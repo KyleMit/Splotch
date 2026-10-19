@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { Animated, Easing } from '../platform/animated';
 import { Svg, Defs, RadialGradient, Rect, Stop } from '../platform/svg';
 import {

@@ -1,0 +1,62 @@
+[
+ {
+  "label": "devtools-sdk58-prerender-datauri",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 725,
+  "lcp": 725,
+  "tbt": 139,
+  "si": 746,
+  "cls": 0,
+  "score": 99,
+  "bytes": 744164,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2905,
+  "phases": {
+   "timeToFirstByte": 93,
+   "elementRenderDelay": 632
+  }
+ },
+ {
+  "label": "devtools-sdk58-prerender-datauri",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 721,
+  "lcp": 721,
+  "tbt": 144,
+  "si": 740,
+  "cls": 0,
+  "score": 99,
+  "bytes": 744164,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2786,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 720
+  }
+ },
+ {
+  "label": "devtools-sdk58-prerender-datauri",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 733,
+  "lcp": 733,
+  "tbt": 202,
+  "si": 769,
+  "cls": 0,
+  "score": 97,
+  "bytes": 744164,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2886,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 732
+  }
+ }
+]

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { Svg, Path } from '../platform/svg';
 import { blobPath } from './blob';
 import { css, html } from 'react-strict-dom';

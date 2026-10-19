@@ -34,6 +34,7 @@ import { useUndoAction } from './useUndoAction';
 import { pageArt } from './drawing/pageArtResource';
 import type { PagePickerLifetime } from './drawing/pageArtSelection';
 import type { PageId } from './drawing/pages';
+import { FIRST_FRAME_PRERENDERED } from './platform/firstFrame';
 
 function useBlankPaper(
   history: History,
@@ -110,7 +111,9 @@ export function useDrawingScreen() {
   });
   // Chrome stays live during a stroke: Undo changes committed ink, and a paint pick or Clear
   // finishes the live cohort before the next action. Dialogs and capture wait for the lift.
-  const disabled = preparing || brushes.state.status !== 'ready';
+  // A prerendered first frame shows the chrome as it will be once the brushes load, a tick after
+  // hydration; until then the commands stay busy (below), so a press does nothing either way.
+  const disabled = preparing || (brushes.state.status !== 'ready' && !FIRST_FRAME_PRERENDERED);
   // A dialog leaves the chrome at full strength under its scrim, as shipping's modal leaves the
   // page: the chrome is held rather than disabled while one is open.
   const dialogOpen = pagePickerOpen || settings.sheetOpen;

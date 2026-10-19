@@ -97,7 +97,7 @@ function HaloMarks({ halo }: { halo: Halo }) {
 // The web build animates halos through React state each frame, like the SVG ink beneath them.
 // Native draws them in Skia on the UI thread instead (PointerHalos.tsx).
 export const PointerHalos = memo(function PointerHalos({ feed }: { feed: HaloFeed }) {
-  const halos = useSyncExternalStore(feed.subscribe, feed.current);
+  const halos = useSyncExternalStore(feed.subscribe, feed.current, feed.current);
   const reduced = useReduceMotion();
   const { shown, now } = useShownHalos(halos, reduced);
   if (shown.length === 0) return null;

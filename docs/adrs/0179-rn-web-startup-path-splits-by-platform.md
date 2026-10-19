@@ -2,6 +2,11 @@
 
 **Status:** Active **Date:** 2026-10
 
+> **Amended by [ADR-0180](0180-rn-web-paints-a-prerendered-first-frame.md).** It prerenders the
+> drawing screen's first frame into the shell, hydrates it, and holds the bundle until that frame
+> has painted. The paper texture is the one image this ADR's startup check now lets the shell
+> inline. The check holds the first paint and the core controls to separate caps instead of one.
+
 ## Context
 
 The React Native app in `experiments/native-architecture` (epic 2690) ships one codebase to Android,
@@ -85,6 +90,13 @@ native keeps its synchronous, offline-complete bundle unchanged.
       once;
     * executable inline scripts;
     * inline CSS.
+  * The inlined-image rule has one exception, which the owner decided under ADR-0180. The paper
+    texture, `experiments/native-architecture/assets/paper/handmade-paper.webp`, may appear once in
+    the shell's inline CSS.
+    * `INLINED_IMAGE_EXCEPTIONS` names that asset with its reason.
+    * A second copy fails, and so does the texture in a script or any other inlined image.
+      `check-native-web-startup.test.mjs` holds each case.
+    * Until that change the checker summed inline CSS but did not scan it for images.
   * `check-native-web-precache.mjs` requires every Farm image and page chunk to be precached for
     offline use. It rejects Farm line art, deferred icons or release notes found in a script the
     shell loads.
@@ -98,13 +110,13 @@ native keeps its synchronous, offline-complete bundle unchanged.
     merged was reviewed at 894,104, 45,120 over. The fourth cut (below) reviewed it at 858,902,
     9,918 over. Expo SDK 58's React 19.3 took it to 900,361, and the fifth cut (below) reviewed it
     at 838,334, 10,650 under the target.
-  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES`, is the reviewed measurement plus 11,896 bytes of
-    headroom, the margin the 906,000 cap kept over 894,104: 870,798 after the fourth cut, 850,230
-    after the fifth. The headroom stays below every move through the third cut (the smallest, the
-    offline library controller, is 24,471 bytes) and below both fifth-cut levers, so undoing one
-    fails the build. So does statically importing the AI sheet (measured at 1,099,429 bytes against
-    the earlier base). Two of the fourth cut's levers are smaller than the headroom, so each of its
-    three fails its own check instead.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` until the split below, was the reviewed measurement plus
+    11,896 bytes of headroom, the margin the 906,000 cap kept over 894,104: 870,798 after the fourth
+    cut, 850,230 after the fifth. The headroom stays below every move through the third cut (the
+    smallest, the offline library controller, is 24,471 bytes) and below both fifth-cut levers, so
+    undoing one fails the build. So does statically importing the AI sheet (measured at 1,099,429
+    bytes against the earlier base). Two of the fourth cut's levers are smaller than the headroom,
+    so each of its three fails its own check instead.
   * The cap is a ratchet. Consuming the headroom is the cue to take the next lever, not to raise the
     number.
   * Amended 2026-10-19: the owner raised the cap for the Expo SDK 58 / React 19.3 upgrade (PR 3000).
@@ -114,6 +126,15 @@ native keeps its synchronous, offline-complete bundle unchanged.
     words: "I would like to do both 1. merge 2. fix startup budget. Whatever order is fine for me."
     The cap was 900,361 + 11,896 = 912,257 bytes, the same headroom over the reviewed startup, until
     the fifth cut (below) took Expo's tree shaking and granular chunking and ratcheted it back down.
+  * Amended 2026-10-19 by ADR-0180: the owner split the cap in two. The prerendered shell holds the
+    bundle until its first frame has painted, so one sum no longer measured one wait. The build
+    measured 861,191 bytes against the 850,230 cap.
+    * `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES`, 827,535, carries this ratchet. It counts every script
+      and stylesheet the drawing controls wait for, whether the document or the boot script loads
+      it: 815,639 bytes plus the same 11,896 of headroom.
+    * `MAX_NATIVE_WEB_FIRST_PAINT_BYTES`, 47,052, counts the shell's inline CSS and scripts and
+      anything the document itself loads: 45,552 bytes plus 1,500 of headroom.
+    * `MAX_NATIVE_WEB_STARTUP_BYTES` was removed.
 * **The app's `Animated` leaves out React Native Web's list components.**
   * RNW's `Animated` export spreads its animation implementation over six animated hosts. Three of
     them (`FlatList`, `SectionList`, `ScrollView`) import `VirtualizedList` and the list machinery,

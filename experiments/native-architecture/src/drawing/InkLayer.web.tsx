@@ -7,6 +7,6 @@ export const InkLayer = forwardRef<RasterInkHandle, InkLayerProps>(function InkL
   { live, ...props },
   ref
 ) {
-  const drafts = useSyncExternalStore(live.subscribe, live.drafts);
+  const drafts = useSyncExternalStore(live.subscribe, live.drafts, live.drafts);
   return <RasterInk ref={ref} {...props} drafts={drafts} />;
 });

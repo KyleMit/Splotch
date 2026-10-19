@@ -1,0 +1,62 @@
+[
+ {
+  "label": "devtools-shipping",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 832,
+  "lcp": 832,
+  "tbt": 101,
+  "si": 898,
+  "cls": 0,
+  "score": 99,
+  "bytes": 630470,
+  "lcpNode": "<div class=\"canvas-container svelte-r2xcee\">",
+  "tti": 7582,
+  "phases": {
+   "timeToFirstByte": 133,
+   "elementRenderDelay": 699
+  }
+ },
+ {
+  "label": "devtools-shipping",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 820,
+  "lcp": 820,
+  "tbt": 94,
+  "si": 886,
+  "cls": 0,
+  "score": 99,
+  "bytes": 630470,
+  "lcpNode": "<div class=\"canvas-container svelte-r2xcee\">",
+  "tti": 7485,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 819
+  }
+ },
+ {
+  "label": "devtools-shipping",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 830,
+  "lcp": 830,
+  "tbt": 97,
+  "si": 896,
+  "cls": 0,
+  "score": 99,
+  "bytes": 630470,
+  "lcpNode": "<div class=\"canvas-container svelte-r2xcee\">",
+  "tti": 7539,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 829
+  }
+ }
+]

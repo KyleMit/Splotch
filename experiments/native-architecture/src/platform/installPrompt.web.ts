@@ -60,4 +60,7 @@ function createBrowserInstallPrompt() {
   return owner;
 }
 
-export const installPrompt: InstallPromptOwner | null = createBrowserInstallPrompt();
+// The build's first-frame prerender (prerenderFirstFrame.tsx) imports this module in Node, where
+// there is no window to listen on.
+export const installPrompt: InstallPromptOwner | null =
+  typeof window === 'undefined' ? null : createBrowserInstallPrompt();

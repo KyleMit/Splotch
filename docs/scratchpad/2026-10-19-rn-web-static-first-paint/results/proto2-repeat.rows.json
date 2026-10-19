@@ -1,0 +1,134 @@
+[
+ {
+  "label": "proto2-repeat",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 1,
+  "fcp": 618,
+  "lcp": 750,
+  "tbt": 486,
+  "si": 618,
+  "cls": 0,
+  "score": 88,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1262,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 23
+  }
+ },
+ {
+  "label": "proto2-repeat",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 2,
+  "fcp": 617,
+  "lcp": 750,
+  "tbt": 399,
+  "si": 617,
+  "cls": 0,
+  "score": 90,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1177,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 23
+  }
+ },
+ {
+  "label": "proto2-repeat",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 3,
+  "fcp": 617,
+  "lcp": 750,
+  "tbt": 449,
+  "si": 617,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1199,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 19
+  }
+ },
+ {
+  "label": "proto2-repeat",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 1,
+  "fcp": 616,
+  "lcp": 750,
+  "tbt": 452,
+  "si": 616,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1231,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 28
+  }
+ },
+ {
+  "label": "proto2-repeat",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 2,
+  "fcp": 617,
+  "lcp": 750,
+  "tbt": 455,
+  "si": 617,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1234,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 6,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 22
+  }
+ },
+ {
+  "label": "proto2-repeat",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 3,
+  "fcp": 616,
+  "lcp": 750,
+  "tbt": 442,
+  "si": 616,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1221,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 24
+  }
+ }
+]

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, type ReactNode, type Ref, type RefObject } from 'react';
-import { StyleSheet, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
+import { StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { ScrollView } from '../platform/ScrollView';
 import {
   initialWindowMetrics,

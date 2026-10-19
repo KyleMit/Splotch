@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { iosShareButtonLocation } from '../../../../web/src/lib/iosShareButtonLocation';
 
 export function useShareButtonLocation() {

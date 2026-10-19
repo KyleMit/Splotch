@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { formatReleaseAgo } from '../../../../web/src/lib/releaseAgo';
 import { paletteHex, type PaletteLabel } from '../drawing/palette';

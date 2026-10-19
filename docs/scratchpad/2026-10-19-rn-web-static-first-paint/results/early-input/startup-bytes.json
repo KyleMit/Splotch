@@ -1,0 +1,20 @@
+{
+ "startupBytes": 861191,
+ "cap": 850230,
+ "over": 10961,
+ "inlineScriptBytes": 4186,
+ "inlineStyleBytes": 41366,
+ "firstPaint": 45552,
+ "bundle": 815639,
+ "files": [
+  [
+   "_expo/static/js/web/__expo-metro-runtime-8c088df87a31e4e6accd81c554ec290d.js",
+   3751
+  ],
+  [
+   "_expo/static/js/web/index-7f7088102946370b96a505dce39ff4ff.js",
+   811888
+  ]
+ ],
+ "inlinedImages": []
+}

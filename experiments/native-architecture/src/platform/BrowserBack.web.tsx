@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { currentAppPage, subscribeAppPage } from './appPath';
+import { currentAppPage, prerenderedAppPage, subscribeAppPage } from './appPath';
 import { hasDrawingInk } from '../drawing/model';
 import {
   createBrowserBack,
@@ -43,7 +43,8 @@ export function BrowserBackProvider({
   session: DrawingSession;
   children: ReactNode;
 }) {
-  const drawingPage = useSyncExternalStore(subscribeAppPage, currentAppPage) === 'drawing';
+  const drawingPage =
+    useSyncExternalStore(subscribeAppPage, currentAppPage, prerenderedAppPage) === 'drawing';
   const [owner, setOwner] = useState<BrowserBackOwner | null>(null);
   const retainedOwner = useRef<BrowserBackOwner | null>(null);
   useEffect(() => {

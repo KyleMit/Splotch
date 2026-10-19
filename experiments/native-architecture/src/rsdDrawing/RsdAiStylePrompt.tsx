@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
 import { hasPunchedBackground } from '../../../../web/src/lib/ai/styles';

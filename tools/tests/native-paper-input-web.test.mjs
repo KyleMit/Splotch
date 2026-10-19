@@ -22,7 +22,9 @@ beforeEach(async () => {
   input = vi.fn();
   claim = vi.fn();
   await act(async () =>
-    root.render(createElement(PaperInputView, { onInput: input, onClaim: claim }))
+    root.render(
+      createElement(PaperInputView, { onInput: input, onClaim: claim, engineReady: () => true })
+    )
   );
 });
 afterEach(async () => {

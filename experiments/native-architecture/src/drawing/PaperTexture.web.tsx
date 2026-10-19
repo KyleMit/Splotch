@@ -1,10 +1,13 @@
 import { memo } from 'react';
 import handmadePaper from '../../assets/paper/handmade-paper.webp';
 import { webAssetUri } from '../platform/webAsset';
+import { PAPER_TEXTURE_PROPERTY } from '../platform/firstFrameContract';
 import { useDrawingTheme } from './DrawingAppearance';
 import type { Point } from './model';
 
-const PAPER_TEXTURE = `url("${webAssetUri(handmadePaper)}")`;
+// The prerendered shell inlines the texture under this property, so the first frame paints it without
+// a request; anywhere else the file loads as before.
+const PAPER_TEXTURE = `var(${PAPER_TEXTURE_PROPERTY}, url("${webAssetUri(handmadePaper)}"))`;
 
 export const PaperTexture = memo(function PaperTexture({
   rightInset = 0,
@@ -22,7 +25,10 @@ export const PaperTexture = memo(function PaperTexture({
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: `${paper} ${PAPER_TEXTURE} ${rightInset ? `calc(${rightInset - origin.x}px - 100vw)` : `${-origin.x}px`} ${-origin.y}px`,
+        // Longhands: a var() inside the shorthand would leave every longhand unreadable.
+        backgroundColor: paper,
+        backgroundImage: PAPER_TEXTURE,
+        backgroundPosition: `${rightInset ? `calc(${rightInset - origin.x}px - 100vw)` : `${-origin.x}px`} ${-origin.y}px`,
       }}
     />
   );

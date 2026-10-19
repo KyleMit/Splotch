@@ -1,4 +1,5 @@
-import { Image, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppearance';
 import {

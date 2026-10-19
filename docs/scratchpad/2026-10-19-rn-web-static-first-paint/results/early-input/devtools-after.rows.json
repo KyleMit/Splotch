@@ -1,0 +1,62 @@
+[
+ {
+  "label": "devtools-after",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 728,
+  "lcp": 728,
+  "tbt": 164,
+  "si": 748,
+  "cls": 0,
+  "score": 98,
+  "bytes": 745817,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2819,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 727
+  }
+ },
+ {
+  "label": "devtools-after",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 719,
+  "lcp": 719,
+  "tbt": 166,
+  "si": 739,
+  "cls": 0,
+  "score": 98,
+  "bytes": 745817,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2816,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 718
+  }
+ },
+ {
+  "label": "devtools-after",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 724,
+  "lcp": 724,
+  "tbt": 168,
+  "si": 744,
+  "cls": 0,
+  "score": 98,
+  "bytes": 741030,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2821,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 723
+  }
+ }
+]
