@@ -1,0 +1,108 @@
+<div class="css-g5y9jx r-13awgt0 r-105ug2t" data-testid="drawing-page">
+<div class="css-g5y9jx r-14lw9ot r-13awgt0">
+<div class="css-g5y9jx r-13awgt0" data-testid="rsd-safe-area-frame" style="padding: 0px;">
+<div class="x1ghz6dp x78zum5 xdt5ytf x1iyjqo2 xs83m0k x1r8uery x2lwn1j x3dh19k x10w31vq x1c2s9wk x1w5v4wc x1717udv xxhr3t" data-layoutconformance="strict">
+<div class="css-g5y9jx r-13awgt0 r-ifefl9" data-testid="rsd-drawing-layout">
+<div class="css-g5y9jx r-18kxxzh r-1q142lx r-184en5c" data-testid="rsd-palette-bar">
+<div class="x1ghz6dp x1717udv x9f619 x1n2onr6 x1iyjqo2 xb3r6kr x1jm3axb xjqpyvm x13e46o5 xwsd3xy x1iotiob x16ye13r x3dh19k x78zum5 x1qyk479 x6s0dn4 x1pidvrl" data-testid="rsd-palette-plate" style="--x-paddingTop: 8px; --x-paddingBottom: 12px; --x-paddingLeft: 10px; --x-paddingRight: 10px; --x-boxShadow: 0 2px 10px rgba(0, 0, 0, 0.1); --x-height: 75px; --x-flexDirection: row; --x-gap: 12.727272727272727px;">
+<div class="x1ghz6dp x1717udv x78zum5 x1qyk479 x6s0dn4 x1pidvrl x2lah0s" data-testid="rsd-palette-paints" style="--x-flexDirection: row; --x-gap: 12.727272727272727px;">
+<button aria-disabled="false" aria-label="Purple" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r x3dh19k" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 47px; --x-height: 47px; --x-borderRadius: 23.5px; --x-backgroundColor: #AB71E1;">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x9f619 x10l6tqk x7yrpt8 x1y0btm7 x47corl xjbys53 xgq9j65 x5lhr3w x16ye13r x1mw0n95 xs8ujip" style="--x-top: -2px; --x-left: -2px; --x-width: 59px; --x-height: 59px; --x-borderRadius: 29.5px; --x-borderWidth: 3px;">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x9f619 x10l6tqk x7yrpt8 x1y0btm7 x47corl xjbys53 xgq9j65 x5lhr3w x16ye13r x1mw0n95 x6w5c0t" style="--x-top: -4px; --x-left: -4px; --x-width: 63px; --x-height: 63px; --x-borderRadius: 31.5px; --x-borderWidth: 3px; --x-borderColor: #9a66cb;">
+<button aria-disabled="false" aria-label="Blue" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #62A2E9;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Teal" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #4FC4C0;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Mint" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #5CCC90;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Green" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #8CC864;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Yellow" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #F9D24F;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Orange" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #F89C45;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Brown" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #B5835A;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Red" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #EC534E;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Pink" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #F47CB0;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Black" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r xl8spv7" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px; --x-backgroundColor: #0a0b10;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<button aria-disabled="false" aria-label="Custom Color" class="x1y0btm7 x1ghz6dp x9f619 x1n2onr6 x78zum5 x6s0dn4 xl56j7k x1717udv xc342km x2lah0s x1ypdohk x3oybdh xvruv2t x11xpdln x3vay4l xwji4o3 x7yrpt8 x5lhr3w x16ye13r x3dh19k" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;" type="button">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x13vifvy xu96u03 x1w5r55w x47corl x7yrpt8 x5lhr3w x16ye13r" style="--x-width: 55px; --x-height: 55px; --x-borderRadius: 27.5px;">
+<svg height="41.96428571428571" viewBox="0 0 1000 1000" width="41.96428571428571" xmlns="http://www.w3.org/2000/svg">
+<defs >
+<path d="m0-192.31 166.54 96.15V96.15L0 192.31l-166.54-96.15V-96.15z" id="a">
+<use fill="#f9d24f" href="#a" x="500" y="500">
+<use fill="#ec534e" href="#a" x="833.08" y="500">
+<use fill="#62a2e9" href="#a" x="166.92" y="500">
+<use fill="#f89c45" href="#a" x="333.46" y="211.54">
+<use fill="#f47cb0" href="#a" x="666.54" y="211.54">
+<use fill="#8cc864" href="#a" x="333.46" y="788.46">
+<use fill="#ab71e1" href="#a" x="666.54" y="788.46">
+<div class="css-g5y9jx r-13awgt0 r-ifefl9 r-bcqeeo" data-testid="rsd-canvas-column">
+<div class="css-g5y9jx r-13awgt0 r-ifefl9 r-bcqeeo" data-testid="rsd-canvas-area">
+<div class="css-g5y9jx" data-testid="rsd-paper-slot" style="flex: 1 1 0%; min-width: 0px; min-height: 0px; overflow: hidden;">
+<div aria-hidden="true" data-testid="paper-texture" style="position: absolute; inset: 0px; pointer-events: none; background: url("/assets/assets/paper/handmade-paper.7637e6600d2982210f85a1a9ff5b9cba.webp") 0px 0px rgb(252, 251, 248);">
+<div class="css-g5y9jx r-1awozwy r-13awgt0 r-1777fci r-ifefl9 r-bcqeeo">
+<div class="css-g5y9jx" data-testid="rsd-paper-plane" style="position: absolute; left: 0px; top: 0px; width: 820px; height: 1105px;">
+<div class="css-g5y9jx r-1pi2tsx r-13qz1uu">
+<div class="css-g5y9jx r-1pi2tsx r-1udh08x r-13qz1uu">
+<div aria-label="Drawing paper" class="css-g5y9jx r-1pi2tsx r-13qz1uu r-ah5dr5" data-testid="drawing-paper">
+<div class="css-g5y9jx r-1pi2tsx r-pdkbbo r-13qz1uu r-633pao">
+<div class="css-g5y9jx r-185brpr r-11f02xd r-orgf3d r-u8s1d r-1qewag5 r-633pao">
+<svg height="256" width="256">
+<svg class="r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af r-633pao" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 760 1024" width="100%">
+<g opacity="1">
+<defs >
+<defs >
+<div class="css-g5y9jx r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af r-633pao" data-testid="rsd-clear-underlay">
+<div class="css-g5y9jx r-185brpr r-u8s1d r-1qewag5" data-testid="rsd-clear-wash" style="top: -75px; right: 0px; transform-origin: 100% 0%; opacity: 0; transform: scale(0);">
+<svg height="256" width="256">
+<defs >
+<radialgradient cx="256" cy="0" gradientUnits="userSpaceOnUse" id="rsd-clear-wash" r="256">
+<stop offset="0" stop-color="#fcfbf8" stop-opacity="0.9">
+<stop offset="1" stop-color="#fcfbf8" stop-opacity="0">
+<rect fill="url(#rsd-clear-wash)" height="256" width="256">
+<div class="css-g5y9jx r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af" style="opacity: 0;">
+<svg height="1105" width="820">
+<defs >
+<radialgradient cx="820" cy="0" gradientUnits="userSpaceOnUse" id="rsd-clear-flood" r="1376.0178051173611">
+<stop offset="0" stop-color="#fcfbf8" stop-opacity="0.95">
+<stop offset="1" stop-color="#fcfbf8" stop-opacity="0.857">
+<rect fill="url(#rsd-clear-flood)" height="1105" width="820">
+<div class="css-g5y9jx r-u8s1d r-zchlnj r-ipm5af r-12vffkv" data-testid="rsd-controls-inset" style="bottom: 0px; left: 0px;">
+<div class="css-g5y9jx r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af r-12vffkv">
+<div class="css-g5y9jx r-1nlw0im r-u8s1d r-3mc0re" data-testid="rsd-settings-dock">
+<button aria-label="Settings" class="x1ghz6dp x9f619 x78zum5 x6s0dn4 xl56j7k x1y0btm7 x1ypdohk xwji4o3 x1useyqa xsdox4t x8o2dna xc342km xjbqb8w xbyyjgo x4gyw5p x1tqd960 xi4js5 x17agq8a x19991ni x3vay4l" role="button" type="button">
+<svg fill="#1f1f1f" height="32" viewBox="0 0 1000 1000" width="32" xmlns="http://www.w3.org/2000/svg">
+<path d="M451.04 916.67q-28.13 0-48.44-18.75t-24.48-45.84l-9.37-68.75q-13.54-5.21-25.52-12.5t-23.44-15.62l-64.58 27.08q-26.04 11.46-52.08 2.08t-40.62-33.33l-48.96-85.42q-14.58-23.96-8.33-51.04t28.13-44.79l55.21-41.67q-1.04-7.29-1.04-14.06v-28.13q0-6.77 1.04-14.06l-55.21-41.67q-21.87-17.71-28.13-44.79t8.33-51.04l48.96-85.42q14.58-23.96 40.63-33.33t52.08 2.08l64.58 27.08q11.46-8.33 23.96-15.63t25-12.5l9.38-68.75q4.17-27.08 24.48-45.83t48.44-18.75h97.92q28.13 0 48.44 18.75t24.48 45.83l9.38 68.75q13.54 5.21 25.52 12.5t23.44 15.63l64.58-27.08q26.04-11.46 52.08-2.08t40.63 33.33l48.96 85.42q14.58 23.96 8.33 51.04t-28.13 44.79l-55.21 41.67q1.04 7.29 1.04 14.06v28.13q0 6.77-2.08 14.06l55.21 41.67q21.88 17.71 28.13 44.79t-8.33 51.04l-50 85.42q-14.58 23.96-40.62 33.33t-52.08-2.08l-62.5-27.08q-11.46 8.33-23.96 15.63t-25 12.5l-9.37 68.75q-4.17 27.08-24.48 45.83t-48.48 18.75zm7.29-83.33h82.29l14.58-110.42q32.29-8.33 59.9-24.48t50.53-39.06l103.13 42.71 40.63-70.83-89.58-67.71q5.21-14.58 7.29-30.73t2.08-32.81-2.08-32.81-7.29-30.73l89.58-67.71-40.62-70.83-103.13 43.75q-22.92-23.96-50.52-40.1t-59.91-24.5l-13.54-110.42h-82.29L444.8 277.08q-32.29 8.33-59.9 24.48t-50.53 39.07l-103.13-42.71-40.62 70.83 89.58 66.67q-5.21 15.63-7.29 31.25T270.83 500q0 16.67 2.08 32.29t7.29 31.25l-89.58 67.71 40.63 70.83 103.13-43.75q22.92 23.96 50.52 40.1t59.89 24.49zm43.75-187.5q60.42 0 103.13-42.71T647.92 500t-42.71-103.13-103.13-42.71q-61.46 0-103.65 42.71T356.25 500t42.19 103.13 103.65 42.71m-2.08-145.83">
+<div class="css-g5y9jx r-u8s1d" data-testid="rsd-drawer-dock" style="left: 11.5px; bottom: 8px;">
+<button aria-expanded="false" aria-label="Expand controls" class="x1ghz6dp x9f619 x78zum5 x6s0dn4 xl56j7k x1y0btm7 x1ypdohk xwji4o3 x1useyqa xsdox4t x8o2dna xc342km xjbqb8w xbyyjgo x4gyw5p x1tqd960 xi4js5 x17agq8a x19991ni x3vay4l" role="button" type="button">
+<div class="x1ghz6dp x1717udv xsqj5wx" style="--x-transform: rotate(-90deg);">
+<svg fill="#1f1f1f" height="32" viewBox="0 0 1000 1000" width="32" xmlns="http://www.w3.org/2000/svg">
+<path d="M525 500 362.5 337.5q-11.46-11.46-11.46-29.17t11.46-29.17 29.17-11.46 29.17 11.46l191.67 191.67q6.25 6.25 8.85 13.54t2.6 15.63-2.6 15.63-8.85 13.54L420.83 720.83q-11.46 11.46-29.17 11.46t-29.17-11.46-11.46-29.17 11.46-29.17z">
+<p aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 x1717udv xkdpibf xb3r6kr xzpqnlu xuxw1ft xc342km" role="status">
+<p aria-live="polite" class="x10l6tqk x1i1rx1s xjm9jq1 x1717udv xkdpibf xb3r6kr xzpqnlu xuxw1ft xc342km" role="status">
+<div class="css-g5y9jx r-1p0dtai r-u8s1d r-633pao" data-testid="rsd-dock-band" style="top: 0px; left: 0px; right: 0px;">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x47corl x15406qy x3vay4l xwji4o3 x13vifvy x1ey2m1c x3m8u43 x5lhr3w xl8spv7" style="--x-width: 0px; --x-backgroundColor: transparent;">
+<div class="css-g5y9jx r-1p0dtai r-1udh08x r-u8s1d r-ipm5af r-12vffkv" data-testid="rsd-clear-clip" style="left: 0px; right: 0px;">
+<div class="css-g5y9jx r-1p0dtai r-u8s1d r-ipm5af r-12vffkv" data-testid="rsd-clear-overlay" style="left: 0px; right: 0px;">
+<div class="css-g5y9jx r-12vffkv" data-testid="rsd-clear-dock" style="position: absolute; top: 90px; right: -10px;">
+<button aria-label="Clear drawing" class="css-g5y9jx r-105ug2t" data-focus-ring="part" role="button" style="width: 60px; height: 60px; transform: translateX(0px) translateY(0px) scale(1) scaleX(1) scaleY(1);" type="button">
+<div class="x1ghz6dp x1717udv x9f619 x78zum5 x6s0dn4 xl56j7k x1f5z8mw x1rtd9fr x1a2w583 xjppbhk x5lhr3w x16ye13r x12l0k95 xpoieih" data-focus-ring-part="ring" data-testid="rsd-clear-face" style="--x-width: 60px; --x-height: 60px; --x-borderTopLeftRadius: 30px; --x-borderBottomLeftRadius: 30px;">
+<div class="x1ghz6dp x1717udv x78zum5 xvcn832" data-testid="rsd-clear-lid" style="--x-marginRight: 10px;">
+<svg height="38" viewBox="0 0 1000 1000" width="38" xmlns="http://www.w3.org/2000/svg">
+<g fill="none" stroke-width="2">
+<path d="m671.56 187.16-63.39-.14m-217.21.06-62.91-.03" stroke="#ffe384" vector-effect="non-scaling-stroke">
+<path d="M354.69 867.84c11.01-.55 20.52-6.93 24.57-16.92q1.93-4.79 1.3-18.79-11.23-251.23-13.25-297.21c-.74-17.04-14.74-28.73-31.06-27.9-16.32.84-29.06 13.9-28.07 30.92q2.68 45.95 17.13 297.01.8 14 3.22 18.56c5.05 9.52 15.15 14.89 26.15 14.33M526.12 534.2a27.01 27.01 0 0 0-27.01-27.01h-1.35a27.01 27.01 0 0 0-27.01 27.01v306.72a27.01 27.01 0 0 0 27.01 27.01h1.35a27.01 27.01 0 0 0 27.01-27.01V534.2m88.76 306.99c-.48 7.71 4.85 16.33 10.6 21.09 14.05 11.56 36.73 5 43.74-11.5q1.3-3.04 1.87-12.93c5.94-102.21 11.67-191.93 17.56-293.27q.66-11.44-1.04-16.84-4.28-13.59-17.13-18.68c-14.05-5.58-28.4-.48-36.9 11.92q-3.82 5.6-3.9 13.54-.03 2.84-.67 17.24-1.03 23.36-7.75 155.57c-2.33 45.75-3.88 93.77-6.38 133.87" stroke="#f69505" vector-effect="non-scaling-stroke">
+<path d="m671.56 187.16-63.39-.14q-2.42-23.88-2.29-48.51.06-9.68-1.37-13.65c-5.2-14.49-18.1-25.44-33.54-26.2q-10.51-.51-37.5-.06-34.66.57-102.87-.15c-22.04-.25-38.76 16.15-38.08 38.44q.77 25.58-1.56 50.2l-62.91-.03q-2.71-11.04-2.55-22.71c.26-17.9-.25-35.51.52-46.66 2.79-40.32 31.46-74.08 70.87-82.5q8.79-1.89 41.55-1.92 89.19-.08 145.46.06c17.79.05 34.22 6.26 49.29 16.33 23.67 15.81 37.35 42.99 38.22 71.06q.8 25.31.14 66.44" fill="#fff">
+<path d="M390.97 187.09q4.6.78 12.02.78 93.76-.14 187.5.08 10.32.02 17.68-.92l63.39.14q8.76.81 22.07.72 4.77-.03 120.72-.08 25.11-.02 29.19 1c15.32 3.83 27.48 15.06 31.89 30.89q1.32 4.74 1.3 17.07-.06 62.1-.2 66.81c-.54 18.53-15.48 34.22-32.71 38.19q-4.48 1.03-28.16 1.04-147.84.14-594.8.08-44.72 0-50.11-.08-16.27-.21-21.5-2.22c-11.95-4.57-23.54-15.21-26.92-27.68q-1.53-5.71-1.49-17.82.09-29.02-.11-56.98-.12-15.06 2.35-21.92 4.88-13.56 18.01-21.83c10.37-6.52 18.04-6.37 32.13-6.43q60.38-.25 136.21.09 9.68.05 18.62-.97zM787.2 364.28c9.19.11 20.89 5.69 28.76 11.43q4.48 3.28 9.65 10.74 11.75 16.96 9.05 41.37-5.52 49.88-32.5 314.2-12.98 127.02-17.71 177.44-2.33 24.72-21.5 43.67-20.72 20.49-50.51 20.55-193.01.4-418.31.06c-10.32-.02-16.96.44-24.43-1.27q-15.97-3.7-26.27-10.69-20.49-13.93-29.42-38.07-2.62-7.13-3.8-22.55-1.04-13.51-3.31-36.5-11.73-118.99-21.98-226.6c-7.04-73.76-14.97-148.57-21.46-213.3q-1.87-18.71-.61-25.2c4.92-25.35 22.75-44.03 48.94-45.06q9.69-.38 28.27-.4 98.17-.05 514.95 0 16.01 0 32.21.18M354.69 867.84c11.01-.55 20.52-6.93 24.57-16.92q1.93-4.79 1.3-18.79-11.23-251.23-13.25-297.21c-.74-17.04-14.74-28.73-31.06-27.9-16.32.84-29.06 13.9-28.07 30.92q2.68 45.95 17.13 297.01.8 14 3.22 18.56c5.05 9.52 15.15 14.89 26.15 14.33M526.12 534.2a27.01 27.01 0 0 0-27.01-27.01h-1.35a27.01 27.01 0 0 0-27.01 27.01v306.72a27.01 27.01 0 0 0 27.01 27.01h1.35a27.01 27.01 0 0 0 27.01-27.01zm88.76 306.99c-.48 7.71 4.85 16.33 10.6 21.09 14.05 11.56 36.73 5 43.74-11.5q1.3-3.04 1.87-12.93c5.94-102.21 11.67-191.93 17.56-293.27q.66-11.44-1.04-16.84-4.28-13.59-17.13-18.68c-14.05-5.58-28.4-.48-36.9 11.92q-3.82 5.6-3.9 13.54-.03 2.84-.67 17.24-1.03 23.36-7.75 155.57c-2.33 45.75-3.88 93.77-6.38 133.87" fill="#fec708">
+<path d="M336.26 507.02c16.32-.83 30.32 10.86 31.06 27.9q2.02 45.98 13.25 297.21.63 14-1.3 18.79c-4.05 9.98-13.56 16.37-24.57 16.92-11 .57-21.1-4.8-26.15-14.33q-2.42-4.56-3.22-18.56-14.45-251.06-17.13-297.01c-1-17.02 11.75-30.08 28.07-30.92" fill="#ee6202">
+<rect fill="#ee6202" height="360.74" rx="27.01" width="55.37" x="470.75" y="507.19">
+<path d="M625.48 862.29c-5.75-4.75-11.07-13.37-10.6-21.09 2.5-40.09 4.05-88.11 6.38-133.87q6.72-132.21 7.75-155.57.64-14.4.67-17.24.08-7.94 3.9-13.54c8.5-12.39 22.85-17.5 36.9-11.92q12.85 5.09 17.13 18.68 1.7 5.4 1.04 16.84c-5.89 101.33-11.63 191.06-17.56 293.27q-.57 9.89-1.87 12.93c-7.01 16.5-29.69 23.07-43.74 11.5" fill="#ee6202">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x47corl x15406qy x3vay4l xwji4o3 x13vifvy xu96u03 x3m8u43 x16ye13r xl8spv7" style="--x-height: 0px; --x-backgroundColor: transparent;">
+<div aria-hidden="true" class="x1ghz6dp x1717udv x10l6tqk x47corl x15406qy x3vay4l xwji4o3 x13vifvy x1ey2m1c xu96u03 x5lhr3w xl8spv7" style="--x-width: 0px; --x-backgroundColor: transparent;">

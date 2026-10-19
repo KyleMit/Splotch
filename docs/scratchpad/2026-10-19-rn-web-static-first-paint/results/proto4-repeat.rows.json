@@ -1,0 +1,134 @@
+[
+ {
+  "label": "proto4-repeat",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 1,
+  "fcp": 609,
+  "lcp": 900,
+  "tbt": 472,
+  "si": 609,
+  "cls": 0,
+  "score": 88,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1235,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 6,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 21
+  }
+ },
+ {
+  "label": "proto4-repeat",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 2,
+  "fcp": 609,
+  "lcp": 900,
+  "tbt": 408,
+  "si": 609,
+  "cls": 0,
+  "score": 90,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1187,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 13
+  }
+ },
+ {
+  "label": "proto4-repeat",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 3,
+  "fcp": 616,
+  "lcp": 900,
+  "tbt": 410,
+  "si": 616,
+  "cls": 0,
+  "score": 90,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1189,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 19
+  }
+ },
+ {
+  "label": "proto4-repeat",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 1,
+  "fcp": 609,
+  "lcp": 900,
+  "tbt": 381,
+  "si": 609,
+  "cls": 0,
+  "score": 91,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1133,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 24
+  }
+ },
+ {
+  "label": "proto4-repeat",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 2,
+  "fcp": 609,
+  "lcp": 900,
+  "tbt": 406,
+  "si": 609,
+  "cls": 0,
+  "score": 90,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1186,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 14
+  }
+ },
+ {
+  "label": "proto4-repeat",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 3,
+  "fcp": 609,
+  "lcp": 900,
+  "tbt": 397,
+  "si": 609,
+  "cls": 0,
+  "score": 90,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1175,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 3,
+   "resourceLoadDuration": 2,
+   "elementRenderDelay": 22
+  }
+ }
+]

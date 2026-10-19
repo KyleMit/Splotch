@@ -2,6 +2,10 @@
 
 **Status:** Active **Date:** 2026-10
 
+> **Proposed amendment: [ADR-0180](0180-rn-web-paints-a-prerendered-first-frame.md)** prerenders the
+> drawing screen's first frame into the shell, hydrates it, and holds the bundle until that frame
+> has painted.
+
 ## Context
 
 The React Native app in `experiments/native-architecture` (epic 2690) ships one codebase to Android,
