@@ -21,14 +21,14 @@ emulators. A native target pairs the RN candidate with the reconstructed v1.6.0 
 same runtime; RN web pairs with production web source. Physical devices are reserved for
 physical-only properties and one drawing-screen sanity check.
 
-| Classification   | Requirements | Status today                                        |
-| ---------------- | -----------: | --------------------------------------------------- |
-| `protocol`       |         1229 | `unverified`                                        |
-| `physical-only`  |          129 | `unverified`; 3 `blocked` without a physical iPhone |
-| `automated-test` |           29 | `unverified` until AC-1 confirms a shipping oracle  |
-| `settled`        |           18 | Accepted owner decisions, never defects             |
-| `out-of-scope`   |          136 | Each with a stated reason                           |
-| **Total**        |         1541 | **0 `verified`**                                    |
+| Classification   | Requirements | Status today                                         |
+| ---------------- | -----------: | ---------------------------------------------------- |
+| `protocol`       |         1229 | `unverified`; 14 `blocked` by an iOS network subcase |
+| `physical-only`  |          129 | `unverified`; 3 `blocked` without a physical iPhone  |
+| `automated-test` |           29 | `unverified` until AC-1 confirms a shipping oracle   |
+| `settled`        |           18 | Accepted owner decisions, never defects              |
+| `out-of-scope`   |          136 | Each with a stated reason                            |
+| **Total**        |         1541 | **0 `verified`**                                     |
 
 A mapping to a protocol or test is not a pass. A row becomes `verified` only when its protocols have
 run on all their targets and arms at one candidate head and the public result record is linked.
@@ -48,7 +48,7 @@ candidate mappings and exact aliases. An old test name or implementation claim i
 lead, not an accepted two-sided contract. `acceptance-subcells.csv` proposes 4,798 observable cells
 before pruning source-proven skips and deduplicating shared evidence. Each subcell takes the
 protocols of its requirement, and a protocol's own states replace the generic setup and expected
-fields. `execution-plan.md` counts the 1,211 physical cells on routine rows that the targets policy
+fields. `execution-plan.md` counts the 1,209 physical cells on routine rows that the targets policy
 supersedes.
 
 `source-ownership.csv` is deliberately conservative: any changed path matching a requirement's

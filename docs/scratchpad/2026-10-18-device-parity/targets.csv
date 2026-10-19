@@ -20,3 +20,4 @@ android-api36,pending fresh qualification,must record live,must verify artifact/
 android-api36-tablet,pending fresh qualification,must record live,must verify artifact/source/certificate before use
 physical-iphone,blocked: no physical iPhone is available; a ring/silent switch has no substitute,n/a,n/a
 ci-exact-head,hosted CI run on the exact candidate head,GitHub Actions runners,run head SHA must equal the candidate under test
+ios-network-conditions,blocked: iOS simulators share the host network; no permitted per-simulator offline or Low Data Mode control,n/a,n/a

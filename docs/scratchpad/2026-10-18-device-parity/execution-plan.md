@@ -53,22 +53,23 @@ By kind:
 | Differences (X)   |   65 |       53 |             6 |              0 |       6 |            0 |
 | **Total**         | 1541 |     1229 |           129 |             29 |      18 |          136 |
 
-Status: 1,384 `unverified` and 3 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
-switch, which the rig does not have. 18 rows are `settled` and 136 `out-of-scope`. **0 are
-`verified`.**
+Status: 1,370 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
+switch, which the rig does not have. Fourteen more rows carry an iOS offline or Low Data Mode
+subcase with no permitted target (see Targets); their Android and web subcases still run. 18 rows
+are `settled` and 136 `out-of-scope`. **0 are `verified`.**
 
 Requirements per protocol. "Mapped" counts every row that names the protocol; "primary" counts the
-rows that list it first. 186 rows map to two protocols, and 6 rows to three or four.
+rows that list it first. 192 rows map to two protocols, and 6 rows to three or four.
 
 | Protocol | Title                                                       | Mapped | Primary | Physical-only | Automated | Settled |
 | -------- | ----------------------------------------------------------- | -----: | ------: | ------------: | --------: | ------: |
-| DS-1     | Drawing-screen chrome visual matrix                         |    106 |      85 |             0 |         0 |       3 |
-| DS-2     | Drawing-screen chrome interaction and motion                |    142 |     128 |             0 |         0 |       0 |
+| DS-1     | Drawing-screen chrome visual matrix                         |    106 |      79 |             0 |         0 |       3 |
+| DS-2     | Drawing-screen chrome interaction and motion                |    143 |     129 |             0 |         0 |       0 |
 | DS-3     | Ink, brushes, Undo and Clear output                         |    107 |     102 |             0 |         0 |       2 |
 | PHY-1    | Physical drawing sanity and input fidelity                  |     87 |      81 |            77 |         0 |       0 |
 | OV-1     | Overlay visual matrix                                       |    112 |     101 |             0 |         0 |       0 |
 | OV-2     | Settings, Parent Center and gate behavior                   |    179 |     166 |             0 |         0 |       0 |
-| A11Y-1   | OS text size, Button Size and Reduce Motion                 |     46 |      41 |             0 |         0 |       0 |
+| A11Y-1   | OS text size, Button Size and Reduce Motion                 |     51 |      46 |             0 |         0 |       0 |
 | A11Y-2   | Accessibility tree: names, roles, states, targets, focus    |     45 |      38 |             0 |         0 |       0 |
 | KEY-1    | Hardware-keyboard input                                     |     40 |      26 |             0 |         0 |       0 |
 | PHY-6    | Assistive speech (VoiceOver, TalkBack)                      |      9 |       5 |             2 |         0 |       0 |
@@ -88,11 +89,12 @@ rows that list it first. 186 rows map to two protocols, and 6 rows to three or f
 
 Subcells. `acceptance-subcells.csv` keeps its 4,798 proposed cells unchanged, and a subcell takes
 the protocols of its `requirement`. Of those cells, 3,330 fall on a target that their requirement's
-protocols use. Another 1,211 name `physical-ipad` or `physical-galaxy` on a routine visual or
+protocols use. Another 1,209 name `physical-ipad` or `physical-galaxy` on a routine visual or
 behavior row. The owner's targets policy moves those rows to simulators, so their physical cells are
-superseded, not run. A further 132 cells name a browser, and 124 a simulator or emulator, outside
-their row's protocol targets. One subcell belongs to the settled P19 row. A protocol's own state
-list replaces the generic setup and expected fields of the cells it covers.
+superseded, not run. A further 132 cells name a browser, and 118 a simulator or emulator, outside
+their row's protocol targets. The 8 cells of P10 stay with that blocked row, and one subcell belongs
+to the settled P19 row. A protocol's own state list replaces the generic setup and expected fields
+of the cells it covers.
 
 ## Targets and arms
 
@@ -114,6 +116,7 @@ for the physical-only properties below, plus one drawing-screen sanity check.
 | `physical-ipad`               | The attached physical iPad                                                | PHY protocols               |
 | `physical-galaxy`             | The attached physical Galaxy phone, bound to Display0                     | PHY protocols               |
 | `physical-iphone`             | Not available; a ring/silent switch has no substitute                     | P10, B0352, X24 (blocked)   |
+| `ios-network-conditions`      | Not available; iOS offline or Low Data Mode with no permitted control     | 14 rows (blocked)           |
 | `ci-exact-head`               | The hosted CI run on the exact candidate head                             | AC-1                        |
 
 Arms:
@@ -136,6 +139,15 @@ install over, launch or drive a store-installed `art.splotch.app`.
 The iOS 16.4 and Safari 16.4 floor targets stay blocked as `targets.csv` records; they are a target
 qualification outside this mapping. #2927 settled the iOS 26.5 simulator's background-download
 limitation, so background coloring publication is physical-only.
+
+`ios-network-conditions` marks the iOS subcase of 14 network-dependent rows: the AI button while
+offline, allowance retry on reconnect, Low Data Mode and cellular download rules (P12, X15, X51 and
+the rows the CSV lists). iOS simulators share the host network, and changing host network settings
+is outside this campaign's permissions. The network is not on the owner's physical-only list, so a
+physical window is not assumed either. These rows stay `blocked` until the owner names a permitted
+method; their Android emulator and RN-web subcases run meanwhile. Some RN-web rows run in Safari on
+`physical-ipad` with the `rn-web` and `web-prod` arms, because the Pencil and Scribble behavior they
+test exists only there.
 
 Physical-only properties, from the owner's list: performance, refresh rate and thermal; input
 density and coalescing; palm and multitouch, including pinch; edge gestures; held-contact rotation;
@@ -285,6 +297,15 @@ The fixture hexagon is the first picker cell whose accessible name is identical 
 manifest records it once per target. The S6 Color Button exists only in phone landscape (B0080).
 Elsewhere S6 is a source-proven skip, confirmed by S1 showing the palette bar.
 
+Phone landscape has no palette bar: its swatches and "Custom Color" live in the Color Menu, which
+closes on a pick and on a second "Colors" tap. In phone-landscape batches:
+
+* Before every swatch or "Custom Color" tap in S7 to S11, tap "Colors" to open the menu.
+* S7 reopens the picker the same way: "Colors", then "Custom Color".
+* S8 to S11 are captured with the Color Menu reopened by one more "Colors" tap. The menu's ring
+  state stands in for the absent bar; the closed "Colors" button is captured first as an extra
+  `-closed` still.
+
 Fixture strokes, in paper-normalized coordinates at the default size:
 
 * F1: Pen in "Black". A zigzag from (0.15, 0.30) to (0.85, 0.30) with six peaks of amplitude 0.05,
@@ -321,9 +342,30 @@ inset, the X46 retint of drawn Black ink in S13, and the static premixed Flat fa
 panes. A state missing on one arm, such as no menu, no ring or no Color Button, fails the cell. A
 requirement row is verified only when all of its DS-1 cells, on every target, pass or are accepted.
 
+**Configuration variants.** The core matrix keeps every tool enabled, so rows about other drawer
+configurations run as variant batches. Each variant starts from the batch fixture, changes settings
+through public Settings controls, and captures S1, S2, S3 where a Brushes control exists, and S6 in
+phone landscape. A variant also captures `S2r`: the first settled frame after a relaunch with the
+drawer left open. Variants run in Raised and Flat, light, both orientations, on `iphone-notch`,
+`ipad-mini`, `android-api36` and `android-api36-tablet`:
+
+* V1: the Tool Drawer switch off (B0102, E0510, E0511).
+* V2: one optional brush, Crayon on with Magic and Eraser off (E0507).
+* V3: no optional brushes (E0508).
+* V4: every optional action off — brushes, Coloring, Camera and AI — so the panel has no enabled
+  action and the colors remain (E0509, E0594).
+* V5: RN web only. `rn-web-chromium` at each viewport that the shipping `palette-trim` and
+  `phone-landscape-toolbar` specs name, including the 906-wide phone, capturing S1, S2 and S6 (E0585
+  to E0589, E0591, E0606).
+
+Button Size variants run in A11Y-1, and disabled chrome during save and clear in DS-2.
+
 **Size.** Each phone target or viewport yields 8 recordings and 164 stills per arm, and each tablet
 target or viewport 8 recordings and 160 stills. Across eight targets and viewports and two arms that
-is 128 recordings and 2,592 stills, compared as 64 recording pairs and 1,296 still pairs.
+is 128 recordings and 2,592 stills, compared as 64 recording pairs and 1,296 still pairs. Phone
+landscape adds one `-closed` still for each of S8 to S11. V1 to V4 add at most 4 variants × 4
+targets × 2 arms × 4 axis combinations × 5 states, which is 640 stills; V5 adds three stills per
+viewport and arm.
 
 ## Other protocols
 
@@ -375,7 +417,9 @@ that row's targets.
   6. Edge swipes and system-gesture edges.
   7. A contact held on the paper through a rotation (P6).
   8. Pinch in Settings and on the AI result.
-  9. Apple Pencil cases, only if a Pencil is paired during the window.
+  9. Apple Pencil cases, only if a Pencil is paired during the window. The Pencil and Scribble rows
+     for RN web (B0012, L0027, L0028, E0281, E0424 to E0427) run in Safari on the iPad, with the
+     `rn-web` and `web-prod` arms instead of the native ones.
 * **Settled phase:** Each gesture ends with the settle rule; held cases are timestamped.
 * **Compared:** The resulting ink, Undo units and chrome activation, the actual contacts, and the
   sample count per stroke.
@@ -426,9 +470,14 @@ that row's targets.
     the maximum Android `font_scale`;
   * Button Size at 70% and at its maximum;
   * OS Reduce Motion on, and in-app Reduce Motion on.
-* **Steps:** Capture Settings and the dialogs at the largest text (T2-19, T2-20), and the drawing
-  screen at each Button Size (T2-21, T2-22, X37). Replay the DS-2 cues under each Reduce Motion
-  source (T2-17, T2-18).
+* **Steps:**
+  * Capture Settings and the dialogs at the largest text (T2-19, T2-20).
+  * Capture DS-1 states S1, S2, S3 and S6 at Button Size 70% and at its maximum, in Raised and Flat
+    and both orientations, on the DS-1 variant targets (T2-21, T2-22, X37, E0094, E0098, E0592,
+    E0608).
+  * Capture the six-button row with AI turned on, its allowance answered by the AI-1 fixture server,
+    at both Button Size ends (E0028).
+  * Replay the DS-2 cues under each Reduce Motion source (T2-17, T2-18).
 * **Settled phase:** The shared rule, or video for motion.
 * **Compared:** Clipping, wrapping, reachability, the Button Size ceiling, and which cues run.
 * **Pass:** The DS-1 rule, and the same set of reduced cues as the reference.
@@ -500,8 +549,8 @@ that row's targets.
 
 * **Fixture:** A fresh install. On Android emulators, Data Saver
   (`cmd netpolicy set restrict-background true`) and airplane mode; on RN web, Playwright offline
-  and Save-Data. iOS simulators share the host network, so iOS offline and Low Data Mode subcases
-  run only in a physical window.
+  and Save-Data. The iOS offline and Low Data Mode subcases are blocked under
+  `ios-network-conditions`.
 * **Steps:**
   * the fresh Farm open; download triggers by stroke and by picker open (X18);
   * drawing during a download (X20); Coloring off, and removing downloads (X50);
@@ -544,7 +593,8 @@ that row's targets.
   report confirmation, timeout, 429, a poll past 240 s, attempt 33 (X2) and malformed bodies. No
   call is paid.
 * **Steps:** The prompt, dial, minimize, result, report, and the settings deep link (T1-12, T2-12 to
-  T2-15). The offline AI button runs on Android emulators and RN web (X15).
+  T2-15). The offline AI button runs on Android emulators and RN web (X15); its iOS subcase is
+  blocked under `ios-network-conditions`.
 * **Compared:** The visible states, the recorded request bodies (upload format for X30, report
   Origin for X3), and retry behavior.
 * **Pass:** The same states and requests as the reference. A fixture never proves live delivery.
@@ -647,8 +697,10 @@ decision.
    native reference stays v1.6.0.
 4. **The Photos-denied banner visual** runs on iOS simulators through `simctl privacy revoke`. The
    deny, Settings, grant and return round trip and actual library writes stay physical-only.
-5. **iOS offline and Low Data Mode subcases** run only in physical windows. iOS simulators share the
-   host network, and the campaign does not change host network settings.
+5. **iOS offline and Low Data Mode subcases are blocked.** iOS simulators share the host network,
+   the campaign may not change host network settings, and the network is not on the owner's
+   physical-only list. The 14 affected rows stay `blocked` until the owner names a permitted method;
+   their Android and web subcases still run.
 6. **Assistive speech is physical-only.** Speech is audio output, and simulators have no VoiceOver.
    Accessibility-tree checks still run on simulators, under A11Y-2.
 7. **Pinch** in Settings and on the AI result is multitouch, so it is physical-only.

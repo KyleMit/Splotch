@@ -162,8 +162,8 @@ X_NOTES = {
     'X45': 'compare Flat glass panes; the static premixed Flat fade is settled',
     'X58': 'iOS top band coloured from launch is settled; Android first frame and resume re-hide are compared',
     'X64': 'confirm the retained hosted /privacy, /changelog and /feedback routes resolve beside the RN-web drawing route',
-    'X15': 'offline on Android emulators and RN web; iOS offline only in a physical window (simulators share the host network)',
-    'X51': 'Data Saver on Android emulators, Save-Data on RN web; iOS Low Data Mode only in a physical window',
+    'X15': 'offline on Android emulators and RN web',
+    'X51': 'Data Saver on Android emulators, Save-Data on RN web',
 }
 X_BLOCKED = {'X24': 'no physical iPhone with a ring/silent switch'}
 
@@ -305,6 +305,7 @@ L_SURFACE_DEFAULT = {'engine': ['DS-3'], 'chrome': ['DS-2'], 'settings': ['OV-2'
                      'platform': ['LIFE-1'], 'orchestrator': ['LIFE-1']}
 EMPTY_DIVERGENCE = re.compile(r"^(—|-|none|none found|n/a|)$|^none \(same|equivalent$", re.I)
 L_NOTES = {
+    'L0027': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window', 'L0028': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window',
     'L0012': 'large-resize re-adopt follows the closed #2924 disposition (settled, not reopened)',
     'L0153': 'missing Keychain migration is settled cutover data loss; unreadable-secret replacement is compared',
     'L0154': 'missing legacy plaintext migration is settled cutover data loss; Gemini purge and persistence request are compared',
@@ -367,6 +368,8 @@ E = {
     'E0087': ['PHY-1'], 'E0080': ['PHY-5'], 'E0365': ['WEB-1', 'AI-1'], 'E0369': ('settled', 'data-loss'),
     'E0067': ['PHY-6', 'A11Y-2'], 'E0068': ['PHY-6', 'A11Y-2'],
     # bare toolbar
+    'E0028': ['A11Y-1', 'DS-1'], 'E0094': ['A11Y-1', 'DS-1'], 'E0098': ['A11Y-1', 'DS-1'],
+    'E0592': ['A11Y-1', 'DS-1'], 'E0608': ['A11Y-1', 'DS-1'], 'E0101': ['DS-2', 'DS-1'],
     'E0095': ['DS-2', 'LIFE-1'], 'E0103': ['DS-2'], 'E0105': ['DS-2'], 'E0107': ['DS-2'], 'E0104': ['WEB-1'],
     # brush ring
     'E0137': ['PHY-5'], 'E0138': ['PHY-1'], 'E0139': ['PHY-1'], 'E0140': ['PHY-1'],
@@ -420,6 +423,8 @@ E = {
 for eid in ['E0507', 'E0508', 'E0509', 'E0510', 'E0511', 'E0513', 'E0514']:
     E.setdefault(eid, ['DS-1', 'LIFE-1'])
 E_NOTES = {
+    'E0281': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window', 'E0424': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window', 'E0425': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window',
+    'E0426': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window', 'E0427': 'RN web in Safari on the physical iPad; requires an Apple Pencil in the operator window',
     'E0369': 'legacy BYO-key migration is settled cutover data loss',
     'E0506': 'per-key fallback is governed by the settled gated damaged-settings reset',
 }
@@ -429,8 +434,14 @@ TARGETS_OVERRIDE = {
     'T2-23': ['physical-ipad'], 'T2-24': ['physical-galaxy'],
     'P10': ['physical-iphone'], 'P15': IPAD_SIM,
     'P16': EMU, 'X24': ['physical-iphone'], 'B0352': ['physical-iphone'], 'X44': IPAD_SIM,
+    'X19': ['rn-web-chromium', 'rn-web-firefox', 'rn-web-edge', 'rn-web-safari'],
 }
 NO_FILTER = {'B0270', 'B0302', 'B0334', 'B0073'}
+IOS_NETWORK_BLOCKED = {'P12', 'X15', 'X51', 'B0087', 'B0255', 'B0286', 'B0314', 'B0315', 'L0159', 'L0190',
+                       'L0213', 'E0021', 'E0022', 'E0178'}
+IOS_NETWORK_REASON = ('iOS offline or Low Data Mode subcase: simulators share the host network and no permitted '
+                      'per-simulator control exists; Android and web subcases still run')
+RN_WEB_SAFARI_ON_IPAD = {'B0012', 'L0027', 'L0028', 'E0281', 'E0424', 'E0425', 'E0426', 'E0427'}
 
 
 def targets_for(protocols, text, rid=None, kind=None):
@@ -499,11 +510,17 @@ def classify(rid, spec, text, extra_tests, note, blocked, kind=None):
     else:
         cls = 'protocol'
     ts = targets_for(protos, text, rid, kind)
+    arms = arms_for(protos, ts)
+    if rid in RN_WEB_SAFARI_ON_IPAD:
+        ts, arms = ['physical-ipad'], ['rn-web', 'web-prod']
+    if rid in IOS_NETWORK_BLOCKED:
+        ts = ts + ['ios-network-conditions']
+        blocked = blocked or IOS_NETWORK_REASON
     status = 'blocked' if blocked else 'unverified'
     basis = note or ''
     if blocked:
         basis = (basis + '; ' if basis else '') + 'blocked: ' + blocked
-    return dict(classification=cls, protocols=protos, targets=ts, arms=arms_for(protos, ts), tests=tests,
+    return dict(classification=cls, protocols=protos, targets=ts, arms=arms, tests=tests,
                 basis=basis, status=status)
 
 def main():
