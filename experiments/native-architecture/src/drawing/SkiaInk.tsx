@@ -220,9 +220,11 @@ function present(scene: InkScene, view: SkiaPictureView | null) {
   perfSubmitted();
 }
 
-// Live ink paints once per display frame, however many packets arrived in it, and at once when a
-// contact ends; neither renders React (ADR-0178). A cohort that finished and was not committed
-// after all leaves the layer by the frame after its commit would have rendered.
+// Live ink renders no React (ADR-0178). The first packet of a display frame paints at once, so a
+// sample waits for no frame callback; packets after it in the same frame wait for the next frame
+// callback and paint together, so the view takes at most one new picture per display frame. A
+// contact that ends paints at once whatever the frame. A cohort that finished and was not
+// committed after all leaves the layer by the frame after its commit would have rendered.
 function useLiveFrames(
   scene: InkScene,
   live: LiveInkFeed,
@@ -238,10 +240,13 @@ function useLiveFrames(
   useEffect(() => {
     let frame: number | null = null;
     let check: number | null = null;
+    // Whether this display frame has painted, and whether samples have arrived since it did.
+    let painted = false;
+    let pending = false;
     // A fault detaches the input, which settles the feed again: report it once.
     let failed = false;
     const run = () => {
-      frame = null;
+      pending = false;
       const source = live.source();
       if (!source || failed) return;
       try {
@@ -260,11 +265,19 @@ function useLiveFrames(
         latest.current.onError(error);
       }
     };
+    const paintNow = () => {
+      run();
+      painted = true;
+      frame ??= requestAnimationFrame(nextFrame);
+    };
+    const nextFrame = () => {
+      frame = null;
+      if (pending) paintNow();
+      else painted = false;
+    };
     const unsubscribe = live.subscribe((event) => {
-      if (event === 'settle') {
-        if (frame !== null) cancelAnimationFrame(frame);
-        run();
-      } else frame ??= requestAnimationFrame(run);
+      if (event === 'sample' && painted) pending = true;
+      else paintNow();
     });
     return () => {
       unsubscribe();

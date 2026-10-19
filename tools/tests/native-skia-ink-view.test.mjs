@@ -213,32 +213,40 @@ afterEach(() => {
 
 const drawn = (picture) => picture.calls.filter(([name]) => name === 'drawImageRectOptions');
 
-// A new frame of live ink reaches the view through Skia's JSI setter, once per display frame,
-// and renders no React (ADR-0178). Negative control: handing ink over as React state renders
-// SkiaInk on every packet, and handing it over per packet shows three pictures for one frame.
-it('shows committed ink once, then one picture per display frame without rendering React', () => {
+// Live ink reaches the view through Skia's JSI setter and renders no React (ADR-0178). The first
+// packet of a display frame is shown at once; the packets after it in that frame are shown
+// together at the next frame callback. Negative controls: handing ink over as React state renders
+// SkiaInk on every packet; handing it over per packet shows three pictures for the first frame;
+// waiting for the frame callback shows nothing until it runs.
+it('shows the first packet of a display frame at once and the rest of that frame together', () => {
   render();
   expect(skia.shown).toHaveLength(1);
   expect(drawn(skia.shown[0][1]).length).toBeGreaterThan(0);
   const renders = skia.inkRenders;
   const surfaces = skia.surfaces;
   contact.start('a', { x: 100, y: 100 });
+  expect(skia.shown).toHaveLength(2);
   contact.sample('a', { x: 120, y: 100 });
   contact.sample('a', { x: 140, y: 100 });
-  expect(skia.shown).toHaveLength(1);
-  paintFrame();
   expect(skia.shown).toHaveLength(2);
-  expect(cohort.live()[0].ops).toEqual([
-    [1, 0],
-    [3, 0],
-  ]);
-  contact.sample('a', { x: 160, y: 100 });
-  paintFrame();
   paintFrame();
   expect(skia.shown).toHaveLength(3);
-  contact.sample('a', { x: 180, y: 100 });
-  const completed = contact.end('a');
+  expect(cohort.live()[0].ops).toEqual([
+    [1, 0],
+    [3, 1],
+  ]);
+  paintFrame();
+  contact.sample('a', { x: 160, y: 100 });
   expect(skia.shown).toHaveLength(4);
+  paintFrame();
+  paintFrame();
+  expect(skia.shown).toHaveLength(4);
+  contact.sample('a', { x: 170, y: 100 });
+  contact.sample('a', { x: 180, y: 100 });
+  expect(skia.shown).toHaveLength(5);
+  // A lift paints what its frame has not shown yet, at once.
+  const completed = contact.end('a');
+  expect(skia.shown).toHaveLength(6);
   expect(skia.frames.size).toBe(1);
   expect(skia.inkRenders).toBe(renders);
   render(
@@ -248,7 +256,7 @@ it('shows committed ink once, then one picture per display frame without renderi
   paintFrame();
   expect(skia.inkRenders).toBe(renders + 1);
   expect(skia.surfaces).toBe(surfaces);
-  expect(skia.shown).toHaveLength(4);
+  expect(skia.shown).toHaveLength(6);
 });
 
 // A blank picture's paper is adopted by its first contact, which records its ops until the layer
@@ -279,7 +287,7 @@ it('replays the live cohort when its committed ink changes mid-stroke, and leave
   const surfaces = skia.surfaces;
   render([]);
   expect(skia.surfaces).toBe(surfaces + 1);
-  expect(skia.shown).toHaveLength(3);
+  expect(skia.shown).toHaveLength(4);
   contact.sample('a', { x: 180, y: 100 });
   paintFrame();
   expect(handle.isReady()).toBe(true);

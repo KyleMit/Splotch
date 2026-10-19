@@ -169,8 +169,8 @@ async function createScene() {
   };
 }
 
-// SkiaInk with a live cohort: `start` takes a contact's first sample and `frame` runs the display
-// frame that paints it.
+// SkiaInk with a live cohort: `start` and `sample` take a contact's samples as packets would, and
+// `frame` runs the display frame callback.
 async function inkHarness() {
   const { SkiaInk } = await drawingModule('SkiaInk.tsx');
   const { InkPaperScope } = await drawingModule('InkPaper.tsx');
@@ -213,6 +213,10 @@ async function inkHarness() {
   return {
     start(point) {
       cohort.start('a', 'Green', 'pen', point, drawing);
+      feed.publish();
+    },
+    sample(point) {
+      cohort.sample('a', point);
       feed.publish();
     },
     frame() {
@@ -379,9 +383,11 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
     ]);
   });
 
-  // Negative control: stamping before Skia's JSI setter puts the stamp before the hand-off. Live
-  // ink renders no SkiaInk commit: one frame flushes, records a scene and hands it over.
-  it('times the live frame and stamps each new picture just after the view receives it', async () => {
+  // Live ink renders no SkiaInk commit. The first packet of a display frame flushes, records a
+  // scene and hands it over at once; a later packet in that frame waits for the frame callback.
+  // Negative controls: stamping before Skia's JSI setter puts the stamp before the hand-off;
+  // waiting for the frame callback to paint the first packet measures it as 27.5 ms, not 15.
+  it('hands the first packet of a frame over at once and the rest at the frame callback', async () => {
     const probe = await loadProbe('1');
     const ink = await inkHarness();
     const packet = createInput();
@@ -389,6 +395,30 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
     probe.perfPacket(packet('start', ['a'], [['a', [[500, 400, 1990]]]]));
     probe.perfStroke(1990);
     ink.start({ x: 10, y: 10 });
+    host.now = 2008;
+    probe.perfPacket(
+      packet(
+        'move',
+        ['a'],
+        [
+          [
+            'a',
+            [
+              [510, 400, 2003],
+              [520, 400, 2006],
+            ],
+          ],
+        ]
+      )
+    );
+    for (const [x, timestamp] of [
+      [20, 2003],
+      [30, 2006],
+    ]) {
+      probe.perfSampleTime(timestamp);
+      probe.perfAppend('appended');
+      ink.sample({ x, y: 10 });
+    }
     host.now = 2012.5;
     ink.frame();
     probe.perfIdle();
@@ -397,9 +427,13 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
     expect(writes()).toEqual([
       expect.objectContaining({
         inkLayoutEffectCommits: 0,
-        liveFlush: { n: 1, totalMs: 0, maxMs: 0 },
-        sceneRecord: { n: 1, totalMs: 0, maxMs: 0 },
-        inputToSubmission: { n: 1, p50Ms: 27.5, p95Ms: 27.5, maxMs: 27.5, minMs: 27.5 },
+        liveFlush: { n: 2, totalMs: 0, maxMs: 0 },
+        sceneRecord: { n: 2, totalMs: 0, maxMs: 0 },
+        inputToSubmission: { n: 2, p50Ms: 11.5, p95Ms: 15, maxMs: 15, minMs: 11.5 },
+        oldestToSubmission: { n: 2, p50Ms: 14.5, p95Ms: 15, maxMs: 15, minMs: 14.5 },
+        firstDotMs: 15,
+        handoffs: 2,
+        submissionGap: { n: 1, p50Ms: 12.5, p95Ms: 12.5, maxMs: 12.5, minMs: 12.5 },
       }),
     ]);
   });
