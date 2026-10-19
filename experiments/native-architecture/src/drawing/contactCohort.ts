@@ -3,6 +3,7 @@ import type { PaintColor } from './palette';
 import { appendPoint, strokeStyle, type Drawing, type Point, type Stroke } from './model';
 import type { Brush } from './brushes';
 import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
+import { PERF_PROBE, perfAppend, perfDrained } from './perfProbe';
 
 export function createContactCohort() {
   const active = new Map<string, number>();
@@ -13,6 +14,7 @@ export function createContactCohort() {
     if (active.size > 0 || strokes.length === 0) return null;
     const completed = strokes;
     strokes = [];
+    if (PERF_PROBE) perfDrained(completed);
     return completed;
   }
 
@@ -47,6 +49,7 @@ export function createContactCohort() {
       if (index === undefined) return;
       const stroke = strokes[index];
       const points = appendPoint(stroke.points, point, endpoint);
+      if (PERF_PROBE) perfAppend(stroke.points, points, point);
       const added = points.length - stroke.points.length;
       if (added === 0) return;
       strokes = strokes.map((item, position) =>

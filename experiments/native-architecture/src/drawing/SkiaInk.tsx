@@ -47,6 +47,7 @@ import type { RasterInkHandle } from './RasterInk';
 import type { UndoGhost } from './undoFeedback';
 import type { PaperFrame } from './paperGeometry';
 import { SkiaUndoGhost, type PreviousInk } from './SkiaUndoGhost';
+import { perfTimed, useInkCommitProbe } from './perfProbe';
 
 type Props = {
   strokes: readonly Stroke[];
@@ -246,15 +247,16 @@ function useDraftPicture(
   }, [drafts, size, context]);
 }
 
-function recordDrafts(drafts: readonly Stroke[], size: Size, context: InkPaintContext) {
-  {
+const recordDrafts = perfTimed(
+  'draftRecord',
+  (drafts: readonly Stroke[], size: Size, context: InkPaintContext) => {
     const recorder = Skia.PictureRecorder();
     const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
     presentPaper(canvas, size, context);
     for (const stroke of drafts) paintStroke(canvas, stroke, context);
     return recorder.finishRecordingAsPicture();
   }
-}
+);
 
 function useInkContext(
   projection: PaperProjection,
@@ -313,6 +315,7 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
   const committed = useCommittedLayer(props.strokes, size, context, key, props.undoGhost);
   const draftPicture = useDraftPicture(drafts, size, context);
   const scene = useInkScene(committed.value, draftPicture.value, size);
+  useInkCommitProbe(scene.value);
   const failure = committed.error ?? draftPicture.error ?? scene.error;
   const ready = size !== null && bookFill.ready && failure === null;
   const propsRef = useRef(props);
@@ -375,30 +378,37 @@ function useInkScene(
   return useMemo(() => {
     if (!size) return { value: null, error: null };
     try {
-      const recorder = Skia.PictureRecorder();
-      const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
-      if (committed) {
-        const { src, dst } = fitRects(
-          'contain',
-          { x: 0, y: 0, width: committed.width(), height: committed.height() },
-          { x: 0, y: 0, width: size.width, height: size.height }
-        );
-        canvas.drawImageRectOptions(
-          committed,
-          src,
-          dst,
-          FilterMode.Linear,
-          MipmapMode.None,
-          Skia.Paint()
-        );
-      }
-      if (draft) canvas.drawPicture(draft);
-      return { value: recorder.finishRecordingAsPicture(), error: null };
+      return { value: recordScene(committed, draft, size), error: null };
     } catch (error) {
       return { value: null, error };
     }
   }, [committed, draft, size]);
 }
+
+const recordScene = perfTimed(
+  'sceneRecord',
+  (committed: SkImage | null, draft: SkPicture | null, size: Size) => {
+    const recorder = Skia.PictureRecorder();
+    const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
+    if (committed) {
+      const { src, dst } = fitRects(
+        'contain',
+        { x: 0, y: 0, width: committed.width(), height: committed.height() },
+        { x: 0, y: 0, width: size.width, height: size.height }
+      );
+      canvas.drawImageRectOptions(
+        committed,
+        src,
+        dst,
+        FilterMode.Linear,
+        MipmapMode.None,
+        Skia.Paint()
+      );
+    }
+    if (draft) canvas.drawPicture(draft);
+    return recorder.finishRecordingAsPicture();
+  }
+);
 
 const styles = StyleSheet.create({
   scene: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },

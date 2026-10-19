@@ -36,6 +36,7 @@ import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
 import type { UndoGhost } from './undoFeedback';
+import { useSurfaceCommitProbe } from './perfProbe';
 
 export type ExportedPaper = CapturedPaper | Readonly<{ base64: null; isCurrent: () => boolean }>;
 
@@ -91,6 +92,7 @@ function surfaceUndoGhost(props: DrawingSurfaceProps, drafts: readonly Stroke[])
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
   function DrawingSurface(props, ref) {
+    useSurfaceCommitProbe();
     const theme = useDrawingAppearance();
     const PageArt = pageArt().current()?.PageArtMotion;
     const appearance = useMemo<InkAppearance>(
