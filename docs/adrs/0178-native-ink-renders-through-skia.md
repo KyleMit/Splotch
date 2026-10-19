@@ -109,24 +109,26 @@ decision above stands; how a cohort reaches the committed layer changed.
 
 * **Strokes keep their ops.** A stroke records shipping's op boundaries
   (`web/src/lib/drawing/strokeOps.ts`; natively `inkOps.ts`): a dot at its first point, then one
-  path per flush that took samples (at most one per display frame, and one as a contact ends),
-  continuing from the previous op's pen. Each op also records the frame it was painted in. Drawing
-  version 8 saves them; a stroke saved without ops replays as one op, as it was drawn before. A
-  version-5 picture, whose format cannot hold ops, keeps its new strokes' ops while it is open and
-  saves those strokes without them. Live ink, every committed rebuild (Undo, page, theme, resize,
-  renderer recovery) and capture paint the same ops, so they produce the same pixels.
+  path per flush that took samples (one per input packet, which both platforms deliver once per
+  display frame, and one as a contact ends), continuing from the previous op's pen. Each op also
+  records the frame it was painted in. Drawing version 8 saves them; a stroke saved without ops
+  replays as one op, as it was drawn before. A version-5 picture, whose format cannot hold ops,
+  keeps its new strokes' ops while it is open and saves those strokes without them. Live ink, every
+  committed rebuild (Undo, page, theme, resize, renderer recovery) and capture paint the same ops,
+  so they produce the same pixels.
 * **"In their existing order" becomes "in the order they were painted."** A cohort's contacts replay
   interleaved by frame, as shipping's stroke-group command does, so a contact that reaches a
   crossing later lies on top. Painting each whole stroke in turn reversed that at every crossing
   between simultaneous contacts. A cohort still commits only when its last contact ends, and is
   still one undo unit.
 * **The live cohort paints onto the committed layer.** A flush records every sample since the last
-  as ops and paints only those (`skiaInkLayer.ts`). The first packet of a display frame flushes at
-  once; the packets after it in that frame flush together at the next frame callback, and a contact
-  that ends flushes at once. The view draws the layer as tiles and re-uploads only the tiles a flush
-  changed; the picture reaches the view through Skia's JSI setter, so live ink renders no React. A
-  commit adopts the pixels already painted. Any other change to the committed strokes replays them,
-  then replays the live cohort's recorded ops.
+  as ops and paints only those (`skiaInkLayer.ts`). Each packet flushes and hands its picture over
+  as it arrives. A packet that reaches JavaScript less than `HANDOFF_SPACING_MS` after the last
+  hand-off has queued behind other work, so it waits for the next packet past that spacing or the
+  next frame callback (`handoffCadence.ts`); a contact that ends flushes at once. The view draws the
+  layer as tiles and re-uploads only the tiles a flush changed; the picture reaches the view through
+  Skia's JSI setter, so live ink renders no React. A commit adopts the pixels already painted. Any
+  other change to the committed strokes replays them, then replays the live cohort's recorded ops.
 * **The view's picture swap is locked.** react-native-skia's picture view replaces its picture on
   the JS thread while its render thread copies it to draw, unsynchronized; when the replacement
   dropped a picture's last reference it could free the picture mid-draw. A pnpm patch

@@ -40,6 +40,7 @@ const skia = vi.hoisted(() => ({
   plane: { width: 400, height: 300 },
   redraws: [],
   nextView: 1,
+  now: 0,
 }));
 
 vi.mock('react-native', async () => {
@@ -175,7 +176,8 @@ const contact = {
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  vi.spyOn(performance, 'now').mockReturnValue(0);
+  skia.now = 0;
+  vi.spyOn(performance, 'now').mockImplementation(() => skia.now);
   skia.shown.length = 0;
   skia.surfaces = 0;
   skia.inkRenders = 0;
@@ -213,12 +215,12 @@ afterEach(() => {
 
 const drawn = (picture) => picture.calls.filter(([name]) => name === 'drawImageRectOptions');
 
-// Live ink reaches the view through Skia's JSI setter and renders no React (ADR-0178). The first
-// packet of a display frame is shown at once; the packets after it in that frame are shown
-// together at the next frame callback. Negative controls: handing ink over as React state renders
-// SkiaInk on every packet; handing it over per packet shows three pictures for the first frame;
-// waiting for the frame callback shows nothing until it runs.
-it('shows the first packet of a display frame at once and the rest of that frame together', () => {
+// Live ink reaches the view through Skia's JSI setter and renders no React (ADR-0178). Each packet
+// is shown as it arrives; one that arrives within HANDOFF_SPACING_MS of the last packet shown waits
+// for the next frame callback. Negative controls: handing ink over as React state renders SkiaInk
+// on every packet; dropping the spacing shows the two packets at 9 ms before the frame callback;
+// PR 2998's first-packet-per-frame cadence holds the packet at 16 ms for the frame callback.
+it('shows each packet as it arrives and holds one within the spacing for the frame callback', () => {
   render();
   expect(skia.shown).toHaveLength(1);
   expect(drawn(skia.shown[0][1]).length).toBeGreaterThan(0);
@@ -226,28 +228,31 @@ it('shows the first packet of a display frame at once and the rest of that frame
   const surfaces = skia.surfaces;
   contact.start('a', { x: 100, y: 100 });
   expect(skia.shown).toHaveLength(2);
+  skia.now = 8;
   contact.sample('a', { x: 120, y: 100 });
-  contact.sample('a', { x: 140, y: 100 });
-  expect(skia.shown).toHaveLength(2);
-  paintFrame();
   expect(skia.shown).toHaveLength(3);
+  skia.now = 9;
+  contact.sample('a', { x: 140, y: 100 });
+  contact.sample('a', { x: 150, y: 100 });
+  expect(skia.shown).toHaveLength(3);
+  paintFrame();
+  expect(skia.shown).toHaveLength(4);
   expect(cohort.live()[0].ops).toEqual([
     [1, 0],
-    [3, 1],
+    [2, 1],
+    [4, 2],
   ]);
-  paintFrame();
+  skia.now = 16;
   contact.sample('a', { x: 160, y: 100 });
-  expect(skia.shown).toHaveLength(4);
-  paintFrame();
-  paintFrame();
-  expect(skia.shown).toHaveLength(4);
-  contact.sample('a', { x: 170, y: 100 });
-  contact.sample('a', { x: 180, y: 100 });
   expect(skia.shown).toHaveLength(5);
-  // A lift paints what its frame has not shown yet, at once.
+  skia.now = 17;
+  contact.sample('a', { x: 170, y: 100 });
+  expect(skia.shown).toHaveLength(5);
+  // A lift paints what has not been shown yet, at once.
   const completed = contact.end('a');
   expect(skia.shown).toHaveLength(6);
-  expect(skia.frames.size).toBe(1);
+  paintFrame();
+  expect(skia.shown).toHaveLength(6);
   expect(skia.inkRenders).toBe(renders);
   render(
     addStrokes(createHistory({ ...emptyDrawing(), paper, strokes: committed }), completed).drawing
@@ -259,16 +264,16 @@ it('shows the first packet of a display frame at once and the rest of that frame
   expect(skia.shown).toHaveLength(6);
 });
 
-// Negative control: counting a packet that changed no ink as the frame's painting makes the moved
-// sample after it wait for the frame callback.
-it('leaves a frame free to paint at once after a packet that changed no ink', () => {
+// Negative control: starting the spacing at a packet that changed no ink holds the moved sample
+// after it for the frame callback.
+it('spends no spacing on a packet that changed no ink', () => {
   render();
   contact.start('a', { x: 100, y: 100 });
-  paintFrame();
-  paintFrame();
   const shown = skia.shown.length;
+  skia.now = 10;
   feed.publish();
   expect(skia.shown).toHaveLength(shown);
+  skia.now = 11;
   contact.sample('a', { x: 140, y: 100 });
   expect(skia.shown).toHaveLength(shown + 1);
 });

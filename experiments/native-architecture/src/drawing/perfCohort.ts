@@ -7,13 +7,13 @@ export const PERF_LOG_TAG = 'SplotchPerf';
 // SplotchPerfLog (ios/HelloWorld/SplotchPerfLog.swift, android .../SplotchPerfLog.kt) writes one
 // line to the device log under PERF_LOG_TAG; native-perf-probe.test.mjs reads both sides.
 export const PERF_LOG_MODULE = 'SplotchPerfLog';
-export const PERF_LINE_VERSION = 2;
+export const PERF_LINE_VERSION = 3;
 // React commits the lifting packet's render after its handler returns, and the committed raster
 // repaints in that commit; a cohort's line waits this long after its last contact lifts so the
 // commits it caused count toward it. The next contact closes it sooner.
 export const COHORT_SETTLE_MS = 250;
 
-export type PerfTimer = 'liveFlush' | 'sceneRecord';
+export type PerfTimer = 'liveFlush' | 'sceneRecord' | 'handoff' | 'pictureRelease' | 'audioVolume';
 export type PerfClock<Handle> = Readonly<{
   now: () => number;
   schedule: (run: () => void, delayMs: number) => Handle;
@@ -23,8 +23,26 @@ export type PerfClock<Handle> = Readonly<{
 // much longer than the real interval a timestamp's resolution can make one read.
 export type ClockJoin = Readonly<{ clock: string; errorMs: number }>;
 export type PerfLineContext = Readonly<{ platform: string; build?: string; clockJoin: ClockJoin }>;
+// The JavaScript runtime's cumulative garbage collections and their wall time, or null where the
+// runtime does not report them.
+export type GcTotals = Readonly<{ count: number; ms: number }>;
 
 type Timing = { n: number; totalMs: number; maxMs: number };
+// What the cohort had seen at one hand-off, so the longest gap between two can be attributed.
+type HandoffMark = Readonly<{
+  at: number;
+  packets: number;
+  memoryWarnings: number;
+  gc: GcTotals | null;
+}>;
+type GapCause = Readonly<{
+  ms: number;
+  atMs: number;
+  packets: number;
+  memoryWarnings: number;
+  gcs: number | null;
+  gcMs: number | null;
+}>;
 type Cohort = {
   index: number;
   openedAt: number;
@@ -44,17 +62,29 @@ type Cohort = {
   // Hand-offs while a contact was held, and the intervals between consecutive ones.
   handoffs: number;
   handoffGaps: number[];
-  lastHandoffAt: number | null;
+  lastHandoff: HandoffMark | null;
+  longestGap: GapCause | null;
   firstSampleAt: number | null;
   firstDotMs: number | null;
+  // Intervals between packets reaching JavaScript, and how old each packet's newest sample was.
+  packetGaps: number[];
+  receiptLags: number[];
+  lastPacketAt: number | null;
+  memoryWarnings: number;
+  gcAtOpen: GcTotals | null;
+  gc: { n: number; ms: number } | null;
 };
 
 function changedSamples(packet: PaperInput) {
   const changed = new Set(packet.changed);
   let samples = 0;
+  let newest = -Infinity;
   for (const contact of packet.contacts)
-    if (changed.has(contact.identifier)) samples += contact.samples.length;
-  return samples;
+    if (changed.has(contact.identifier)) {
+      samples += contact.samples.length;
+      for (const sample of contact.samples) newest = Math.max(newest, sample.timestamp);
+    }
+  return { samples, newest };
 }
 
 const round = (ms: number) => Math.round(ms * 100) / 100;
@@ -82,6 +112,39 @@ const timing = ({ n, totalMs, maxMs }: Timing) => ({
   maxMs: round(maxMs),
 });
 
+const gcSince = (from: GcTotals | null, to: GcTotals | null) =>
+  from && to ? { n: to.count - from.count, ms: round(to.ms - from.ms) } : null;
+
+function gapCause(cohort: Cohort, from: HandoffMark, to: HandoffMark): GapCause {
+  const gc = gcSince(from.gc, to.gc);
+  return {
+    ms: round(to.at - from.at),
+    atMs: round(from.at - cohort.openedAt),
+    packets: to.packets - from.packets,
+    memoryWarnings: to.memoryWarnings - from.memoryWarnings,
+    gcs: gc?.n ?? null,
+    gcMs: gc?.ms ?? null,
+  };
+}
+
+// A hand-off while a contact is held: the cadence live ink updates at.
+function markHandoff(cohort: Cohort, at: number, gc: GcTotals | null) {
+  cohort.handoffs += 1;
+  const mark: HandoffMark = {
+    at,
+    packets: cohort.packets,
+    memoryWarnings: cohort.memoryWarnings,
+    gc,
+  };
+  const last = cohort.lastHandoff;
+  if (last) {
+    cohort.handoffGaps.push(at - last.at);
+    if (!cohort.longestGap || at - last.at > cohort.longestGap.ms)
+      cohort.longestGap = gapCause(cohort, last, mark);
+  }
+  cohort.lastHandoff = mark;
+}
+
 function formatPerfLine(cohort: Cohort, context: PerfLineContext): string {
   return JSON.stringify({
     probe: PERF_LOG_TAG,
@@ -100,16 +163,24 @@ function formatPerfLine(cohort: Cohort, context: PerfLineContext): string {
     surfaceLayoutEffectCommits: cohort.surfaceCommits,
     liveFlush: timing(cohort.timers.liveFlush),
     sceneRecord: timing(cohort.timers.sceneRecord),
+    handoff: timing(cohort.timers.handoff),
+    pictureRelease: timing(cohort.timers.pictureRelease),
+    audioVolume: timing(cohort.timers.audioVolume),
     inputToSubmission: intervalSummary(cohort.submissions),
     oldestToSubmission: intervalSummary(cohort.oldestSubmissions),
     firstDotMs: cohort.firstDotMs === null ? null : round(cohort.firstDotMs),
     handoffs: cohort.handoffs,
     submissionGap: intervalSummary(cohort.handoffGaps),
+    longestGap: cohort.longestGap,
+    packetGap: intervalSummary(cohort.packetGaps),
+    receiptLag: intervalSummary(cohort.receiptLags),
+    memoryWarnings: cohort.memoryWarnings,
+    gc: cohort.gc,
     clockJoin: context.clockJoin,
   });
 }
 
-function openCohort(index: number, openedAt: number): Cohort {
+function openCohort(index: number, openedAt: number, gc: GcTotals | null): Cohort {
   return {
     index,
     openedAt,
@@ -125,14 +196,24 @@ function openCohort(index: number, openedAt: number): Cohort {
     timers: {
       liveFlush: { n: 0, totalMs: 0, maxMs: 0 },
       sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
+      handoff: { n: 0, totalMs: 0, maxMs: 0 },
+      pictureRelease: { n: 0, totalMs: 0, maxMs: 0 },
+      audioVolume: { n: 0, totalMs: 0, maxMs: 0 },
     },
     submissions: [],
     oldestSubmissions: [],
     handoffs: 0,
     handoffGaps: [],
-    lastHandoffAt: null,
+    lastHandoff: null,
+    longestGap: null,
     firstSampleAt: null,
     firstDotMs: null,
+    packetGaps: [],
+    receiptLags: [],
+    lastPacketAt: null,
+    memoryWarnings: 0,
+    gcAtOpen: gc,
+    gc: null,
   };
 }
 
@@ -142,7 +223,8 @@ function openCohort(index: number, openedAt: number): Cohort {
 export function createPerfCohorts<Handle>(
   clock: PerfClock<Handle>,
   context: PerfLineContext,
-  emit: (line: string) => void
+  emit: (line: string) => void,
+  gcTotals: () => GcTotals | null
 ) {
   let nextIndex = 1;
   let open: Cohort | null = null;
@@ -162,7 +244,10 @@ export function createPerfCohorts<Handle>(
       : next;
 
   function finalize() {
-    if (closing) lines.push(formatPerfLine(closing, context));
+    if (closing) {
+      closing.gc = gcSince(closing.gcAtOpen, gcTotals());
+      lines.push(formatPerfLine(closing, context));
+    }
     closing = null;
   }
 
@@ -181,16 +266,26 @@ export function createPerfCohorts<Handle>(
 
   return {
     packet(packet: PaperInput) {
+      const now = clock.now();
       if (!open) {
         finalize();
-        open = openCohort(nextIndex++, clock.now());
+        open = openCohort(nextIndex++, now, gcTotals());
         taken = null;
         recorded = null;
       }
-      const samples = changedSamples(packet);
+      const { samples, newest } = changedSamples(packet);
       open.packets += 1;
       open.samples += samples;
       open.maxSamplesPerPacket = Math.max(open.maxSamplesPerPacket, samples);
+      if (open.lastPacketAt !== null) open.packetGaps.push(now - open.lastPacketAt);
+      open.lastPacketAt = now;
+      if (samples > 0) open.receiptLags.push(now - newest);
+    },
+    // The operating system warned that memory is low. React Native on iOS answers each warning
+    // with a full JavaScript garbage collection on the JavaScript thread.
+    memoryWarning() {
+      const cohort = active();
+      if (cohort) cohort.memoryWarnings += 1;
     },
     idle() {
       if (!open) return;
@@ -246,11 +341,7 @@ export function createPerfCohorts<Handle>(
       const cohort = active();
       if (!cohort) return;
       const now = clock.now();
-      if (cohort === open) {
-        cohort.handoffs += 1;
-        if (cohort.lastHandoffAt !== null) cohort.handoffGaps.push(now - cohort.lastHandoffAt);
-        cohort.lastHandoffAt = now;
-      }
+      if (cohort === open) markHandoff(cohort, now, gcTotals());
       if (!recorded) return;
       cohort.submissions.push(now - recorded.newest);
       cohort.oldestSubmissions.push(now - recorded.oldest);

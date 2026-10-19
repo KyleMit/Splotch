@@ -28,6 +28,7 @@ const host = vi.hoisted(() => ({ modules: {}, touched: [] }));
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'ios' },
+  AppState: { addEventListener: () => ({ remove() {} }) },
   NativeModules: new Proxy(
     {},
     {
