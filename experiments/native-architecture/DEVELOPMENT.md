@@ -64,15 +64,17 @@ stroke's work and writes one JSON line per contact cohort to the device log. Wit
 checker resolve the no-op `src/drawing/perfProbe.ts` instead. `babel-preset-expo` inlines
 `EXPO_PUBLIC_*` values into a production bundle when Metro transforms it, and both Release bundle
 steps pass `--reset-cache`, so a cached transform never carries an earlier build's value. Gradle
-does not treat the environment as an input of `:app:createBundleReleaseJsAndAssets`, so an Android
-probe build reruns that task. `EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD` sets the line's `build` field.
+does not treat the environment as an input of `:app:createBundleReleaseJsAndAssets` and reports it
+up to date, so an Android build that turns the probe on or back off reruns that task.
+`EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD` sets the line's `build` field.
 
 ```sh
 export EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1 EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD="$(git rev-parse --short HEAD)"
 # iOS, from ios/ (after pod install)
 xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration Release \
   -destination generic/platform=iOS build
-# Android, from android/, with the signing properties from the Android section
+# Android, from android/, with the signing properties from the Android section; unset the two
+# variables and run the same command again to return to a build without the probe
 ./gradlew :app:createBundleReleaseJsAndAssets --rerun :app:assembleRelease
 ```
 
