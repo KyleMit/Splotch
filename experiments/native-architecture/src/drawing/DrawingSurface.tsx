@@ -162,6 +162,22 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
       };
     }, [input, geometry, refreshGeometry]);
     useLayoutEffect(() => input.observeInputStyle(), [input, props.color, props.brush]);
+    // Stable, so the memoized native ink layer renders for what it draws and not for every
+    // surface render (the input's disabled flag, a stroke width, a cohort starting).
+    const onInkBusy = useCallback(
+      (busy: boolean) => {
+        propsRef.current.onPreparingChange(busy);
+        if (!busy) resume();
+      },
+      [resume]
+    );
+    const onInkError = useCallback(
+      (error: unknown) => {
+        input.detach();
+        propsRef.current.onRendererFault(error);
+      },
+      [input]
+    );
 
     return (
       <InkPaperScope.Provider value={projection}>
@@ -195,14 +211,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   live={live.ink}
                   brush={props.brush}
                   color={props.color}
-                  onBusy={(busy) => {
-                    props.onPreparingChange(busy);
-                    if (!busy) resume();
-                  }}
-                  onError={(error) => {
-                    input.detach();
-                    props.onRendererFault(error);
-                  }}
+                  onBusy={onInkBusy}
+                  onError={onInkError}
                 />
                 {PageArt ? <PageArt pageId={props.drawing.pageId} size={presented} /> : null}
                 <PointerHalos feed={live.halos} />
