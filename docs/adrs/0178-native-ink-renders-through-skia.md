@@ -1,6 +1,9 @@
 # ADR-0178: Native Ink Renders Through Skia, With Committed Strokes Flattened
 
-**Status:** Active **Date:** 2026-10
+**Status:** Active — amended 2026-10: a cohort's strokes flatten in the order their ops were
+painted, not stroke order, and live ink paints op by op onto the committed layer. See the amendment
+at the end.\
+**Date:** 2026-10
 
 ## Context
 
@@ -96,3 +99,48 @@ on the physical Android phone and on the iPad.
   checks across targets (issue 2759).
 * − The `RasterInk`/`InkScene`/`svgCapture` code and its mounted tests are replaced, not adapted.
   Rendering tests move to asserting on the Skia surface's pixels.
+
+## Amendment (2026-10): live ink paints op by op
+
+Device captures (issue 2978) showed the live cohort still cost its whole length on every packet: one
+React commit per input packet, and the stroke so far re-recorded and rasterized each time. On the
+Galaxy, skipping only the draft picture took a long pen stroke from 5.58% janky frames to 0.31%. The
+decision above stands; how a cohort reaches the committed layer changed.
+
+* **Strokes keep their ops.** A stroke records shipping's op boundaries (`strokeOps.ts`): a dot at
+  its first point, then one path per display frame that took samples, continuing from the previous
+  op's pen. Each op also records the frame it was painted in. Drawing version 8 saves them; a stroke
+  saved without ops replays as one op, as it was drawn before. Live ink, every committed rebuild
+  (Undo, page, theme, resize, renderer recovery) and capture paint the same ops, so they produce the
+  same pixels.
+* **"In their existing order" becomes "in the order they were painted."** A cohort's contacts replay
+  interleaved by frame, as shipping's stroke-group command does, so a contact that reaches a
+  crossing later lies on top. Painting each whole stroke in turn reversed that at every crossing
+  between simultaneous contacts. A cohort still commits only when its last contact ends, and is
+  still one undo unit.
+* **The live cohort paints onto the committed layer.** One display frame flushes every sample since
+  the last into ops and paints only those (`skiaInkLayer.ts`). The view draws the layer as tiles and
+  re-uploads only the tiles a frame changed; the picture reaches the view through Skia's JSI setter,
+  so a frame renders no React. A commit adopts the pixels already painted. Any other change to the
+  committed strokes replays them, then replays the live cohort's recorded ops.
+* **Crayon glazes once per pass, as a group.** A pass's wax accumulates at full opacity and is
+  glazed onto the ink beneath it as one group, restamped from the pre-group pixels each frame so
+  overlapping chunks never glaze over their own wax. Contacts drawn together share a group, as
+  shipping's pass buffer does; a new cohort starts a frame after the last one ends, so a group never
+  spans cohorts.
+* **Capture reads the committed layer** (resampled to the capture grid) instead of rendering the
+  strokes through SVG, which could not reproduce these pixels.
+
+Consequences:
+
+* \+ A frame's live ink costs its new samples, not the stroke so far, and the drawing surface
+  renders only when a cohort starts or ends.
+* \+ Ink joints and simultaneous-contact overlaps match shipping's op composition. A pixel test
+  replays each brush frame by frame against a rebuild and a capture
+  (`tools/tests/native-incremental-ink.test.mjs`).
+* − A rebuild draws one op per painted frame rather than one path per stroke, so Undo and page or
+  theme changes cost more on a long drawing.
+* − The layer holds the committed raster, its tile images and, while a Crayon pass is open, a pass
+  buffer and a pre-group copy: up to four paper-sized rasters.
+* − Pixels at op joints differ slightly from a single path per stroke: each op's round cap
+  antialiases against the one before it, as shipping's do.

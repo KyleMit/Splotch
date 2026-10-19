@@ -59,9 +59,9 @@ The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; insta
 ## Performance probe
 
 A Release bundle built with `EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1` in the environment counts the live
-stroke's work and writes one JSON line per contact cohort to the device log. Without it the probe is
-`false` at every call site (`src/drawing/perfProbe.native.ts`); the web export, Node and the type
-checker resolve the no-op `src/drawing/perfProbe.ts` instead. `babel-preset-expo` inlines
+stroke's work and writes one JSON line (`v` 2) per contact cohort to the device log. Without it the
+probe is `false` at every call site (`src/drawing/perfProbe.native.ts`); the web export, Node and
+the type checker resolve the no-op `src/drawing/perfProbe.ts` instead. `babel-preset-expo` inlines
 `EXPO_PUBLIC_*` values into a production bundle when Metro transforms it, and both Release bundle
 steps pass `--reset-cache`, so a cached transform never carries an earlier build's value. Gradle
 does not treat the environment as an input of `:app:createBundleReleaseJsAndAssets` and reports it
@@ -94,11 +94,11 @@ passes or the next contact begins; the line is written then, never while a later
 | Field                                                  | Counts                                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packets`, `samples`, `maxSamplesPerPacket`            | Packets `paperInputOwner` accepted, and the native samples they carried for the contacts each one changed                                                                                                                                                                             |
-| `appended`, `duplicate`, `minDistanceRejected`         | What `appendPoint` did with each sample after a stroke's first point                                                                                                                                                                                                                  |
+| `appended`, `duplicate`                                | What the contact cohort did with each sample after a stroke's first point: kept it, or dropped a repeat of the last point                                                                                                                                                             |
 | `strokes`, `points`                                    | Strokes the cohort committed, and the points in its longest                                                                                                                                                                                                                           |
-| `inkLayoutEffectCommits`, `surfaceLayoutEffectCommits` | Commits in which `SkiaInk` or `DrawingSurface` rendered, counted by a layout effect without dependencies (React's `<Profiler>` does not report in a production renderer)                                                                                                              |
-| `draftRecord`, `sceneRecord`                           | Count, total and slowest milliseconds of recording the live strokes' picture and the scene picture                                                                                                                                                                                    |
-| `inputToSubmission`                                    | For each new scene picture handed to `SkiaPictureView`: from the newest native sample it newly carries to the hand-off, as count and nearest-rank p50, p95, max and min. It ends at submission, not at a presented frame                                                              |
+| `inkLayoutEffectCommits`, `surfaceLayoutEffectCommits` | Commits in which `SkiaInk` or `DrawingSurface` rendered, counted by a layout effect without dependencies (React's `<Profiler>` does not report in a production renderer). Live ink renders neither: expect commits only where a cohort starts and ends                                |
+| `liveFlush`, `sceneRecord`                             | Count, total and slowest milliseconds of one display frame's live ink (recording the samples since the last frame as ops and painting them on the ink layer) and of recording the scene picture of the layer's tiles                                                                  |
+| `inputToSubmission`                                    | For each new scene picture handed to the ink view through Skia's JSI setter: from the newest native sample it newly carries to the hand-off, as count and nearest-rank p50, p95, max and min. It ends at submission, not at a presented frame                                         |
 | `clockJoin`                                            | The clock both ends read: `performance.now()` is React Native's `HighResTimeStamp`, `mach_absolute_time` on iOS like `UITouch.timestamp`, and `CLOCK_MONOTONIC` on Android like `MotionEvent.getEventTime()`, whose whole milliseconds can make an interval read up to `errorMs` long |
 
 ## Web
