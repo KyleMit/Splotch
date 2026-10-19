@@ -12,8 +12,9 @@ reconciliation inside each protocol, and final-head evidence are unfinished. The
 final-head device passes in this inventory: **zero device, simulator and browser cells are
 verified.** The first desk protocol, AC-1, verified 24 logic requirements by two-sided automated
 contract and failed one (`results/ac-1-2026-10-19.md`). The DS-2 slice
-(`results/ds2-slice-2026-10-19.md`) failed four more rows, each linked to its defect issue.
-Diagnostic build inspections are recorded separately.
+(`results/ds2-slice-2026-10-19.md`) failed four more rows, each linked to its defect issue. The
+LIFE-1, SAVE-1, A11Y-2 and Android DS-1 slices in `results/` changed no row and found no `rn`
+defect. Diagnostic build inspections are recorded separately.
 
 ## Execution plan
 
