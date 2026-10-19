@@ -4400,6 +4400,2501 @@
         "external": [],
         "consoleErrors": []
       }
+    },
+    "save-download": {
+      "ranAt": "2026-10-19T19:01:27.063Z",
+      "ms": 28956,
+      "dpr1": {
+        "rn-web": {
+          "filenamePattern": true,
+          "filename": "splotch-####-##-##_##-##-##.png",
+          "width": 2392,
+          "height": 1600,
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "after": {
+            "settled": true,
+            "settleMs": 2019,
+            "frames": 6,
+            "shot": "shots/save-download-dpr1-rn-web.webp",
+            "digest": "72d32f29136c41a6ce4280d9bb18e4e030106e28641b4753c49f10c1357a7a62"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "filenamePattern": true,
+          "filename": "splotch-####-##-##_##-##-##.png",
+          "width": 2392,
+          "height": 1600,
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "after": {
+            "settled": true,
+            "settleMs": 1871,
+            "frames": 6,
+            "shot": "shots/save-download-dpr1-web-prod.webp",
+            "digest": "2471d7f91dac681e256720202db235142044a42b3acd3f586c7921cabe3fdd1d"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "dpr2": {
+        "rn-web": {
+          "filenamePattern": true,
+          "filename": "splotch-####-##-##_##-##-##.png",
+          "width": 2392,
+          "height": 1600,
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "after": {
+            "settled": true,
+            "settleMs": 2752,
+            "frames": 4,
+            "shot": "shots/save-download-dpr2-rn-web.webp",
+            "digest": "38b7f63d07aeac683b3d0f714278e35da9494d3730c2a572ea7b0a34b52b8bbc"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "filenamePattern": true,
+          "filename": "splotch-####-##-##_##-##-##.png",
+          "width": 2392,
+          "height": 1600,
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "after": {
+            "settled": true,
+            "settleMs": 2531,
+            "frames": 4,
+            "shot": "shots/save-download-dpr2-web-prod.webp",
+            "digest": "18375161d829194cd38211efff9dcd01358d142c134713568da9e4c707909047"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "folder-save-row-and-picker": {
+      "ranAt": "2026-10-19T19:01:56.023Z",
+      "ms": 20120,
+      "rn-web": {
+        "supported": true,
+        "row": {
+          "text": "Save drawings to Choose folder",
+          "label": {
+            "x": 536,
+            "y": 447,
+            "w": 113,
+            "h": 18
+          },
+          "action": {
+            "x": 897,
+            "y": 432,
+            "w": 125,
+            "h": 48
+          }
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 2008,
+          "frames": 6,
+          "shot": "shots/folder-save-row-rn-web.webp",
+          "digest": "d23919b8a4f8a7171a65f8b76fdc0b535309bf326a8ce5e8fa614bfba28acf24"
+        },
+        "pickerCalls": true,
+        "pickerOutcome": "AbortError: Failed to execute 'showDirectoryPicker' on 'Window': The user aborted a request.",
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "supported": true,
+        "row": {
+          "text": "Save drawings to Choose folder",
+          "label": {
+            "x": 536,
+            "y": 447,
+            "w": 113,
+            "h": 18
+          },
+          "action": {
+            "x": 897,
+            "y": 432,
+            "w": 125,
+            "h": 48
+          }
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1996,
+          "frames": 6,
+          "shot": "shots/folder-save-row-web-prod.webp",
+          "digest": "8dab62424aa0135b020e55f4c3685c5f3bc23df33cc00a8237f18594a16dbe97"
+        },
+        "pickerCalls": true,
+        "pickerOutcome": "AbortError: Failed to execute 'showDirectoryPicker' on 'Window': The user aborted a request.",
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "folder-save-opfs-diagnostic": {
+      "ranAt": "2026-10-19T19:02:16.151Z",
+      "ms": 31128,
+      "rn-web": {
+        "saving": "Save drawings to Choose folder Parent Center Choose when Splotch should ask for a grown-up check",
+        "downloads": [],
+        "files": [
+          "file:splotch-####-##-##_##-##-##.png"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1884,
+          "frames": 6,
+          "shot": "shots/folder-save-opfs-rn-web.webp",
+          "digest": "e197f8b2d02e1e0cc30209598ce4ba00274c799904e7bf591eccb9064528f73e"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "saving": "Save drawings to Choose folder Parent Center Choose when Splotch should ask for a grown-up check",
+        "downloads": [],
+        "files": [
+          "file:splotch-####-##-##_##-##-##.png"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1964,
+          "frames": 6,
+          "shot": "shots/folder-save-opfs-web-prod.webp",
+          "digest": "2471d7f91dac681e256720202db235142044a42b3acd3f586c7921cabe3fdd1d"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "orientation-and-fullscreen": {
+      "ranAt": "2026-10-19T19:04:16.530Z",
+      "ms": 58396,
+      "desktop": {
+        "rn-web": {
+          "fullscreenButtons": [],
+          "orientationInTab": null,
+          "inFullscreen": null,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "fullscreenButtons": [],
+          "orientationInTab": null,
+          "inFullscreen": null,
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "android": {
+        "rn-web": {
+          "fullscreenButtons": [
+            "Enter fullscreen"
+          ],
+          "orientationInTab": null,
+          "inFullscreen": {
+            "element": "HTML",
+            "locks": [
+              "portrait@fullscreen"
+            ],
+            "shot": {
+              "settled": true,
+              "settleMs": 1745,
+              "frames": 6,
+              "shot": "shots/fullscreen-android-rn-web.webp",
+              "digest": "cc704e9f324637962eb98bd3696a69f2fde99c9b04f0ed5e1f29236449ed8d84"
+            },
+            "text": "Orientation Portrait Landscape Auto Auto follows your device's rotation setting.",
+            "afterExit": {
+              "element": null,
+              "unlocks": 0,
+              "buttons": [
+                "Enter fullscreen"
+              ]
+            },
+            "reentered": {
+              "locks": [
+                "portrait@fullscreen",
+                "portrait@fullscreen"
+              ]
+            }
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "fullscreenButtons": [
+            "Enter fullscreen"
+          ],
+          "orientationInTab": null,
+          "inFullscreen": {
+            "element": "HTML",
+            "locks": [
+              "portrait@tab",
+              "portrait@fullscreen"
+            ],
+            "shot": {
+              "settled": true,
+              "settleMs": 1713,
+              "frames": 6,
+              "shot": "shots/fullscreen-android-web-prod.webp",
+              "digest": "1cdb66ba324f2f06fde490f0f8cc921e08c097016c8b28b6e1c4652cba1b8781"
+            },
+            "text": "Orientation Portrait Landscape Auto Auto follows your device's rotation setting.",
+            "afterExit": {
+              "element": null,
+              "unlocks": 0,
+              "buttons": [
+                "Enter fullscreen"
+              ]
+            },
+            "reentered": {
+              "locks": [
+                "portrait@tab",
+                "portrait@fullscreen",
+                "portrait@tab",
+                "portrait@fullscreen"
+              ]
+            }
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "iphone": {
+        "rn-web": {
+          "fullscreenButtons": [],
+          "orientationInTab": null,
+          "inFullscreen": null,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "fullscreenButtons": [],
+          "orientationInTab": null,
+          "inFullscreen": null,
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "tablet-browser-chrome": {
+      "ranAt": "2026-10-19T19:03:39.593Z",
+      "ms": 13789,
+      "rn-web": {
+        "before": [
+          {
+            "name": "Expand controls",
+            "x": 92,
+            "y": 706,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Settings",
+            "x": 968,
+            "y": 712,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Clear drawing",
+            "x": 964,
+            "y": 48,
+            "w": 70,
+            "h": 70
+          }
+        ],
+        "after": [
+          {
+            "name": "Expand controls",
+            "x": 92,
+            "y": 606,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Settings",
+            "x": 968,
+            "y": 612,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Clear drawing",
+            "x": 964,
+            "y": 48,
+            "w": 70,
+            "h": 70
+          }
+        ],
+        "full": {
+          "settled": true,
+          "settleMs": 1809,
+          "frames": 6,
+          "shot": "shots/tablet-chrome-full-rn-web.webp",
+          "digest": "7efe00d121679989f6e4fe388403f9d1a0fca5ce18cd5312765579529aadcf80"
+        },
+        "shrunk": {
+          "settled": true,
+          "settleMs": 1744,
+          "frames": 6,
+          "shot": "shots/tablet-chrome-shrunk-rn-web.webp",
+          "digest": "a1b3514e173de901a10af6e5310a029f932fa31d3f18b3f18cfda9058cc3f803"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "before": [
+          {
+            "name": "Expand controls",
+            "x": 92,
+            "y": 706,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Settings",
+            "x": 968,
+            "y": 712,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Clear drawing",
+            "x": 964,
+            "y": 48,
+            "w": 70,
+            "h": 70
+          }
+        ],
+        "after": [
+          {
+            "name": "Expand controls",
+            "x": 92,
+            "y": 606,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Settings",
+            "x": 968,
+            "y": 612,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "name": "Clear drawing",
+            "x": 964,
+            "y": 48,
+            "w": 70,
+            "h": 70
+          }
+        ],
+        "full": {
+          "settled": true,
+          "settleMs": 1791,
+          "frames": 6,
+          "shot": "shots/tablet-chrome-full-web-prod.webp",
+          "digest": "7586df7c61e7f9267816352c4df251e13d99a604976c83beb55fe74c5892dc8d"
+        },
+        "shrunk": {
+          "settled": true,
+          "settleMs": 1757,
+          "frames": 6,
+          "shot": "shots/tablet-chrome-shrunk-web-prod.webp",
+          "digest": "96b39d6319b9df1aba6215670b682c82a3ec9fb5a1988f576b5ea205b1d86bd9"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "coloring-connection-policy": {
+      "ranAt": "2026-10-19T19:05:23.896Z",
+      "ms": 206581,
+      "chromium-default": {
+        "rn-web": {
+          "connection": {
+            "type": null,
+            "effectiveType": "4g",
+            "saveData": false
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 6,
+            "imagesDecoded": 6
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 1,
+          "shot": {
+            "settled": true,
+            "settleMs": 2074,
+            "frames": 6,
+            "shot": "shots/coloring-chromium-default-rn-web.webp",
+            "digest": "92cbd0ab1152c66ec4c9becb0b1010dadf57c5d98d42b1d4129bdbf721c2f206"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "connection": {
+            "type": null,
+            "effectiveType": "4g",
+            "saveData": false
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 11,
+            "imagesDecoded": 8
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 528,
+          "shot": {
+            "settled": true,
+            "settleMs": 2061,
+            "frames": 6,
+            "shot": "shots/coloring-chromium-default-web-prod.webp",
+            "digest": "c339d821cfd876f651ab5717ca376d12210c9b63921d4fb18ad7ff3f97de59f3"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "no-api": {
+        "rn-web": {
+          "connection": null,
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 6,
+            "imagesDecoded": 6
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 1,
+          "shot": {
+            "settled": true,
+            "settleMs": 2037,
+            "frames": 6,
+            "shot": "shots/coloring-no-api-rn-web.webp",
+            "digest": "52707e05dde823698b3f65b136a44c48e7a3b9f7a5aef0872d144f09f22e7abf"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "connection": null,
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 11,
+            "imagesDecoded": 8
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 528,
+          "shot": {
+            "settled": true,
+            "settleMs": 2082,
+            "frames": 6,
+            "shot": "shots/coloring-no-api-web-prod.webp",
+            "digest": "c339d821cfd876f651ab5717ca376d12210c9b63921d4fb18ad7ff3f97de59f3"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "save-data": {
+        "rn-web": {
+          "connection": {
+            "type": null,
+            "effectiveType": "4g",
+            "saveData": true
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 6,
+            "imagesDecoded": 6
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 2042,
+            "frames": 6,
+            "shot": "shots/coloring-save-data-rn-web.webp",
+            "digest": "087566f79205562b6e5822e60c5c38351aa7c55dd018ce07600d213691f5fd57"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "connection": {
+            "type": null,
+            "effectiveType": "4g",
+            "saveData": true
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 11,
+            "imagesDecoded": 8
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 8,
+          "shot": {
+            "settled": true,
+            "settleMs": 2064,
+            "frames": 6,
+            "shot": "shots/coloring-save-data-web-prod.webp",
+            "digest": "c339d821cfd876f651ab5717ca376d12210c9b63921d4fb18ad7ff3f97de59f3"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "2g": {
+        "rn-web": {
+          "connection": {
+            "type": null,
+            "effectiveType": "2g",
+            "saveData": false
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 6,
+            "imagesDecoded": 6
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 2043,
+            "frames": 6,
+            "shot": "shots/coloring-2g-rn-web.webp",
+            "digest": "087566f79205562b6e5822e60c5c38351aa7c55dd018ce07600d213691f5fd57"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "connection": {
+            "type": null,
+            "effectiveType": "2g",
+            "saveData": false
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 11,
+            "imagesDecoded": 8
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 8,
+          "shot": {
+            "settled": true,
+            "settleMs": 2023,
+            "frames": 6,
+            "shot": "shots/coloring-2g-web-prod.webp",
+            "digest": "c339d821cfd876f651ab5717ca376d12210c9b63921d4fb18ad7ff3f97de59f3"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "cellular": {
+        "rn-web": {
+          "connection": {
+            "type": "cellular",
+            "effectiveType": "4g",
+            "saveData": false
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 6,
+            "imagesDecoded": 6
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 2047,
+            "frames": 6,
+            "shot": "shots/coloring-cellular-rn-web.webp",
+            "digest": "52707e05dde823698b3f65b136a44c48e7a3b9f7a5aef0872d144f09f22e7abf"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "connection": {
+            "type": "cellular",
+            "effectiveType": "4g",
+            "saveData": false
+          },
+          "picker": {
+            "text": "Farm",
+            "imagesShown": 11,
+            "imagesDecoded": 8
+          },
+          "crossOriginBookFetches": 0,
+          "sameOriginBookFetches": 7,
+          "shot": {
+            "settled": true,
+            "settleMs": 2114,
+            "frames": 6,
+            "shot": "shots/coloring-cellular-web-prod.webp",
+            "digest": "c339d821cfd876f651ab5717ca376d12210c9b63921d4fb18ad7ff3f97de59f3"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "settings-scrollbars": {
+      "ranAt": "2026-10-19T19:15:10.003Z",
+      "ms": 32406,
+      "w1280": {
+        "rn-web": {
+          "scrollers": [
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 234,
+                "y": 154,
+                "w": 232,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            },
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 474,
+                "y": 154,
+                "w": 572,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1975,
+            "frames": 6,
+            "shot": "shots/settings-scrollbars-1280-rn-web.webp",
+            "digest": "7712472eca216d9d764bf414d81e2cddfc0d705967086242722ef70e75c18d61"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "scrollers": [
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 234,
+                "y": 154,
+                "w": 232,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            },
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 474,
+                "y": 154,
+                "w": 572,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1921,
+            "frames": 6,
+            "shot": "shots/settings-scrollbars-1280-web-prod.webp",
+            "digest": "1693cdc9e5c57fe1cb8eebe4785e76c783cb7d71c7b1350a545b2ae403ab3c1c"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "w900": {
+        "rn-web": {
+          "scrollers": [
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 44,
+                "y": 154,
+                "w": 232,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            },
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 284,
+                "y": 154,
+                "w": 572,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1791,
+            "frames": 6,
+            "shot": "shots/settings-scrollbars-900-rn-web.webp",
+            "digest": "0d5682e2b232ff2e5d37960e4691ad771ba050aada3b5dd12a3d6e4977d86653"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "scrollers": [
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 44,
+                "y": 154,
+                "w": 232,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            },
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 284,
+                "y": 154,
+                "w": 572,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1917,
+            "frames": 7,
+            "shot": "shots/settings-scrollbars-900-web-prod.webp",
+            "digest": "07b786777e8865714d68a6c58f736d3cff2b5a7d359a5d4eb6ae0c8fad0c4434"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "w760": {
+        "rn-web": {
+          "scrollers": [
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 40,
+                "y": 154,
+                "w": 232,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            },
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 280,
+                "y": 154,
+                "w": 440,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1752,
+            "frames": 6,
+            "shot": "shots/settings-scrollbars-760-rn-web.webp",
+            "digest": "86a7a1e11b3555a300f5ab38e5eb4ad302ed718eb5f045d23822bef785170396"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "scrollers": [
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 40,
+                "y": 154,
+                "w": 232,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            },
+            {
+              "vertical": 15,
+              "horizontal": 0,
+              "box": {
+                "x": 280,
+                "y": 154,
+                "w": 440,
+                "h": 562
+              },
+              "gutterHitsScroller": true
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1845,
+            "frames": 7,
+            "shot": "shots/settings-scrollbars-760-web-prod.webp",
+            "digest": "1b12ed185c0ef38f8e9b2c7265f44821057d03fc754da6e03f422fb10efeaf6b"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "drawer-first-open-icons": {
+      "ranAt": "2026-10-19T19:18:55.684Z",
+      "ms": 6413,
+      "rn-web": {
+        "frames": [
+          {
+            "atMs": 190,
+            "shot": "shots/drawer-first-open-80ms-rn-web.webp"
+          },
+          {
+            "atMs": 300,
+            "shot": "shots/drawer-first-open-200ms-rn-web.webp"
+          },
+          {
+            "atMs": 439,
+            "shot": "shots/drawer-first-open-350ms-rn-web.webp"
+          },
+          {
+            "atMs": 677,
+            "shot": "shots/drawer-first-open-600ms-rn-web.webp"
+          },
+          {
+            "atMs": 1274,
+            "shot": "shots/drawer-first-open-1200ms-rn-web.webp"
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "frames": [
+          {
+            "atMs": 180,
+            "shot": "shots/drawer-first-open-80ms-web-prod.webp"
+          },
+          {
+            "atMs": 281,
+            "shot": "shots/drawer-first-open-200ms-web-prod.webp"
+          },
+          {
+            "atMs": 455,
+            "shot": "shots/drawer-first-open-350ms-web-prod.webp"
+          },
+          {
+            "atMs": 676,
+            "shot": "shots/drawer-first-open-600ms-web-prod.webp"
+          },
+          {
+            "atMs": 1299,
+            "shot": "shots/drawer-first-open-1200ms-web-prod.webp"
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "boot-head": {
+      "ranAt": "2026-10-19T19:15:57.151Z",
+      "ms": 3776,
+      "rn-web": {
+        "head": {
+          "attributes": [
+            "data-app-surface",
+            "lang"
+          ],
+          "colorScheme": "normal",
+          "themeColor": "#ffffff"
+        },
+        "title": "Splotch",
+        "csp": null,
+        "inlineScripts": 2,
+        "inlineAuthorized": null,
+        "unsafeInline": null,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "head": {
+          "attributes": [
+            "data-app-surface",
+            "data-orientation",
+            "data-toolbar",
+            "lang"
+          ],
+          "colorScheme": "light",
+          "themeColor": "#ffffff"
+        },
+        "title": "Splotch - Drawing for Kids",
+        "csp": "default-src 'self'; worker-src 'self'; connect-src 'self' blob:; font-src 'self'; img-src 'self' blob: data:; manifest-s",
+        "inlineScripts": 2,
+        "inlineAuthorized": 2,
+        "unsafeInline": false,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "appearance-restamp-without-state": {
+      "ranAt": "2026-10-19T19:16:00.930Z",
+      "ms": 11488,
+      "rn-web": {
+        "light": {
+          "attributes": [
+            "lang=en"
+          ],
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        "dark": {
+          "attributes": [
+            "lang=en"
+          ],
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1833,
+          "frames": 7,
+          "shot": "shots/restamp-dark-rn-web.webp",
+          "digest": "b38d5ad07d82f3f1d52e5ddda5ddc71961c2072024a5bfdb9cff64a70483f714"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "light": {
+          "attributes": [
+            "data-orientation=landscape",
+            "data-toolbar=buttons",
+            "lang=en"
+          ],
+          "background": "rgb(245, 245, 245)"
+        },
+        "dark": {
+          "attributes": [
+            "data-orientation=landscape",
+            "data-toolbar=buttons",
+            "lang=en"
+          ],
+          "background": "rgb(23, 23, 29)"
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1840,
+          "frames": 7,
+          "shot": "shots/restamp-dark-web-prod.webp",
+          "digest": "50800179c5a6685d99c17b3b06f0bd27cb6be7486167a8c7b4a632d863b426ce"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "routes-direct-and-in-app": {
+      "ranAt": "2026-10-19T19:16:12.421Z",
+      "ms": 89361,
+      "direct": {
+        "rn-web": {
+          "/": {
+            "status": 200,
+            "title": "Splotch",
+            "headings": [],
+            "links": [],
+            "paper": true,
+            "locks": true,
+            "shot": {
+              "settled": true,
+              "settleMs": 1859,
+              "frames": 6,
+              "shot": "shots/route--rn-web.webp",
+              "digest": "01205d801d4e9e6a6a284e8f1a7360bc08e4e7a3e30779cb4f40db44ea051b6f"
+            }
+          },
+          "/privacy": {
+            "status": 200,
+            "title": "Privacy policy · Splotch",
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ],
+            "links": [
+              "Start drawing -> null",
+              "# -> null",
+              "# -> null",
+              "How the counting works -> null",
+              "Reporting a picture -> null",
+              "OpenAI Services Agreement -> null",
+              "published policy -> null",
+              "# -> null",
+              "# -> null",
+              "private feedback form -> null",
+              "# -> null",
+              "# -> null"
+            ],
+            "paper": true,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1823,
+              "frames": 7,
+              "shot": "shots/route-privacy-rn-web.webp",
+              "digest": "2acf02940c298012abd4b3d01bf309dff883698a702f613429eaa4e524982d4e"
+            }
+          },
+          "/changelog": {
+            "status": 200,
+            "title": "Changelog · Splotch",
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0",
+              "Version 1.5.0"
+            ],
+            "links": [
+              "Start drawing -> null",
+              "Back to top -> null",
+              "SPLOTCH -> null",
+              "Privacy -> null",
+              "Send feedback -> null",
+              "What's new -> null"
+            ],
+            "paper": true,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1817,
+              "frames": 7,
+              "shot": "shots/route-changelog-rn-web.webp",
+              "digest": "57be5c09f2d85d82671f6acbca1ca981a2fc72a79793b4f30d87f640bfbc6126"
+            }
+          },
+          "/feedback": {
+            "status": 200,
+            "title": "Send Feedback · Splotch",
+            "headings": [
+              "Send us feedback",
+              "What happens next"
+            ],
+            "links": [
+              "Start drawing -> null",
+              "privacy policy -> null",
+              "SPLOTCH -> null",
+              "Privacy -> null",
+              "Changelog -> null",
+              "What's new -> null"
+            ],
+            "paper": true,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1860,
+              "frames": 7,
+              "shot": "shots/route-feedback-rn-web.webp",
+              "digest": "258917d6840fe2ba502fb7f6f862ed019c221e0dd8fffc6d0f6de7d7746cffc0"
+            }
+          },
+          "/no-such-page": {
+            "status": 200,
+            "title": "Page not found · Splotch",
+            "headings": [
+              "This page wandered off"
+            ],
+            "links": [
+              "Start drawing -> null",
+              "Start drawing -> /",
+              "Changelog -> /changelog",
+              "Privacy -> /privacy",
+              "SPLOTCH -> null",
+              "Privacy -> null",
+              "Changelog -> null",
+              "Send feedback -> null",
+              "What's new -> null"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1775,
+              "frames": 7,
+              "shot": "shots/route-no-such-page-rn-web.webp",
+              "digest": "0f513c79360ca36bb49d837fd76cc61e48c4b885fb05c1a523acf0247daeb502"
+            }
+          },
+          "/privacy/missing": {
+            "status": 200,
+            "title": "Page not found · Splotch",
+            "headings": [
+              "This page wandered off"
+            ],
+            "links": [
+              "Start drawing -> null",
+              "Start drawing -> /",
+              "Changelog -> /changelog",
+              "Privacy -> /privacy",
+              "SPLOTCH -> null",
+              "Privacy -> null",
+              "Changelog -> null",
+              "Send feedback -> null",
+              "What's new -> null"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1767,
+              "frames": 7,
+              "shot": "shots/route-privacy-missing-rn-web.webp",
+              "digest": "0f513c79360ca36bb49d837fd76cc61e48c4b885fb05c1a523acf0247daeb502"
+            }
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "/": {
+            "status": 200,
+            "title": "Splotch - Drawing for Kids",
+            "headings": [],
+            "links": [],
+            "paper": true,
+            "locks": true,
+            "shot": {
+              "settled": true,
+              "settleMs": 1921,
+              "frames": 6,
+              "shot": "shots/route--web-prod.webp",
+              "digest": "394571c3346672798daddb2c36384825c4047a1c8310f19760096cacc2d0a107"
+            }
+          },
+          "/privacy": {
+            "status": 200,
+            "title": "Privacy Policy · Splotch",
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ],
+            "links": [
+              "Back to drawing -> /",
+              "SPLOTCH -> /",
+              "What stays on your device -> #on-device",
+              "Making an AI picture -> #ai-pictures",
+              "How the counting works -> #counting",
+              "Reporting a picture -> #reports",
+              "Sending feedback -> #feedback",
+              "Hosting and downloads -> #hosting",
+              "Children's privacy -> #children",
+              "Changes and contact -> #contact",
+              "# -> #on-device",
+              "# -> #ai-pictures"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1801,
+              "frames": 7,
+              "shot": "shots/route-privacy-web-prod.webp",
+              "digest": "6ce7ef39894fc0ca4e6af97c5f1e4e5b3ded6259a526612a51bed95ec5b46a9b"
+            }
+          },
+          "/changelog": {
+            "status": 200,
+            "title": "Changelog · Splotch",
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0",
+              "Version 1.5.0"
+            ],
+            "links": [
+              "Back to drawing -> /",
+              "SPLOTCH -> /",
+              "Version 1.6.0 September 9, 2026 -> #release-1-6-0",
+              "Version 1.5.0 August 12, 2026 -> #release-1-5-0",
+              "Version 1.4.0 July 28, 2026 -> #release-1-4-0",
+              "Version 1.3.0 July 5, 2026 -> #release-1-3-0",
+              "Version 1.2.0 June 22, 2026 -> #release-1-2-0",
+              "Version 1.1.0 June 5, 2026 -> #release-1-1-0",
+              "Version 1.0.1 June 3, 2026 -> #release-1-0-1",
+              "Version 1.0.0 June 1, 2026 -> #release-1-0-0",
+              "Back to top -> #top",
+              "SPLOTCH -> /"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1824,
+              "frames": 7,
+              "shot": "shots/route-changelog-web-prod.webp",
+              "digest": "2c65817622d746113ebb4fa80fdab9b7a16d83b8488f22ae87cc4bd24d8f6fec"
+            }
+          },
+          "/feedback": {
+            "status": 200,
+            "title": "Send Feedback · Splotch",
+            "headings": [
+              "Send us feedback",
+              "What happens next"
+            ],
+            "links": [
+              "Back to drawing -> /",
+              "SPLOTCH -> /",
+              "privacy policy -> /privacy",
+              "SPLOTCH -> /",
+              "Privacy -> /privacy",
+              "Changelog -> /changelog",
+              "What's new -> /changelog#release-1-6-0"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1918,
+              "frames": 7,
+              "shot": "shots/route-feedback-web-prod.webp",
+              "digest": "09f9da4b0fc96c3389bb05d31284ff4e4ab34d2996452db8e704aeef6e40733b"
+            }
+          },
+          "/no-such-page": {
+            "status": 404,
+            "title": "Page not found · Splotch",
+            "headings": [
+              "This page wandered off"
+            ],
+            "links": [
+              "Back to drawing -> /",
+              "SPLOTCH -> /",
+              "Start drawing -> /",
+              "Changelog -> /changelog",
+              "Privacy -> /privacy",
+              "SPLOTCH -> /",
+              "Privacy -> /privacy",
+              "Changelog -> /changelog",
+              "Send feedback -> /feedback",
+              "What's new -> /changelog#release-1-6-0"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1793,
+              "frames": 7,
+              "shot": "shots/route-no-such-page-web-prod.webp",
+              "digest": "700e479131ed369ffa74b60202dbb53d340533ce2a2574f776b283331a881902"
+            }
+          },
+          "/privacy/missing": {
+            "status": 404,
+            "title": "Page not found · Splotch",
+            "headings": [
+              "This page wandered off"
+            ],
+            "links": [
+              "Back to drawing -> /",
+              "SPLOTCH -> /",
+              "Start drawing -> /",
+              "Changelog -> /changelog",
+              "Privacy -> /privacy",
+              "SPLOTCH -> /",
+              "Privacy -> /privacy",
+              "Changelog -> /changelog",
+              "Send feedback -> /feedback",
+              "What's new -> /changelog#release-1-6-0"
+            ],
+            "paper": false,
+            "locks": false,
+            "shot": {
+              "settled": true,
+              "settleMs": 1769,
+              "frames": 7,
+              "shot": "shots/route-privacy-missing-web-prod.webp",
+              "digest": "700e479131ed369ffa74b60202dbb53d340533ce2a2574f776b283331a881902"
+            }
+          },
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ]
+        }
+      },
+      "inApp": {
+        "rn-web": {
+          "Privacy Policy": {
+            "path": "/privacy",
+            "dialogs": [
+              "Information page"
+            ],
+            "historyLength": 4,
+            "headings": [
+              "Settings",
+              "Privacy policy",
+              "THE SHORT VERSION"
+            ]
+          },
+          "See all releases": {
+            "path": "/changelog",
+            "dialogs": [
+              "Information page"
+            ],
+            "historyLength": 4,
+            "headings": [
+              "Settings",
+              "Changelog",
+              "CONTENTS"
+            ]
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "Privacy Policy": {
+            "path": "/privacy",
+            "dialogs": [],
+            "historyLength": 4,
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ]
+          },
+          "See all releases": {
+            "path": "/changelog",
+            "dialogs": [],
+            "historyLength": 4,
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0"
+            ]
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "routes-without-javascript": {
+      "ranAt": "2026-10-19T19:17:41.786Z",
+      "ms": 4405,
+      "rn-web": {
+        "/no-such-page": {
+          "status": 200,
+          "title": "Splotch",
+          "text": "You need to enable JavaScript to run this app."
+        },
+        "/privacy": {
+          "status": 200,
+          "title": "Splotch",
+          "text": "You need to enable JavaScript to run this app."
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "/no-such-page": {
+          "status": 404,
+          "title": "Page not found · Splotch",
+          "text": "Start drawing SPLOTCH This page wandered off The link may be old. These are still here: Start drawing Changelog Privacy SPLOTCH Privacy Changelog Send feedback "
+        },
+        "/privacy": {
+          "status": 200,
+          "title": "Privacy Policy · Splotch",
+          "text": "Start drawing SPLOTCH Privacy policy Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short version is easy to remember."
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        ]
+      }
+    },
+    "root-crash-lazy-chunk": {
+      "ranAt": "2026-10-19T19:17:46.193Z",
+      "ms": 21527,
+      "rn-web": {
+        "blocked": 6,
+        "title": "Splotch",
+        "headings": [
+          "Did not load"
+        ],
+        "buttons": [
+          "Purple",
+          "Blue",
+          "Teal",
+          "Green",
+          "Yellow",
+          "Orange",
+          "Red",
+          "Pink",
+          "Black",
+          "Custom Color",
+          "Settings",
+          "Expand controls"
+        ],
+        "dialogs": [
+          "Did not load"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1871,
+          "frames": 6,
+          "shot": "shots/root-crash-rn-web.webp",
+          "digest": "a8f61f4814ba98e1ea4bd80e6d3780ee6ecf9246d0e1929d164c4294a8d0bd3e"
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_FAILED",
+          "AsyncRequireError: Loading module http://127.0.0.1:5300/_expo/static/js/web/ModalShellContent-0b4b502e736cb86d23bdae0b6db7ec6e.js failed.\n(error: http://127.0.0.1:5300/_expo/static/js/web/ModalShellContent-0b4b502e736cb86d23bdae0b6db7ec6e.js)\n    at http://127.0.0.1:5300/_expo/static/js/web/index-d3",
+          "A drawing screen surface failed to load: AsyncRequireError: Loading module http://127.0.0.1:5300/_expo/static/js/web/ModalShellContent-0b4b502e736cb86d23bdae0b6db7ec6e.js failed.\n(error: http://127.0.0.1:5300/_expo/static/js/web/ModalShellContent-0b4b502e736cb86d23bdae0b6db7ec6e.js)\n    at http://12",
+          "Failed to load resource: net::ERR_FAILED",
+          "Failed to load resource: net::ERR_FAILED"
+        ]
+      },
+      "web-prod": {
+        "blocked": 0,
+        "title": "Splotch - Drawing for Kids",
+        "headings": [
+          "Settings"
+        ],
+        "buttons": [
+          "Purple",
+          "Blue",
+          "Teal",
+          "Green",
+          "Yellow",
+          "Orange",
+          "Red",
+          "Pink",
+          "Black",
+          "Custom Color",
+          "Clear drawing",
+          "Expand controls"
+        ],
+        "dialogs": [
+          "Settings"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1907,
+          "frames": 6,
+          "shot": "shots/root-crash-web-prod.webp",
+          "digest": "7b65a28f89b7b3851e98fe3de9351004c1e2af75fe2980bf5ea297ca5f77e3dd"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "info-back-label-after-reload": {
+      "ranAt": "2026-10-19T19:19:02.102Z",
+      "ms": 24755,
+      "rn-web": {
+        "beforeReload": "Back to drawing",
+        "afterReload": "Start drawing",
+        "followed": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "paper": true,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "beforeReload": "Back to drawing",
+        "afterReload": "Back to drawing",
+        "followed": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "paper": true,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "not-found-layouts": {
+      "ranAt": "2026-10-19T19:19:26.860Z",
+      "ms": 40538,
+      "320-light": {
+        "rn-web": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 7,
+              "right": 181
+            },
+            {
+              "text": "Start drawing",
+              "y": 339,
+              "right": 157
+            },
+            {
+              "text": "Changelog",
+              "y": 405,
+              "right": 134
+            },
+            {
+              "text": "Privacy",
+              "y": 405,
+              "right": 234
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 562,
+              "right": 117
+            },
+            {
+              "text": "Privacy",
+              "y": 622,
+              "right": 69
+            },
+            {
+              "text": "Changelog",
+              "y": 622,
+              "right": 149
+            },
+            {
+              "text": "Send feedback",
+              "y": 622,
+              "right": 257
+            },
+            {
+              "text": "What's new",
+              "y": 697,
+              "right": 84
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1628,
+            "frames": 7,
+            "shot": "shots/not-found-320-light-rn-web.webp",
+            "digest": "6c2674308882ae24b0d6c91a89365c3f258c9566f51dfaa2d4025a5a9caf5a49"
+          },
+          "recovered": {
+            "path": "/",
+            "paper": true
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 7,
+              "right": 181
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 19,
+              "right": 300
+            },
+            {
+              "text": "Start drawing",
+              "y": 339,
+              "right": 157
+            },
+            {
+              "text": "Changelog",
+              "y": 405,
+              "right": 134
+            },
+            {
+              "text": "Privacy",
+              "y": 405,
+              "right": 234
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 562,
+              "right": 117
+            },
+            {
+              "text": "Privacy",
+              "y": 622,
+              "right": 69
+            },
+            {
+              "text": "Changelog",
+              "y": 622,
+              "right": 149
+            },
+            {
+              "text": "Send feedback",
+              "y": 622,
+              "right": 257
+            },
+            {
+              "text": "What's new",
+              "y": 702,
+              "right": 90
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1648,
+            "frames": 7,
+            "shot": "shots/not-found-320-light-web-prod.webp",
+            "digest": "6ce5efc926c525b354800ed6cc7f510f0d2c790fed35daf4f30bca6ef418ac42"
+          },
+          "recovered": {
+            "path": "/",
+            "paper": true
+          },
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ]
+        }
+      },
+      "320-dark": {
+        "rn-web": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 7,
+              "right": 181
+            },
+            {
+              "text": "Start drawing",
+              "y": 339,
+              "right": 157
+            },
+            {
+              "text": "Changelog",
+              "y": 405,
+              "right": 134
+            },
+            {
+              "text": "Privacy",
+              "y": 405,
+              "right": 234
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 562,
+              "right": 117
+            },
+            {
+              "text": "Privacy",
+              "y": 622,
+              "right": 69
+            },
+            {
+              "text": "Changelog",
+              "y": 622,
+              "right": 149
+            },
+            {
+              "text": "Send feedback",
+              "y": 622,
+              "right": 257
+            },
+            {
+              "text": "What's new",
+              "y": 697,
+              "right": 84
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1631,
+            "frames": 7,
+            "shot": "shots/not-found-320-dark-rn-web.webp",
+            "digest": "cd2da2d845a5db79c5804ed34d1519be9d6a137e0cd49c8b6172a050ed004d84"
+          },
+          "recovered": null,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 7,
+              "right": 181
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 19,
+              "right": 300
+            },
+            {
+              "text": "Start drawing",
+              "y": 339,
+              "right": 157
+            },
+            {
+              "text": "Changelog",
+              "y": 405,
+              "right": 134
+            },
+            {
+              "text": "Privacy",
+              "y": 405,
+              "right": 234
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 562,
+              "right": 117
+            },
+            {
+              "text": "Privacy",
+              "y": 622,
+              "right": 69
+            },
+            {
+              "text": "Changelog",
+              "y": 622,
+              "right": 149
+            },
+            {
+              "text": "Send feedback",
+              "y": 622,
+              "right": 257
+            },
+            {
+              "text": "What's new",
+              "y": 702,
+              "right": 90
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1642,
+            "frames": 7,
+            "shot": "shots/not-found-320-dark-web-prod.webp",
+            "digest": "025ff5e05084cc8fae20c85292e117ef2bb5407825b0b0954cb8d7eb4f476ffc"
+          },
+          "recovered": null,
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ]
+        }
+      },
+      "short": {
+        "rn-web": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 12,
+              "right": 209
+            },
+            {
+              "text": "Start drawing",
+              "y": 206,
+              "right": 193
+            },
+            {
+              "text": "Changelog",
+              "y": 206,
+              "right": 318
+            },
+            {
+              "text": "Privacy",
+              "y": 206,
+              "right": 419
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 348,
+              "right": 153
+            },
+            {
+              "text": "Privacy",
+              "y": 348,
+              "right": 376
+            },
+            {
+              "text": "Changelog",
+              "y": 348,
+              "right": 466
+            },
+            {
+              "text": "Send feedback",
+              "y": 348,
+              "right": 584
+            },
+            {
+              "text": "What's new",
+              "y": 408,
+              "right": 364
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1632,
+            "frames": 7,
+            "shot": "shots/not-found-short-rn-web.webp",
+            "digest": "5bacb58f8676f8cc3bf954f72016f6c45eba4c1132ddc088f37b8b08847ad1af"
+          },
+          "recovered": null,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 12,
+              "right": 209
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 24,
+              "right": 584
+            },
+            {
+              "text": "Start drawing",
+              "y": 206,
+              "right": 193
+            },
+            {
+              "text": "Changelog",
+              "y": 206,
+              "right": 318
+            },
+            {
+              "text": "Privacy",
+              "y": 206,
+              "right": 419
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 348,
+              "right": 153
+            },
+            {
+              "text": "Privacy",
+              "y": 348,
+              "right": 376
+            },
+            {
+              "text": "Changelog",
+              "y": 348,
+              "right": 466
+            },
+            {
+              "text": "Send feedback",
+              "y": 348,
+              "right": 584
+            },
+            {
+              "text": "What's new",
+              "y": 408,
+              "right": 364
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1629,
+            "frames": 7,
+            "shot": "shots/not-found-short-web-prod.webp",
+            "digest": "6c54c5911b681b4310dd2f3fe18e1ab257540e8f0e82559bd17f6a0e58e325bb"
+          },
+          "recovered": null,
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ]
+        }
+      },
+      "forced-colors": {
+        "rn-web": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 7,
+              "right": 181
+            },
+            {
+              "text": "Start drawing",
+              "y": 313,
+              "right": 157
+            },
+            {
+              "text": "Changelog",
+              "y": 379,
+              "right": 134
+            },
+            {
+              "text": "Privacy",
+              "y": 379,
+              "right": 234
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 537,
+              "right": 117
+            },
+            {
+              "text": "Privacy",
+              "y": 597,
+              "right": 69
+            },
+            {
+              "text": "Changelog",
+              "y": 597,
+              "right": 149
+            },
+            {
+              "text": "Send feedback",
+              "y": 597,
+              "right": 257
+            },
+            {
+              "text": "What's new",
+              "y": 657,
+              "right": 328
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1676,
+            "frames": 7,
+            "shot": "shots/not-found-forced-colors-rn-web.webp",
+            "digest": "11077405be1148382b09292334563c42927cea856e9317d667c23a9c1997a3a4"
+          },
+          "recovered": null,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "links": [
+            {
+              "text": "Start drawing",
+              "y": 7,
+              "right": 181
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 19,
+              "right": 370
+            },
+            {
+              "text": "Start drawing",
+              "y": 313,
+              "right": 157
+            },
+            {
+              "text": "Changelog",
+              "y": 379,
+              "right": 134
+            },
+            {
+              "text": "Privacy",
+              "y": 379,
+              "right": 234
+            },
+            {
+              "text": "SPLOTCH",
+              "y": 531,
+              "right": 117
+            },
+            {
+              "text": "Privacy",
+              "y": 591,
+              "right": 69
+            },
+            {
+              "text": "Changelog",
+              "y": 591,
+              "right": 149
+            },
+            {
+              "text": "Send feedback",
+              "y": 591,
+              "right": 257
+            },
+            {
+              "text": "What's new",
+              "y": 651,
+              "right": 328
+            }
+          ],
+          "overflow": 0,
+          "shot": {
+            "settled": true,
+            "settleMs": 1663,
+            "frames": 7,
+            "shot": "shots/not-found-forced-colors-web-prod.webp",
+            "digest": "e01bdc6a088190d6a071be0999810eed11da36f65c7db6c7bc19e4354fc49ead"
+          },
+          "recovered": null,
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ]
+        }
+      }
+    },
+    "invite-link": {
+      "ranAt": "2026-10-19T19:20:07.401Z",
+      "ms": 14234,
+      "rn-web": {
+        "search": "",
+        "aiSwitch": "false",
+        "mentionsCode": true,
+        "vault": {
+          "databases": [
+            "splotch-beta-ai-vault-v1",
+            "splotch-beta-offline-library-v1",
+            "splotch-candidate-unsaved-pictures"
+          ],
+          "local": [],
+          "alerts": [],
+          "inputs": []
+        },
+        "api": [],
+        "shot": {
+          "settled": true,
+          "settleMs": 2002,
+          "frames": 6,
+          "shot": "shots/invite-ai-settings-rn-web.webp",
+          "digest": "3028ac99911601b61051851fba12ca48421d71e038cacabe93299a1c363ccaed"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "search": "",
+        "aiSwitch": "false",
+        "mentionsCode": true,
+        "vault": {
+          "databases": [
+            "splotch-secure"
+          ],
+          "local": [
+            "splotch-free-generation-badge-hint",
+            "splotch-secure-vault-empty"
+          ],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "radio",
+              "value": "bug",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "fea…ure",
+              "readOnly": false
+            },
+            {
+              "type": "checkbox",
+              "value": "on",
+              "readOnly": false
+            },
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ]
+        },
+        "api": [],
+        "shot": {
+          "settled": true,
+          "settleMs": 2094,
+          "frames": 6,
+          "shot": "shots/invite-ai-settings-web-prod.webp",
+          "digest": "4d50ed6f9c85c96f3b6302e3377903025cfebe70e06152154455561c3e546cdd"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "vault-save-reload-and-connection-loss": {
+      "ranAt": "2026-10-19T19:24:22.798Z",
+      "ms": 60742,
+      "rn-web": {
+        "api": [
+          {
+            "method": "GET",
+            "pathname": "/api/free-generation-grant",
+            "origin": "http://127.0.0.1:5300"
+          },
+          {
+            "method": "POST",
+            "pathname": "/api/verify-key",
+            "origin": "http://127.0.0.1:5300"
+          },
+          {
+            "method": "GET",
+            "pathname": "/api/free-generation-grant",
+            "origin": "http://127.0.0.1:5300"
+          },
+          {
+            "method": "POST",
+            "pathname": "/api/verify-key",
+            "origin": "http://127.0.0.1:5300"
+          }
+        ],
+        "savedAfterConnectionLoss": {
+          "databases": [
+            "splotch-beta-ai-vault-v1"
+          ],
+          "local": [],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************0000",
+              "readOnly": true
+            }
+          ],
+          "persistCalls": 0
+        },
+        "savedShot": {
+          "settled": true,
+          "settleMs": 2174,
+          "frames": 6,
+          "shot": "shots/vault-saved-rn-web.webp",
+          "digest": "f8dbf73fb49e6660206db488432d58b133dabc2af846e7fbfb7ce2977b559d93"
+        },
+        "afterReload": {
+          "databases": [
+            "splotch-beta-ai-vault-v1",
+            "splotch-beta-offline-library-v1",
+            "splotch-candidate-unsaved-pictures"
+          ],
+          "local": [],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************0000",
+              "readOnly": true
+            }
+          ]
+        },
+        "afterForget": {
+          "databases": [
+            "splotch-beta-ai-vault-v1"
+          ],
+          "local": [],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ]
+        },
+        "replacement": {
+          "databases": [
+            "splotch-beta-ai-vault-v1"
+          ],
+          "local": [],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************9999",
+              "readOnly": true
+            }
+          ]
+        },
+        "replacementAfterReload": {
+          "databases": [
+            "splotch-beta-ai-vault-v1",
+            "splotch-beta-offline-library-v1",
+            "splotch-candidate-unsaved-pictures"
+          ],
+          "local": [],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************9999",
+              "readOnly": true
+            }
+          ]
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "api": [
+          {
+            "method": "GET",
+            "pathname": "/api/free-generation-grant",
+            "origin": null
+          },
+          {
+            "method": "POST",
+            "pathname": "/api/verify-key",
+            "origin": "http://127.0.0.1:5400"
+          },
+          {
+            "method": "GET",
+            "pathname": "/api/free-generation-grant",
+            "origin": null
+          },
+          {
+            "method": "POST",
+            "pathname": "/api/verify-key",
+            "origin": "http://127.0.0.1:5400"
+          }
+        ],
+        "savedAfterConnectionLoss": {
+          "databases": [
+            "splotch-secure"
+          ],
+          "local": [
+            "splotch-ai-image-enabled",
+            "splotch-free-generation-badge-hint",
+            "splotch-free-generation-installation-v1"
+          ],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************0000",
+              "readOnly": true
+            },
+            {
+              "type": "radio",
+              "value": "bug",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "fea…ure",
+              "readOnly": false
+            },
+            {
+              "type": "checkbox",
+              "value": "on",
+              "readOnly": false
+            },
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ],
+          "persistCalls": 1
+        },
+        "savedShot": {
+          "settled": true,
+          "settleMs": 1991,
+          "frames": 6,
+          "shot": "shots/vault-saved-web-prod.webp",
+          "digest": "cb988e839a21891302c89511a50ce4ca723a824c0f437f80c74562182c517342"
+        },
+        "afterReload": {
+          "databases": [
+            "splotch-secure"
+          ],
+          "local": [
+            "splotch-ai-image-enabled",
+            "splotch-free-generation-badge-hint",
+            "splotch-free-generation-installation-v1",
+            "splotch-secure-vault-empty"
+          ],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************0000",
+              "readOnly": true
+            },
+            {
+              "type": "radio",
+              "value": "bug",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "fea…ure",
+              "readOnly": false
+            },
+            {
+              "type": "checkbox",
+              "value": "on",
+              "readOnly": false
+            },
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ]
+        },
+        "afterForget": {
+          "databases": [
+            "splotch-secure"
+          ],
+          "local": [
+            "splotch-ai-image-enabled",
+            "splotch-free-generation-badge-hint",
+            "splotch-free-generation-installation-v1"
+          ],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "bug",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "fea…ure",
+              "readOnly": false
+            },
+            {
+              "type": "checkbox",
+              "value": "on",
+              "readOnly": false
+            },
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ]
+        },
+        "replacement": {
+          "databases": [
+            "splotch-secure"
+          ],
+          "local": [
+            "splotch-ai-image-enabled",
+            "splotch-free-generation-badge-hint",
+            "splotch-free-generation-installation-v1"
+          ],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************9999",
+              "readOnly": true
+            },
+            {
+              "type": "radio",
+              "value": "bug",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "fea…ure",
+              "readOnly": false
+            },
+            {
+              "type": "checkbox",
+              "value": "on",
+              "readOnly": false
+            },
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ]
+        },
+        "replacementAfterReload": {
+          "databases": [
+            "splotch-secure"
+          ],
+          "local": [
+            "splotch-ai-image-enabled",
+            "splotch-free-generation-badge-hint",
+            "splotch-free-generation-installation-v1",
+            "splotch-secure-vault-empty"
+          ],
+          "alerts": [],
+          "inputs": [
+            {
+              "type": "text",
+              "value": "*********************************************9999",
+              "readOnly": true
+            },
+            {
+              "type": "radio",
+              "value": "bug",
+              "readOnly": false
+            },
+            {
+              "type": "radio",
+              "value": "fea…ure",
+              "readOnly": false
+            },
+            {
+              "type": "checkbox",
+              "value": "on",
+              "readOnly": false
+            },
+            {
+              "type": "text",
+              "value": "",
+              "readOnly": false
+            }
+          ]
+        },
+        "external": [],
+        "consoleErrors": []
+      }
     }
   },
   "browser": "chromium 141.0.7390.37 (headless)"

@@ -72,8 +72,9 @@ export const PROFILES = {
 
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
 
-export async function launch() {
+export async function launch(extra = {}) {
   return chromium.launch({
+    ...extra,
     executablePath: chromiumExecutablePath(chromium),
     // Keep the browser's own background services (sync, GCM, component updates) off the network.
     args: ['--disable-background-networking', '--disable-component-update', '--disable-sync'],

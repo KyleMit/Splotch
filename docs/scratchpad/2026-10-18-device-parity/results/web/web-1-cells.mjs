@@ -5,6 +5,7 @@ import { INSTALL_CELLS } from './web-1-install.mjs';
 import { SW_CELLS } from './web-1-sw.mjs';
 import { BACK_CELLS } from './web-1-back.mjs';
 import { SURFACE_CELLS } from './web-1-surface.mjs';
+import { MISC_CELLS } from './web-1-misc.mjs';
 
 export const RECORD = 'web-1-observations.json';
 
@@ -26,4 +27,5 @@ export const CELLS = {
   ...SW_CELLS,
   ...BACK_CELLS,
   ...SURFACE_CELLS,
+  ...MISC_CELLS,
 };
