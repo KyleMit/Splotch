@@ -177,6 +177,36 @@ describe('pencil take variety', () => {
     expect(only.play).toHaveBeenCalledTimes(2);
     loop.dispose();
   });
+  const teardowns = {
+    dispose: ({ loop }) => loop.dispose(),
+    abort: ({ controller }) => controller.abort(),
+    'media services reset': ({ only }) =>
+      only.listener({ isLoaded: true, playing: false, error: null, mediaServicesDidReset: true }),
+    'decoder error': ({ only }) =>
+      only.listener({ isLoaded: false, playing: false, error: 'decoder error' }),
+  };
+  for (const [name, teardown] of Object.entries(teardowns)) {
+    it(`never plays a released take when its seek lands after ${name}`, async () => {
+      const players = PENCIL_SOUNDS.map(() => nativePlayer());
+      const controller = new NativeAbortController();
+      const promise = loadDrawingLoop(controller.signal, vi.fn());
+      await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+      players[0].listener({ isLoaded: true, playing: false, error: null });
+      for (const failed of players.slice(1))
+        failed.listener({ isLoaded: false, playing: false, error: 'decoder error' });
+      const loop = await promise;
+      const [only] = players;
+      const land = holdSeeks(only);
+      loop.start();
+      loop.stop();
+      loop.start();
+      teardown({ loop, controller, only });
+      expect(only.release).toHaveBeenCalledOnce();
+      await land();
+      expect(only.play).toHaveBeenCalledOnce();
+      expect(only.seekTo).toHaveBeenCalledOnce();
+    });
+  }
   it('keeps playing the takes that loaded when one take fails', async () => {
     const f = takes();
     await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));

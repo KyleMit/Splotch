@@ -94,6 +94,10 @@ function createCuedPlayback(player: AudioPlayer) {
       sounded = false;
       return cue();
     },
+    // Teardown: a seek still in flight lands after release, and must not play the player.
+    cancel() {
+      wanted = false;
+    },
   };
 }
 
@@ -123,6 +127,7 @@ export async function loadPencilClip(
     signal.removeEventListener('abort', abort);
     let failed = false;
     // remove clears Expo's player registry; release tears down the platform player and observers.
+    playback.cancel();
     for (const cleanup of [
       () => subscription?.remove(),
       () => gain.dispose(),
