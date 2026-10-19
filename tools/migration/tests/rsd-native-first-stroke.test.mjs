@@ -30,9 +30,11 @@ const SEED_STROKE_POINTS = [
 // The renderer seam guards admission after retirement; the separate onset-order tests and native
 // comparisons qualify the timing change.
 vi.mock('../../../experiments/native-architecture/src/drawing/InkLayer.tsx', async () => {
-  const { createElement, forwardRef, useImperativeHandle, useLayoutEffect } = await import('react');
+  const { createElement, forwardRef, useImperativeHandle, useLayoutEffect, useSyncExternalStore } =
+    await import('react');
   return {
-    InkLayer: forwardRef(function ReadyInk({ strokes, drafts = [], onBusy }, ref) {
+    InkLayer: forwardRef(function ReadyInk({ strokes, live, onBusy }, ref) {
+      const drafts = useSyncExternalStore(live.subscribe, live.drafts);
       useImperativeHandle(ref, () => ({
         isReady: () => true,
         canStart: () => true,

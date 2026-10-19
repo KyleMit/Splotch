@@ -1,16 +1,8 @@
 // @vitest-environment happy-dom
-import {
-  act,
-  createElement,
-  forwardRef,
-  StrictMode,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from 'react';
+import { act, createElement, StrictMode, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { adoptedDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
+import { adoptedDrawing } from './native-paper-fixtures.mjs';
 import {
   drawingPaper,
   paperProjection,
@@ -21,18 +13,15 @@ import {
   DrawingSessionProvider,
   useDrawingHistory,
 } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import {
-  SvgUndoGhostLayer,
-  useSvgUndoGhostPlan,
-} from '../../experiments/native-architecture/src/drawing/SvgUndoGhost.tsx';
-import * as tileOwner from '../../experiments/native-architecture/src/drawing/useCrayonTileReadiness.tsx';
-import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
-import { CRAYON_BANDS } from '../../experiments/native-architecture/src/drawing/crayon.ts';
 import { SkiaInk } from '../../experiments/native-architecture/src/drawing/SkiaInk.tsx';
+import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
+import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
 import {
+  addStrokes,
+  createHistory,
   emptyDrawing,
   strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -40,8 +29,9 @@ import {
 const PLANE = { width: 400, height: 300 };
 
 const skia = vi.hoisted(() => ({
-  views: [],
-  canvases: 0,
+  shown: [],
+  surfaces: 0,
+  inkRenders: 0,
   ghosts: [],
   frames: new Map(),
   nextFrame: 0,
@@ -49,6 +39,7 @@ const skia = vi.hoisted(() => ({
   imageLoads: 0,
   plane: { width: 400, height: 300 },
   redraws: [],
+  nextView: 1,
 }));
 
 vi.mock('react-native', async () => {
@@ -67,66 +58,30 @@ vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts
   },
 }));
 
-// A recording canvas: each picture is the list of calls drawn into it.
-function recordingCanvas() {
-  const calls = [];
-  return new Proxy(
-    { calls },
-    {
-      get: (target, name) =>
-        name === 'calls' ? calls : (...args) => void calls.push([name, ...args]),
-    }
-  );
-}
-
-vi.mock('@shopify/react-native-skia', () => ({
-  FilterMode: { Linear: 1 },
-  MipmapMode: { None: 0 },
-  fitRects: (_fit, src, dst) => ({ src, dst }),
-  Skia: {
-    XYWHRect: (x, y, width, height) => ({ x, y, width, height }),
-    Paint: () => ({}),
-    PictureRecorder: () => {
-      const canvas = recordingCanvas();
-      return {
-        beginRecording: () => canvas,
-        finishRecordingAsPicture: () => ({ calls: canvas.calls }),
-      };
-    },
-    Surface: {
-      Make: (width, height) => {
-        const canvas = recordingCanvas();
-        return {
-          getCanvas: () => canvas,
-          flush: () => {},
-          makeImageSnapshot: () => ({ width: () => width, height: () => height, kind: 'ink' }),
-        };
-      },
-    },
+// Each SkiaInk render runs its commit probe once.
+vi.mock('../../experiments/native-architecture/src/drawing/perfProbe.ts', async (original) => ({
+  ...(await original()),
+  useInkCommitProbe: () => {
+    skia.inkRenders += 1;
   },
-  Canvas: () => {
-    skia.canvases += 1;
-    return null;
-  },
-  SkiaPictureView: forwardRef(({ picture }, ref) => {
-    useImperativeHandle(ref, () => ({ redraw: () => skia.redraws.push(picture) }), [picture]);
-    useEffect(() => {
-      skia.views.push(picture);
-    }, [picture]);
-    return null;
-  }),
 }));
+
+vi.mock('@shopify/react-native-skia', async () => {
+  const { recordingSkiaModule } = await import('./native-skia-recording-fixture.mjs');
+  return recordingSkiaModule({
+    onSurface: () => {
+      skia.surfaces += 1;
+    },
+    nativeId: () => skia.nextView++,
+    redraw: (id) => skia.redraws.push(skia.shown.findLast(([shown]) => shown === id)?.[1] ?? null),
+  });
+});
 
 // SVG hosts mount the real artwork resource consumers; CanvasKit tests own pixel assertions.
 vi.mock('react-native-svg', async () => {
   const { svgInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
   return svgInkViewSdk(loadImage);
 });
-
-vi.mock('../../experiments/native-architecture/src/drawing/skiaInkPainter.ts', () => ({
-  paintStroke: (canvas, stroke) => canvas.drawStroke(stroke.points.length),
-  decodeDataUriImage: () => null,
-}));
 
 let container;
 let root;
@@ -162,6 +117,9 @@ function drawingAppearance(child) {
   );
 }
 
+let feed;
+let cohort;
+let handle;
 function DrawingInk({ reference = paper, ...props }) {
   return drawingAppearance(
     createElement(
@@ -169,6 +127,10 @@ function DrawingInk({ reference = paper, ...props }) {
       { value: reference },
       createElement(SkiaInk, {
         ...props,
+        ref: (value) => {
+          handle = value;
+        },
+        live: feed,
         paperFrame: { ...PLANE, pageX: 0, pageY: 0 },
         brush: 'pen',
         color: 'Green',
@@ -181,21 +143,56 @@ function DrawingInk({ reference = paper, ...props }) {
   );
 }
 
-function render(drafts, strokes = committed, undoGhost = null, reference = paper) {
-  act(() => root.render(createElement(DrawingInk, { strokes, drafts, undoGhost, reference })));
+function render(strokes = committed, undoGhost = null, reference = paper) {
+  act(() => root.render(createElement(DrawingInk, { strokes, undoGhost, reference })));
 }
+
+function paintFrame() {
+  const callbacks = [...skia.frames.values()];
+  skia.frames.clear();
+  act(() => {
+    for (const callback of callbacks) callback(0);
+  });
+}
+
+// The responder's half of the feed: samples land and are published, a lift settles first.
+const contact = {
+  start(id, point, drawing = { ...emptyDrawing(), paper }) {
+    cohort.start(id, 'Green', 'pen', point, drawing, 'medium', () => paper);
+    feed.publish();
+  },
+  sample(id, point) {
+    cohort.sample(id, point);
+    feed.publish();
+  },
+  end(id) {
+    feed.settle();
+    const completed = cohort.finish(id);
+    feed.publish();
+    return completed;
+  },
+};
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(performance, 'now').mockReturnValue(0);
-  skia.views.length = 0;
-  skia.canvases = 0;
+  skia.shown.length = 0;
+  skia.surfaces = 0;
+  skia.inkRenders = 0;
   skia.ghosts.length = 0;
   skia.loadImages = true;
   skia.imageLoads = 0;
   skia.plane = PLANE;
   skia.redraws.length = 0;
   skia.frames.clear();
+  feed = createLiveInkFeed();
+  cohort = createContactCohort();
+  feed.connect(cohort);
+  vi.stubGlobal('SkiaViewApi', {
+    setJsiProperty: (nativeId, name, value) => {
+      if (name === 'picture') skia.shown.push([nativeId, value]);
+    },
+  });
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++skia.nextFrame;
     skia.frames.set(id, callback);
@@ -214,62 +211,133 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// A Skia Canvas re-records its element tree on the UI thread and draws twice for each change
-// (on the reconciler's commit, then again once the render resolves), each draw a full-paper blit
-// of the committed ink. The ink view takes one picture the JS thread recorded and draws it once.
-// Negative control: the Canvas element tree mounts a Canvas and never hands a view a picture.
-it('hands the ink view one picture per change, the committed ink beneath the stroke in progress', () => {
-  render([]);
-  expect(skia.canvases).toBe(0);
-  expect(skia.views).toHaveLength(1);
-  const [still] = skia.views;
-  expect(still.calls.map(([name]) => name)).toEqual(['drawImageRectOptions']);
-  expect(still.calls[0][1]).toMatchObject({ kind: 'ink' });
-  expect(still.calls[0][3]).toEqual({ x: 0, y: 0, ...PLANE });
+const drawn = (picture) => picture.calls.filter(([name]) => name === 'drawImageRectOptions');
 
-  render([
-    pen([
-      { x: 20, y: 20 },
-      { x: 60, y: 30 },
-      { x: 80, y: 70 },
-    ]),
+// Live ink reaches the view through Skia's JSI setter and renders no React (ADR-0178). The first
+// packet of a display frame is shown at once; the packets after it in that frame are shown
+// together at the next frame callback. Negative controls: handing ink over as React state renders
+// SkiaInk on every packet; handing it over per packet shows three pictures for the first frame;
+// waiting for the frame callback shows nothing until it runs.
+it('shows the first packet of a display frame at once and the rest of that frame together', () => {
+  render();
+  expect(skia.shown).toHaveLength(1);
+  expect(drawn(skia.shown[0][1]).length).toBeGreaterThan(0);
+  const renders = skia.inkRenders;
+  const surfaces = skia.surfaces;
+  contact.start('a', { x: 100, y: 100 });
+  expect(skia.shown).toHaveLength(2);
+  contact.sample('a', { x: 120, y: 100 });
+  contact.sample('a', { x: 140, y: 100 });
+  expect(skia.shown).toHaveLength(2);
+  paintFrame();
+  expect(skia.shown).toHaveLength(3);
+  expect(cohort.live()[0].ops).toEqual([
+    [1, 0],
+    [3, 1],
   ]);
-  expect(skia.views).toHaveLength(2);
-  const live = skia.views[1];
-  expect(live.calls.map(([name]) => name)).toEqual(['drawImageRectOptions', 'drawPicture']);
-  expect(live.calls[1][1].calls.at(-1)).toEqual(['drawStroke', 3]);
+  paintFrame();
+  contact.sample('a', { x: 160, y: 100 });
+  expect(skia.shown).toHaveLength(4);
+  paintFrame();
+  paintFrame();
+  expect(skia.shown).toHaveLength(4);
+  contact.sample('a', { x: 170, y: 100 });
+  contact.sample('a', { x: 180, y: 100 });
+  expect(skia.shown).toHaveLength(5);
+  // A lift paints what its frame has not shown yet, at once.
+  const completed = contact.end('a');
+  expect(skia.shown).toHaveLength(6);
+  expect(skia.frames.size).toBe(1);
+  expect(skia.inkRenders).toBe(renders);
+  render(
+    addStrokes(createHistory({ ...emptyDrawing(), paper, strokes: committed }), completed).drawing
+      .strokes
+  );
+  paintFrame();
+  expect(skia.inkRenders).toBe(renders + 1);
+  expect(skia.surfaces).toBe(surfaces);
+  expect(skia.shown).toHaveLength(6);
+});
+
+// Negative control: counting a packet that changed no ink as the frame's painting makes the moved
+// sample after it wait for the frame callback.
+it('leaves a frame free to paint at once after a packet that changed no ink', () => {
+  render();
+  contact.start('a', { x: 100, y: 100 });
+  paintFrame();
+  paintFrame();
+  const shown = skia.shown.length;
+  feed.publish();
+  expect(skia.shown).toHaveLength(shown);
+  contact.sample('a', { x: 140, y: 100 });
+  expect(skia.shown).toHaveLength(shown + 1);
+});
+
+// A blank picture's paper is adopted by its first contact, which records its ops until the layer
+// for that paper replays them. Negative control: requiring a layer before a contact may start
+// refuses the first contact on every fresh drawing.
+it('admits the first contact on unadopted paper and shows it once the paper is adopted', () => {
+  render([], null, UNADOPTED_PAPER);
+  expect(handle.canStart()).toBe(true);
+  expect(handle.readyPlan([]).ink).toBeUndefined();
+  contact.start('a', { x: 100, y: 100 }, emptyDrawing());
+  contact.sample('a', { x: 140, y: 100 });
+  paintFrame();
+  expect(skia.shown).toHaveLength(0);
+  render([], null, paper);
+  expect(skia.shown).toHaveLength(1);
+  expect(drawn(skia.shown[0][1]).length).toBeGreaterThan(0);
+  contact.sample('a', { x: 180, y: 100 });
+  paintFrame();
+  expect(skia.shown).toHaveLength(2);
+  expect(cohort.live()[0].ops).toHaveLength(3);
+});
+
+it('replays the live cohort when its committed ink changes mid-stroke, and leaves a dropped cohort', () => {
+  render();
+  contact.start('a', { x: 100, y: 100 });
+  contact.sample('a', { x: 140, y: 100 });
+  paintFrame();
+  const surfaces = skia.surfaces;
+  render([]);
+  expect(skia.surfaces).toBe(surfaces + 1);
+  expect(skia.shown).toHaveLength(4);
+  contact.sample('a', { x: 180, y: 100 });
+  paintFrame();
+  expect(handle.isReady()).toBe(true);
+  expect(() => handle.readyPlan([])).toThrow('still being prepared');
+  contact.end('a');
+  paintFrame();
+  expect(() => handle.readyPlan([])).toThrow('still being prepared');
+  // The cohort was never committed: the frame after its commit would have rendered, the layer
+  // rebuilds without it.
+  paintFrame();
+  expect(skia.surfaces).toBe(surfaces + 2);
+  const plan = handle.readyPlan([]);
+  expect(plan.ink(PLANE, plan.projection)).toBe('committed ink');
 });
 
 it('redraws the current picture after layout and cancels superseded or unmounted redraws', () => {
-  render([]);
+  render();
   paintFrame();
   expect(skia.redraws).toHaveLength(0);
   paintFrame();
-  expect(skia.redraws).toEqual([skia.views.at(-1)]);
-  render([
-    pen([
-      { x: 20, y: 20 },
-      { x: 60, y: 30 },
-    ]),
-  ]);
-  expect(skia.frames.size).toBe(0);
-  expect(skia.redraws).toHaveLength(1);
-
+  expect(skia.redraws).toEqual([skia.shown.at(-1)[1]]);
   skia.plane = { width: 300, height: 400 };
-  render([]);
+  render();
   paintFrame();
   const obsolete = [...skia.frames.values()][0];
   skia.plane = { width: 800, height: 600 };
-  render([]);
+  render();
   expect(skia.frames.size).toBe(1);
   act(() => obsolete(0));
   expect(skia.redraws).toHaveLength(1);
   paintFrame();
   paintFrame();
-  expect(skia.redraws).toEqual([skia.views[0], skia.views.at(-1)]);
+  expect(skia.redraws).toEqual([skia.shown[0][1], skia.shown.at(-1)[1]]);
 
   skia.plane = PLANE;
-  render([]);
+  render();
   const unmounted = [...skia.frames.values()][0];
   act(() => root.unmount());
   expect(skia.frames.size).toBe(0);
@@ -281,12 +349,12 @@ it.each([false, true])(
   'retains the pre-Undo raster and reprojects an active ghost when resize=%s',
   async (resize) => {
     const projection = paperProjection(paper);
-    render([], committed, null, projection);
+    render(committed, null, projection);
     expect(skia.ghosts).toHaveLength(0);
     const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
     const after = { ...before, strokes: [] };
     const feedback = feedbackFor(before, after);
-    render([], after.strokes, feedback, projection);
+    render(after.strokes, feedback, projection);
     expect(skia.ghosts).toHaveLength(1);
     expect(skia.ghosts[0]).toMatchObject({
       removed: committed,
@@ -295,32 +363,24 @@ it.each([false, true])(
       density: 1,
     });
     const current = resize ? paperProjection(paper, { width: 800, height: 600 }) : projection;
-    render([], after.strokes, feedback, current);
+    render(after.strokes, feedback, current);
     expect(skia.ghosts.at(-1).context.projection).toBe(current);
     expect(feedback.onFinished).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
     const count = skia.ghosts.length;
-    render([], committed);
+    render(committed);
     expect(skia.ghosts).toHaveLength(count);
     expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
     await act(async () => {});
   }
 );
 
-function paintFrame() {
-  const callbacks = [...skia.frames.values()];
-  skia.frames.clear();
-  act(() => {
-    for (const callback of callbacks) callback(0);
-  });
-}
-
 it('disposes the last-stroke ghost after Undo returns to unadopted paper', () => {
-  render([]);
+  render();
   const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
   const after = { ...before, paper: UNADOPTED_PAPER, strokes: [] };
-  const finished = vi.fn(() => render([], after.strokes, null, UNADOPTED_PAPER));
-  render([], after.strokes, feedbackFor(before, after, finished), UNADOPTED_PAPER);
+  const finished = vi.fn(() => render(after.strokes, null, UNADOPTED_PAPER));
+  render(after.strokes, feedbackFor(before, after, finished), UNADOPTED_PAPER);
   expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
   expect(skia.ghosts.at(-1)).toMatchObject({ before: { kind: 'ink' }, after: null });
   expect(finished).not.toHaveBeenCalled();
@@ -333,15 +393,15 @@ it('disposes the last-stroke ghost after Undo returns to unadopted paper', () =>
 });
 
 it('disposes an interrupted ghost once and cancels its pending paint frames', async () => {
-  render([]);
+  render();
   paintFrame();
   paintFrame();
   const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
   const after = { ...before, strokes: [] };
   const finished = vi.fn();
-  render([], after.strokes, feedbackFor(before, after, finished));
+  render(after.strokes, feedbackFor(before, after, finished));
   expect(skia.frames.size).toBe(1);
-  render([], after.strokes);
+  render(after.strokes);
   await act(async () => {});
   expect(finished).toHaveBeenCalledOnce();
   expect(skia.frames.size).toBe(0);
@@ -415,106 +475,6 @@ it.each(['keyboard', 'button'])(
   }
 );
 
-it.each(
-  ['none', 'prefix', 'exact-after', 'wrong-paper', 'wrong-prefix'].flatMap((kind) =>
-    ['crayon', 'pen'].map((brush) => [kind, brush])
-  )
-)('owns the SVG ghost pigments with a %s checkpoint and %s removal', async (kind, brush) => {
-  const raster = brush === 'crayon';
-  skia.loadImages = raster;
-  const prefix = Array.from({ length: 17 }, (_, index) => ({
-    brush: 'crayon',
-    width: 34,
-    seed: index + 1,
-    color: `#${(index + 1).toString(16).padStart(6, '0').toUpperCase()}`,
-    points: [{ x: 40, y: 40 }],
-  }));
-  const separator = pen([{ x: 20, y: 20 }]);
-  const green = { ...prefix[0], color: 'Green' };
-  const red = { ...prefix[0], color: 'Red' };
-  const tailPen = pen([{ x: 50, y: 50 }]);
-  const survivors = [...prefix, separator, green];
-  const after = { version: 5, pageId: 'blank', rainbow: 0, strokes: survivors };
-  const removed = raster ? [tailPen, red] : [tailPen];
-  const before = { ...after, strokes: [...after.strokes, ...removed] };
-  const checkpoint = {
-    id: 1,
-    base64: 'checkpoint',
-    paper: kind === 'wrong-paper' ? paper : LEGACY_PAPER,
-    projection: paperProjection(kind === 'wrong-paper' ? paper : LEGACY_PAPER),
-    strokes: kind === 'exact-after' ? after.strokes : [...prefix, separator],
-  };
-  const cached = kind === 'none' ? null : checkpoint;
-  if (kind === 'wrong-prefix') cached.strokes = [{ ...prefix[0] }, ...cached.strokes.slice(1)];
-  const valid = kind === 'prefix' || kind === 'exact-after';
-  const beforeTail =
-    kind === 'exact-after' ? removed : valid ? [green, ...removed] : before.strokes;
-  const afterTail = kind === 'exact-after' ? [] : valid ? [green] : after.strokes;
-  const display = after.strokes.slice(valid ? cached.strokes.length : 0);
-  const feedback = feedbackFor(before, after);
-  const requests = vi.spyOn(tileOwner, 'useCrayonTileResources');
-  let current;
-  function RasterPlan({ cue }) {
-    current.ghost = useSvgUndoGhostPlan(cue, cached).ghost;
-    return null;
-  }
-  function Owner({ cue }) {
-    const resources = tileOwner.useCrayonTileResources(display, 'light');
-    current = { resources };
-    return createElement(
-      tileOwner.CrayonTileResourceScope.Provider,
-      { value: resources },
-      raster && createElement(RasterPlan, { cue }),
-      cue &&
-        createElement(SvgUndoGhostLayer, {
-          feedback: cue,
-          checkpoint: cached,
-          frame: { ...PLANE, pageX: 0, pageY: 0 },
-        })
-    );
-  }
-  const renderOwner = (cue) => drawingAppearance(createElement(Owner, { cue }));
-  await act(async () => root.render(renderOwner(feedback)));
-  const pigmentCount = (strokes) =>
-    new Set(strokes.filter((stroke) => stroke.brush === 'crayon').map((stroke) => stroke.color))
-      .size;
-  expect(current.resources.byKey.size).toBe(pigmentCount(display) * CRAYON_BANDS.length);
-  expect(skia.imageLoads === 0).toBe(!raster);
-  expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
-  expect(current.ghost?.plan?.strokes).toEqual(raster ? beforeTail : undefined);
-  expect(current.ghost?.remaining?.strokes).toEqual(raster ? afterTail : undefined);
-  expect(current.ghost?.plan?.checkpoint).toBe(raster ? (valid ? cached : null) : undefined);
-  expect(current.ghost?.remaining?.checkpoint).toBe(raster ? (valid ? cached : null) : undefined);
-  expect(
-    planInk(before.strokes, cached, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).needsCheckpoint
-  ).toBe(raster || kind !== 'prefix');
-  const consumers = requests.mock.calls.map(([strokes], index) => ({
-    strokes,
-    count: requests.mock.results[index].value.byKey.size,
-  }));
-  expect(consumers).toEqual(
-    expect.arrayContaining(
-      raster
-        ? [
-            { strokes: beforeTail, count: pigmentCount(beforeTail) * CRAYON_BANDS.length },
-            { strokes: afterTail, count: pigmentCount(afterTail) * CRAYON_BANDS.length },
-          ]
-        : [
-            { strokes: [], count: 0 },
-            { strokes: removed, count: 0 },
-          ]
-    )
-  );
-  expect(
-    consumers.every(({ strokes, count }) => raster || strokes === display || count === 0)
-  ).toBe(true);
-  await act(async () => root.render(renderOwner(null)));
-  expect(current.ghost ?? null).toBeNull();
-  expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
-  expect(current.resources.byKey.size).toBe(pigmentCount(display) * CRAYON_BANDS.length);
-  requests.mockRestore();
-});
-
 it.each(['eraser', 'page'])(
   'finishes an unsupported %s native candidate without ghost work',
   async (kind) => {
@@ -525,8 +485,8 @@ it.each(['eraser', 'page'])(
     const before = { ...adoptedDrawing({ ...PLANE, pixelRatio: 1 }), strokes: [removed] };
     const after = { ...before, pageId: kind === 'page' ? 'butterfly' : before.pageId, strokes: [] };
     const feedback = feedbackFor(before, after);
-    render([], before.strokes, null, drawingPaper(before));
-    render([], after.strokes, feedback, drawingPaper(after));
+    render(before.strokes, null, drawingPaper(before));
+    render(after.strokes, feedback, drawingPaper(after));
     expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
     expect(skia.ghosts).toHaveLength(0);
     expect(feedback.onFinished).toHaveBeenCalledTimes(1);

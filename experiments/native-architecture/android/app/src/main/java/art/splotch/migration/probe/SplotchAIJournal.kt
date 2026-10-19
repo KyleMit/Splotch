@@ -16,8 +16,8 @@ class SplotchAIJournal(private val context: Context) {
   private val executor = Executors.newSingleThreadExecutor()
   private val root get() = File(context.noBackupFilesDir, "splotch-ai-journal-v1")
   private val maxModel = 8 * 1024 * 1024
-  private val currentOriginalVersions = setOf(5L, 7L)
-  private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 7L)
+  private val currentOriginalVersions = setOf(5L, 7L, 8L)
+  private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 7L, 8L)
   private val drawingRainbowCount = 10L
   private val drawingPaperWidth = 1024.0
   private val drawingPaperHeight = 768.0
@@ -360,7 +360,7 @@ class SplotchAIJournal(private val context: Context) {
       1L -> setOf("version", "strokes")
       2L -> if (value.has("pageId")) setOf("version", "pageId", "strokes") else setOf("version", "rainbow", "strokes")
       3L, 4L, 5L -> setOf("version", "pageId", "rainbow", "strokes")
-      7L -> setOf("version", "paper", "pageId", "rainbow", "strokes")
+      7L, 8L -> setOf("version", "paper", "pageId", "rainbow", "strokes")
       else -> error("Original drawing version unavailable")
     }
     check(value.keys().asSequence().toSet() == expected)

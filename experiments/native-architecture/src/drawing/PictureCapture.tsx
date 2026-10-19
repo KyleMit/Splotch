@@ -54,6 +54,16 @@ function captureTarget(packet: PictureRequest): CaptureTarget {
   return { raster: ios ? size : boundedRasterSize(exported.size), exported };
 }
 
+// The grid an SVG ink capture produces, which the rest of a capture expects: iOS draws the view
+// box at the screen scale (see captureTarget).
+function inkGrid(packet: PictureRequest, raster: PaperSize): PaperSize {
+  if (Platform.OS !== 'ios') return raster;
+  return {
+    width: Math.round(raster.width * packet.pixelRatio),
+    height: Math.round(raster.height * packet.pixelRatio),
+  };
+}
+
 function composeExport(
   layer: string,
   exported: PictureExport | null,
@@ -63,6 +73,51 @@ function composeExport(
   return import('./pictureCompose').then(({ composePicture }) =>
     composePicture(layer, exported, includePaperTexture)
   );
+}
+
+// Native ink is already raster: its committed pixels are the capture's ink (ADR-0178).
+function useCommittedInk(
+  packet: PictureRequest,
+  raster: PaperSize,
+  captured: boolean,
+  accept: (pixels: string, kind: PictureRequest['kind']) => void,
+  fail: (error: unknown) => void
+) {
+  const committedInk = packet.plan.ink;
+  useEffect(() => {
+    if (!committedInk || captured) return;
+    if (!packet.isCurrent()) {
+      fail(new Error('The picture changed before capture finished.'));
+      return;
+    }
+    try {
+      accept(committedInk(inkGrid(packet, raster), packet.plan.projection), 'ink');
+    } catch (error) {
+      fail(error);
+    }
+  }, [committedInk, captured, packet, raster, accept, fail]);
+  return committedInk;
+}
+
+// A capture that has not finished within PNG_TIMEOUT_MS fails; unmounting cancels it.
+function useCaptureLifetime(
+  captures: ReturnType<typeof createSvgCapture>,
+  request: PngCaptureRequest,
+  fail: (error: unknown) => void,
+  current: { current: boolean }
+) {
+  useEffect(() => {
+    const timeout = setTimeout(
+      () => fail(new Error('Picture capture did not finish. Your drawing is still here.')),
+      PNG_TIMEOUT_MS
+    );
+    return () => {
+      current.current = false;
+      clearTimeout(timeout);
+      captures.dispose();
+      request.cancel('Picture capture was cancelled.');
+    };
+  }, [captures, request, fail, current]);
 }
 
 export function PictureCapture({ packet }: { packet: PictureRequest }) {
@@ -103,6 +158,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   function loaded() {
     if (current.current && packet.isCurrent()) setImageLoaded(true);
   }
+  const committedInk = useCommittedInk(packet, target.raster, base64 !== null, accept, fail);
 
   useEffect(() => {
     if (!ready || base64) return;
@@ -129,18 +185,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
     return () => job.cancel();
   }, [imageLoaded, outlineReady, captures, packet, target, accept, fail]);
 
-  useEffect(() => {
-    const timeout = setTimeout(
-      () => fail(new Error('Picture capture did not finish. Your drawing is still here.')),
-      PNG_TIMEOUT_MS
-    );
-    return () => {
-      current.current = false;
-      clearTimeout(timeout);
-      captures.dispose();
-      request.cancel('Picture capture was cancelled.');
-    };
-  }, [captures, request, fail]);
+  useCaptureLifetime(captures, request, fail, current);
 
   return (
     <InkPaperScope.Provider value={packet.plan.projection}>
@@ -156,13 +201,15 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
             <DecodedPng base64={base64} size={target.raster} onLoad={loaded} onError={fail} />
           ) : null}
           {!base64 ? (
-            <FixedInkCapture
-              plan={packet.plan}
-              raster={raster}
-              svgRef={ink}
-              onReady={() => setReady(true)}
-              onError={fail}
-            />
+            committedInk ? null : (
+              <FixedInkCapture
+                plan={packet.plan}
+                raster={raster}
+                svgRef={ink}
+                onReady={() => setReady(true)}
+                onError={fail}
+              />
+            )
           ) : (
             <CaptureSvg
               ref={output}

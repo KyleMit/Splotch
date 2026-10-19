@@ -12,11 +12,12 @@ export const CrayonTileResourceScope = createContext<CrayonTileResources | null>
 export function useCrayonTileResources(
   strokes: readonly Stroke[],
   theme: 'light' | 'dark',
-  selected?: PaintColor
+  selected?: PaintColor,
+  drafts?: readonly Stroke[]
 ) {
   const inherited = useContext(CrayonTileResourceScope);
   const [resources] = useState(() => createCrayonTileResources());
-  return resources(strokes, theme, selected, inherited);
+  return resources(strokes, theme, selected, inherited, drafts);
 }
 
 export function useCrayonTileReadiness(uris: readonly string[], onError: (error: unknown) => void) {

@@ -1,8 +1,8 @@
-import { parseDrawing } from '../drawing/model';
+import { parseDrawing } from '../drawing/drawingFormat';
 
 export const MAX_AI_MODEL_BYTES = 8 * 1024 * 1024;
-export const AI_ORIGINAL_CURRENT_VERSIONS = [5, 7] as const;
-export const AI_ORIGINAL_IMPORT_VERSIONS = [1, 2, 3, 4, 5, 7] as const;
+export const AI_ORIGINAL_CURRENT_VERSIONS = [5, 7, 8] as const;
+export const AI_ORIGINAL_IMPORT_VERSIONS = [1, 2, 3, 4, 5, 7, 8] as const;
 type OriginalAdmission = 'current' | 'imported';
 
 export function validateAiOriginalModel(originalModel: string, admission: OriginalAdmission): void {

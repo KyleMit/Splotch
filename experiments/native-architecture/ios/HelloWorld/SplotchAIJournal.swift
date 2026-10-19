@@ -6,8 +6,8 @@ import Darwin
 final class SplotchAIJournal {
   private let queue = DispatchQueue(label: "art.splotch.ai-journal")
   private let maxModel = 8 * 1024 * 1024
-  private let currentOriginalVersions: Set<Int64> = [5, 7]
-  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 7]
+  private let currentOriginalVersions: Set<Int64> = [5, 7, 8]
+  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 7, 8]
   private let drawingRainbowCount: Int64 = 10
   private let drawingPaperWidth = 1024.0
   private let drawingPaperHeight = 768.0
@@ -364,7 +364,7 @@ final class SplotchAIJournal {
     case 1: expected = ["version", "strokes"]
     case 2: expected = value["pageId"] == nil ? ["version", "rainbow", "strokes"] : ["version", "pageId", "strokes"]
     case 3, 4, 5: expected = ["version", "pageId", "rainbow", "strokes"]
-    case 7: expected = ["version", "paper", "pageId", "rainbow", "strokes"]
+    case 7, 8: expected = ["version", "paper", "pageId", "rainbow", "strokes"]
     default: throw failure()
     }
     try keys(value, expected)

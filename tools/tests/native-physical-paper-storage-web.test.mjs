@@ -3,8 +3,8 @@ import {
   addStrokes,
   createHistory,
   emptyDrawing,
-  parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { legacyDrawing } from './native-paper-fixtures.mjs';
@@ -26,12 +26,12 @@ describe('physical paper drawing format', () => {
   it.each([
     { width: 342, height: 256.5, pixelRatio: 1 },
     { width: 760, height: 570, pixelRatio: 3 },
-  ])('round-trips adopted v7 contact paper and exact widths at %j', async (frame) => {
+  ])('round-trips adopted v8 contact paper and exact widths at %j', async (frame) => {
     const drawing = contactedDrawing(frame);
     const before = JSON.stringify(drawing);
     const reopened = parseDrawing(JSON.parse(JSON.stringify(drawing)));
     expect(reopened).toEqual(drawing);
-    expect(reopened.version).toBe(7);
+    expect(reopened.version).toBe(8);
     expect(reopened.paper).toEqual({
       kind: 'adopted',
       cssWidth: frame.width,

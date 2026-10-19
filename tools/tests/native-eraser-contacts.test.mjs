@@ -5,9 +5,9 @@ import { createContactCohort } from '../../experiments/native-architecture/src/d
 import {
   addStrokes,
   createHistory,
-  parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { MAX_CRAYON_SEED } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
 

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  appendOutcome,
   COHORT_SETTLE_MS,
   createPerfCohorts,
   PERF_LINE_VERSION,
   PERF_LOG_TAG,
 } from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
-import { appendPoint } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  appendPoint,
+  sampleOutcome,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const CLOCK_JOIN = { clock: 'mach_absolute_time', errorMs: 0 };
 
@@ -63,17 +65,22 @@ const stroke = (points) => ({
   points: Array.from({ length: points }, (_, x) => ({ x, y: 0 })),
 });
 
-describe('appendOutcome', () => {
-  // Negative control: classifying by array identity alone would call both rejections duplicates.
-  it('names what appendPoint did with each sample', () => {
+describe('sampleOutcome', () => {
+  // Negative control: classifying by whether the stroke grew would call both rejections duplicates.
+  it('names what the stroke keeps of each sample, as appendPoint keeps it', () => {
     const points = [{ x: 10, y: 10 }];
-    const classify = (point, includeEndpoint) =>
-      appendOutcome(points, appendPoint(points, point, includeEndpoint), point);
-    expect(classify({ x: 20, y: 20 }, false)).toBe('appended');
-    expect(classify({ x: 10, y: 10 }, true)).toBe('duplicate');
-    expect(classify({ x: 10, y: 10 }, false)).toBe('duplicate');
-    expect(classify({ x: 10.5, y: 10 }, false)).toBe('minDistanceRejected');
-    expect(classify({ x: 10.5, y: 10 }, true)).toBe('appended');
+    for (const [point, includeEndpoint, outcome] of [
+      [{ x: 20, y: 20 }, false, 'appended'],
+      [{ x: 10, y: 10 }, true, 'duplicate'],
+      [{ x: 10, y: 10 }, false, 'duplicate'],
+      [{ x: 10.5, y: 10 }, false, 'minDistanceRejected'],
+      [{ x: 10.5, y: 10 }, true, 'appended'],
+    ]) {
+      expect(sampleOutcome(points, point, includeEndpoint)).toBe(outcome);
+      expect(appendPoint(points, point, includeEndpoint).length > points.length).toBe(
+        outcome === 'appended'
+      );
+    }
   });
 });
 
@@ -113,9 +120,13 @@ describe('createPerfCohorts', () => {
         minDistanceRejected: 1,
         inkLayoutEffectCommits: 0,
         surfaceLayoutEffectCommits: 0,
-        draftRecord: { n: 0, totalMs: 0, maxMs: 0 },
+        liveFlush: { n: 0, totalMs: 0, maxMs: 0 },
         sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
         inputToSubmission: { n: 0 },
+        oldestToSubmission: { n: 0 },
+        firstDotMs: null,
+        handoffs: 0,
+        submissionGap: { n: 0 },
         clockJoin: CLOCK_JOIN,
       },
     ]);
@@ -217,19 +228,22 @@ describe('createPerfCohorts', () => {
   it('times each recording and keeps its count, total and slowest', () => {
     const { cohorts, lines, advance } = harness();
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
-    for (const ms of [1.234, 3.5, 0.25]) cohorts.timed('draftRecord', ms);
+    for (const ms of [1.234, 3.5, 0.25]) cohorts.timed('liveFlush', ms);
     cohorts.timed('sceneRecord', 0.5);
     cohorts.idle();
     advance(COHORT_SETTLE_MS);
-    expect(lines[0].draftRecord).toEqual({ n: 3, totalMs: 4.98, maxMs: 3.5 });
+    expect(lines[0].liveFlush).toEqual({ n: 3, totalMs: 4.98, maxMs: 3.5 });
     expect(lines[0].sceneRecord).toEqual({ n: 1, totalMs: 0.5, maxMs: 0.5 });
   });
 
-  it('measures each submitted picture from the newest sample it carries', () => {
+  // Negative controls: measuring each hand-off from its newest sample in place of its oldest, or
+  // timing the first dot at the latest hand-off instead of the first, fails here.
+  it('measures each submitted picture from the newest and the oldest sample it carries', () => {
     const { cohorts, lines, clock, advance } = harness();
     clock.at = 1000;
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     cohorts.stroke(990);
+    cohorts.flushed();
     advance(4);
     cohorts.submitted();
     cohorts.submitted();
@@ -241,6 +255,7 @@ describe('createPerfCohorts', () => {
       cohorts.sampleTime(sample);
       cohorts.append(appended ? 'appended' : 'duplicate');
     }
+    cohorts.flushed();
     advance(16);
     cohorts.submitted();
     cohorts.idle();
@@ -252,6 +267,66 @@ describe('createPerfCohorts', () => {
       maxMs: 20,
       minMs: 14,
     });
+    expect(lines[0].oldestToSubmission).toEqual({
+      n: 2,
+      p50Ms: 14,
+      p95Ms: 24,
+      maxMs: 24,
+      minMs: 14,
+    });
+    expect(lines[0].firstDotMs).toBe(14);
+  });
+
+  // A picture built before the next flush, as a rebuild is, lacks the samples taken since the last
+  // one; they are measured at the hand-off that carries them. Negative control: counting every
+  // sample taken at any hand-off reads 8 ms here and then nothing for the hand-off that carried it.
+  it('measures a sample at the first hand-off after a flush records it', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    clock.at = 100;
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    cohorts.stroke(100);
+    cohorts.flushed();
+    cohorts.submitted();
+    cohorts.sampleTime(108);
+    cohorts.append('appended');
+    advance(16);
+    cohorts.submitted();
+    advance(14);
+    cohorts.flushed();
+    advance(5);
+    cohorts.submitted();
+    cohorts.idle();
+    advance(COHORT_SETTLE_MS);
+    expect(lines[0].inputToSubmission).toEqual({
+      n: 2,
+      p50Ms: 0,
+      p95Ms: 27,
+      maxMs: 27,
+      minMs: 0,
+    });
+    expect(lines[0].handoffs).toBe(3);
+  });
+
+  // Negative control: counting a hand-off made after the last lift adds one more hand-off and a
+  // gap across the settle, which is not ink cadence.
+  it('counts hand-offs while a contact is held and the gaps between them', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    cohorts.stroke(clock.at);
+    cohorts.flushed();
+    for (const gap of [0, 8, 16]) {
+      advance(gap);
+      cohorts.submitted();
+    }
+    cohorts.idle();
+    advance(COHORT_SETTLE_MS - 1);
+    cohorts.submitted();
+    advance(1);
+    expect(lines[0]).toMatchObject({
+      handoffs: 3,
+      submissionGap: { n: 2, p50Ms: 8, p95Ms: 16, maxMs: 16, minMs: 8 },
+      firstDotMs: 0,
+    });
   });
 
   it('reports nearest-rank percentiles over every submission', () => {
@@ -259,6 +334,7 @@ describe('createPerfCohorts', () => {
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     for (let interval = 1; interval <= 20; interval += 1) {
       cohorts.stroke(clock.at - interval);
+      cohorts.flushed();
       cohorts.submitted();
     }
     cohorts.idle();
@@ -276,6 +352,11 @@ describe('createPerfCohorts', () => {
     const { cohorts, lines, advance } = harness();
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     cohorts.stroke(-100);
+    cohorts.sampleTime(-90);
+    cohorts.append('appended');
+    cohorts.flushed();
+    cohorts.sampleTime(-80);
+    cohorts.append('appended');
     cohorts.idle();
     advance(COHORT_SETTLE_MS);
     cohorts.packet(packet('start', [{ identifier: 'b', samples: 1 }]));
@@ -290,7 +371,7 @@ describe('createPerfCohorts', () => {
     cohorts.idle();
     cohorts.append('appended');
     cohorts.drained([stroke(4)]);
-    cohorts.timed('draftRecord', 9);
+    cohorts.timed('liveFlush', 9);
     cohorts.inkCommit();
     cohorts.surfaceCommit();
     advance(COHORT_SETTLE_MS);
