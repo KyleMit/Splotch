@@ -3,12 +3,15 @@ import { fileURLToPath } from 'node:url';
 // Applied (not simulated) throttling: DevTools' Slow 4G values + 4x CPU through CDP, cold cache.
 // Records FCP, LCP, and "handlers at" — the moment the Purple swatch carries React props, i.e. a
 // tap would be handled — plus "settled at", when the clear underlay (client-only) mounts.
-// node tti-probe.mjs <url> <label> <samples> [width]x[height]
+// node tti-probe.mjs <url> <label> <samples> [width]x[height] [repeat]
+// With `repeat`, each sample first loads the page unthrottled (installing the service worker and
+// filling the HTTP cache), then measures a throttled reload with the cache left on.
 import { createRequire } from 'node:module';
 const REPO = fileURLToPath(new URL('../../../../', import.meta.url));
 const require = createRequire(join(REPO, 'package.json'));
 const { chromium } = require('playwright');
-const [url, label, samplesArg = '3', size = '412x915'] = process.argv.slice(2);
+const [url, label, samplesArg = '3', size = '412x915', visit = 'first'] = process.argv.slice(2);
+const repeat = visit === 'repeat';
 const [width, height] = size.split('x').map(Number);
 const SLOW_4G = {
   offline: false,
@@ -28,7 +31,10 @@ for (let i = 0; i < Number(samplesArg); i++) {
   const page = await context.newPage();
   const cdp = await context.newCDPSession(page);
   await cdp.send('Network.enable');
-  await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+  if (repeat) {
+    await page.goto(url, { waitUntil: 'load' });
+    await page.waitForTimeout(4000);
+  } else await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
   await cdp.send('Network.emulateNetworkConditions', SLOW_4G);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await page.addInitScript(() => {

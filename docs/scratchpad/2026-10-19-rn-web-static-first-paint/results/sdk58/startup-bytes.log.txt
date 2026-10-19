@@ -1,0 +1,8 @@
+exports/baseline2 total 838334 inlineJS 315 inlineCSS 528
+    3751 _expo/static/js/web/__expo-metro-runtime.js
+    806925 _expo/static/js/web/index.js
+    26815 _expo/static/css/strict.css
+exports/proto6 total 845064 inlineJS 1964 inlineCSS 3244
+    3751 _expo/static/js/web/__expo-metro-runtime.js
+    809290 _expo/static/js/web/index.js
+    26815 _expo/static/css/strict.css

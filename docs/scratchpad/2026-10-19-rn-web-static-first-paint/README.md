@@ -1,9 +1,11 @@
 # React Native web static first paint — spike evidence, 2026-10-19
 
 The working behind [ADR-0180](../../adrs/0180-rn-web-paints-a-prerendered-first-frame.md)
-(proposed): measurements, the harness that produced them, and the checks behind each claim. The base
-is `origin/codex/native-migration` at 0cc444886 (Expo SDK 57.0.26, React Native Web 0.21.0, React
-19.2.3).
+(proposed): measurements, the harness that produced them, and the checks behind each claim. The
+investigation ran on `origin/codex/native-migration` at 0cc444886 (Expo SDK 57.0.26, React Native
+Web 0.21.0, React 19.2.3), sections Method through Findings. The PR then merged the base at
+00fcc5c78 (Expo SDK 58.0.14, React 19.3.0, React Native Web 0.21.4, ADR-0179's fifth cut), and
+[the final measurement](#final-measurement-on-the-sdk-58-base) repeats the headline cells there.
 
 ## Method
 
@@ -19,10 +21,11 @@ is `origin/codex/native-migration` at 0cc444886 (Expo SDK 57.0.26, React Native 
   `--disable-storage-reset`. Rows are in `results/*.rows.json`; the tables show medians. The host
   was an Apple-silicon Mac, idle apart from the run.
 * **Applied throttling.** `harness/tti-probe.mjs` drives Chromium through the DevTools protocol:
-  Slow 4G with 562.5 ms latency and 1,474.56 kbps down, 4× CPU, cache disabled, phone 412×915. It
-  records first contentful paint, Largest Contentful Paint, **handlers**, the first frame in which
-  the Purple swatch carries React props (a tap would be handled), and **settled**, when the
-  client-only clear underlay mounts. Output is in `results/applied-throttling.log.txt`.
+  Slow 4G with 562.5 ms latency and 1,474.56 kbps down, 4× CPU, cache disabled (or, with `repeat`,
+  after an unthrottled priming load), phone 412×915. It records first contentful paint, Largest
+  Contentful Paint, **handlers**, the first frame in which the Purple swatch carries React props (a
+  tap would be handled), and **settled**, when the client-only clear underlay mounts. Output is in
+  `results/applied-throttling.log.txt`.
 
 | Variant    | What it is                                                                                                                                                        |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -72,6 +75,38 @@ is 870,798. proto5 adds:
 * +2,680 of inlined critical CSS.
 
 The shell is 925 bytes brotli at baseline and 7,304 (210,790 raw) with twelve variants.
+
+## Final measurement on the SDK 58 base
+
+`baseline` is 00fcc5c78 built in a scratch worktree; `prerender` is this PR's merge of it. Rows are
+in `results/sdk58/`.
+
+| Simulated (Slow 4G, 4× CPU), medians of three | Baseline      | Prerender     |
+| --------------------------------------------- | ------------- | ------------- |
+| First visit LCP, phone / tablet               | 2,785 / 2,784 | 1,201 / 1,201 |
+| First visit FCP, phone and tablet             | 1,051         | 751           |
+| First visit Speed Index, phone / tablet       | 1,107 / 1,107 | 861 / 859     |
+| Repeat visit LCP (304 revalidation)           | 750           | 900           |
+| Unthrottled first visit LCP, phone / tablet   | 73 / 70       | 27 / 23       |
+| CLS                                           | 0–0.009       | 0             |
+
+| Applied throttling, phone, medians of three | FCP   | LCP   | Handlers | Settled |
+| ------------------------------------------- | ----- | ----- | -------- | ------- |
+| Baseline, first visit                       | 2,964 | 3,628 | 2,958    | 4,242   |
+| Prerender, first visit                      | 1,260 | 1,260 | 3,058    | 3,693   |
+| Baseline, repeat visit                      | 684   | 684   | 678      | 687     |
+| Prerender, repeat visit                     | 608   | 608   | 691      | 705     |
+
+The simulated repeat visit is 150 ms worse; the applied one paints 76 ms sooner. The difference is
+Finding 2: with the bundle held, `load` fires before the paint is presented, and Lantern counts the
+favicon and manifest-icon revalidations it triggers. On 0cc444886 the baseline's repeat visit was
+900 ms as well; ADR-0179's granular chunking moved it to 750.
+
+Startup path (`results/sdk58/startup-bytes.log.txt`): baseline 838,334 bytes, prerender 845,064,
+against the 850,230 cap. The build passes. The prerender adds +2,365 in the entry chunk, +1,649 of
+boot script and +2,716 of critical CSS. The shell is 910 bytes brotli at baseline and 7,265 (210,748
+raw) with twelve variants. The pixel and DOM checks below reproduce on this base
+(`results/sdk58/pixel-compare.log.txt`, `results/sdk58/hydrated-vs-fresh.log.txt`).
 
 ## Findings
 

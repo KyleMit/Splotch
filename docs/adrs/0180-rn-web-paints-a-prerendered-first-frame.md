@@ -5,24 +5,26 @@
 
 ## Context
 
-ADR-0179 cut the React Native web export's startup path from 5.17 MB to 870,798 bytes and its
+ADR-0179 cut the React Native web export's startup path from 5.17 MB to 838,334 bytes and its
 throttled Largest Contentful Paint (LCP) from 13.2 s to about 2.7 s. It named the remaining lever:
 the export's document is empty until the bundle mounts, while the shipping app paints prerendered
 HTML. The owner's priority is to get the first LCP down and accept a later time to interactive.
 
-The baseline is `origin/codex/native-migration` at 0cc444886. It was measured with Lighthouse 13.5.0
-on the `tools/page-load` phone and tablet profiles, through a local brotli server, taking the median
-of three runs. The evidence and harness are in
+The baseline is `origin/codex/native-migration` at 00fcc5c78 (Expo SDK 58, React 19.3, after
+ADR-0179's fifth cut). It was measured with Lighthouse 13.5.0 on the `tools/page-load` phone and
+tablet profiles, through a local brotli server that revalidates with 304s, taking the median of
+three runs. The investigation itself ran on 0cc444886 (SDK 57); the alternatives below come from
+there. The evidence and harness are in
 [`docs/scratchpad/2026-10-19-rn-web-static-first-paint/`](../scratchpad/2026-10-19-rn-web-static-first-paint/README.md).
 
-| Simulated Slow 4G, 4× CPU      | FCP      | LCP      | Speed Index |
-| ------------------------------ | -------- | -------- | ----------- |
-| Phone, first visit             | 1,051 ms | 2,820 ms | 1,161 ms    |
-| Tablet, first visit            | 1,051 ms | 2,818 ms | 1,161 ms    |
-| Repeat visit (304 revalidated) | 609 ms   | 900 ms   | 609 ms      |
+| Simulated Slow 4G, 4× CPU | FCP      | LCP      | Speed Index |
+| ------------------------- | -------- | -------- | ----------- |
+| Phone, first visit        | 1,051 ms | 2,785 ms | 1,107 ms    |
+| Tablet, first visit       | 1,051 ms | 2,784 ms | 1,107 ms    |
+| Repeat visit              | 609 ms   | 750 ms   | 609 ms      |
 
-Unthrottled, LCP is 67 ms. Under applied throttling the phone's LCP is 3,772 ms and its controls
-take taps at 3,062 ms. The LCP element is the paper texture (`PaperTexture.web.tsx`): a `div` whose
+Unthrottled, LCP is 70–73 ms. Under applied throttling the phone's LCP is 3,628 ms and its controls
+take taps at 2,958 ms. The LCP element is the paper texture (`PaperTexture.web.tsx`): a `div` whose
 CSS background is the handmade-paper WebP, not the flat paper colour the boot script paints.
 
 ### Why the first frame could not simply be server-rendered
@@ -99,8 +101,8 @@ So the hydrating render must equal the markup; only a later render may move it.
 
 ### Alternatives measured
 
-All rows are first visits, simulated Slow 4G and 4× CPU, phone, median of three. Speed Index is
-abbreviated SI.
+All rows were measured on 0cc444886 (SDK 57): first visits, simulated Slow 4G and 4× CPU, phone,
+median of three. Speed Index is abbreviated SI.
 
 | Alternative                                                                     | FCP      | LCP      | SI       |
 | ------------------------------------------------------------------------------- | -------- | -------- | -------- |
@@ -144,10 +146,10 @@ document.
   * `Dimensions.set` supplies the window.
   * The build lends happy-dom's `DOMParser`, and nothing else, so `SvgXml` can parse icons. The
     render has no `window`.
-* **The document.** Each variant becomes an inert `<template>`. Twelve are 210,790 bytes raw and
-  7,304 brotli, against 925 for an empty shell. The document also gets:
+* **The document.** Each variant becomes an inert `<template>`. Twelve are 210,748 bytes raw and
+  7,265 brotli, against 910 for an empty shell. The document also gets:
   * React Native Web's sheet as `<style id="react-native-stylesheet">`, cut to the rules the markup
-    uses plus the sheet's group markers: 2,680 bytes of 13,786.
+    uses plus the sheet's group markers: 2,716 bytes, about a fifth of the full server sheet.
   * The paper texture, preloaded at `fetchpriority="high"`.
   * The bundle's `<script defer>` tags, moved into a JSON list.
 * **Expo's `getStyleElement` is not used.** It looks `getSheet` up on React Native Web's module
@@ -217,7 +219,8 @@ Node before its fix.
 | Palette gap off a variant's viewport | `edgeLayout.ts`                                                            | variant    | variant, then live         | one relayout (390×844: 12.4 → 8 px, 3.6% of pixels)        |
 | Saved settings that change the frame | toolbar style, button size, drawer, colours                                | defaults   | —                          | no frame for a visitor with a record; today's render       |
 
-Verification on the PR's build (the evidence package's `results/`):
+Verification, on both the SDK 57 and the SDK 58 build (the evidence package's `results/` and
+`results/sdk58/`):
 
 * **Pixels.** The static frame (bundle blocked) and the hydrated, settled screen differ in 0 pixels
   at every variant viewport, light and dark.
@@ -228,40 +231,42 @@ Verification on the PR's build (the evidence package's `results/`):
 
 ### Startup cap
 
-`MAX_NATIVE_WEB_STARTUP_BYTES` is not raised by this draft. The build measures 876,019 bytes against
-the 870,798 cap, so `native:web:build`'s post-check fails. No CI job runs that build. The additions:
+On the SDK 58 base the build passes: 845,064 bytes against the 850,230 cap, from a baseline of
+838,334. The prerender spends 6,730 of the cap's 11,896 bytes of headroom:
 
 | Addition                                                     | Bytes  |
 | ------------------------------------------------------------ | ------ |
-| Entry-chunk code (server snapshots, the window seam, guards) | +2,090 |
-| `__common`                                                   | −59    |
+| Entry-chunk code (server snapshots, the window seam, guards) | +2,365 |
 | Boot script                                                  | +1,649 |
-| Inlined critical CSS                                         | +2,680 |
+| Inlined critical CSS                                         | +2,716 |
 
-Babel's `minifyTypeofWindow` on web, a stable `babel-preset-expo` option that Expo disables on web
-only for Web Workers, takes back 1,824 bytes. That is not enough on its own. With the bundle held
-until after first paint, the bundle bytes gate interactivity, not paint. Review should decide
-whether the cap keeps counting them as first-paint bytes or splits into a first-paint cap and an
-interactive cap.
+ADR-0179 treats consumed headroom as the cue to take the next lever. Two are measured here:
+
+* Babel's `minifyTypeofWindow` on web takes back 1,824 bytes. It is a stable `babel-preset-expo`
+  option, which Expo disables on web only for Web Workers.
+* With the bundle held until after first paint, those bytes gate interactivity, not paint. A
+  first-paint cap (the shell, its inline code and its render-blocking CSS) and a separate
+  interactive cap would say so.
 
 ## Consequences
 
-* \+ Throttled first-visit LCP fell from 2,820 ms to 1,201 ms on phone and tablet, inside the
+* \+ Throttled first-visit LCP fell from 2,785 ms to 1,201 ms on phone and tablet, inside the
   shipping app's 0.9–1.3 s.
-  * Phone FCP fell from 1,051 to 751 ms and Speed Index from 1,161 to 901 ms; CLS stayed 0.
-  * Under applied throttling, LCP fell from 3,772 to 1,284 ms.
-  * Unthrottled, LCP fell from 67 to 30 ms.
+  * FCP fell from 1,051 to 751 ms and Speed Index from 1,107 to 861 ms (phone); CLS stayed 0.
+  * Under applied throttling, LCP fell from 3,628 to 1,260 ms on a first visit and from 684 to 608
+    ms on a repeat visit.
+  * Unthrottled, LCP fell from 73 to 27 ms.
 * \+ The first paint shows the whole drawing screen in the visitor's size class and theme: palette,
   Clear Button, drawer toggle, Settings Button and textured paper. It is pixel-identical to the
   hydrated screen on the variants' viewports.
 * − **A visible screen that does not respond.** Under applied throttling the phone's frame paints at
-  1,284 ms, and its controls take taps at 3,123 ms (3,062 ms today). Today that time shows flat
-  paper instead.
+  1,260 ms and its controls take taps at 3,058 ms, against 2,958 ms today. Today that wait shows
+  flat paper instead.
   * For about 1.8 s a toddler who taps a swatch or draws gets no response.
   * Nothing replays those taps: React's event replay starts only once hydration has begun, and no
     listeners exist before the bundle loads.
-  * Holding the bundle until after the paint moved interactivity 33 ms later than requesting it with
-    the document (3,090 ms).
+  * Holding the bundle until after the paint costs 33–47 ms of that against requesting it with the
+    document (measured on SDK 57).
 * − Two renderers' discipline. Every first-frame read of the browser needs a server value and a
   matching hydration value.
   * A new `useSyncExternalStore` without a server snapshot, or a browser read at import or during
@@ -270,17 +275,18 @@ interactive cap.
     query, would be kept stale by React in production. The evidence package's DOM comparison catches
     one, but it is not in CI.
 * − A returning visitor with any saved choice gets no prerendered frame and paints as before.
-* − Repeat visits did not improve (900 ms either way). Holding the bundle lets the `load` event fire
-  before the paint is presented, and the favicon and manifest-icon revalidations it triggers then
-  count toward LCP. The same document with the bundle deferred by the parser scored 750 ms.
+* − Lighthouse's simulated repeat visit got 150 ms worse (750 to 900 ms), though the applied repeat
+  visit paints sooner.
+  * Holding the bundle lets the `load` event fire before the paint is presented.
+  * Lantern then counts the favicon and manifest-icon revalidations that `load` triggers.
+  * The page-load gate's repeat-visit cells would show the simulated number.
 * − The window seam reroutes 37 modules' `useWindowDimensions` import.
 * − The build adds a Metro build and depends on Expo internals: a deep import of
   `@expo/cli/build/src/export/embed/exportEmbedAsync.js` and `@expo/router-server`'s flag helper. An
-  Expo upgrade that moves either fails the build.
+  Expo upgrade that moves either fails the build. Both survived the SDK 57 to 58 upgrade unchanged.
 * − The build depends on happy-dom, a development dependency, for `DOMParser`. Shipping the web
   export from Netlify would need it moved (ADR-0070).
-* − 6,360 bytes more on the startup path, over the cap, until a lever pays for them or the cap is
-  split.
+* − 6,730 bytes more on the startup path, more than half the cap's headroom.
 
 ### Follow-ups
 
@@ -288,7 +294,7 @@ interactive cap.
    the first frame, as ADR-0040 does. Then clone a matching variant instead of none.
 2. **The hydrated-vs-fresh DOM comparison in CI.** Also a development-build pass that fails on
    React's hydration warnings.
-3. **Pay for the cap or split it** (Startup cap, above).
+3. **Win back the headroom or split the cap** (Startup cap, above).
 4. **Port first-frame geometry to CSS where it is cheap**, such as the palette gap, to shrink the
    post-hydration relayout.
 5. **Acknowledge early taps.** Design what a tap does before hydration, for example a CSS `:active`

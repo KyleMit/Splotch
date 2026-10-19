@@ -1,0 +1,16 @@
+{"label":"sdk58-baseline","fcp":2964,"lcp":3628,"handlers":2958,"settled":4242}
+{"label":"sdk58-baseline","fcp":2964,"lcp":3628,"handlers":2961,"settled":4241}
+{"label":"sdk58-baseline","fcp":2960,"lcp":3628,"handlers":2957,"settled":4242}
+sdk58-baseline median: FCP 2964 LCP 3628 handlers 2958 settled 4242
+{"label":"sdk58-prerender","fcp":1276,"lcp":1276,"handlers":3072,"settled":3706}
+{"label":"sdk58-prerender","fcp":1260,"lcp":1260,"handlers":3057,"settled":3693}
+{"label":"sdk58-prerender","fcp":1260,"lcp":1260,"handlers":3058,"settled":3692}
+sdk58-prerender median: FCP 1260 LCP 1260 handlers 3058 settled 3693
+{"label":"sdk58-baseline-repeat","fcp":684,"lcp":684,"handlers":679,"settled":688}
+{"label":"sdk58-baseline-repeat","fcp":684,"lcp":684,"handlers":678,"settled":687}
+{"label":"sdk58-baseline-repeat","fcp":680,"lcp":680,"handlers":676,"settled":687}
+sdk58-baseline-repeat median: FCP 684 LCP 684 handlers 678 settled 687
+{"label":"sdk58-prerender-repeat","fcp":604,"lcp":604,"handlers":688,"settled":702}
+{"label":"sdk58-prerender-repeat","fcp":612,"lcp":612,"handlers":694,"settled":707}
+{"label":"sdk58-prerender-repeat","fcp":608,"lcp":608,"handlers":691,"settled":705}
+sdk58-prerender-repeat median: FCP 608 LCP 608 handlers 691 settled 705
