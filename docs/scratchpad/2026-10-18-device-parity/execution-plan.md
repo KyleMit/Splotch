@@ -300,11 +300,13 @@ Elsewhere S6 is a source-proven skip, confirmed by S1 showing the palette bar.
 Phone landscape has no palette bar: its swatches and "Custom Color" live in the Color Menu, which
 closes on a pick and on a second "Colors" tap. In phone-landscape batches:
 
-* Before every swatch or "Custom Color" tap in S7 to S11, tap "Colors" to open the menu.
-* S7 reopens the picker the same way: "Colors", then "Custom Color".
-* S8 to S11 are captured with the Color Menu reopened by one more "Colors" tap. The menu's ring
-  state stands in for the absent bar; the closed "Colors" button is captured first as an extra
-  `-closed` still.
+* The menu is opened only when it is closed: read the "Colors" control's expanded state from the
+  accessibility tree before tapping it. A blind second tap would close the menu.
+* Before every swatch or "Custom Color" tap in S7 to S11, open the menu.
+* S7 reopens the picker the same way: open the menu, then "Custom Color".
+* S8 to S11 first capture the closed "Colors" button as an extra `-closed` still. They then open the
+  menu and capture its ring state, which stands in for the absent bar, and close it again with
+  "Colors". Every step therefore starts with the menu closed.
 
 Fixture strokes, in paper-normalized coordinates at the default size:
 
@@ -346,14 +348,16 @@ requirement row is verified only when all of its DS-1 cells, on every target, pa
 configurations run as variant batches. Each variant starts from the batch fixture, changes settings
 through public Settings controls, and captures S1, S2, S3 where a Brushes control exists, and S6 in
 phone landscape. A variant also captures `S2r`: the first settled frame after a relaunch with the
-drawer left open. Variants run in Raised and Flat, light, both orientations, on `iphone-notch`,
-`ipad-mini`, `android-api36` and `android-api36-tablet`:
+drawer left open. Variants run in Raised and Flat, light, both orientations, on every DS-1 target
+and viewport:
 
 * V1: the Tool Drawer switch off (B0102, E0510, E0511).
 * V2: one optional brush, Crayon on with Magic and Eraser off (E0507).
 * V3: no optional brushes (E0508).
-* V4: every optional action off — brushes, Coloring, Camera and AI — so the panel has no enabled
-  action and the colors remain (E0509, E0594).
+* V4: every optional action off: "Crayon", "Magic brush", "Eraser", "Stroke width" and "Undo" under
+  Drawing Tools, plus Coloring, Camera and AI (E0509, E0594). The pass rule asserts that the Actions
+  Panel, its drawer and its chevron are absent from the first frame on, and that the colors remain.
+  S2, S2r and S3 are recorded as absent rather than captured.
 * V5: RN web only. `rn-web-chromium` at each viewport that the shipping `palette-trim` and
   `phone-landscape-toolbar` specs name, including the 906-wide phone, capturing S1, S2 and S6 (E0585
   to E0589, E0591, E0606).
@@ -363,9 +367,9 @@ Button Size variants run in A11Y-1, and disabled chrome during save and clear in
 **Size.** Each phone target or viewport yields 8 recordings and 164 stills per arm, and each tablet
 target or viewport 8 recordings and 160 stills. Across eight targets and viewports and two arms that
 is 128 recordings and 2,592 stills, compared as 64 recording pairs and 1,296 still pairs. Phone
-landscape adds one `-closed` still for each of S8 to S11. V1 to V4 add at most 4 variants × 4
-targets × 2 arms × 4 axis combinations × 5 states, which is 640 stills; V5 adds three stills per
-viewport and arm.
+landscape adds one `-closed` still for each of S8 to S11. V1 to V4 add at most 4 variants × 8
+targets and viewports × 2 arms × 4 axis combinations × 5 states, which is 1,280 stills; V5 adds
+three stills per viewport and arm.
 
 ## Other protocols
 
@@ -473,8 +477,8 @@ that row's targets.
 * **Steps:**
   * Capture Settings and the dialogs at the largest text (T2-19, T2-20).
   * Capture DS-1 states S1, S2, S3 and S6 at Button Size 70% and at its maximum, in Raised and Flat
-    and both orientations, on the DS-1 variant targets (T2-21, T2-22, X37, E0094, E0098, E0592,
-    E0608).
+    and both orientations, on every DS-1 target and viewport (T2-21, T2-22, X37, E0094, E0098,
+    E0592, E0608).
   * Capture the six-button row with AI turned on, its allowance answered by the AI-1 fixture server,
     at both Button Size ends (E0028).
   * Replay the DS-2 cues under each Reduce Motion source (T2-17, T2-18).
