@@ -63,7 +63,8 @@ function nearestRank(sorted: readonly number[], fraction: number) {
   return sorted[Math.max(0, Math.ceil(fraction * sorted.length) - 1)];
 }
 
-function intervalSummary(intervals: readonly number[]) {
+// Count and nearest-rank p50, p95, max and min of a set of millisecond intervals.
+export function intervalSummary(intervals: readonly number[]) {
   if (intervals.length === 0) return { n: 0 };
   const sorted = [...intervals].sort((a, b) => a - b);
   return {

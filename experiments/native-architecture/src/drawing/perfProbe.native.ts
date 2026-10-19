@@ -1,7 +1,13 @@
 import { useLayoutEffect } from 'react';
 import { NativeModules, Platform } from 'react-native';
 import type * as Contract from './perfProbe';
-import { createPerfCohorts, PERF_LOG_MODULE, PERF_LOG_TAG, type ClockJoin } from './perfCohort';
+import {
+  createPerfCohorts,
+  PERF_LOG_MODULE,
+  PERF_LOG_TAG,
+  type ClockJoin,
+  type PerfLineContext,
+} from './perfCohort';
 
 // The Android and iOS perf probe, with the types perfProbe.ts declares. babel-preset-expo replaces
 // process.env.EXPO_PUBLIC_* with the bundling process's value when it builds a production bundle,
@@ -35,6 +41,12 @@ function writeLine(line: string) {
   else console.warn(`${PERF_LOG_TAG} ${line}`);
 }
 
+const lineContext = (): PerfLineContext => ({
+  platform: Platform.OS,
+  build: process.env.EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD,
+  clockJoin: Platform.OS === 'android' ? CLOCK_JOINS.android : CLOCK_JOINS.ios,
+});
+
 const cohorts = PERF_PROBE
   ? createPerfCohorts(
       {
@@ -42,14 +54,18 @@ const cohorts = PERF_PROBE
         schedule: (run, delayMs) => setTimeout(run, delayMs),
         cancel: (handle) => clearTimeout(handle),
       },
-      {
-        platform: Platform.OS,
-        build: process.env.EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD,
-        clockJoin: Platform.OS === 'android' ? CLOCK_JOINS.android : CLOCK_JOINS.ios,
-      },
+      lineContext(),
       writeLine
     )
   : null;
+
+// The replay and its traces exist only in a probe build: in any other production bundle this
+// branch folds away before Metro collects dependencies, so nothing can ask the native driver to
+// replay, whatever the launch arguments say.
+if (PERF_PROBE)
+  void import('./perfReplay').then(({ replayRequestedTrace }) =>
+    replayRequestedTrace(writeLine, lineContext())
+  );
 
 export const perfPacket: typeof Contract.perfPacket = (packet) => cohorts?.packet(packet);
 export const perfIdle: typeof Contract.perfIdle = () => cohorts?.idle();

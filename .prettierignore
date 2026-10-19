@@ -63,6 +63,10 @@ tools/asset-gen/ideas-exploration/ideas-review.html
 # tables no human reads. The README beside them is Markdown and dprint's to own.
 perf-profiles/evidence/**/*.json
 
+# Replay traces are written one packet per line by tools/migration/gen-replay-traces.mjs, which
+# native-replay-traces.test.mjs holds them to byte for byte; Prettier would put every field on a line.
+experiments/native-architecture/perf/replay/*.json
+
 # Frozen migration archive and lock receipts retain their producing serializers; recorded byte digests bind their evidence.
 docs/migration/evidence/rsd-drawing-graph-20261010/archive-reuse.json
 docs/migration/evidence/rsd-safe-insets-20261011/archive-reconciliation.json
