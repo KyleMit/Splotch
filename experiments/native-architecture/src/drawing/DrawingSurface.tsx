@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
   type ForwardedRef,
+  type RefObject,
   type ReactNode,
 } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -162,6 +163,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
       };
     }, [input, geometry, refreshGeometry]);
     useLayoutEffect(() => input.observeInputStyle(), [input, props.color, props.brush]);
+    const ink = useInkHandlers(propsRef, input, resume);
 
     return (
       <InkPaperScope.Provider value={projection}>
@@ -195,14 +197,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   live={live.ink}
                   brush={props.brush}
                   color={props.color}
-                  onBusy={(busy) => {
-                    props.onPreparingChange(busy);
-                    if (!busy) resume();
-                  }}
-                  onError={(error) => {
-                    input.detach();
-                    props.onRendererFault(error);
-                  }}
+                  onBusy={ink.onBusy}
+                  onError={ink.onError}
                 />
                 {PageArt ? <PageArt pageId={props.drawing.pageId} size={presented} /> : null}
                 <PointerHalos feed={live.halos} />
@@ -215,6 +211,30 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     );
   }
 );
+
+// Stable, so the memoized native ink layer renders for what it draws and not for every surface
+// render (the input's disabled flag, a stroke width, a cohort starting).
+function useInkHandlers(
+  propsRef: RefObject<DrawingSurfaceProps>,
+  input: ReturnType<typeof createContactResponder>,
+  resume: () => void
+) {
+  const onBusy = useCallback(
+    (busy: boolean) => {
+      propsRef.current.onPreparingChange(busy);
+      if (!busy) resume();
+    },
+    [propsRef, resume]
+  );
+  const onError = useCallback(
+    (error: unknown) => {
+      input.detach();
+      propsRef.current.onRendererFault(error);
+    },
+    [propsRef, input]
+  );
+  return { onBusy, onError };
+}
 
 // A blank picture shows as the paper it would adopt from the ink plane's live size.
 function usePresentedPaper(
