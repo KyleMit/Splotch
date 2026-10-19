@@ -1,0 +1,3 @@
+{"size":"412x915","scheme":"light","hydratedLines":96,"freshLines":96,"onlyHydrated":0,"onlyFresh":0,"errors":["Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the"]}
+{"size":"1133x744","scheme":"dark","hydratedLines":104,"freshLines":104,"onlyHydrated":0,"onlyFresh":0,"errors":["Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the"]}
+{"size":"390x844","scheme":"light","hydratedLines":96,"freshLines":96,"onlyHydrated":0,"onlyFresh":0,"errors":["Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the"]}

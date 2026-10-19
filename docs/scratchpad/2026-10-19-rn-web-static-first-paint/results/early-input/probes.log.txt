@@ -1,0 +1,20 @@
+{"label":"after","fcp":744,"lcp":744,"touchedAt":775,"bursts":1,"drawingLive":2710,"captured":876,"controlsLive":2574,"paper":701,"inkPaths":1}
+{"label":"after","fcp":716,"lcp":716,"touchedAt":732,"bursts":1,"drawingLive":2640,"captured":826,"controlsLive":2513,"paper":693,"inkPaths":1}
+{"label":"after","fcp":724,"lcp":724,"touchedAt":739,"bursts":1,"drawingLive":2642,"captured":833,"controlsLive":2519,"paper":698,"inkPaths":1}
+after median: FCP 724 LCP 724 drawing live 2642 captured 833 controls live 2519 ink paths 1
+{"label":"baseline","fcp":2972,"lcp":null,"touchedAt":3097,"bursts":0,"drawingLive":null,"captured":3200,"controlsLive":null,"paper":2967,"inkPaths":1}
+{"label":"baseline","fcp":2972,"lcp":null,"touchedAt":3093,"bursts":0,"drawingLive":null,"captured":3184,"controlsLive":null,"paper":2967,"inkPaths":1}
+{"label":"baseline","fcp":2976,"lcp":null,"touchedAt":3103,"bursts":0,"drawingLive":null,"captured":3200,"controlsLive":null,"paper":2970,"inkPaths":1}
+baseline median: FCP 2972 LCP null drawing live null captured 3200 controls live null ink paths 1
+{"label":"before","fcp":676,"lcp":1196,"handlers":2480,"settled":3109}
+{"label":"before","fcp":664,"lcp":1196,"handlers":2464,"settled":3094}
+{"label":"before","fcp":668,"lcp":1196,"handlers":2465,"settled":3094}
+before median: FCP 668 LCP 1196 handlers 2465 settled 3094
+{"label":"after-tti","fcp":724,"lcp":724,"handlers":2507,"settled":3150}
+{"label":"after-tti","fcp":724,"lcp":724,"handlers":2523,"settled":3151}
+{"label":"after-tti","fcp":716,"lcp":716,"handlers":2513,"settled":3143}
+after-tti median: FCP 724 LCP 724 handlers 2513 settled 3150
+{"label":"baseline-tti","fcp":2980,"lcp":3656,"handlers":2975,"settled":4253}
+{"label":"baseline-tti","fcp":2968,"lcp":3628,"handlers":2961,"settled":4243}
+{"label":"baseline-tti","fcp":2964,"lcp":3628,"handlers":2958,"settled":4242}
+baseline-tti median: FCP 2968 LCP 3628 handlers 2961 settled 4243

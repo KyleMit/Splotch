@@ -1,0 +1,7 @@
+{"size":"412x915","scheme":"light","seeded":false,"hydratedLines":96,"freshLines":96,"onlyHydrated":0,"onlyFresh":0,"errors":[]}
+{"size":"1133x744","scheme":"dark","seeded":false,"hydratedLines":104,"freshLines":104,"onlyHydrated":0,"onlyFresh":0,"errors":[]}
+{"size":"390x844","scheme":"light","seeded":false,"hydratedLines":96,"freshLines":96,"onlyHydrated":0,"onlyFresh":0,"errors":[]}
+{"size":"844x390","scheme":"light","seeded":false,"hydratedLines":73,"freshLines":73,"onlyHydrated":0,"onlyFresh":0,"errors":[]}
+{"size":"820x1180","scheme":"light","seeded":false,"hydratedLines":108,"freshLines":108,"onlyHydrated":0,"onlyFresh":0,"errors":[]}
+{"size":"1366x1024","scheme":"light","seeded":false,"hydratedLines":112,"freshLines":112,"onlyHydrated":0,"onlyFresh":0,"errors":[]}
+{"size":"412x915","scheme":"light","seeded":true,"hydratedLines":140,"freshLines":140,"onlyHydrated":0,"onlyFresh":0,"errors":[]}

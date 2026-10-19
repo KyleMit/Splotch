@@ -34,7 +34,7 @@
 <div class="css-g5y9jx r-13awgt0 r-ifefl9 r-bcqeeo" data-testid="rsd-canvas-column">
 <div class="css-g5y9jx r-13awgt0 r-ifefl9 r-bcqeeo" data-testid="rsd-canvas-area">
 <div class="css-g5y9jx" data-testid="rsd-paper-slot" style="flex: 1 1 0%; min-width: 0px; min-height: 0px; overflow: hidden;">
-<div aria-hidden="true" data-testid="paper-texture" style="position: absolute; inset: 0px; pointer-events: none; background: url("/assets/assets/paper/handmade-paper.7637e6600d2982210f85a1a9ff5b9cba.webp") 0px 0px rgb(252, 251, 248);">
+<div aria-hidden="true" data-testid="paper-texture" style="position: absolute; inset: 0px; pointer-events: none; background-color: rgb(252, 251, 248); background-image: var(--paper-texture, url("/assets/assets/paper/handmade-paper.7637e6600d2982210f85a1a9ff5b9cba.webp")); background-position: 0px 0px;">
 <div class="css-g5y9jx r-1awozwy r-13awgt0 r-1777fci r-ifefl9 r-bcqeeo">
 <div class="css-g5y9jx" data-testid="rsd-paper-plane" style="position: absolute; left: 0px; top: 0px; width: 412px; height: 840px;">
 <div class="css-g5y9jx r-1pi2tsx r-13qz1uu">

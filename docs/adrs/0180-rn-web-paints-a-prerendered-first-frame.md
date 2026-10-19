@@ -1,7 +1,9 @@
 # ADR-0180: The React Native Web Export Paints a Prerendered First Frame, Then Hydrates It
 
 **Status:** Proposed — amends [ADR-0179](0179-rn-web-startup-path-splits-by-platform.md) **Date:**
-2026-10
+2026-10. On 2026-10-19 the owner decided three parts: the inlined paper texture, the pre-engine
+burst with finger adoption, and the pre-hydration press feedback. The startup cap, the interactivity
+tiers and the prerender mechanism are still proposals, with numbers below.
 
 ## Context
 
@@ -19,14 +21,14 @@ there. The evidence and harness are in
 
 | Phone, first visit, Slow 4G and 4× CPU       | FCP      | LCP      |
 | -------------------------------------------- | -------- | -------- |
-| Lighthouse devtools throttling, RN baseline  | 3,034 ms | 3,651 ms |
-| Lighthouse devtools throttling, shipping app | 830 ms   | 830 ms   |
+| Lighthouse devtools throttling, RN baseline  | 3,037 ms | 3,652 ms |
+| Lighthouse devtools throttling, shipping app | 824 ms   | 824 ms   |
 | Lighthouse simulated throttling, RN baseline | 1,051 ms | 2,785 ms |
 
 The devtools rows ran on a quiet host, under the RN performance campaign's rig lock. The campaign
 found Lighthouse's simulated mode scatters the shipping app between 1.1 and 3.9 s, so the devtools
 rows are the comparison to trust. The simulated rows are what the `tools/page-load` gate reports.
-Under applied throttling (a CDP probe), the RN baseline's controls take taps at 2,987 ms. Its
+Under applied throttling (a CDP probe), the RN baseline's controls take taps at 2,961 ms. Its
 simulated repeat visit is 750 ms, and the tablet matches the phone. The LCP element is the paper
 texture (`PaperTexture.web.tsx`): a `div` whose CSS background is the handmade-paper WebP, not the
 flat paper colour the boot script paints.
@@ -155,7 +157,13 @@ document.
   bytes brotli. The document also gets:
   * React Native Web's sheet as `<style id="react-native-stylesheet">`, cut to the rules the markup
     uses plus the sheet's group markers: 2,716 bytes, about a fifth of the full server sheet.
-  * The paper texture, preloaded at `fetchpriority="high"`.
+  * The paper texture, once, as `:root{--paper-texture:url("data:image/webp;base64,…")}` in the
+    shell's own `<style>`. `PaperTexture.web.tsx` paints `var(--paper-texture, url(<file>))`, so the
+    template-free 404 shell still loads the file. This is the owner's decision. Requested on its
+    own, the texture held LCP a round trip behind first paint: 1,229 ms against 682 ms FCP.
+    `check-native-web-startup.mjs` now scans inline CSS for inlined images too. Its
+    `INLINED_IMAGE_EXCEPTIONS` names this one asset with its reason. A second copy fails, and so
+    does the texture in a script or any other inlined image. ADR-0179 records the exception.
   * The bundle's `<script defer>` tags, moved into a JSON list.
 * **The style sheet is inlined.** Expo links its extracted `strict.css` render-blocking, which cost
   the first paint one more round trip. The prerender inlines it where the link was, as the shipping
@@ -186,6 +194,40 @@ The boot script runs as the parser passes the root.
 `check-native-web-startup.mjs` and `check-native-web-precache.mjs` read the JSON list, so the held
 bundle still counts.
 
+### Before the engine and the controls listen
+
+These are the owner's decisions. Everything is painted from the first frame, and nothing moves when
+a part goes live. Until a part is live, the shell itself answers a touch on it, before any app
+script has run. There is no early ink and no second drawing engine.
+
+* **The paper.**
+  * A touch there throws a small burst of six palette-coloured dots from the boot script, outside
+    `#root`: 520 ms, still dots that only fade under Reduce Motion.
+  * The boot script records each finger that is down on the paper, and where it is, under
+    `window.__splotchEarlyPointers` (`EARLY_POINTERS_GLOBAL`). It never draws or buffers a stroke.
+  * `PaperInputView.web.tsx` attaches its listeners at hydration, then checks once a frame whether
+    the engine would admit a stroke (`contactResponder.isReady()`, passed as `engineReady`). The
+    paper must be measured and its ink ready, about 120 ms after hydration.
+  * When it would, the input view starts each recorded finger's stroke where the finger is now,
+    through its own start path (`setPointerCapture`, then the same `start` packet a fresh pointer
+    sends). It then stamps `data-drawing-live`, which stops the bursts.
+  * A finger that lands between hydration and readiness is left to the shell in the same way.
+  * `takeEarlyPointers` validates the record and fails loudly on one it cannot read. The engine goes
+    live regardless.
+* **The controls.** Until `data-controls-live`, a press on a control does two things:
+  * it squishes, through CSS `:active` (`scale`, which composes with the Clear Button's inline
+    transform) and through the boot script's "not yet" animation, because a touch press does not
+    always match `:active`;
+  * it wiggles "not yet", a 320 ms translate. Under Reduce Motion the control only dims.
+
+  The boot script stops the press at the window in the capture phase, so the app never sees it, and
+  React has nothing to replay. The drawing content stamps `data-controls-live` in the commit that
+  attaches its handlers (`platform/firstFrameControls.web.ts`).
+* `platform/firstFrameContract.ts` declares the property, the attributes, the global and the paper's
+  test id once, and the build imports them. `tools/tests/native-web-early-input.test.mjs` runs the
+  boot script against a shell. `native-web-paper-adoption.test.mjs` mounts the real input view and
+  holds the adoption: nothing before readiness, then a `start` at the finger's current position.
+
 ### Client
 
 `platform/firstFrame.web.ts` exports `FIRST_FRAME_PRERENDERED` (always `false` in the native
@@ -209,24 +251,25 @@ bundle still counts.
 Each input a server render or hydration reads differently. **(throws)** means the module threw in
 Node before its fix.
 
-| Input                                | Where                                                                      | Server     | Hydration                  | Handling                                                   |
-| ------------------------------------ | -------------------------------------------------------------------------- | ---------- | -------------------------- | ---------------------------------------------------------- |
-| Install prompt owner at import       | `installPrompt.web.ts`                                                     | (throws)   | owner                      | `typeof window` guard; constant install server snapshot    |
-| Shipping font faces at import        | `shippingFont.web.tsx`                                                     | (throws)   | faces                      | built on first mount, memoized                             |
-| Current page                         | `ProbeApp`, `BrowserBack.web.tsx`                                          | (throws)   | `drawing`                  | `prerenderedAppPage`; boot hydrates only the drawing paths |
-| In-memory stores                     | `lazyExport`, `lazySurface`, `bareGlass`, ink, halos, capture, library, AI | (throws)   | store value                | server snapshot is the same read                           |
-| Default orientation                  | `orientationDefault.web.ts`                                                | (throws)   | from `innerWidth`          | `portrait` on the server; feeds Settings only              |
-| Boot appearance                      | `bootAppearance.web.ts`                                                    | (throws)   | stamp                      | the variant's theme (`prerenderInputs.ts`)                 |
-| System theme                         | `DrawingAppearanceProvider`                                                | light      | system                     | a Light and a Dark variant; boot resolves as the client    |
-| Orientation lock applies             | `deviceOrientation.web.ts`                                                 | (throws)   | probe                      | `false`, read in the effect that already ran               |
-| Held first paint                     | `useFirstPaintHeld`                                                        | flat paper | flat paper                 | not held when prerendered                                  |
-| Safe-area insets                     | `NativeFrame` provider                                                     | nothing    | nothing                    | zero insets while hydrating, measured next                 |
-| Window size                          | 37 modules                                                                 | 0×0        | live window                | the variant viewport while hydrating; one relayout         |
-| Brushes loading                      | `useDrawingScreen`                                                         | dimmed     | dimmed                     | not dimmed when prerendered                                |
-| `SvgXml` parse                       | `platform/svg.web.ts`                                                      | no parser  | `DOMParser`                | the build lends happy-dom's parser                         |
-| Paper plane box, ink `viewBox`       | `NativeDrawingLayout`                                                      | window     | window, then measured area | invisible; corrected on measurement                        |
-| Palette gap off a variant's viewport | `edgeLayout.ts`                                                            | variant    | variant, then live         | one relayout (390×844: 12.4 → 8 px, 3.6% of pixels)        |
-| Saved settings that change the frame | toolbar style, button size, drawer, colours                                | defaults   | —                          | no frame for a visitor with a record; today's render       |
+| Input                                   | Where                                                                      | Server     | Hydration                  | Handling                                                             |
+| --------------------------------------- | -------------------------------------------------------------------------- | ---------- | -------------------------- | -------------------------------------------------------------------- |
+| Install prompt owner at import          | `installPrompt.web.ts`                                                     | (throws)   | owner                      | `typeof window` guard; constant install server snapshot              |
+| Shipping font faces at import           | `shippingFont.web.tsx`                                                     | (throws)   | faces                      | built on first mount, memoized                                       |
+| Current page                            | `ProbeApp`, `BrowserBack.web.tsx`                                          | (throws)   | `drawing`                  | `prerenderedAppPage`; boot hydrates only the drawing paths           |
+| In-memory stores                        | `lazyExport`, `lazySurface`, `bareGlass`, ink, halos, capture, library, AI | (throws)   | store value                | server snapshot is the same read                                     |
+| Default orientation                     | `orientationDefault.web.ts`                                                | (throws)   | from `innerWidth`          | `portrait` on the server; feeds Settings only                        |
+| Boot appearance                         | `bootAppearance.web.ts`                                                    | (throws)   | stamp                      | the variant's theme (`prerenderInputs.ts`)                           |
+| System theme                            | `DrawingAppearanceProvider`                                                | light      | system                     | a Light and a Dark variant; boot resolves as the client              |
+| Orientation lock applies                | `deviceOrientation.web.ts`                                                 | (throws)   | probe                      | `false`, read in the effect that already ran                         |
+| Held first paint                        | `useFirstPaintHeld`                                                        | flat paper | flat paper                 | not held when prerendered                                            |
+| Safe-area insets                        | `NativeFrame` provider                                                     | nothing    | nothing                    | zero insets while hydrating, measured next                           |
+| Window size                             | 37 modules                                                                 | 0×0        | live window                | the variant viewport while hydrating; one relayout                   |
+| Brushes loading                         | `useDrawingScreen`                                                         | dimmed     | dimmed                     | not dimmed when prerendered                                          |
+| `SvgXml` parse                          | `platform/svg.web.ts`                                                      | no parser  | `DOMParser`                | the build lends happy-dom's parser                                   |
+| Paper plane box, ink `viewBox`          | `NativeDrawingLayout`                                                      | window     | window, then measured area | invisible; corrected on measurement                                  |
+| Palette gap off a variant's viewport    | `edgeLayout.ts`                                                            | variant    | variant, then live         | one relayout (390×844: 12.4 → 8 px, 3.6% of pixels)                  |
+| Fingers down before the engine is ready | the paper                                                                  | —          | no listener                | the shell bursts and records them; adopted where they are when ready |
+| Saved settings that change the frame    | toolbar style, button size, drawer, colours                                | defaults   | —                          | no frame for a visitor with a record; today's render                 |
 
 Verification, on the SDK 57 build, the SDK 58 build and the SDK 58 build with the inlined style
 sheet (the evidence package's `results/`, `results/sdk58/` and `results/quiet-host/`):
@@ -238,48 +281,129 @@ sheet (the evidence package's `results/`, `results/sdk58/` and `results/quiet-ho
   variants, and for a visitor with a saved record. This is the check that would catch an attribute
   React kept silently.
 
-### Startup cap
+### Startup cap (proposed split, awaiting the owner)
 
-On the SDK 58 base the build passes: 845,064 bytes against the 850,230 cap, from a baseline of
-838,334. The prerender spends 6,730 of the cap's 11,896 bytes of headroom:
+The build measures 860,582 bytes against the 850,230 cap, so `native:web:build`'s post-check fails.
+No CI job runs that build. The cap structure is unchanged until the owner decides.
 
-| Addition                                                     | Bytes  |
-| ------------------------------------------------------------ | ------ |
-| Entry-chunk code (server snapshots, the window seam, guards) | +2,365 |
-| Boot script                                                  | +1,649 |
-| Inlined critical CSS                                         | +2,716 |
+| Part of the startup path                                   | Bytes   |
+| ---------------------------------------------------------- | ------- |
+| Inline CSS: `strict.css`                                   | 26,815  |
+| Inline CSS: the paper texture rule                         | 10,493  |
+| Inline CSS: React Native Web's critical rules              | 2,716   |
+| Inline CSS: the feedback styles                            | 814     |
+| Inline CSS: Expo's reset and the boot theme                | 528     |
+| Inline JS: the boot scripts (theme, surface, frame, input) | 3,703   |
+| The bundle: Expo's runtime and the entry chunk             | 815,513 |
 
-ADR-0179 treats consumed headroom as the cue to take the next lever. Two are measured here:
+Against the SDK 58 baseline (838,334), the prerender adds 22,248 bytes:
 
-* Babel's `minifyTypeofWindow` on web takes back 1,824 bytes. It is a stable `babel-preset-expo`
-  option, which Expo disables on web only for Web Workers.
-* With the bundle held until after first paint, those bytes gate interactivity, not paint. A
-  first-paint cap (the shell, its inline code and its render-blocking CSS) and a separate
-  interactive cap would say so.
+* 10,493 for the texture;
+* 4,837 for the entry chunk's server snapshots, window seam, guards, adoption and live stamps;
+* 3,388 for the boot scripts;
+* 3,530 for the critical and feedback CSS.
+
+With the bundle held until after first paint, one cap measures two different things. The proposal
+splits it, each part set from measurement plus headroom by ADR-0179's rule:
+
+* **A first-paint cap** on what the first frame needs before it can paint: the shell's inline CSS
+  and inline scripts, now 45,069 bytes. The template markup is not in it; the shell document is
+  23,335 bytes brotli. ADR-0179's 11,896 bytes of headroom would be a quarter of this cap, so it
+  would catch nothing smaller than the whole feedback layer. A headroom below the smallest
+  first-paint lever taken here, the 1,649-byte boot script, would catch it. One choice is 1,500
+  bytes, giving a cap of 46,569.
+* **A core-controls cap** on the bundle tier 2 needs. Without tiers that is Expo's runtime plus the
+  entry chunk: 815,513 bytes, with ADR-0179's 11,896 bytes of headroom giving 827,409.
+
+### Interactivity tiers (proposed, awaiting the owner)
+
+The owner's order: (0) everything visible; (1) the drawing engine, as soon as possible; (2) palette,
+brushes, stroke width and Undo; (3) Clear, drawer, coloring book and AI; (4) the settings cog and
+parent gate, last. Today one whole-tree hydration makes every tier live at once. Measured on a phone
+under applied throttling, from navigation start, in ms:
+
+| Tier                                         | RN baseline   | This draft |
+| -------------------------------------------- | ------------- | ---------- |
+| 0: first paint and LCP                       | 2,972 / 3,628 | 724 / 724  |
+| 1: a finger on the paper draws               | about 3,000   | 2,642      |
+| 2–4: controls take presses (`controls-live`) | 2,961         | 2,519      |
+
+The baseline's tier 1 is when its paper first appears. Before that a touch lands on nothing.
+
+The entry chunk's source map (`results/early-input/entry-attribution.json`) bounds what tiering
+could buy:
+
+* **Libraries** load before anything can hydrate: React DOM 211,589 bytes, React Native Web 140,669,
+  React 8,142, Expo's runtime 6,064 and others 24,033, about 390 KB.
+* **The drawing engine** is 100,093 bytes.
+* **The drawing chrome** (palette, actions panel, Clear, drawer) is 122,111 bytes.
+* **Product, settings and the library** are 75,576 bytes.
+* **Platform seams** are 27,517 bytes and other app code 25,029.
+
+A tier-1 chunk needs the libraries, the engine and most of the seams: about 70% of the entry's
+bytes. At Slow 4G's throughput (the entry is 197,360 bytes brotli) that brings the engine forward by
+about 0.3 s, not to first paint. The library floor alone takes about 0.5 s to arrive. Suspense
+boundaries with lazy chunks would split hydration that way.
+
+The boot script already keeps a press on a part that is not live from the app, so the design needs
+no React event replay. React 19's replay of a click on a still-dehydrated boundary was not verified
+with React Native Web's pressables, because nothing here depends on it. Per-tier stamps would let
+the same guard release each tier as it goes live.
+
+### Prerender mechanism (proposed, awaiting the owner)
+
+Two options were measured through the same shell and checks.
+
+| Mechanism                                                | Hydrates          | Devtools LCP | Controls live | Build cost                     |
+| -------------------------------------------------------- | ----------------- | ------------ | ------------- | ------------------------------ |
+| Node render (this draft: Metro `environment: node`)      | yes, 0 mismatches | 724 ms       | 2,513 ms      | 7 s, warm cache; no browser    |
+| Headless-browser snapshot (react-snap style, Playwright) | no: error #418    | 733 ms       | 2,555 ms      | 46 s for 12 variants; Chromium |
+
+The snapshot is the settled screen: it already holds measured layout and client-only elements, so it
+can never equal the client's first render. React reports minified error #418 (hydration mismatch) on
+every load, discards the snapshot and re-renders the whole root. That hides the mismatch class this
+ADR's checks exist to catch, and it re-does the work hydration should save.
+
+The snapshot pattern also needs a browser at build time. Playwright is a development dependency, so
+a Netlify web build would have to install it and its Chromium. It remains fit for a static
+placeholder that is replaced rather than hydrated.
+
+**Recommendation: keep the Node render.** It is the mechanism Expo Router's own static export uses.
+Two parts are off that path and can be narrowed:
+
+* The deep import of `@expo/cli`'s `exportEmbedAsync.js`. Pin it with a test that fails when Expo
+  moves it, or reach Metro through Expo's public `expo export:embed` command.
+* happy-dom's `DOMParser` at build time. Have `gen-native-icons.mjs` emit the icons' parsed element
+  trees, so neither the client nor the build parses SVG text.
 
 ## Consequences
 
-* \+ On a phone's first visit under Lighthouse devtools throttling, LCP fell from 3,651 to 1,229 ms,
-  against shipping's 830.
-  * FCP fell from 3,034 to 680 ms, ahead of shipping's 830.
-  * Under a CDP probe the repeat visit's LCP fell from 688 to 600 ms; shipping's is 636.
-  * Lighthouse's simulated LCP fell from 2,785 to 1,351 ms on phone and tablet; CLS stayed 0.
-  * The remaining first-visit gap is the paper texture's own request. Inlined as a data URI, it
-    brings LCP to FCP, 725 ms (an experiment, follow-up 6).
-* \+ The first paint shows the whole drawing screen in the visitor's size class and theme: palette,
-  Clear Button, drawer toggle, Settings Button and textured paper. It is pixel-identical to the
-  hydrated screen on the variants' viewports.
-* − **A visible screen that does not respond.** Under the CDP probe the phone's frame paints at 672
-  ms and its controls take taps at 2,466 ms.
-  * For about 1.8 s a toddler who taps a swatch or draws gets no response. Today's 2,987 ms of
-    waiting shows flat paper instead.
-  * The controls answer 521 ms sooner than today. The bundle starts once the earlier paint lands,
-    and hydration attaches handlers to swatches that are already there, without waiting for the
-    settings to load.
-  * Nothing replays those taps: React's event replay starts only once hydration has begun, and no
-    listeners exist before the bundle loads.
-  * Holding the bundle until after the paint cost 33–47 ms of interactivity against requesting it
-    with the document (measured on SDK 57, style sheet linked).
+Phone, first visit, quiet host, medians of three, in ms. "Before" is the draft with only the frame
+and inlined style sheet, before the owner's decisions.
+
+| Tier                                    | Shipping | RN baseline | Before  | This draft                    |
+| --------------------------------------- | -------- | ----------- | ------- | ----------------------------- |
+| 0: first paint (devtools method)        | 824      | 3,037       | 682     | 724                           |
+| 0: LCP (devtools method)                | 824      | 3,652       | 1,231   | 724                           |
+| 0: LCP (Lighthouse simulated, the gate) | —        | 2,785       | 1,351   | 1,051                         |
+| 1: time to first scribble (CDP probe)   | —        | about 3,000 | 2,600 ¹ | 2,642, finger held from 739 ² |
+| 2–4: controls live (CDP probe)          | —        | 2,961       | 2,465   | 2,519                         |
+
+¹ Estimated: that build has no live stamp. It is its hydration (2,465) plus the 120 ms or so the
+engine takes to become ready. A touch before that was lost. ² The burst answers the touch at once,
+and the held finger becomes ink at 2,642 without lifting.
+
+* \+ First paint and LCP land together at 724 ms, ahead of shipping's 824, on the method the RN
+  campaign trusts. The simulated LCP the `tools/page-load` gate reports fell from 2,785 to 1,051 ms
+  on phone and tablet.
+* \+ The whole drawing screen is visible from the first frame in the visitor's size class and theme.
+  It is pixel-identical to the hydrated screen on the variants' viewports.
+* \+ The time the frame shows before it listens is no longer dead. The paper answers a touch with a
+  burst, and a finger held from then becomes a real stroke as soon as the engine can take it.
+  Controls squish and wiggle "not yet", and their press reaches the app only once they listen.
+* − The engine still takes about 1.9 s after first paint to listen, and the controls a little less.
+  Interactivity tiers (proposed) would bring the engine forward by about 0.3 s. The library floor
+  bounds anything more.
 * − Two renderers' discipline. Every first-frame read of the browser needs a server value and a
   matching hydration value.
   * A new `useSyncExternalStore` without a server snapshot, or a browser read at import or during
@@ -292,14 +416,15 @@ ADR-0179 treats consumed headroom as the cue to take the next lever. Two are mea
   visit paints sooner.
   * Holding the bundle lets the `load` event fire before the paint is presented.
   * Lantern then counts the favicon and manifest-icon revalidations that `load` triggers.
-  * The page-load gate's repeat-visit cells would show the simulated number.
-* − The window seam reroutes 37 modules' `useWindowDimensions` import.
+* − The window seam reroutes 37 modules' `useWindowDimensions` import. The web input view gains an
+  `engineReady` prop that the native one ignores.
 * − The build adds a Metro build and depends on Expo internals: a deep import of
   `@expo/cli/build/src/export/embed/exportEmbedAsync.js` and `@expo/router-server`'s flag helper. An
   Expo upgrade that moves either fails the build. Both survived the SDK 57 to 58 upgrade unchanged.
 * − The build depends on happy-dom, a development dependency, for `DOMParser`. Shipping the web
-  export from Netlify would need it moved (ADR-0070).
-* − 6,730 bytes more on the startup path, more than half the cap's headroom.
+  export from Netlify would need it moved (ADR-0070), or the icons pre-parsed.
+* − The startup path is 22,248 bytes over the SDK 58 baseline and 10,352 over the cap, until the
+  owner decides the split.
 
 ### Follow-ups
 
@@ -307,12 +432,6 @@ ADR-0179 treats consumed headroom as the cue to take the next lever. Two are mea
    the first frame, as ADR-0040 does. Then clone a matching variant instead of none.
 2. **The hydrated-vs-fresh DOM comparison in CI.** Also a development-build pass that fails on
    React's hydration warnings.
-3. **Win back the headroom or split the cap** (Startup cap, above).
+3. **The cap split, the tiers and the mechanism** await the owner (above).
 4. **Port first-frame geometry to CSS where it is cheap**, such as the palette gap, to shrink the
    post-hydration relayout.
-5. **Acknowledge early taps.** Design what a tap does before hydration, for example a CSS `:active`
-   state on the swatches, so the dead window is not silent.
-6. **Inline the paper texture.** Inlined into the shell as a data URI (14.6 to 22.5 KB brotli), it
-   took devtools-throttled LCP from 1,229 to 725 ms. ADR-0179 keeps base64 images off the startup
-   path, so this needs its own decision. One CSS rule carrying the image, not a copy per variant,
-   would keep the shell small.

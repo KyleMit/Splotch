@@ -2,9 +2,11 @@
 
 **Status:** Active **Date:** 2026-10
 
-> **Proposed amendment: [ADR-0180](0180-rn-web-paints-a-prerendered-first-frame.md)** prerenders the
+> **Amended by [ADR-0180](0180-rn-web-paints-a-prerendered-first-frame.md)**, which is still a
+> proposal; its inlined paper texture and its pre-hydration feedback are decided. It prerenders the
 > drawing screen's first frame into the shell, hydrates it, and holds the bundle until that frame
-> has painted.
+> has painted. The paper texture is the one image this ADR's startup check now lets the shell
+> inline.
 
 ## Context
 
@@ -89,6 +91,13 @@ native keeps its synchronous, offline-complete bundle unchanged.
       once;
     * executable inline scripts;
     * inline CSS.
+  * The inlined-image rule has one exception, which the owner decided under ADR-0180. The paper
+    texture, `experiments/native-architecture/assets/paper/handmade-paper.webp`, may appear once in
+    the shell's inline CSS.
+    * `INLINED_IMAGE_EXCEPTIONS` names that asset with its reason.
+    * A second copy fails, and so does the texture in a script or any other inlined image.
+      `check-native-web-startup.test.mjs` holds each case.
+    * Until that change the checker summed inline CSS but did not scan it for images.
   * `check-native-web-precache.mjs` requires every Farm image and page chunk to be precached for
     offline use. It rejects Farm line art, deferred icons or release notes found in a script the
     shell loads.

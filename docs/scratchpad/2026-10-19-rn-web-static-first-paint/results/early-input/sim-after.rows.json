@@ -1,0 +1,242 @@
+[
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 767,
+  "lcp": 1051,
+  "tbt": 474,
+  "si": 767,
+  "cls": 0,
+  "score": 88,
+  "bytes": 724506,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 4513,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 39
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 760,
+  "lcp": 1051,
+  "tbt": 460,
+  "si": 833,
+  "cls": 0,
+  "score": 89,
+  "bytes": 724506,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 4423,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 31
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 760,
+  "lcp": 1051,
+  "tbt": 458,
+  "si": 868,
+  "cls": 0,
+  "score": 89,
+  "bytes": 724506,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 4503,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 30
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 1,
+  "fcp": 610,
+  "lcp": 900,
+  "tbt": 467,
+  "si": 610,
+  "cls": 0,
+  "score": 88,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1267,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 25
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 2,
+  "fcp": 610,
+  "lcp": 900,
+  "tbt": 452,
+  "si": 610,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1253,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 28
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "phone",
+  "visit": "repeat",
+  "sample": 3,
+  "fcp": 611,
+  "lcp": 900,
+  "tbt": 449,
+  "si": 611,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1250,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 20
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 758,
+  "lcp": 1051,
+  "tbt": 464,
+  "si": 863,
+  "cls": 0,
+  "score": 88,
+  "bytes": 724506,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 4509,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 26
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 768,
+  "lcp": 1051,
+  "tbt": 464,
+  "si": 768,
+  "cls": 0,
+  "score": 88,
+  "bytes": 724506,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 4509,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 24
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 759,
+  "lcp": 1051,
+  "tbt": 459,
+  "si": 874,
+  "cls": 0,
+  "score": 89,
+  "bytes": 724506,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 4507,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 33
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 1,
+  "fcp": 610,
+  "lcp": 900,
+  "tbt": 455,
+  "si": 610,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1212,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 25
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 2,
+  "fcp": 610,
+  "lcp": 900,
+  "tbt": 452,
+  "si": 610,
+  "cls": 0,
+  "score": 89,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1251,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 17
+  }
+ },
+ {
+  "label": "sim-after",
+  "throttle": "simulate",
+  "device": "tablet",
+  "visit": "repeat",
+  "sample": 3,
+  "fcp": 611,
+  "lcp": 900,
+  "tbt": 471,
+  "si": 611,
+  "cls": 0,
+  "score": 88,
+  "bytes": 953,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 1228,
+  "phases": {
+   "timeToFirstByte": 1,
+   "elementRenderDelay": 30
+  }
+ }
+]

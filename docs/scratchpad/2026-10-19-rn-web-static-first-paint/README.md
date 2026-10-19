@@ -162,6 +162,41 @@ inlined prerender 600 ms.
   (`results/quiet-host/*-inline-css.log.txt`). Its hydrated screen is pixel-identical to the linked
   build's.
 
+## The owner's decisions and proposals (2026-10-19, SDK 58 base)
+
+The owner decided three changes: inline the paper texture once; answer touches before hydration (a
+burst on the paper, with finger adoption once the engine is ready, and a "not yet" squish-wiggle on
+controls); and add no early ink. `after` is the build with those changes, and `before` is the build
+before them, which only inlines the style sheet. Measured on a quiet host under the rig lock, 17:10
+to 17:26Z. Results are in `results/early-input/` and `results/snapshot/`. All are phone, first
+visit, median of three, ms.
+
+| Variant     | Devtools FCP | Devtools LCP | Simulated LCP | First scribble (CDP)              | Controls live (CDP) |
+| ----------- | ------------ | ------------ | ------------- | --------------------------------- | ------------------- |
+| Shipping    | 824          | 824          | —             | —                                 | —                   |
+| RN baseline | 3,037        | 3,652        | 2,785         | about 3,000 (paper appears)       | 2,961               |
+| `before`    | 682          | 1,231        | 1,351         | about 2,600; earlier touches lost | 2,465               |
+| **`after`** | **724**      | **724**      | **1,051**     | **2,642, finger held from 739**   | **2,519**           |
+| `snapshot`  | 733          | 733          | —             | —                                 | 2,555               |
+
+`harness/early-touch-probe.mjs` lands a finger on the paper as soon as first contentful paint is
+reported, keeps it moving, and lifts it 800 ms after the engine goes live. On `after`, every sample
+showed one burst at the touch and ended with one ink path, a stroke started where the finger was
+when the engine took it over (`results/early-input/probes.log.txt`). The pixel and
+hydrated-versus-fresh DOM checks pass again on `after` (`results/early-input/`).
+
+* **Item 4, the tiers.** `harness/attribute-entry.mjs` attributes the entry chunk through a
+  source-mapped export (`results/early-input/entry-attribution.json`). Libraries are 390,497 bytes,
+  the drawing engine 100,093, the drawing chrome 122,111, and product, settings and the library
+  75,576. The entry is 197,360 bytes brotli, about 1.05 s on Slow 4G. The library share alone is
+  about 0.5 s, and a tier-1 chunk would save about 0.3 s.
+* **Item 5, the cap.** The per-part bytes are in ADR-0180's Startup cap table.
+* **Item 6, the mechanism.** `harness/snapshot-prerender.mjs` builds the headless-browser
+  alternative: Playwright renders the export at each variant, 46 s for 12. It captures React Native
+  Web's sheet from the CSSOM; the element's text is empty. Its frame is pixel-identical to the
+  hydrated screen. But every load raises React error #418 and re-renders the root
+  (`results/snapshot/hydrated-vs-fresh.log.txt`), so it fails the gate the Node render passes.
+
 ## Findings
 
 1. **What Lantern credits.** Lantern's LCP estimate counts every request started before the
