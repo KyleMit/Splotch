@@ -280,7 +280,7 @@
     "native:web:build": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/build-native-web.mjs",
     "postnative:web:build": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-startup.mjs",
     "gen:native-privacy": "node tools/migration/gen-native-privacy.mjs",
-    "gen:native-replay-traces": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/gen-replay-traces.mjs",
+    "gen:native-replay-traces": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/gen-replay-traces.mjs",
     "android:accessibility:build": "node tools/mobile/android/build-accessibility-probe.mjs"
   },
   "scripts-info": {
