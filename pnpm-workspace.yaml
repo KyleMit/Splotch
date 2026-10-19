@@ -65,12 +65,10 @@ patchedDependencies:
   react-strict-dom@0.0.54: patches/react-strict-dom@0.0.54.patch
   '@stylexjs/stylex@0.15.4': patches/@stylexjs__stylex@0.15.4.patch
   node-forge@1.4.0: patches/node-forge@1.4.0.patch
-  expo-audio@57.0.5: patches/expo-audio@57.0.5.patch
-  react-native-svg@15.15.4: patches/react-native-svg@15.15.4.patch
-  expo-screen-orientation@57.0.2: patches/expo-screen-orientation@57.0.2.patch
-  react-native-reanimated@4.5.1: patches/react-native-reanimated@4.5.1.patch
-  react-native@0.86.3: patches/react-native@0.86.3.patch
-  '@shopify/react-native-skia@2.6.2': patches/@shopify__react-native-skia@2.6.2.patch
+  expo-audio@58.0.9: patches/expo-audio@58.0.9.patch
+  react-native-svg@15.16.0: patches/react-native-svg@15.16.0.patch
+  expo-screen-orientation@58.0.3: patches/expo-screen-orientation@58.0.3.patch
+  react-native@0.88.0: patches/react-native@0.88.0.patch
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the
@@ -91,9 +89,9 @@ allowBuilds:
   # Codegen for the protobufjs CLI, which nothing here invokes; the library that
   # @google/genai imports works without it.
   protobufjs: false
-  # The native app's ink renderer (ADR-0178). `scripts/install-libs.js` copies the
-  # prebuilt Skia xcframeworks and Android libraries out of its own
-  # react-native-skia-apple-* / -android dependencies into `libs/`, where the podspec
-  # and Gradle build read them. It reads no environment beyond SK_GRAPHITE and makes no
-  # network request.
-  '@shopify/react-native-skia': true
+  # The native app's ink renderer (ADR-0178). From 2.14 it declares no install script:
+  # the podspec copies its prebuilt xcframeworks out of react-native-skia-apple-* at
+  # `pod install`, and Gradle reads react-native-skia-android's libraries in place.
+  # pnpm still reports it as a build candidate, so it is declined here rather than
+  # failing the install.
+  '@shopify/react-native-skia': false

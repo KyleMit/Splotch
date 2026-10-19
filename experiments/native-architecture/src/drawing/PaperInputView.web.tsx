@@ -1,5 +1,5 @@
 import { forwardRef, useLayoutEffect, useRef } from 'react';
-import { View, type ViewProps } from 'react-native';
+import { View, type ViewProps, type ViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { InputContact, InputSample, InputTool } from './paperInput';
 
@@ -11,11 +11,11 @@ function inputSample(event: PointerEvent): InputSample {
   return { pageX: event.pageX, pageY: event.pageY, timestamp: event.timeStamp };
 }
 
-export const PaperInputView = forwardRef<View, Props>(function PaperInputView(
+export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInputView(
   { onInput, onClaim, ...props },
   ref
 ) {
-  const host = useRef<View | null>(null);
+  const host = useRef<ViewInstance | null>(null);
   const bottomInset = useSafeAreaInsets().bottom;
   const current = useRef({ onInput, onClaim, bottomInset });
   current.current = { onInput, onClaim, bottomInset };

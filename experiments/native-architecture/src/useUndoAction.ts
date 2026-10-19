@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import { undoDrawing, type History, type Point } from './drawing/model';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import type { UndoFeedback, UndoGhost } from './drawing/undoFeedback';
@@ -43,7 +43,7 @@ export function useUndoAction(owner: UndoActionOwner) {
   const finishGhost = useCallback((id: number) => {
     if (life.current.alive) setUndoGhost((cue) => (cue?.id === id ? null : cue));
   }, []);
-  const undoTile = useRef<View>(null);
+  const undoTile = useRef<ViewInstance>(null);
   const nextId = useRef(0);
   const undo = useCallback(
     (reduced: boolean, towards: Point | null) => {

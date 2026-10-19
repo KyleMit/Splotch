@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { Pressable, type PressableProps, type View } from 'react-native';
+import { Pressable, type PressableProps, type ViewInstance } from 'react-native';
 import { Animated } from '../platform/animated';
 import { compat, type html } from 'react-strict-dom';
 import { InertRegion } from './toolbarSkin';
@@ -19,7 +19,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 // The props the released renderer resolves for a host: its :active state handlers, and whether
 // a style transition made the style animated.
 type ResolvedProps = PressableProps & {
-  ref?: Ref<View>;
+  ref?: Ref<ViewInstance>;
   animated?: boolean;
   onPressBegin?: () => void;
   onPointerDown?: () => void;
@@ -37,12 +37,12 @@ function NativePressable({
   children,
   ...resolved
 }: ResolvedProps & { children: ReactNode }) {
-  const host = useRef<View | null>(null);
+  const host = useRef<ViewInstance | null>(null);
   const mounted = useRef(true);
   const current = useRef({ resolved, onPointerDown, onPointerUp, onPointerCancel, onPressBegin });
   current.current = { resolved, onPointerDown, onPointerUp, onPointerCancel, onPressBegin };
   const ref = useCallback(
-    (node: View | null) => {
+    (node: ViewInstance | null) => {
       host.current = node;
       if (typeof forwarded === 'function') forwarded(node);
       else if (forwarded) forwarded.current = node;

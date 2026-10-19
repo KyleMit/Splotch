@@ -130,10 +130,10 @@ decision above stands; how a cohort reaches the committed layer changed.
   Skia's JSI setter, so live ink renders no React. A commit adopts the pixels already painted. Any
   other change to the committed strokes replays them, then replays the live cohort's recorded ops.
 * **The view's picture swap is locked.** react-native-skia's picture view replaces its picture on
-  the JS thread while its render thread copies it to draw, unsynchronized; when the replacement
-  dropped a picture's last reference it could free the picture mid-draw. A pnpm patch
-  (`patches/@shopify__react-native-skia@2.6.2.patch`) takes one lock on both sides, so the ink layer
-  releases each picture as soon as the view holds the next (`skiaViewPicture.ts`).
+  the JS thread while its render thread copies it to draw; unsynchronized, a replacement that
+  dropped a picture's last reference could free the picture mid-draw. react-native-skia 2.14's
+  renderer takes one lock on both sides (2.6.2 needed a pnpm patch to), so the ink layer releases
+  each picture as soon as the view holds the next (`skiaViewPicture.ts`).
 * **Crayon glazes once per pass, as a group.** A pass's wax accumulates at full opacity and is
   glazed onto the ink beneath it as one group, restamped from the pre-group pixels each frame so
   overlapping chunks never glaze over their own wax. Contacts drawn together share a group, as
@@ -153,8 +153,8 @@ Consequences:
   theme changes cost more on a long drawing.
 * − The layer holds the committed raster, its tile images and, while a Crayon pass is open, a pass
   buffer and a pre-group copy: up to four paper-sized rasters.
-* − Live ink depends on that react-native-skia patch until upstream orders the swap with the draw;
-  an upgrade must carry it, and `tools/tests/native-picture-lifetime.test.mjs` reads the installed
-  header to fail otherwise.
+* − Live ink depends on react-native-skia ordering the swap with the draw;
+  `tools/tests/native-picture-lifetime.test.mjs` reads the installed renderer and fails a version
+  that touches the picture outside its lock.
 * − Pixels at op joints differ slightly from a single path per stroke: each op's round cap
   antialiases against the one before it, as shipping's do.

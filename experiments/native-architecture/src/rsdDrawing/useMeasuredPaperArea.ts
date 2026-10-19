@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import type { View, LayoutChangeEvent } from 'react-native';
+import type { LayoutChangeEvent, ViewInstance } from 'react-native';
 import { measurePaper } from '../drawing/measurePaper';
 import { createResizeListener } from '../../../../web/src/lib/drawing/resizeListener';
 import { sameBox, sameSize, type AreaBox as Box, type AreaSize } from './edgeLayout';
@@ -7,7 +7,7 @@ import { sameBox, sameSize, type AreaBox as Box, type AreaSize } from './edgeLay
 export type MeasuredPaperArea = Readonly<{ box: Box; window: AreaSize; layoutOnly?: boolean }>;
 
 export type MeasuredPaperAreaResult = Readonly<{
-  host: RefObject<View | null>;
+  host: RefObject<ViewInstance | null>;
   onLayout: (event: LayoutChangeEvent) => void;
   area?: Box;
   window: AreaSize;
@@ -15,7 +15,7 @@ export type MeasuredPaperAreaResult = Readonly<{
 }>;
 
 export function useMeasuredPaperArea({ width, height }: AreaSize): MeasuredPaperAreaResult {
-  const host = useRef<View>(null);
+  const host = useRef<ViewInstance>(null);
   const [measured, setMeasured] = useState<MeasuredPaperArea>();
   const current = useRef<{
     box?: Box;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type ReactNode, type Ref, type RefObject } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
 import {
   initialWindowMetrics,
@@ -280,7 +280,7 @@ export function RsdPageSheet({
   title: string;
   lede: string;
   children: ReactNode;
-  scrollRef?: Ref<ScrollView>;
+  scrollRef?: Ref<ScrollViewInstance>;
   onBodyOffset?: (y: number) => void;
   backLabel?: BackLabel;
   onScroll?: (y: number) => void;

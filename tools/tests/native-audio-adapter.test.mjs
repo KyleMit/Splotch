@@ -1,17 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NativeAbortController } from './native-rn-abort-controller.mjs';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
   GAIN_RAMP_S,
 } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
-const runtimeRequire = createRequire(import.meta.url);
-const reactNativeRequire = createRequire(runtimeRequire.resolve('react-native/package.json'));
-const { AbortController: NativeAbortController } = reactNativeRequire(
-  'abort-controller/dist/abort-controller'
-);
 const native = vi.hoisted(() => ({ players: [], mode: vi.fn(async () => {}), create: vi.fn() }));
 vi.mock('expo-audio', () => ({ setAudioModeAsync: native.mode, createAudioPlayer: native.create }));
 import {
@@ -174,9 +169,8 @@ describe('Clear foreground preparation', () => {
 });
 
 describe('supported Expo native audio binding', () => {
-  it('loads with the actual React Native signal without DOM throwIfAborted', async () => {
+  it('loads with the actual React Native signal', async () => {
     const f = fixture();
-    expect('throwIfAborted' in f.controller.signal).toBe(false);
     const outcome = f.promise.catch((error) => error);
     await Promise.resolve();
     expect(native.create).toHaveBeenCalledOnce();

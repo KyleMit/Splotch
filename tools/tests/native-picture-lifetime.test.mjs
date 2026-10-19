@@ -14,51 +14,61 @@ import {
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 
 // The ink view releases each picture as soon as the native view holds the next one
-// (skiaViewPicture.ts). That is safe only because the patched native view orders its picture's
-// replacement on the JS thread with the copy its render thread draws; unpatched, dropping a
-// replaced picture's last reference could free it mid-draw ("Pure virtual function called!").
+// (skiaViewPicture.ts). That is safe only because the native view orders its picture's replacement
+// on the JS thread with the copy its render thread draws; unordered, dropping a replaced picture's
+// last reference could free it mid-draw ("Pure virtual function called!").
 
 const ROOT = join(fileURLToPath(import.meta.url), '../../..');
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
-const PATCH = 'patches/@shopify__react-native-skia@2.6.2.patch';
-const VIEW_HEADER = 'node_modules/@shopify/react-native-skia/cpp/rnskia/RNSkPictureView.h';
+const RENDERER = 'node_modules/@shopify/react-native-skia/cpp/rnskia/RNSkPictureView';
+const LOCK = 'std::lock_guard<std::mutex> lock(_mutex);';
 
-// One renderer method, by its signature, from the installed header.
-function rendererMethod(header, signature) {
-  const start = header.indexOf(signature);
-  if (start === -1) return null;
-  let depth = 0;
-  for (let index = header.indexOf('{', start); index < header.length; index++) {
-    if (header[index] === '{') depth += 1;
-    if (header[index] === '}' && --depth === 0) return header.slice(start, index + 1);
-  }
-  return null;
+// Each read or write of `_picture`, with the statements of its innermost enclosing block that
+// precede it. Blocks already closed by then are dropped: a lock taken inside one has been released.
+// The lock must open that block, so no condition can skip it.
+function pictureAccesses(source) {
+  const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, (comment) =>
+    ' '.repeat(comment.length)
+  );
+  return [...code.matchAll(/\b_picture\b/g)]
+    .filter(({ index }) => !/sk_sp<SkPicture>\s*$/.test(code.slice(0, index)))
+    .map(({ index }) => {
+      let depth = 0;
+      let open = index;
+      while (open > 0) {
+        open -= 1;
+        if (code[open] === '}') depth += 1;
+        if (code[open] === '{' && depth-- === 0) break;
+      }
+      let scope = code.slice(open + 1, index);
+      while (/\{[^{}]*\}/.test(scope)) scope = scope.replace(/\{[^{}]*\}/g, '');
+      return scope;
+    });
 }
 
-// Negative control: the unpatched header copies `_picture` in performDraw and assigns it in
-// setPicture without the lock, and the first test fails on it.
-describe('the patched react-native-skia picture view', () => {
-  const header = read(VIEW_HEADER);
+function unlockedPictureAccesses(...sources) {
+  return sources.flatMap(pictureAccesses).filter((scope) => !scope.trimStart().startsWith(LOCK));
+}
 
-  it('replaces and copies its picture under one lock', () => {
-    expect(header).toMatch(/mutable std::mutex _pictureMutex;/);
-    const set = rendererMethod(header, 'void setPicture(sk_sp<SkPicture> picture)');
-    expect(set).toMatch(
-      /std::lock_guard<std::mutex> lock\(_pictureMutex\);\s*_picture\.swap\(picture\);/
-    );
-    const get = rendererMethod(header, 'sk_sp<SkPicture> getPicture() const');
-    expect(get).toMatch(/std::lock_guard<std::mutex> lock\(_pictureMutex\);\s*return _picture;/);
-    const draw = rendererMethod(header, 'bool performDraw(');
-    expect(draw).toMatch(/sk_sp<SkPicture> picture = getPicture\(\);/);
-    expect(draw).not.toMatch(/=\s*_picture;/);
+// Negative control: react-native-skia 2.6.2's header declares no lock, and its setPicture,
+// getPicture and performDraw each touch `_picture` outside one, so both tests fail on it. Moving
+// 2.14's `_picture = picture;` past its lock block, or guarding that lock with `if (false)`, fails
+// the first.
+describe('the installed react-native-skia picture view', () => {
+  const header = read(`${RENDERER}.h`);
+  const source = read(`${RENDERER}.cpp`);
+
+  it('replaces and copies its picture only under its lock', () => {
+    expect(header).toMatch(/mutable std::mutex _mutex;\s*sk_sp<SkPicture> _picture;/);
+    expect(pictureAccesses(header).length + pictureAccesses(source).length).toBeGreaterThan(2);
+    expect(unlockedPictureAccesses(header, source)).toEqual([]);
   });
 
-  it('is applied from the registered patch on every install', () => {
-    expect(read('pnpm-workspace.yaml')).toContain(`'@shopify/react-native-skia@2.6.2': ${PATCH}`);
-    expect(read(PATCH)).toContain('+      _picture.swap(picture);');
-    expect(read('experiments/native-architecture/src/drawing/skiaViewPicture.ts')).toContain(
-      'react-native-skia patch'
-    );
+  it('draws the copy it took, not the field a commit may be replacing', () => {
+    const draw = header.slice(header.indexOf('void drawInto('), header.indexOf('private:'));
+    expect(draw).toMatch(/picture = _picture;/);
+    expect(draw).toMatch(/canvas->drawPicture\(picture\);/);
+    expect(header).toMatch(/performDraw\([^)]*\)\s*\{[\s\S]*?drawInto\(canvas, pd\)/);
   });
 });
 

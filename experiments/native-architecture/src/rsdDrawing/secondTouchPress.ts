@@ -1,5 +1,5 @@
 import { createContext, useContext, useLayoutEffect, useState } from 'react';
-import type { GestureResponderEvent, NativeTouchEvent, View } from 'react-native';
+import type { GestureResponderEvent, NativeTouchEvent, ViewInstance } from 'react-native';
 import { useModalOrigin } from './modalOrigin';
 
 type Frame = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -31,7 +31,7 @@ type Target = {
 // The palette paints above the Clear tab where their bounds overlap.
 const TARGET_PRIORITY = { clear: 0, control: 1 } as const;
 
-export function nativePressFrame(view: View | null): Frame | null {
+export function nativePressFrame(view: ViewInstance | null): Frame | null {
   if (!view) return null;
   const { x, y, width, height } = view.getBoundingClientRect();
   return [x, y, width, height].every(Number.isFinite) && width > 0 && height > 0

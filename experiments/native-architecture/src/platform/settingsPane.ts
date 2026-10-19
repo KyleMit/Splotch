@@ -1,10 +1,10 @@
-import type { ScrollView } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import type { NativeSettingsSectionId } from '../settings/settingsSections';
 import { spiedSectionAt } from '../settings/settingsPane';
 import type { ScrollExtent } from '../rsdDrawing/RsdScrollCue';
 
 export function scrollSettingsPaneToSection(
-  pane: ScrollView | null,
+  pane: ScrollViewInstance | null,
   _id: NativeSettingsSectionId,
   offset: number,
   animated: boolean
@@ -13,7 +13,7 @@ export function scrollSettingsPaneToSection(
 }
 
 export function spiedSettingsSection(
-  _pane: ScrollView | null,
+  _pane: ScrollViewInstance | null,
   ids: readonly NativeSettingsSectionId[],
   offsets: readonly number[],
   extent: ScrollExtent

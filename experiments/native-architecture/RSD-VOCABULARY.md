@@ -106,11 +106,11 @@ Small-screen and large-text paper allocation, remaining native drawing fidelity,
 adapters, lifecycle, services, security and release gates remain open. See the migration contract
 and Phase 1 plan.
 
-`NativeFrame` owns a `react-native-safe-area-context` 5.7.0 provider and padding safe-area view for
-all four window edges. Each frame mounts its provider in its own coordinate space: the drawing root
-and every native Modal window use separate providers. Core React Native SafeAreaView is not an
-Android inset owner. No initial activity metrics are transplanted into a Modal. The fixed
-nonshrinking footer remains outside the options ScrollView, with token padding inside the safe area.
+`NativeFrame` owns a `react-native-safe-area-context` provider and padding safe-area view for all
+four window edges. Each frame mounts its provider in its own coordinate space: the drawing root and
+every native Modal window use separate providers. Core React Native SafeAreaView is not an Android
+inset owner. No initial activity metrics are transplanted into a Modal. The fixed nonshrinking
+footer remains outside the options ScrollView, with token padding inside the safe area.
 Back/dismiss/busy guards and the 52-point control minimum remain unchanged.
 
 The new package declaration is unresolved until an ordinary owned pnpm resolution, exact released

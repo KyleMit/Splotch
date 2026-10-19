@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type ViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -63,8 +63,8 @@ export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const shown = !disabled && !staleColor && (open || flyout === 'color') ? flyout : null;
   const live = useRef(shown);
   live.current = shown;
-  const menu = useRef<View>(null);
-  const triggers = useRef<Partial<Record<FlyoutName, View | null>>>({});
+  const menu = useRef<ViewInstance>(null);
+  const triggers = useRef<Partial<Record<FlyoutName, ViewInstance | null>>>({});
   function close() {
     const current = live.current;
     if (current) refocusFlyoutTrigger(menu.current, triggers.current[current]);
