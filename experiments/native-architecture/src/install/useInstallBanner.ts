@@ -19,10 +19,13 @@ export function useInstallSnapshot(owner: InstallPromptOwner | null) {
 
 // The banner waits until the child has drawn a little, steps aside while other
 // controls cover the screen, and auto-clears once ignored for a few more strokes.
+// `waiting` is shipping's other visibility guards: an AI picture minimized in the corner or a
+// save-failure banner up. Unlike `hidden`, it leaves a parting message already shown on screen.
 export function useInstallBanner(
   owner: InstallPromptOwner | null,
   strokes: number,
-  hidden: boolean
+  hidden: boolean,
+  waiting: boolean
 ) {
   const snapshot = useInstallSnapshot(owner);
   const [hintOpen, setHintOpen] = useState(false);
@@ -33,6 +36,7 @@ export function useInstallBanner(
     !snapshot.installed &&
     snapshot.stage !== null &&
     snapshot.mode !== 'none' &&
+    !waiting &&
     strokes >= SETTLED_IN_STROKES;
   // A card still on screen for its exit, or behind the parting message, takes no action, as
   // Svelte leaves an outroing block inert.

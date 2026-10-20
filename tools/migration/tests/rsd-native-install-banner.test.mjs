@@ -7,6 +7,7 @@ import {
   root,
 } from './rsd-native-selection-host.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
+import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { act, createElement } from 'react';
 import { Animated } from 'react-native';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -73,8 +74,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function show(strokes, hidden = false, size = TOUCH_TARGET) {
-  const element = createElement(RsdInstallBanner, { strokes, hidden, controlSize: size });
+async function show(strokes, hidden = false, size = TOUCH_TARGET, waiting = false) {
+  const element = createElement(RsdInstallBanner, {
+    strokes,
+    hidden,
+    waiting,
+    controlSize: size,
+  });
   if (root) await act(async () => root.render(element));
   else host = await mount(element);
 }
@@ -202,6 +208,28 @@ it('hands off to Settings after five ignored strokes and shrinks into it', async
   expect(host.textContent).not.toContain(INSTALL_BANNER_COPY.parting);
 });
 
+// Shipping keeps a parting message on screen through its visibility guards ({#if visible ||
+// parting}), so a save failure or a minimized AI picture that arrives during it does not cut it
+// short (#3021). Negative control: routing those guards through `hidden` drops it at once.
+it('keeps the parting message through a save failure that arrives during it', async () => {
+  vi.useFakeTimers();
+  await show(3);
+  for (const strokes of [4, 5, 6, 7, 8]) await show(strokes);
+  expect(host.textContent).toContain(INSTALL_BANNER_COPY.parting);
+  await show(8, false, TOUCH_TARGET, true);
+  expect(host.textContent).toContain(INSTALL_BANNER_COPY.parting);
+  await act(async () => vi.advanceTimersByTime(PARTING_MESSAGE_MS));
+  expect(host.textContent).not.toContain(INSTALL_BANNER_COPY.parting);
+  expect(stored.get(STORAGE_KEYS.installDismissed)).toBe('true');
+});
+
+it('waits without a parting message while a picture is not yet kept, and shows again after', async () => {
+  await show(3, false, TOUCH_TARGET, true);
+  expect(host.textContent).not.toContain(INSTALL_PROMPT_COPY.initial.heading);
+  await show(3);
+  expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
+});
+
 it('steps aside under other controls without motion and restarts its countdown when shown again', async () => {
   await show(3);
   timing.mockClear();
@@ -303,4 +331,23 @@ it('steps aside while the landscape tool drawer is open and returns when it clos
   expect(screenHost.textContent).toContain(heading);
   expect(caller.paperRender).toHaveBeenCalledTimes(paperRenders);
   expect(how(INSTALL_BANNER_COPY.hideHint)).toBeDefined();
+});
+
+// Shipping's InstallBanner waits out a save-failure banner, which is about a picture not kept yet
+// (#3021). Negative control: a banner hold without the save failure fails here.
+it('steps aside while a save-failure banner is up and returns once it is dismissed', async () => {
+  const failed = {
+    outcome: 'failed',
+    pictureCount: 1,
+    retrying: false,
+    retry: async () => {},
+    dismiss() {},
+    report: vi.fn(),
+  };
+  await mountToolbar(toolbarScreen({ committedStrokes: 3, saveFailure: failed }));
+  const heading = INSTALL_PROMPT_COPY.initial.heading;
+  expect(screenHost.textContent).not.toContain(heading);
+  caller.screen.saveFailure = { ...failed, outcome: null, pictureCount: 0 };
+  await act(async () => root.render(createElement(RsdDrawingScreen)));
+  expect(screenHost.textContent).toContain(heading);
 });

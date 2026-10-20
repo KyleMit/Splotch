@@ -84,13 +84,15 @@ export function installDockInsets(
 export function RsdInstallBanner({
   strokes,
   hidden,
+  waiting,
   controlSize,
 }: {
   strokes: number;
   hidden: boolean;
+  waiting: boolean;
   controlSize: number;
 }) {
-  const banner = useInstallBanner(installPrompt, strokes, hidden);
+  const banner = useInstallBanner(installPrompt, strokes, hidden, waiting);
   const dock = installDockInsets(useWindowDimensions(), controlSize);
   const area = useRef<Box | null>(null);
   const card = useRef<Box | null>(null);
