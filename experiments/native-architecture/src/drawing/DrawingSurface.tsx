@@ -172,7 +172,10 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         geometry.clear();
       };
     }, [input, geometry, refreshGeometry]);
-    useLayoutEffect(() => input.observeInputStyle(), [input, props.color, props.brush]);
+    useLayoutEffect(
+      () => input.observeInputStyle(),
+      [input, props.color, props.brush, props.eraserWidth]
+    );
     const ink = useInkHandlers(propsRef, input, resume);
 
     return (
@@ -197,6 +200,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 onClaim={preemptBackground}
                 engineReady={() => input.isReady()}
                 onInput={(value) => input.receiveInput(value)}
+                onHover={(sample) => input.hover(sample)}
+                erasing={props.brush === 'eraser'}
               >
                 {/* Committed ink holds Magic colors; appearance changes must replay semantic strokes. */}
                 <InkLayer
