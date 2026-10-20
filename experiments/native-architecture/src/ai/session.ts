@@ -15,6 +15,7 @@ import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
 import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
 import { AI_FLOW_IDLE, aiJournalWaiting } from './uiState';
+import { requestPersistentStorage } from '../platform/persistentStorage';
 export type { AiState, PreparedAiDrawing } from './sessionContract';
 export class AiSession {
   protected deps: AiSessionDependencies;
@@ -360,6 +361,9 @@ export class AiSession {
       this.credential = null;
       await this.deps.vault.write(kind, verified);
       if (!current()) return;
+      // Only after a parent's explicit save that still owns the session, as shipping asks: an
+      // abandoned save and an invite link's capture are not the parent's opt-in (ADR-0127/0128).
+      void requestPersistentStorage();
       await this.readStatus(current);
       this.report({ kind, outcome: 'accepted' });
     } catch {
