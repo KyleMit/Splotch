@@ -56,6 +56,15 @@ cd experiments/native-architecture/android
 The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; install it with
 `adb install -r`. A local keystore supports development only and is not store signing.
 
+A keystore kept under `/private/tmp` can be cleared between sessions; the 2026-10-20 crash hunt
+found its campaign keystore gone. For a local probe install, sign with Android's debug key instead:
+copy `~/.android/debug.keystore` to an absolute path outside the repository under the name
+`candidate-release.keystore`, pass that path as `storeFile`, and pass `storePassword=android`,
+`keyAlias=androiddebugkey` and `keyPassword=android`. Those are Android's published debug-key
+defaults, not secrets. An APK signed with a different key cannot replace the installed probe
+(`adb install -r` refuses the update), so uninstall the probe first, which deletes its data. Never
+touch the store-installed `art.splotch.app`.
+
 ## Checking a JS-only change on a device
 
 A change to TS or TSX alone needs no native rebuild. Build the Release probe once per device as
@@ -72,6 +81,34 @@ the device keeps running a Release build, so the result holds for timing too.
 `tools/device-parity/README.md` has the iOS form and the limits. A Kotlin, Swift or native config
 change, an Android image or sound that is new, and a committed performance capture still take the
 full build.
+
+## Checking an SDK bump or a platform-I/O change on a device
+
+The unit tests run file, network, keychain and Photos access in Node or against fakes, and the crash
+matrix drives drawing, not those paths, so neither reaches the device runtime's I/O. On 2026-10-20 a
+few minutes of hand use on the devices, and the recheck of each fix, found five defects that both
+had passed:
+
+* Expo SDK 58 made `File.write()` asynchronous, ten call sites kept calling it unawaited, and the
+  stores that verify a file read it back before the bytes landed (issue 3062).
+* React Native's `Blob` rejects `ArrayBuffer` and typed-array parts where Node's accepts them, so
+  every AI upload threw before sending (issue 3063).
+* Every real PNG AI result carries a C2PA `caBX` chunk, which the validators rejected (issue 3066).
+* The new-architecture interop delivers a native `nil` to JavaScript as `undefined`, not `null`, so
+  an empty iOS keychain slot failed its read and every AI credential save failed (issue 3068).
+* iOS directory listings return `/private/var/...` URLs with a trailing slash, so the AI journal
+  never matched the attempt folders it had built from `/var/...` (issue 3069).
+
+After an Expo or React Native SDK bump, or any change to platform I/O, run this on a Release build
+on each platform:
+
+1. Change a setting, force-stop the app, relaunch it, and confirm the setting stuck.
+2. Save an AI key, then reopen Settings and confirm it is still there.
+3. Save a picture to Photos.
+4. Run one AI generation, when the work has AI budget.
+
+Rechecking a fix that touches only TS or TSX takes about ten seconds through
+`node tools/device-parity/swap-js-bundle.mjs` (above).
 
 ## Performance probe
 

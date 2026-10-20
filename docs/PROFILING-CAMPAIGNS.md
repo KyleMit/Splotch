@@ -1736,6 +1736,19 @@ Another agent session on the same host counts. So does another worktree's `npm r
 not only a build or a test suite. An unattended campaign that runs device-free units beside a
 capture unit serializes them with a rig lock (the `ship-campaign` skill's performance reference).
 
+## Build caches fill the host disk
+
+Every native build leaves Xcode DerivedData and Gradle outputs behind, and a campaign that rebuilds
+per experiment piles them up. On 2026-10-20 one session's own build directories reached about 21 GB
+in its scratchpad; the disk filled ("No space left on device"), and a Codex review launch failed on
+its `pnpm install`. A full disk fails every session on the host, not only the one that filled it.
+
+* Pass `xcodebuild -derivedDataPath <dir>` with one known directory per campaign, and keep copied
+  APKs and `.app` bundles beside it, so the campaign's build weight is one place to measure.
+* Check `df -h` before each build.
+* Delete only your own obsolete build directories: `cd` into the campaign's directory and remove
+  them by relative path. Never delete another session's.
+
 ## Metric traps
 
 Each is worth recognizing in a number.
