@@ -360,12 +360,13 @@ export async function regionDigest(session, [nx, ny], sizePx = 6) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+// A record path is relative to this folder, or absolute (a scratch file outside the repo).
 export function writeJson(file, value) {
-  writeFileSync(join(HERE, file), `${JSON.stringify(value, null, 2)}\n`);
+  writeFileSync(resolve(HERE, file), `${JSON.stringify(value, null, 2)}\n`);
 }
 
 export function readJson(file) {
-  const path = join(HERE, file);
+  const path = resolve(HERE, file);
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
 }
 

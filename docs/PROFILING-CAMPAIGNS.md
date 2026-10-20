@@ -217,6 +217,17 @@ harmless but wastes an approval round-trip.
 
 The same applies to the Appium server and to WebDriverAgent: look first.
 
+**Stopping an Appium server leaves the WebDriverAgent builds it started running.** For a simulator
+session, the XCUITest driver runs `xcodebuild build-for-testing test-without-building` with that
+simulator as its destination. When the server is stopped, the build process is reparented to launchd
+and keeps running. It is then in no PID list the session recorded, so the rule against stopping
+unrecorded processes leaves it up.
+
+So record those `xcodebuild` PIDs while the server is still their parent
+(`pgrep -P <appium pid> -fl xcodebuild`), and stop them with the server. Seen 2026-10-20: two such
+builds outlived the crash-hunt rig release, each holding a simulator that had already been shut
+down.
+
 **A borrowed long-running Appium can report the attached iPad as
 `Unknown device or simulator UDID`.** The message comes from XCUITest's device discovery, before any
 WebDriverAgent build or launch. Discovery short-circuits on the root RemoteXPC tunnel's registry, so

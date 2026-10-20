@@ -207,6 +207,12 @@ ahead of the JSON. `cmd` lines are the rival's own shell and `broker` lines are 
 `cmd failed` line that is never followed by a `broker` line for the same command is a refusal the
 rival swallowed rather than escalated.
 
+A `failed` state whose log ends with `Selected model is at capacity` is the provider, not the
+review. The next launch on the same PR opens a fresh reviewer at round 1, so the failure costs no
+round. Before you relaunch, read the failed run's `agent_message` items in `rival.ndjson`. A
+reviewer that had already reproduced defects says so there, and you can fix those before the
+relaunch (PR 3053).
+
 ## Handling the findings
 
 The findings are an outside opinion, not a verdict. The rival reviewed a diff without this session's
