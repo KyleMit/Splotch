@@ -307,7 +307,9 @@ async function mountUndoKeyboard() {
   expect(sdk.shortcut).toBeTypeOf('function');
 }
 
-async function requestUndo(kind) {
+// A button press with nothing committed to undo answers with the unavailable cue and measures
+// nothing; keyboard Undo has no cue, as shipping's shortcut has none.
+async function requestUndo(kind, { committed = true } = {}) {
   if (kind === 'keyboard') {
     await call(() => sdk.shortcut({ nativeEvent: { key: 'undo' } }));
     return;
@@ -319,6 +321,10 @@ async function requestUndo(kind) {
     },
   };
   await call(() => owner.undoFromButton(false));
+  if (!committed) {
+    expect(measured).toBeUndefined();
+    return;
+  }
   expect(measured).toBeTypeOf('function');
   await call(() => measured(0, 0, 60, 60, 200, 300));
 }
@@ -357,11 +363,12 @@ it.each(['keyboard', 'button'])(
     await mountUndoKeyboard();
     const empty = historyOwner.historyRef.current;
     await send('start', event([touch(0, 10, 20, 100)]));
-    await requestUndo(kind);
+    await requestUndo(kind, { committed: false });
     expect(historyOwner.historyRef.current).toBe(empty);
     expect(owner.drawing).toBe(true);
     expect(owner.undoFeedback).toBeNull();
     expect(owner.undoGhost).toBeNull();
+    expect(owner.unavailableFeedback?.id ?? null).toBe(kind === 'button' ? 1 : null);
     await send('move', event([touch(0, 30, 40, 200)], undefined, { 0: 100 }));
     await send('end', event([], [touch(0, 50, 60, 300)], { 0: 100 }));
     expect(owner.history.drawing.strokes).toHaveLength(1);
