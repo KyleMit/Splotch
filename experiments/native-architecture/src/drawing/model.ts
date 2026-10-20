@@ -103,6 +103,15 @@ export function cohortFrame(drawing: Drawing): number {
   return next;
 }
 
+// The grain seed a new crayon stroke takes after `strokes`, so adjacent passes differ.
+export function nextCrayonSeed(strokes: readonly Stroke[]): number {
+  const largest = strokes.reduce(
+    (largest, stroke) => (stroke.brush === 'crayon' ? Math.max(largest, stroke.seed) : largest),
+    0
+  );
+  return (largest % MAX_CRAYON_SEED) + 1;
+}
+
 export function strokeStyle(
   brush: Brush,
   color: PaintColor,
@@ -113,14 +122,7 @@ export function strokeStyle(
   const width = strokeWidthPx(brush, selection);
   if (brush === 'eraser') return { brush, width };
   if (brush === 'magic') return { brush, width, rainbow: drawing.rainbow };
-  if (brush === 'crayon') {
-    const largest = drawing.strokes.reduce(
-      (largest, stroke) => (stroke.brush === 'crayon' ? Math.max(largest, stroke.seed) : largest),
-      0
-    );
-    const seed = (largest % MAX_CRAYON_SEED) + 1;
-    return { brush, width, color, seed };
-  }
+  if (brush === 'crayon') return { brush, width, color, seed: nextCrayonSeed(drawing.strokes) };
   return { brush, width, color };
 }
 
