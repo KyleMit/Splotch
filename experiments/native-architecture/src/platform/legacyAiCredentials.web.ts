@@ -8,12 +8,23 @@ export const LEGACY_PLAINTEXT_AI_CREDENTIALS = [
   STORAGE_KEYS.legacyAiAccessToken,
 ] as const;
 
-export function removeLegacyAiCredentials(storage: Pick<Storage, 'removeItem'> = localStorage) {
+// A browser that blocks site data throws on the `localStorage` getter itself; such storage holds
+// nothing to remove.
+function siteStorage(): Pick<Storage, 'removeItem'> | null {
+  try {
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function removeLegacyAiCredentials(storage = siteStorage()) {
+  if (!storage) return;
   for (const key of LEGACY_PLAINTEXT_AI_CREDENTIALS) {
     try {
       storage.removeItem(key);
     } catch {
-      // Storage the browser refuses (a private window, blocked site data) holds nothing to remove.
+      // A refused write leaves the launch running; the next launch tries again.
     }
   }
 }

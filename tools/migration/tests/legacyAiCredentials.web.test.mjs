@@ -32,3 +32,10 @@ it('leaves a launch running when the browser refuses storage', () => {
   expect(() => removeLegacyAiCredentials(refused)).not.toThrow();
   expect(refused.removeItem.mock.calls).toEqual([[LEGACY_API_KEY], [LEGACY_ACCESS_CODE]]);
 });
+
+it('leaves a launch running when the browser blocks the storage getter itself', () => {
+  vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(() => {
+    throw new DOMException('The operation is insecure.', 'SecurityError');
+  });
+  expect(() => removeLegacyAiCredentials()).not.toThrow();
+});
