@@ -57,7 +57,9 @@ vi.mock('expo-file-system', () => {
       if (this.exists) throw new Error('Exists');
       fixture.files.set(this.uri, new Uint8Array());
     }
-    write(value) {
+    async write(value) {
+      // Expo SDK 58's write() is asynchronous: the bytes land after it returns.
+      await Promise.resolve();
       fixture.files.set(
         this.uri,
         typeof value === 'string' ? new TextEncoder().encode(value) : value.slice()

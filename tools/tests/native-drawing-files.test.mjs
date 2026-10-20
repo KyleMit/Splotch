@@ -51,7 +51,9 @@ vi.mock('expo-file-system', () => {
       filesystem.created.push(this.uri);
     }
 
-    write(contents) {
+    async write(contents) {
+      // Expo SDK 58's write() is asynchronous: the bytes land after it returns.
+      await Promise.resolve();
       if (filesystem.writeError) throw filesystem.writeError;
       filesystem.contents.set(this.uri, contents);
     }

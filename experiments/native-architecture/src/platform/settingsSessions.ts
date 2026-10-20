@@ -15,6 +15,6 @@ export const settingsSessions = createSettingsSessions({
   async write(count) {
     const file = countFile();
     if (!file.exists) file.create();
-    file.write(count);
+    await file.write(count);
   },
 });

@@ -34,7 +34,9 @@ vi.mock('expo-file-system', () => ({
       host.create();
       host.files.set(this.path, '');
     }
-    write(value) {
+    async write(value) {
+      // Expo SDK 58's write() is asynchronous: the bytes land after it returns.
+      await Promise.resolve();
       if (!this.exists) throw new Error('missing file');
       host.files.set(this.path, value);
     }

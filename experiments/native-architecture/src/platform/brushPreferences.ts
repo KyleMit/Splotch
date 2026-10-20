@@ -45,7 +45,7 @@ export const brushPreferencesStorage: BrushPreferencesStorage = {
     const pending = new File(owner, `brush-${revision}.pending`);
     if (pending.exists) pending.delete();
     pending.create();
-    pending.write(snapshot);
+    await pending.write(snapshot);
     if ((await pending.text()) !== snapshot)
       throw new Error('Brush settings could not be saved completely.');
     const committed = new File(owner, `brush-${revision}.json`);

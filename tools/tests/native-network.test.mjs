@@ -30,7 +30,7 @@ vi.mock('expo-file-system', () => ({
       return sdk.stored;
     }
     create() {}
-    write(value) {
+    writeSync(value) {
       sdk.stored = value;
     }
   },

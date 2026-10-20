@@ -323,8 +323,9 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
 // source is under web/. Type checking is owned by `npm run check` (svelte-check); ESLint runs
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
 // — it covers correctness/style rules and the project conventions, not type errors. The one
-// deliberate exception is the scoped type-aware block near the bottom (no-floating-promises
-// over web/src TS), which pays the TS-program cost for that rule alone.
+// deliberate exception is no-floating-promises, run type-aware by two scoped blocks near the
+// bottom (web/src TS and the native candidate's src), which pay the TS-program cost for that rule
+// alone.
 export default tseslint.config(
   {
     ignores: [
@@ -883,7 +884,7 @@ export default tseslint.config(
     rules: VACUOUS_TEST_RULES.vitest,
   },
   {
-    // The ONE type-aware exception to the fast non-type-aware design above: floating promises
+    // The type-aware exception to the fast non-type-aware design above: floating promises
     // in app code silently swallow rejections (a failed dynamic import, an unawaited native
     // call), and only a TS program can see a call's return type. Scoped to web/src TS so the
     // project-service cost (~seconds) stays off tooling/scripts. .svelte components are NOT
@@ -897,6 +898,23 @@ export default tseslint.config(
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname + '/web',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+    },
+  },
+  {
+    // The same rule over the native candidate, against its own tsconfig. Expo SDK 58 made
+    // File.write() return a promise, and ten unawaited calls verified or moved files before their
+    // bytes landed (issue 3062). tools/tests/native-floating-promises-lint.test.mjs is the
+    // positive control.
+    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+    ignores: ['**/*.d.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname + '/experiments/native-architecture',
       },
     },
     rules: {
