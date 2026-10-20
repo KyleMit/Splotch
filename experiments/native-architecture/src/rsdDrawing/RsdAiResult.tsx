@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Image } from 'react-native';
+import { Image, View, type LayoutChangeEvent } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
@@ -11,7 +11,7 @@ import {
 import { Animated, Easing } from '../platform/animated';
 import type { AiProgress, AiProgressOwner } from '../ai/aiProgress';
 import { AI_RESULT_COPY } from '../ai/aiResultCopy';
-import { aiResultFrame, type AiResultMode } from '../ai/aiResultGeometry';
+import { aiResultFrame, type AiFooterSlots, type AiResultMode } from '../ai/aiResultGeometry';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import type { AiResult } from '../ai/journal';
 import { aiResultPhase, aiRun } from '../ai/uiState';
@@ -40,6 +40,44 @@ import { RsdAiResultStage } from './RsdAiResultStage';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 import { returnFocusToAiLauncher } from '../platform/aiLauncherFocus';
 import { colors, darkTheme, dimensions, fixedColors, fonts, shadows } from './tokens.css';
+
+const UNMEASURED_SLOTS: AiFooterSlots = { caption: 0, keepDrawing: 0, strip: 0 };
+const STRIP_MEASURE_STYLE = { maxWidth: '100%' } as const;
+type MeasureSlot = (slot: keyof AiFooterSlots) => (event: LayoutChangeEvent) => void;
+
+// The heights the caption and the Keep drawing button laid out at, which the card budgets.
+function useFooterSlots() {
+  const [measured, setMeasured] = useState<AiFooterSlots>(UNMEASURED_SLOTS);
+  const measure: MeasureSlot = (slot) => (event) => {
+    const height = Math.ceil(event.nativeEvent.layout.height);
+    setMeasured((current) => (current[slot] === height ? current : { ...current, [slot]: height }));
+  };
+  return { measured, measure };
+}
+
+// The caption under the dial, and the Keep drawing button while the picture is made, each in a
+// view that reports its height.
+function WaitingFooter(props: {
+  loading: boolean;
+  waiting: boolean;
+  onMinimize: () => void;
+  measure: MeasureSlot;
+}) {
+  return (
+    <>
+      {props.loading ? (
+        <View onLayout={props.measure('caption')}>
+          <RsdAiLoadingCaption />
+        </View>
+      ) : null}
+      {props.waiting ? (
+        <View onLayout={props.measure('keepDrawing')}>
+          <RsdAiKeepDrawing onPress={props.onMinimize} />
+        </View>
+      ) : null}
+    </>
+  );
+}
 
 // AiImageResult.svelte's polaroid send-off: the card tilts like a fresh print, holds, then sails
 // off to the bottom-left. native-ai-flow-geometry.test.mjs reads these back.
@@ -198,6 +236,7 @@ function ResultCard({
   const sizerSrc = result?.uri ?? run?.submitted ?? null;
   const decoded = useDecodedSize(sizerSrc);
   const aspect = decoded ? decoded.width / decoded.height : window.width / window.height;
+  const slots = useFooterSlots();
   const frame = aiResultFrame({
     window,
     insets,
@@ -205,6 +244,7 @@ function ResultCard({
     mode: resultMode(phase, waiting),
     autosave: autoSaveEnabled,
     naturalWidth: decoded && decoded.src === sizerSrc ? decoded.width : null,
+    measured: slots.measured,
   });
   const settled = aiReportSettled(state.report);
   const download = useDownload(exiting, onKept);
@@ -246,8 +286,12 @@ function ResultCard({
                 height={frame.stage.height}
                 dialSize={frame.dialSize}
               />
-              {loading ? <RsdAiLoadingCaption /> : null}
-              {waiting ? <RsdAiKeepDrawing onPress={owner.minimize} /> : null}
+              <WaitingFooter
+                loading={loading}
+                waiting={waiting}
+                onMinimize={owner.minimize}
+                measure={slots.measure}
+              />
               {revealed && result ? (
                 <Fades hidden={exiting}>
                   <html.div style={styles.footer}>
@@ -264,20 +308,20 @@ function ResultCard({
           )}
         </html.div>
         {revealed && result && !settled ? (
-          <Fades hidden={exiting} strip="center">
+          <StripFade hidden={exiting} strip="center" onLayout={slots.measure('strip')}>
             <RsdAiDisclosure
               disabled={!run?.submitted}
               onReport={() => owner.reportPicture(result.uri)}
             />
-          </Fades>
+          </StripFade>
         ) : null}
         {phase.kind === 'error' &&
         phase.reason !== 'safety' &&
         state.problem &&
         !aiProblemSettled(state.problem) ? (
-          <Fades hidden={exiting} strip="end">
+          <StripFade hidden={exiting} strip="end" onLayout={slots.measure('strip')}>
             <RsdAiDisclosure kind="problem" disabled={false} onReport={owner.reportProblem} />
-          </Fades>
+          </StripFade>
         ) : null}
       </html.div>
     </SendOff>
@@ -362,6 +406,27 @@ function SendOff({
 
 // The send-off hides the card's controls so it reads as a clean print, keeping their footprint so
 // the Download's place stays as the polaroid's thick bottom edge.
+// A strip under the card, held to the card's width and reporting its height to the card's budget.
+function StripFade({
+  hidden,
+  strip,
+  onLayout,
+  children,
+}: {
+  hidden: boolean;
+  strip: 'center' | 'end';
+  onLayout: (event: LayoutChangeEvent) => void;
+  children: ReactNode;
+}) {
+  return (
+    <Fades hidden={hidden} strip={strip}>
+      <View onLayout={onLayout} style={STRIP_MEASURE_STYLE}>
+        {children}
+      </View>
+    </Fades>
+  );
+}
+
 function Fades({
   hidden,
   strip,

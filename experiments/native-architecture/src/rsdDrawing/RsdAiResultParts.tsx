@@ -110,7 +110,7 @@ export function RsdAiDisclosure({
     >
       {picture ? (
         <>
-          <html.span>{AI_RESULT_COPY.disclosure}</html.span>
+          <html.span style={styles.disclosure}>{AI_RESULT_COPY.disclosure}</html.span>
           <html.span aria-hidden style={styles.separator}>
             ·
           </html.span>
@@ -170,6 +170,8 @@ const styles = css.create({
     borderWidth: 0,
     borderRadius: dimensions.radiusPill,
     fontSize: dimensions.fontSizeSm,
+    // A large system text size wraps the label; its lines stay centred in the pill.
+    textAlign: 'center',
     cursor: 'pointer',
   }),
   wash: {
@@ -200,7 +202,8 @@ const styles = css.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: dimensions.space2,
-    height,
+    // At least one line; a large system text size wraps the disclosure, and the strip grows.
+    minHeight: height,
     paddingLeft: padding,
     paddingRight: padding,
     borderRadius: dimensions.radiusPill,
@@ -209,6 +212,8 @@ const styles = css.create({
     fontSize: dimensions.fontSizeXs,
     whiteSpace: 'nowrap',
   }),
+  // The words that wrap when a large system text size outgrows the card; Report stays whole.
+  disclosure: { flexShrink: 1 },
   separator: { color: fixedColors.scrimInkSoft },
   flag: (tap: number, icon: number, pressed: string) => ({
     display: 'flex',
@@ -216,6 +221,7 @@ const styles = css.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: dimensions.space1,
+    flexShrink: 0,
     minWidth: tap,
     height: tap,
     marginTop: (icon - tap) / 2,

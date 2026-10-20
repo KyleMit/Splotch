@@ -7,6 +7,10 @@ import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.m
 import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { RsdAiReportStatus } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
+import {
+  RsdAiKeepDrawing,
+  RsdAiLoadingCaption,
+} from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiResultParts.tsx';
 
 const launcher = vi.hoisted(() => ({ returnFocusToAiLauncher: vi.fn() }));
 vi.mock('../../../experiments/native-architecture/src/platform/aiLauncherFocus.ts', () => launcher);
@@ -347,6 +351,38 @@ it(
     await click('Close');
     await settle(() => expect(modal('AI Result')).toBeNull());
     expect(launcher.returnFocusToAiLauncher).toHaveBeenCalledOnce();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+// A large system text size wraps the caption and the button past their 48 px slots; the stage gives
+// way so the card keeps them inside it (#3075). In landscape, where the card's height binds.
+it(
+  'gives the waiting stage up to a caption and button laid out past their slots',
+  async () => {
+    const pending = Promise.withResolvers();
+    reply(() => pending.promise);
+    useCaller();
+    await sendDrawing();
+    await settle(() => expect(testId('ai-result-stage')).not.toBeNull());
+    const stage = () => records.props.findLast((props) => props.testID === 'ai-result-stage');
+    const height = () =>
+      stage()
+        .style.flat()
+        .find((style) => style?.height !== undefined).height;
+    const slot = (type) => records.props.findLast((props) => props.children?.type === type);
+    const layOut = (caption, keepDrawing) =>
+      act(async () => {
+        slot(RsdAiLoadingCaption).onLayout({ nativeEvent: { layout: { height: caption } } });
+        slot(RsdAiKeepDrawing).onLayout({ nativeEvent: { layout: { height: keepDrawing } } });
+      });
+    records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
+    // Inside their slots, which the frame keeps budgeting; this lays the card out in landscape.
+    await layOut(40, 40);
+    const fitted = height();
+    await layOut(108, 88);
+    expect(fitted - height()).toBeCloseTo(100, 6);
+    await act(async () => pending.resolve(pictureReply()));
   },
   GATED_FLOW_TIMEOUT_MS
 );
