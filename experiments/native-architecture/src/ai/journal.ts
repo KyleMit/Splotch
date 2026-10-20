@@ -152,6 +152,8 @@ export interface AiStorage extends AiRecoveryStorage {
   pictures(): Promise<AiResult[]>;
   write(value: AiJournal): Promise<AiReceipt>;
   retain(id: number, bytes: Uint8Array, mime: AiMime): Promise<AiRetainedResult>;
+  // Lets go of the finished run `id` once its picture is closed; an unfinished run stays.
+  release(id: number): Promise<void>;
 }
 export function parseAiJournal(raw: unknown): AiJournal {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
