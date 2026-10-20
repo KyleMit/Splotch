@@ -211,6 +211,63 @@ describe('RsdUnavailableCue', () => {
     );
   });
 
+  // The tile keeps its DOM node, and so its keyboard focus, from before a press through the cue.
+  it('plays over the tile it wraps without remounting it', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(100);
+    const tile = (feedback) =>
+      createElement(
+        RsdUnavailableCue,
+        { feedback, size: 60, radius: 18, borderPx: 2, lit: createElement('i') },
+        createElement('button', { 'aria-label': 'Undo' })
+      );
+    await act(async () => root.render(tile(null)));
+    const button = host.querySelector('[aria-label="Undo"]');
+    button.focus();
+    await act(async () => root.render(tile({ id: 1, startedAt: 100, reduced: false })));
+    await act(async () => root.render(tile({ id: 2, startedAt: 100, reduced: true })));
+    expect(host.querySelector('[aria-label="Undo"]')).toBe(button);
+    expect(document.activeElement).toBe(button);
+  });
+
+  // The web loads the motion with the other Undo cues. Negative control: a wrapper that renders
+  // the bare tile until the chunk lands, then wraps it, remounts the button and drops its focus.
+  it('keeps the tile mounted and focused when the web chunk with its motion arrives late', async () => {
+    const SRC = join(import.meta.dirname, '../../experiments/native-architecture/src/rsdDrawing/');
+    let release;
+    const held = new Promise((resolve) => (release = resolve));
+    vi.resetModules();
+    vi.doMock(`${SRC}undoFeedbackChunk.web.ts`, async () => {
+      await held;
+      return vi.importActual(`${SRC}unavailableMotion.tsx`);
+    });
+    vi.doMock(`${SRC}unavailableMotionSurface.ts`, () =>
+      vi.importActual(`${SRC}unavailableMotionSurface.web.ts`)
+    );
+    const { RsdUnavailableCue: WebCue } = await import(`${SRC}RsdUnavailableCue.tsx`);
+    vi.spyOn(performance, 'now').mockReturnValue(100);
+    const tile = (feedback) =>
+      createElement(
+        WebCue,
+        { feedback, size: 60, radius: 18, borderPx: 2, lit: createElement('i') },
+        createElement('button', { 'aria-label': 'Undo' })
+      );
+    await act(async () => root.render(tile(null)));
+    const button = host.querySelector('[aria-label="Undo"]');
+    button.focus();
+    await act(async () => root.render(tile({ id: 1, startedAt: 100, reduced: false })));
+    expect(host.querySelector('[data-testid="rsd-unavailable-flash"]')).toBeNull();
+    await act(async () => release());
+    await act(() =>
+      vi.waitFor(() =>
+        expect(host.querySelector('[data-testid="rsd-unavailable-flash"]')).not.toBeNull()
+      )
+    );
+    expect(host.querySelector('[aria-label="Undo"]')).toBe(button);
+    expect(document.activeElement).toBe(button);
+    vi.doUnmock(`${SRC}undoFeedbackChunk.web.ts`);
+    vi.doUnmock(`${SRC}unavailableMotionSurface.ts`);
+  });
+
   it('flashes without the shake under Reduce Motion, and leaves a cue that has run out at rest', async () => {
     vi.spyOn(performance, 'now').mockReturnValue(100);
     await render({ id: 1, startedAt: 100, reduced: true });
