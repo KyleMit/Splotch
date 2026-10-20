@@ -9,6 +9,7 @@ import { DRAWING_EASE_POP } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { hasDrawingInk, type Drawing } from '../drawing/model';
 import type { ClearSound } from '../audio/pageTurnSound';
+import type { DepartingInk } from '../drawing/departingInk';
 import {
   ACCEPT_ZONE_HIDE_DELAY_MS,
   CLEAR_SHEET_DURATION_MS,
@@ -31,12 +32,19 @@ const EASE_POP = Easing.bezier(...DRAWING_EASE_POP);
 const CSS_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 
 // `startedAt` is the Date.now() of the commit, so a renderer that mounts after the flight began
-// can tell it missed the departure.
-export type ClearSheet = Readonly<{ id: number; drawing: Drawing; startedAt: number }>;
+// can tell it missed the departure. `ink` is the native layer's pixels of the departing page, held
+// for the flight and released when it ends.
+export type ClearSheet = Readonly<{
+  id: number;
+  drawing: Drawing;
+  ink: DepartingInk | null;
+  startedAt: number;
+}>;
 
 type Owner = {
   disabled: boolean;
   currentDrawing: () => Drawing;
+  departingInk: () => DepartingInk | null;
   onBegin?: () => void;
   onClear: () => Promise<void>;
   sound: ClearSound | null;
@@ -224,7 +232,7 @@ function clearEffects(context: Context): ClearGestureEffects {
       if (!reduced.current && hasDrawingInk(drawing)) {
         context.sheets.current += 1;
         const id = context.sheets.current;
-        set.sheet({ id, drawing, startedAt: Date.now() });
+        set.sheet({ id, drawing, ink: owner.current.departingInk(), startedAt: Date.now() });
         // The flight's own deadline also applies when no renderer flies the sheet (the web
         // underlay's chunk can arrive after the clear).
         context.later(() => set.finishSheet(id), CLEAR_SHEET_DURATION_MS);
@@ -402,6 +410,7 @@ export function useClearGesture(owner: Owner) {
     },
     [gesture, timers, values]
   );
+  useEffect(() => () => sheet?.ink?.image.dispose(), [sheet]);
   useEffect(() => {
     if (!coachmark) return;
     const timer = setTimeout(() => setCoachmark(false), COACHMARK_AUTO_DISMISS_MS);

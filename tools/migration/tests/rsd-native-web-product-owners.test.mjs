@@ -81,6 +81,7 @@ function useCaller() {
     brush: 'marker',
     history: { undo: [], drawing },
     currentDrawing: () => drawing,
+    departingInk: () => null,
     surface: { current: null },
     inkVisible: true,
     recovery: { failed: false },

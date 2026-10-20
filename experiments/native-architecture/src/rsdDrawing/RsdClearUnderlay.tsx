@@ -16,7 +16,7 @@ import type { ClearControl } from '../clear/useClearGesture';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { InkAppearanceScope } from '../drawing/InkAppearance';
 import { InkPaperScope } from '../drawing/InkPaper';
-import { InkScene } from '../drawing/InkScene';
+import type { DepartingInk } from '../drawing/departingInk';
 import { hasDrawingInk, type Drawing } from '../drawing/model';
 import { PageOutline } from '../drawing/PageOutline';
 import { PaperTexture } from '../drawing/PaperTexture';
@@ -31,6 +31,7 @@ import {
 import { PAPER_THEMES } from '../drawing/theme';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import { isOfflinePageId } from '../offlineLibrary/identity';
+import { DepartingSheetInk } from './DepartingSheetInk';
 import type { AreaOffset, AreaSize } from './edgeLayout';
 
 // ClearButton.svelte's .clear-wash: a fixed gradient square scaled out from the dock corner.
@@ -52,12 +53,14 @@ function PaperArt({
   area,
   frame,
   projection: supplied,
+  ink = null,
 }: {
   drawing: Drawing;
   content: 'none' | 'outline' | 'ink';
   area: AreaSize;
   frame: PresentedFrame;
   projection?: PaperProjection | null;
+  ink?: DepartingInk | null;
 }) {
   const theme = useDrawingAppearance();
   const paper = drawingPaper(drawing);
@@ -72,7 +75,16 @@ function PaperArt({
         <PaperTexture
           origin={paperLifted(area, frame) ? { x: 0, y: 0 } : { x: frame.left, y: frame.top }}
         />
-        {content !== 'none' ? (
+        {content === 'ink' ? (
+          <DepartingSheetInk
+            drawing={drawing}
+            ink={ink}
+            size={size}
+            frame={frame}
+            outline={outline}
+          />
+        ) : null}
+        {content === 'outline' ? (
           <Svg
             style={layer.fill}
             width="100%"
@@ -80,9 +92,6 @@ function PaperArt({
             viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
             preserveAspectRatio="none"
           >
-            {content === 'ink' ? (
-              <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={() => {}} />
-            ) : null}
             {outline ? <PageOutline pageId={drawing.pageId} size={size} /> : null}
           </Svg>
         ) : null}
@@ -170,6 +179,7 @@ function DepartingSheet({
         area={area}
         frame={frame}
         projection={projection}
+        ink={sheet?.ink}
       />
     </Animated.View>
   );

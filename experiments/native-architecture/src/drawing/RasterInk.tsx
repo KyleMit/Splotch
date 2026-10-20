@@ -30,6 +30,7 @@ import {
   type InkPreparation,
   type InkRaster,
 } from './checkpoints';
+import type { DepartingInk } from './departingInk';
 import { useInkAppearance } from './InkAppearance';
 import {
   CrayonTileResourceScope,
@@ -51,6 +52,7 @@ export type RasterInkHandle = {
   readyPlan: (strokes: readonly Stroke[]) => InkPlan;
   isReady: () => boolean;
   canStart: (strokes: readonly Stroke[], brush: Brush, active: boolean) => boolean;
+  departingInk: () => DepartingInk | null;
 };
 type Props = {
   strokes: readonly Stroke[];
@@ -198,6 +200,8 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
         throw new Error('This picture is still being prepared.');
       return plan;
     },
+    // The web departing page draws its own ink (RsdClearUnderlay's DepartingSheetInk).
+    departingInk: () => null,
   }));
   useEffect(() => propsRef.current.onBusy(!inputReady), [inputReady]);
   useEffect(() => {

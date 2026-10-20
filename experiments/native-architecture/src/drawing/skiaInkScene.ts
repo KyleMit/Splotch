@@ -8,7 +8,13 @@ import {
 import type { LiveStroke } from './contactCohort';
 import type { LiveInkSource } from './liveInk';
 import { extendsStrokes, type Stroke } from './model';
-import { samePaperProjection, type PaperProjection, type PaperSize } from './paperSpace';
+import type { DepartingInk } from './departingInk';
+import {
+  paperBounds,
+  samePaperProjection,
+  type PaperProjection,
+  type PaperSize,
+} from './paperSpace';
 import { paperRasterBounds } from './pictureExport';
 import { createInkLayer, type InkLayer } from './skiaInkLayer';
 import type { InkPaintContext } from './skiaInkPainter';
@@ -193,6 +199,21 @@ export function createInkScene() {
     idle: () => pending.length === 0,
     context: () => input?.context ?? null,
     snapshot: (): SkImage | null => layer?.snapshot() ?? null,
+    // The page Clear sends away, or null before the paper has a layer.
+    departing(): DepartingInk | null {
+      if (!layer || !input) return null;
+      const bounds = paperBounds(input.context.projection);
+      const { view } = layer;
+      return {
+        image: layer.snapshot(),
+        paper: {
+          x: view.left + bounds.x * view.scale,
+          y: view.top + bounds.y * view.scale,
+          width: bounds.width * view.scale,
+          height: bounds.height * view.scale,
+        },
+      };
+    },
     // The committed ink on a capture's pixel grid.
     capture(projection: PaperProjection, grid: PaperSize): string {
       if (!layer || pending.length > 0) throw new Error('This picture is still being prepared.');

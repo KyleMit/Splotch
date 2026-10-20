@@ -8,12 +8,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { displayOrientation, Orientation, orientationCalls } from './rsd-orientation-port.mjs';
 import './rsd-native-settings-hub-mocks.mjs';
+import './rsd-native-skia-stand-ins.mjs';
 import { clearSoundPort } from './rsd-native-launch-stores.mjs';
-
-// Native Skia cannot load in Node; native-glass-pane-raster tests the compositor's CanvasKit pixels.
-vi.mock('../../../experiments/native-architecture/src/rsdDrawing/glassPaneImage.ts', () => ({
-  glassPaneImage: vi.fn(async () => null),
-}));
 
 const caller = vi.hoisted(() => {
   let journal = null;

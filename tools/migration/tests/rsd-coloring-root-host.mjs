@@ -83,6 +83,7 @@ export function paperPort(React, strokeStyle, caller) {
         lockInput: () => () => {},
         finishInput() {},
         refreshGeometry() {},
+        departingInk: () => null,
         // A save's photo library copy; what the library does with it is the test's port.
         exportPng: async (drawing) =>
           caller.exportPng?.(drawing) ?? {

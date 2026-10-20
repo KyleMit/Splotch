@@ -459,7 +459,8 @@ it('keeps the prepared native grain image through release and removes it on canc
   const sheet = host.querySelector('[data-testid="rsd-clear-sheet"]');
   expect(sheet.querySelector('[data-testid="paper-grain"]')).toBe(next);
   expect(sheet.children).toHaveLength(2);
-  expect(sheet.querySelector('path')).not.toBeNull();
+  // The departing page never draws the cleared strokes again (issue 3035).
+  expect(sheet.querySelector('path')).toBeNull();
   expect(committedStyle(sheet).opacity).toBe(1);
   expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
   expect(caller.screen.clear).toHaveBeenCalledOnce();

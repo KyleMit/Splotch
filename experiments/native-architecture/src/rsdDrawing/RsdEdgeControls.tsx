@@ -119,6 +119,7 @@ export const RsdEdgeLayout = memo(function RsdEdgeLayout({
   const clear = useClearGesture({
     disabled: blocked || screen.commandBusy,
     currentDrawing: screen.currentDrawing,
+    departingInk: screen.departingInk,
     onBegin: screen.finishInput,
     // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
     onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),

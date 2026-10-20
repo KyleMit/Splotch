@@ -82,6 +82,7 @@ export function useCaller(drawing = emptyDrawing(), overrides = {}) {
     brush: 'marker',
     history: { undo: [], drawing },
     currentDrawing: () => drawing,
+    departingInk: () => null,
     surface: {
       current: {
         lockInput: () => () => {},
