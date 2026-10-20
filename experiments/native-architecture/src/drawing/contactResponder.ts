@@ -43,6 +43,7 @@ export type ContactDrawingProps = {
 };
 
 type ContactHalo = { id: number; brush: Brush; width: number; x: number; y: number };
+type HoverHalo = Readonly<{ id: number; x: number; y: number }>;
 export type ContactStyle = Pick<
   ContactDrawingProps,
   'color' | 'brush' | 'strokeWidth' | 'eraserWidth'
@@ -78,6 +79,7 @@ class ContactResponder {
   private readonly input = createContactCohort();
   private readonly contacts = new Map<string, OwnedContact>();
   private nextHalo = 1;
+  private hovering: HoverHalo | null = null;
   private readonly packetInput = createPaperInputOwner({
     contacts: this.contacts,
     currentStyle: () => {
@@ -99,6 +101,20 @@ class ContactResponder {
 
   observeInputStyle() {
     this.packetInput.observeStyle();
+    if (this.hovering) this.showHover(this.current().brush === 'eraser' ? this.hovering : null);
+  }
+
+  // A mouse or pen over the web paper shows the eraser bubble before it presses and after it lifts,
+  // as shipping's PointerHalos.svelte does; null when it leaves the paper. Touch never hovers.
+  hover(sample: InputSample | null) {
+    const point =
+      sample && this.current().brush === 'eraser' ? paperLocation(sample, this.frame()) : null;
+    this.showHover(point && { id: this.hovering?.id ?? this.nextHalo++, ...point });
+  }
+
+  private showHover(next: HoverHalo | null) {
+    this.hovering = next;
+    this.showLive(this.input.hasActive() ? this.input.paper() : null, this.halos());
   }
 
   constructor(
@@ -119,9 +135,26 @@ class ContactResponder {
     );
   }
 
+  // Each contact's halo, and the hovering pointer's bubble unless that pointer is holding a stroke
+  // of its own: a mouse keeps its bubble while a finger draws elsewhere, as shipping's does.
   private halos(): readonly Halo[] {
     const frame = this.frame();
-    if (!frame || !this.input.hasActive()) return [];
+    if (!frame) return [];
+    const hover = this.hoverHalos(frame);
+    if (!this.input.hasActive()) return hover;
+    const contacts = this.contactHalos(frame);
+    return this.ownStroke() ? contacts : [...contacts, ...hover];
+  }
+
+  // The stroke the hovering mouse or pen is holding, if any; touch never hovers.
+  private ownStroke() {
+    for (const contact of this.contacts.values())
+      if (contact.admission.kind === 'accepted' && this.sharesHover(contact))
+        return contact.admission;
+    return null;
+  }
+
+  private contactHalos(frame: PaperFrame): readonly Halo[] {
     const paper = this.input.paper();
     return [...this.contacts.values()].flatMap(({ admission }) =>
       admission.kind === 'accepted'
@@ -138,10 +171,38 @@ class ContactResponder {
     );
   }
 
+  private hoverHalos(frame: PaperFrame): readonly Halo[] {
+    if (!this.hovering) return [];
+    // Sized on the paper a press here would draw on, which a blank picture adopts on its first press.
+    const paper = this.adoption(frame) ?? this.contactPaper();
+    const width = strokeWidthPx('eraser', this.current().eraserWidth);
+    return [
+      {
+        id: this.hovering.id,
+        kind: 'eraser',
+        x: this.hovering.x,
+        y: this.hovering.y,
+        size: haloSize(width, paper, frame, this.contactProjection(paper)),
+      },
+    ];
+  }
+
+  // A mouse or pen erasing shows one bubble from approach to departure: its press keeps the hover's
+  // halo rather than growing a second one in, and the hover after its lift keeps the press's.
+  private sharesHover(contact: OwnedContact) {
+    return contact.input.tool !== 'touch' && contact.style.brush === 'eraser';
+  }
+
+  private haloId(contact: OwnedContact) {
+    return (this.sharesHover(contact) ? this.hovering?.id : undefined) ?? this.nextHalo++;
+  }
+
   // Shipping flushes every contact's queued samples when any contact lifts (stopDrawing), so the
   // lifting stroke's last samples land before its cohort can commit.
   private finish(identifier: string) {
     const contact = this.contacts.get(identifier);
+    if (contact?.admission.kind === 'accepted' && this.hovering && this.sharesHover(contact))
+      this.hovering = { ...this.hovering, id: contact.admission.halo.id };
     contact?.sound?.end();
     if (contact) contact.admission = { kind: 'ignored' };
     this.live.settle();
@@ -269,7 +330,7 @@ class ContactResponder {
       contact.admission = {
         kind: 'accepted',
         halo: {
-          id: this.nextHalo++,
+          id: this.haloId(contact),
           brush: style.brush,
           width: strokeWidthPx(style.brush, width),
           ...point,
@@ -299,6 +360,7 @@ class ContactResponder {
   }
 
   detach() {
+    this.hovering = null;
     this.packetInput.detach();
     this.silence();
     this.contacts.clear();

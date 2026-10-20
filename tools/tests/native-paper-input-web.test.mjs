@@ -30,6 +30,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  vi.restoreAllMocks();
 });
 function pointer(type, x, y, timestamp, extra = {}) {
   const event = new PointerEvent(type, {
@@ -92,6 +93,106 @@ it('cancels a held contact on unmount and removes all late event listeners', asy
   paper.dispatchEvent(pointer('pointermove', 80, 80, 120));
   window.dispatchEvent(new Event('blur'));
   expect(input.mock.calls.map(([packet]) => packet.phase)).toEqual(['start', 'cancel']);
+});
+
+async function renderHovering(erasing) {
+  const log = [];
+  const frames = [];
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => frames.push(callback));
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+    frames[id - 1] = null;
+  });
+  input.mockImplementation((packet) => log.push(packet.phase));
+  const onHover = vi.fn((sample) => log.push(sample));
+  await act(async () =>
+    root.render(
+      createElement(PaperInputView, {
+        onInput: input,
+        onClaim: claim,
+        engineReady: () => true,
+        onHover,
+        erasing,
+      })
+    )
+  );
+  const runFrames = () => frames.splice(0).forEach((callback) => callback?.());
+  return { paper: host.firstChild, onHover, log, runFrames };
+}
+const mouse = { pointerType: 'mouse' };
+
+it('follows a hovering mouse at most once a frame while erasing, and leaves at once', async () => {
+  const { paper, onHover, runFrames } = await renderHovering(true);
+  expect(paper.style.cursor).toBe('none');
+  paper.dispatchEvent(pointer('pointerenter', 60, 70, 10, mouse));
+  expect(onHover).toHaveBeenLastCalledWith({ pageX: 60, pageY: 70, timestamp: 10 });
+  paper.dispatchEvent(pointer('pointermove', 80, 90, 20, mouse));
+  paper.dispatchEvent(pointer('pointermove', 100, 110, 30, mouse));
+  expect(onHover).toHaveBeenCalledTimes(1);
+  runFrames();
+  expect(onHover).toHaveBeenCalledTimes(2);
+  expect(onHover).toHaveBeenLastCalledWith({ pageX: 100, pageY: 110, timestamp: 30 });
+  paper.dispatchEvent(pointer('pointermove', 120, 130, 40, mouse));
+  paper.dispatchEvent(pointer('pointerleave', 120, 130, 41, mouse));
+  runFrames();
+  expect(onHover).toHaveBeenCalledTimes(3);
+  expect(onHover).toHaveBeenLastCalledWith(null);
+  expect(input).not.toHaveBeenCalled();
+});
+
+it('places the bubble where a mouse presses, lifts or loses its stroke, ahead of its packet', async () => {
+  const { paper, log } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointerdown', 50, 50, 100, mouse));
+  paper.dispatchEvent(pointer('pointerup', 70, 80, 140, mouse));
+  paper.dispatchEvent(pointer('pointerdown', 90, 90, 200, mouse));
+  paper.dispatchEvent(pointer('lostpointercapture', 95, 99, 210, mouse));
+  expect(log).toEqual([
+    { pageX: 50, pageY: 50, timestamp: 100 },
+    'start',
+    { pageX: 70, pageY: 80, timestamp: 140 },
+    'end',
+    { pageX: 90, pageY: 90, timestamp: 200 },
+    'start',
+    { pageX: 95, pageY: 99, timestamp: 210 },
+    'cancel',
+  ]);
+});
+
+it('keeps the bubble’s place current while a mouse holds its stroke', async () => {
+  const { paper, onHover, log, runFrames } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointerdown', 50, 50, 100, mouse));
+  paper.dispatchEvent(pointer('pointermove', 150, 160, 120, mouse));
+  runFrames();
+  expect(onHover).toHaveBeenLastCalledWith({ pageX: 150, pageY: 160, timestamp: 120 });
+  expect(log.filter((entry) => typeof entry === 'string')).toEqual(['start', 'move']);
+});
+
+it('drops a hovering move still queued when the mouse presses', async () => {
+  const { paper, onHover, runFrames } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointermove', 80, 90, 20, mouse));
+  paper.dispatchEvent(pointer('pointerdown', 85, 95, 30, mouse));
+  runFrames();
+  expect(onHover.mock.calls).toEqual([[{ pageX: 85, pageY: 95, timestamp: 30 }]]);
+});
+
+it('keeps the mouse bubble when a finger leaves the paper', async () => {
+  const { paper, onHover } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointerenter', 60, 70, 10, mouse));
+  paper.dispatchEvent(
+    pointer('pointerleave', 300, 200, 20, { pointerType: 'touch', pointerId: 9 })
+  );
+  expect(onHover.mock.calls).toEqual([[{ pageX: 60, pageY: 70, timestamp: 10 }]]);
+});
+
+it.each([
+  ['a finger while erasing', true, 'touch', 'none'],
+  ['a mouse with a drawing brush', false, 'mouse', 'crosshair'],
+])('shows no hover bubble for %s', async (_case, erasing, pointerType, cursor) => {
+  const { paper, onHover, runFrames } = await renderHovering(erasing);
+  expect(paper.style.cursor).toBe(cursor);
+  paper.dispatchEvent(pointer('pointerenter', 60, 70, 10, { pointerType }));
+  paper.dispatchEvent(pointer('pointermove', 80, 90, 20, { pointerType }));
+  runFrames();
+  expect(onHover).not.toHaveBeenCalled();
 });
 
 it('binds both native paper views to the same direct event and public metadata APIs', () => {

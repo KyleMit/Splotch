@@ -695,6 +695,12 @@ PROTOCOL_RERUN = {
     'L0155': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3024,
               'rn-web-chromium rerun 2026-10-20 of ai-exhausted-mid-run: the exhausted answer sets the free '
               'count to 0 (B0277)'),
+    'L0032': ('WEB-1', 'results/web-1-2026-10-19.md', 3020,
+              'rn-web-chromium rerun 2026-10-20 of eraser-hover: the cursor over the paper reads none with '
+              'the Eraser selected, as web-prod\'s does'),
+    'E0431': ('WEB-1', 'results/web-1-2026-10-19.md', 3020,
+              'rn-web-chromium rerun 2026-10-20 of eraser-hover: the eraser bubble shows under the hovering '
+              'mouse and is gone once it leaves the paper, as on web-prod'),
 }
 
 
