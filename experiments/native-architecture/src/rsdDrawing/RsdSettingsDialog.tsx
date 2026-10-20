@@ -123,7 +123,10 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     onClose();
     exitTrigger.current?.();
   };
-  const busy = settings.status !== 'ready' || !visible;
+  // A save in flight leaves Settings looking as it is: every action already waits for 'ready', so a
+  // tap meanwhile does nothing, and dimming the whole sheet for the write's few frames read as a
+  // flash on every choice (#3077). Shipping saves synchronously and never dims.
+  const busy = settings.status === 'loading' || !visible;
   const shell = settingsShell(useWindowDimensions());
   const { unlocked } = props.parentCenter;
   const { page, setPage, sectionTitle } = useSettingsPage(unlocked, props.initialSection);

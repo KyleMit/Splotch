@@ -478,6 +478,12 @@ describe('the compact shell', () => {
       soundEnabled: !soundWas,
       appearance: 'dark',
     });
+    // A parent choice's save holds every action until it lands, yet leaves the sheet undimmed (#3077).
+    const finishParent = holdNextWrite(settings.storage);
+    await act(async () => void caller.product.sound.owner.settings.setAiEnabled(true));
+    expect(caller.product.sound.settings.status).toBe('saving');
+    for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(false);
+    await finishParent();
   });
 });
 describe('Parent Center in the wide shell', () => {
