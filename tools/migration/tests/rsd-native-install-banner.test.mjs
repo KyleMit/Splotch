@@ -7,6 +7,7 @@ import {
   root,
 } from './rsd-native-selection-host.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
+import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { act, createElement } from 'react';
 import { Animated } from 'react-native';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -303,4 +304,23 @@ it('steps aside while the landscape tool drawer is open and returns when it clos
   expect(screenHost.textContent).toContain(heading);
   expect(caller.paperRender).toHaveBeenCalledTimes(paperRenders);
   expect(how(INSTALL_BANNER_COPY.hideHint)).toBeDefined();
+});
+
+// Shipping's InstallBanner waits out a save-failure banner, which is about a picture not kept yet
+// (#3021). Negative control: a banner hold without the save failure fails here.
+it('steps aside while a save-failure banner is up and returns once it is dismissed', async () => {
+  const failed = {
+    outcome: 'failed',
+    pictureCount: 1,
+    retrying: false,
+    retry: async () => {},
+    dismiss() {},
+    report: vi.fn(),
+  };
+  await mountToolbar(toolbarScreen({ committedStrokes: 3, saveFailure: failed }));
+  const heading = INSTALL_PROMPT_COPY.initial.heading;
+  expect(screenHost.textContent).not.toContain(heading);
+  caller.screen.saveFailure = { ...failed, outcome: null, pictureCount: 0 };
+  await act(async () => root.render(createElement(RsdDrawingScreen)));
+  expect(screenHost.textContent).toContain(heading);
 });

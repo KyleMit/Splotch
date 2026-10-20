@@ -434,7 +434,15 @@ function useChromeParts({
     [screen, sound, ai, paperBlocked]
   );
   const { committedStrokes, pagePickerOpen, colorPickerOpen } = screen;
-  const bannerHeld = paperBlocked || pagePickerOpen || colorPickerOpen;
+  const aiMinimized = ai.state?.open === true && ai.state.minimized;
+  // Shipping's InstallBanner also stands down while an AI picture waits minimized in the corner and
+  // while a save-failure banner is up: both are about a picture not yet kept.
+  const bannerHeld =
+    paperBlocked ||
+    pagePickerOpen ||
+    colorPickerOpen ||
+    aiMinimized ||
+    screen.saveFailure.outcome !== null;
   const paperOverlay = useCallback(
     (drawerOpen: boolean) => (
       <RsdInstallBanner
@@ -446,7 +454,6 @@ function useChromeParts({
     [committedStrokes, bannerControlSize, bannerHeld]
   );
   const openAppSettings = product.owner ? product.openAppSettings : null;
-  const aiMinimized = ai.state?.open === true && ai.state.minimized;
   const status = useMemo(
     () => (
       <RsdDrawingStatus
