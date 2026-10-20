@@ -119,6 +119,7 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
           <RsdPrivacyContent
             policy={policy}
             onLink={onLink}
+            externalCheckDue={() => owner?.gate.requires('externalLinks') ?? true}
             onSectionLayout={reading.onSectionLayout}
             scrollY={reading.offset}
           />

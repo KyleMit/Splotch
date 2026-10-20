@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
+import { useForcedColors } from '../platform/forcedColors';
 import { css, html } from 'react-strict-dom';
 import { formatReleaseAgo } from '../../../../web/src/lib/releaseAgo';
 import { paletteHex, type PaletteLabel } from '../drawing/palette';
@@ -32,6 +33,7 @@ const AGO_GAP_PX = 2;
 const RULE_PERIOD_PX = 24;
 const RULE_HEIGHT_PX = 8;
 const RULE_STROKE_PX = 2.5;
+const FORCED_RULE_PX = 2;
 const LATEST_TILT = '3deg';
 const TAPE_EDGE_FRACTIONS = { left: 0.03, top: 0.08, right: 0.97, bottom: 0.9 };
 const SECTION_TAPES = {
@@ -236,31 +238,39 @@ export function RsdReleaseArticle({
   );
 }
 
-export function RsdReleaseRule({ hue }: { hue?: PaletteLabel }) {
-  const theme = useDrawingTheme();
-  const [width, setWidth] = useState(0);
-  const path = Array.from({ length: Math.ceil(width / RULE_PERIOD_PX) }, (_, index) => {
+function squigglePath(width: number) {
+  return Array.from({ length: Math.ceil(width / RULE_PERIOD_PX) }, (_, index) => {
     const x = index * RULE_PERIOD_PX;
     return `M${x} ${RULE_HEIGHT_PX / 2} Q${x + RULE_PERIOD_PX / 4} 0 ${x + RULE_PERIOD_PX / 2} ${RULE_HEIGHT_PX / 2} T${x + RULE_PERIOD_PX} ${RULE_HEIGHT_PX / 2}`;
   }).join(' ');
-  const ink = mixSrgb(
-    hue ? paletteHex(hue) : theme.border,
-    Number.parseFloat(theme.squiggleStrength),
-    theme.surface
-  );
+}
+
+export function RsdReleaseRule({ hue }: { hue?: PaletteLabel }) {
+  const theme = useDrawingTheme();
+  const forced = useForcedColors();
+  const [width, setWidth] = useState(0);
+  // SquiggleRule.svelte's forced-colors rule: a straight system-ink line in place of the crayon.
+  const height = forced ? FORCED_RULE_PX : RULE_HEIGHT_PX;
+  const ink = forced
+    ? 'CanvasText'
+    : mixSrgb(
+        hue ? paletteHex(hue) : theme.border,
+        Number.parseFloat(theme.squiggleStrength),
+        theme.surface
+      );
   return (
     <View
       testID="release-squiggle"
       onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}
-      style={{ height: RULE_HEIGHT_PX }}
+      style={{ height }}
     >
-      <Svg width={width} height={RULE_HEIGHT_PX}>
+      <Svg width={width} height={height}>
         <Path
-          d={path}
+          d={forced ? `M0 ${FORCED_RULE_PX / 2} H${width}` : squigglePath(width)}
           fill="none"
           stroke={ink}
-          strokeWidth={RULE_STROKE_PX}
-          strokeLinecap="round"
+          strokeWidth={forced ? FORCED_RULE_PX : RULE_STROKE_PX}
+          strokeLinecap={forced ? 'butt' : 'round'}
         />
       </Svg>
     </View>

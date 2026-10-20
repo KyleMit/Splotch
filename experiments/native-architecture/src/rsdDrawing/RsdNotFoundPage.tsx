@@ -11,6 +11,7 @@ import { Platform, StyleSheet, View, type ScrollViewInstance } from 'react-nativ
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { ScrollView } from '../platform/ScrollView';
 import { drawingArrival } from '../platform/drawingArrival';
+import { useForcedColors } from '../platform/forcedColors';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -37,13 +38,14 @@ import { APP_PAGE_PATHS } from '../information/appPages';
 import { landFocus, retainFocus } from './landFocus';
 import { RsdNotFoundLink } from './notFoundLink';
 import { RsdPageHero } from './RsdPageHero';
+import { pageTextRef } from './pageTypography';
 import { RsdNotFoundFooter } from './notFoundFooter';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 export { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { RsdPressable } from './RsdPressable';
 import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
-import { blobXml } from './blob';
+import { blobPath, blobXml } from './blob';
 import { styles as controlStyles } from './controls';
 import { fontTheme } from './fontTheme';
 import { useNativeIconMarkup } from './iconRegistry';
@@ -83,6 +85,7 @@ const SHORT_SHEET_GUTTER_PX = 32;
 const SHORT_TOPBAR_PADDING_PX = 10;
 const SHORT_BACK_OVERHANG_PX = -10;
 const SHORT_BACK_BLOB_PX = 36;
+const FORCED_BLOB_BORDER_PX = 1;
 const WORDMARK_TRACKING_EM = { wide: 0.14, phone: 0.06 } as const;
 const CRAYON = { wide: { width: 11, height: 7, gap: 4 }, phone: { width: 9, height: 5, gap: 3 } };
 const DESKTOP_PAGE_PADDING_PX = { top: 32, side: 16, bottom: 72 } as const;
@@ -212,6 +215,14 @@ function startDrawing() {
   openAppPage('drawing');
 }
 
+// The system-colour blob shipping's BackToTopLink draws in forced colors, a CanvasText border inside
+// its edge; BackLink.svelte leaves its own to the browser, which blanks the disc and the chevron.
+function withForcedBorder(xml: string, size: number) {
+  const inset = FORCED_BLOB_BORDER_PX / 2;
+  const edge = `<path d="${blobPath('radiusBlob1', size, size, inset)}" fill="none" stroke="CanvasText" stroke-width="${FORCED_BLOB_BORDER_PX}"/>`;
+  return xml.replace('</svg>', `${edge}</svg>`);
+}
+
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
 function BackLink({
   label,
@@ -226,16 +237,18 @@ function BackLink({
   const theme = useDrawingAppearance();
   const chevron = useNativeIconMarkup('chevron-left')?.[theme];
   const { brandSolid } = DRAWING_THEMES[theme];
-  const xml = useMemo(
-    () =>
-      blobXml({
-        shape: 'radiusBlob1',
-        size,
-        fill: brandSolid,
-        icon: chevron ? { markup: chevron, size: BACK_ICON_PX, ink: DRAWING_ON_BRAND } : undefined,
-      }),
-    [brandSolid, chevron, size]
-  );
+  const forced = useForcedColors();
+  const xml = useMemo(() => {
+    const disc = blobXml({
+      shape: 'radiusBlob1',
+      size,
+      fill: forced ? 'Canvas' : brandSolid,
+      icon: chevron
+        ? { markup: chevron, size: BACK_ICON_PX, ink: forced ? 'CanvasText' : DRAWING_ON_BRAND }
+        : undefined,
+    });
+    return forced ? withForcedBorder(disc, size) : disc;
+  }, [brandSolid, chevron, forced, size]);
   const face = (
     <>
       <html.div aria-hidden style={[styles.blob(blobShadow(brandSolid)), styles.blobSize(size)]}>
@@ -330,7 +343,6 @@ export function RsdPageSheet({
   onDrawingReturn?: () => void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
-
   const theme = useDrawingAppearance();
   const window = useWindowDimensions();
   // PageShell adds safe-area spacing except for the short phone's explicitly edge-to-edge sides.
@@ -371,6 +383,7 @@ export function RsdPageSheet({
     >
       <PageSheetFocus title={title} titleRef={titleRef}>
         <html.main
+          ref={pageTextRef}
           style={[
             styles.page,
             phone ? styles.plain : styles.ground,

@@ -1,5 +1,8 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import { css, type html } from 'react-strict-dom';
+
+// MouseEvent.button for the wheel button, whose click opens a link in a new tab.
+const MIDDLE_BUTTON = 1;
 
 type AnchorStyle = ComponentProps<typeof html.a>['style'];
 type Activation = Readonly<{
@@ -64,6 +67,54 @@ export function RsdPageAnchor({
         if (!isPlainActivation(event)) return;
         event.preventDefault();
         onFollow();
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+// A web anchor for a page outside the app, behind the grown-up check. Its address shows on hover
+// as shipping's does, but every activation the page hears (a click with or without modifier keys,
+// Enter, a middle click) asks `onOpen`, which holds it to the parent's setting and opens the
+// address itself. While a check is due, the browser's own ways to open the address with no event
+// to answer stay shut: the context menu, which opens the check instead as a long press does on
+// Android, iOS Safari's long-press preview, and dragging the link onto a tab.
+export function RsdGatedAnchor({
+  href,
+  checkDue,
+  onOpen,
+  style,
+  children,
+}: {
+  href: string;
+  checkDue: () => boolean;
+  onOpen: () => void;
+  style?: AnchorStyle;
+  children: ReactNode;
+}) {
+  const open = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    onOpen();
+  };
+  const props = css.props(styles.anchor, style);
+  return (
+    <a
+      {...props}
+      style={checkDue() ? { ...props.style, WebkitTouchCallout: 'none' } : props.style}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={open}
+      onAuxClick={(event) => {
+        if (event.button === MIDDLE_BUTTON) open(event);
+      }}
+      onContextMenu={(event) => {
+        if (checkDue()) open(event);
+      }}
+      onDragStart={(event) => {
+        if (checkDue()) event.preventDefault();
       }}
     >
       {children}

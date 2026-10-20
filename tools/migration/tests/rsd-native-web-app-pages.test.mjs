@@ -24,6 +24,7 @@ import { openAppPage } from '../../../experiments/native-architecture/src/platfo
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
 import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
 import { GATE_MODAL } from './rsd-parent-gate-keypad.mjs';
+import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
 import { useCaller, click, settle } from './rsd-native-ai-fixture.mjs';
 
 vi.mock('react-strict-dom', async (importOriginal) => {
@@ -431,7 +432,12 @@ it('gives the privacy contents, section anchors and in-page links their fragment
     ['How the counting works', '#counting'],
     ['Reporting a picture', '#reports'],
   ]);
-  expect(anchors.some(([, href]) => href.startsWith('https:'))).toBe(false);
+  expect(anchors.filter(([, href]) => href.startsWith('https:'))).toEqual(
+    privacy.web.sections
+      .flatMap((section) => section.blocks.flatMap((block) => block.spans))
+      .filter((span) => span.href?.startsWith('https:'))
+      .map((span) => [span.text, span.href])
+  );
 });
 
 it('gives the changelog contents and Back to top their fragments', async () => {
@@ -472,4 +478,35 @@ it('follows a contents entry in place, and leaves a modified click to the browse
   await act(async () => row().dispatchEvent(plain));
   expect(plain.defaultPrevented).toBe(true);
   expect(location.hash).toBe(`#${SECTIONS[2].id}`);
+});
+
+it('gives the page shipping’s inherited leading and pretty wrapping', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
+    'utf8'
+  );
+  expect(shipping).toContain('text-wrap: pretty;');
+  const pageLeading = shipping.match(/line-height: ([\d.]+);/)[1];
+  records.os = 'web';
+  useCaller();
+  await loadAt('/unknown-page');
+  const ancestors = [];
+  for (let node = host.querySelector('[role="heading"]'); node; node = node.parentElement)
+    ancestors.push(node);
+  const page = ancestors.find((node) => node.style.lineHeight === pageLeading);
+  expect(page).toBeDefined();
+  expect(page.style.getPropertyValue('text-wrap')).toBe('pretty');
+  expect(page.contains(host.querySelector('[aria-label="Splotch pages"]'))).toBe(true);
+});
+
+it('runs the footer’s release line as one paragraph, as shipping’s does', async () => {
+  records.os = 'web';
+  useCaller();
+  await loadAt('/unknown-page');
+  const link = [...host.querySelectorAll('a[href]')].find(
+    (node) => node.textContent === "What's new"
+  );
+  expect(link.parentElement.textContent).toBe(
+    `Splotch ${releases[0].version} · released ${releases[0].dateLabel} · What's new`
+  );
 });
