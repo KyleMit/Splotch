@@ -51,7 +51,9 @@ function RsdClearButton({ control, disabled }: { control: ClearControl; disabled
       accessibilityRole="button"
       accessibilityLabel="Clear drawing"
       accessibilityState={{ disabled }}
-      pointerEvents={clearing ? 'none' : 'auto'}
+      // The button itself owns every touch. A press swaps the face's icon, and the native views it
+      // replaces would otherwise take the touch with them: its moves and lift never arrive.
+      pointerEvents={clearing ? 'none' : 'box-only'}
       {...control.responder}
       {...clearActivationProps(control.activate)}
       {...focusRingHostView('part')}

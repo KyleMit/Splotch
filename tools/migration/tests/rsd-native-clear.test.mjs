@@ -137,6 +137,23 @@ it.each([
   expect(caller.clearSound.load).toHaveBeenCalledTimes(volume === null ? 0 : 1);
 });
 
+// A press swaps the face's icon (trash-closed to trash-open), which replaces the native views it
+// drew with. A touch that landed on one of them lost its moves and its lift with it on iOS: the
+// gesture stayed held (#3037), and the next taps of a run never arrived (#3013). The button
+// itself must be the only touch target through the swap. Negative control: the former
+// pointerEvents 'auto' fails here.
+it('keeps the button itself the only touch target while the press swaps its icon', async () => {
+  await mountClear();
+  vi.useFakeTimers();
+  expect(clearProps().pointerEvents).toBe('box-only');
+  await press();
+  expect(clearIcon()).toContain(NATIVE_ICONS['trash-open'].light.slice(0, 80));
+  expect(clearProps().pointerEvents).toBe('box-only');
+  await lift(HOME);
+  expect(clearIcon()).toContain(NATIVE_ICONS['trash-closed'].light.slice(0, 80));
+  expect(clearProps().pointerEvents).toBe('box-only');
+});
+
 it('turns a plain tap into nothing, a run of three taps or a held press into the coachmark', async () => {
   await mountClear();
   vi.useFakeTimers();
