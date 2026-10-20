@@ -17,6 +17,7 @@ import {
   ipadCrashList,
   ipadExitRecords,
   ipadNewReports,
+  ipadReportText,
   ipadVerdict,
   simVerdict,
 } from './lib/crash-verdict.mjs';
@@ -93,7 +94,13 @@ async function ipadDeviceVerdict({ session, options, before, source, label, star
     appState = `query failed: ${shortError(error)}`;
   }
   const newReports = ipadNewReports(session.device, before, options.processName);
-  const verdict = ipadVerdict({ appState, newReports, source });
+  const verdict = ipadVerdict({
+    appState,
+    newReports,
+    source,
+    processName: options.processName,
+    readReport: (path) => ipadReportText(session.device, path),
+  });
   if (!options.collectLog) return verdict;
   const exitRecords = ipadExitRecords({
     udid: session.device,

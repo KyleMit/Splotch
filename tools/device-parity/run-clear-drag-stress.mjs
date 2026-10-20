@@ -27,6 +27,7 @@ import {
   ipadCrashList,
   ipadExitRecords,
   ipadNewReports,
+  ipadReportText,
   ipadVerdict,
   simAppPid,
   simVerdict,
@@ -67,6 +68,19 @@ const FLAGS = {
   'collect-log': { type: 'boolean', default: false },
 };
 
+// More fingers than the target allows make a system gesture that leaves the app
+// (lib/crash-targets.mjs), so the count is refused before a session is read or any input sent.
+function fingersFlag(values, target) {
+  const fingers = numberFlag(values, 'fingers', POSITIVE_INTEGER);
+  const { maxFingers } = CRASH_TARGETS[target];
+  if (fingers > maxFingers) {
+    fail(
+      `--fingers=${fingers} exceeds the ${maxFingers} simultaneous fingers --target=${target} allows`
+    );
+  }
+  return fingers;
+}
+
 export function parseClearDragFlags(argv) {
   const { values } = parseFlags(argv, {
     options: FLAGS,
@@ -93,7 +107,7 @@ export function parseClearDragFlags(argv) {
     seconds: number('seconds'),
     release: choiceFlag(values, 'release', ['commit', 'cancel']),
     ink: numberFlag(values, 'ink', NON_NEGATIVE_INTEGER),
-    fingers: numberFlag(values, 'fingers', POSITIVE_INTEGER),
+    fingers: fingersFlag(values, target),
     regrab: numberFlag(values, 'regrab', NON_NEGATIVE_INTEGER),
     settleSeconds: number('settle'),
     clearName: values['clear-name'],
@@ -164,7 +178,13 @@ async function stressVerdict({ session, options, source, startMs, startStamp, be
     (error) => `query failed: ${String(error.message).slice(0, ACTION_ERROR_CHARS)}`
   );
   const newReports = ipadNewReports(session.device, before, options.processName);
-  const verdict = ipadVerdict({ appState, newReports, source });
+  const verdict = ipadVerdict({
+    appState,
+    newReports,
+    source,
+    processName: options.processName,
+    readReport: (path) => ipadReportText(session.device, path),
+  });
   if (!options.collectLog) return verdict;
   const archive = join(options.out, `${options.label}.logarchive`);
   const udid = session.device;

@@ -1,8 +1,8 @@
 // Crash verdicts for one stress run: alive, crashed (with the report), or error-screened.
 // Every probe reads only state created after the run's start; nothing here clears a log.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
 import { IOS_APP_RUNNING_FOREGROUND } from './app-foreground.mjs';
 import { readAdb, readCommand } from './device-commands.mjs';
 
@@ -18,16 +18,33 @@ const ANDROID_LOG_TAGS =
   /\b(AndroidRuntime|libc|DEBUG|ReactNativeJS|lowmemorykiller|ActivityManager)\b/;
 const ANDROID_FATAL =
   /FATAL EXCEPTION|Fatal signal|\*\*\* \*\*\*|backtrace:|Process .* has died|lowmemorykiller.*kill/;
+// `-v threadtime`: date, time, pid, tid, level, tag, message.
+const THREADTIME_LINE = /^\d{2}-\d{2}\s+[\d:.]+\s+(\d+)\s+\d+\s+[A-Z]\s+([^\s:]+)\s*: ?(.*)$/;
+// AndroidRuntime and libc report a crash from inside the crashing process, so the logging pid is
+// the crashed one; crash_dump reports a tombstone (tag DEBUG) from its own pid.
+const IN_PROCESS_CRASH_TAGS = new Set(['AndroidRuntime', 'libc']);
+const MULTILINE_CRASH_TAGS = new Set(['AndroidRuntime', 'DEBUG']);
+const CRASH_BLOCK_START = /FATAL EXCEPTION|\*\*\* \*\*\*/;
+// ActivityManager's process start and death, AndroidRuntime's uncaught-exception header, libc's
+// fatal signal, the tombstone header, and lmkd's kill: each names a process and its pid.
+const PROCESS_MENTIONS = [
+  /Start proc (?<pid>\d+):(?<name>[^/\s]+)\//,
+  /Process (?<name>\S+) \(pid (?<pid>\d+)\) has died/,
+  /Process: (?<name>[^,\s]+), PID: (?<pid>\d+)/,
+  /, pid (?<pid>\d+) \((?<name>[^)]*)\)/,
+  /pid: (?<pid>\d+), tid: \d+, name: .*>>> (?<name>\S+) <<</,
+  /Kill(?:ing)? '(?<name>[^']+)' \((?<pid>\d+)\)/,
+];
 // cpu_resource, diskwrites_resource and wakeups_resource reports record a limit the process
 // crossed and kept running through: diagnostics, not crashes.
 const RESOURCE_REPORT = /_resource-/;
 const IPAD_REPORT_KINDS = /JetsamEvent|ExcResource|0x8badf00d|watchdog/i;
+const JETSAM_REPORT = /JetsamEvent/i;
 const IPAD_CRASH_LIST_DEPTH = '3';
 // The collected window opens a little before the run so the launch that preceded it is included.
 const LOG_COLLECT_LEAD_S = 2;
 const CRASH_FRAMES_KEPT = 8;
 const JS_ERRORS_KEPT = 50;
-const ANDROID_LOG_LINES_KEPT = 200;
 const ANDROID_LOG_LINES_REPORTED = 60;
 const DROPBOX_HEAD_CHARS = 1600;
 const EXIT_RECORD_CHARS = 400;
@@ -81,10 +98,13 @@ export function hostRssMb(pid) {
 }
 
 // The .ips body is a JSON header line followed by one JSON document.
+function ipsBody(text) {
+  return JSON.parse(text.slice(text.indexOf('\n') + 1));
+}
+
 function ipsSignature(text) {
-  const newline = text.indexOf('\n');
   try {
-    const body = JSON.parse(text.slice(newline + 1));
+    const body = ipsBody(text);
     const exception = body.exception ?? {};
     const termination = body.termination ?? {};
     const thread = (body.threads ?? []).find((candidate) => candidate.triggered);
@@ -209,8 +229,68 @@ function androidCrashLog(serial, startStamp, pkg) {
     .filter((line) => !/ActivityManager/.test(line) || line.includes(pkg))
     .filter((line) =>
       /ReactNativeJS/.test(line) ? /\bE\b|Error|Exception|Unhandled/.test(line) : true
+    );
+}
+
+function parseLogcatLine(line) {
+  const match = line.match(THREADTIME_LINE);
+  if (!match) return { line, pid: null, tag: null, message: line };
+  return { line, pid: Number(match[1]), tag: match[2], message: match[3] };
+}
+
+function processMentions(message) {
+  return PROCESS_MENTIONS.flatMap((pattern) => {
+    const groups = message.match(pattern)?.groups;
+    return groups ? [{ name: groups.name, pid: Number(groups.pid) }] : [];
+  });
+}
+
+const isPackageProcess = (name, pkg) => name === pkg || name.startsWith(`${pkg}:`);
+
+// A crash block is one fatal line, or an uncaught exception or tombstone with the lines its pid
+// logs under the same tag after it.
+function crashBlocks(entries) {
+  const blocks = [];
+  const open = new Map();
+  for (const entry of entries) {
+    const key = `${entry.pid} ${entry.tag}`;
+    const multiline = MULTILINE_CRASH_TAGS.has(entry.tag);
+    if (multiline && open.has(key) && !CRASH_BLOCK_START.test(entry.message)) {
+      open.get(key).push(entry);
+    } else if (ANDROID_FATAL.test(entry.line)) {
+      const block = [entry];
+      blocks.push(block);
+      if (multiline) open.set(key, block);
+    }
+  }
+  return blocks;
+}
+
+// The target's pids are its current one plus every pid a line names alongside its package, so a
+// crash of an instance that has since restarted is still the target's.
+function isTargetBlock(block, pkg, targetPids) {
+  const [head] = block;
+  if (IN_PROCESS_CRASH_TAGS.has(head.tag) && targetPids.has(head.pid)) return true;
+  return block.some((entry) =>
+    processMentions(entry.message).some(
+      (mention) => isPackageProcess(mention.name, pkg) || targetPids.has(mention.pid)
     )
-    .slice(0, ANDROID_LOG_LINES_KEPT);
+  );
+}
+
+function androidFatalLines(log, { pkg, pid }) {
+  const entries = log.map(parseLogcatLine);
+  const targetPids = new Set(pid ? [pid] : []);
+  for (const mention of entries.flatMap((entry) => processMentions(entry.message))) {
+    if (isPackageProcess(mention.name, pkg)) targetPids.add(mention.pid);
+  }
+  const target = [];
+  const other = [];
+  for (const block of crashBlocks(entries)) {
+    const lines = block.filter((entry) => ANDROID_FATAL.test(entry.line)).map(({ line }) => line);
+    (isTargetBlock(block, pkg, targetPids) ? target : other).push(...lines);
+  }
+  return { target, other };
 }
 
 // `dumpsys dropbox --print` prints each entry with its wall-clock time; keep only entries after the
@@ -235,11 +315,12 @@ export function androidVerdict({ serial, pkg, startStamp, sinceMs, source }) {
   const log = androidCrashLog(serial, startStamp, pkg);
   const dropbox = androidDropbox(serial, sinceMs, pkg);
   const errorScreen = errorScreenIn(source);
-  const fatal = log.filter((line) => ANDROID_FATAL.test(line));
+  const fatal = androidFatalLines(log, { pkg, pid });
   return {
-    verdict: verdictOf(dropbox.length > 0 || fatal.length > 0 || !pid, errorScreen),
+    verdict: verdictOf(dropbox.length > 0 || fatal.target.length > 0 || !pid, errorScreen),
     pid,
-    fatal,
+    fatal: fatal.target.slice(0, ANDROID_LOG_LINES_REPORTED),
+    otherProcessFatal: fatal.other.slice(0, ANDROID_LOG_LINES_REPORTED),
     dropbox,
     errorScreen,
     log: log.slice(0, ANDROID_LOG_LINES_REPORTED),
@@ -269,14 +350,65 @@ export function ipadNewReports(udid, before, processName) {
   );
 }
 
-export function ipadVerdict({ appState, newReports, source }) {
-  const { reports, diagnostics } = classifyCrashReports(newReports);
+// Pulls one report into a scratch directory and returns its text, or null when it cannot be read.
+export function ipadReportText(udid, path) {
+  const dir = mkdtempSync(join(tmpdir(), 'device-parity-report-'));
+  try {
+    readCommand('pymobiledevice3', ['crash', 'pull', '--udid', udid, '--remote-file', path, dir]);
+    return readFileSync(join(dir, basename(path)), 'utf8');
+  } catch {
+    return null;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// A JetsamEvent report lists every process memory pressure touched, whichever app was in front;
+// only the entries the kernel terminated carry a `reason` (per-process-limit, vm-pageshortage, …).
+// Null when the report is not a readable one.
+function jetsamKills(text) {
+  let body;
+  try {
+    body = ipsBody(text ?? '');
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(body?.processes)) return null;
+  return body.processes
+    .filter((entry) => entry.killed === true || (typeof entry.reason === 'string' && entry.reason))
+    .map((entry) => ({ name: entry.name ?? null, reason: entry.reason ?? 'killed' }));
+}
+
+// A JetsamEvent is the target's crash only when it killed the target; any other is a diagnostic.
+function attributeJetsam(candidates, { processName, readReport }) {
+  const jetsam = candidates
+    .filter((path) => JETSAM_REPORT.test(path))
+    .map((path) => ({ path, killed: jetsamKills(readReport(path)) }));
+  const killedTarget = new Set(
+    jetsam
+      .filter(({ killed }) => killed?.some((kill) => kill.name === processName))
+      .map(({ path }) => path)
+  );
+  return {
+    reports: candidates.filter((path) => !JETSAM_REPORT.test(path) || killedTarget.has(path)),
+    unrelated: jetsam.map(({ path }) => path).filter((path) => !killedTarget.has(path)),
+    jetsam,
+  };
+}
+
+export function ipadVerdict({ appState, newReports, source, processName, readReport }) {
+  const classified = classifyCrashReports(newReports);
+  const { reports, unrelated, jetsam } = attributeJetsam(classified.reports, {
+    processName,
+    readReport,
+  });
   const errorScreen = errorScreenIn(source);
   return {
     verdict: verdictOf(reports.length > 0 || appState !== IOS_APP_RUNNING_FOREGROUND, errorScreen),
     appState,
     reports,
-    diagnostics,
+    diagnostics: [...classified.diagnostics, ...unrelated],
+    jetsam,
     errorScreen,
   };
 }

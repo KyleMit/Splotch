@@ -154,6 +154,27 @@ function createStepRecorder({ session, driver, dir, info }) {
   };
 }
 
+// Every step before the last named one still runs, unrecorded, because each arm starts from a
+// fresh install and a named step needs the state the steps before it build.
+function plannedSteps(steps, stepIds) {
+  if (!stepIds) return steps;
+  return steps.slice(0, steps.findLastIndex((step) => stepIds.has(step.id)) + 1);
+}
+
+async function runSteps({ steps, stepIds, context, recordStep }) {
+  const results = [];
+  for (const step of plannedSteps(steps, stepIds)) {
+    if (step.setup) await step.setup(context);
+    if (!stepIds || stepIds.has(step.id)) {
+      results.push(await recordStep(step.id, () => step.run(context)));
+    } else {
+      await step.run(context);
+    }
+    if (step.after) await step.after(context);
+  }
+  return results;
+}
+
 async function runArm({ session, options, arm, runtime }) {
   const { platform, device } = session;
   const slice = PARITY_SLICES[options.slice];
@@ -197,13 +218,12 @@ async function runArm({ session, options, arm, runtime }) {
 
   const context = stepContext({ session, driver, arm, notes });
   const recordStep = createStepRecorder({ session, driver, dir, info });
-  const results = [];
-  for (const step of slice.steps) {
-    if (step.setup) await step.setup(context);
-    if (options.stepIds && !options.stepIds.has(step.id)) continue;
-    results.push(await recordStep(step.id, () => step.run(context)));
-    if (step.after) await step.after(context);
-  }
+  const results = await runSteps({
+    steps: slice.steps,
+    stepIds: options.stepIds,
+    context,
+    recordStep,
+  });
   const steps = results.map((result) => ({
     id: result.id,
     error: result.error,
@@ -215,7 +235,7 @@ async function runArm({ session, options, arm, runtime }) {
     JSON.stringify({ ...info, inputs: driver.inputs, notes, steps }, null, 2)
   );
   await driver.terminate();
-  return dir;
+  return steps.filter((step) => step.error).map(({ id, error }) => ({ id, error }));
 }
 
 export async function runParitySlice(options) {
@@ -228,7 +248,12 @@ export async function runParitySlice(options) {
   const failed = [];
   for (const arm of arms) {
     try {
-      await runArm({ session, options, arm, runtime });
+      const stepErrors = await runArm({ session, options, arm, runtime });
+      if (stepErrors.length) {
+        const error = stepErrors.map((step) => `${step.id}: ${step.error}`).join('; ');
+        console.error(`FAILED ${arm.tag}: ${error}`);
+        failed.push({ arm: arm.tag, error });
+      }
     } catch (error) {
       console.error(`FAILED ${arm.tag}: ${error.message}`);
       failed.push({ arm: arm.tag, error: error.message });

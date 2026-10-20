@@ -54,7 +54,9 @@ in `lib/parity-slices.mjs`.
   name to that arm's name. `lib/parity-arms.mjs` documents and validates it. The drivers branch on
   `webview-reference` where the shipping build's tree and settings differ.
 * **Slices** (`--slice`): `ds2`, `key1`, `life1`, `life1-android-back` (Android), `save1` (iOS),
-  `font`; `--steps` narrows a run to named steps, still running every earlier step's setup.
+  `font`; `--steps` records only the named steps. Every step before the last named one still runs,
+  unrecorded, so a named step starts from the state the earlier steps build; nothing after the last
+  named step runs.
 
 ## Outputs
 
@@ -83,7 +85,8 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
 * Xcode command-line tools (`xcrun simctl`, `xcrun devicectl`).
 * Android SDK platform-tools (`adb`, found through `ANDROID_HOME`/`ANDROID_SDK_ROOT` by
   `tools/mobile/android/lib/android-toolchain.mjs`); the emulator console for `adb emu rotate`.
-* `pymobiledevice3` for a physical iPad's crash list and unified log.
+* `pymobiledevice3` for a physical iPad's crash list, its JetsamEvent reports
+  (`crash pull --remote-file`), and its unified log.
 * `ffmpeg` and `ffprobe` for motion timelines; ImageMagick `magick` for `compare-parity-states.mjs`.
   `sharp` comes from the repo's dependencies.
 * The parity drivers run on an iOS simulator or Android emulator: they install builds and screenshot
@@ -101,7 +104,8 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
   exits 1 without writing a result.
 * `run-crash-matrix.mjs` and the parity drivers wrap each run or batch, keep completed results,
   report every failure at the end, and exit 1 if any failed; a failed parity batch leaves
-  `failure.png` and `failure.xml` in its directory.
+  `failure.png` and `failure.xml` in its directory. A slice step whose action throws keeps its
+  recording, capture, and sidecar, the batch runs on, and the step's error fails its arm.
 * Verdict probes read only state created after a run starts and never clear a log.
 
 ## Rules the device work learned
@@ -111,17 +115,19 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
   and navigation at zero, and the parity driver sends Back only for the `life1-android-back` slice,
   whose subject is Back (`tests/system-back.test.mjs`).
 * **Check the foreground app before every input.** The drivers call `createForegroundGuard` before
-  every tap, stroke, drag, and key they send. The exceptions are the hand-run `explore-app-ui.mjs`,
-  the click that dismisses Android's immersive-mode notice (OS chrome over the app), and a
-  Clear-drag stress's re-grabs, which must land while the release motion is still running. On iOS a
-  hosted `com.apple.*ViewService` (DockFolderViewService) can hold XCUITest's active-app slot while
-  the app is in front; it is accepted only when the app's own `queryAppState` is 4, and the crash
-  runner also sets Appium's `defaultActiveApplication`.
+  every tap, stroke, drag, and key they send; `drive-android-ui.mjs keys` reads Display0's focus
+  before each key, since a key such as Home moves focus off the app. The exceptions are the hand-run
+  `explore-app-ui.mjs`, the click that dismisses Android's immersive-mode notice (OS chrome over the
+  app), and a Clear-drag stress's re-grabs, which must land while the release motion is still
+  running. On iOS a hosted `com.apple.*ViewService` (DockFolderViewService) can hold XCUITest's
+  active-app slot while the app is in front; it is accepted only when the app's own `queryAppState`
+  is 4, and the crash runner also sets Appium's `defaultActiveApplication`.
 * **Bind Android display checks to Display0.** A device with a second display dumps one section per
   display; focus, rotation, and orientation are read from Display0's own section, and the package is
   matched whole (`tests/android-display.test.mjs`).
 * **Cap simultaneous fingers at 3 on iPadOS** (four- and five-finger swipes switch apps; Samsung
   phones add multi-finger capture gestures); only the emulator keeps 5 (`lib/crash-targets.mjs`).
+  `run-clear-drag-stress.mjs` refuses a `--fingers` above its target's limit before any input.
   Crash-harness strokes stay 80 pt clear of every screen edge: a stroke along the bottom edge is the
   swipe-between-apps gesture. A press on a control near an edge stays where the control is.
 * **The reference WebView names its controls in `text`, not `content-desc`**, so Android lookups
@@ -137,6 +143,13 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
 * **Resource reports are diagnostics.** `cpu_resource`, `diskwrites_resource`, and
   `wakeups_resource` reports record a limit crossed and survived; they are listed as `diagnostics`
   and never make a run `crashed` (`tests/crash-verdict.test.mjs`).
+* **A crash counts only when it is the target's.** On Android an uncaught exception, fatal signal,
+  tombstone, or process death counts when it names the target's package or one of its pids (the
+  current one or any a line names beside the package, so a crash before a restart still counts);
+  another process's is kept as `otherProcessFatal`. The verdict reads the whole log since the start,
+  and only the excerpts stored in the result are capped. On a physical iPad a new JetsamEvent is
+  pulled and counts only when its process list shows the target's process with a kill `reason` (or
+  `killed`); any other is a diagnostic, with each report's kills under `jetsam`.
 * `log show` reads a zone-less time as host-local, so every timestamp passed to it carries `+0000`.
 
 ## Domain ownership
@@ -151,8 +164,9 @@ helpers).
 ## Maintenance
 
 * Run `npm run test:tools -- tools/device-parity` after any change; the tests cover the pointer
-  chains, verdict classification, the foreground rule, Display0 reads, the Back refusal, the tally,
-  and every entry's flag refusal, each with a negative control.
+  chains, verdict classification and crash attribution, the foreground rule, Display0 reads, the
+  Back refusal, the finger limit, slice step selection and step errors, the tally, and every entry's
+  flag refusal, each with a negative control.
 * A new entry uses `parseFlags` from `lib/cli-flags.mjs`, which refuses unknown flags with the
   shared message, and gates on `isMain(import.meta.url)`; `tests/cli-entries.test.mjs` picks it up.
 * A new slice is a step list in `lib/slices/` registered in `lib/parity-slices.mjs` with the

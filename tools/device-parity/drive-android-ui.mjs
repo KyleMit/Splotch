@@ -3,7 +3,8 @@
 //   focus             the focused node
 //   tap <label-regex> taps the first node whose content-desc or text matches
 //   keys <keycode...> sends key events (never KEYCODE_BACK)
-// Every command first checks that the app under test holds Display0's focus.
+// Every command, and every key of `keys`, first checks that the app under test holds Display0's
+// focus.
 import { fail, isMain, runMain } from '../lib/proc.mjs';
 import { display0Focus, focusedPackage, readDisplays } from './lib/android-display.mjs';
 import { parseFlags } from './lib/cli-flags.mjs';
@@ -37,13 +38,21 @@ function dumpNodes(serial) {
 
 const labelOf = (node) => node['content-desc'] || node.text || '';
 
-export function driveAndroidUi({ serial, bundleId, command, args }) {
+function assertAppFocused(serial, bundleId) {
   const focus = display0Focus(readDisplays(serial));
   if (focusedPackage(focus) !== bundleId) throw new Error(`foreground: ${focus}`);
+}
+
+export function driveAndroidUi({ serial, bundleId, command, args }) {
   if (command === 'keys') {
-    for (const keycode of args) sendAndroidKey(serial, keycode);
+    // A key such as Home moves focus off the app, so every key gets its own check.
+    for (const keycode of args) {
+      assertAppFocused(serial, bundleId);
+      sendAndroidKey(serial, keycode);
+    }
     return;
   }
+  assertAppFocused(serial, bundleId);
   const nodes = dumpNodes(serial);
   if (command === 'dump') {
     for (const node of nodes.filter(labelOf)) {
