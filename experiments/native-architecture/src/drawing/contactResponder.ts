@@ -6,6 +6,7 @@ import {
   paperBounds,
   paperProjection,
   paperProjectionView,
+  paperSize,
   type PaperProjection,
   presentedPaperSize,
   textureScale,
@@ -15,10 +16,10 @@ import {
 } from './paperSpace';
 import { createPaperInputOwner } from './paperInputOwner';
 import { INPUT_INTERRUPTED_MESSAGE, type InputSample, type InputTool } from './paperInput';
-import type { GuardEdge } from '../../../../web/src/lib/drawing/strokeMath';
+import { pointerWasResumed, type GuardEdge } from '../../../../web/src/lib/drawing/strokeMath';
 import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
-import { paperPoint, type Drawing, type Stroke } from './model';
+import { paperPoint, type Drawing, type Point, type Stroke } from './model';
 import type { LiveInkFeed } from './liveInk';
 import type { Brush } from './brushes';
 import type { PaintColor } from './palette';
@@ -43,6 +44,8 @@ export type ContactDrawingProps = {
 };
 
 type ContactHalo = { id: number; brush: Brush; width: number; x: number; y: number };
+// The paper point and time of an accepted contact's latest sample.
+type ContactTrail = { at: number; point: Point };
 type HoverHalo = Readonly<{ id: number; x: number; y: number }>;
 export type ContactStyle = Pick<
   ContactDrawingProps,
@@ -52,13 +55,23 @@ export type OwnedContact = {
   startedAt: number;
   style: ContactStyle;
   admission:
-    | { kind: 'accepted'; halo: ContactHalo }
+    | { kind: 'accepted'; halo: ContactHalo; trail: ContactTrail }
     | { kind: 'guarded'; edge: GuardEdge; first: ContactSample; pending: InputSample[] }
     | { kind: 'ignored' };
   input: { tool: InputTool; last: InputSample };
   sound: SoundContact | null;
 };
 export type ContactSample = InputSample & { identifier: string };
+
+// Shipping's dropped-pointer recovery (engine.ts restartStrokeIfResumed): a sample after an idle gap
+// and too far away for continuous contact means the pointer lifted and came down again without the
+// stream reporting it, so its stroke must not bridge the two places. Both distances are paper
+// units, so the jump threshold scales with the paper as shipping's does.
+function resumedAfterLift(trail: ContactTrail, point: Point, at: number, paper: PaperReference) {
+  const { width, height } = paperSize(paper);
+  const jump = Math.hypot(point.x - trail.point.x, point.y - trail.point.y);
+  return pointerWasResumed(at - trail.at, jump, Math.min(width, height));
+}
 
 function insidePaper(
   touch: ContactSample,
@@ -281,7 +294,9 @@ class ContactResponder {
   }
 
   private sample(touch: ContactSample, audible: boolean) {
-    if (this.contacts.get(touch.identifier)?.admission.kind !== 'accepted') return;
+    const contact = this.contacts.get(touch.identifier);
+    if (contact?.admission.kind !== 'accepted') return;
+    const admission = contact.admission;
     try {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
@@ -289,13 +304,15 @@ class ContactResponder {
       const paper = this.input.paper();
       const sample = this.paperSample(point, frame, paper);
       if (PERF_PROBE) perfSampleTime(touch.timestamp);
-      this.input.sample(touch.identifier, sample);
-      const contact = this.contacts.get(touch.identifier);
+      if (resumedAfterLift(admission.trail, sample, touch.timestamp, paper))
+        this.input.resume(touch.identifier, sample);
+      else this.input.sample(touch.identifier, sample);
+      admission.trail = { at: touch.timestamp, point: sample };
       if (audible) {
         const texel = textureScale(paper);
-        contact?.sound?.sample({ x: sample.x / texel, y: sample.y / texel }, touch.timestamp);
+        contact.sound?.sample({ x: sample.x / texel, y: sample.y / texel }, touch.timestamp);
       }
-      if (contact?.admission.kind === 'accepted') Object.assign(contact.admission.halo, point);
+      Object.assign(admission.halo, point);
     } catch (error) {
       this.current().onError(error);
     }
@@ -338,6 +355,7 @@ class ContactResponder {
           width: strokeWidthPx(style.brush, width),
           ...point,
         },
+        trail: { at: touch.timestamp, point: sample },
       };
       const texel = textureScale(paper);
       contact.sound =

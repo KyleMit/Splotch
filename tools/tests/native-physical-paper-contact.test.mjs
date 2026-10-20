@@ -134,7 +134,7 @@ describe('normal contact adoption owner', () => {
     f.send('end', lift);
     routes.end(lift);
     expect(press).toHaveBeenCalledTimes(1);
-    f.send('end', event([], [touch('paper', 30, 40, 400)], { paper: 100 }));
+    f.send('end', event([], [touch('paper', 12, 22, 400)], { paper: 100 }));
     expect(f.history().drawing.strokes).toHaveLength(1);
     expect(f.commit).toHaveBeenCalledTimes(1);
   });
