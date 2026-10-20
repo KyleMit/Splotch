@@ -322,6 +322,8 @@ vi.mock('react-native', async () => {
     // Every picture the fixtures hand out reads as a landscape drawing's size.
     Image: imagePort(host('div')),
     TextInput: host('input'),
+    // No case raises the on-screen keyboard; a dialog only subscribes to it.
+    Keyboard: { addListener: () => ({ remove() {} }) },
     requireNativeComponent: () => host('div'),
     experimental_LayoutConformance: View,
   };

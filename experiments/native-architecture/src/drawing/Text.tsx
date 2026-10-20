@@ -48,3 +48,6 @@ export function Text({ style, children, ...props }: ComponentPropsWithRef<typeof
 export function TextInput({ style, ...props }: ComponentPropsWithRef<typeof BaseTextInput>) {
   return <BaseTextInput {...props} style={[style, shippingTextFont(fontWeightOf(style))]} />;
 }
+
+// The text field holding focus, which a dialog lifts above the on-screen keyboard.
+export const focusedTextInput = () => BaseTextInput.State.currentlyFocusedInput();
