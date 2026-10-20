@@ -29,6 +29,7 @@ export function toolbarScreen(overrides = {}) {
     undoTile: { current: null },
     undoFeedback: null,
     clear: vi.fn(async () => {}),
+    departingInk: vi.fn(() => null),
     save: vi.fn(async () => {}),
     setPagePickerOpen: vi.fn(),
     openSettings: vi.fn(),

@@ -337,6 +337,7 @@ const SkiaInkLayer = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaInk
   useImperativeHandle(ref, () => ({
     isReady: () => ready,
     canStart: () => ready,
+    departingInk: () => scene.departing(),
     readyPlan(requested): InkPlan {
       const live = props.live.source()?.live() ?? [];
       if (!ready || live.length > 0 || !sameStrokes(requested, props.strokes))

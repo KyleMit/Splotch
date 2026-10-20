@@ -156,6 +156,7 @@ export function useDrawingScreen() {
     brush,
     ...brushActions,
     finishInput: () => surface.current?.finishInput(),
+    departingInk: () => surface.current?.departingInk() ?? null,
     drawing,
     activePaper,
     isDrawing,

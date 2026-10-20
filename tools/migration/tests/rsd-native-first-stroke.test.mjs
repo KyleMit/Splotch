@@ -38,6 +38,7 @@ vi.mock('../../../experiments/native-architecture/src/drawing/InkLayer.tsx', asy
       useImperativeHandle(ref, () => ({
         isReady: () => true,
         canStart: () => true,
+        departingInk: () => null,
         readyPlan() {
           throw new Error('Picture capture is outside this contact-admission fixture.');
         },

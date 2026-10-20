@@ -80,6 +80,7 @@ export function clearScreen({ drawing = inkedDrawing(), ...overrides } = {}) {
     colorPickerOpen: false,
     undo: vi.fn(),
     clear: vi.fn(async () => {}),
+    departingInk: vi.fn(() => null),
     save: vi.fn(async () => {}),
     setPagePickerOpen: vi.fn(),
     openSettings: vi.fn(),

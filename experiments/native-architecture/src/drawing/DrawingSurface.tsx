@@ -45,6 +45,7 @@ import { createHaloFeed } from './haloFeed';
 import { createLiveInkFeed } from './liveInk';
 import type { Halo } from './haloModel';
 import type { UndoGhost } from './undoFeedback';
+import type { DepartingInk } from './departingInk';
 import { useSurfaceCommitProbe } from './perfProbe';
 
 export type ExportedPaper = CapturedPaper | Readonly<{ base64: null; isCurrent: () => boolean }>;
@@ -55,6 +56,8 @@ export type DrawingSurfaceHandle = {
   // The saved picture: the shipping export's pixel grid, paper color and grain.
   exportPng: (snapshot: Drawing) => Promise<ExportedPaper>;
   captureInk: (snapshot: Drawing) => Promise<CapturedPaper>;
+  // The committed ink's pixels for the page Clear sends away, or null where no native layer holds them.
+  departingInk: () => DepartingInk | null;
   lockInput: (mode?: 'command' | 'undo') => () => void;
   finishInput: () => void;
   // A lease for work the child never asked for. Any foreground claim on the paper (a fresh
@@ -334,6 +337,7 @@ function useSurfaceCapture(
         return output.promise.catch(() => ({ base64: null, isCurrent: output.isCurrent }));
       },
       captureInk: async (snapshot) => capture(snapshot, 'ink').promise,
+      departingInk: () => raster.current?.departingInk() ?? null,
       refreshGeometry,
       finishInput() {
         preemptBackground();
@@ -351,7 +355,7 @@ function useSurfaceCapture(
         return claim(onPreempt);
       },
     }),
-    [capture, captureLock, claim, input, preemptBackground, refreshGeometry]
+    [capture, captureLock, claim, input, preemptBackground, raster, refreshGeometry]
   );
 
   return { captureLock, commandLock, preemptBackground, raster, attachRaster, resume };

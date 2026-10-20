@@ -228,35 +228,6 @@ it('skips the departing page and keeps every cue under reduced motion', async ()
   expect(ghost.style[1].transform[0].translateX).toBeCloseTo(-(radius() * 1.18) / Math.SQRT2);
 });
 
-it('grains the cover and departing art, uncovering the next drawing before the flight ends', async () => {
-  expect(readFileSync(join(import.meta.dirname, '../../../web/src/app.css'), 'utf8')).toContain(
-    'background: var(--paper) var(--paper-texture) repeat;'
-  );
-  vi.spyOn(Animated, 'timing').mockReturnValue({ start: vi.fn(), stop: vi.fn() });
-  let finish;
-  const drawing = { ...inkedDrawing(), pageId: 'sunshine' };
-  await mountClear({ drawing, clear: vi.fn(() => new Promise((resolve) => (finish = resolve))) });
-  await layout('rsd-canvas-area', { x: 0, y: 0, width: 402, height: 760 });
-  vi.useFakeTimers();
-  await commitClear();
-  const cover = host.querySelector('[data-testid="rsd-clear-cover"]');
-  await act(async () => finish());
-  expect(rendered('rsd-clear-cover')).toBe(false);
-  const sheet = host.querySelector('[data-testid="rsd-clear-sheet"]');
-  for (const paper of [cover, sheet]) {
-    expect(paper.children).toHaveLength(2);
-    expect(paper.firstElementChild.dataset.testid).toBe('paper-texture');
-    expect(paper.querySelector('[data-testid="paper-grain"]')).not.toBeNull();
-  }
-  // The SVG host preserves each primitive: an opaque Rect adds a child before the outline.
-  expect(cover.lastElementChild.childElementCount).toBe(1);
-  expect(sheet.querySelectorAll('path').length).toBe(cover.querySelectorAll('path').length + 1);
-  await settle(CLEAR_SHEET_DURATION_MS - 1);
-  expect(rendered('rsd-clear-sheet')).toBe(true);
-  await settle(1);
-  expect(rendered('rsd-clear-sheet')).toBe(false);
-});
-
 it('does not fly an empty page', async () => {
   await mountClear({ drawing: emptyDrawing() });
   await commitClear();

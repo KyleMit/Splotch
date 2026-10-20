@@ -29,6 +29,10 @@ vi.mock(
   () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
 );
 vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/DepartingSheetInk.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/DepartingSheetInk.web.tsx')
+);
+vi.mock(
   '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
   () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
 );
