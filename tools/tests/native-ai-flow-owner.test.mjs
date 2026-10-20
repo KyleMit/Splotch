@@ -262,7 +262,7 @@ it.each([
   }
 );
 
-// Shipping's known grant is never asked for again, so a used-up answer from a generation stays
+// Shipping keeps a grant it knows for the launch, so a used-up answer from a generation stays
 // used up when Settings opens and reads the credential (#3024). Negative control: a Settings read
 // that asks the grant endpoint again shows the stale allowance here.
 it('keeps a used-up answer when Settings reads the allowance afterwards', async () => {

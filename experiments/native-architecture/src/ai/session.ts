@@ -265,15 +265,15 @@ export class AiSession {
       });
       return;
     }
-    const known =
-      this.state.credential === 'free' && this.state.availability === 'ready'
-        ? this.state.remaining
-        : null;
+    // The server's used-up answer stands for the rest of the launch, as shipping keeps a grant it
+    // knows: a later Settings read asks the grant endpoint nothing, so AI Art and the drawer keep
+    // saying the free creations are used up (#3024).
+    const usedUp =
+      this.state.credential === 'free' &&
+      this.state.availability === 'ready' &&
+      this.state.remaining === 0;
     this.update({ credential: 'free' });
-    if (!this.deps.parent?.consent().enabled) return;
-    // A known allowance stands, as shipping never asks again for a grant it knows: a used-up
-    // answer from a generation stays used up when Settings opens (#3024).
-    if (known !== null) return;
+    if (!this.deps.parent?.consent().enabled || usedUp) return;
     this.update({ remaining: null });
     const id = await this.deps.vault.installationId();
     if (!current() || !isInstallationId(id)) return;
