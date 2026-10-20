@@ -29,7 +29,8 @@ export type LiveStroke = Stroke &
   }>;
 export type LiveOp = InkStep<LiveStroke>;
 
-type EntryState = { flushed: number; cached: Stroke | null; done: boolean };
+// `opensPass`: a resumed contact's stroke whose first op is not recorded yet (see flush).
+type EntryState = { flushed: number; cached: Stroke | null; done: boolean; opensPass: boolean };
 type Entry = Readonly<{
   style: StrokeStyle;
   stroke: LiveStroke;
@@ -38,10 +39,10 @@ type Entry = Readonly<{
   state: EntryState;
 }>;
 
-function liveEntry(style: StrokeStyle, first: Point): Entry {
+function liveEntry(style: StrokeStyle, first: Point, opensPass = false): Entry {
   const points = [first];
   const ops: StrokeOp[] = [];
-  const state: EntryState = { flushed: 0, cached: null, done: false };
+  const state: EntryState = { flushed: 0, cached: null, done: false, opensPass };
   const stroke: LiveStroke = {
     ...style,
     points,
@@ -53,36 +54,74 @@ function liveEntry(style: StrokeStyle, first: Point): Entry {
   return { style, stroke, points, ops, state };
 }
 
+// Numbers the frames a cohort's ops are painted in.
+function createOpFrames() {
+  let frame = 0;
+  let recordedFrame = -Infinity;
+
+  // A stroke's first flush is its dot, and each flush after paints the samples since as one path.
+  function record(entry: Entry, recorded: LiveOp[]) {
+    if (entry.ops.length === 0) {
+      entry.ops.push([1, frame]);
+      recorded.push({ stroke: entry.stroke, op: 0 });
+    }
+    if (entry.points.length > 1 && entry.ops.at(-1)?.[0] !== entry.points.length) {
+      entry.ops.push([entry.points.length, frame]);
+      recorded.push({ stroke: entry.stroke, op: entry.ops.length - 1 });
+    }
+    entry.state.flushed = entry.points.length;
+    entry.state.cached = null;
+    entry.state.opensPass = false;
+  }
+
+  function endFrame(recorded: readonly LiveOp[], before: number) {
+    if (recorded.length === before) return;
+    recordedFrame = frame;
+    frame += 1;
+  }
+
+  // Every sample taken since the last flush becomes ops in one frame. A resumed contact's new
+  // stroke instead starts a frame of its own, one frame clear of every op before it: the gap that
+  // separates cohorts, which closes the crayon glaze group live and on replay (skiaInkLayer's
+  // joins), as shipping's rollToNextPass closes the pass.
+  function flush(entries: readonly Entry[]): readonly LiveOp[] {
+    const recorded: LiveOp[] = [];
+    const opening: Entry[] = [];
+    for (const entry of entries) {
+      if (entry.state.flushed === entry.points.length) continue;
+      if (entry.state.opensPass) opening.push(entry);
+      else record(entry, recorded);
+    }
+    endFrame(recorded, 0);
+    if (opening.length > 0) {
+      if (recordedFrame === frame - 1) frame += 1;
+      const before = recorded.length;
+      for (const entry of opening) record(entry, recorded);
+      endFrame(recorded, before);
+    }
+    if (PERF_PROBE && recorded.length > 0) perfFlushed();
+    return recorded;
+  }
+
+  return {
+    flush,
+    startCohort(drawing: Drawing) {
+      frame = cohortFrame(drawing);
+    },
+  };
+}
+
 export function createContactCohort() {
   const active = new Map<string, number>();
   let entries: Entry[] = [];
   let paper: PaperReference | null = null;
-  let frame = 0;
+  const frames = createOpFrames();
   // One drafts list per change to the cohort, so a consumer keyed on the list sees each change.
   let drafts: readonly Stroke[] | null = null;
 
-  // Every sample taken since the last flush becomes ops in one frame: a stroke's first flush is
-  // its dot, and each flush after paints the samples since as one path.
   function flush(): readonly LiveOp[] {
-    const recorded: LiveOp[] = [];
-    for (const entry of entries) {
-      if (entry.state.flushed === entry.points.length) continue;
-      if (entry.ops.length === 0) {
-        entry.ops.push([1, frame]);
-        recorded.push({ stroke: entry.stroke, op: 0 });
-      }
-      if (entry.points.length > 1 && entry.ops.at(-1)?.[0] !== entry.points.length) {
-        entry.ops.push([entry.points.length, frame]);
-        recorded.push({ stroke: entry.stroke, op: entry.ops.length - 1 });
-      }
-      entry.state.flushed = entry.points.length;
-      entry.state.cached = null;
-      drafts = null;
-    }
-    if (recorded.length > 0) {
-      frame += 1;
-      if (PERF_PROBE) perfFlushed();
-    }
+    const recorded = frames.flush(entries);
+    if (recorded.length > 0) drafts = null;
     return recorded;
   }
 
@@ -120,7 +159,7 @@ export function createContactCohort() {
         const reference = drawingPaper(drawing);
         paper = reference.kind === 'unadopted' ? (adoption?.() ?? null) : reference;
         if (!paper) throw new Error('The drawing paper is not ready.');
-        if (entries.length === 0) frame = cohortFrame(drawing);
+        if (entries.length === 0) frames.startCohort(drawing);
       }
       const reserved = lastCrayon();
       const style = strokeStyle(
@@ -159,7 +198,8 @@ export function createContactCohort() {
           style.brush === 'crayon'
             ? { ...style, seed: nextCrayonSeed(reserved ? [reserved] : []) }
             : style,
-          point
+          point,
+          true
         )
       );
       drafts = null;

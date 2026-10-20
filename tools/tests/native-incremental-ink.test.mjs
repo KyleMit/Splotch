@@ -121,6 +121,7 @@ function drawCohort({
           () => paper
         );
       else if (event.sample) cohort.sample(event.sample, event.at);
+      else if (event.resume) cohort.resume(event.resume, event.at);
       else if (event.end) {
         scene.flush(cohort);
         commit(cohort.finish(event.end));
@@ -399,6 +400,37 @@ describe('native incremental ink', () => {
     );
     const { live, replay, captured, midCohort } = expectIdentity({ script });
     expect(midCohort).toEqual(midCohort.map(() => 0));
+    expect(differing(live, replay)).toBe(0);
+    expect(differing(live, captured)).toBe(0);
+  });
+
+  it('closes the glaze group where a resumed crayon contact starts its new stroke, live and replayed', () => {
+    const crayon = { brush: 'crayon', color: 'Red', width: 'extraThick' };
+    const twoContacts = createInkScene();
+    const first = drawCohort({
+      scene: twoContacts,
+      history: createHistory(emptyDrawing()),
+      script: stroke('a', across, 2, crayon),
+    });
+    drawCohort({
+      scene: twoContacts,
+      history: first.history,
+      script: stroke('b', across, 2, crayon),
+    });
+    const separate = pixelsOf(twoContacts.snapshot());
+    twoContacts.dispose();
+    // The same two strokes from one contact whose stream resumed at the start and retraced it, the
+    // resume landing in the frame that still holds the first stroke's unflushed tail.
+    const script = stroke('a', across, 2, crayon);
+    script.at(-1).pop();
+    const retrace = stroke('a', across, 2).map((events) =>
+      events.map((event) => (event.start ? { resume: 'a', at: event.at } : event))
+    );
+    script.at(-1).push(...retrace[0]);
+    script.push(...retrace.slice(1));
+    const { live, replay, captured, committed } = expectIdentity({ script });
+    expect(committed.map((stroke) => stroke.seed)).toEqual([1, 2]);
+    expect(differing(live, separate)).toBe(0);
     expect(differing(live, replay)).toBe(0);
     expect(differing(live, captured)).toBe(0);
   });
