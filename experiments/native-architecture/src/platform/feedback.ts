@@ -1,4 +1,4 @@
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { APP_VERSION } from './appVersion';
 import { fetch } from 'expo/fetch';
 import { File, Paths } from 'expo-file-system';
 import { Dimensions, NativeModules, Platform } from 'react-native';
@@ -43,7 +43,7 @@ export function feedbackDevice(online: boolean): DeviceInfo {
   const screen = Dimensions.get('screen');
   const viewport = Dimensions.get('window');
   return {
-    app: FEEDBACK_APP_VERSION,
+    app: APP_VERSION,
     platform: Platform.OS === 'android' ? 'Android' : 'iOS',
     ...nativeDevice(),
     screen: `${Math.round(screen.width)} × ${Math.round(screen.height)}`,

@@ -1,5 +1,5 @@
 import { osLabelFromUserAgent } from '../feedback/osLabel';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { APP_VERSION } from './appVersion';
 import { FEEDBACK_URL, type FeedbackTransport } from '../feedback/feedbackTransport';
 import {
   FEEDBACK_POLICY_KEY,
@@ -20,7 +20,7 @@ export const feedbackTransport: FeedbackTransport = (body, signal) =>
   });
 export function feedbackDevice(online: boolean): DeviceInfo {
   return {
-    app: FEEDBACK_APP_VERSION,
+    app: APP_VERSION,
     platform: 'Web',
     os: osLabelFromUserAgent(navigator.userAgent),
     browser: navigator.userAgent,
