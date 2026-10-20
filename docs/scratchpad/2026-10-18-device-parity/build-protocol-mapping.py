@@ -701,6 +701,35 @@ PROTOCOL_RERUN = {
     'E0431': ('WEB-1', 'results/web-1-2026-10-19.md', 3020,
               'rn-web-chromium rerun 2026-10-20 of eraser-hover: the eraser bubble shows under the hovering '
               'mouse and is gone once it leaves the paper, as on web-prod'),
+    'L0154': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3016,
+              'rn-web-chromium rerun 2026-10-20 of ai-legacy-plaintext-credentials: no legacy plaintext '
+              'credential remains, as on web-prod; WEB-1 vault-save-reload-and-connection-loss: saving a '
+              'key requests persistent storage once (#3023), as on web-prod'),
+    'B0267': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3015,
+              'rn-web-chromium check on #3049\'s branch 2026-10-20: with the picture minimized, the paper\'s '
+              'centre is no longer under a layer and a stroke drawn there inks (10 to 11 paths)'),
+    'L0168': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3015,
+              'rn-web-chromium check on #3049\'s branch 2026-10-20: with the picture minimized, the paper\'s '
+              'centre is no longer under a layer and a stroke drawn there inks (10 to 11 paths)'),
+    'E0329': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3015,
+              'rn-web-chromium check on #3049\'s branch 2026-10-20: with the picture minimized, the paper\'s '
+              'centre is no longer under a layer and a stroke drawn there inks (10 to 11 paths)'),
+    'T1-12': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3015,
+              'rn-web-chromium check on #3049\'s branch 2026-10-20: with the picture minimized, the paper\'s '
+              'centre is no longer under a layer and a stroke drawn there inks (10 to 11 paths); rerun of '
+              'ai-focus-after-close: closing the result focuses the AI button or Expand controls (#3018)'),
+    'E0069': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3018,
+              'rn-web-chromium rerun 2026-10-20 of ai-focus-after-close: closing the result with the drawer '
+              'open focuses the AI button, the value web-prod recorded'),
+    'E0070': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3018,
+              'rn-web-chromium rerun 2026-10-20 of ai-focus-after-close: closing the result with the drawer '
+              'folded focuses Expand controls, the value web-prod recorded'),
+    'B0308': ('WEB-1', 'results/web-1-2026-10-19.md', 3021,
+              'rn-web-chromium rerun 2026-10-20 of ai-install-banner-suppression: the install banner hides '
+              'while the picture is minimized, as on web-prod'),
+    'L0210': ('WEB-1', 'results/web-1-2026-10-19.md', 3021,
+              'rn-web-chromium rerun 2026-10-20 of ai-install-banner-suppression: the install banner hides '
+              'while the picture is minimized, as on web-prod'),
 }
 
 
