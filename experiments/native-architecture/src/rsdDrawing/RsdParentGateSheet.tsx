@@ -436,17 +436,21 @@ const styles = css.create({
     transitionDuration: motion.durationFast,
   },
   footerLead: { color: colors.textSoft },
-  // Shipping's path is one unit that never wraps inside; the separator gets twice its 4 px gap.
+  // The separator gets twice shipping's 4 px gap. Where a large system text size outgrows the
+  // card, the path breaks between its places rather than squeezing a name over the separator.
   footerPath: {
     display: 'flex',
     flexDirection: 'row',
-    flexWrap: 'nowrap',
+    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: dimensions.space2,
   },
+  // Each place keeps its icon beside its name, whole.
   footerPlace: {
     display: 'flex',
     flexDirection: 'row',
+    flexShrink: 0,
     alignItems: 'center',
     gap: dimensions.space1,
   },
