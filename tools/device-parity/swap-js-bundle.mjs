@@ -29,6 +29,7 @@ import {
   hermescArgs,
   hermescPath,
   hermescVersion,
+  xcodeBuildEnv,
 } from './lib/js-bundle.mjs';
 
 // Uncompressed native libraries in the base APK sit on 16 KB pages; the copy keeps them there.
@@ -51,6 +52,10 @@ const FLAGS = {
   identity: { type: 'string' },
 };
 
+// apksigner's `file:` form names a path; `env:` and `pass:` pass through.
+const passwordSource = (value) =>
+  value?.startsWith('file:') ? `file:${resolve(value.slice('file:'.length))}` : value;
+
 export function parseSwapFlags(argv) {
   const { values } = parseFlags(argv, {
     options: FLAGS,
@@ -64,25 +69,27 @@ export function parseSwapFlags(argv) {
     fail(`--platform=${platform} needs ${missing.map((name) => `--${name}`).join(', ')}`);
   }
   if (platform === 'ios' && process.platform !== 'darwin') fail('The iOS route needs macOS');
-  if (existsSync(values.out) && readdirSync(values.out).length) {
-    fail(`--out ${values.out} already holds files; give each run its own directory`);
+  // Every path resolves against the caller's directory: the steps run from the app's.
+  const out = resolve(values.out);
+  if (existsSync(out) && readdirSync(out).length) {
+    fail(`--out ${out} already holds files; give each run its own directory`);
   }
   return {
     platform,
-    base: values.base,
+    base: resolve(values.base),
     bundleId: values.bundle,
-    out: values.out,
+    out,
     device: values.device,
-    keystore: values.keystore,
+    keystore: values.keystore === undefined ? undefined : resolve(values.keystore),
     keyAlias: values['key-alias'],
-    ksPass: values['ks-pass'],
-    keyPass: values['key-pass'] ?? values['ks-pass'],
+    ksPass: passwordSource(values['ks-pass']),
+    keyPass: passwordSource(values['key-pass'] ?? values['ks-pass']),
     identity: values.identity,
   };
 }
 
-function step(cmd, args, { cwd = APP_DIR, encoding = 'utf8' } = {}) {
-  const result = spawnSync(cmd, args, { cwd, encoding, maxBuffer: OUTPUT_LIMIT_BYTES });
+function step(cmd, args, { cwd = APP_DIR, encoding = 'utf8', env = process.env } = {}) {
+  const result = spawnSync(cmd, args, { cwd, encoding, env, maxBuffer: OUTPUT_LIMIT_BYTES });
   if (result.status !== 0) {
     const reason = result.error ? `: ${result.error.message}` : '';
     fail(`${cmd} ${args[0] ?? ''} failed (exit ${result.status})${reason}\n${result.stderr ?? ''}`);
@@ -99,12 +106,20 @@ function buildTool(name) {
   return join(root, versions.at(-1), name);
 }
 
-function appEntry(platform) {
+function appEntry(platform, { node, env }) {
   const script = "require('expo/scripts/resolveAppEntry')";
-  return step(process.execPath, ['-e', script, APP_DIR, platform, 'absolute'])
+  return step(node, ['-e', script, APP_DIR, platform, 'absolute'], { env })
     .trim()
     .split('\n')
     .at(-1);
+}
+
+// Gradle bundles in the environment it was started from; Xcode's phase also sources its env files
+// and runs NODE_BINARY. Exported for js-bundle.test.mjs, which pins that wiring.
+export function bundleEnvironment(platform) {
+  if (platform === 'android') return { node: process.execPath, env: process.env };
+  const env = xcodeBuildEnv();
+  return { node: env.NODE_BINARY || process.execPath, env };
 }
 
 // The JavaScript, bundled and compiled exactly as the base build's own bundle step does it.
@@ -115,14 +130,15 @@ function compileBundle(platform, out) {
   mkdirSync(assets, { recursive: true });
   const source = join(js, BUNDLE_NAME[platform]);
   const started = Date.now();
+  const runtime = bundleEnvironment(platform);
   const args = bundleArgs(platform, {
     cli: expoCliPath(),
-    entry: appEntry(platform),
+    entry: appEntry(platform, runtime),
     bundle: source,
     assets,
     sourcemap: `${source}.packager.map`,
   });
-  step(process.execPath, args);
+  step(runtime.node, args, { env: runtime.env });
   const compiled = join(out, BUNDLE_NAME[platform]);
   step(hermescPath(), hermescArgs(platform, { input: source, output: compiled }));
   console.log(`bundled and compiled in ${Math.round((Date.now() - started) / 1000)} s`);

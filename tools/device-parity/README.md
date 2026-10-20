@@ -137,8 +137,10 @@ Relaunch the app afterwards. `--ks-pass` and `--key-pass` take apksigner's forms
   Native's Gradle task and Xcode script pass for Release (`lib/js-bundle.mjs`), and
   `tests/js-bundle.test.mjs` fails when React Native changes them. At an unchanged commit the
   Android bundle is byte for byte the one Gradle packaged. The iOS one differs only in the path
-  Hermes records for its source. The tool prints whether the JavaScript differs from the base
-  build's, which catches a forgotten save.
+  Hermes records for its source. On iOS the bundle step sources the app's `.xcode.env` files, as
+  Xcode's bundle phase does; on Android it uses the calling environment, as a Gradle build started
+  from it does, so an `EXPO_PUBLIC_*` value applies either way. The tool prints whether the
+  JavaScript differs from the base build's, which catches a forgotten save.
 * **Native code and Android resources come from the base build.** A Kotlin, Swift or native config
   change needs a full build. On Android, an image or sound the base APK lacks is refused, because
   React Native compiles those into the APK's resources; an edited one under an unchanged name is not

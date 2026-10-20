@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   APP_DIR,
@@ -13,86 +13,158 @@ import {
   hermescArgs,
   hermescPath,
   hermescVersion,
+  xcodeBuildEnv,
 } from '../lib/js-bundle.mjs';
+import { bundleEnvironment, parseSwapFlags } from '../swap-js-bundle.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'js-bundle-test-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const nodeModule = (path) => {
-  const resolved = join(APP_DIR, '..', '..', 'node_modules', path);
-  return readFileSync(resolved, 'utf8');
-};
-const gradlePlugin = (file) => {
-  const root = '@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin';
-  return nodeModule(`${root}/com/facebook/react/${file}`);
-};
+const repo = join(APP_DIR, '..', '..');
+const read = (path) => readFileSync(join(repo, path), 'utf8');
+const KOTLIN =
+  'node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react';
 const native = {
-  xcode: nodeModule('react-native/scripts/react-native-xcode.sh'),
-  hermesTask: gradlePlugin('tasks/BundleHermesCTask.kt'),
-  extension: gradlePlugin('ReactExtension.kt'),
-  configuration: gradlePlugin('TaskConfiguration.kt'),
+  xcode: read('node_modules/react-native/scripts/react-native-xcode.sh'),
+  hermesTask: read(`${KOTLIN}/tasks/BundleHermesCTask.kt`),
+  extension: read(`${KOTLIN}/ReactExtension.kt`),
+  configuration: read(`${KOTLIN}/TaskConfiguration.kt`),
+  appGradle: read('experiments/native-architecture/android/app/build.gradle'),
+  gradleProperties: read('experiments/native-architecture/android/gradle.properties'),
+  xcodeProject: read('experiments/native-architecture/ios/HelloWorld.xcodeproj/project.pbxproj'),
+  infoPlist: read('experiments/native-architecture/ios/HelloWorld/Info.plist'),
+  expoEmbedOptions: read('node_modules/@expo/cli/build/src/export/embed/resolveOptions.js'),
 };
-const PATHS = { cli: 'CLI', entry: 'ENTRY', bundle: 'B', assets: 'A', sourcemap: 'M' };
+const PATH = '<path>';
+const PATHS = { cli: PATH, entry: PATH, bundle: PATH, assets: PATH, sourcemap: PATH };
 const IO = { input: 'IN', output: 'OUT' };
 
-// The Release flags each native build passes, read from React Native's own build scripts.
-function nativeReleaseFlags({ xcode, hermesTask, extension, configuration }) {
-  const xcodeHermes = /"\$HERMES_CLI_PATH" (.+?) \$EXTRA_COMPILER_ARGS -out/.exec(xcode)?.[1];
-  const xcodeRelease = /else\s+EXTRA_COMPILER_ARGS=(\S+)/.exec(xcode)?.[1];
+// Each flag with its value: the next token unless that is a flag, or true for a bare switch.
+function flagValues(tokens) {
+  const values = {};
+  tokens.forEach((token, index) => {
+    if (!token.startsWith('--')) return;
+    const next = tokens[index + 1];
+    values[token] = next === undefined || next.startsWith('--') ? true : next;
+  });
+  return values;
+}
+
+// The Gradle task's bundle command for this app's Release variant, built from its own add() calls.
+// `--config` needs a bundleConfig the app never sets, and `--verbose` only changes logging.
+function gradleBundleCommand({ hermesTask, configuration, appGradle, gradleProperties }) {
+  expect(appGradle).not.toMatch(/bundleConfig|extraPackagerArgs|hermesFlags/);
+  const body = /fun getBundleCommand[\s\S]+?return windowsAwareCommandLine/.exec(hermesTask)[0];
+  const setting = (name) => new RegExp(`task\\.${name}\\.set\\(([^)]+)\\)`).exec(configuration)[1];
+  const hermes = /^hermesEnabled=true$/m.test(gradleProperties);
+  const valueOf = (expression) => {
+    const literal = /^"(.*)"$/.exec(expression);
+    if (literal) return literal[1];
+    if (expression === 'bundleCommand.get()') return /bundleCommand = "([^"]+)"/.exec(appGradle)[1];
+    if (expression === 'devEnabled.get().toString()') return setting('devEnabled');
+    if (expression === 'minifyEnabled.get().toString()') {
+      const minify = setting('minifyEnabled');
+      return minify === '!isHermesEnabledInThisVariant' ? String(!hermes) : minify;
+    }
+    return PATH;
+  };
+  const tokens = [...body.matchAll(/\badd\((.+)\)\n/g)].map((match) => valueOf(match[1].trim()));
+  const omitted = new Set(['--config', '--verbose']);
+  return tokens.filter((token, index) => !omitted.has(token) && !omitted.has(tokens[index - 1]));
+}
+
+// The Xcode script's bundle command for a Release device build, with the EXTRA_ARGS it adds for
+// Hermes. It adds a source map only for a SOURCEMAP_FILE, an asset catalog only for
+// RCTUseAssetCatalog, and a --config only for a BUNDLE_CONFIG, none of which this app sets; it
+// always adds --config-cmd, which Expo's export:embed parses and never reads.
+function xcodeBundleCommand({ xcode, xcodeProject, infoPlist, expoEmbedOptions }) {
+  expect(xcodeProject).not.toMatch(/SOURCEMAP_FILE|BUNDLE_CONFIG|EXTRA_PACKAGER_ARGS/);
+  expect(infoPlist).not.toContain('RCTUseAssetCatalog');
+  expect(expoEmbedOptions).not.toContain("'--config-cmd'");
+  const command =
+    /"\$NODE_BINARY" \$NODE_ARGS "\$CLI_PATH" \$BUNDLE_COMMAND([\s\S]+?)\$EXTRA_PACKAGER_ARGS/.exec(
+      xcode
+    )[1];
+  const minify =
+    /\$USE_HERMES != false && \$DEV == false \]\]; then\s+EXTRA_ARGS\+=\("--minify" "(\w+)"\)/.exec(
+      xcode
+    );
+  const values = {
+    $DEV: /\*\)\s+DEV=(\w+)/.exec(xcode)[1],
+    '"$BUNDLE_PLATFORM"': /\*\)\s+BUNDLE_PLATFORM="(\w+)"/.exec(xcode)[1],
+    '"${EXTRA_ARGS[@]}"': minify ? ['--minify', minify[1]] : [],
+  };
+  const tokens = command
+    .split(/\s+/)
+    .filter((token) => token && token !== '\\' && token !== '$CONFIG_ARG');
+  const bundleCommand = /BUNDLE_COMMAND=\\"([\w:]+)\\"/.exec(xcodeProject)[1];
+  return [
+    PATH,
+    bundleCommand,
+    ...tokens.flatMap((token) => values[token] ?? (token.startsWith('--') ? token : PATH)),
+  ];
+}
+
+// The Release Hermes flags each native build passes.
+function nativeHermesFlags({ xcode, hermesTask, extension }) {
+  const xcodeHermes = /"\$HERMES_CLI_PATH" (.+?) \$EXTRA_COMPILER_ARGS -out/.exec(xcode)[1];
+  const xcodeRelease = /else\s+EXTRA_COMPILER_ARGS=(\S+)/.exec(xcode)[1];
   const gradleHermes = /windowsAwareCommandLine\(\s*hermesCommand,([\s\S]+?)"-out"/.exec(
     hermesTask
-  );
-  const gradleFlags = /hermesFlags[\s\S]+?convention\(listOf\(([^)]*)\)\)/.exec(extension)?.[1];
+  )[1];
+  const gradleFlags = /hermesFlags[\s\S]+?convention\(listOf\(([^)]*)\)\)/.exec(extension)[1];
   const quoted = (text) => [...text.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
   return {
-    ios: {
-      hermes: [...xcodeHermes.split(' '), xcodeRelease],
-      minifyFalse: /\$USE_HERMES != false && \$DEV == false[\s\S]{0,40}"--minify" "false"/.test(
-        xcode
-      ),
-      resetCache: /--dev \$DEV \\\s+--reset-cache/.test(xcode),
-    },
-    android: {
-      hermes: [...quoted(gradleHermes[1]), ...quoted(gradleFlags)],
-      minifyFalse: /task\.minifyEnabled\.set\(!isHermesEnabledInThisVariant\)/.test(configuration),
-      devFalse: /task\.devEnabled\.set\(false\)/.test(configuration),
-      sourcemap: /add\("--sourcemap-output"\)/.test(hermesTask),
-    },
+    ios: [...xcodeHermes.split(' '), xcodeRelease],
+    android: [...quoted(gradleHermes), ...quoted(gradleFlags)],
   };
 }
 
 function assertMatchesNative(sources) {
-  const flags = nativeReleaseFlags(sources);
-  const ios = hermescArgs('ios', IO);
-  expect(ios).toEqual([...flags.ios.hermes, '-out', 'OUT', 'IN']);
-  const android = hermescArgs('android', IO);
-  const out = android.indexOf('-out');
-  expect(android.slice(out, out + 3)).toEqual(['-out', 'OUT', 'IN']);
-  expect(android.toSpliced(out, 3)).toEqual(flags.android.hermes);
-  for (const platform of ['android', 'ios']) {
-    const args = bundleArgs(platform, PATHS).join(' ');
-    expect(args).toContain('export:embed --platform ' + platform + ' --dev false --reset-cache');
-    expect(args).toContain('--minify false');
-  }
-  expect(flags.ios).toMatchObject({ minifyFalse: true, resetCache: true });
-  expect(flags.android).toMatchObject({ minifyFalse: true, devFalse: true, sourcemap: true });
-  expect(bundleArgs('android', PATHS)).toContain('--sourcemap-output');
+  const gradle = gradleBundleCommand(sources);
+  const android = bundleArgs('android', PATHS);
+  expect(android[1]).toBe(gradle[1]);
+  expect(flagValues(android)).toEqual(flagValues(gradle));
+  const xcode = xcodeBundleCommand(sources);
+  const ios = bundleArgs('ios', PATHS);
+  expect(ios[1]).toBe(xcode[1]);
+  expect(flagValues(ios)).toEqual(flagValues(xcode));
+
+  const hermes = nativeHermesFlags(sources);
+  expect(hermescArgs('ios', IO)).toEqual([...hermes.ios, '-out', 'OUT', 'IN']);
+  const compiled = hermescArgs('android', IO);
+  const out = compiled.indexOf('-out');
+  expect(compiled.slice(out, out + 3)).toEqual(['-out', 'OUT', 'IN']);
+  expect(compiled.toSpliced(out, 3)).toEqual(hermes.android);
 }
 
 describe('the swapped bundle is built as the native Release builds build it', () => {
-  it('passes the bundle and Hermes flags React Native’s Gradle task and Xcode script pass', () => {
+  it('passes the bundle and Hermes arguments React Native’s Gradle task and Xcode script pass', () => {
     expect(() => assertMatchesNative(native)).not.toThrow();
   });
 
   it.each([
+    ['hermesTask', 'add("--dev")', 'add("--development")'],
+    ['hermesTask', '          add("--reset-cache")\n', ''],
+    ['configuration', 'task.devEnabled.set(false)', 'task.devEnabled.set(true)'],
+    ['gradleProperties', 'hermesEnabled=true', 'hermesEnabled=false'],
+    ['appGradle', 'bundleCommand = "export:embed"', 'bundleCommand = "bundle"'],
+    [
+      'appGradle',
+      '    autolinkLibrariesWithApp()',
+      '    bundleConfig = file("x")\n    autolinkLibrariesWithApp()',
+    ],
+    ['xcode', '  --reset-cache \\\n', ''],
+    ['xcode', 'EXTRA_ARGS+=("--minify" "false")', 'EXTRA_ARGS+=("--minify" "true")'],
+    ['xcode', '    DEV=false', '    DEV=true'],
     ['xcode', 'EXTRA_COMPILER_ARGS=-O\n', 'EXTRA_COMPILER_ARGS=-Os\n'],
+    ['xcodeProject', 'BUNDLE_COMMAND=\\"export:embed\\"', 'BUNDLE_COMMAND=\\"bundle\\"'],
     ['hermesTask', '"-emit-binary",', '"-emit-binary", "-g",'],
     ['extension', 'listOf("-O", "-output-source-map")', 'listOf("-O")'],
-    ['configuration', 'task.devEnabled.set(false)', 'task.devEnabled.set(true)'],
-  ])('fails when the %s changes its Release flags', (source, from, to) => {
+  ])('fails when the %s changes a Release argument (%s)', (source, from, to) => {
     const changed = native[source].replace(from, to);
     expect(changed).not.toBe(native[source]);
-    expect(() => assertMatchesNative({ ...native, [source]: changed })).toThrow();
+    expect(() => assertMatchesNative({ ...native, [source]: changed })).toThrow(/expected/);
   });
 });
 
@@ -169,5 +241,61 @@ describe('swap-js-bundle refusals', () => {
     const result = run([...args, ...signing]);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('already holds files');
+  });
+});
+
+describe('the environment each bundle step runs in', () => {
+  const writeEnvFiles = (dir, files) => {
+    mkdirSync(dir, { recursive: true });
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text);
+  };
+
+  // An EXPO_PUBLIC_* value exported from an Xcode env file reaches the full build's bundle, so it
+  // has to reach the swapped one too.
+  it('applies the Xcode env files in the order the bundle phase sources them', () => {
+    const dir = join(scratch, 'ios-env');
+    writeEnvFiles(dir, {
+      '.xcode.env': 'export NODE_BINARY=/opt/node\nexport EXPO_PUBLIC_SWAP_CHECK=from-env\n',
+      '.xcode.env.local': 'export EXPO_PUBLIC_SWAP_CHECK=from-local\n',
+    });
+    const env = xcodeBuildEnv(dir, { PATH: process.env.PATH, KEPT: 'caller' });
+    expect(env).toMatchObject({
+      NODE_BINARY: '/opt/node',
+      EXPO_PUBLIC_SWAP_CHECK: 'from-local',
+      KEPT: 'caller',
+    });
+    rmSync(join(dir, '.xcode.env.local'));
+    expect(xcodeBuildEnv(dir, { PATH: process.env.PATH }).EXPO_PUBLIC_SWAP_CHECK).toBe('from-env');
+  });
+
+  it('bundles for iOS with the sourced environment and its NODE_BINARY', () => {
+    const runtime = bundleEnvironment('ios');
+    expect(runtime.env).toEqual(xcodeBuildEnv());
+    expect(runtime.node).toBe(runtime.env.NODE_BINARY || process.execPath);
+    expect(bundleEnvironment('android')).toEqual({ node: process.execPath, env: process.env });
+  });
+});
+
+describe('swap-js-bundle paths', () => {
+  // Every step runs from the app's directory, so a path the caller gave relative to their own
+  // directory is resolved before any of them.
+  it('resolves the base, output, keystore and a password file against the caller', () => {
+    const options = parseSwapFlags([
+      '--platform=android',
+      '--bundle=probe',
+      '--base=build/app.apk',
+      `--out=${join('scratch-out', String(Date.now()))}`,
+      '--keystore=keys/candidate-release.keystore',
+      '--key-alias=a',
+      '--ks-pass=file:keys/password.txt',
+      '--key-pass=env:KEY_PASSWORD',
+    ]);
+    expect(options).toMatchObject({
+      base: resolve('build/app.apk'),
+      keystore: resolve('keys/candidate-release.keystore'),
+      ksPass: `file:${resolve('keys/password.txt')}`,
+      keyPass: 'env:KEY_PASSWORD',
+    });
+    expect(options.out.startsWith(resolve('scratch-out'))).toBe(true);
   });
 });
