@@ -17,6 +17,7 @@ import {
   SERVICE_WORKER_PATH,
 } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
+import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
@@ -132,6 +133,14 @@ function exportWebBundle(outputDir) {
   );
 }
 
+// Shipping's drawing route titles its tab from the home card (web/src/routes/+page.svelte); Expo
+// titles the document with the app's name.
+export function withShippingTitle(indexHtml) {
+  const title = /<title>[^<]*<\/title>/;
+  if (!title.test(indexHtml)) throw new Error('The exported document has no <title> to replace.');
+  return indexHtml.replace(title, `<title>${HOME_CARD.title}</title>`);
+}
+
 export function webVersionHeadTag(appVersion) {
   return `<meta name=${JSON.stringify(WEB_VERSION_META_NAME)} content=${JSON.stringify(appVersion)}>`;
 }
@@ -151,7 +160,7 @@ function copyShippingInstallAssets(outputDir, appVersion) {
   writeFileSync(
     indexPath,
     withShippingViewport(
-      withInstallHeadTags(readFileSync(indexPath, 'utf8'), [
+      withInstallHeadTags(withShippingTitle(readFileSync(indexPath, 'utf8')), [
         ...tags,
         webVersionHeadTag(appVersion),
         ...bootThemeHeadTags(),

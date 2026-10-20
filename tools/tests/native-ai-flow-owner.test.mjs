@@ -3,7 +3,10 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
 import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
-import { aiResultPhase } from '../../experiments/native-architecture/src/ai/uiState.ts';
+import {
+  aiButtonFace,
+  aiResultPhase,
+} from '../../experiments/native-architecture/src/ai/uiState.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
 import { FREE_DAILY_LIMIT_EXHAUSTED_CODE } from '../../web/src/lib/ai/generationResult.ts';
@@ -258,6 +261,136 @@ it.each([
     expect(f.owner.getState().open).toBe(false);
   }
 );
+
+// Shipping keeps a grant it knows for the launch, so a used-up answer from a generation stays
+// used up when Settings opens and reads the credential (#3024). Negative control: a Settings read
+// that asks the grant endpoint again shows the stale allowance here.
+it('keeps a used-up answer when Settings reads the allowance afterwards', async () => {
+  const f = await fixture({
+    generate: () =>
+      new Response(
+        JSON.stringify({ ok: false, code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+        { status: 403 }
+      ),
+  });
+  await sendStyle(f);
+  expect(f.owner.getState()).toMatchObject({ credential: 'free', remaining: 0 });
+  const grants = () =>
+    f.transport.mock.calls.filter(([request]) => request.path === '/api/free-generation-grant');
+  const asked = grants().length;
+  await f.owner.inspect();
+  expect(f.owner.getState()).toMatchObject({ remaining: 0, availability: 'ready' });
+  expect(aiButtonFace(f.owner.getState(), false)).toMatchObject({
+    label: 'Set up AI image',
+    badge: 0,
+  });
+  expect(grants()).toHaveLength(asked);
+});
+
+const usedUp = () =>
+  new Response(
+    JSON.stringify({ ok: false, code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+    { status: 403 }
+  );
+const grantRequests = (f) =>
+  f.transport.mock.calls.filter(([request]) => request.path === '/api/free-generation-grant');
+
+// A zero any authoritative answer gives stands as the exhausted one does: a grant of 0 and a
+// creation whose count header says 0 (#3024). Negative control: recording only the exhausted
+// refusal leaves both reading the grant again here.
+it.each([
+  [
+    'a grant',
+    { grant: () => new Response('{"ok":true,"remaining":0,"limit":10}') },
+    async () => {},
+  ],
+  [
+    "a creation's count",
+    {
+      generate: () =>
+        new Response(rgbaPng(2, 2, 255), {
+          headers: { 'Content-Type': 'image/png', 'X-Free-Generations-Remaining': '0' },
+        }),
+    },
+    sendStyle,
+  ],
+])('keeps a zero that %s gave through a later Settings read', async (_, replies, answer) => {
+  const f = await fixture(replies);
+  await f.owner.inspect();
+  await answer(f);
+  await vi.waitFor(() => expect(f.owner.getState().remaining).toBe(0));
+  const asked = grantRequests(f).length;
+  await f.owner.inspect();
+  expect(f.owner.getState().remaining).toBe(0);
+  expect(grantRequests(f)).toHaveLength(asked);
+});
+
+// Only turning AI off or on starts a new span: another parent choice keeps the used-up answer.
+// Negative control: keying the answer to the consent epoch, which any parent choice moves, fails.
+it('keeps a used-up answer through an unrelated parent choice', async () => {
+  const f = await fixture({ generate: usedUp });
+  await sendStyle(f);
+  f.product.openParentCenter();
+  solve(f.product.gate);
+  await f.product.setPolicy('feedback', 'session');
+  f.product.closeParentCenter();
+  const asked = grantRequests(f).length;
+  await f.owner.inspect();
+  expect(f.owner.getState().remaining).toBe(0);
+  expect(grantRequests(f)).toHaveLength(asked);
+});
+
+// AI switched off and on while the refusal's journal is still being written must not adopt the
+// old answer. Negative control: reading the span after the write fails here.
+it('drops a used-up answer whose journal write outlived an AI off and on', async () => {
+  const f = await fixture({ generate: usedUp });
+  await f.owner.inspect();
+  let release;
+  const held = new Promise((resolve) => (release = resolve));
+  const write = f.storage.write.getMockImplementation();
+  f.storage.write.mockImplementation(async (next) => {
+    if (next.phase === 'failed') await held;
+    return write(next);
+  });
+  f.owner.start({ onSetup: vi.fn(), customize: true });
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.owner.getState()).toMatchObject({ open: true, view: 'prompt' }));
+  f.owner.pickStyle('Clay');
+  await vi.waitFor(() =>
+    expect(f.storage.write.mock.calls.some(([next]) => next.phase === 'failed')).toBe(true)
+  );
+  f.product.openParentCenter();
+  solve(f.product.gate);
+  await f.product.setAiEnabled(false);
+  await f.product.setAiEnabled(true);
+  f.product.closeParentCenter();
+  release();
+  await f.settled();
+  await f.owner.inspect();
+  expect(f.owner.getState().remaining).toBe(10);
+});
+
+// Turning AI off and on again reads the grant afresh, as shipping's eligibility does, so an
+// allowance the server has since restored comes back. Negative control: a used-up answer kept
+// through the switch leaves the count at 0 here.
+it('reads the allowance again after AI is turned off and on following a used-up answer', async () => {
+  const f = await fixture({
+    generate: () =>
+      new Response(
+        JSON.stringify({ ok: false, code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+        { status: 403 }
+      ),
+  });
+  await sendStyle(f);
+  expect(f.owner.getState().remaining).toBe(0);
+  f.product.openParentCenter();
+  solve(f.product.gate);
+  await f.product.setAiEnabled(false);
+  await f.product.setAiEnabled(true);
+  f.product.closeParentCenter();
+  await f.owner.inspect();
+  expect(f.owner.getState()).toMatchObject({ remaining: 10, availability: 'ready' });
+});
 
 it('reports a failed run behind the report check with its bounded details and no drawing', async () => {
   const f = await fixture({

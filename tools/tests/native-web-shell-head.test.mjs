@@ -8,12 +8,14 @@ import { createRoot } from 'react-dom/client';
 import {
   bootAppSurfaceHeadTag,
   bootThemeHeadTags,
+  withShippingTitle,
   withShippingViewport,
 } from '../migration/build-native-web.mjs';
 import { bootAppearance } from '../../experiments/native-architecture/src/platform/bootAppearance.web.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
 import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
 import { installAppSurface } from '../../experiments/native-architecture/src/platform/appSurface.web.ts';
 import { APP_SURFACE_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { installAppSurface as installNativeAppSurface } from '../../experiments/native-architecture/src/platform/appSurface.ts';
@@ -254,5 +256,20 @@ describe("the web shell's viewport", () => {
     );
     expect(shell.match(/name="viewport"/g)).toHaveLength(1);
     expect(() => withShippingViewport('<head></head>', appHtml)).toThrow();
+  });
+});
+
+// Shipping's drawing route titles its tab from the home card; the export replaces Expo's app-name
+// title with it (#3027). Negative control: a shell left with Expo's title fails here.
+describe("the web shell's title", () => {
+  it("takes shipping's drawing-page title in place of Expo's app name", () => {
+    const route = readFileSync(
+      join(import.meta.dirname, '../../web/src/routes/+page.svelte'),
+      'utf8'
+    );
+    expect(route).toContain('<title>{HOME_CARD.title}</title>');
+    const shell = withShippingTitle('<head><title>Splotch</title></head>');
+    expect(shell).toBe(`<head><title>${HOME_CARD.title}</title></head>`);
+    expect(() => withShippingTitle('<head></head>')).toThrow('no <title>');
   });
 });

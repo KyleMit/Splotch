@@ -88,7 +88,10 @@ export class NativeAiController extends AiRecoverySession {
       this.journals.get(id) ?? (this.state.journal?.id === id ? this.state.journal : null);
     if (!journal || (journal.phase === 'result' && reply.kind !== 'image')) return;
     if (reply.kind === 'image') {
-      if (reply.remaining !== null) this.update({ remaining: reply.remaining });
+      if (reply.remaining !== null) {
+        this.noteRemaining(reply.remaining, this.aiSpan());
+        this.update({ remaining: reply.remaining });
+      }
       try {
         await this.deps.admit(reply.bytes, reply.mime);
       } catch {
@@ -167,6 +170,8 @@ export class NativeAiController extends AiRecoverySession {
     reply: Extract<AiReply, { kind: 'failure' }>,
     poll: boolean
   ) => {
+    // Read before the journal write: AI switched off and on meanwhile must not adopt this answer.
+    const span = this.aiSpan();
     if (reply.reason === 'safety') {
       this.reports.refuse(journal.id, reply.reportToken);
       this.update({ refusal: { id: journal.id }, message: reply.message, failures: 0 });
@@ -177,6 +182,7 @@ export class NativeAiController extends AiRecoverySession {
         endpoint: poll ? '/api/generation-result' : '/api/generate-image',
         message: reply.detail ?? reply.message,
       });
+    if (reply.reason === 'exhausted') this.noteRemaining(0, span);
     this.update({
       message: reply.message,
       ...(reply.reason === 'exhausted'

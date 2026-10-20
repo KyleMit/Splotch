@@ -120,7 +120,8 @@ export type ParentOperationPort = {
     options?: ParentRequestOptions
   ) => boolean;
   cancel: (feature: ParentFeature) => void;
-  consent: () => Readonly<{ enabled: boolean; epoch: number }>;
+  // `epoch` changes with any parent choice; `aiSpan` only when AI image creation turns on or off.
+  consent: () => Readonly<{ enabled: boolean; epoch: number; aiSpan: number }>;
 };
 
 export function readLegacyParentPreferences(value: unknown) {
