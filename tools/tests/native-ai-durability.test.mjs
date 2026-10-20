@@ -93,7 +93,7 @@ it('replaces abandoned attempts before the attempt cap in both native journals',
 
 it('lists iOS attempt folders in the form the journal builds and stores them', () => {
   const source = readFileSync(new URL(apple, candidate), 'utf8');
-  const attempts = source.match(/private func attempts\(_ root: URL\)[\s\S]*?\n  \}/)[0];
+  const attempts = source.match(/private func attempts\(_ root: URL\)[\s\S]*?\n {2}\}/)[0];
   expect(attempts).toContain('return root.appendingPathComponent($0.lastPathComponent)');
   expect(attempts).not.toMatch(/return \$0\s/);
 });
