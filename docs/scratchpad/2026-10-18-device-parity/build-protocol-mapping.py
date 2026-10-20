@@ -67,6 +67,7 @@ SETTLED = {
     'restoration': 'settled: drawing restoration removed (picture lives in memory, as shipping)',
     'caps': 'settled: stroke and point caps removed (no per-picture limit, as shipping)',
     'damaged-reset': 'settled: gated damaged-settings reset',
+    'legacy-page-cache': "settled: RN web leaves shipping's legacy page caches in place (owner, 2026-10-19)",
 }
 
 OUT = {
@@ -415,6 +416,8 @@ E = {
     'E0676': ['INFO-1'],
     'E0689': ['A11Y-2', 'OV-2'], 'E0690': ['A11Y-2', 'OV-2'], 'E0691': ['OV-2', 'OV-1'], 'E0697': ['OV-1'],
     'E0699': ['A11Y-2'], 'E0700': ['A11Y-2'],
+    # pwa-registration
+    'E0640': ('settled', 'legacy-page-cache'), 'E0641': ('settled', 'legacy-page-cache'),
     'E0708': ['PHY-5'], 'E0712': ['PHY-5'], 'E0713': ['PHY-5'], 'E0715': ['PHY-5'], 'E0714': ['OV-2'],
     'E0716': ['OV-2'], 'E0719': ['A11Y-2'], 'E0720': ['WEB-1'], 'E0723': ['OV-2', 'LIFE-1'],
     'E0724': ['OV-2'], 'E0725': ['WEB-1'],

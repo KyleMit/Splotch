@@ -28,10 +28,10 @@ physical-only properties and one drawing-screen sanity check.
 
 | Classification   | Requirements | Status today                                               |
 | ---------------- | -----------: | ---------------------------------------------------------- |
-| `protocol`       |         1234 | `unverified`; 14 `blocked`; 5 `failed` by DS-2, 2 by KEY-1 |
+| `protocol`       |         1232 | `unverified`; 14 `blocked`; 5 `failed` by DS-2, 2 by KEY-1 |
 | `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone        |
 | `automated-test` |           25 | AC-1: 24 `verified`, 1 `failed` (L0161, #3008)             |
-| `settled`        |           18 | Accepted owner decisions, never defects                    |
+| `settled`        |           20 | Accepted owner decisions, never defects                    |
 | `out-of-scope`   |          136 | Each with a stated reason                                  |
 | **Total**        |         1541 | **24 `verified`** (logic contracts only)                   |
 

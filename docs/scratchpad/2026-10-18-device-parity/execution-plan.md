@@ -40,10 +40,10 @@ Classification of the 1,541 requirements:
 
 | Classification   | Rows | Meaning                                                                                    |
 | ---------------- | ---: | ------------------------------------------------------------------------------------------ |
-| `protocol`       | 1234 | Runs on fresh simulators, emulators or browsers; some rows add a physical subcase          |
+| `protocol`       | 1232 | Runs on fresh simulators, emulators or browsers; some rows add a physical subcase          |
 | `physical-only`  |  128 | Needs a property only physical hardware has (the owner's list below)                       |
 | `automated-test` |   25 | A named test is the two-sided check, and AC-1 confirms that its oracle reads shipping code |
-| `settled`        |   18 | Governed by a settled owner decision; recorded as accepted, never as a defect              |
+| `settled`        |   20 | Governed by a settled owner decision; recorded as accepted, never as a defect              |
 | `out-of-scope`   |  136 | Hosted SvelteKit routes, server behavior, shipping harness seams, or internals RN replaces |
 
 By kind:
@@ -53,13 +53,13 @@ By kind:
 | Acceptance (T, P) |   59 |       49 |             9 |              0 |       1 |            0 |
 | Behavior (B)      |  355 |      313 |            35 |              0 |       5 |            2 |
 | Logic (L)         |  275 |      208 |            13 |             25 |       4 |           25 |
-| Shipping E2E (E)  |  787 |      611 |            65 |              0 |       2 |          109 |
+| Shipping E2E (E)  |  787 |      609 |            65 |              0 |       4 |          109 |
 | Differences (X)   |   65 |       53 |             6 |              0 |       6 |            0 |
-| **Total**         | 1541 |     1234 |           128 |             25 |      18 |          136 |
+| **Total**         | 1541 |     1232 |           128 |             25 |      20 |          136 |
 
-Status: 1,338 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
+Status: 1,336 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
 switch, which the rig does not have. Fourteen more rows carry an iOS offline or Low Data Mode
-subcase with no permitted target (see Targets); their Android and web subcases still run. 18 rows
+subcase with no permitted target (see Targets); their Android and web subcases still run. 20 rows
 are `settled` and 136 `out-of-scope`. AC-1 verified 24 logic rows and failed one, L0161. The DS-2
 slice failed B0022, B0100 and L0047 (#3012) and B0119 and E0174 (#3013). The KEY-1 slice failed
 B0206 and E0450 on an Android phone (#3031); **no device, simulator or browser cell is `verified`.**
@@ -90,7 +90,7 @@ rows that list it first. 192 rows map to two protocols, and 6 rows to three or f
 | PHY-2    | Audio and haptics                                           |     18 |      17 |            15 |         0 |       0 |
 | PHY-5    | Performance, refresh and thermal                            |     17 |      17 |            14 |         0 |       0 |
 | INFO-1   | Information pages                                           |    100 |     100 |             0 |         0 |       0 |
-| WEB-1    | RN web platform behavior                                    |    154 |     132 |             0 |         0 |       0 |
+| WEB-1    | RN web platform behavior                                    |    152 |     130 |             0 |         0 |       0 |
 | AC-1     | Two-sided automated contract confirmation                   |     30 |      25 |             0 |        25 |       0 |
 
 Subcells. `acceptance-subcells.csv` keeps its 4,798 proposed cells unchanged, and a subcell takes
@@ -230,6 +230,8 @@ and never as a pass of the original requirement:
 * Removal of restoration (X6, B0063), of stroke and point caps (X7, B0028), and of the Pictures
   gallery and Export PNG.
 * Ungated AI on/off and key save, and the gated damaged-settings reset (X55, B0103, L0220, E0506).
+* RN web leaves shipping's legacy `pages` page caches in place after cutover (E0640, E0641). The
+  owner chose this on 2026-10-19: "accept leaving the legacy pages caches as a recorded difference".
 * React Compiler stays deferred. The brushes are Pen, Crayon, Magic and Eraser.
 * The #2924 large-resize disposition (part of X11 and L0012), and the #2927 iOS 26.5 simulator
   background-download limitation.
@@ -706,7 +708,7 @@ Each of the 136 out-of-scope rows carries one reason in `basis`:
 * The shipping bundle structure, which ADR-0179 replaces for RN web.
 * The WebView-only Scribble guard on native.
 
-The 18 settled rows follow the decisions listed under the shared rules.
+The 20 settled rows follow the decisions listed under the shared rules.
 
 ## Decisions taken while planning
 
