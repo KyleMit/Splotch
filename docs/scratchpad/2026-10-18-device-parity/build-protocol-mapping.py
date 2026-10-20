@@ -643,12 +643,6 @@ AC1_RECORDED = {
 # and status"). A shipping E2E spec testing the same behavior is not linked to its behavior row, so
 # search the shipping-e2e rows of the surface too: E0174 fails with B0119.
 PROTOCOL_FAILED = {
-    'B0022': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
-              'iphone-notch: Undo at end of history plays no cue; the RN tile is a disabled button'),
-    'B0100': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
-              'iphone-notch: Undo at end of history neither shakes nor flashes'),
-    'L0047': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
-              'iphone-notch: no RN counterpart replays the unavailable cue'),
     'B0119': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
               'iphone-notch: a triple tap on Clear shows no coachmark; a hold does'),
     'E0174': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
@@ -660,7 +654,24 @@ PROTOCOL_FAILED = {
 }
 
 
+# Rows whose failed cell was rerun on the fixing branch and passed. The fix clears the failure, and
+# the row stays unverified until its protocol has covered every other target.
+PROTOCOL_RERUN = {
+    'B0022': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
+              'iphone-notch rerun 2026-10-20: Undo at end of history shakes and flashes on rn and ref160'),
+    'B0100': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
+              'iphone-notch rerun 2026-10-20: Undo at end of history shakes and flashes on rn and ref160'),
+    'L0047': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
+              'iphone-notch rerun 2026-10-20: rn replays the unavailable cue as ref160 does'),
+}
+
+
 def protocol_result(rid, res):
+    if rid in PROTOCOL_RERUN:
+        proto, record, issue, result = PROTOCOL_RERUN[rid]
+        assert proto in res['protocols'] and res['status'] == 'unverified', rid
+        res['evidence'] = f'{record};{ISSUE}{issue}'
+        res['basis'] += f'; {proto} slice 2026-10-19: failed, fixed by #{issue}; {result}'
     if rid not in PROTOCOL_FAILED:
         return res
     proto, record, issue, reason = PROTOCOL_FAILED[rid]
