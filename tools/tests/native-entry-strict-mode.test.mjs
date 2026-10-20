@@ -17,6 +17,7 @@ it.each([false, true])('registers the canonical root with development=%s', async
   const registerRootComponent = vi.fn();
   const startLaunchInvites = vi.fn();
   const load = vi.fn();
+  const removeLegacyAiCredentials = vi.fn();
   const modules = {
     './platform/skiaRuntime': {},
     './strict.css': {},
@@ -25,6 +26,7 @@ it.each([false, true])('registers the canonical root with development=%s', async
     './ProbeApp': { ProbeApp },
     './platform/launchInvites': { startLaunchInvites },
     './platform/settingsSessions': { settingsSessions: { load } },
+    './platform/legacyAiCredentials': { removeLegacyAiCredentials },
   };
   runInNewContext(code, {
     __DEV__: development,
@@ -35,6 +37,7 @@ it.each([false, true])('registers the canonical root with development=%s', async
     },
   });
   await vi.waitFor(() => expect(load).toHaveBeenCalledOnce());
+  await vi.waitFor(() => expect(removeLegacyAiCredentials).toHaveBeenCalledOnce());
   expect(registerRootComponent).toHaveBeenCalledOnce();
   const [Registered] = registerRootComponent.mock.calls[0];
   const rendered = development ? Registered() : createElement(Registered);
