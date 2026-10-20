@@ -89,6 +89,13 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   generated shell. A module the drawing screen's first frame reads must render in Node (no `window`
   at import or during render, a server snapshot on every `useSyncExternalStore`), or this step fails
   the build.
+* `compose-cutover-web.mjs` (`npm run native:web:compose`) assembles the directory a web cutover
+  deploy would publish: the SvelteKit build in `web/build` with the export laid over it at the
+  drawing route, into `experiments/native-architecture/dist/cutover-web`. The export's `index.html`,
+  `sw.js` and `version.json` replace SvelteKit's; any other file both builds write must be
+  byte-identical, and every entry of the export's worker must resolve to the bytes it pins. No
+  deploy runs it yet; `docs/scratchpad/2026-10-20-rn-web-single-app/` has the hosting design it
+  belongs to (issue 3007). `tools/tests/native-web-cutover-compose.test.mjs` holds its rules.
 
 ## Layout
 
