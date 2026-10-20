@@ -1,6 +1,6 @@
 import { sanitizeDeviceInfo, type DeviceInfo } from '../feedback/deviceReport';
 import { describeFeedbackDevice } from '../feedback/feedback';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { APP_VERSION } from '../platform/appVersion';
 import { sendFeedback, type FeedbackTransport } from '../feedback/feedbackTransport';
 import { attachesDevice, type ReportKind } from '../feedback/report';
 import { truncateCodeUnits } from '../feedback/truncate';
@@ -54,7 +54,7 @@ export function problemReportRows(
         'No error details available.',
     },
     { label: 'Attempts', value: `${attempts} in a row` },
-    { label: 'App version', value: `${FEEDBACK_APP_VERSION} (${platform})` },
+    { label: 'App version', value: `${APP_VERSION} (${platform})` },
     { label: 'Art style', value: style ?? 'Default' },
   ];
 }

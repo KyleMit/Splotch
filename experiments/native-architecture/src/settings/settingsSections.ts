@@ -1,7 +1,7 @@
 import type { SoundSettingsState } from './soundSettingsCodec';
 import type { BrushPreferencesState } from './brushPreferences';
 import { hiddenDrawingToolCount, TOOL_DRAWER_COPY } from './toolDrawerSection';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { APP_VERSION } from '../platform/appVersion';
 import type { AiState } from '../ai/sessionContract';
 import { SPLOTCHY_ICON_NAME } from '../rsdDrawing/icons.generated';
 import type { SectionIconName } from '../rsdDrawing/RsdSectionIcon';
@@ -26,7 +26,7 @@ export const NATIVE_SETTINGS_SECTIONS = [
     label: "What's New",
     title: 'Updates',
     icon: 'whats-new',
-    contentStamp: FEEDBACK_APP_VERSION,
+    contentStamp: APP_VERSION,
   },
   { id: 'about', label: 'About', icon: SPLOTCHY_ICON_NAME, contentStamp: '1' },
 ] as const satisfies readonly {
@@ -143,6 +143,6 @@ export function sectionSubtitle(id: NativeSettingsSectionId, context: SectionSum
     case 'whatsnew':
       return SECTION_SUBTITLES.whatsnew;
     case 'about':
-      return `Version ${FEEDBACK_APP_VERSION}`;
+      return `Version ${APP_VERSION}`;
   }
 }

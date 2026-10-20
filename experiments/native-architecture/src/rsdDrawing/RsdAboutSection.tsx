@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { APP_VERSION } from '../platform/appVersion';
 import type { SettingsLink } from '../settings/hostedPages';
 import { RsdExternalMark } from './RsdExternalMark';
 import { RsdIcon } from './RsdIcon';
@@ -93,7 +93,7 @@ export function RsdAboutSection({ onOpen }: { onOpen: (page: SettingsLink) => vo
           <html.span>{ABOUT_COPY.github}</html.span>
           <RsdExternalMark variant="standalone" />
         </RsdTextLink>
-        <html.p style={styles.version}>{`${ABOUT_COPY.version} ${FEEDBACK_APP_VERSION}`}</html.p>
+        <html.p style={styles.version}>{`${ABOUT_COPY.version} ${APP_VERSION}`}</html.p>
       </html.div>
     </html.section>
   );
