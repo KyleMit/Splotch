@@ -204,12 +204,12 @@ export function pinPrecacheToExport(outputDir, shell) {
   });
 }
 
-// Workbox serializes the matcher, so native-web-not-found.test.mjs pins these paths to APP_PAGE_PATHS.
-export function isNativeAppNavigation({ request, url }) {
-  return (
-    request.mode === 'navigate' &&
-    ['/', '/index.html', '/privacy', '/changelog', '/feedback'].includes(url.pathname)
-  );
+// Every page load answers from the network, or from the app shell when the network fails or
+// stalls: the shell routes by path (src/platform/appPath.web.ts) to the drawing, a parent page or
+// shipping's not-found page, so a mistyped path offline still gets the friendly page shipping's
+// worker answers with. Online, the host's own answer passes through, its 404 status included.
+export function isNativeNavigation({ request }) {
+  return request.mode === 'navigate';
 }
 
 export function nativeWebServiceWorkerConfig(outputDir, shell) {
@@ -226,7 +226,7 @@ export function nativeWebServiceWorkerConfig(outputDir, shell) {
     clientsClaim: true,
     runtimeCaching: [
       {
-        urlPattern: isNativeAppNavigation,
+        urlPattern: isNativeNavigation,
         handler: 'NetworkFirst',
         options: {
           networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,

@@ -7,7 +7,7 @@ import {
 } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
 import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
 import {
-  isNativeAppNavigation,
+  isNativeNavigation,
   APP_SHELL_FILE,
   NOT_FOUND_FILE,
 } from '../migration/build-native-web.mjs';
@@ -31,25 +31,18 @@ describe("the web export's unknown paths", () => {
     }
   });
 
-  it('routes every bundled parent page online and offline without treating unknown paths as pages', () => {
+  it('answers every page load, unknown paths included, and routes the shell by path', () => {
     for (const [page, path] of Object.entries(APP_PAGE_PATHS)) {
       globalThis.location = { pathname: path };
       expect(currentAppPage()).toBe(page);
-      expect(
-        isNativeAppNavigation({
-          request: { mode: 'navigate' },
-          url: new URL(path, 'https://splotch.art'),
-        })
-      ).toBe(true);
     }
     globalThis.location = { pathname: '/unknown' };
     expect(currentAppPage()).toBe('notFound');
-    expect(
-      isNativeAppNavigation({
-        request: { mode: 'navigate' },
-        url: new URL('https://splotch.art/unknown'),
-      })
-    ).toBe(false);
+    for (const path of [...Object.values(APP_PAGE_PATHS), '/index.html', '/unknown']) {
+      const url = new URL(path, 'https://splotch.art');
+      expect(isNativeNavigation({ request: { mode: 'navigate' }, url }), path).toBe(true);
+      expect(isNativeNavigation({ request: { mode: 'no-cors' }, url }), path).toBe(false);
+    }
   });
 
   it("serves the host's 404 answer without asking the precache to hold it", () => {
