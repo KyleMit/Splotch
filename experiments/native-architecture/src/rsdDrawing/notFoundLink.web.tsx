@@ -3,6 +3,7 @@ import { css } from 'react-strict-dom';
 import { APP_PAGE_PATHS } from '../information/appPages';
 import { openAppPage } from '../platform/appPath';
 import { buttonSkin } from './RsdButton';
+import { isPlainActivation } from './RsdPageAnchor';
 import type { NotFoundLinkProps } from './notFoundLink';
 
 // Button.svelte anchors inherit PageShell's leading; rsd-native-web-app-pages.test.mjs pins it.
@@ -12,15 +13,7 @@ export function RsdNotFoundLink({ page, variant, children }: NotFoundLinkProps) 
   const styles = buttonSkin();
   const chrome = css.props(styles.button, styles.lg, styles[variant]);
   const open = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey
-    )
-      return;
+    if (!isPlainActivation(event)) return;
     event.preventDefault();
     openAppPage(page);
   };

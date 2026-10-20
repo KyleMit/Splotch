@@ -97,6 +97,7 @@ vi.mock('react-strict-dom', () => ({
           typeof value === 'function' ? () => null : null,
         ])
       ),
+    props: () => ({}),
     defineVars: (values) => values,
     createTheme: () => null,
   },
