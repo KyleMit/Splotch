@@ -165,6 +165,7 @@ it('selects paint through text-free round buttons and keeps Custom Color outside
   const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
   await act(async () => button('Blue').click());
   expect(caller.screen.selectInkBrush).toHaveBeenCalledOnce();
+  expect(caller.screen.notePaintChoice).toHaveBeenCalledExactlyOnceWith('Blue');
   expect(setColor).toHaveBeenCalledExactlyOnceWith('Blue');
   expect(checked()).toEqual(['Blue']);
   const more = button('Custom Color');

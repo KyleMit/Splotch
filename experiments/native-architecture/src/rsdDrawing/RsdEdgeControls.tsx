@@ -297,6 +297,7 @@ function RsdPalette({
             onPressBegin={screen.finishInput}
             onClick={() => {
               screen.selectInkBrush();
+              screen.notePaintChoice(color);
               sound.owner?.settings.setColor(color);
               setConfirmation((current) =>
                 current?.paint === color && current.reduced === reduced

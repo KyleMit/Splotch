@@ -106,18 +106,17 @@ function samples(owner: InputOwner, source: InputContact, contact: OwnedContact,
 export function createPaperInputOwner(owner: InputOwner) {
   let sequence = -1;
   let detached = false;
-  let style: ReturnType<InputOwner['currentStyle']> | null = null;
   let changedAt = -Infinity;
   function finish(identifier: string) {
     owner.finish(identifier);
     owner.contacts.delete(identifier);
   }
   return {
-    observeStyle() {
-      const next = owner.currentStyle();
-      if (style && (next.color !== style.color || next.brush !== style.brush))
-        changedAt = Date.now();
-      style = next;
+    // Shipping's setColor: only a genuine paint change arms the debounce, timed from the pick. The
+    // render that delivers the new colour can hold the JS thread for 200 ms on Android, and a finger
+    // that lands meanwhile is read only after it, so timing from the render dropped strokes (#3071).
+    notePaintChoice(color: ContactStyle['color']) {
+      if (color !== owner.currentStyle().color) changedAt = Date.now();
     },
     attach() {
       detached = false;

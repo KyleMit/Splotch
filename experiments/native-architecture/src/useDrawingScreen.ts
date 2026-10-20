@@ -26,6 +26,7 @@ import {
   type OptionalBrush,
 } from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
+import type { PaintColor } from './drawing/palette';
 import { useRendererRecovery } from './useRendererRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
 import { useVisibleInk } from './drawing/inkVisibility';
@@ -158,6 +159,7 @@ export function useDrawingScreen() {
     brush,
     ...brushActions,
     finishInput: () => surface.current?.finishInput(),
+    notePaintChoice: (color: PaintColor) => surface.current?.notePaintChoice(color),
     departingInk: () => surface.current?.departingInk() ?? null,
     drawing,
     activePaper,

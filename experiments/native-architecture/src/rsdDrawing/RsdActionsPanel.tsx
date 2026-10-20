@@ -517,6 +517,7 @@ function RsdColorControl({
             disabled={disabled}
             onPick={(color) => {
               screen.selectInkBrush();
+              screen.notePaintChoice(color);
               sound.owner?.settings.setColor(color);
               close();
             }}

@@ -87,6 +87,7 @@ export function clearScreen({ drawing = inkedDrawing(), ...overrides } = {}) {
     openColorPicker: vi.fn(),
     toggleBrush: vi.fn(),
     selectInkBrush: vi.fn(),
+    notePaintChoice: vi.fn(),
     ...overrides,
   };
 }

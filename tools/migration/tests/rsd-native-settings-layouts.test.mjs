@@ -224,6 +224,7 @@ function openSettings(dimensions, overrides = {}) {
     closeColorPicker: vi.fn(),
     openColorPicker: vi.fn(),
     selectInkBrush: vi.fn(),
+    notePaintChoice: vi.fn(),
   };
   caller.sound = { settings: { status: 'loading' }, owner: null, audioMessage: '' };
   return { storage: caller.settingsStorage, stored: () => JSON.parse(stored) };

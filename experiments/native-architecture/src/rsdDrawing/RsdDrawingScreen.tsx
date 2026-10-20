@@ -506,6 +506,7 @@ function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound })
         onClose={screen.closeColorPicker}
         onChoose={(color) => {
           screen.selectInkBrush();
+          screen.notePaintChoice(color);
           sound.owner?.settings.setColor(color);
           screen.closeColorPicker();
         }}
