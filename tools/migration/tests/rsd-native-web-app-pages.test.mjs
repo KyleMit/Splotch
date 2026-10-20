@@ -21,6 +21,7 @@ import releases from '../../../web/src/lib/releases.json';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
+import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
 import { GATE_MODAL } from './rsd-parent-gate-keypad.mjs';
 import { useCaller, click, settle } from './rsd-native-ai-fixture.mjs';
 
@@ -163,10 +164,15 @@ it.each([
   expect(nav).not.toBeNull();
   const footerNode = nav.parentElement.parentElement;
   expect(footerNode).not.toBeNull();
-  expect([...nav.querySelectorAll('[role="link"]')].map((node) => node.textContent)).toEqual([
-    'Privacy',
-    'Changelog',
-    'Send feedback',
+  expect(
+    [...nav.querySelectorAll('a[href]')].map((node) => [
+      node.textContent,
+      node.getAttribute('href'),
+    ])
+  ).toEqual([
+    ['Privacy', '/privacy'],
+    ['Changelog', '/changelog'],
+    ['Send feedback', '/feedback'],
   ]);
   expect(
     [...footerNode.querySelector('[aria-label="Splotch pages"]').children[0].children].map(
@@ -188,7 +194,8 @@ it('renders the not-found actions as real links with shipping page leading', asy
   history.replaceState(null, '', '/unknown-page');
   useCaller();
   await mount(createElement(ProbeApp));
-  const links = [...host.querySelectorAll('[data-testid="information-page-body"] a[href]')];
+  const actions = host.querySelector('[data-testid="information-page-body"] [role="list"]');
+  const links = [...actions.querySelectorAll('a[href]')];
   expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
     ['Start drawing', '/'],
     ['Changelog', '/changelog'],
@@ -333,3 +340,71 @@ it.each(['privacy', 'changelog', 'feedback'])(
     expect(document.title).toBe(shipping.match(/<title>(.+?)<\/title>/)[1]);
   }
 );
+
+const pageAnchors = () =>
+  [...host.querySelectorAll('a[href]')].map((link) => [
+    link.textContent,
+    link.getAttribute('href'),
+  ]);
+
+it('gives the masthead, footer and in-app page links the addresses shipping’s pages give them', async () => {
+  records.os = 'web';
+  useCaller();
+  await loadAt('/unknown-page');
+  expect(pageAnchors()).toEqual([
+    ['Start drawing', '/'],
+    ['Splotch', '/'],
+    ['Start drawing', '/'],
+    ['Changelog', '/changelog'],
+    ['Privacy', '/privacy'],
+    ['Splotch', '/'],
+    ['Privacy', '/privacy'],
+    ['Changelog', '/changelog'],
+    ['Send feedback', '/feedback'],
+    ["What's new", `/changelog#${releases[0].id}`],
+  ]);
+  await loadAt('/changelog');
+  const anchors = pageAnchors();
+  expect(anchors.slice(0, 2)).toEqual([
+    ['Start drawing', '/'],
+    ['Splotch', '/'],
+  ]);
+  expect(anchors.slice(-4)).toEqual([
+    ['Splotch', '/'],
+    ['Privacy', '/privacy'],
+    ['Send feedback', '/feedback'],
+    ["What's new", `#${releases[0].id}`],
+  ]);
+  await loadAt('/feedback');
+  expect(pageAnchors()).toContainEqual([FEEDBACK_PAGE_COPY.privacy, '/privacy']);
+});
+
+it.each([
+  ['the masthead mark', 1],
+  ['the back link', 0],
+])('follows %s in place, and leaves a modified click to the browser', async (_name, index) => {
+  records.os = 'web';
+  useCaller();
+  await loadAt('/privacy');
+  const anchor = () => host.querySelectorAll('a[href="/"]')[index];
+  const browserDefault = vi.fn((event) => {
+    expect(event.defaultPrevented).toBe(false);
+    event.preventDefault();
+  });
+  document.addEventListener('click', browserDefault);
+  try {
+    await act(async () =>
+      anchor().dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true })
+      )
+    );
+  } finally {
+    document.removeEventListener('click', browserDefault);
+  }
+  expect(browserDefault).toHaveBeenCalledOnce();
+  expect(location.pathname).toBe('/privacy');
+  const plain = new MouseEvent('click', { bubbles: true, cancelable: true });
+  await act(async () => anchor().dispatchEvent(plain));
+  expect(plain.defaultPrevented).toBe(true);
+  expect(location.pathname).toBe('/');
+});

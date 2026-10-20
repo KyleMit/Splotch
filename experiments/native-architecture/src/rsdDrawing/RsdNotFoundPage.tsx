@@ -7,7 +7,7 @@ import {
   type Ref,
   type RefObject,
 } from 'react';
-import { StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { ScrollView } from '../platform/ScrollView';
 import { drawingArrival } from '../platform/drawingArrival';
@@ -33,6 +33,7 @@ import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
+import { APP_PAGE_PATHS } from '../information/appPages';
 import { landFocus, retainFocus } from './landFocus';
 import { RsdNotFoundLink } from './notFoundLink';
 import { RsdPageHero } from './RsdPageHero';
@@ -40,6 +41,7 @@ import { RsdNotFoundFooter } from './notFoundFooter';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 export { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { RsdPressable } from './RsdPressable';
+import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { blobXml } from './blob';
 import { styles as controlStyles } from './controls';
@@ -172,6 +174,7 @@ const styles = css.create({
   }),
   blobSize: (size: number) => ({ width: size, height: size, borderRadius: size / 2 }),
   brand: (gap: number) => ({ display: 'flex', flexDirection: 'row', alignItems: 'center', gap }),
+  brandLink: { display: 'flex' },
   crayons: (gap: number) => ({ display: 'flex', flexDirection: 'row', gap }),
   crayon: (width: number, height: number, backgroundColor: string) => ({
     width,
@@ -233,17 +236,24 @@ function BackLink({
       }),
     [brandSolid, chevron, size]
   );
-  return (
-    <RsdPressable
-      type="button"
-      role="link"
-      style={styles.back(short ? SHORT_BACK_OVERHANG_PX : BACK_OVERHANG_PX)}
-      onClick={onDrawingReturn}
-    >
+  const face = (
+    <>
       <html.div aria-hidden style={[styles.blob(blobShadow(brandSolid)), styles.blobSize(size)]}>
         <SvgXml xml={xml} width={size} height={size} />
       </html.div>
       <html.span style={[controlStyles.boldText, styles.backLabel]}>{label}</html.span>
+    </>
+  );
+  const style = styles.back(short ? SHORT_BACK_OVERHANG_PX : BACK_OVERHANG_PX);
+  if (Platform.OS === 'web')
+    return (
+      <RsdPageAnchor href={APP_PAGE_PATHS.drawing} onFollow={onDrawingReturn} style={style}>
+        {face}
+      </RsdPageAnchor>
+    );
+  return (
+    <RsdPressable type="button" role="link" style={style} onClick={onDrawingReturn}>
+      {face}
     </RsdPressable>
   );
 }
@@ -255,10 +265,19 @@ function blobShadow(hex: string) {
   return `0 3px 8px rgba(${red}, ${green}, ${blue}, ${BLOB_SHADOW_ALPHA})`;
 }
 
-function BrandMark({ phone, narrow }: { phone: boolean; narrow: boolean }) {
+// PageShell.svelte's masthead mark is a second anchor home on the web; native shows the mark alone.
+function BrandMark({
+  phone,
+  narrow,
+  onDrawingReturn,
+}: {
+  phone: boolean;
+  narrow: boolean;
+  onDrawingReturn: () => void;
+}) {
   const crayon = CRAYON[phone ? 'phone' : 'wide'];
   const tracking = WORDMARK_TRACKING_EM[phone ? 'phone' : 'wide'];
-  return (
+  const mark = (
     <html.div style={styles.brand(BRAND_GAP_PX[phone ? 'phone' : 'wide'])}>
       {!narrow && (
         <html.div aria-hidden style={styles.crayons(crayon.gap)}>
@@ -274,6 +293,16 @@ function BrandMark({ phone, narrow }: { phone: boolean; narrow: boolean }) {
         {NOT_FOUND_COPY.wordmark}
       </html.span>
     </html.div>
+  );
+  if (Platform.OS !== 'web') return mark;
+  return (
+    <RsdPageAnchor
+      href={APP_PAGE_PATHS.drawing}
+      onFollow={onDrawingReturn}
+      style={styles.brandLink}
+    >
+      {mark}
+    </RsdPageAnchor>
   );
 }
 
@@ -364,7 +393,7 @@ export function RsdPageSheet({
           >
             <html.div style={[styles.topbar, short && styles.shortTopbar]}>
               <BackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
-              <BrandMark phone={phone} narrow={narrow} />
+              <BrandMark phone={phone} narrow={narrow} onDrawingReturn={onDrawingReturn} />
             </html.div>
             {/* RN Web does not report position-only layout changes on the body. */}
             <View

@@ -1,9 +1,12 @@
+import { Platform } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
+import { APP_PAGE_PATHS } from '../information/appPages';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import { useNativeFeedbackState } from '../feedback/useNativeFeedback';
 import { FEEDBACK_PAGE_COPY } from '../information/feedbackPageCopy';
 import { RsdFeedbackSection } from './RsdFeedbackSection';
+import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdStatusMessage } from './RsdStatusMessage';
 import { RsdStepNumber } from './RsdStepNumber';
 import { styles as controls } from './controls';
@@ -131,17 +134,27 @@ export function RsdFeedbackPageContent({
                 {step}
                 {index === 2 ? (
                   <>
-                    <html.span
-                      role="link"
-                      tabIndex={0}
-                      onClick={onPrivacy}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') onPrivacy();
-                      }}
-                      style={styles.link}
-                    >
-                      {FEEDBACK_PAGE_COPY.privacy}
-                    </html.span>
+                    {Platform.OS === 'web' ? (
+                      <RsdPageAnchor
+                        href={APP_PAGE_PATHS.privacy}
+                        onFollow={onPrivacy}
+                        style={styles.link}
+                      >
+                        {FEEDBACK_PAGE_COPY.privacy}
+                      </RsdPageAnchor>
+                    ) : (
+                      <html.span
+                        role="link"
+                        tabIndex={0}
+                        onClick={onPrivacy}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') onPrivacy();
+                        }}
+                        style={styles.link}
+                      >
+                        {FEEDBACK_PAGE_COPY.privacy}
+                      </html.span>
+                    )}
                     .
                   </>
                 ) : null}

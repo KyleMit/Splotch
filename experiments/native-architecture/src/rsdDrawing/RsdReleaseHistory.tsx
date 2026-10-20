@@ -227,12 +227,23 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
   );
 }
 
-export function RsdLatestReleaseLabel({ onPress }: { onPress: (id: string) => void }) {
+// PageFooter.svelte's release line; its link is a fragment of the page it is on, or of /changelog.
+export function RsdLatestReleaseLabel({
+  hrefBase,
+  onPress,
+}: {
+  hrefBase: string;
+  onPress: (id: string) => void;
+}) {
   const latest = releases[0];
   return (
     <html.div style={styles.version}>
       <html.span>{`Splotch ${latest.version} · released ${latest.dateLabel} ·`}</html.span>
-      <RsdTextLink style={styles.versionLink} onPress={() => onPress(latest.id)}>
+      <RsdTextLink
+        href={`${hrefBase}#${latest.id}`}
+        style={styles.versionLink}
+        onPress={() => onPress(latest.id)}
+      >
         <html.span>What's new</html.span>
       </RsdTextLink>
     </html.div>

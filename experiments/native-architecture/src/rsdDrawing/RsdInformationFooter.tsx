@@ -4,7 +4,7 @@ import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { paletteHex } from '../drawing/palette';
 import { FEEDBACK_URL } from '../../../../web/src/lib/siteUrl';
-import type { AppPage } from '../information/appPages';
+import { APP_PAGE_PATHS, type AppPage } from '../information/appPages';
 import { openAppPage } from '../platform/appPath';
 import { Svg, Path } from '../platform/svg';
 import { blobPath } from './blob';
@@ -109,6 +109,7 @@ export function RsdInformationFooter({
       </html.div>
       <html.div style={[styles.row, narrow && styles.narrow]}>
         <RsdTextLink
+          href={APP_PAGE_PATHS.drawing}
           onPress={onDrawingReturn ?? (() => openAppPage('drawing'))}
           style={styles.brand}
         >
@@ -141,6 +142,7 @@ export function RsdInformationFooter({
                     </html.div>
                   ) : (
                     <RsdTextLink
+                      href={external ? undefined : APP_PAGE_PATHS[link.page]}
                       onPress={() => (external ? onExternal(FEEDBACK_URL) : openAppPage(link.page))}
                       style={[styles.link, controlStyles.semiboldText]}
                     >
@@ -155,6 +157,7 @@ export function RsdInformationFooter({
         </html.nav>
       </html.div>
       <RsdLatestReleaseLabel
+        hrefBase={page === 'changelog' ? '' : APP_PAGE_PATHS.changelog}
         onPress={(id) => {
           if (page === 'changelog') onExternal(`#${id}`);
           else openAppPage('changelog', id);
