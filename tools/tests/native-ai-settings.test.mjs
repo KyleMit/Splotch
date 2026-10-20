@@ -357,4 +357,20 @@ describe('saving a credential from Settings', () => {
     await work;
     expect(f.vault.write).not.toHaveBeenCalled();
   });
+
+  // A save that a switch-off overtakes while the vault writes is no longer the parent's opt-in, so
+  // it asks the browser for nothing. Negative control: a request made before the ownership check
+  // fails here.
+  it('asks for persistent storage only for a save that still owns the session', async () => {
+    storage.requestPersistentStorage.mockClear();
+    let written;
+    const f = await aiFixture({ verify: async () => json({ ok: true }) });
+    f.vault.write.mockImplementationOnce(() => new Promise((resolve) => (written = resolve)));
+    const work = f.ai.setup('byok', 'sk-fixture');
+    await vi.waitFor(() => expect(written).toBeDefined());
+    await f.owner.setAiEnabled(false);
+    written();
+    await work;
+    expect(storage.requestPersistentStorage).not.toHaveBeenCalled();
+  });
 });

@@ -360,10 +360,10 @@ export class AiSession {
       if (!validCredential(verified)) throw new Error('Invalid credential');
       this.credential = null;
       await this.deps.vault.write(kind, verified);
-      // Only after a parent's explicit save, as shipping asks: an invite link's capture is
-      // credential delivery, not the parent's opt-in (ADR-0127/0128).
-      void requestPersistentStorage();
       if (!current()) return;
+      // Only after a parent's explicit save that still owns the session, as shipping asks: an
+      // abandoned save and an invite link's capture are not the parent's opt-in (ADR-0127/0128).
+      void requestPersistentStorage();
       await this.readStatus(current);
       this.report({ kind, outcome: 'accepted' });
     } catch {
