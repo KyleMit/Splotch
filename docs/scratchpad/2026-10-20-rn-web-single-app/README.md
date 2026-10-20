@@ -30,45 +30,88 @@ on-device data at cutover is accepted.
 From `npm run native:web:build`, `npm run build` and the harness in `harness/`; raw output in
 `results/`.
 
-| Document                        | Paints with                              | First-paint bytes                                           | Waits for before content                              |
-| ------------------------------- | ---------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
-| RN `/` (`index.html`)           | prerendered first frame (ADR-0180)       | 45,601 (4,211 inline JS + 41,390 inline CSS), cap 47,052    | core controls 821,371 (cap 827,535; 199,942 brotli)   |
-| RN `/privacy`, `/changelog`     | client render in the `404.html` shell    | 849,053: the shell names the whole bundle and `strict.css`  | 1,685,327 bytes in 31 files (410,053 brotli)          |
-| RN `/feedback`                  | same                                     | same                                                        | 1,687,445 in 32 files (411,129 brotli)                |
-| RN unknown path                 | same                                     | same                                                        | 1,396,960 in 21 files (335,413 brotli)                |
-| SvelteKit `/privacy` (shipping) | prerendered HTML, CSS inlined (ADR-0040) | 84,707 (7,417 inline JS + 77,290 inline CSS); 30,627 br doc | nothing: content is in the HTML; 322,830 JS+CSS named |
-| SvelteKit `/changelog`, `/beta` | same                                     | 80,809 and 81,816                                           | nothing; 294,113 and 292,503 JS+CSS named             |
+Two measures, kept apart because they answer different questions:
 
-"First-paint bytes" is `check-native-web-startup.mjs`'s own measure (`startupResources`): inline
-executable scripts and inline CSS plus every script, stylesheet and preload the document names
-(SvelteKit's `disabled media="(max-width: 0)"` stylesheet links never block and are left out of its
-row). The RN secondary-page rows count every JS and CSS file fetched by the time the page's heading
-was visible, so they include the drawing screen's post-paint prewarms: the information pages render
-inside the drawing screen, which mounts beneath them (issue 3026). Today a direct visit to
-`/privacy` on RN web downloads about five times the bytes shipping's page needs to show anything,
-and shows nothing without JavaScript.
+* **Inline bytes**: the executable inline scripts and inline CSS a document carries, which paint it
+  without a request. For RN `/` this is exactly `check-native-web-startup.mjs`'s first-paint figure,
+  because its boot script holds the bundle in a JSON list that the document never names.
+* **Named resources**: every script, stylesheet and preload the document names, which is the rest of
+  that checker's `startupResources` measure. On RN `/` that is zero; on the `404.html` shell it is
+  the whole bundle and `strict.css`, which the content waits for. On SvelteKit's pages it is JS
+  `modulepreload`s for hydration plus `disabled media="(max-width: 0)"` stylesheet links, neither of
+  which blocks the first paint.
+
+| Document                        | Paints with                              | Inline bytes                               | Named resources (checker total)        | Fetched before content shows                 |
+| ------------------------------- | ---------------------------------------- | ------------------------------------------ | -------------------------------------- | -------------------------------------------- |
+| RN `/` (`index.html`)           | prerendered first frame (ADR-0180)       | 45,601 (4,211 JS + 41,390 CSS), cap 47,052 | 0 (45,601); core controls 821,371 held | nothing beyond the document                  |
+| RN `/privacy`, `/changelog`     | client render in the `404.html` shell    | 843                                        | 848,210 (849,053)                      | 1,685,327 bytes in 31 files (410,053 brotli) |
+| RN `/feedback`                  | same                                     | 843                                        | 848,210 (849,053)                      | 1,687,445 in 32 files (411,129 brotli)       |
+| RN unknown path                 | same                                     | 843                                        | 848,210 (849,053)                      | 1,396,960 in 21 files (335,413 brotli)       |
+| SvelteKit `/privacy` (shipping) | prerendered HTML, CSS inlined (ADR-0040) | 84,707 (7,417 JS + 77,290 CSS)             | 322,830 (407,537)                      | nothing beyond the document (30,627 brotli)  |
+| SvelteKit `/changelog`          | same                                     | 80,809                                     | 294,113 (374,922)                      | nothing beyond the document                  |
+| SvelteKit `/beta`               | same                                     | 81,816                                     | 292,503 (374,319)                      | nothing beyond the document                  |
+
+`results/document-bytes.jsonl` has the checker totals (`firstPaintBytes`) and their parts. The RN
+secondary-page rows of the last column count every JS and CSS file fetched by the time the page's
+heading was visible, so they include the drawing screen's post-paint prewarms: the information pages
+render inside the drawing screen, which mounts beneath them (issue 3026). Today a direct visit to
+`/privacy` on RN web downloads about five times the bytes shipping's whole page document weighs
+before it shows anything, and shows nothing without JavaScript.
 
 ## 1. Cutover-time hosting (ledger row X64)
 
 ### Deploy shape
 
-One Netlify site, one build, one publish directory. The build runs the SvelteKit build as today, the
-RN export (`npm run native:web:build`), then `npm run native:web:compose`, and publishes the
-composed directory. `tools/stage-netlify-functions.mjs` keeps staging the SvelteKit function
-unchanged.
+One Netlify site, one build, one publish directory. The build runs the SvelteKit build without its
+drawing route (next section), the RN export (`npm run native:web:build`), then
+`npm run native:web:compose`, and publishes the composed directory.
+`tools/stage-netlify-functions.mjs` keeps staging the SvelteKit function unchanged.
 
 `tools/migration/compose-cutover-web.mjs` (the proof PR) builds that directory:
 
+* It refuses a SvelteKit build that still renders `/` (an `index.html` in `web/build`; `+layout.ts`
+  prerenders every route), for the reason in the next section.
 * It copies `web/build`, then lays over it the RN files the deploy needs: `index.html`, `sw.js`,
   `version.json`, and every file the RN worker precaches. Expo's `metadata.json` and the RN
   `404.html` stay out (see routing below).
-* The three named files replace SvelteKit's. Any other file both builds write must be byte-identical
-  (today: the manifest and the eight icons the RN build copies from `web/static`), or the
-  composition fails before writing anything.
+* The RN `sw.js` and `version.json` replace SvelteKit's until the web build stops emitting them. Any
+  other file both builds write must be byte-identical (today: the manifest and the eight icons the
+  RN build copies from `web/static`), or the composition fails before writing anything.
 * After copying, every one of the RN worker's 151 precache entries must resolve in the composed
   directory to the bytes its sha384 integrity pins, the content-addressed shell included. A composed
   deploy that fails this would abandon every install.
 * It is not wired into `netlify.toml`; that is the cutover switch itself (plan step P5).
+
+### The SvelteKit pages cross a document boundary back to `/`
+
+The Codex review of the proof PR found this, and reproduced it in Chromium. Every retained SvelteKit
+page links to `/` (Back to drawing, the SPLOTCH mark, the footer). SvelteKit's client router
+intercepts a link to any route it has, so while the web build still has
+`web/src/routes/+page.svelte` a click on `/privacy`'s back link mounts the shipping drawing screen
+client-side and never requests the RN document. A static-file override of `index.html` alone does
+not cut the shipping app over.
+
+The fix is to build the web app without its `/` route. SvelteKit's router then has no match for `/`
+and falls back to a full navigation, which Netlify answers with the RN shell. The rehearsal did this
+locally by moving `+page.svelte` aside and letting `prerender.handleHttpError` skip `/`, which the
+other pages' links make the prerender crawler request:
+
+```js
+prerender: {
+  handleHttpError: ({ path, message }) => {
+    if (path === '/') return;
+    throw new Error(message);
+  },
+},
+```
+
+The SvelteKit build itself then succeeded. Its post-build checks (`check-pwa-precache.mjs`, which
+expects the prerendered `/`, and the shipping bundle budgets) failed, as they should: they guard the
+shipping drawing route, which this build no longer has. Plan step P5 removes them with the route and
+`VitePWA`. With that build composed, all three links to `/` on each of `/privacy`, `/changelog` and
+`/beta` made a document request for `/` and loaded the RN shell (`results/cutover-rehearsal.json`,
+`links to / from …`). The composer refuses a SvelteKit build that still has the route, so this
+cannot regress silently.
 
 ### Routing order on Netlify
 
@@ -124,9 +167,9 @@ Both apps register `/sw.js` at scope `/`, so the deploy that replaces the file u
 installed shipping registration in place. There is one worker owner after cutover, the RN one.
 
 Rehearsed (`results/cutover-rehearsal.json`, part C): shipping's build was served, five strokes
-registered its worker (276 precache entries, 163 of them SvelteKit chunks, plus a 221-entry
-`coloring-packs-v2-compact` cache). The root was switched to the composed build and the app launched
-again:
+registered its worker (276 precache entries, 163 of them SvelteKit chunks, plus a
+`coloring-packs-v2-compact` cache of 145 entries in the recorded run). The root was switched to the
+composed build and the app launched again:
 
 1. The shipping worker's NetworkFirst navigation answered `/` with the RN document from the network.
 2. The navigation's update check installed the RN worker. Its install fetches its own shell and
@@ -141,11 +184,12 @@ again:
 
 What the rehearsal also showed, and what to do about it:
 
-* **Shipping's runtime caches leak.** `coloring-packs-v2-compact` (222 entries here; downloaded
-  books can make it tens of MB), `pages-v2` and the legacy `pages` cache are never deleted: the RN
-  worker has no activate hook beyond Workbox's precache cleanup. Fix: an activate step in the RN
-  worker that deletes those names, imported from `web/src/lib/pwa/pageCacheCleanup.ts` and the
-  coloring-pack cache keys. Their data is the shipping data the owner accepted losing.
+* **Shipping's runtime caches leak.** `coloring-packs-v2-compact` (145 entries in the recorded run;
+  downloaded books can make it tens of MB), `pages-v2` and the legacy `pages` cache are never
+  deleted: the RN worker has no activate hook beyond Workbox's precache cleanup. Fix: an activate
+  step in the RN worker that deletes those names, imported from
+  `web/src/lib/pwa/pageCacheCleanup.ts` and the coloring-pack cache keys. Their data is the shipping
+  data the owner accepted losing.
 * **A visible shipping tab can lose its precache.** If a second shipping tab is open when the first
   applies the update, or an update is owed while visible, the RN activation removes that tab's
   shipping chunks from the shared precache, and lazy loads then go to a network that no longer hosts
@@ -318,23 +362,30 @@ export and routes `/api/*` to functions.
 
 ## 3. Page-load budget per page
 
-| Page         | Today (RN web)                         | Cutover window                               | End state, first paint                   | End state, interactive                        |
-| ------------ | -------------------------------------- | -------------------------------------------- | ---------------------------------------- | --------------------------------------------- |
-| `/`          | 45,601 / cap 47,052; core 821,371      | unchanged (composer copies the bytes)        | unchanged caps                           | unchanged caps                                |
-| `/privacy`   | 849,053 to paint; 1,685,327 to content | SvelteKit's: 84,707 inline, no script needed | ≤ 84,707, held by its own cap (proposed) | page entry ≤ 323,984 RN Web floor + page code |
-| `/changelog` | as `/privacy`                          | SvelteKit's: 80,809                          | ≤ 80,809                                 | as `/privacy`                                 |
-| `/beta`      | not served                             | SvelteKit's: 81,816                          | ≤ 81,816                                 | as `/privacy`                                 |
-| `/feedback`  | 849,053; 1,687,445 to content          | SvelteKit SSR (function)                     | measured when built; no-JS form note     | page entry + the form                         |
-| `/admin`     | not served                             | SvelteKit SSR (function)                     | measured when built; never precached     | admin entry, not counted against pages        |
+Every figure in this table is in `check-native-web-startup.mjs`'s own measure, applied per document:
+inline bytes plus named resources. An RN page document built like `/` names no script or stylesheet
+(its boot script holds the bundle in a JSON list), so its whole figure is its inline bytes.
+Shipping's SvelteKit documents also name their hydration `modulepreload`s, which do not block their
+paint; their checker totals are shown beside their inline bytes so the comparison is explicit.
 
-* The end-state first-paint caps are proposals: shipping's own measured figure, so no page regresses
-  from what visitors get today. Each is set from the page's measurement plus headroom when its
-  prerender lands, by ADR-0179's rule, in a per-document table that `check-native-web-startup.mjs`
-  reads instead of its single `index.html`.
+| Page         | Today, RN web (checker total)      | Cutover window                                   | End state, first paint (checker total) | End state, interactive                        |
+| ------------ | ---------------------------------- | ------------------------------------------------ | -------------------------------------- | --------------------------------------------- |
+| `/`          | 45,601, cap 47,052                 | unchanged: the composer copies the bytes         | unchanged cap                          | core controls 821,371, cap 827,535, unchanged |
+| `/privacy`   | 849,053; 1,685,327 fetched to show | SvelteKit: 407,537 total, of which 84,707 inline | ≤ 84,707, all inline (proposed cap)    | page entry: 323,984 RN Web floor + page code  |
+| `/changelog` | 849,053; 1,685,327 fetched to show | SvelteKit: 374,922 total, 80,809 inline          | ≤ 80,809                               | as `/privacy`                                 |
+| `/beta`      | not served                         | SvelteKit: 374,319 total, 81,816 inline          | ≤ 81,816                               | as `/privacy`                                 |
+| `/feedback`  | 849,053; 1,687,445 fetched to show | SvelteKit SSR (function)                         | measured when built; no-JS form note   | page entry + the form                         |
+| `/admin`     | not served                         | SvelteKit SSR (function)                         | measured when built; never precached   | admin entry, not counted against pages        |
+
+* The end-state caps are proposals: shipping's inline bytes, the part of its document that paints
+  without a request, so no page paints from more than it does today. Each is set from the page's
+  measurement plus headroom when its prerender lands, by ADR-0179's rule, in a per-document table
+  that `check-native-web-startup.mjs` reads instead of its single `index.html`. A page document that
+  named its bundle would fail by the whole bundle, as `/` already does.
 * The page entry's interactive budget has a known floor: an empty React Native Web app is 323,984
-  bytes (`REACT_NATIVE_WEB_FLOOR_BYTES`), against shipping's 292–323 KB to hydrate these pages. A
-  page can show its content without any of it, since its HTML is complete; the bundle only adds the
-  grown-up gate, the contents disclosure and in-app navigation.
+  bytes (`REACT_NATIVE_WEB_FLOOR_BYTES`), against the 292–323 KB of JS and CSS shipping's documents
+  name for hydrating these pages. A page can show its content without any of it, since its HTML is
+  complete; the bundle only adds the grown-up gate, the contents disclosure and in-app navigation.
 * The `/` numbers do not move in this PR: `native:web:build` reports first paint 45,601 and core
   controls 821,371 before and after it.
 
@@ -343,20 +394,20 @@ export and routes `/api/*` to functions.
 Each step is one PR. **Before cutover** steps land on `codex/native-migration`; P5 is the cutover
 switch itself.
 
-| Step | When       | PR                                                                                                                                                                                                                                                                                                                                     | Touches                                                         |
-| ---- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| P1   | before     | **This proof.** The composer, its rules and this rehearsal.                                                                                                                                                                                                                                                                            | `tools/migration/compose-cutover-web.mjs`, test, `package.json` |
-| P2   | before     | Pin the handoff: assert the `SKIP_WAITING` listener in the precache check, fix the `clientsClaim` comment, add an activate step that deletes `pages`, `pages-v2` and `coloring-packs-*`.                                                                                                                                               | RN worker config (another lane's file now)                      |
-| P3   | before     | `<noscript>` friendly copy and links in the RN shell and its `404.html`.                                                                                                                                                                                                                                                               | prerender / boot files (another lane's)                         |
-| P4   | before     | Same-origin web API: one origin constant with a `.web.ts` split; `AI_ORIGIN`, `FEEDBACK_URL` and `PACK_ORIGIN` read it. Lands with P5, or behind it.                                                                                                                                                                                   | `src/ai`, `src/feedback`, `src/offlineLibrary` (another lane's) |
-| P5   | at cutover | Netlify wiring: build both and compose, publish the composed directory, `ignore` watches the candidate, the RN build's packages move to `dependencies`, immutable rules for `/_expo/static/*` and `/assets/*`, drop `VitePWA` from the web build. Verified on a deploy preview: shell integrity, the handoff rehearsal, the API smoke. | `netlify.toml`, `package.json`, lockfile (after L3)             |
-| Q1   | after      | Route table with render modes; the page entry and its Node render; `/privacy` as the first prerendered page with its no-JS spec and first-paint cap; the drawing-entry drift guard.                                                                                                                                                    | `appPages.ts`, prerender tool, startup check                    |
-| Q2   | after      | `/changelog`, `/beta` (and its `?os=` tabs; the 308s stay in `netlify.toml`), and the not-found document.                                                                                                                                                                                                                              | pages, route table                                              |
-| Q3   | after      | `/feedback` as a page posting to `/api/report`, with its no-JS note.                                                                                                                                                                                                                                                                   | feedback page                                                   |
-| Q4   | after      | `/admin` as an unlinked RN page on the bearer API.                                                                                                                                                                                                                                                                                     | new admin page                                                  |
-| Q5   | after      | `/api/*` as Netlify Functions with the wire-diff test, smoke tiers, and an old Capacitor build's generation and report.                                                                                                                                                                                                                | `netlify/functions`, `web/src/lib/server`                       |
-| Q6   | after      | `/design` rebuilt or retired; `/dev/*` retired.                                                                                                                                                                                                                                                                                        | routes                                                          |
-| Q7   | after      | Remove SvelteKit and its toolchain, the composer and the function staging; `netlify.toml` routes every path to the RN export or a function; the ADR.                                                                                                                                                                                   | `web/`, `package.json`, ADR                                     |
+| Step | When       | PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Touches                                                         |
+| ---- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| P1   | before     | **This proof.** The composer, its rules and this rehearsal.                                                                                                                                                                                                                                                                                                                                                                                                                | `tools/migration/compose-cutover-web.mjs`, test, `package.json` |
+| P2   | before     | Pin the handoff: assert the `SKIP_WAITING` listener in the precache check, fix the `clientsClaim` comment, add an activate step that deletes `pages`, `pages-v2` and `coloring-packs-*`.                                                                                                                                                                                                                                                                                   | RN worker config (another lane's file now)                      |
+| P3   | before     | `<noscript>` friendly copy and links in the RN shell and its `404.html`.                                                                                                                                                                                                                                                                                                                                                                                                   | prerender / boot files (another lane's)                         |
+| P4   | before     | Same-origin web API: one origin constant with a `.web.ts` split; `AI_ORIGIN`, `FEEDBACK_URL` and `PACK_ORIGIN` read it. Lands with P5, or behind it.                                                                                                                                                                                                                                                                                                                       | `src/ai`, `src/feedback`, `src/offlineLibrary` (another lane's) |
+| P5   | at cutover | Netlify wiring: remove the SvelteKit `/` route (with `prerender.handleHttpError` skipping `/`, and the shipping drawing route's post-build checks), build both and compose, publish the composed directory, `ignore` watches the candidate, the RN build's packages move to `dependencies`, immutable rules for `/_expo/static/*` and `/assets/*`, drop `VitePWA` from the web build. Verified on a deploy preview: shell integrity, the handoff rehearsal, the API smoke. | `netlify.toml`, `package.json`, lockfile (after L3)             |
+| Q1   | after      | Route table with render modes; the page entry and its Node render; `/privacy` as the first prerendered page with its no-JS spec and first-paint cap; the drawing-entry drift guard.                                                                                                                                                                                                                                                                                        | `appPages.ts`, prerender tool, startup check                    |
+| Q2   | after      | `/changelog`, `/beta` (and its `?os=` tabs; the 308s stay in `netlify.toml`), and the not-found document.                                                                                                                                                                                                                                                                                                                                                                  | pages, route table                                              |
+| Q3   | after      | `/feedback` as a page posting to `/api/report`, with its no-JS note.                                                                                                                                                                                                                                                                                                                                                                                                       | feedback page                                                   |
+| Q4   | after      | `/admin` as an unlinked RN page on the bearer API.                                                                                                                                                                                                                                                                                                                                                                                                                         | new admin page                                                  |
+| Q5   | after      | `/api/*` as Netlify Functions with the wire-diff test, smoke tiers, and an old Capacitor build's generation and report.                                                                                                                                                                                                                                                                                                                                                    | `netlify/functions`, `web/src/lib/server`                       |
+| Q6   | after      | `/design` rebuilt or retired; `/dev/*` retired.                                                                                                                                                                                                                                                                                                                                                                                                                            | routes                                                          |
+| Q7   | after      | Remove SvelteKit and its toolchain, the composer and the function staging; `netlify.toml` routes every path to the RN export or a function; the ADR.                                                                                                                                                                                                                                                                                                                       | `web/`, `package.json`, ADR                                     |
 
 Q1 is the riskiest post-cutover step: it decides how a second entry is bundled and proves the
 drawing startup set does not move. Q5 is the longest, but its risk is contained by the wire-diff
@@ -379,9 +430,11 @@ test.
 * `harness/serve.mjs`: a Netlify-shaped static server (static first with pretty URLs, every other
   path a function stand-in) whose root can be switched to simulate a deploy landing.
 * `harness/rehearse.mjs`: the browser rehearsal (composed deploy online, offline and without
-  JavaScript, and the handoff from an installed shipping worker). Run with the server on a free
-  port:
-  `node docs/scratchpad/2026-10-20-rn-web-single-app/harness/serve.mjs '{"composed":"<dist/cutover-web>","shipping":"<web/build>"}' <port>`,
+  JavaScript, every link to `/` on the retained SvelteKit pages, and the handoff from an installed
+  shipping worker). The `composed` root is `npm run native:web:compose` over a web build without its
+  `/` route (see "The SvelteKit pages cross a document boundary back to `/`"); the `shipping` root
+  is a copy of an ordinary `npm run build`. Run with the server on a free port:
+  `node docs/scratchpad/2026-10-20-rn-web-single-app/harness/serve.mjs '{"composed":"<dist/cutover-web>","shipping":"<copy of web/build>"}' <port>`,
   then `node …/harness/rehearse.mjs http://127.0.0.1:<port>`.
 * `harness/measure-docs.mjs`: first-paint bytes of the SvelteKit and RN documents, run from the repo
   root after both builds.

@@ -83,6 +83,28 @@ try {
       ...(await which(page)),
     };
   }
+  // Every link to the drawing route on a retained SvelteKit page must load the export's document,
+  // not a client-side render of SvelteKit's own `/`.
+  for (const path of ['/privacy', '/changelog', '/beta']) {
+    await page.goto(`${base}${path}`);
+    await page.waitForTimeout(1500);
+    const links = await page.locator('a[href="/"]').count();
+    const results = [];
+    for (let index = 0; index < links; index += 1) {
+      await page.goto(`${base}${path}`);
+      await page.waitForTimeout(1500);
+      const documents = [];
+      const onRequest = (request) => {
+        if (request.isNavigationRequest()) documents.push(new URL(request.url()).pathname);
+      };
+      page.on('request', onRequest);
+      await page.locator('a[href="/"]').nth(index).click();
+      await page.waitForTimeout(3000);
+      page.off('request', onRequest);
+      results.push({ documents, ...(await which(page)) });
+    }
+    out[`links to / from ${path}`] = results;
+  }
   await context.setOffline(true);
   for (const path of ['/', '/privacy', '/beta', '/no-such-page']) {
     try {

@@ -52,7 +52,6 @@ beforeEach(() => {
   outputDir = join(root, 'out');
   logged = [];
   write(sveltekitDir, {
-    'index.html': '<html><body>svelte drawing</body></html>',
     'privacy.html': '<html><body>svelte privacy</body></html>',
     'sw.js': 'svelte worker',
     'version.json': '{"version":"1.6.0"}',
@@ -79,6 +78,13 @@ it('lays the export over the SvelteKit build at the drawing route and keeps its 
   expect(existsSync(join(outputDir, '404.html'))).toBe(false);
   expect(existsSync(join(outputDir, 'metadata.json'))).toBe(false);
   expect(logged.join('\n')).toContain('left out: 404.html, metadata.json');
+});
+
+it('refuses a SvelteKit build that still renders the drawing route', () => {
+  writeNativeExport();
+  write(sveltekitDir, { 'index.html': '<html><body>svelte drawing</body></html>' });
+  expect(compose).toThrow('The SvelteKit build still renders the drawing route');
+  expect(existsSync(outputDir)).toBe(false);
 });
 
 it('refuses a file both builds write with different bytes, before writing anything', () => {

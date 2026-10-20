@@ -4,8 +4,13 @@
 // prefers a static file (adapter-netlify's `preferStatic`), so the export's index.html answers `/`
 // and the function still answers every path no static file matches.
 //
+// The SvelteKit build must no longer have the drawing route. Its client router keeps any link to a
+// route it has inside the shipping app, so a "Back to drawing" link on /privacy would mount the
+// shipping drawing screen without ever requesting the export's document. +layout.ts prerenders every
+// route, so a SvelteKit build that still has `/` writes an index.html, which this refuses.
+//
 // One URL can serve only one file. The export's document, its service worker and the version that
-// worker's update check reads replace SvelteKit's; any other file both builds write must be
+// worker's update check reads are the export's; any other file both builds write must be
 // byte-identical, or the composition fails. Every entry of the export's worker must then resolve in
 // the composed directory to the bytes its integrity pins, or every install from this deploy would
 // be abandoned.
@@ -27,9 +32,9 @@ import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 const SVELTEKIT_BUILD_DIR = join(ROOT, 'web/build');
 const CUTOVER_WEB_DIR = join(NATIVE_APP_DIR, 'dist/cutover-web');
 
-// The export's files that take the SvelteKit build's place: the drawing document, the one worker
-// both apps register at scope `/`, and the version an installed page compares before applying it.
-const NATIVE_REPLACED_FILES = [APP_SHELL_FILE, NATIVE_WEB_SERVICE_WORKER, VERSION_JSON_FILENAME];
+// The export's files that win over the SvelteKit build's: the drawing document, the one worker both
+// apps register at scope `/`, and the version an installed page compares before applying it.
+const NATIVE_OWNED_FILES = [APP_SHELL_FILE, NATIVE_WEB_SERVICE_WORKER, VERSION_JSON_FILENAME];
 
 const relativeFiles = (directory) =>
   filesRecursively(directory).map((path) => relative(directory, path).split(sep).join('/'));
@@ -37,7 +42,7 @@ const relativeFiles = (directory) =>
 const onDisk = (directory, url) =>
   join(directory, APP_SHELL_PRECACHE_URL_PATTERN.test(url) ? APP_SHELL_FILE : url);
 
-// What the cutover deploy takes from the export: the replaced files and everything its worker
+// What the cutover deploy takes from the export: the files it owns and everything its worker
 // precaches. check-native-web-precache.mjs already holds the export to precaching every file the app
 // loads, so the rest (Expo's build identity, the template-free 404 shell no request reaches while
 // the function answers unknown paths) stays out.
@@ -49,12 +54,12 @@ function nativeCutoverFiles(nativeDir) {
   const precached = entries
     .map(({ url }) => url)
     .filter((url) => !APP_SHELL_PRECACHE_URL_PATTERN.test(url));
-  return { entries, files: [...new Set([...NATIVE_REPLACED_FILES, ...precached])] };
+  return { entries, files: [...new Set([...NATIVE_OWNED_FILES, ...precached])] };
 }
 
 function cutoverCollisions({ sveltekitDir, nativeDir, files }) {
   return files.filter((file) => {
-    if (NATIVE_REPLACED_FILES.includes(file)) return false;
+    if (NATIVE_OWNED_FILES.includes(file)) return false;
     const existing = join(sveltekitDir, file);
     return (
       existsSync(existing) && !readFileSync(existing).equals(readFileSync(join(nativeDir, file)))
@@ -75,12 +80,12 @@ export function composeCutoverWeb({
   outputDir = CUTOVER_WEB_DIR,
   log = console.log,
 } = {}) {
-  for (const [name, directory] of [
-    ['SvelteKit build', sveltekitDir],
-    ['React Native web export', nativeDir],
-  ])
-    if (!existsSync(join(directory, APP_SHELL_FILE)))
-      throw new Error(`The ${name} has no ${APP_SHELL_FILE}: ${directory}`);
+  if (!existsSync(join(nativeDir, APP_SHELL_FILE)))
+    throw new Error(`The React Native web export has no ${APP_SHELL_FILE}: ${nativeDir}`);
+  if (existsSync(join(sveltekitDir, APP_SHELL_FILE)))
+    throw new Error(
+      `The SvelteKit build still renders the drawing route (${join(sveltekitDir, APP_SHELL_FILE)}); its client router would keep links to / inside the shipping app. Build it without web/src/routes/+page.svelte.`
+    );
   const { entries, files } = nativeCutoverFiles(nativeDir);
   const missing = files.filter((file) => !existsSync(join(nativeDir, file)));
   if (missing.length)
@@ -90,7 +95,7 @@ export function composeCutoverWeb({
     throw new Error(
       `Both builds write different bytes at ${collisions.join(', ')}; one URL can serve only one of them.`
     );
-  const replaced = NATIVE_REPLACED_FILES.filter((file) => existsSync(join(sveltekitDir, file)));
+  const replaced = NATIVE_OWNED_FILES.filter((file) => existsSync(join(sveltekitDir, file)));
   rmSync(outputDir, { recursive: true, force: true });
   cpSync(sveltekitDir, outputDir, { recursive: true });
   for (const file of files) {
@@ -104,7 +109,7 @@ export function composeCutoverWeb({
     );
   const left = relativeFiles(nativeDir).filter((file) => !files.includes(file));
   log(
-    `[cutover-web] ${outputDir}: SvelteKit build plus ${files.length} export files (${replaced.join(', ')} replaced; ${entries.length} precache entries resolve to their pinned bytes; left out: ${left.join(', ') || 'nothing'})`
+    `[cutover-web] ${outputDir}: SvelteKit build plus ${files.length} export files (${replaced.join(', ') || 'nothing'} replaced; ${entries.length} precache entries resolve to their pinned bytes; left out: ${left.join(', ') || 'nothing'})`
   );
 }
 

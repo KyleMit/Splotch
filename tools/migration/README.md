@@ -91,11 +91,12 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   the build.
 * `compose-cutover-web.mjs` (`npm run native:web:compose`) assembles the directory a web cutover
   deploy would publish: the SvelteKit build in `web/build` with the export laid over it at the
-  drawing route, into `experiments/native-architecture/dist/cutover-web`. The export's `index.html`,
-  `sw.js` and `version.json` replace SvelteKit's; any other file both builds write must be
-  byte-identical, and every entry of the export's worker must resolve to the bytes it pins. No
-  deploy runs it yet; `docs/scratchpad/2026-10-20-rn-web-single-app/` has the hosting design it
-  belongs to (issue 3007). `tools/tests/native-web-cutover-compose.test.mjs` holds its rules.
+  drawing route, into `experiments/native-architecture/dist/cutover-web`. The export's `sw.js` and
+  `version.json` replace SvelteKit's; any other file both builds write must be byte-identical, and
+  every entry of the export's worker must resolve to the bytes it pins. It refuses a SvelteKit build
+  that still has the drawing route, whose client router would keep links to `/` inside the shipping
+  app. No deploy runs it yet; `docs/scratchpad/2026-10-20-rn-web-single-app/` has the hosting design
+  it belongs to (issue 3007). `tools/tests/native-web-cutover-compose.test.mjs` holds its rules.
 
 ## Layout
 

@@ -15,7 +15,7 @@
         "expo": 62,
         "sveltekit": 0,
         "shell": [
-          "http://127.0.0.1:5300/?app-shell-build=440ddb9c66d8948a931b8ed434b42d8b3f9220117d242b529f51acb237a73701"
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
         ]
       }
     }
@@ -31,7 +31,7 @@
         "expo": 62,
         "sveltekit": 0,
         "shell": [
-          "http://127.0.0.1:5300/?app-shell-build=440ddb9c66d8948a931b8ed434b42d8b3f9220117d242b529f51acb237a73701"
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
         ]
       }
     }
@@ -44,7 +44,7 @@
     "status": 200,
     "title": "Privacy Policy · Splotch",
     "app": "sveltekit",
-    "text": "Start drawing SPLOTCH Privacy policy Splotch is a drawing app made for little kids. We built it to b"
+    "text": "Back to drawing SPLOTCH Privacy policy Splotch is a drawing app made for little kids. We built it to"
   },
   "online /changelog": {
     "status": 200,
@@ -76,6 +76,66 @@
     "app": "other",
     "text": "function stub /no-such-page"
   },
+  "links to / from /privacy": [
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    }
+  ],
+  "links to / from /changelog": [
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    }
+  ],
+  "links to / from /beta": [
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    }
+  ],
   "offline /": {
     "status": 200,
     "title": "Splotch - Drawing for Kids",
@@ -131,7 +191,7 @@
     "installing": null,
     "cached": {
       "coloring-packs-v2-compact": {
-        "count": 221,
+        "count": 145,
         "expo": 0,
         "sveltekit": 0,
         "shell": []
@@ -156,7 +216,7 @@
     "installing": null,
     "cached": {
       "coloring-packs-v2-compact": {
-        "count": 222,
+        "count": 145,
         "expo": 0,
         "sveltekit": 0,
         "shell": []
@@ -166,7 +226,7 @@
         "expo": 62,
         "sveltekit": 0,
         "shell": [
-          "http://127.0.0.1:5300/?app-shell-build=440ddb9c66d8948a931b8ed434b42d8b3f9220117d242b529f51acb237a73701"
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
         ]
       }
     }
@@ -181,7 +241,7 @@
     "installing": null,
     "cached": {
       "coloring-packs-v2-compact": {
-        "count": 222,
+        "count": 145,
         "expo": 0,
         "sveltekit": 0,
         "shell": []
@@ -191,7 +251,7 @@
         "expo": 62,
         "sveltekit": 0,
         "shell": [
-          "http://127.0.0.1:5300/?app-shell-build=440ddb9c66d8948a931b8ed434b42d8b3f9220117d242b529f51acb237a73701"
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
         ]
       }
     }
