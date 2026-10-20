@@ -649,14 +649,6 @@ AC1_RECORDED = {
 # and status"). A shipping E2E spec testing the same behavior is not linked to its behavior row, so
 # search the shipping-e2e rows of the surface too: E0174 fails with B0119.
 PROTOCOL_FAILED = {
-    'B0119': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
-              'iphone-notch: a triple tap on Clear shows no coachmark; a hold does'),
-    'E0174': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
-              'iphone-notch: a triple tap on Clear shows no coachmark'),
-    'B0206': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
-              'android-api36 phone: hardware digits, Delete and Enter do not reach the grown-up check'),
-    'E0450': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
-              'android-api36 phone: a typed answer never reaches the grown-up check, so Enter checks nothing'),
 }
 
 
@@ -669,6 +661,17 @@ PROTOCOL_RERUN = {
               'iphone-notch rerun 2026-10-20: Undo at end of history shakes and flashes on rn and ref160'),
     'L0047': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
               'iphone-notch rerun 2026-10-20: rn replays the unavailable cue as ref160 does'),
+    'B0119': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
+              'iphone-notch rerun 2026-10-20: three quick taps on Clear show the coachmark on rn and '
+              'ref160, with the tab docked again on rn'),
+    'E0174': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
+              'iphone-notch rerun 2026-10-20: three quick taps on Clear show the coachmark on rn and ref160'),
+    'B0206': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
+              'android-api36 phone rerun 2026-10-20: hardware digits, Delete and Enter answer the '
+              'grown-up check on rn, and Escape closes it'),
+    'E0450': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
+              'android-api36 phone rerun 2026-10-20: a typed answer reaches the check and Enter opens '
+              'Parent Center on rn'),
 }
 
 

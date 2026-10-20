@@ -12,10 +12,14 @@ reconciliation inside each protocol, and final-head evidence are unfinished. The
 final-head device passes in this inventory: **zero device, simulator and browser cells are
 verified.** The first desk protocol, AC-1, verified 24 logic requirements by two-sided automated
 contract and failed one (`results/ac-1-2026-10-19.md`). The DS-2 slice
-(`results/ds2-slice-2026-10-19.md`) failed five more rows, each linked to its defect issue. The
-LIFE-1, SAVE-1, A11Y-2 and Android DS-1 slices in `results/` changed no row and found no `rn`
-defect. The KEY-1 slice (`results/key1-slice-2026-10-19.md`) failed two rows on an Android phone
-(#3031). Diagnostic build inspections are recorded separately.
+(`results/ds2-slice-2026-10-19.md`) failed five more rows, each linked to its defect issue. Their
+fixes (#3012, #3013) were rerun on the failed cell and the rows returned to unverified. The crash
+hunt (`results/crash-hunt-2026-10-20.md`) found and fixed the Clear memory crash on iOS (#3035). Its
+pre-registered stress matrix then ran on four targets and both arms with no crash. The LIFE-1,
+SAVE-1, A11Y-2 and Android DS-1 slices in `results/` changed no row and found no `rn` defect. The
+KEY-1 slice (`results/key1-slice-2026-10-19.md`) failed two rows on an Android phone (#3031). Its
+fix was rerun on that cell and the rows returned to unverified. Diagnostic build inspections are
+recorded separately.
 
 ## Execution plan
 
