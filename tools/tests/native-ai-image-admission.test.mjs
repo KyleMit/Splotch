@@ -8,6 +8,7 @@ import {
   MAX_AI_IMAGE_PIXELS,
   MAX_AI_IMAGE_DIMENSION_PX,
   MAX_AI_DECODED_BYTES,
+  MAX_AI_IMAGE_METADATA_BYTES,
   imageGrid,
 } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
 import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
@@ -153,6 +154,42 @@ it('rejects inconsistent PNG color metadata and invalid palette ordering', async
       current
     )
   ).toEqual({ width: 2, height: 2 });
+});
+it('admits one C2PA caBX chunk before the image data, as provider pictures carry', async () => {
+  const valid = rgbaPng(2, 2, 255);
+  const credentials = pngChunk('caBX', Buffer.from('jumb c2pa manifest store'));
+  const withMetadata = (...chunks) =>
+    Buffer.concat([valid.subarray(0, 33), ...chunks, valid.subarray(33)]);
+  expect(await resultImageGrid(withMetadata(credentials), 'image/png', current)).toEqual({
+    width: 2,
+    height: 2,
+  });
+  const root = new URL('../../experiments/native-architecture/', import.meta.url);
+  const nativeChunks = (path, pattern) =>
+    readFileSync(new URL(path, root), 'utf8')
+      .match(pattern)[1]
+      .split(',')
+      .map((type) => type.trim().replaceAll('"', ''));
+  const admitted = ['cHRM', 'gAMA', 'sRGB', 'sBIT', 'pHYs', 'PLTE', 'caBX'];
+  expect(
+    nativeChunks(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      /!dataSeen && type in setOf\(([^)]*)\)/
+    )
+  ).toEqual(admitted);
+  expect(
+    nativeChunks(
+      'ios/HelloWorld/SplotchAIEnvironment.swift',
+      /!dataSeen && \[([^\]]*)\]\.contains\(type\)/
+    )
+  ).toEqual(admitted);
+  for (const rejected of [
+    withMetadata(credentials, credentials),
+    withMetadata(pngChunk('caBX')),
+    withMetadata(pngChunk('caBX', Buffer.alloc(MAX_AI_IMAGE_METADATA_BYTES + 1))),
+    Buffer.concat([valid.subarray(0, valid.length - 12), credentials, valid.subarray(-12)]),
+  ])
+    await expect(resultImageGrid(rejected, 'image/png', current)).rejects.toThrow();
 });
 it('rejects result dimensions and pixel budgets before decoded allocation', async () => {
   for (const [width, height] of [

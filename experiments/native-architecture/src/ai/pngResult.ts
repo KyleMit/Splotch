@@ -59,6 +59,9 @@ function metadata(chunk: Chunk, channels: number) {
     if (n !== channels || chunk.data.some((value) => value < 1 || value > 8)) invalidImage();
   } else if (chunk.type === 'PLTE') {
     if (!n || n > 768 || n % 3) invalidImage();
+  } else if (chunk.type === 'caBX') {
+    // The provider's C2PA content credentials. Its pictures carry one; it is kept, never read.
+    if (!n) invalidImage();
   } else invalidImage();
 }
 export async function pngResultGrid(
