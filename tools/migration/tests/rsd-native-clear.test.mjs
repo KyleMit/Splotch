@@ -185,6 +185,27 @@ it('turns a plain tap into nothing, a run of three taps or a held press into the
   expect(caller.screen.clear).not.toHaveBeenCalled();
 });
 
+// Shipping counts every press toward the run of taps, so a third quick grab while dragging back
+// and forth showed the coachmark's ghost instead of moving the button (#3072). Negative control:
+// without the run's reset on a drag, the third grab stays docked and the coachmark shows.
+it('keeps quick re-grabs dragging, as a press that moves is no tap', async () => {
+  await mountClear();
+  vi.useFakeTimers();
+  const away = { x: HOME.x - MOVEMENT_THRESHOLD_PX - 1, y: HOME.y };
+  for (let grab = 0; grab < 2; grab++) {
+    await press();
+    await drag(away);
+    await lift(away);
+    await settle(200);
+  }
+  await press();
+  expect(rendered('rsd-clear-coachmark')).toBe(false);
+  expect(clearIcon()).toContain(NATIVE_ICONS['trash-open'].light.slice(0, 80));
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+});
+
 it('shows the coachmark again on a later hold, as the shipping app keeps no dismissal', async () => {
   await mountClear();
   vi.useFakeTimers();

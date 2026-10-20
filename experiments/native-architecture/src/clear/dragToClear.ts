@@ -60,6 +60,11 @@ function createTapRun() {
       lastTapTime = now;
       return false;
     },
+    // A press that became a drag was never a tap, so the next press starts a new run.
+    reset() {
+      count = 0;
+      lastTapTime = 0;
+    },
   };
 }
 
@@ -81,7 +86,9 @@ type ActiveDrag = { start: Point; radius: number; reached: boolean };
 // hold timer that shows the coachmark; moving past MOVEMENT_THRESHOLD_PX dismisses it; releasing
 // at least one accept radius from the press commits, anything shorter cancels. A run of taps shows
 // the coachmark instead of starting a drag, and only an activation (keyboard or assistive
-// technology) clears without a drag.
+// technology) clears without a drag. Unlike shipping, which counts every press toward the run, a
+// press that moves past the threshold ends it, so quick re-grabs while dragging back and forth keep
+// moving the button rather than showing the coachmark's ghost (#3072).
 export function createClearGesture(
   effects: ClearGestureEffects,
   radius: () => number,
@@ -141,6 +148,7 @@ export function createClearGesture(
       const dy = point.y - drag.start.y;
       if (Math.abs(dx) > MOVEMENT_THRESHOLD_PX || Math.abs(dy) > MOVEMENT_THRESHOLD_PX) {
         cancelHold();
+        taps.reset();
         effects.dismissTutorial();
       }
       const distance = Math.hypot(dx, dy);
