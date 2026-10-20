@@ -4,6 +4,7 @@ import type { useDrawingScreen } from '../useDrawingScreen';
 import type { ActionPanelLayout } from './edgeLayout';
 import type { useFlyoutSlot } from './RsdActionsPanel';
 import { RsdDrawerCascade } from './RsdDrawerCascade';
+import { drawerToolId } from './drawerToolId';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Slot = ReturnType<typeof useFlyoutSlot>;
@@ -51,6 +52,7 @@ export function RsdDrawerTools({
       key={item.key}
       ref={triggerRef(slot.triggers, item.key, screen)}
       testID="rsd-drawer-tool"
+      nativeID={drawerToolId(item.key)}
       style={[{ position: 'absolute' }, layout.tools[index]]}
       onStartShouldSetResponderCapture={item.key === slot.flyout ? slot.markInside : undefined}
     >
