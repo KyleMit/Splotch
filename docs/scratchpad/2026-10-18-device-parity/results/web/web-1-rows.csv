@@ -115,7 +115,7 @@ E0582,drawing survives a real-route remount and the fresh tiled canvas accepts m
 E0610,browser chrome does not switch a CSS tablet into the phone toolbar,unverified,pass,tablet-browser-chrome,N,,
 E0638,the service worker registers only after the stroke-count gate passes,unverified,pass,sw-first-visit-gate,Y,,
 E0639,a repeat visit is controlled by the service worker with no stroke gate,unverified,pass,sw-repeat-visit-and-offline,Y,,
-E0640,activating the service worker deletes the page cache earlier workers wrote,unverified,accepted difference,sw-legacy-page-cache,Y,,accepted difference (cutover data loss): RN never deletes shipping's legacy pages cache; WEB-CONTRACT does not require deleting inert caches. Owner to confirm
+E0640,activating the service worker deletes the page cache earlier workers wrote,unverified,accepted difference,sw-legacy-page-cache,Y,,accepted difference (cutover data loss): RN never deletes shipping's legacy pages cache; WEB-CONTRACT does not require deleting inert caches. Owner confirmed 2026-10-19 (option A)
 E0641,the service worker imports its page-cache cleanup under a content-hashed name,unverified,accepted difference,sw-legacy-page-cache,Y,,As E0640: RN imports no cleanup script
 E0642,an old cached page still opens offline,unverified,pass,sw-repeat-visit-and-offline,Y,,"/privacy, /changelog and /feedback open offline in both"
 E0643,serves canonical precache bytes for offline DPR 1 and DPR 3 page previews,unverified,not run,,Y,,DPR 1 and 3 offline page previews not run
