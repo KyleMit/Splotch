@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import type { ViewInstance } from 'react-native';
 import { undoDrawing, type History, type Point } from './drawing/model';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
-import type { UndoFeedback, UndoGhost } from './drawing/undoFeedback';
+import type { UnavailableFeedback, UndoFeedback, UndoGhost } from './drawing/undoFeedback';
 import { measurePaper } from './drawing/measurePaper';
 
 type UndoActionOwner = {
@@ -37,6 +37,7 @@ export function useUndoAction(owner: UndoActionOwner) {
   }, []);
   const [undoFeedback, setUndoFeedback] = useState<UndoFeedback | null>(null);
   const [undoGhost, setUndoGhost] = useState<UndoGhost | null>(null);
+  const [unavailableFeedback, setUnavailableFeedback] = useState<UnavailableFeedback | null>(null);
   useEffect(() => {
     if (inputActive) setUndoGhost(null);
   }, [inputActive]);
@@ -86,6 +87,12 @@ export function useUndoAction(owner: UndoActionOwner) {
       const history = current.current.historyRef.current;
       if (!life.current.alive || current.current.command.current || current.current.blocked())
         return;
+      // Shipping's Undo stays pressable at the end of history and answers with the unavailable cue.
+      if (undoDrawing(history) === history) {
+        const startedAt = performance.now();
+        setUnavailableFeedback((cue) => ({ id: (cue?.id ?? 0) + 1, startedAt, reduced }));
+        return;
+      }
       measurePaper(undoTile.current, (frame) => {
         if (life.current.epoch !== requested || current.current.historyRef.current !== history)
           return;
@@ -97,5 +104,5 @@ export function useUndoAction(owner: UndoActionOwner) {
     },
     [undo]
   );
-  return { undo, undoFromButton, undoFeedback, undoGhost, undoTile };
+  return { undo, undoFromButton, undoFeedback, unavailableFeedback, undoGhost, undoTile };
 }
