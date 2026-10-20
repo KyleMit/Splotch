@@ -1,6 +1,8 @@
 import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
-import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
+import { buildMetadataOncePerProcess, deriveWebVersion } from '../../web/buildVersion.ts';
+import { isWhatsNewSeen } from '../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
+import { parseSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettingsCodec.ts';
 import { webVersionHeadTag } from '../migration/build-native-web.mjs';
 import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
 
@@ -43,4 +45,25 @@ it('falls back to the package version only where no export wrote the meta', asyn
   vi.stubGlobal('document', headWith());
   const { APP_VERSION } = await import(WEB_APP_VERSION);
   expect(APP_VERSION).toBe(FEEDBACK_APP_VERSION);
+});
+
+// A saved settings record carries the What's New stamp, so the codec must accept every version a
+// web build can stamp, deriveWebVersion's fallbacks included, or a parent's settings would fail to
+// load after opening What's New. Negative control: the former x.y.z-only stamp rejects the SHA
+// fallback here.
+const SAVED_SETTINGS =
+  '{"version":16,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons","toolDrawerEnabled":true,"screenshotEnabled":true,"aiCustomizationEnabled":true,"autoSaveAiEnabled":false}';
+
+it.each([
+  ['a release tag', { describe: 'v1.6.0-45-gabc1234', sha: 'abc1234' }],
+  ['no tags, the SHA fallback', { describe: undefined, sha: 'abc1234' }],
+  ['no git at all', { describe: undefined, sha: undefined }],
+])("saves and reloads What's New as seen for a web build with %s", (_, git) => {
+  const version = deriveWebVersion({
+    packageVersion: FEEDBACK_APP_VERSION,
+    runGit: (args) => (args.startsWith('describe') ? git.describe : git.sha),
+  });
+  expect(isWhatsNewSeen(version)).toBe(true);
+  const saved = JSON.stringify({ ...JSON.parse(SAVED_SETTINGS), whatsNewSeen: version });
+  expect(parseSoundSettings(saved)).toMatchObject({ whatsNewSeen: version });
 });
