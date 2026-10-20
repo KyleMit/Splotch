@@ -31,6 +31,7 @@ import {
 import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { startupScriptList } from './prerender-native-web.mjs';
+import { documentPolicyProblems } from './lib/native-web-csp.mjs';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
@@ -282,6 +283,10 @@ export function checkNativeWebPrecache({
     precacheBytes,
     maxPrecacheBytes,
   });
+  problems.push(
+    ...documentPolicyProblems(indexHtml.toString('utf8'), APP_SHELL_FILE),
+    ...documentPolicyProblems(readFileSync(join(exportDir, NOT_FOUND_FILE), 'utf8'), NOT_FOUND_FILE)
+  );
   if (problems.length) throw new Error(problems.join('\n'));
   log(
     `[native-web-precache] ${present.length} entries / ${precacheBytes} bytes; content-addressed app shell first; every entry integrity-pinned; ${starterOutlines.length} starter pages and ${starterImages.length} starter images precached off the startup path`

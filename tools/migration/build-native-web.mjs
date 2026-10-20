@@ -27,6 +27,7 @@ import {
 } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 import { prerenderNativeWeb } from './prerender-native-web.mjs';
+import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
 export const NATIVE_WEB_EXPORT_DIR = join(NATIVE_APP_DIR, 'dist/web');
@@ -236,6 +237,11 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
   copyShippingInstallAssets(outputDir, appVersion);
   copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
   await prerenderNativeWeb(join(outputDir, APP_SHELL_FILE));
+  // Each document's policy hashes its own inline scripts, so it is written after their last edit.
+  for (const file of [APP_SHELL_FILE, NOT_FOUND_FILE]) {
+    const path = join(outputDir, file);
+    writeFileSync(path, withContentSecurityPolicy(readFileSync(path, 'utf8')));
+  }
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
     nativeWebServiceWorkerConfig(outputDir, shell)
