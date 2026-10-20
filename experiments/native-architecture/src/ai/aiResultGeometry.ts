@@ -34,6 +34,10 @@ export const AI_RESULT_METRICS = {
 export type AiResultMode = 'waiting' | 'picture' | 'safety' | 'serverError';
 
 type Size = { width: number; height: number };
+// The heights the loading caption, the Keep drawing button and the report strip under the card
+// laid out at. Each is budgeted at least its shipping slot; a large system text size grows them
+// past it, and the stage gives way rather than the card spilling them (#3075). Zero until measured.
+export type AiFooterSlots = Readonly<{ caption: number; keepDrawing: number; strip: number }>;
 type Insets = { top: number; right: number; bottom: number; left: number };
 
 export type AiResultFrame = Readonly<{
@@ -54,6 +58,7 @@ export function aiResultFrame({
   mode,
   autosave,
   naturalWidth,
+  measured,
 }: {
   window: Size;
   insets: Insets;
@@ -63,6 +68,7 @@ export function aiResultFrame({
   autosave: boolean;
   // The decoded picture's own width, which the stage never draws past; null before it decodes.
   naturalWidth: number | null;
+  measured?: AiFooterSlots;
 }): AiResultFrame {
   const m = AI_RESULT_METRICS;
   const vmin = Math.min(window.width, window.height);
@@ -71,16 +77,20 @@ export function aiResultFrame({
     m.gutterMin + (vmin - m.gutterRampFrom) * m.gutterRamp,
     m.gutterMax
   );
+  const strip = Math.max(m.reportStripHeight, measured?.strip ?? 0);
+  // The flag's tap target hangs past a one-line strip; a wrapped strip hangs past the target.
   const stripReserve =
-    m.reportStripGap + (m.reportStripHeight + m.reportStripTap) / 2 + insets.bottom;
+    m.reportStripGap + Math.max(strip, (strip + m.reportStripTap) / 2) + insets.bottom;
   const top = Math.max(insets.top, gutter);
   const bottom = Math.max(mode === 'safety' ? insets.bottom : stripReserve, gutter);
   const side = Math.max(insets.left, insets.right, gutter);
   const maxHeight = window.height - top - bottom;
-  const loadingReserve = 2 * m.contentPadding + m.contentGap + m.loadingCaptionHeight + m.sizingAir;
+  const caption = Math.max(m.loadingCaptionHeight, measured?.caption ?? 0);
+  const keepDrawing = Math.max(m.keepDrawingHeight, measured?.keepDrawing ?? 0);
+  const loadingReserve = 2 * m.contentPadding + m.contentGap + caption + m.sizingAir;
   const footerReserve =
     mode === 'waiting'
-      ? loadingReserve + m.contentGap + m.keepDrawingHeight
+      ? loadingReserve + m.contentGap + keepDrawing
       : autosave
         ? m.autosaveFooterReserve
         : loadingReserve;

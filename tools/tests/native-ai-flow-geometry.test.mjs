@@ -258,6 +258,46 @@ it('reserves the saved caption footer while auto-save is on, but not over the wa
   expect(frame('waiting', true).stage.height).toBe(frame('waiting', false).stage.height);
 });
 
+it('gives the stage up to a caption and Keep drawing button laid out taller than their slots', () => {
+  const frame = (measured) =>
+    aiResultFrame({
+      window: { width: 390, height: 844 },
+      insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      // A waiting card sizes its stage from the window until the picture decodes: height-bound.
+      aspect: 390 / 844,
+      mode: 'waiting',
+      autosave: false,
+      naturalWidth: null,
+      measured,
+    }).stage.height;
+  const m = AI_RESULT_METRICS;
+  // At Android's 2x font scale the Galaxy wrapped the caption and the button onto two lines each.
+  const grown = {
+    caption: m.loadingCaptionHeight + 60,
+    keepDrawing: m.keepDrawingHeight + 40,
+    strip: 0,
+  };
+  expect(frame(undefined) - frame(grown)).toBeCloseTo(100, 6);
+  expect(frame({ caption: 20, keepDrawing: 20, strip: 20 })).toBe(frame(undefined));
+});
+
+it('reserves room under the card for a report strip that wrapped past one line', () => {
+  const frame = (strip) =>
+    aiResultFrame({
+      window: { width: 390, height: 844 },
+      insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      aspect: 390 / 844,
+      mode: 'picture',
+      autosave: false,
+      naturalWidth: null,
+      measured: { caption: 0, keepDrawing: 0, strip },
+    }).maxHeight;
+  const m = AI_RESULT_METRICS;
+  const oneLine = (m.reportStripHeight + m.reportStripTap) / 2;
+  expect(frame(70) - frame(0)).toBe(oneLine - 70);
+  expect(frame(m.reportStripHeight)).toBe(frame(0));
+});
+
 it('fits the AI Result card the way the shipping calc() chain resolves', () => {
   const insets = { top: 0, right: 0, bottom: 0, left: 0 };
   // A 390px phone: the gutter sits at its 10px floor, the strip reserve (53px) bounds the bottom.
