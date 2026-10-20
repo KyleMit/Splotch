@@ -377,6 +377,16 @@ describe('RSD Parental Gate card', () => {
     expect(footer.textContent).toBe(
       `${PARENT_GATE_COPY.manageLead}${PARENT_GATE_COPY.managePlace}›${PARENT_GATE_COPY.managePolicies}`
     );
+    // Native lays out a View, not Text: each place a centred row of icon and name (#3079).
+    const path = footer.lastElementChild;
+    expect([path, ...path.children].map((node) => node.tagName)).toEqual([
+      'DIV',
+      'DIV',
+      'SPAN',
+      'DIV',
+    ]);
+    for (const place of [path.children[0], path.children[2]])
+      expect(place.firstElementChild.tagName).toBe('svg');
     await act(async () => footer.click());
     expect(owner.getState().gate.feature).toBe('parentCenter');
     expect(host.querySelector(GATE_MODAL).textContent).toContain(PARENT_GATE_COPY.managingSubtitle);

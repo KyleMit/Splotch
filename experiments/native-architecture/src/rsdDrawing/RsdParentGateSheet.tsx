@@ -266,19 +266,21 @@ function GateManageFooter({ size, onManage }: { size: GateSizeClass; onManage: (
       style={[styles.footer, roomy ? styles.fontSm : styles.fontXs]}
     >
       <html.span style={styles.footerLead}>{PARENT_GATE_COPY.manageLead}</html.span>
-      <html.span style={styles.footerPath}>
-        <html.span style={styles.footerPlace}>
+      {/* Views, not spans: native renders a span as Text, where flex, gap and centring do nothing,
+          so the icons sat on the text's baseline with no room around them (#3079). */}
+      <html.div style={styles.footerPath}>
+        <html.div style={styles.footerPlace}>
           <RsdIcon name="settings" size={icon} ink={theme.text} muted={false} />
           <html.span style={styles.footerPlaceName}>{PARENT_GATE_COPY.managePlace}</html.span>
-        </html.span>
+        </html.div>
         <html.span aria-hidden style={styles.footerLead}>
           ›
         </html.span>
-        <html.span style={styles.footerPlace}>
+        <html.div style={styles.footerPlace}>
           <RsdIcon name="parent-center" size={icon} ink={theme.text} muted={false} />
           <html.span style={styles.footerPlaceName}>{PARENT_GATE_COPY.managePolicies}</html.span>
-        </html.span>
-      </html.span>
+        </html.div>
+      </html.div>
     </html.button>
   );
 }
@@ -434,15 +436,21 @@ const styles = css.create({
     transitionDuration: motion.durationFast,
   },
   footerLead: { color: colors.textSoft },
+  // The separator gets twice shipping's 4 px gap. Where a large system text size outgrows the
+  // card, the path breaks between its places rather than squeezing a name over the separator.
   footerPath: {
     display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: dimensions.space1,
+    justifyContent: 'center',
+    gap: dimensions.space2,
   },
+  // Each place keeps its icon beside its name, whole.
   footerPlace: {
     display: 'flex',
     flexDirection: 'row',
+    flexShrink: 0,
     alignItems: 'center',
     gap: dimensions.space1,
   },
