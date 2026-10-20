@@ -50,9 +50,10 @@ end-to-end — see the ADR's Verification table.
      every worktree and a fetch never moves them, so a stale local `pr-assets` would take the commit
      and the push would be rejected. `FETCH_HEAD` is per worktree and is filled whatever the clone's
      fetch refspec, unlike the shared `origin/pr-assets`.
-   * **One rebase-and-retry on rejection.** Each PR adds only its own `<pr-slug>/` folder, so a push
-     that lost a race replays cleanly onto the new remote tip. Never force-push `pr-assets`: other
-     PR bodies link to its files by raw URL.
+   * **One replay-and-retry on rejection.** Each PR adds only its own `<pr-slug>/` folder, so a push
+     that lost a race replays cleanly onto the new remote tip. The replay cherry-picks the one
+     upload commit rather than rebasing, because some agent harnesses deny `git rebase` outright.
+     Never force-push `pr-assets`: other PR bodies link to its files by raw URL.
    * **The first upload ever** (no remote branch) starts from a parentless empty commit, so the
      branch shares no history with `main`. The push names `refs/heads/pr-assets` in full because a
      detached `HEAD` cannot create a remote branch from a short name.
@@ -75,9 +76,10 @@ end-to-end — see the ADR's Verification table.
        mkdir -p <pr-slug>
        cp /path/to/before.png /path/to/after.png <pr-slug>/
        git add <pr-slug> && git commit -m "pr-assets: shots for <pr-slug>"
+       upload="$(git rev-parse HEAD)"
        git push origin HEAD:refs/heads/pr-assets || {
-         git fetch origin pr-assets && git rebase FETCH_HEAD &&
-           git push origin HEAD:refs/heads/pr-assets
+         git fetch origin pr-assets && git checkout --detach FETCH_HEAD &&
+           git cherry-pick "$upload" && git push origin HEAD:refs/heads/pr-assets
        }
      ); ok=$?
      git worktree remove --force "$wt"

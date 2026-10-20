@@ -24,7 +24,18 @@ node pair-shots.mjs --out /tmp/pairs install-android # rn-web | web-prod side by
 ```
 
 A batch stops before a cell that would start after 600 s. `--record` writes a separate observation
-file, so a long cell such as `ai-poll-past-240s` can run beside another batch.
+file, so a long cell such as `ai-poll-past-240s` can run beside another batch. A relative `--record`
+path lands in this folder; pass an absolute one to keep a rerun's observations out of the repo.
+
+### Rerunning a fix on `rn-web` alone
+
+A fix PR usually needs only its failed cells rerun on `rn-web`, compared with the `web-prod` values
+the committed record already holds. Building and serving `web-prod` is not needed for that:
+
+* Point `WEB_PROD_URL` at a free port with nothing listening. That arm then records its connection
+  error, and the `rn-web` arm runs normally.
+* Cells that capture write to the committed `shots/` here, overwriting the record's images. Copy any
+  capture the PR needs, then restore the folder with `git checkout -- shots/`.
 
 ## Files
 
