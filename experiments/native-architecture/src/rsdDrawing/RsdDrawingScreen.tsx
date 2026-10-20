@@ -48,7 +48,7 @@ import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { DrawingKeyboardScope } from '../platform/KeyboardScope';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
-import { BUTTON_SCALE_MAX, controlSize } from '../settings/buttonSize';
+import { BUTTON_SCALE_MAX } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { FIRST_FRAME_PRERENDERED } from '../platform/firstFrame';
 import { useControlsLive } from '../platform/firstFrameControls';
@@ -332,7 +332,6 @@ function RsdDrawingContent({
     sound,
     product,
     paperBlocked,
-    bannerControlSize: controlSize(buttonScale.value),
     notice,
     soundNotice,
   });
@@ -404,7 +403,6 @@ type ChromePartInputs = {
   sound: Sound;
   product: ReturnType<typeof useDrawingProduct>;
   paperBlocked: boolean;
-  bannerControlSize: number;
   notice: string;
   soundNotice: string;
 };
@@ -418,7 +416,6 @@ function useChromeParts({
   sound,
   product,
   paperBlocked,
-  bannerControlSize,
   notice,
   soundNotice,
 }: ChromePartInputs) {
@@ -447,12 +444,11 @@ function useChromeParts({
     (drawerOpen: boolean) => (
       <RsdInstallBanner
         strokes={committedStrokes}
-        controlSize={bannerControlSize}
         hidden={drawerOpen || bannerHeld}
         waiting={bannerWaiting}
       />
     ),
-    [committedStrokes, bannerControlSize, bannerHeld, bannerWaiting]
+    [committedStrokes, bannerHeld, bannerWaiting]
   );
   const openAppSettings = product.owner ? product.openAppSettings : null;
   const status = useMemo(

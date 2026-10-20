@@ -395,4 +395,7 @@ export const aiStorage: AiStorage = {
       return pictures;
     });
   },
+  // Native keeps the one finished run until the next run replaces it: its journal and picture file
+  // live behind the Kotlin and Swift bridges, which have no release operation.
+  async release() {},
 };

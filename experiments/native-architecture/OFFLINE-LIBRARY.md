@@ -1,11 +1,25 @@
 # Offline coloring library source candidate
 
 The app downloads the seven additional complete coloring books on its own, as shipping does.
-Dinosaurs is the first additional book. Parents see and manage the downloads in Settings › Coloring
-(`rsdDrawing/RsdColoringSection.tsx`, the shipping `ColoringSection.svelte`): the Coloring book
-switch, the "Download over mobile data" switch, and the "Downloaded pictures" storage card with its
-Remove button. The kid-facing picker carries none of these controls. Installation verifies the
-finite approved HTTPS file inventory, byte lengths and SHA-256 digests before publishing its marker.
+Dinosaurs is the first additional book. Native starts at idle after launch. A web profile with no
+library storage waits for the child to engage, by three strokes or by opening the picker, as
+shipping's first visit does (`web/src/lib/boot/coloringPacks.ts`). A profile that already holds
+library storage resumes at idle. On web, a Save-Data, `2g`/`slow-2g` or `cellular` connection waits
+instead of downloading unless the parent allows mobile data, and an unknown connection downloads
+(`platform/offlineLibrary.web.ts`).
+
+The web export fetches book files from its own origin's `/coloring/**`, as shipping does. `dist/web`
+does not contain them. Whatever hosts the export (the retained-host choice in
+`docs/migration/WEB-CONTRACT.md`) must serve `web/static/coloring` there, as the shipping build
+does. A static host for the export alone answers those paths with its SPA fallback, so the first
+file fails verification and no book installs. A harness serving the export must serve `/coloring/**`
+too.
+
+Parents see and manage the downloads in Settings › Coloring (`rsdDrawing/RsdColoringSection.tsx`,
+the shipping `ColoringSection.svelte`): the Coloring book switch, the "Download over mobile data"
+switch, and the "Downloaded pictures" storage card with its Remove button. The kid-facing picker
+carries none of these controls. Installation verifies the finite approved HTTPS file inventory, byte
+lengths and SHA-256 digests before publishing its marker.
 
 Generate the retained asset catalog directly with
 `node --experimental-strip-types tools/migration/gen-offline-catalog.mjs`. Add `--check` to verify

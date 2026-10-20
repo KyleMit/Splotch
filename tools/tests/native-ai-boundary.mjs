@@ -37,6 +37,7 @@ export function nativeAiBoundary() {
         return receipt(next);
       }),
       pictures: vi.fn(async () => []),
+      release: vi.fn(async () => {}),
       retain: vi.fn(async () => {
         const picture = { uri: 'file:///fixture/ai.png', mime: 'image/png' };
         journal = { ...journal, phase: 'result', result: picture };
