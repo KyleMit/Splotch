@@ -202,9 +202,10 @@ reference.
     other tap lost its release.
   * Fixed by #3041, merged as 2a37becf4116ee5a5bdcca22327316d0bc9d5af6: the button is `box-only`, so
     it alone owns the touch.
-* **#3012: Undo at the end of history played no cue.** Fixed in #3040.
+* **#3012: Undo at the end of history played no cue.** Fixed by #3040, merged as
+  ea670da046fbb013100ed5c0a3206fdb825d6281.
 * **#3031: hardware keys did not reach the grown-up check on Android phones.** The modal's shortcut
-  scope held focus. Fixed in #3042.
+  scope held focus. Fixed by #3042, merged as 77de12ac84174e19e9bff41dbb387ebebd09bba0.
 * **Input-tool limits, not app defects:**
   * WDA plays W3C actions at about 2 to 8 times their nominal duration and can return before
     playback ends.

@@ -17,8 +17,9 @@ fixes (#3012, #3013) were rerun on the failed cell and the rows returned to unve
 hunt (`results/crash-hunt-2026-10-20.md`) found and fixed the Clear memory crash on iOS (#3035). Its
 pre-registered stress matrix then ran on four targets and both arms with no crash. The LIFE-1,
 SAVE-1, A11Y-2 and Android DS-1 slices in `results/` changed no row and found no `rn` defect. The
-KEY-1 slice (`results/key1-slice-2026-10-19.md`) failed two rows on an Android phone (#3031).
-Diagnostic build inspections are recorded separately.
+KEY-1 slice (`results/key1-slice-2026-10-19.md`) failed two rows on an Android phone (#3031). Its
+fix was rerun on that cell and the rows returned to unverified. Diagnostic build inspections are
+recorded separately.
 
 ## Execution plan
 
