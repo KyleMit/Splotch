@@ -5,3 +5,6 @@ export function usePageTypography(
   _title: RefObject<HTMLHeadingElement | null>,
   _lede: RefObject<HTMLParagraphElement | null>
 ) {}
+
+// Nor does an inherited page leading or pretty wrapping.
+export function pageTextRef(_page: HTMLElement | null) {}

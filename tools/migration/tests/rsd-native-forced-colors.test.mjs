@@ -1,0 +1,118 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { act, createElement } from 'react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { host, mount, records } from './rsd-native-selection-host.mjs';
+import { RsdPageSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
+import { RsdReleaseRule } from '../../../experiments/native-architecture/src/rsdDrawing/RsdReleaseArticle.tsx';
+import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+
+vi.mock(
+  '../../../experiments/native-architecture/src/platform/forcedColors.ts',
+  () => import('../../../experiments/native-architecture/src/platform/forcedColors.web.ts')
+);
+
+const FORCED_COLORS = '(forced-colors: active)';
+const readShipping = (path) =>
+  readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', path), 'utf8');
+const forcedRule = (source) => source.slice(source.indexOf('@media (forced-colors: active)'));
+
+let forced;
+let listeners;
+let originalMatchMedia;
+
+beforeEach(() => {
+  forced = true;
+  listeners = new Set();
+  originalMatchMedia = window.matchMedia;
+  window.matchMedia = (query) => ({
+    matches: query === FORCED_COLORS && forced,
+    media: query,
+    addEventListener: (_type, listener) => listeners.add(listener),
+    removeEventListener: (_type, listener) => listeners.delete(listener),
+  });
+});
+
+afterEach(() => {
+  window.matchMedia = originalMatchMedia;
+});
+
+async function setForced(value) {
+  forced = value;
+  await act(async () => {
+    for (const listener of listeners) listener();
+  });
+}
+
+async function mountRule() {
+  await mount(
+    createElement(
+      DrawingAppearanceProvider,
+      { preference: 'light' },
+      createElement(RsdReleaseRule, { hue: 'Orange' })
+    )
+  );
+  const rule = records.props.findLast((props) => props.testID === 'release-squiggle');
+  await act(async () => rule.onLayout({ nativeEvent: { layout: { width: 48 } } }));
+}
+
+const rulePath = () => host.querySelector('[data-testid="release-squiggle"] path');
+
+it('draws the crayon divider as shipping’s straight system-ink line in forced colors', async () => {
+  const squiggle = forcedRule(readShipping('design/SquiggleRule.svelte'));
+  expect(squiggle).toContain('height: 0;');
+  const [, width, ink] = squiggle.match(/border-top: (\d+)px solid (\w+);/);
+  await mountRule();
+  expect(rulePath().getAttribute('d')).toBe(`M0 ${Number(width) / 2} H48`);
+  expect(rulePath().getAttribute('stroke')).toBe(ink);
+  expect(rulePath().getAttribute('stroke-width')).toBe(width);
+  expect(records.props.findLast((props) => props.testID === 'release-squiggle').style).toEqual({
+    height: Number(width),
+  });
+  await setForced(false);
+  expect(rulePath().getAttribute('d')).toMatch(/^M0 4 Q6 0 12 4 T24 4/);
+  expect(rulePath().getAttribute('stroke')).not.toBe(ink);
+});
+
+async function mountSheet(theme) {
+  records.os = 'web';
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  await mount(
+    createElement(
+      DrawingAppearanceProvider,
+      { preference: theme },
+      createElement(RsdPageSheet, { title: 'This page wandered off', lede: 'Still here.' })
+    )
+  );
+  return () => {
+    const xml = host.querySelector('a[href="/"] svg[data-xml]').getAttribute('data-xml');
+    return new DOMParser().parseFromString(xml, 'image/svg+xml').documentElement;
+  };
+}
+
+const paints = (disc) =>
+  [...disc.querySelectorAll('path, g')].flatMap((node) =>
+    ['fill', 'stroke'].map((paint) => node.getAttribute(paint)).filter(Boolean)
+  );
+
+it.each(['light', 'dark'])(
+  'draws the back-link disc in system colours in forced colors, %s',
+  async (theme) => {
+    const backToTop = forcedRule(readShipping('page/BackToTopLink.svelte'));
+    const [, border, ink] = backToTop.match(/border: (\d+)px solid (\w+);/);
+    expect(backToTop).toContain(`fill: ${ink};`);
+    const disc = await mountSheet(theme);
+    await vi.waitFor(() => expect(disc().querySelector('g')).not.toBeNull());
+    const [blob, edge] = disc().querySelectorAll(':scope > path');
+    expect(blob.getAttribute('fill')).toBe('Canvas');
+    expect(edge.getAttribute('stroke')).toBe(ink);
+    expect(edge.getAttribute('stroke-width')).toBe(border);
+    expect(new Set(paints(disc()))).toEqual(new Set(['Canvas', 'none', ink]));
+    await setForced(false);
+    expect(disc().querySelector('path').getAttribute('fill')).toBe(
+      DRAWING_THEMES[theme].brandSolid
+    );
+    expect(paints(disc())).not.toContain(ink);
+  }
+);

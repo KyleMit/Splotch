@@ -1,5 +1,8 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { css, type html } from 'react-strict-dom';
+
+// MouseEvent.button for the wheel button, whose click opens a link in a new tab.
+const MIDDLE_BUTTON = 1;
 
 type AnchorStyle = ComponentProps<typeof html.a>['style'];
 type Activation = Readonly<{
@@ -64,6 +67,53 @@ export function RsdPageAnchor({
         if (!isPlainActivation(event)) return;
         event.preventDefault();
         onFollow();
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+// A web anchor for a page outside the app, behind the grown-up check. Every activation the page
+// hears (a click with or without modifier keys, Enter, a middle click) asks `onOpen`, which holds it
+// to the parent's setting and opens the address itself. The address itself is rendered only while
+// no check is due: a browser can reach an href through routes no page event announces (Firefox's
+// Shift-right-click menu, a screen reader's open-in-new-tab, iOS Safari's long-press preview), so
+// while one is due the link carries none and stays a link by role and keyboard focus.
+export function RsdGatedAnchor({
+  href,
+  checkDue,
+  onOpen,
+  style,
+  children,
+}: {
+  href: string;
+  checkDue: () => boolean;
+  onOpen: () => void;
+  style?: AnchorStyle;
+  children: ReactNode;
+}) {
+  const open = (event: MouseEvent<HTMLAnchorElement> | KeyboardEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    onOpen();
+  };
+  const address = checkDue()
+    ? {
+        role: 'link',
+        tabIndex: 0,
+        onKeyDown: (event: KeyboardEvent<HTMLAnchorElement>) => {
+          if (event.key === 'Enter') open(event);
+        },
+      }
+    : { href, target: '_blank', rel: 'noopener noreferrer' };
+  return (
+    <a
+      {...css.props(styles.anchor, style)}
+      {...address}
+      onClick={open}
+      onAuxClick={(event) => {
+        if (event.button === MIDDLE_BUTTON) open(event);
       }}
     >
       {children}
