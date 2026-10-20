@@ -173,8 +173,8 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
     });
   }
   release(id: number): Promise<void> {
-    return this.owner.queue(false, async () => {
-      await this.owner.ready();
+    return this.owner.queue(true, async () => {
+      await this.owner.load();
       await this.owner.release(id);
     });
   }

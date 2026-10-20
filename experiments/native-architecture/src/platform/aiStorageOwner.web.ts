@@ -106,11 +106,12 @@ export class WebAiStorageOwner {
     }
     return this.connection;
   }
-  queue<T>(reading: boolean, work: () => Promise<T>): Promise<T> {
+  // Work that rereads the stored state before acting on it may run after an unconfirmed write.
+  queue<T>(rereads: boolean, work: () => Promise<T>): Promise<T> {
     const next = this.pending
       .catch(() => {})
       .then(async () => {
-        if (this.uncertain && !reading) invalidAiStorage();
+        if (this.uncertain && !rereads) invalidAiStorage();
         try {
           return await work();
         } catch (error) {

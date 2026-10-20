@@ -269,14 +269,13 @@ it('reads past a run another tab released after last seeing it unfinished', asyn
   });
 });
 
-it('keeps the record when a release does not commit, and releases it after a reread', async () => {
+it('keeps the record when a release does not commit, and the next release rereads it', async () => {
   const storage = createAiStorage();
   await storage.prepare(journal(), model, png);
   await storage.retain(1, png, 'image/png');
   disk.abort = true;
   await expect(storage.release(1)).rejects.toThrow('transaction abort');
   expect(disk.raw.attempts).toHaveLength(1);
-  await storage.read();
   await storage.release(1);
   expect(disk.raw.attempts).toEqual([]);
 });
