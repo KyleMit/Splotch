@@ -49,6 +49,40 @@ physical-only list does not include the keyboard. Hardware Cmd+Z, Escape and gat
 therefore run as KEY-1 in `execution-plan.md`, on the iPad simulators and the Android emulator,
 rather than in an operator window.
 
+## The owner's next session, about 25 minutes
+
+These checks were refreshed after the crash hunt (`results/crash-hunt-2026-10-20.md`). They cover
+what scripted input could not. Use the RN probe at the newest `codex/native-migration` build and the
+v1.6.0 reference, with sound on. Each line gives the time to spend and what passes.
+
+1. **The Clear crash, by finger (5 min, iPad then Galaxy).** Draw about 12 Crayon strokes, then drag
+   Clear back and forth across the ring several times and let go past it.
+   * Passes: the page flies away and the app stays up. The owner's report was "at first, screen
+     froze and stayed there for ~5s and then app completely shut down and went to home screen".
+   * Repeat once with 25 or more Crayon strokes.
+2. **Clear by quick taps and holds (3 min, iPad then Galaxy).** Tap Clear once and lift; three quick
+   taps; a half-second hold.
+   * Passes: the tab docks again after every lift, and three taps or a hold show the coachmark.
+   * The Galaxy half has not been checked since #3041.
+3. **Real-finger feel (4 min, both devices).** Scribble with one and two fingers, resting a palm,
+   and use the palette, the drawer and Undo with the other hand.
+   * Note any lag, a missed stroke, or a control that fires under the palm.
+4. **VoiceOver on the iPad, TalkBack on the Galaxy (5 min).** Move through the palette, the drawer,
+   Undo, Clear and Settings.
+   * Passes: Undo at the end of history is announced as dimmed or disabled, and activating it plays
+     the shake and flash without undoing anything.
+   * Clear's activation clears the page.
+5. **Largest font on the devices (3 min).** Set the largest OS text size, open Settings on both,
+   then return the size to normal while Settings is open.
+   * Note any word split, clipped label or text that stays the old size (#2985).
+   * Restore the setting.
+6. **Photos round trip (3 min, iPad).** Run the Photos window above: deny, retry, open Settings,
+   grant, return, retry.
+7. **One live AI generation (2 min, only if the owner chooses).**
+   * The owner enters the credential directly, with capture suspended as below.
+   * Charge the ledger before dispatch: 1 of 10 is charged, so at most nine remain, and only for the
+     P12, P13 and T1-12 cells.
+
 ## Existing credentials and live AI
 
 If a live flow requires an existing key or access code, the operator enters it directly on the named
