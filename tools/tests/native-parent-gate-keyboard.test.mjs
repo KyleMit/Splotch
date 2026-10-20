@@ -116,7 +116,7 @@ it('binds drawing and modal shortcut receivers to the same native view and event
   );
   expect(shortcut).toContain('event.action != KeyEvent.ACTION_DOWN');
   expect(shortcut).toContain('super.dispatchKeyEvent(event)');
-  expect(shortcut).toContain('rootView.findFocus() !is EditText');
+  expect(shortcut).toContain('focused !is EditText');
   expect(shortcut).toContain('event.isCtrlPressed || event.isMetaPressed');
   expect(shortcut).not.toContain('repeatCount');
   expect(ios).toContain('@objc(SplotchShortcutKeyboardManager)');
@@ -183,6 +183,41 @@ it('restores Android shortcut capture when a modal window returns', () => {
     /super\.onWindowFocusChanged\(hasWindowFocus\)\s+if \(hasWindowFocus\) focusWhenAvailable\(\)/
   );
   expect(shortcut).toContain(
-    'isAttachedToWindow && shortcutsEnabled && !hasFocus() && rootView.findFocus() !is EditText'
+    'isAttachedToWindow && shortcutsEnabled && !hasFocus() && focused !is EditText && focused !is GateKeyboardView'
   );
+});
+
+// On an Android phone the Settings modal's shortcut scope took focus before the grown-up check's
+// receiver could, so digits, Delete and Enter never reached the check (#3031). The check claims
+// focus once attached, again once laid out and on window focus, and no shortcut scope takes focus
+// from it. Negative control: the former scope condition, or a receiver that asks only on attach,
+// fails here; the KEY-1 gate-keys step on the API 36 phone emulator is the behavioural check.
+it('leaves the hardware keys with an open grown-up check on every layout', () => {
+  const android = readFileSync(
+    resolve(
+      import.meta.dirname,
+      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchGateKeyboard.kt'
+    ),
+    'utf8'
+  );
+  const gate = android.slice(
+    android.indexOf('class GateKeyboardView'),
+    android.indexOf('class SplotchGateKeyboardManager')
+  );
+  expect(gate).toMatch(
+    /private fun claimFocus\(\) \{\s+post \{ if \(isAttachedToWindow && !isFocused\) requestFocus\(\) \}/
+  );
+  expect(gate).toMatch(/super\.onAttachedToWindow\(\)\s+claimFocus\(\)/);
+  expect(gate).toMatch(
+    /super\.onLayout\(changed, left, top, right, bottom\)\s+if \(changed\) claimFocus\(\)/
+  );
+  expect(gate).toMatch(
+    /super\.onWindowFocusChanged\(hasWindowFocus\)\s+if \(hasWindowFocus\) claimFocus\(\)/
+  );
+  const shortcut = android.slice(
+    android.indexOf('class ShortcutKeyboardView'),
+    android.indexOf('class SplotchShortcutKeyboardManager')
+  );
+  expect(shortcut).toContain('val focused = rootView.findFocus()');
+  expect(shortcut).toContain('focused !is GateKeyboardView');
 });

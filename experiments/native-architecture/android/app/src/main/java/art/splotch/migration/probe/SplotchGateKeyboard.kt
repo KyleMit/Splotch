@@ -37,9 +37,25 @@ class GateKeyboardView(private val reactContext: ThemedReactContext) : ReactView
     isFocusableInTouchMode = true
   }
 
+  // The open check owns the keys. A request made before the view is laid out fails, and a modal's
+  // shortcut scope can take focus first, so the claim repeats once laid out and on window focus.
+  private fun claimFocus() {
+    post { if (isAttachedToWindow && !isFocused) requestFocus() }
+  }
+
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
-    post { if (isAttachedToWindow) requestFocus() }
+    claimFocus()
+  }
+
+  override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+    super.onLayout(changed, left, top, right, bottom)
+    if (changed) claimFocus()
+  }
+
+  override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+    super.onWindowFocusChanged(hasWindowFocus)
+    if (hasWindowFocus) claimFocus()
   }
 
   override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -90,9 +106,12 @@ class ShortcutKeyboardView(private val reactContext: ThemedReactContext) : React
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) defaultFocusHighlightEnabled = false
   }
 
+  // A text field and the grown-up check's receiver keep the keys; Escape still passes through this
+  // scope's dispatchKeyEvent on its way to a focused descendant.
   private fun focusWhenAvailable() {
     post {
-      if (isAttachedToWindow && shortcutsEnabled && !hasFocus() && rootView.findFocus() !is EditText) requestFocus()
+      val focused = rootView.findFocus()
+      if (isAttachedToWindow && shortcutsEnabled && !hasFocus() && focused !is EditText && focused !is GateKeyboardView) requestFocus()
     }
   }
 
