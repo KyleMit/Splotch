@@ -38,6 +38,7 @@ import {
 } from './RsdAiResultParts';
 import { RsdAiResultStage } from './RsdAiResultStage';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
+import { returnFocusToAiLauncher } from '../platform/aiLauncherFocus';
 import { colors, darkTheme, dimensions, fixedColors, fonts, shadows } from './tokens.css';
 
 // AiImageResult.svelte's polaroid send-off: the card tilts like a fresh print, holds, then sails
@@ -137,7 +138,10 @@ export function RsdAiResult({
         visible={visible}
         label={AI_RESULT_COPY.label}
         onClose={leave}
-        onDismiss={onDismiss}
+        onDismiss={() => {
+          onDismiss();
+          returnFocusToAiLauncher();
+        }}
       >
         <ResultCard
           owner={owner}

@@ -7,6 +7,9 @@ import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.m
 import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { RsdAiReportStatus } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
+
+const launcher = vi.hoisted(() => ({ returnFocusToAiLauncher: vi.fn() }));
+vi.mock('../../../experiments/native-architecture/src/platform/aiLauncherFocus.ts', () => launcher);
 import {
   save,
   labelled,
@@ -323,6 +326,22 @@ it(
       )
     );
     expect(labelled('Report a problem')).toBeNull();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+// Shipping lands focus back on the AI button, or the drawer toggle, once the result card has
+// closed (#3018); RN web does it from the card's dismissal. Negative control: a dismissal that
+// skips the hand-back fails here.
+it(
+  'hands focus back to the AI launcher once the closed card has left',
+  async () => {
+    launcher.returnFocusToAiLauncher.mockClear();
+    await finishedPicture();
+    expect(launcher.returnFocusToAiLauncher).not.toHaveBeenCalled();
+    await click('Close');
+    await settle(() => expect(modal('AI Result')).toBeNull());
+    expect(launcher.returnFocusToAiLauncher).toHaveBeenCalledOnce();
   },
   GATED_FLOW_TIMEOUT_MS
 );
