@@ -24,7 +24,6 @@ import { openAppPage } from '../../../experiments/native-architecture/src/platfo
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
 import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
 import { GATE_MODAL } from './rsd-parent-gate-keypad.mjs';
-import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
 import { useCaller, click, settle } from './rsd-native-ai-fixture.mjs';
 
 vi.mock('react-strict-dom', async (importOriginal) => {
@@ -425,19 +424,17 @@ it('gives the privacy contents, section anchors and in-page links their fragment
     expect(copy?.getAttribute('href')).toBe(`#${section.id}`);
     expect(copy?.getAttribute('data-focus-ring')).toBe('radiusBlob2');
   }
-  const inText = [...host.querySelectorAll('a:not([data-testid="sidebar-row"]):not([aria-label])')]
+  const inText = [
+    ...host.querySelectorAll('a[href]:not([data-testid="sidebar-row"]):not([aria-label])'),
+  ]
     .map((link) => [link.textContent, link.getAttribute('href')])
     .filter(([, href]) => href.startsWith('#'));
   expect(inText).toEqual([
     ['How the counting works', '#counting'],
     ['Reporting a picture', '#reports'],
   ]);
-  expect(anchors.filter(([, href]) => href.startsWith('https:'))).toEqual(
-    privacy.web.sections
-      .flatMap((section) => section.blocks.flatMap((block) => block.spans))
-      .filter((span) => span.href?.startsWith('https:'))
-      .map((span) => [span.text, span.href])
-  );
+  // The default policy asks for a check, which keeps the links that leave the app addressless.
+  expect(anchors.some(([, href]) => href.startsWith('https:'))).toBe(false);
 });
 
 it('gives the changelog contents and Back to top their fragments', async () => {

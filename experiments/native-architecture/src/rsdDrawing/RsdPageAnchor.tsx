@@ -1,4 +1,4 @@
-import type { ComponentProps, MouseEvent, ReactNode } from 'react';
+import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { css, type html } from 'react-strict-dom';
 
 // MouseEvent.button for the wheel button, whose click opens a link in a new tab.
@@ -74,12 +74,12 @@ export function RsdPageAnchor({
   );
 }
 
-// A web anchor for a page outside the app, behind the grown-up check. Its address shows on hover
-// as shipping's does, but every activation the page hears (a click with or without modifier keys,
-// Enter, a middle click) asks `onOpen`, which holds it to the parent's setting and opens the
-// address itself. While a check is due, the browser's own ways to open the address with no event
-// to answer stay shut: the context menu, which opens the check instead as a long press does on
-// Android, iOS Safari's long-press preview, and dragging the link onto a tab.
+// A web anchor for a page outside the app, behind the grown-up check. Every activation the page
+// hears (a click with or without modifier keys, Enter, a middle click) asks `onOpen`, which holds it
+// to the parent's setting and opens the address itself. The address itself is rendered only while
+// no check is due: a browser can reach an href through routes no page event announces (Firefox's
+// Shift-right-click menu, a screen reader's open-in-new-tab, iOS Safari's long-press preview), so
+// while one is due the link carries none and stays a link by role and keyboard focus.
 export function RsdGatedAnchor({
   href,
   checkDue,
@@ -93,28 +93,27 @@ export function RsdGatedAnchor({
   style?: AnchorStyle;
   children: ReactNode;
 }) {
-  const open = (event: MouseEvent<HTMLAnchorElement>) => {
+  const open = (event: MouseEvent<HTMLAnchorElement> | KeyboardEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented) return;
     event.preventDefault();
     onOpen();
   };
-  const props = css.props(styles.anchor, style);
+  const address = checkDue()
+    ? {
+        role: 'link',
+        tabIndex: 0,
+        onKeyDown: (event: KeyboardEvent<HTMLAnchorElement>) => {
+          if (event.key === 'Enter') open(event);
+        },
+      }
+    : { href, target: '_blank', rel: 'noopener noreferrer' };
   return (
     <a
-      {...props}
-      style={checkDue() ? { ...props.style, WebkitTouchCallout: 'none' } : props.style}
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...css.props(styles.anchor, style)}
+      {...address}
       onClick={open}
       onAuxClick={(event) => {
         if (event.button === MIDDLE_BUTTON) open(event);
-      }}
-      onContextMenu={(event) => {
-        if (checkDue()) open(event);
-      }}
-      onDragStart={(event) => {
-        if (checkDue()) event.preventDefault();
       }}
     >
       {children}
