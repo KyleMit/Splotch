@@ -273,6 +273,11 @@ it(
     await settle(() => expect(modal('AI Result')).toBeNull());
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     expect(labelled(WAITING_LABEL).closest('[data-testid="rsd-paper-corner"]')).not.toBeNull();
+    // The paper under the corner layer takes strokes while the picture is made, as on shipping
+    // (#3015). Negative control: a style-only box-none, which react-native-web drops, fails here.
+    expect(
+      records.props.findLast((props) => props.testID === 'rsd-paper-corner').pointerEvents
+    ).toBe('box-none');
     // A minimized run is the one time the wand works with a picture in flight: it shows it again,
     // without a second check.
     await click('Show the picture being made');

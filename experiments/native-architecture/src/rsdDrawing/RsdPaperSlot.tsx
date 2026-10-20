@@ -20,7 +20,6 @@ const paperCorner = {
   left: 0,
   right: 0,
   bottom: 0,
-  pointerEvents: 'box-none',
 } as const;
 
 // The themed float shadow, whose dark value carries the hairline that edges a lifted sheet
@@ -66,7 +65,9 @@ export function RsdPaperSlot({
       )}
       <NativePaper {...paper} lifted={lifted} />
       {run && ai.owner && ai.state ? (
-        <View testID="rsd-paper-corner" style={paperCorner}>
+        // The prop, not a style: react-native-web writes a style's box-none as CSS, which has no
+        // such value, so the layer took every stroke meant for the paper under it (#3015).
+        <View testID="rsd-paper-corner" pointerEvents="box-none" style={paperCorner}>
           <RsdSurfaceBoundary>
             <AiWaitingPolaroid
               run={run}
