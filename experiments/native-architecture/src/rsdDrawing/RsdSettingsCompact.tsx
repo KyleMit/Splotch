@@ -3,6 +3,7 @@ import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useOrientationLockApplies } from '../platform/deviceOrientation';
 import { APP_VERSION } from '../platform/appVersion';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import type { OrientationChoice } from '../settings/orientation';
 import { TOOL_DRAWER_COPY } from '../settings/toolDrawerSection';
 import { RsdOrientationPicker } from './RsdOrientationPicker';
@@ -21,6 +22,10 @@ export const COMPACT_SHELL = {
   note: { top: 10, inline: 24, bottom: 14, gap: 8, icon: 16 },
 } as const;
 const COLUMNS = 2;
+// Past iOS's largest ordinary text size (XXXL, 1.353×), at its accessibility sizes and Android's
+// largest, the pinned pointer to portrait wraps over most of the landscape shell and leaves the
+// toggles a sliver to scroll in. There it scrolls in after the toggles instead.
+export const NOTE_PINNED_MAX_FONT_SCALE = 1.4;
 
 const styles = css.create({
   grid: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
@@ -78,6 +83,8 @@ const styles = css.create({
     fontSize: dimensions.fontSizeSm,
     textAlign: 'center',
   },
+  // The scroller already insets its content by the note's own inline padding.
+  scrolledNote: { paddingLeft: 0, paddingRight: 0 },
 });
 
 function rows(cells: readonly ReactNode[]) {
@@ -116,6 +123,13 @@ export function RsdSettingsCompact({
 }) {
   const softInk = useDrawingTheme().textSoft;
   const lockApplies = useOrientationLockApplies();
+  const notePinned = useWindowDimensions().fontScale <= NOTE_PINNED_MAX_FONT_SCALE;
+  const note = (
+    <html.div data-testid="portrait-note" style={[styles.note, !notePinned && styles.scrolledNote]}>
+      <RsdIcon name="mobile-portrait" size={COMPACT_SHELL.note.icon} ink={softInk} muted />
+      <html.span>Switch to portrait for the full settings.</html.span>
+    </html.div>
+  );
   const cells = [
     <html.div key="sound" style={styles.cell}>
       <RsdToggleRow
@@ -169,12 +183,10 @@ export function RsdSettingsCompact({
         <html.div style={styles.grid}>
           {rows(cells)}
           {children}
+          {notePinned ? null : note}
         </html.div>
       </RsdScrollCue>
-      <html.div style={styles.note}>
-        <RsdIcon name="mobile-portrait" size={COMPACT_SHELL.note.icon} ink={softInk} muted />
-        <html.span>Switch to portrait for the full settings.</html.span>
-      </html.div>
+      {notePinned ? note : null}
     </>
   );
 }
