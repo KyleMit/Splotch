@@ -51,7 +51,8 @@ export function RsdParentCenterSection({ owner }: { owner: DrawingProductOwner }
   const settings = state.settings;
   const matrix = useMatrixLayout();
   if (!settings) return null;
-  const disabled = !owner.settings.canEditParent();
+  // Not dimmed while a choice saves; setPolicy ignores a tap until the write has landed (#3077).
+  const disabled = settings.status !== 'saving' && !owner.settings.canEditParent();
   const choose = (feature: ParentFeature, mode: ParentMode) => {
     void owner.setPolicy(feature, mode);
   };

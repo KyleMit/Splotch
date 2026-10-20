@@ -1,16 +1,20 @@
-import { act, createElement, useEffect, useState } from 'react';
+import { act, createElement, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { host, mount, records, checkedRadio } from './rsd-native-selection-host.mjs';
+import {
+  SECTION,
+  choose,
+  click,
+  clickText,
+  mountProduct,
+  openParentCenter,
+  policyGroup,
+  policyNote,
+  policyOption,
+} from './rsd-native-parent-center-fixture.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
-import { createDrawingProduct } from '../../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { RsdParentCenterSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentCenterSection.tsx';
-import { useModalPresence } from '../../../experiments/native-architecture/src/rsdDrawing/useModalPresence.ts';
-import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { useParentGateCard } from '../../../experiments/native-architecture/src/parentCenter/useParentGateCard.ts';
 import {
   PARENT_GATE_ERROR_MESSAGE,
   PARENT_GATE_KEYPAD_KEYS,
@@ -33,7 +37,6 @@ import {
   expectGateEquationGeometry,
   gateKey,
   gateProblem,
-  solveParentGate,
   tapGateKeys,
 } from './rsd-parent-gate-keypad.mjs';
 import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
@@ -50,7 +53,6 @@ vi.mock('../../../experiments/native-architecture/src/platform/parentPlatform.ts
 
 const PHONE = { width: 390, height: 844, scale: 1, fontScale: 1 };
 const TABLET = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
-const SECTION = '[data-testid="parent-center-fixture"]';
 const CONFIRM_MODAL = `[data-native-modal="${PARENT_CENTER_COPY.confirmTitle}"]`;
 const AI_SWITCH = '[aria-label="Create AI Images"]';
 // Math.random 0.5 picks operand 6 every time: a two-digit answer (36) on every problem.
@@ -58,89 +60,6 @@ const FIXED_OPERAND_RANDOM = 0.5;
 const FIXED_ANSWER_DIGITS = [3, 6];
 const REGENERATED_OPERAND_RANDOM = 0.9;
 const REGENERATED_ANSWER_DIGITS = [8, 1];
-
-async function click(label) {
-  const button = host.querySelector(`[aria-label="${label}"]`);
-  expect(button, label).not.toBeNull();
-  expect(button.disabled).toBe(false);
-  await act(async () => button.click());
-}
-async function clickText(text) {
-  const button = [...host.querySelectorAll('button')].find((node) => node.textContent === text);
-  expect(button, text).toBeDefined();
-  await act(async () => button.click());
-}
-const policyGroup = (feature) =>
-  host.querySelector(`[aria-label="${PARENT_LABELS[feature]} parental gate frequency"]`);
-const policyOption = (feature, mode) =>
-  policyGroup(feature).querySelector(`[aria-label="${PARENT_MODE_LABELS[mode]}"]`);
-// A stacked card: its heading's copy block, then the picker and any note beside it.
-const policyCard = (feature) =>
-  [...host.querySelectorAll(`${SECTION} [role="heading"]`)].find(
-    (node) => node.textContent === PARENT_LABELS[feature]
-  ).parentElement.parentElement;
-const policyNote = (feature) => policyCard(feature).querySelector('[role="note"]');
-async function choose(feature, mode) {
-  await act(async () => policyOption(feature, mode).click());
-}
-
-function GateFixture({ owner }) {
-  const view = useParentGateCard(owner.getState().gate);
-  const presence = useModalPresence(view?.open ? view : null);
-  return presence.shown
-    ? createElement(RsdParentGateSheet, {
-        owner,
-        state: presence.shown.state,
-        unlocked: presence.shown.unlocked,
-        visible: presence.visible,
-        onDismiss: presence.dismissed,
-      })
-    : null;
-}
-function ProductFixture({ storage, onOwner }) {
-  const [, update] = useState(0);
-  const [instance] = useState(() =>
-    createDrawingProduct(storage, () => update((value) => value + 1))
-  );
-  onOwner(instance);
-  useEffect(() => {
-    void instance.settings.load();
-    return instance.dispose;
-  }, [instance]);
-  const state = instance.getState();
-  return createElement(
-    DrawingAppearanceProvider,
-    { preference: 'dark' },
-    createElement(RsdAction, {
-      label: 'Parent Center fixture entry',
-      onClick: instance.openParentCenter,
-    }),
-    state.parentCenterOpen
-      ? createElement(
-          'div',
-          { 'data-testid': 'parent-center-fixture' },
-          createElement(RsdParentCenterSection, { owner: instance })
-        )
-      : null,
-    createElement(GateFixture, { owner: instance })
-  );
-}
-async function mountProduct(
-  storage = { read: vi.fn(async () => null), write: vi.fn(async () => {}) }
-) {
-  let owner;
-  await mount(
-    createElement(ProductFixture, { storage, onOwner: (instance) => (owner = instance) })
-  );
-  return owner;
-}
-async function openParentCenter(storage) {
-  const owner = await mountProduct(storage);
-  await click('Parent Center fixture entry');
-  await solveParentGate();
-  expect(host.querySelector(SECTION)).not.toBeNull();
-  return owner;
-}
 
 describe('RSD Parent Center section', () => {
   afterEach(() => {
@@ -228,6 +147,36 @@ describe('RSD Parent Center section', () => {
     await openParentCenter();
     expect(policyOption('externalLinks', 'never').disabled).toBe(false);
     expect(policyNote('externalLinks')).toBeNull();
+  });
+
+  it('leaves the options undimmed while a choice saves, and ignores a tap until it lands', async () => {
+    let stored = null;
+    let land;
+    const storage = {
+      read: vi.fn(async () => stored),
+      write: vi.fn(async (next) => {
+        stored = next;
+      }),
+    };
+    const owner = await openParentCenter(storage);
+    storage.write.mockImplementationOnce(
+      (next) =>
+        new Promise((resolve) => {
+          land = () => {
+            stored = next;
+            resolve();
+          };
+        })
+    );
+    await act(async () => policyOption('feedback', 'session').click());
+    expect(owner.getState().settings.status).toBe('saving');
+    for (const mode of ['always', 'session'])
+      expect(policyOption('feedback', mode).disabled, mode).toBe(false);
+    await act(async () => policyOption('feedback', 'always').click());
+    await act(async () => land());
+    expect(owner.getState().settings).toMatchObject({ status: 'ready', saved: true });
+    expect(JSON.parse(stored).parentPolicies.feedback).toBe('session');
+    checkedRadio(policyOption('feedback', 'session'));
   });
 
   it("keeps a failed policy save pending and retryable after the queued What's New stamp writes", async () => {
