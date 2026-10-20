@@ -13,6 +13,7 @@ import {
   starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
+import { withContentSecurityPolicy } from '../migration/lib/native-web-csp.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
@@ -50,9 +51,16 @@ const CAT_IMAGE = 'assets/__web/static/coloring/farm/cat-wide.selector.1.webp';
 const COW_IMAGE = 'assets/__web/static/coloring/farm/cow-wide.selector.1.webp';
 const CSS = '_expo/static/css/strict-1.css';
 const BUILT_VERSION = '1.6.1234';
-const INDEX = `<html><head>${webVersionHeadTag(BUILT_VERSION)}<link rel="stylesheet" href="/${CSS}"></head><body><script src="/${ENTRY}" defer></script></body></html>`;
+const BOOT_SCRIPT = '<script>document.documentElement.dataset.boot="1"</script>';
+const INDEX = withContentSecurityPolicy(
+  `<html><head>${webVersionHeadTag(BUILT_VERSION)}${BOOT_SCRIPT}<link rel="stylesheet" href="/${CSS}"></head><body><script src="/${ENTRY}" defer></script></body></html>`
+);
+const NOT_FOUND = withContentSecurityPolicy(
+  `<html><head>${BOOT_SCRIPT}</head><body></body></html>`
+);
 const ASSETS = {
   'index.html': INDEX,
+  '404.html': NOT_FOUND,
   [ENTRY]: 'var app={};',
   [CAT]: `var d="${OUTLINES[0].sample}";`,
   [COW]: `var d="${OUTLINES[1].sample}";`,
@@ -195,6 +203,24 @@ it('rejects a shell that names a file outside its precache', () => {
     fallbackUrl: shell.url,
   });
   expect(() => check(fixture)).toThrow(/names files outside its precache: .*late-2\.js/);
+});
+
+it('rejects documents whose policy does not authorize every inline script (issue 3017)', () => {
+  const index = INDEX.replace('dataset.boot="1"', 'dataset.boot="2"');
+  const shell = contentAddressedShell(index);
+  const fixture = exportFixture({
+    urls: [shell.url, ...COMPLETE.slice(1)],
+    assets: {
+      ...ASSETS,
+      'index.html': index,
+      '404.html': NOT_FOUND.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, ''),
+    },
+    integrity: { [shell.url]: shell.integrity },
+    fallbackUrl: shell.url,
+  });
+  expect(() => check(fixture)).toThrow(
+    /index\.html carries 1 inline script\(s\) its policy does not hash\n404\.html carries no Content-Security-Policy/
+  );
 });
 
 it('rejects an export whose precached chunks lack a starter page', () => {

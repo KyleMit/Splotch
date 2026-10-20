@@ -62,7 +62,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `tools/migration/tests/rsd-native-button-chrome.test.mjs` holds their untokened chrome values to
   `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
-  Its post hook runs `check-native-web-precache.mjs`, which verifies the service worker, then
+  After the prerender it writes a Content-Security-Policy meta tag at the top of `index.html` and
+  `404.html` (`lib/native-web-csp.mjs`): shipping's directives from `web/securityPolicy.ts`, with
+  `script-src` holding `'self'` and the hash of each inline script the document carries, never
+  `'unsafe-inline'`. Its post hook runs `check-native-web-precache.mjs`, which verifies the service
+  worker and that both documents' policies hash every inline script, then
   `check-native-web-startup.mjs`, which holds the startup path to two caps (ADR-0180) and rejects an
   image inlined into it. `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the
   scripts, stylesheets and preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds
