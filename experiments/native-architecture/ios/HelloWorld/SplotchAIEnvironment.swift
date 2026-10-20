@@ -107,8 +107,10 @@ final class SplotchAIEnvironment: NSObject {
       return value
     }
   }
+  // An absent value resolves NSNull: the new architecture's interop hands JS a nil as undefined, and the
+  // vault's contract, which Android's resolve(null) keeps, is a string or null (issue 3068).
   private func guarded(_ resolve: RCTPromiseResolveBlock, _ reject: RCTPromiseRejectBlock, _ operation: () throws -> Any?) {
-    do { resolve(try operation()) }
+    do { resolve(try operation() ?? NSNull()) }
     catch { reject("AI_SECURE_UNAVAILABLE", "Secure AI storage is unavailable.", nil) }
   }
   @objc(installationId:rejecter:)
