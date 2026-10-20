@@ -133,13 +133,34 @@ export class AiSession {
     const work = this.writing
       .catch(() => {})
       .then(async () => {
-        if (this.journals.get(journal.id)?.phase === 'result' && journal.phase !== 'result') return;
-        const receipt = await this.deps.storage.write(journal);
-        this.journals.set(journal.id, receipt.journal);
-        this.update({ journal: receipt.journal });
+        try {
+          if (this.journals.get(journal.id)?.phase === 'result' && journal.phase !== 'result')
+            return;
+          const receipt = await this.deps.storage.write(journal);
+          this.journals.set(journal.id, receipt.journal);
+          this.update({ journal: receipt.journal });
+        } finally {
+          if (!this.state.open) await this.release(journal.id);
+        }
       });
     this.writing = work;
     return work;
+  };
+  // Shipping keeps no AI picture once its card is closed, so storage holds a run only while it is
+  // in progress or on screen. Storage judges whether the run has finished from its own record, which
+  // a retained picture whose journal write failed has reached ahead of this session's journal. A
+  // release that fails leaves the record for the next run to replace, and rereads storage so that
+  // run is not refused as unconfirmed.
+  private release = async (id: number) => {
+    try {
+      await this.deps.storage.release(id);
+    } catch {
+      await this.deps.storage.read().catch(() => null);
+    }
+  };
+  protected releaseClosed = () => {
+    const id = this.state.journal?.id;
+    if (id !== undefined) this.writing = this.writing.catch(() => {}).then(() => this.release(id));
   };
   protected persistPrepared = (journal: AiJournal, prepared: PreparedAiDrawing) => {
     const work = this.writing
@@ -441,6 +462,7 @@ export class AiSession {
       failures: 0,
       failure: null,
     });
+    this.releaseClosed();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   };
