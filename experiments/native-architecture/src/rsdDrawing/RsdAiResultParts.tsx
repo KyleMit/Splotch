@@ -103,10 +103,7 @@ export function RsdAiDisclosure({
   const m = AI_RESULT_METRICS;
   return (
     <html.div
-      style={[
-        controlStyles.semiboldText,
-        styles.strip(m.reportStripGap, m.reportStripHeight, DISCLOSURE_PADDING_PX),
-      ]}
+      style={[controlStyles.semiboldText, styles.strip(m.reportStripHeight, DISCLOSURE_PADDING_PX)]}
     >
       {picture ? (
         <>
@@ -196,8 +193,7 @@ const styles = css.create({
     transitionProperty: 'transform, background-color',
     transitionDuration: motion.durationFast,
   }),
-  strip: (gap: number, height: number, padding: number) => ({
-    marginTop: gap,
+  strip: (height: number, padding: number) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',

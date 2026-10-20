@@ -11,7 +11,12 @@ import {
 import { Animated, Easing } from '../platform/animated';
 import type { AiProgress, AiProgressOwner } from '../ai/aiProgress';
 import { AI_RESULT_COPY } from '../ai/aiResultCopy';
-import { aiResultFrame, type AiFooterSlots, type AiResultMode } from '../ai/aiResultGeometry';
+import {
+  AI_RESULT_METRICS,
+  aiResultFrame,
+  type AiFooterSlots,
+  type AiResultMode,
+} from '../ai/aiResultGeometry';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import type { AiResult } from '../ai/journal';
 import { aiResultPhase, aiRun } from '../ai/uiState';
@@ -42,7 +47,12 @@ import { returnFocusToAiLauncher } from '../platform/aiLauncherFocus';
 import { colors, darkTheme, dimensions, fixedColors, fonts, shadows } from './tokens.css';
 
 const UNMEASURED_SLOTS: AiFooterSlots = { caption: 0, keepDrawing: 0, strip: 0 };
-const STRIP_MEASURE_STYLE = { maxWidth: '100%' } as const;
+// The strip's gap from the card sits outside the measured view, so its height is the strip's own:
+// the frame adds the gap itself.
+const STRIP_MEASURE_STYLE = {
+  maxWidth: '100%',
+  marginTop: AI_RESULT_METRICS.reportStripGap,
+} as const;
 type MeasureSlot = (slot: keyof AiFooterSlots) => (event: LayoutChangeEvent) => void;
 
 // The heights the caption and the Keep drawing button laid out at, which the card budgets.

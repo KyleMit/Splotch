@@ -8,9 +8,11 @@ import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contr
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { RsdAiReportStatus } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
 import {
+  RsdAiDisclosure,
   RsdAiKeepDrawing,
   RsdAiLoadingCaption,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiResultParts.tsx';
+import { AI_RESULT_METRICS } from '../../../experiments/native-architecture/src/ai/aiResultGeometry.ts';
 
 const launcher = vi.hoisted(() => ({ returnFocusToAiLauncher: vi.fn() }));
 vi.mock('../../../experiments/native-architecture/src/platform/aiLauncherFocus.ts', () => launcher);
@@ -383,6 +385,19 @@ it(
     await layOut(108, 88);
     expect(fitted - height()).toBeCloseTo(100, 6);
     await act(async () => pending.resolve(pictureReply()));
+    await settle(() => expect(slot(RsdAiDisclosure)).toBeDefined());
+    // The strip's gap sits on the measuring view, so the height it reports is the strip's own and
+    // the frame adds the gap once.
+    const stripView = slot(RsdAiDisclosure);
+    expect(stripView.style.marginTop).toBe(AI_RESULT_METRICS.reportStripGap);
+    const strip = records.props.findLast((props) =>
+      [props.style]
+        .flat(Infinity)
+        .some((style) => style?.minHeight === AI_RESULT_METRICS.reportStripHeight)
+    );
+    expect([strip.style].flat(Infinity).some((style) => style?.marginTop !== undefined)).toBe(
+      false
+    );
   },
   GATED_FLOW_TIMEOUT_MS
 );
