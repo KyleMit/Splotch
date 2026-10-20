@@ -153,6 +153,48 @@ Relaunch the app afterwards. `--ks-pass` and `--key-pass` take apksigner's forms
 React Native's Debug build loading from Metro is the other way to skip a native build, for
 functional checks only; `experiments/native-architecture/DEVELOPMENT.md` describes it.
 
+## Scripted multi-finger touch on a physical Android device
+
+`adb shell input` drives a single pointer, so it cannot put down a second finger, hold one finger
+for a timed interval while another moves, or re-grab mid-motion, and UiAutomator2 has answered 400
+to multi-finger W3C actions on a physical phone. SELinux refuses `sendevent` on the real
+touchscreen. What works is a virtual touchscreen: `/system/bin/uinput` reads a JSONL script that
+registers one and then injects Linux multi-touch events into it. Fill in the two `maximum`
+placeholders before running the example.
+
+```jsonl
+{"id": 1, "command": "register", "name": "Diag Touchscreen", "vid": 6353, "pid": 20225, "bus": "usb", "port": "usb:diag", "configuration": [{"type": "UI_SET_EVBIT", "data": [1, 3]}, {"type": "UI_SET_KEYBIT", "data": [330, 325]}, {"type": "UI_SET_ABSBIT", "data": [47, 48, 53, 54, 55, 57]}, {"type": "UI_SET_PROPBIT", "data": [1]}], "abs_info": [{"code": 47, "info": {"value": 0, "minimum": 0, "maximum": 9, "fuzz": 0, "flat": 0, "resolution": 0}}, {"code": 48, "info": {"value": 0, "minimum": 0, "maximum": 255, "fuzz": 0, "flat": 0, "resolution": 0}}, {"code": 53, "info": {"value": 0, "minimum": 0, "maximum": <width - 1>, "fuzz": 0, "flat": 0, "resolution": 0}}, {"code": 54, "info": {"value": 0, "minimum": 0, "maximum": <height - 1>, "fuzz": 0, "flat": 0, "resolution": 0}}, {"code": 55, "info": {"value": 0, "minimum": 0, "maximum": 2, "fuzz": 0, "flat": 0, "resolution": 0}}, {"code": 57, "info": {"value": 0, "minimum": 0, "maximum": 65535, "fuzz": 0, "flat": 0, "resolution": 0}}]}
+{"id": 1, "command": "delay", "duration": 1500}
+{"id": 1, "command": "inject", "events": [3, 47, 0, 3, 57, 11, 3, 55, 0, 3, 53, 540, 3, 54, 800, 3, 48, 10, 1, 330, 1, 1, 325, 1, 0, 0, 0]}
+{"id": 1, "command": "delay", "duration": 16}
+{"id": 1, "command": "inject", "events": [3, 47, 0, 3, 54, 815, 0, 0, 0]}
+{"id": 1, "command": "delay", "duration": 16}
+{"id": 1, "command": "inject", "events": [3, 47, 1, 3, 57, 12, 3, 55, 0, 3, 53, 850, 3, 54, 1900, 3, 48, 10, 0, 0, 0]}
+{"id": 1, "command": "delay", "duration": 16}
+{"id": 1, "command": "inject", "events": [3, 47, 1, 3, 57, -1, 0, 0, 0]}
+{"id": 1, "command": "delay", "duration": 16}
+{"id": 1, "command": "inject", "events": [3, 47, 0, 3, 57, -1, 1, 330, 0, 1, 325, 0, 0, 0, 0]}
+{"id": 1, "command": "delay", "duration": 500}
+```
+
+* **`register`** declares key and absolute events (`UI_SET_EVBIT` 1, 3), `BTN_TOUCH` 330 and
+  `BTN_TOOL_FINGER` 325, the multi-touch axes, and `INPUT_PROP_DIRECT` (`UI_SET_PROPBIT` 1), which
+  makes it a touchscreen rather than a touchpad. In `abs_info`, X (53) and Y (54) span the screen's
+  pixels from `adb shell wm size`, the slot (47) runs 0–9, the tracking id (57) 0–65535, and the
+  tool type (55) 0–2. The first `delay` gives Android time to add the device.
+* **`inject`** takes flat `[type, code, value, …]` triples (type 3 an axis, 1 a key), each batch
+  ending in `0, 0, 0` (SYN). The first finger down selects its slot, sets a tracking id, tool type,
+  X, Y and touch major (48), and presses 330 and 325; a later finger sets the same axes without the
+  keys. A move selects the slot and sets the axes that changed. Lifting a finger sets its tracking
+  id to -1; the last one up also releases 330 and 325.
+* **`delay`** is in milliseconds; 16 ms between moves is one 60 Hz frame. The device exists only
+  while the command runs, so end with a delay that outlasts the last event's delivery.
+
+Push the script to `/data/local/tmp/` and run `adb shell uinput /data/local/tmp/<file>.jsonl`. It
+sends no foreground check of its own: read
+`adb shell dumpsys activity activities | grep topResumedActivity` first, and never inject Back (the
+rules below).
+
 ## Rules the device work learned
 
 * **Never send Back.** Back on the app's root screen leaves the app, and every later input lands on
@@ -196,6 +238,10 @@ functional checks only; `experiments/native-architecture/DEVELOPMENT.md` describ
   pulled and counts only when its process list shows the target's process with a kill `reason` (or
   `killed`); any other is a diagnostic, with each report's kills under `jetsam`.
 * `log show` reads a zone-less time as host-local, so every timestamp passed to it carries `+0000`.
+* **Never edit a runner script while it runs.** The shell reads a script from disk as it executes
+  it, so during the 2026-10-20 crash hunt an edit to a shell queue that looped the device matrix
+  corrupted every later loop ("command not found", syntax errors), and those runs had to be redone.
+  Copy the queue to a run-specific file and launch the copy.
 
 ## Domain ownership
 
