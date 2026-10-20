@@ -206,7 +206,7 @@ enum SplotchAIImageDecoder {
           try require(type == "IHDR" && length == 13 && b[offset + 16] == 8 && [2, 6].contains(b[offset + 17]) && b[offset + 18] == 0 && b[offset + 19] == 0 && b[offset + 20] == 0)
         } else if type == "IDAT" { dataSeen = true }
         else if type == "IEND" { try require(length == 0 && dataSeen && end == b.count); ended = true }
-        else { try require(!dataSeen && ["cHRM", "gAMA", "sRGB", "sBIT", "pHYs", "PLTE"].contains(type)) }
+        else { try require(!dataSeen && ["cHRM", "gAMA", "sRGB", "sBIT", "pHYs", "PLTE", "caBX"].contains(type)) }
         offset = end
       }
       try require(ended)
