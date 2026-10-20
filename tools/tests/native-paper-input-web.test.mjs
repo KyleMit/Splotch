@@ -139,11 +139,39 @@ it('follows a hovering mouse at most once a frame while erasing, and leaves at o
   expect(input).not.toHaveBeenCalled();
 });
 
-it('places the bubble where a mouse lifts before its stroke ends', async () => {
+it('places the bubble where a mouse presses, lifts or loses its stroke, ahead of its packet', async () => {
   const { paper, log } = await renderHovering(true);
   paper.dispatchEvent(pointer('pointerdown', 50, 50, 100, mouse));
   paper.dispatchEvent(pointer('pointerup', 70, 80, 140, mouse));
-  expect(log).toEqual(['start', { pageX: 70, pageY: 80, timestamp: 140 }, 'end']);
+  paper.dispatchEvent(pointer('pointerdown', 90, 90, 200, mouse));
+  paper.dispatchEvent(pointer('lostpointercapture', 95, 99, 210, mouse));
+  expect(log).toEqual([
+    { pageX: 50, pageY: 50, timestamp: 100 },
+    'start',
+    { pageX: 70, pageY: 80, timestamp: 140 },
+    'end',
+    { pageX: 90, pageY: 90, timestamp: 200 },
+    'start',
+    { pageX: 95, pageY: 99, timestamp: 210 },
+    'cancel',
+  ]);
+});
+
+it('drops a hovering move still queued when the mouse presses', async () => {
+  const { paper, onHover, runFrames } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointermove', 80, 90, 20, mouse));
+  paper.dispatchEvent(pointer('pointerdown', 85, 95, 30, mouse));
+  runFrames();
+  expect(onHover.mock.calls).toEqual([[{ pageX: 85, pageY: 95, timestamp: 30 }]]);
+});
+
+it('keeps the mouse bubble when a finger leaves the paper', async () => {
+  const { paper, onHover } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointerenter', 60, 70, 10, mouse));
+  paper.dispatchEvent(
+    pointer('pointerleave', 300, 200, 20, { pointerType: 'touch', pointerId: 9 })
+  );
+  expect(onHover.mock.calls).toEqual([[{ pageX: 60, pageY: 70, timestamp: 10 }]]);
 });
 
 it.each([

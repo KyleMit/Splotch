@@ -215,6 +215,19 @@ describe('native Pointer Halos', () => {
     r.input.hover(null);
     expect(r.halos()).toEqual([]);
   });
+  it.each(['end', 'cancel'])(
+    'keeps the bubble a mouse pressed with after it %ss, though nothing hovered first',
+    (phase) => {
+      const r = responder('eraser');
+      r.input.hover(hoverAt(5, 5));
+      r.input.hover(null);
+      r.begin(event([mouse(0, 12, 22)]));
+      expect(r.halos()).toEqual([{ id: 2, kind: 'eraser', x: 12, y: 22, size: 16 }]);
+      r.input.hover(hoverAt(55, 65, 300));
+      r.send(phase, event([], [mouse(0, 55, 65, 300)], { 0: 100 }));
+      expect(r.halos()).toEqual([{ id: 2, kind: 'eraser', x: 55, y: 65, size: 16 }]);
+    }
+  );
   it('grows a finger its own eraser halo while a mouse hovers elsewhere', () => {
     const r = responder('eraser');
     r.input.hover(hoverAt(10, 20));

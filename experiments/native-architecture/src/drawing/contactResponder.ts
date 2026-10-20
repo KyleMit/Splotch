@@ -171,17 +171,22 @@ class ContactResponder {
     ];
   }
 
-  // A press from the hovering pointer keeps its bubble rather than growing a second one in.
+  // A mouse or pen erasing shows one bubble from approach to departure: its press keeps the hover's
+  // halo rather than growing a second one in, and the hover after its lift keeps the press's.
+  private sharesHover(contact: OwnedContact) {
+    return contact.input.tool !== 'touch' && contact.style.brush === 'eraser';
+  }
+
   private haloId(contact: OwnedContact) {
-    const hover =
-      contact.input.tool !== 'touch' && contact.style.brush === 'eraser' ? this.hovering : null;
-    return hover?.id ?? this.nextHalo++;
+    return (this.sharesHover(contact) ? this.hovering?.id : undefined) ?? this.nextHalo++;
   }
 
   // Shipping flushes every contact's queued samples when any contact lifts (stopDrawing), so the
   // lifting stroke's last samples land before its cohort can commit.
   private finish(identifier: string) {
     const contact = this.contacts.get(identifier);
+    if (contact?.admission.kind === 'accepted' && this.hovering && this.sharesHover(contact))
+      this.hovering = { ...this.hovering, id: contact.admission.halo.id };
     contact?.sound?.end();
     if (contact) contact.admission = { kind: 'ignored' };
     this.live.settle();

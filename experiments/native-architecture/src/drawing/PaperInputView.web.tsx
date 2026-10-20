@@ -125,7 +125,9 @@ function createPointerHover(window: Window, owner: HoverOwner, live: () => boole
       queued = inputSample(event);
       if (!frame) frame = window.requestAnimationFrame(flush);
     },
-    leave: () => show(null),
+    leave(event: PointerEvent) {
+      if (event.pointerType !== 'touch') show(null);
+    },
     stop: () => window.cancelAnimationFrame(frame),
   };
 }
@@ -194,6 +196,7 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
     function start(event: PointerEvent) {
       if (event.button !== DRAWING_POINTER_BUTTON || !live) return;
       event.preventDefault();
+      hover.place(event);
       begin(event.pointerId, event.pointerType, inputSample(event));
     }
     function move(event: PointerEvent) {
@@ -217,6 +220,7 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
     function cancel(event: PointerEvent) {
       const identifier = String(event.pointerId);
       if (!contacts.has(identifier)) return;
+      hover.place(event);
       send('cancel', [identifier]);
       contacts.delete(identifier);
     }
