@@ -8,6 +8,9 @@ import {
 } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
 
+const storage = vi.hoisted(() => ({ requestPersistentStorage: vi.fn(async () => true) }));
+vi.mock('../../experiments/native-architecture/src/platform/persistentStorage.ts', () => storage);
+
 // Settings › AI Art's owners: schema 15, the master switch and the credential read, save and
 // forget, none of which asks for a grown-up check, as in shipping. The copy and geometry checks
 // against shipping are native-ai-settings-drift.test.mjs.
@@ -242,6 +245,7 @@ describe("Settings' read of the AI credential and allowance", () => {
 
 describe('saving a credential from Settings', () => {
   async function save(verify, kind = 'byok', value = 'sk-fixture') {
+    storage.requestPersistentStorage.mockClear();
     const f = await aiFixture({ verify });
     await f.ai.setup(kind, value);
     await vi.waitFor(() => expect(f.ai.getState().credentialResult).not.toBeNull());
@@ -257,6 +261,9 @@ describe('saving a credential from Settings', () => {
       saved: `${'*'.repeat(6)}ture`,
       credentialResult: { id: 1, kind: 'byok', outcome: 'accepted' },
     });
+    // Shipping asks the browser once to keep the origin's storage after an explicit save
+    // (ADR-0128). Negative control: a save that skips the request fails here.
+    expect(storage.requestPersistentStorage).toHaveBeenCalledOnce();
   });
 
   it("passes on the server's own words for a refused key and keeps nothing", async () => {
@@ -264,6 +271,7 @@ describe('saving a credential from Settings', () => {
       json({ ok: false, error: 'That key could not authenticate with OpenAI.' })
     );
     expect(f.vault.write).not.toHaveBeenCalled();
+    expect(storage.requestPersistentStorage).not.toHaveBeenCalled();
     expect(f.ai.getState().credentialResult).toMatchObject({
       outcome: 'invalid',
       detail: 'That key could not authenticate with OpenAI.',

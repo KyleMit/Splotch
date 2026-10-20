@@ -15,6 +15,7 @@ import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
 import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
 import { AI_FLOW_IDLE, aiJournalWaiting } from './uiState';
+import { requestPersistentStorage } from '../platform/persistentStorage';
 export type { AiState, PreparedAiDrawing } from './sessionContract';
 export class AiSession {
   protected deps: AiSessionDependencies;
@@ -359,6 +360,9 @@ export class AiSession {
       if (!validCredential(verified)) throw new Error('Invalid credential');
       this.credential = null;
       await this.deps.vault.write(kind, verified);
+      // Only after a parent's explicit save, as shipping asks: an invite link's capture is
+      // credential delivery, not the parent's opt-in (ADR-0127/0128).
+      void requestPersistentStorage();
       if (!current()) return;
       await this.readStatus(current);
       this.report({ kind, outcome: 'accepted' });
