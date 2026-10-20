@@ -131,7 +131,7 @@ kill in the iPad's collected log. The bar is met in every cell.
 | S2 scribble     | 3 / 3                  | 3 / 3                 | 2 ¹ / 2           | 2 / 2               |
 | S3 chrome mash  | 2 / 2                  | 5 seeds / 5 seeds     | not run           | not run             |
 | S4 lifecycle    | 1 / 1                  | 1 / 1                 | 1 / 1             | 1 / 1               |
-| S5 long session | SIM-S5                 | 1 / 1                 | 1 / 1             | 1 / 1               |
+| S5 long session | 1 / 1                  | 1 / 1                 | 1 / 1             | 1 / 1               |
 | S6 audio        | 3 / 3                  | 3 / 3                 | 2 / 2             | 2 / 2               |
 
 Each entry is the number of runs alive. Each S4 run holds 3 cycles on the simulator and emulator and
@@ -150,7 +150,13 @@ Read the PSS figures below with care. `ref160`'s Android PSS counts the app proc
 WebView renderer runs in a separate process. So the Android columns compare RN with part of the
 reference.
 
-* **S5 on the emulator, 2,000 strokes, two Clears.**
+* **S5 on the simulator, 2,000 strokes, eight Clears.**
+  * `rn`'s resident memory moved between 357 and 569 MB. It ended lower than it started (499, then
+    431 MB), so it showed no steady growth.
+  * `ref160` held 247 to 287 MB.
+  * Simulator resident memory includes the simulator's own share, so compare the two arms with each
+    other, not with a device.
+* **S5 on the emulator, 2,000 strokes, eight Clears.**
   * `rn`'s total PSS moved between 207 and 345 MB, with its native heap between 90 and 175 MB. It
     fell back after collections and Clears, and showed no steady growth.
   * `ref160` held 68 to 70 MB.
