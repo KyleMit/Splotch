@@ -177,6 +177,7 @@ export class NativeAiController extends AiRecoverySession {
         endpoint: poll ? '/api/generation-result' : '/api/generate-image',
         message: reply.detail ?? reply.message,
       });
+    if (reply.reason === 'exhausted') this.usedUpEpoch = this.deps.parent?.consent().epoch ?? null;
     this.update({
       message: reply.message,
       ...(reply.reason === 'exhausted'

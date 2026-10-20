@@ -287,6 +287,28 @@ it('keeps a used-up answer when Settings reads the allowance afterwards', async 
   expect(grants()).toHaveLength(asked);
 });
 
+// Turning AI off and on again reads the grant afresh, as shipping's eligibility does, so an
+// allowance the server has since restored comes back. Negative control: a used-up answer kept
+// through the switch leaves the count at 0 here.
+it('reads the allowance again after AI is turned off and on following a used-up answer', async () => {
+  const f = await fixture({
+    generate: () =>
+      new Response(
+        JSON.stringify({ ok: false, code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+        { status: 403 }
+      ),
+  });
+  await sendStyle(f);
+  expect(f.owner.getState().remaining).toBe(0);
+  f.product.openParentCenter();
+  solve(f.product.gate);
+  await f.product.setAiEnabled(false);
+  await f.product.setAiEnabled(true);
+  f.product.closeParentCenter();
+  await f.owner.inspect();
+  expect(f.owner.getState()).toMatchObject({ remaining: 10, availability: 'ready' });
+});
+
 it('reports a failed run behind the report check with its bounded details and no drawing', async () => {
   const f = await fixture({
     generate: () => new Response('{"ok":false,"error":"Upstream down"}', { status: 502 }),

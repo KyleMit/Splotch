@@ -119,6 +119,9 @@ export class AiSession {
     );
   };
   private writing: Promise<unknown> = Promise.resolve();
+  // The AI consent epoch in which the server answered that the free creations are used up; turning
+  // AI off or on starts a new one, after which the grant is read again, as shipping's is.
+  protected usedUpEpoch: number | null = null;
   protected persist = (journal: AiJournal) => {
     const work = this.writing
       .catch(() => {})
@@ -265,13 +268,14 @@ export class AiSession {
       });
       return;
     }
-    // The server's used-up answer stands for the rest of the launch, as shipping keeps a grant it
-    // knows: a later Settings read asks the grant endpoint nothing, so AI Art and the drawer keep
-    // saying the free creations are used up (#3024).
+    // The server's used-up answer stands while AI stays on, as shipping keeps a grant it knows: a
+    // later Settings read asks the grant endpoint nothing, so AI Art and the drawer keep saying the
+    // free creations are used up (#3024).
     const usedUp =
       this.state.credential === 'free' &&
       this.state.availability === 'ready' &&
-      this.state.remaining === 0;
+      this.state.remaining === 0 &&
+      this.usedUpEpoch === this.deps.parent?.consent().epoch;
     this.update({ credential: 'free' });
     if (!this.deps.parent?.consent().enabled || usedUp) return;
     this.update({ remaining: null });
