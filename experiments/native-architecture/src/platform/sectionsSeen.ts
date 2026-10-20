@@ -14,6 +14,6 @@ export const sectionsSeen = createSectionsSeen({
   async write(snapshot) {
     const file = seenFile();
     if (!file.exists) file.create();
-    file.write(snapshot);
+    await file.write(snapshot);
   },
 });

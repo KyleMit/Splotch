@@ -130,6 +130,6 @@ export const aiDismissal: AiDismissalStore = {
   async write(id) {
     const file = new File(Paths.document, AI_DISMISSAL_FILE);
     if (!file.exists) file.create();
-    file.write(id);
+    await file.write(id);
   },
 };

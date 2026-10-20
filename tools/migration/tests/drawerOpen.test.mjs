@@ -20,7 +20,7 @@ vi.mock('expo-file-system', () => {
     textSync() {
       return documents.get(this.name);
     }
-    write(text) {
+    writeSync(text) {
       if (!documents.has(this.name)) throw new Error('The file was never created.');
       documents.set(this.name, text);
     }

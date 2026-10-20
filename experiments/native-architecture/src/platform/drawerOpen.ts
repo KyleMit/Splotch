@@ -20,6 +20,6 @@ export const drawerOpenStorage: DrawerOpenStorage = {
   write(value) {
     const file = stateFile();
     if (!file.exists) file.create();
-    file.write(value);
+    file.writeSync(value);
   },
 };
