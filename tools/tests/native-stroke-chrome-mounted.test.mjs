@@ -15,6 +15,7 @@ import {
 } from './native-contacts-mounted-harness.mjs';
 import { Animated } from '../../experiments/native-architecture/src/platform/animated.ts';
 import { UndoInkMotion } from '../../experiments/native-architecture/src/drawing/UndoInkMotion.tsx';
+import { UNDO_GHOST_MS } from '../../experiments/native-architecture/src/drawing/undoFeedback.ts';
 import { SvgUndoGhostLayer } from '../../experiments/native-architecture/src/drawing/SvgUndoGhost.tsx';
 import * as tileOwner from '../../experiments/native-architecture/src/drawing/useCrayonTileReadiness.tsx';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
@@ -399,8 +400,10 @@ it('releases an unmounted ghost when a new stroke begins and ignores its late co
   expect(owner.undoGhost).toBe(active);
 });
 
-it.each([210, 420, 600])(
-  'admits a mounted ghost only for the remaining action time at %sms',
+// Shipping's runWhenPainted: the fly-away starts one frame after the ghost paints, whenever that
+// is. Timed from the press instead, a slow commit spent most of the eased fade unseen (#3073).
+it.each([0, 210, 600])(
+  'runs the whole fly-away from the frame after the ghost paints, %sms after the press',
   async (elapsed) => {
     vi.spyOn(performance, 'now').mockReturnValue(elapsed);
     const timing = vi.spyOn(Animated, 'timing');
@@ -427,6 +430,7 @@ it.each([210, 420, 600])(
         )
       )
     );
+    expect(timing).not.toHaveBeenCalled();
     await act(async () => {
       const first = [...sdk.frames.values()];
       sdk.frames.clear();
@@ -435,8 +439,9 @@ it.each([210, 420, 600])(
       sdk.frames.clear();
       for (const frame of second) frame();
     });
-    const durations = timing.mock.calls.map(([, config]) => config.duration);
-    expect(durations).toEqual(elapsed < 420 ? [420 - elapsed] : []);
+    expect(timing.mock.calls.map(([, config]) => [config.duration, config.toValue])).toEqual([
+      [UNDO_GHOST_MS, 1],
+    ]);
     expect(onFinished).toHaveBeenCalledTimes(1);
     expect(host.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
   }
