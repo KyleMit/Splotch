@@ -13,7 +13,7 @@ import {
 
 const CSP_META = /<meta http-equiv="Content-Security-Policy" content="([^"]*)">/i;
 
-export function inlineScriptHashes(html) {
+function inlineScriptHashes(html) {
   return [
     ...new Set(
       inlineExecutableScriptBodies(html).map(
@@ -23,7 +23,7 @@ export function inlineScriptHashes(html) {
   ];
 }
 
-export function nativeWebCspDirectives(html) {
+function nativeWebCspDirectives(html) {
   return { ...nativeMetaCspDirectives(), 'script-src': ['self', ...inlineScriptHashes(html)] };
 }
 
