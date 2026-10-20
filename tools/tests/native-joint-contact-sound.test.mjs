@@ -145,9 +145,10 @@ describe('joint admitted contact sound lifecycle', () => {
       f.send('end', partial);
       expect(f.loop.stop).not.toHaveBeenCalled();
       expect(f.cohort).not.toHaveBeenCalled();
+      // Within the resume gap of its last sample, so the far lift continues the stroke.
       f.send(
         'end',
-        event(controlSurvives ? [control] : [], [touch(1, 5000, 6000, 400)], { 1: 200, 2: 200 })
+        event(controlSurvives ? [control] : [], [touch(1, 5000, 6000, 250)], { 1: 200, 2: 200 })
       );
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
