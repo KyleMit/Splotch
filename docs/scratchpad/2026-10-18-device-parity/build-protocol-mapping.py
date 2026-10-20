@@ -679,6 +679,22 @@ PROTOCOL_RERUN = {
               'rn-web-chromium rerun 2026-10-20 of not-found-back-label: Start drawing cold and from '
               '/changelog, Back to drawing from the canvas and after the drawing ran, the values web-prod '
               'recorded'),
+    'E0189': ('WEB-1', 'results/web-1-2026-10-19.md', 3017,
+              'rn-web-chromium rerun 2026-10-20 of boot-head: the document\'s policy authorizes its 3 inline '
+              'scripts by hash without unsafe-inline'),
+    'E0190': ('WEB-1', 'results/web-1-2026-10-19.md', 3017,
+              'rn-web-chromium rerun 2026-10-20 of boot-head: the document\'s policy authorizes its 3 inline '
+              'scripts by hash without unsafe-inline'),
+    'E0191': ('WEB-1', 'results/web-1-2026-10-19.md', 3017,
+              'rn-web-chromium rerun 2026-10-20 of boot-head: the document\'s policy authorizes its 3 inline '
+              'scripts by hash without unsafe-inline'),
+    'B0277': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3024,
+              'rn-web-chromium rerun 2026-10-20 of ai-exhausted-mid-run: the card closes onto AI Art, which '
+              'says the 10 free creations are used up, and the wand reads Set up AI image, as web-prod '
+              'recorded'),
+    'L0155': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3024,
+              'rn-web-chromium rerun 2026-10-20 of ai-exhausted-mid-run: the exhausted answer sets the free '
+              'count to 0 (B0277)'),
 }
 
 
