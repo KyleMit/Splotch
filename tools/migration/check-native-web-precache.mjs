@@ -20,6 +20,7 @@ import { BUNDLED_FARM_DIR, bundledFarmImageFiles, imageFilePaths } from './gen-b
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import {
+  APP_SHELL_FALLBACK_ROUTES,
   APP_SHELL_FILE,
   NATIVE_WEB_EXPORT_DIR,
   NOT_FOUND_FILE,
@@ -150,7 +151,10 @@ function shellProblems({ precacheUrls, expectedShellUrl, appShellFallbackLookups
     problems.push(`The app shell ${shellUrls[0]} is not the content address ${expectedShellUrl}`);
   for (const callback of APP_SHELL_FALLBACK_CALLBACKS) {
     const lookups = appShellFallbackLookups.filter((lookup) => lookup.callback === callback);
-    if (lookups.length !== 1 || lookups[0].url !== shellUrls[0])
+    if (
+      lookups.length !== APP_SHELL_FALLBACK_ROUTES[callback] ||
+      lookups.some((lookup) => lookup.url !== shellUrls[0])
+    )
       problems.push(`The navigation fallback's ${callback} does not look up ${shellUrls[0]}`);
   }
   return problems;

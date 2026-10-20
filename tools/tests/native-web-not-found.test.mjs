@@ -7,7 +7,9 @@ import {
 } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
 import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
 import {
-  isNativeNavigation,
+  isNativeAppNavigation,
+  isOtherNativeNavigation,
+  nativeWebServiceWorkerConfig,
   APP_SHELL_FILE,
   NOT_FOUND_FILE,
 } from '../migration/build-native-web.mjs';
@@ -31,18 +33,37 @@ describe("the web export's unknown paths", () => {
     }
   });
 
-  it('answers every page load, unknown paths included, and routes the shell by path', () => {
+  it('routes each page load once: app paths with a timeout, others on failure, /admin never', () => {
     for (const [page, path] of Object.entries(APP_PAGE_PATHS)) {
       globalThis.location = { pathname: path };
       expect(currentAppPage()).toBe(page);
     }
     globalThis.location = { pathname: '/unknown' };
     expect(currentAppPage()).toBe('notFound');
-    for (const path of [...Object.values(APP_PAGE_PATHS), '/index.html', '/unknown']) {
+    const routes = (path, mode = 'navigate') => {
+      const request = { mode };
       const url = new URL(path, 'https://splotch.art');
-      expect(isNativeNavigation({ request: { mode: 'navigate' }, url }), path).toBe(true);
-      expect(isNativeNavigation({ request: { mode: 'no-cors' }, url }), path).toBe(false);
-    }
+      return [isNativeAppNavigation({ request, url }), isOtherNativeNavigation({ request, url })];
+    };
+    for (const path of [...Object.values(APP_PAGE_PATHS), '/index.html'])
+      expect(routes(path), path).toEqual([true, false]);
+    for (const path of ['/unknown', '/version.json', '/privacy/missing'])
+      expect(routes(path), path).toEqual([false, true]);
+    for (const path of ['/admin', '/admin/tokens'])
+      expect(routes(path), path).toEqual([false, false]);
+    expect(routes('/unknown', 'no-cors')).toEqual([false, false]);
+  });
+
+  it('answers a slow page from the network alone, and only an app path from the shell', () => {
+    const [app, other] = nativeWebServiceWorkerConfig('/export', {
+      url: '/?app-shell-build=x',
+    }).runtimeCaching;
+    expect(app.urlPattern).toBe(isNativeAppNavigation);
+    expect(app.options.networkTimeoutSeconds).toBeGreaterThan(0);
+    expect(other.urlPattern).toBe(isOtherNativeNavigation);
+    expect(other.handler).toBe('NetworkOnly');
+    expect(other.options.networkTimeoutSeconds).toBeUndefined();
+    expect(Object.keys(other.options.plugins[0])).toEqual(['handlerDidError']);
   });
 
   it("serves the host's 404 answer without asking the precache to hold it", () => {
