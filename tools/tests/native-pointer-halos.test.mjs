@@ -228,13 +228,33 @@ describe('native Pointer Halos', () => {
       expect(r.halos()).toEqual([{ id: 2, kind: 'eraser', x: 55, y: 65, size: 16 }]);
     }
   );
-  it('grows a finger its own eraser halo while a mouse hovers elsewhere', () => {
+  it('keeps a hovering mouse’s bubble beside a finger’s own eraser halo', () => {
     const r = responder('eraser');
     r.input.hover(hoverAt(10, 20));
     r.begin(event([touch(0, 300, 200)]));
-    expect(r.halos()).toEqual([{ id: 2, kind: 'eraser', x: 300, y: 200, size: 16 }]);
+    expect(r.halos()).toEqual([
+      { id: 2, kind: 'eraser', x: 300, y: 200, size: 16 },
+      { id: 1, kind: 'eraser', x: 10, y: 20, size: 16 },
+    ]);
+    r.input.hover(hoverAt(15, 25, 150));
+    expect(r.halos()).toEqual([
+      { id: 2, kind: 'eraser', x: 300, y: 200, size: 16 },
+      { id: 1, kind: 'eraser', x: 15, y: 25, size: 16 },
+    ]);
     r.send('end', event([], [touch(0, 300, 200, 300)], { 0: 100 }));
-    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 10, y: 20, size: 16 }]);
+    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 15, y: 25, size: 16 }]);
+  });
+  it('shows a cut-short mouse stroke’s bubble where the mouse is, not where it pressed', () => {
+    const r = responder('eraser');
+    r.input.hover(hoverAt(10, 20));
+    r.begin(event([mouse(0, 12, 22)]));
+    r.send('move', event([mouse(0, 50, 60, 200)], undefined, { 0: 100 }));
+    r.input.hover(hoverAt(50, 60, 200));
+    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 50, y: 60, size: 16 }]);
+    r.input.finishInput();
+    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 50, y: 60, size: 16 }]);
+    r.input.hover(hoverAt(70, 80, 250));
+    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 70, y: 80, size: 16 }]);
   });
   it('drops the hovering bubble when the brush leaves the eraser, and shows none for drawing', () => {
     const r = responder('eraser');

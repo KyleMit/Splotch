@@ -114,7 +114,7 @@ class ContactResponder {
 
   private showHover(next: HoverHalo | null) {
     this.hovering = next;
-    if (!this.input.hasActive()) this.showLive(null, this.halos());
+    this.showLive(this.input.hasActive() ? this.input.paper() : null, this.halos());
   }
 
   constructor(
@@ -135,10 +135,18 @@ class ContactResponder {
     );
   }
 
+  // Each contact's halo, and the hovering pointer's bubble unless its own press is one of them: a
+  // mouse keeps its bubble while a finger draws elsewhere, as shipping's does.
   private halos(): readonly Halo[] {
     const frame = this.frame();
     if (!frame) return [];
-    if (!this.input.hasActive()) return this.hoverHalos(frame);
+    const hover = this.hoverHalos(frame);
+    if (!this.input.hasActive()) return hover;
+    const contacts = this.contactHalos(frame);
+    return [...contacts, ...hover.filter(({ id }) => !contacts.some((halo) => halo.id === id))];
+  }
+
+  private contactHalos(frame: PaperFrame): readonly Halo[] {
     const paper = this.input.paper();
     return [...this.contacts.values()].flatMap(({ admission }) =>
       admission.kind === 'accepted'

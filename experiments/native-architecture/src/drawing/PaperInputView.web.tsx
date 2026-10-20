@@ -202,7 +202,9 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
     function move(event: PointerEvent) {
       const identifier = String(event.pointerId);
       const contact = contacts.get(identifier);
-      if (!contact) return hover.move(event);
+      // The bubble's place follows a held mouse too, so it is current when the stroke is cut short.
+      hover.move(event);
+      if (!contact) return;
       event.preventDefault();
       contacts.set(identifier, { ...contact, samples: moveSamples(event) });
       send('move', [identifier]);

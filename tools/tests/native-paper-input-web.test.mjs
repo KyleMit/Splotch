@@ -157,6 +157,15 @@ it('places the bubble where a mouse presses, lifts or loses its stroke, ahead of
   ]);
 });
 
+it('keeps the bubble’s place current while a mouse holds its stroke', async () => {
+  const { paper, onHover, log, runFrames } = await renderHovering(true);
+  paper.dispatchEvent(pointer('pointerdown', 50, 50, 100, mouse));
+  paper.dispatchEvent(pointer('pointermove', 150, 160, 120, mouse));
+  runFrames();
+  expect(onHover).toHaveBeenLastCalledWith({ pageX: 150, pageY: 160, timestamp: 120 });
+  expect(log.filter((entry) => typeof entry === 'string')).toEqual(['start', 'move']);
+});
+
 it('drops a hovering move still queued when the mouse presses', async () => {
   const { paper, onHover, runFrames } = await renderHovering(true);
   paper.dispatchEvent(pointer('pointermove', 80, 90, 20, mouse));
