@@ -240,14 +240,22 @@ requested and received, launch the owned physical WDA session within 30 seconds.
 settings after experiments. Retained installs remain read-only.
 
 Live AI is gated by zero-cost capability checks, public entry and harmless synthetic payload
-admission. The persistent cumulative counter remains one possible generation charged out of ten,
-zero returned pictures and zero accepted reports. No campaign generation has been dispatched.
+admission. On 2026-10-20 the owner replaced the ten-generation allowance with a spend cap: "you can
+do plenty of AI generations - anything under $5 worth of spend is approved for this campaign." The
+persistent cumulative counter stands at eleven possible generations charged, each counted at a
+conservative $0.25, so at most $2.75 of the $5 cap. One was charged before 2026-10-20. The other ten
+were charged while diagnosing and verifying #3062 to #3069 on the Galaxy and the iPad:
+
+* Five reached the provider.
+* Five failed on the device before anything was sent (#3063, #3069).
+* Two pictures returned and displayed, one per native platform.
+* Zero picture reports were accepted.
+
 Charges happen atomically before dispatch, ambiguity stays charged, and the counter never resets by
-session or device. Nine possible generations remain, only for P12/P13/T1-12. Plan one successful
-generation and real picture-report per native platform plus applicable RN-web coverage, reserving
-the remainder for diagnosed retries. A real picture-report writes to the moderation queue; a problem
-report is not a substitute. Attempt 33 and refusal/timeout/retry/retention layouts use explicit
-fixtures through production components/adapters, not paid calls. Fixtures cannot prove live
+session or device. Plan one real picture-report per native platform plus applicable RN-web coverage,
+reserving the remainder for diagnosed retries. A real picture-report writes to the moderation queue;
+a problem report is not a substitute. Attempt 33 and refusal/timeout/retry/retention layouts use
+explicit fixtures through production components/adapters, not paid calls. Fixtures cannot prove live
 generation or report delivery. Existing keys/access codes are entered directly on the named device,
 with no credential reading, capture or provisioning.
 
