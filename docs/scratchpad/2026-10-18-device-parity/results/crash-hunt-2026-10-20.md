@@ -208,6 +208,9 @@ reference.
     other tap lost its release.
   * Fixed by #3041, merged as 2a37becf4116ee5a5bdcca22327316d0bc9d5af6: the button is `box-only`, so
     it alone owns the touch.
+  * On an API 36 phone emulator, a Release build of #3041 showed the coachmark after three quick
+    taps, cleared on a drag, and left the tab docked after a tap. The physical Galaxy was not
+    rechecked.
 * **#3012: Undo at the end of history played no cue.** Fixed by #3040, merged as
   ea670da046fbb013100ed5c0a3206fdb825d6281.
 * **#3031: hardware keys did not reach the grown-up check on Android phones.** The modal's shortcut
@@ -224,7 +227,7 @@ reference.
 
 * **Real fingers.** The owner's ~25-minute session will try the Clear gesture by finger on both
   devices.
-* **The Android check of the Clear touch-target fix (#3041).**
+* **#3041 on the physical Galaxy.** Its Android check ran on the emulator only.
 * **Low-memory devices.** Every target here has at least 2 GB.
 * **iOS older than 26.5.**
 * **RN web.** It was outside this matrix. Its CSP and credential fixes (#3039, #3038) were checked

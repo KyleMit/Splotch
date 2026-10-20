@@ -1,7 +1,16 @@
-import { useEffect, useMemo, useRef, type ReactNode, type Ref, type RefObject } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type Ref,
+  type RefObject,
+} from 'react';
 import { StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { ScrollView } from '../platform/ScrollView';
+import { drawingArrival } from '../platform/drawingArrival';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -9,7 +18,10 @@ import {
 } from 'react-native-safe-area-context';
 import { SvgXml } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
-import type { BackLabel } from '../../../../web/src/lib/components/page/backLabel';
+import {
+  resolveBackLabel,
+  type BackLabel,
+} from '../../../../web/src/lib/components/page/backLabel';
 import {
   BREAKPOINT_EPSILON_PX,
   NARROW_PHONE_MIN_WIDTH_PX,
@@ -408,6 +420,7 @@ function PageSheetFocus({
 export function RsdNotFoundPage() {
   const window = useWindowDimensions();
   const short = window.height <= SHORT_PAGE_HEIGHT_PX;
+  const [arrival] = useState(drawingArrival);
   useEffect(() => {
     setDocumentTitle(NOT_FOUND_COPY.documentTitle);
   }, []);
@@ -417,6 +430,7 @@ export function RsdNotFoundPage() {
         <RsdPageSheet
           title={NOT_FOUND_COPY.title}
           lede={NOT_FOUND_COPY.lede}
+          backLabel={resolveBackLabel({ fromPath: null, ...arrival })}
           collapsibleLede={false}
         >
           <html.div style={styles.body(short ? dimensions.space4 : dimensions.space6)}>
