@@ -144,6 +144,26 @@ it.each([
     'X-Report-Token': 'proof',
   });
 });
+it('resolves an absent iOS secure value as null, as Android does', async () => {
+  const native = new URL('../../experiments/native-architecture/', import.meta.url);
+  const swift = await readFile(
+    new URL('ios/HelloWorld/SplotchAIEnvironment.swift', native),
+    'utf8'
+  );
+  const kotlin = await readFile(
+    new URL(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      native
+    ),
+    'utf8'
+  );
+  expect(swift).toContain('do { resolve(try operation() ?? NSNull()) }');
+  expect(kotlin).toContain('promise.resolve(operation())');
+  fixture.read.mockResolvedValue(undefined);
+  await expect(aiVault.read('byok')).rejects.toThrow('could not be read');
+  fixture.read.mockResolvedValue(null);
+  await expect(aiVault.read('byok')).resolves.toBeNull();
+});
 it('uploads the drawing bytes without building a React Native Blob', async () => {
   // React Native's BlobManager.createFromParts throws on ArrayBuffer and ArrayBufferView parts.
   class ReactNativeBlob {

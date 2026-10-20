@@ -161,10 +161,12 @@ final class SplotchAIJournal {
   private func attempts(_ root: URL) throws -> [URL] {
     let entries = try children(root)
     try checked(entries.count <= maxAttempts + 1)
+    // Rebuilt from root: a listed folder is file:///private/var/…/attempt-N/, while the journal builds and
+    // stores file:///var/…/attempt-N, so a listed URL never equals the one it names (issue 3069).
     return try entries.filter { $0.lastPathComponent != "owner.lock" }.map {
       let info = try fileStat($0.path)
       try checked(matches($0.lastPathComponent, "attempt-[0-9]+") && (info.st_mode & S_IFMT) == S_IFDIR)
-      return $0
+      return root.appendingPathComponent($0.lastPathComponent)
     }
   }
   private func verify(_ dir: URL, _ name: String, _ raw: Any?, _ cap: Int) throws {
