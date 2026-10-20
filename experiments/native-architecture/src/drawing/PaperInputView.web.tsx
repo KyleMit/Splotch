@@ -9,12 +9,45 @@ type Props = ViewProps & {
   onInput: (value: unknown) => void;
   onClaim: () => void;
   engineReady: () => boolean;
+  onHover: (sample: InputSample | null) => void;
+  erasing: boolean;
 };
 function inputTool(tool: string): InputTool {
   return tool === 'touch' || tool === 'pen' || tool === 'mouse' ? tool : 'unknown';
 }
 function inputSample(event: PointerEvent): InputSample {
   return { pageX: event.pageX, pageY: event.pageY, timestamp: event.timeStamp };
+}
+
+// Every coalesced point of a move, ending on the event's own point.
+function moveSamples(event: PointerEvent) {
+  const coalesced = event.getCoalescedEvents?.() ?? [];
+  const samples = coalesced.length ? coalesced.map(inputSample) : [inputSample(event)];
+  const last = samples[samples.length - 1];
+  if (
+    last.timestamp !== event.timeStamp ||
+    last.pageX !== event.pageX ||
+    last.pageY !== event.pageY
+  )
+    samples.push(inputSample(event));
+  return samples;
+}
+
+type PaperPointerEvent =
+  | 'pointerenter'
+  | 'pointerleave'
+  | 'pointerdown'
+  | 'pointermove'
+  | 'pointerup'
+  | 'pointercancel'
+  | 'lostpointercapture';
+type PaperListeners = readonly (readonly [PaperPointerEvent, (event: PointerEvent) => void])[];
+
+function listen(node: HTMLElement, listeners: PaperListeners) {
+  for (const [type, listener] of listeners) node.addEventListener(type, listener);
+  return () => {
+    for (const [type, listener] of listeners) node.removeEventListener(type, listener);
+  };
 }
 
 type Begin = (pointerId: number, pointerType: string, sample: InputSample) => void;
@@ -62,14 +95,60 @@ function whenEngineReady(
   };
 }
 
+type HoverOwner = {
+  readonly current: { onHover: (sample: InputSample | null) => void; erasing: boolean };
+};
+
+// The eraser bubble follows a hovering mouse or pen at most once a painted frame, as shipping's
+// PointerHalos.svelte does; entering, leaving and lifting take effect at once, superseding a
+// queued move. Touch never hovers.
+function createPointerHover(window: Window, owner: HoverOwner, live: () => boolean) {
+  let frame = 0;
+  let queued: InputSample | null = null;
+  const hovers = (event: PointerEvent) =>
+    live() && owner.current.erasing && event.pointerType !== 'touch';
+  const show = (sample: InputSample | null) => {
+    window.cancelAnimationFrame(frame);
+    frame = 0;
+    owner.current.onHover(sample);
+  };
+  const flush = () => {
+    frame = 0;
+    owner.current.onHover(queued);
+  };
+  return {
+    place(event: PointerEvent) {
+      if (hovers(event)) show(inputSample(event));
+    },
+    move(event: PointerEvent) {
+      if (!hovers(event)) return;
+      queued = inputSample(event);
+      if (!frame) frame = window.requestAnimationFrame(flush);
+    },
+    leave(event: PointerEvent) {
+      if (event.pointerType !== 'touch') show(null);
+    },
+    stop: () => window.cancelAnimationFrame(frame),
+  };
+}
+
+// LiveSurface.svelte's canvas: a crosshair over the paper, hidden under the eraser's bubble.
+function usePaperCursor(host: { readonly current: ViewInstance | null }, erasing: boolean) {
+  useLayoutEffect(() => {
+    if (host.current instanceof HTMLElement)
+      host.current.style.cursor = erasing ? 'none' : 'crosshair';
+  }, [host, erasing]);
+}
+
 export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInputView(
-  { onInput, onClaim, engineReady, ...props },
+  { onInput, onClaim, engineReady, onHover, erasing, ...props },
   ref
 ) {
   const host = useRef<ViewInstance | null>(null);
   const bottomInset = useSafeAreaInsets().bottom;
-  const current = useRef({ onInput, onClaim, engineReady, bottomInset });
-  current.current = { onInput, onClaim, engineReady, bottomInset };
+  const current = useRef({ onInput, onClaim, engineReady, onHover, erasing, bottomInset });
+  current.current = { onInput, onClaim, engineReady, onHover, erasing, bottomInset };
+  usePaperCursor(host, erasing);
   useLayoutEffect(() => {
     const candidate: unknown = host.current;
     if (!(candidate instanceof HTMLElement))
@@ -113,26 +192,21 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
       send('start', [identifier]);
     }
     let live = false;
+    const hover = createPointerHover(window, current, () => live);
     function start(event: PointerEvent) {
       if (event.button !== DRAWING_POINTER_BUTTON || !live) return;
       event.preventDefault();
+      hover.place(event);
       begin(event.pointerId, event.pointerType, inputSample(event));
     }
     function move(event: PointerEvent) {
       const identifier = String(event.pointerId);
       const contact = contacts.get(identifier);
+      // The bubble's place follows a held mouse too, so it is current when the stroke is cut short.
+      hover.move(event);
       if (!contact) return;
       event.preventDefault();
-      const coalesced = event.getCoalescedEvents?.() ?? [];
-      const samples = coalesced.length ? coalesced.map(inputSample) : [inputSample(event)];
-      const last = samples[samples.length - 1];
-      if (
-        last.timestamp !== event.timeStamp ||
-        last.pageX !== event.pageX ||
-        last.pageY !== event.pageY
-      )
-        samples.push(inputSample(event));
-      contacts.set(identifier, { ...contact, samples });
+      contacts.set(identifier, { ...contact, samples: moveSamples(event) });
       send('move', [identifier]);
     }
     function end(event: PointerEvent) {
@@ -140,6 +214,7 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
       const contact = contacts.get(identifier);
       if (!contact) return;
       event.preventDefault();
+      hover.place(event);
       contacts.set(identifier, { ...contact, samples: [inputSample(event)] });
       send('end', [identifier]);
       contacts.delete(identifier);
@@ -147,6 +222,7 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
     function cancel(event: PointerEvent) {
       const identifier = String(event.pointerId);
       if (!contacts.has(identifier)) return;
+      hover.place(event);
       send('cancel', [identifier]);
       contacts.delete(identifier);
     }
@@ -154,11 +230,15 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
       if (contacts.size) send('cancel', [...contacts.keys()]);
       contacts.clear();
     }
-    node.addEventListener('pointerdown', start);
-    node.addEventListener('pointermove', move);
-    node.addEventListener('pointerup', end);
-    node.addEventListener('pointercancel', cancel);
-    node.addEventListener('lostpointercapture', cancel);
+    const unlisten = listen(node, [
+      ['pointerenter', hover.place],
+      ['pointerleave', hover.leave],
+      ['pointerdown', start],
+      ['pointermove', move],
+      ['pointerup', end],
+      ['pointercancel', cancel],
+      ['lostpointercapture', cancel],
+    ]);
     window.addEventListener('blur', cancelAll);
     const stopWaiting = whenEngineReady(window, current, () => {
       live = true;
@@ -167,11 +247,8 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
     return () => {
       stopWaiting();
       cancelAll();
-      node.removeEventListener('pointerdown', start);
-      node.removeEventListener('pointermove', move);
-      node.removeEventListener('pointerup', end);
-      node.removeEventListener('pointercancel', cancel);
-      node.removeEventListener('lostpointercapture', cancel);
+      hover.stop();
+      unlisten();
       window.removeEventListener('blur', cancelAll);
     };
   }, []);
