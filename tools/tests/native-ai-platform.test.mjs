@@ -142,6 +142,36 @@ it.each([
     'X-Report-Token': 'proof',
   });
 });
+it('uploads the drawing bytes without building a React Native Blob', async () => {
+  // React Native's BlobManager.createFromParts throws on ArrayBuffer and ArrayBufferView parts.
+  class ReactNativeBlob {
+    constructor(parts = []) {
+      if (parts.some((part) => part instanceof ArrayBuffer || ArrayBuffer.isView(part)))
+        throw new Error(
+          "Creating blobs from 'ArrayBuffer' and 'ArrayBufferView' are not supported"
+        );
+    }
+  }
+  vi.stubGlobal('Blob', ReactNativeBlob);
+  try {
+    const body = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x57, 0x45, 0x42, 0x50]);
+    await aiTransport(
+      {
+        path: '/api/generate-image',
+        method: 'POST',
+        headers: { 'Content-Type': 'image/webp' },
+        body,
+      },
+      new AbortController().signal
+    );
+    const init = nativeFetch.mock.calls.at(-1)[1];
+    expect(init.body).toBeInstanceOf(Uint8Array);
+    expect([...init.body]).toEqual([...body]);
+    expect(init.headers['Content-Type']).toBe('image/webp');
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 it('uses strict native secure readback for writes and removals, with no fallback on an ambiguous outcome', async () => {
   fixture.write.mockResolvedValue(true);
   await expect(aiVault.write('byok', 'fixture-key')).rejects.toThrow('not confirmed');
