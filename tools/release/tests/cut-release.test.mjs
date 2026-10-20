@@ -86,9 +86,19 @@ const DRY_RUN_LISTING = listing(
 );
 
 const roots = [];
+// A git process a release cut started can still be writing into the scratch checkout's .git when
+// the test ends; CI then saw rmSync fail with ENOTEMPTY on .git/objects. Node retries that removal.
+const SCRATCH_REMOVE_RETRIES = 5;
+const SCRATCH_REMOVE_RETRY_MS = 100;
 
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0))
+    rmSync(root, {
+      recursive: true,
+      force: true,
+      maxRetries: SCRATCH_REMOVE_RETRIES,
+      retryDelay: SCRATCH_REMOVE_RETRY_MS,
+    });
 });
 
 function scratchDir() {
