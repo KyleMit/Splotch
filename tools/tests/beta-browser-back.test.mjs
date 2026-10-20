@@ -292,4 +292,25 @@ describe('beta browser Back history owner', () => {
     expect(history.port.state().foreign).toBe('retained');
     expect(history.layers()).toEqual([]);
   });
+
+  // An update applied at the hidden edge reloads a blank page (Refs #3027, WEB-1
+  // sw-update-lifecycle). The reloaded document claims the base entry with one in-place write;
+  // anything more would be a real extra navigation rather than a history-state stamp.
+  it('claims a reloaded blank page with one in-place write and no added or traversed entry', () => {
+    const history = browser();
+    owner(history, { owner: 'before-reload', runtime: 'first-document' });
+    history.reload();
+    const replace = vi.spyOn(history.port, 'replace');
+    const push = vi.spyOn(history.port, 'push');
+    owner(history, { owner: 'after-reload', runtime: 'reloaded-document' });
+    expect(replace).toHaveBeenCalledOnce();
+    expect(push).not.toHaveBeenCalled();
+    expect(history.port.back).not.toHaveBeenCalled();
+    expect(history.entries).toHaveLength(2);
+    expect(history.index()).toBe(1);
+    expect(history.port.state()[BROWSER_BACK_STATE_KEY]).toMatchObject({
+      owner: 'after-reload',
+      layers: [],
+    });
+  });
 });
