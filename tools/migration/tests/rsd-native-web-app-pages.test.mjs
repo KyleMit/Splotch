@@ -7,6 +7,7 @@ import {
   host,
   mount,
   records,
+  root,
   expandControls,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
@@ -57,8 +58,20 @@ vi.mock(
   '../../../experiments/native-architecture/src/platform/BrowserBack.tsx',
   () => import('../../../experiments/native-architecture/src/platform/BrowserBack.web.tsx')
 );
+vi.mock(
+  '../../../experiments/native-architecture/src/platform/drawingArrival.ts',
+  () => import('../../../experiments/native-architecture/src/platform/drawingArrival.web.ts')
+);
+vi.mock(
+  '../../../experiments/native-architecture/src/platform/drawingVisited.ts',
+  () => import('../../../experiments/native-architecture/src/platform/drawingVisited.web.ts')
+);
 
-afterEach(() => history.replaceState(null, '', '/'));
+afterEach(() => {
+  history.replaceState(null, '', '/');
+  sessionStorage.clear();
+  delete document.referrer;
+});
 const BROWSER_HISTORY_SETTLE_MS = 50;
 
 it('keeps the drawing and Settings mounted through browser Back and Forward between pages', async () => {
@@ -250,3 +263,73 @@ it('applies browser typography after actual information-page navigation remounts
     expect(title.parentElement.lastElementChild.style.maxWidth).toBe('62ch');
   }
 });
+
+const mastheadLabel = () =>
+  host.querySelector('[data-testid="information-page-scroll"]').firstElementChild.firstElementChild
+    .firstElementChild.firstElementChild.textContent;
+
+async function loadAt(path) {
+  if (root) await act(async () => root.unmount());
+  history.replaceState(null, '', path);
+  await mount(createElement(ProbeApp));
+}
+
+it.each(['/privacy', '/unknown-page'])(
+  'offers the way back from %s loaded after the drawing ran in this tab',
+  async (path) => {
+    records.os = 'web';
+    useCaller();
+    await loadAt(path);
+    expect(mastheadLabel()).toBe('Start drawing');
+    await loadAt('/');
+    await loadAt(path);
+    expect(mastheadLabel()).toBe('Back to drawing');
+  }
+);
+
+it.each([
+  { path: '/unknown-page', from: '/', label: 'Back to drawing' },
+  { path: '/privacy', from: '/', label: 'Back to drawing' },
+  { path: '/unknown-page', from: '/changelog', label: 'Start drawing' },
+  { path: '/changelog', from: '/privacy', label: 'Start drawing' },
+])('labels the way back from $path reached from $from as $label', async ({ path, from, label }) => {
+  records.os = 'web';
+  Object.defineProperty(document, 'referrer', {
+    configurable: true,
+    value: new URL(from, location.origin).href,
+  });
+  useCaller();
+  await loadAt(path);
+  expect(mastheadLabel()).toBe(label);
+});
+
+it('keeps the cold-visit label when the browser blocks session storage', async () => {
+  records.os = 'web';
+  const blocked = vi.spyOn(window, 'sessionStorage', 'get').mockImplementation(() => {
+    throw new DOMException('Storage is disabled', 'SecurityError');
+  });
+  try {
+    useCaller();
+    await loadAt('/');
+    expect(blocked).toHaveBeenCalled();
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+    await loadAt('/unknown-page');
+    expect(mastheadLabel()).toBe('Start drawing');
+  } finally {
+    blocked.mockRestore();
+  }
+});
+
+it.each(['privacy', 'changelog', 'feedback'])(
+  'titles the browser tab for %s as the shipping page does',
+  async (page) => {
+    const shipping = readFileSync(
+      join(import.meta.dirname, `../../../web/src/routes/${page}/+page.svelte`),
+      'utf8'
+    );
+    records.os = 'web';
+    useCaller();
+    await loadAt(`/${page}`);
+    expect(document.title).toBe(shipping.match(/<title>(.+?)<\/title>/)[1]);
+  }
+);

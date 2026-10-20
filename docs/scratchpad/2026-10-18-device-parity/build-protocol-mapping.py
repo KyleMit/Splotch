@@ -672,6 +672,13 @@ PROTOCOL_RERUN = {
     'E0450': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
               'android-api36 phone rerun 2026-10-20: a typed answer reaches the check and Enter opens '
               'Parent Center on rn'),
+    'E0576': ('WEB-1', 'results/web-1-2026-10-19.md', 3026,
+              'rn-web-chromium rerun 2026-10-20 of info-back-label-after-reload: a reload of /privacy '
+              'reached from the canvas keeps Back to drawing, the values web-prod recorded'),
+    'L0270': ('WEB-1', 'results/web-1-2026-10-19.md', 3026,
+              'rn-web-chromium rerun 2026-10-20 of not-found-back-label: Start drawing cold and from '
+              '/changelog, Back to drawing from the canvas and after the drawing ran, the values web-prod '
+              'recorded'),
 }
 
 

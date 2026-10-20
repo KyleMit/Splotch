@@ -56,6 +56,7 @@ import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
 import { usePWAUpdates } from '../platform/serviceWorker';
+import { markDrawingVisited } from '../platform/drawingVisited';
 import { useParentGateCard, type ParentGateView } from '../parentCenter/useParentGateCard';
 import type { AppPage } from '../information/appPages';
 import { RsdInformationPage } from './informationSurface';
@@ -82,6 +83,9 @@ export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
   const informationOpen = page !== 'drawing';
   const [drawingVisited, setDrawingVisited] = useState(!informationOpen);
   if (!informationOpen && !drawingVisited) setDrawingVisited(true);
+  useEffect(() => {
+    if (!informationOpen) markDrawingVisited();
+  }, [informationOpen]);
   const gate = useParentGateCard(informationOpen ? null : (product.state?.gate ?? null));
   const sound = product.sound;
   // Settings holds the gate over itself, as shipping stacks the challenge over its modal, so a
