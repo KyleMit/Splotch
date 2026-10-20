@@ -18,6 +18,10 @@ vi.mock('react-native', () => {
     }
     setValue(value) {
       this.value = value;
+      // As React Native's does, a reset stops the move in flight and calls its completion.
+      const running = this.running;
+      this.running = null;
+      running?.({ finished: false });
     }
   }
   return {
@@ -33,11 +37,14 @@ vi.mock('react-native', () => {
       timing: (value, { toValue }) => ({
         start(done) {
           const land = () => {
+            value.running = null;
             value.setValue(toValue);
             done?.({ finished: true });
           };
-          if (host.hold) host.held = land;
-          else land();
+          if (host.hold) {
+            value.running = done;
+            host.held = land;
+          } else land();
         },
       }),
     },
@@ -104,4 +111,19 @@ it('waits for a move in flight to land before measuring again', () => {
   host.hold = false;
   act(() => host.held());
   expect(560 + lift.value).toBe(450 - KEYBOARD_CLEARANCE_PX);
+});
+
+it('does nothing more once the dialog closes with a move in flight and a refit queued', async () => {
+  host.focused = field(560);
+  host.hold = true;
+  keyboard('keyboardDidShow', 500);
+  // A lower field takes focus mid-move, so a refit waits for the move to land.
+  host.focused = field(640);
+  await act(async () => vi.advanceTimersByTime(200));
+  host.hold = false;
+  // Closing resets the lift, which stops the move and calls its completion unfinished.
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await act(async () => vi.advanceTimersByTime(1000));
+  expect(lift.value).toBe(0);
 });

@@ -29,15 +29,17 @@ export function useKeyboardLift(active: boolean) {
     let settled = 0;
     let moving = 0;
     let waiting: number | null = null;
+    let disposed = false;
     const move = (to: number, duration: number) => {
       const id = ++moving;
       Animated.timing(lift, {
         toValue: to,
         duration: duration || FALLBACK_LIFT_MS,
         useNativeDriver: true,
-      }).start(() => {
-        if (id !== moving) return;
+      }).start(({ finished }) => {
+        if (disposed || id !== moving) return;
         moving = 0;
+        if (!finished) return;
         settled = to;
         if (waiting !== null) {
           const next = waiting;
@@ -56,7 +58,7 @@ export function useKeyboardLift(active: boolean) {
         return;
       }
       field.measureInWindow((_x, y, _width, height) => {
-        if (keyboardTop === top && !moving)
+        if (!disposed && keyboardTop === top && !moving)
           move(keyboardLiftTarget(settled, y + height, top), duration);
       });
     };
@@ -76,6 +78,9 @@ export function useKeyboardLift(active: boolean) {
       move(0, event.duration);
     });
     return () => {
+      // Before the reset below, which stops a move in flight and calls its completion.
+      disposed = true;
+      waiting = null;
       shown.remove();
       hidden.remove();
       clearInterval(focusCheck);
