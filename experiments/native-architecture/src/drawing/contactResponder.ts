@@ -135,15 +135,23 @@ class ContactResponder {
     );
   }
 
-  // Each contact's halo, and the hovering pointer's bubble unless its own press is one of them: a
-  // mouse keeps its bubble while a finger draws elsewhere, as shipping's does.
+  // Each contact's halo, and the hovering pointer's bubble unless that pointer is holding a stroke
+  // of its own: a mouse keeps its bubble while a finger draws elsewhere, as shipping's does.
   private halos(): readonly Halo[] {
     const frame = this.frame();
     if (!frame) return [];
     const hover = this.hoverHalos(frame);
     if (!this.input.hasActive()) return hover;
     const contacts = this.contactHalos(frame);
-    return [...contacts, ...hover.filter(({ id }) => !contacts.some((halo) => halo.id === id))];
+    return this.ownStroke() ? contacts : [...contacts, ...hover];
+  }
+
+  // The stroke the hovering mouse or pen is holding, if any; touch never hovers.
+  private ownStroke() {
+    for (const contact of this.contacts.values())
+      if (contact.admission.kind === 'accepted' && this.sharesHover(contact))
+        return contact.admission;
+    return null;
   }
 
   private contactHalos(frame: PaperFrame): readonly Halo[] {

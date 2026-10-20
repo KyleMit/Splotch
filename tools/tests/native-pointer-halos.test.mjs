@@ -256,6 +256,18 @@ describe('native Pointer Halos', () => {
     r.input.hover(hoverAt(70, 80, 250));
     expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 70, y: 80, size: 16 }]);
   });
+  it('shows one bubble for a held eraser stroke when the brush leaves and returns', () => {
+    const r = responder('eraser');
+    r.input.hover(hoverAt(10, 20));
+    r.begin(event([mouse(0, 12, 22)]));
+    r.restyle('pen');
+    r.restyle('eraser');
+    r.send('move', event([mouse(0, 50, 60, 200)], undefined, { 0: 100 }));
+    r.input.hover(hoverAt(50, 60, 200));
+    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 50, y: 60, size: 16 }]);
+    r.send('end', event([], [mouse(0, 50, 60, 300)], { 0: 100 }));
+    expect(r.halos()).toEqual([{ id: 1, kind: 'eraser', x: 50, y: 60, size: 16 }]);
+  });
   it('drops the hovering bubble when the brush leaves the eraser, and shows none for drawing', () => {
     const r = responder('eraser');
     r.input.hover(hoverAt(10, 20));
