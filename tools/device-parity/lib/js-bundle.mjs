@@ -107,7 +107,8 @@ export function expoCliPath(appDir = APP_DIR) {
 // The environment the Xcode bundle phase runs its bundle step in: `env` with the exports of
 // XCODE_ENV_FILES applied, sourced by the same POSIX shell.
 export function xcodeBuildEnv(iosDir = IOS_DIR, env = process.env) {
-  const sources = XCODE_ENV_FILES.map((file) => `if [ -f ${file} ]; then . ./${file}; fi`);
+  // Whatever the files print goes to stderr; stdout carries only the environment.
+  const sources = XCODE_ENV_FILES.map((file) => `if [ -f ${file} ]; then . ./${file} 1>&2; fi`);
   const print = 'exec "$SWAP_NODE" -e "process.stdout.write(JSON.stringify(process.env))"';
   const result = spawnSync('/bin/sh', ['-c', [...sources, print].join('; ')], {
     cwd: iosDir,

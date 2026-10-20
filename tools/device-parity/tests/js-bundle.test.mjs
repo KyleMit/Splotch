@@ -252,10 +252,12 @@ describe('the environment each bundle step runs in', () => {
 
   // An EXPO_PUBLIC_* value exported from an Xcode env file reaches the full build's bundle, so it
   // has to reach the swapped one too.
+  // The files are ordinary shell; one that prints must not corrupt the environment read back.
   it('applies the Xcode env files in the order the bundle phase sources them', () => {
     const dir = join(scratch, 'ios-env');
     writeEnvFiles(dir, {
-      '.xcode.env': 'export NODE_BINARY=/opt/node\nexport EXPO_PUBLIC_SWAP_CHECK=from-env\n',
+      '.xcode.env':
+        'echo "Using configured Node"\nexport NODE_BINARY=/opt/node\nexport EXPO_PUBLIC_SWAP_CHECK=from-env\n',
       '.xcode.env.local': 'export EXPO_PUBLIC_SWAP_CHECK=from-local\n',
     });
     const env = xcodeBuildEnv(dir, { PATH: process.env.PATH, KEPT: 'caller' });
