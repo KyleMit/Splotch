@@ -99,8 +99,11 @@ class ContactResponder {
     this.packetInput.receive(value);
   }
 
+  notePaintChoice(color: PaintColor) {
+    this.packetInput.notePaintChoice(color);
+  }
+
   observeInputStyle() {
-    this.packetInput.observeStyle();
     if (this.hovering) this.showHover(this.current().brush === 'eraser' ? this.hovering : null);
   }
 

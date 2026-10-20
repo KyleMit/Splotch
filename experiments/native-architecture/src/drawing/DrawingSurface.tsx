@@ -29,6 +29,7 @@ import {
   type ViewInstance,
 } from 'react-native';
 import type { Drawing } from './model';
+import type { PaintColor } from './palette';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
@@ -60,6 +61,8 @@ export type DrawingSurfaceHandle = {
   departingInk: () => DepartingInk | null;
   lockInput: (mode?: 'command' | 'undo') => () => void;
   finishInput: () => void;
+  // A person picked this paint: a genuine change briefly holds back a new finger, as shipping does.
+  notePaintChoice: (color: PaintColor) => void;
   // A lease for work the child never asked for. Any foreground claim on the paper (a fresh
   // contact, lockInput) ends it first, ending its capture and calling onPreempt; it is refused
   // while anything else holds the paper.
@@ -348,6 +351,7 @@ function useSurfaceCapture(
         preemptBackground();
         input.finishInput();
       },
+      notePaintChoice: (color) => input.notePaintChoice(color),
       lockInput(mode = 'command') {
         preemptBackground();
         if ((mode === 'command' && input.hasActive()) || commandLock.current)

@@ -273,6 +273,7 @@ describe('paper-scoped ordered input and shipping input hygiene', () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(1000);
     const style = { color: 'Red' };
     const f = packetFixture(style);
+    f.input.notePaintChoice('Blue');
     style.color = 'Blue';
     f.input.observeInputStyle();
     clock.mockReturnValue(1000 + COLOR_CHANGE_DEBOUNCE_MS - 1);
@@ -283,11 +284,42 @@ describe('paper-scoped ordered input and shipping input hygiene', () => {
 
   it('admits a fresh finger contact at the shipping debounce boundary', () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(1000);
-    const style = { brush: 'pen' };
+    const style = { color: 'Red' };
     const f = packetFixture(style);
-    style.brush = 'crayon';
+    f.input.notePaintChoice('Blue');
+    style.color = 'Blue';
     f.input.observeInputStyle();
     clock.mockReturnValue(1000 + COLOR_CHANGE_DEBOUNCE_MS);
+    f.send('start', 'a', [sample(50, 50, 100)]);
+    f.send('end', 'a', [sample(60, 60, 110)]);
+    expect(f.history().drawing.strokes).toHaveLength(1);
+  });
+
+  it('times the debounce from the pick, not from the render that delivers the paint', () => {
+    // On the Galaxy the render after a swatch tap held the JS thread for up to 223 ms, and the
+    // finger that landed meanwhile was read 5 ms after it committed (#3071).
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1000);
+    const style = { color: 'Red' };
+    const f = packetFixture(style);
+    f.input.notePaintChoice('Blue');
+    clock.mockReturnValue(1000 + 223);
+    style.color = 'Blue';
+    f.input.observeInputStyle();
+    clock.mockReturnValue(1000 + 228);
+    f.send('start', 'a', [sample(50, 50, 100)]);
+    f.send('end', 'a', [sample(60, 60, 110)]);
+    expect(f.history().drawing.strokes).toHaveLength(1);
+    expect(f.history().drawing.strokes[0].color).toBe('Blue');
+  });
+
+  it('arms the debounce only for a genuine paint change, as shipping setColor does', () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1000);
+    const style = { color: 'Red', brush: 'pen' };
+    const f = packetFixture(style);
+    f.input.notePaintChoice('Red');
+    style.brush = 'crayon';
+    f.input.observeInputStyle();
+    clock.mockReturnValue(1001);
     f.send('start', 'a', [sample(50, 50, 100)]);
     f.send('end', 'a', [sample(60, 60, 110)]);
     expect(f.history().drawing.strokes).toHaveLength(1);
