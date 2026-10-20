@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Platform } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { Svg, Path } from '../platform/svg';
 import type { SECTIONS } from '../../../../web/src/routes/privacy/contents';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { RsdPressable } from './RsdPressable';
+import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdIcon } from './RsdIcon';
 import { blobPath } from './blob';
 import { focusRingHost } from './focusRing';
@@ -63,19 +65,14 @@ export function RsdPrivacyHeading({
 }) {
   const [hovered, setHovered] = useState(false);
   const theme = useDrawingTheme();
-  const anchor = (
-    <RsdPressable
-      {...focusRingHost('radiusBlob2')}
-      type="button"
-      role="link"
-      aria-label={`Copy link to “${section.label}”`}
-      style={[
-        styles.anchor,
-        wide && styles.margin(-PRIVACY_LAYOUT.railGap),
-        (hovered || copied) && styles.revealed,
-      ]}
-      onClick={onCopy}
-    >
+  const name = `Copy link to “${section.label}”`;
+  const style = [
+    styles.anchor,
+    wide && styles.margin(-PRIVACY_LAYOUT.railGap),
+    (hovered || copied) && styles.revealed,
+  ];
+  const face = (
+    <>
       <html.div aria-hidden style={styles.mark}>
         <Svg width={LINK_BLOB_PX} height={LINK_BLOB_PX}>
           <Path d={LINK_PATH} fill={copied ? theme.successWash : theme.brandWash} />
@@ -88,8 +85,32 @@ export function RsdPrivacyHeading({
           <html.span style={[controls.boldText, styles.text]}>#</html.span>
         )}
       </html.div>
-    </RsdPressable>
+    </>
   );
+  // SectionHeading.svelte's anchor carries the section's fragment on the web; its plain click copies.
+  const anchor =
+    Platform.OS === 'web' ? (
+      <RsdPageAnchor
+        {...focusRingHost('radiusBlob2')}
+        href={`#${section.id}`}
+        onFollow={onCopy}
+        aria-label={name}
+        style={style}
+      >
+        {face}
+      </RsdPageAnchor>
+    ) : (
+      <RsdPressable
+        {...focusRingHost('radiusBlob2')}
+        type="button"
+        role="link"
+        aria-label={name}
+        style={style}
+        onClick={onCopy}
+      >
+        {face}
+      </RsdPressable>
+    );
   return (
     <html.div
       style={[styles.header, wide && styles.wide(PRIVACY_LAYOUT.railGap - LINK_TARGET_PX)]}

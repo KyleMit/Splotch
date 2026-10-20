@@ -175,6 +175,7 @@ function ContentsPanel<Id extends string>({
               meta={section.meta}
               hue={section.hue}
               active={active === section.id}
+              href={`#${section.id}`}
               onSelect={() => onSelect(section.id)}
             />
           ))}
