@@ -99,7 +99,9 @@ export function useDrawingScreen() {
   useBlankPaper(history, setHistory, drawing, ink.visible);
   visibleInk.current = ink;
   const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (strokes) => {
-    setCommittedStrokes((total) => total + strokes.length);
+    // Shipping's canvas strokeCount: one per stroke group (engine.ts commitStrokeGroup), however
+    // many fingers drew it, so a two-finger stroke is not two strokes toward settling in.
+    if (strokes.length) setCommittedStrokes((total) => total + 1);
     if (strokes.some((stroke) => stroke.brush === 'eraser')) ink.erased(historyRef.current.drawing);
   });
 
