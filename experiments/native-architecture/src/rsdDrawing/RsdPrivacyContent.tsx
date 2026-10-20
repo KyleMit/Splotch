@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { Svg, Path } from '../platform/svg';
 import { blobPath } from './blob';
@@ -14,6 +14,7 @@ import { paletteHex } from '../drawing/palette';
 import type privacy from '../information/privacy.generated.json';
 import { RsdList } from './RsdList';
 import { RsdSidebarRow } from './RsdSidebarRow';
+import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdPrivacyHeading } from './RsdPrivacyHeading';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 import { usePrivacySectionLinks } from './usePrivacySectionLinks';
@@ -122,14 +123,23 @@ export function PolicySpans({
 }) {
   return spans.map((span, index) => {
     const href = span.href;
+    const style = [
+      span.strong && controlStyles.boldText,
+      span.italic && styles.italic,
+      !!href && styles.link,
+    ];
+    // A section of this page or another app page is a real anchor on the web, as shipping's is; a
+    // link that leaves the app keeps its grown-up check, which an address would let a click skip.
+    if (href && /^[#/]/.test(href) && Platform.OS === 'web')
+      return (
+        <RsdPageAnchor key={index} href={href} onFollow={() => onLink(href)} style={style}>
+          {span.text}
+        </RsdPageAnchor>
+      );
     return (
       <html.span
         key={index}
-        style={[
-          span.strong && controlStyles.boldText,
-          span.italic && styles.italic,
-          !!href && styles.link,
-        ]}
+        style={style}
         role={href ? 'link' : undefined}
         tabIndex={href ? 0 : undefined}
         onClick={href ? () => onLink(href) : undefined}
@@ -344,6 +354,7 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
                   key={section.id}
                   label={section.label}
                   active={active === section.id}
+                  href={`#${section.id}`}
                   onSelect={() => onLink(`#${section.id}`)}
                 />
               ))}

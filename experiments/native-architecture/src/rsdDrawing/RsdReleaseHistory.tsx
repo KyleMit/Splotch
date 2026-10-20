@@ -171,6 +171,7 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
                   meta={release.dateLabel}
                   hue={release.hue}
                   active={active === release.id}
+                  href={`#${release.id}`}
                   onSelect={() => navigation.pick(release.id)}
                 />
               ))}
@@ -266,7 +267,11 @@ function ReleaseHistoryEnd({ height, onLink }: { height: number; onLink: (href: 
           <RsdReleaseRule />
         </html.div>
         <html.p style={styles.endText}>{`That's every release since ${oldest?.dateLabel}.`}</html.p>
-        <RsdTextLink style={styles.top} onPress={() => onLink(`#${INFORMATION_TOP_ID}`)}>
+        <RsdTextLink
+          href={`#${INFORMATION_TOP_ID}`}
+          style={styles.top}
+          onPress={() => onLink(`#${INFORMATION_TOP_ID}`)}
+        >
           <ReleaseNavMark kind="top" />
           <html.span style={controls.boldText}>Back to top</html.span>
         </RsdTextLink>

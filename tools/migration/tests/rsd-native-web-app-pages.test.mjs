@@ -18,6 +18,7 @@ import {
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
 import releases from '../../../web/src/lib/releases.json';
+import { SECTIONS } from '../../../web/src/routes/privacy/contents.ts';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
@@ -407,4 +408,68 @@ it.each([
   await act(async () => anchor().dispatchEvent(plain));
   expect(plain.defaultPrevented).toBe(true);
   expect(location.pathname).toBe('/');
+});
+
+const WIDE = { width: 1280, height: 900, scale: 1, fontScale: 1 };
+
+it('gives the privacy contents, section anchors and in-page links their fragments', async () => {
+  records.os = 'web';
+  records.dimensions = WIDE;
+  useCaller();
+  await loadAt('/privacy');
+  const anchors = pageAnchors();
+  for (const section of SECTIONS) {
+    expect(anchors).toContainEqual([section.label, `#${section.id}`]);
+    const copy = host.querySelector(`a[aria-label="Copy link to “${section.label}”"]`);
+    expect(copy?.getAttribute('href')).toBe(`#${section.id}`);
+    expect(copy?.getAttribute('data-focus-ring')).toBe('radiusBlob2');
+  }
+  const inText = [...host.querySelectorAll('a:not([data-testid="sidebar-row"]):not([aria-label])')]
+    .map((link) => [link.textContent, link.getAttribute('href')])
+    .filter(([, href]) => href.startsWith('#'));
+  expect(inText).toEqual([
+    ['How the counting works', '#counting'],
+    ['Reporting a picture', '#reports'],
+  ]);
+  expect(anchors.some(([, href]) => href.startsWith('https:'))).toBe(false);
+});
+
+it('gives the changelog contents and Back to top their fragments', async () => {
+  records.os = 'web';
+  records.dimensions = WIDE;
+  useCaller();
+  await loadAt('/changelog');
+  const rows = [...host.querySelectorAll('a[data-testid="sidebar-row"]')];
+  expect(rows.map((row) => row.getAttribute('href'))).toEqual(
+    releases.map((release) => `#${release.id}`)
+  );
+  expect(pageAnchors()).toContainEqual(['Back to top', '#top']);
+});
+
+it('follows a contents entry in place, and leaves a modified click to the browser', async () => {
+  records.os = 'web';
+  records.dimensions = WIDE;
+  useCaller();
+  await loadAt('/privacy');
+  const row = () => host.querySelector(`a[data-testid="sidebar-row"][href="#${SECTIONS[2].id}"]`);
+  const browserDefault = vi.fn((event) => {
+    expect(event.defaultPrevented).toBe(false);
+    event.preventDefault();
+  });
+  document.addEventListener('click', browserDefault);
+  try {
+    await act(async () =>
+      row().dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true })
+      )
+    );
+  } finally {
+    document.removeEventListener('click', browserDefault);
+  }
+  expect(browserDefault).toHaveBeenCalledOnce();
+  expect(location.hash).toBe('');
+  const plain = new MouseEvent('click', { bubbles: true, cancelable: true });
+  await act(async () => row().dispatchEvent(plain));
+  expect(plain.defaultPrevented).toBe(true);
+  expect(location.hash).toBe(`#${SECTIONS[2].id}`);
 });

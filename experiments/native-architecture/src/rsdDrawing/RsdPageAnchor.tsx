@@ -34,12 +34,22 @@ const styles = css.create({
 // it can for shipping's; a plain click follows it in place, keeping the drawing session. Rendered
 // on the web only: React Native has no anchor navigation. A DOM anchor rather than html.a, as
 // notFoundLink.web.tsx renders, so the page tier's tests mount it as the browser does.
+// The attributes a caller's control carried before it became an anchor: its name, its place in the
+// page's contents, its keyboard focus-ring mark (focusRing.ts) and its test handle.
+type AnchorAttributes = {
+  'aria-label'?: string;
+  'aria-current'?: 'location';
+  'data-focus-ring'?: string;
+  'data-testid'?: string;
+};
+
 export function RsdPageAnchor({
   href,
   onFollow,
   style,
   children,
-}: {
+  ...attributes
+}: AnchorAttributes & {
   href: string;
   onFollow: () => void;
   style?: AnchorStyle;
@@ -47,6 +57,7 @@ export function RsdPageAnchor({
 }) {
   return (
     <a
+      {...attributes}
       {...css.props(styles.anchor, style)}
       href={href}
       onClick={(event) => {

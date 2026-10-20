@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { Svg, Path, Circle } from '../platform/svg';
 import { paletteHex } from '../drawing/palette';
 import type { ReleaseHue } from '../../../../web/src/lib/releaseHues';
@@ -9,6 +10,7 @@ import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
 import { styles as controlStyles } from './controls';
 import { sidebarRowFade } from './sidebarRowFade';
 import { WholeWordText } from './WholeWordText';
+import { RsdPageAnchor } from './RsdPageAnchor';
 import { DRAWING_SCALE } from '../drawing/theme';
 
 // The shipping SidebarToc.svelte row; rsd-native-settings-rows.test.mjs reads each from that
@@ -102,8 +104,16 @@ const styles = css.create({
   front: { position: 'relative' },
 });
 
-// SidebarToc.svelte's button row, marked as the reading position while its section is.
-type SidebarRowProps = { label: string; meta?: string; active: boolean; onSelect: () => void } & (
+// SidebarToc.svelte's row, marked as the reading position while its section is. A page's contents
+// row carries its section's fragment (`href`) and is an anchor on the web, as shipping's is;
+// Settings' rows stay buttons.
+type SidebarRowProps = {
+  label: string;
+  meta?: string;
+  active: boolean;
+  onSelect: () => void;
+  href?: string;
+} & (
   | { icon: SectionIconName; unseen: boolean; hue?: never }
   | { icon?: never; unseen?: never; hue?: ReleaseHue }
 );
@@ -116,6 +126,7 @@ export function RsdSidebarRow({
   unseen,
   active,
   onSelect,
+  href,
 }: SidebarRowProps) {
   // The table of contents keeps its shipping width, so at a large OS font a section name too wide
   // for it shrinks to fit rather than breaking mid-word.
@@ -127,20 +138,17 @@ export function RsdSidebarRow({
       {label}
     </WholeWordText>
   );
-  return (
-    <html.button
-      aria-label={unseen ? `${label}, new` : label}
-      aria-current={active ? 'location' : undefined}
-      data-testid="sidebar-row"
-      style={[
-        styles.row,
-        sidebarRowFade.row,
-        active && styles.active,
-        active && !!hue && styles.huedActive,
-        active && styles.activePadding(ACTIVE_PADDING_LEFT_PX),
-      ]}
-      onClick={onSelect}
-    >
+  const name = unseen ? `${label}, new` : label;
+  const current = active ? 'location' : undefined;
+  const style = [
+    styles.row,
+    sidebarRowFade.row,
+    active && styles.active,
+    active && !!hue && styles.huedActive,
+    active && styles.activePadding(ACTIVE_PADDING_LEFT_PX),
+  ];
+  const face = (
+    <>
       {icon ? (
         <html.div style={styles.icon}>
           <RsdSectionIcon icon={icon} size={ICON_PX} ink={undefined} />
@@ -172,6 +180,30 @@ export function RsdSidebarRow({
       ) : (
         text
       )}
+    </>
+  );
+  if (href !== undefined && Platform.OS === 'web')
+    return (
+      <RsdPageAnchor
+        href={href}
+        onFollow={onSelect}
+        aria-label={name}
+        aria-current={current}
+        data-testid="sidebar-row"
+        style={style}
+      >
+        {face}
+      </RsdPageAnchor>
+    );
+  return (
+    <html.button
+      aria-label={name}
+      aria-current={current}
+      data-testid="sidebar-row"
+      style={style}
+      onClick={onSelect}
+    >
+      {face}
     </html.button>
   );
 }
