@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Modal, Platform } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { visitInformationFragment } from '../platform/informationFragment';
+import { drawingArrival } from '../platform/drawingArrival';
 import { useDialogBack } from '../platform/BrowserBack';
 import { ModalKeyboardScope } from '../platform/KeyboardScope';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
@@ -33,6 +34,12 @@ const PAGE_TITLES: Record<Page, string> = {
   changelog: 'Changelog',
   feedback: FEEDBACK_PAGE_COPY.title,
 };
+// Shipping's <title> tags, which title-case what the page headings write in sentence case.
+const DOCUMENT_TITLES: Record<Page, string> = {
+  privacy: 'Privacy Policy · Splotch',
+  changelog: 'Changelog · Splotch',
+  feedback: 'Send Feedback · Splotch',
+};
 const PAGE_LEDES: Record<Page, string> = {
   privacy: privacy.native.lede,
   changelog:
@@ -56,6 +63,7 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
   const { owner, state, feedback } = product;
   const delivery = useNativeFeedbackState(feedback.owner)?.delivery;
   const sent = page === 'feedback' && delivery?.status === 'success';
+  const [arrival] = useState(drawingArrival);
   useEffect(
     () => () => {
       if (owner?.getState().gate.open) owner.gate.dismiss();
@@ -100,9 +108,7 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
         onDrawingReturn={returnToDrawing}
         backLabel={resolveBackLabel({
           fromPath: drawingVisited ? DRAWING_ROUTE : null,
-          sessionFlag: null,
-          referrer: '',
-          origin: '',
+          ...arrival,
         })}
         lede={sent ? FEEDBACK_PAGE_COPY.sentLede : PAGE_LEDES[page]}
         scrollRef={reading.scroll}
@@ -163,9 +169,7 @@ export function RsdInformationPage({
 }: InformationPageProps) {
   const close = () => openAppPage('drawing');
   useEffect(() => {
-    const previous = setDocumentTitle(
-      `${page === 'feedback' ? 'Send Feedback' : PAGE_TITLES[page]} · Splotch`
-    );
+    const previous = setDocumentTitle(DOCUMENT_TITLES[page]);
     return () => {
       setDocumentTitle(previous);
     };
