@@ -80,25 +80,24 @@ function createOpFrames() {
     frame += 1;
   }
 
-  // Every sample taken since the last flush becomes ops in one frame. A resumed contact's new
-  // stroke instead starts a frame of its own, one frame clear of every op before it: the gap that
-  // separates cohorts, which closes the crayon glaze group live and on replay (skiaInkLayer's
-  // joins), as shipping's rollToNextPass closes the pass.
+  // Every sample taken since the last flush becomes ops in one frame, in the order the strokes
+  // began. A resumed contact's new stroke instead opens a frame one clear of every op before it:
+  // the gap that separates cohorts, which closes the crayon glaze group live and on replay
+  // (skiaInkLayer's joins), as shipping's rollToNextPass closes the pass. Strokes after it in the
+  // cohort began after the resume, so they follow it into that frame.
   function flush(entries: readonly Entry[]): readonly LiveOp[] {
     const recorded: LiveOp[] = [];
-    const opening: Entry[] = [];
+    let frameStart = 0;
     for (const entry of entries) {
       if (entry.state.flushed === entry.points.length) continue;
-      if (entry.state.opensPass) opening.push(entry);
-      else record(entry, recorded);
+      if (entry.state.opensPass) {
+        endFrame(recorded, frameStart);
+        if (recordedFrame === frame - 1) frame += 1;
+        frameStart = recorded.length;
+      }
+      record(entry, recorded);
     }
-    endFrame(recorded, 0);
-    if (opening.length > 0) {
-      if (recordedFrame === frame - 1) frame += 1;
-      const before = recorded.length;
-      for (const entry of opening) record(entry, recorded);
-      endFrame(recorded, before);
-    }
+    endFrame(recorded, frameStart);
     if (PERF_PROBE && recorded.length > 0) perfFlushed();
     return recorded;
   }

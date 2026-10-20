@@ -219,6 +219,38 @@ function expectIdentity({
   return { live, replay, captured, midCohort, committed };
 }
 
+// Each stroke drawn as its own contact, one cohort after another, framed as resumedScript frames
+// it: the first two samples a frame, every later stroke in one frame.
+function separately(strokes) {
+  const scene = createInkScene();
+  let history = createHistory(emptyDrawing());
+  for (const [index, { points, style }] of strokes.entries()) {
+    const script = stroke(`s${index}`, points, index === 0 ? 2 : points.length, style);
+    history = drawCohort({ scene, history, script }).history;
+  }
+  const pixels = pixelsOf(scene.snapshot());
+  scene.dispose();
+  return pixels;
+}
+
+// Contact 'a' draws the first stroke, then its stream resumes at the start of each later stroke in
+// turn; a stroke naming a `contact` is that new contact starting instead. Everything after the
+// first stroke lands in the frame that still holds its unflushed tail.
+function resumedScript([first, ...rest]) {
+  const script = stroke('a', first.points, 2, first.style);
+  const tail = script.at(-1);
+  tail.pop();
+  const ends = ['a'];
+  for (const { points, style, contact } of rest) {
+    const [head, ...after] = points;
+    tail.push(contact ? { start: contact, at: head, ...style } : { resume: 'a', at: head });
+    for (const at of after) tail.push({ sample: contact ?? 'a', at });
+    if (contact) ends.push(contact);
+  }
+  script.push(ends.map((end) => ({ end })));
+  return script;
+}
+
 describe('native incremental ink', () => {
   it('paints two crossing pen contacts identically live, committed, replayed and captured', () => {
     const script = merge(
@@ -404,33 +436,21 @@ describe('native incremental ink', () => {
     expect(differing(live, captured)).toBe(0);
   });
 
-  it('closes the glaze group where a resumed crayon contact starts its new stroke, live and replayed', () => {
-    const crayon = { brush: 'crayon', color: 'Red', width: 'extraThick' };
-    const twoContacts = createInkScene();
-    const first = drawCohort({
-      scene: twoContacts,
-      history: createHistory(emptyDrawing()),
-      script: stroke('a', across, 2, crayon),
-    });
-    drawCohort({
-      scene: twoContacts,
-      history: first.history,
-      script: stroke('b', across, 2, crayon),
-    });
-    const separate = pixelsOf(twoContacts.snapshot());
-    twoContacts.dispose();
-    // The same two strokes from one contact whose stream resumed at the start and retraced it, the
-    // resume landing in the frame that still holds the first stroke's unflushed tail.
-    const script = stroke('a', across, 2, crayon);
-    script.at(-1).pop();
-    const retrace = stroke('a', across, 2).map((events) =>
-      events.map((event) => (event.start ? { resume: 'a', at: event.at } : event))
-    );
-    script.at(-1).push(...retrace[0]);
-    script.push(...retrace.slice(1));
-    const { live, replay, captured, committed } = expectIdentity({ script });
-    expect(committed.map((stroke) => stroke.seed)).toEqual([1, 2]);
-    expect(differing(live, separate)).toBe(0);
+  const as = (style, contact) => (points) => ({ points, style, contact });
+  const crayon = as({ brush: 'crayon', color: 'Red', width: 'extraThick' });
+  const pen = as({ brush: 'pen', color: 'Blue', width: 'extraThick' });
+  const eraser = as({ brush: 'eraser', width: 'extraThick' }, 'e');
+  const retrace = across.slice(0, 12);
+  it.each([
+    ['retraces itself', [crayon(across), crayon(across)]],
+    ['resumes twice before one flush', [crayon(across), crayon(retrace), crayon(retrace)]],
+    [
+      'resumes just before a new eraser contact starts',
+      [pen(across), pen(across.slice(18, 24)), eraser(across.slice(16, 26))],
+    ],
+  ])('paints a contact that %s as its strokes drawn one after another', (_case, strokes) => {
+    const { live, replay, captured } = expectIdentity({ script: resumedScript(strokes) });
+    expect(differing(live, separately(strokes))).toBe(0);
     expect(differing(live, replay)).toBe(0);
     expect(differing(live, captured)).toBe(0);
   });
