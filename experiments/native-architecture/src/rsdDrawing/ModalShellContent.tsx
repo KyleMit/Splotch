@@ -16,6 +16,7 @@ import { css, html } from 'react-strict-dom';
 import { DrawingStatusBar, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useDialogBack } from '../platform/BrowserBack';
+import { useKeyboardLift } from '../platform/keyboardLift';
 import { ModalKeyboardScope } from '../platform/KeyboardScope';
 import { DialogScope } from './dialogScope';
 import { useConfirmFocus } from './useConfirmFocus';
@@ -256,6 +257,7 @@ export function ModalStage({
   overlay,
 }: ModalStageProps) {
   const { presented, motion } = useModalMotion(visible, onDismiss, exitTrigger);
+  const lift = useKeyboardLift(visible);
   const origin = useModalOrigin();
   useDialogBack(visible, onClose);
   return (
@@ -319,7 +321,7 @@ export function ModalStage({
                 opacity: motion.opacity,
                 transform: [
                   { translateX: motion.x },
-                  { translateY: motion.y },
+                  { translateY: Animated.add(motion.y, lift) },
                   { scale: motion.scale },
                 ],
               }}
