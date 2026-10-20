@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { AI_ORIGIN } from '../../../experiments/native-architecture/src/ai/contract.ts';
+import { FEEDBACK_URL } from '../../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
+import { PACK_ORIGIN } from '../../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
 import { documentPolicyProblems, withContentSecurityPolicy } from '../lib/native-web-csp.mjs';
 
 const BOOT = "document.documentElement.setAttribute('data-boot','')";
@@ -38,9 +41,15 @@ describe('withContentSecurityPolicy', () => {
     const policy = policyOf(withContentSecurityPolicy(SHELL));
     expect(directive(policy, 'default-src')).toEqual(["'self'"]);
     expect(directive(policy, 'object-src')).toEqual(["'none'"]);
-    expect(directive(policy, 'connect-src')).toEqual(["'self'", 'blob:']);
+    expect(directive(policy, 'connect-src')).toEqual(["'self'", 'blob:', 'https://splotch.art']);
     for (const name of ['frame-ancestors', 'report-uri', 'report-to', 'sandbox'])
       expect(directive(policy, name)).toBeUndefined();
+  });
+
+  it('lets an export served from another origin reach every hosted service it calls', () => {
+    const connect = directive(policyOf(withContentSecurityPolicy(SHELL)), 'connect-src');
+    for (const url of [AI_ORIGIN, FEEDBACK_URL, PACK_ORIGIN])
+      expect(connect).toContain(new URL(url).origin);
   });
 
   it('refuses a document that already has a policy or no head', () => {

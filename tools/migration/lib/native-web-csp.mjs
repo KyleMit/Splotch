@@ -1,20 +1,16 @@
-// The Content-Security-Policy the React Native web export's documents carry: shipping's web
-// directives (web/securityPolicy.ts) with script-src holding 'self' and the hash of every inline
-// executable script the document itself carries, never 'unsafe-inline' (issue 3017). A meta tag
-// cannot carry the directives SvelteKit's meta policy also drops, nor report-to; the hosting
-// response delivers those, as it does for shipping.
+// The Content-Security-Policy the React Native web export's documents carry: shipping's native
+// meta policy (nativeMetaCspDirectives in web/securityPolicy.ts), whose connect-src admits the
+// hosted API origin the export's transports call from wherever it is served, with script-src
+// holding 'self' and the hash of every inline executable script the document itself carries, never
+// 'unsafe-inline' (issue 3017). A meta tag cannot carry the directives that policy leaves out; the
+// hosting response delivers those, as it does for shipping.
 import { createHash } from 'node:crypto';
 import {
-  SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
-  WEB_CSP_DIRECTIVES,
   inlineExecutableScriptBodies,
+  nativeMetaCspDirectives,
   serializeCspDirectives,
 } from '../../../web/securityPolicy.ts';
 
-const META_UNSUPPORTED_DIRECTIVES = new Set([
-  ...SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
-  'report-to',
-]);
 const CSP_META = /<meta http-equiv="Content-Security-Policy" content="([^"]*)">/i;
 
 export function inlineScriptHashes(html) {
@@ -28,12 +24,7 @@ export function inlineScriptHashes(html) {
 }
 
 export function nativeWebCspDirectives(html) {
-  return {
-    ...Object.fromEntries(
-      Object.entries(WEB_CSP_DIRECTIVES).filter(([name]) => !META_UNSUPPORTED_DIRECTIVES.has(name))
-    ),
-    'script-src': ['self', ...inlineScriptHashes(html)],
-  };
+  return { ...nativeMetaCspDirectives(), 'script-src': ['self', ...inlineScriptHashes(html)] };
 }
 
 // The policy goes first in <head>, ahead of every script it governs.

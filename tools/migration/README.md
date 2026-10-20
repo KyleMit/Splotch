@@ -63,17 +63,18 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
   After the prerender it writes a Content-Security-Policy meta tag at the top of `index.html` and
-  `404.html` (`lib/native-web-csp.mjs`): shipping's directives from `web/securityPolicy.ts`, with
-  `script-src` holding `'self'` and the hash of each inline script the document carries, never
-  `'unsafe-inline'`. Its post hook runs `check-native-web-precache.mjs`, which verifies the service
-  worker and that both documents' policies hash every inline script, then
-  `check-native-web-startup.mjs`, which holds the startup path to two caps (ADR-0180) and rejects an
-  image inlined into it. `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the
-  scripts, stylesheets and preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds
-  every script and stylesheet the controls wait for, including the bundle the boot script loads
-  after first paint. Both are set from the measured export, and the check reports them against the
-  shipping `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor. The constants'
-  comments carry the numbers. A surface the drawing screen shows only on request loads through
+  `404.html` (`lib/native-web-csp.mjs`): shipping's native meta policy from `web/securityPolicy.ts`,
+  whose `connect-src` admits the hosted API origin from any serving origin, with `script-src`
+  holding `'self'` and the hash of each inline script the document carries, never `'unsafe-inline'`.
+  Its post hook runs `check-native-web-precache.mjs`, which verifies the service worker and that
+  both documents' policies hash every inline script, then `check-native-web-startup.mjs`, which
+  holds the startup path to two caps (ADR-0180) and rejects an image inlined into it.
+  `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the scripts, stylesheets and
+  preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds every script and
+  stylesheet the controls wait for, including the bundle the boot script loads after first paint.
+  Both are set from the measured export, and the check reports them against the shipping
+  `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor. The constants' comments carry
+  the numbers. A surface the drawing screen shows only on request loads through
   `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
   failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
   drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
