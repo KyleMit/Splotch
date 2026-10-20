@@ -18,6 +18,7 @@ import {
 export function createDrawingProduct(storage: SoundSettingsStorage, publish: () => void) {
   let preferences = DEFAULT_PARENT_PREFERENCES;
   let consentEpoch = 0;
+  let aiSpan = 0;
   let parentCenterOpen = false;
   let confirmNever = false;
   let disposed = false;
@@ -30,6 +31,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     const changedPolicies = PARENT_FEATURES.filter(
       (feature) => preferences.parentPolicies[feature] !== next.parentPolicies[feature]
     );
+    if (preferences.aiEnabled !== next.aiEnabled) aiSpan += 1;
     const changed = preferences.aiEnabled !== next.aiEnabled || changedPolicies.length > 0;
     preferences = { aiEnabled: next.aiEnabled, parentPolicies: next.parentPolicies };
     settingsState = next;
@@ -52,7 +54,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       return gate.request(feature, action, options);
     },
     cancel: gate.cancel,
-    consent: () => ({ enabled: !disposed && preferences.aiEnabled, epoch: consentEpoch }),
+    consent: () => ({ enabled: !disposed && preferences.aiEnabled, epoch: consentEpoch, aiSpan }),
   };
   // Parent Center's controls answer to whoever can reach them: the parent who passed its check, or
   // anyone when its policy asks for none.
