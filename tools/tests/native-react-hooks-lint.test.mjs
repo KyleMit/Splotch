@@ -8,7 +8,18 @@ import { describe, expect, it } from 'vitest';
 // at a plain and a platform-suffixed path, in .ts and .tsx, so a glob that narrows or a rule that
 // stops firing fails here instead of reading as a clean tree.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const eslint = new ESLint({ cwd: repoRoot });
+const eslint = new ESLint({
+  cwd: repoRoot,
+  // The probe paths do not exist, so the type-aware floating-promise block (which needs each file
+  // in the candidate's TS program) is switched off here, as the web lint tests switch off theirs.
+  overrideConfig: [
+    {
+      files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+      languageOptions: { parserOptions: { projectService: false } },
+      rules: { '@typescript-eslint/no-floating-promises': 'off' },
+    },
+  ],
+});
 
 const ERROR = 2;
 const HOOKS_RULES = ['react-hooks/exhaustive-deps', 'react-hooks/rules-of-hooks'];

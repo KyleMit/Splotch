@@ -12,6 +12,8 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const eslint = new ESLint({ cwd: repoRoot });
 
 const RULE = '@typescript-eslint/no-floating-promises';
+// The first probe builds the candidate's whole TypeScript program; CI measured 7 s for it.
+const TYPE_AWARE_LINT_TIMEOUT_MS = 60_000;
 const ERROR = 2;
 const PROBE_PATHS = [
   'experiments/native-architecture/src/platform/sectionsSeen.ts',
@@ -43,13 +45,21 @@ async function floatingPromises(path, source) {
 }
 
 describe('the native candidate floating-promise fence', () => {
-  it.each(PROBE_PATHS)('rejects an unawaited File.write() in %s', async (path) => {
-    expect(await floatingPromises(path, UNAWAITED_WRITE)).toEqual([
-      { ruleId: RULE, severity: ERROR, line: 4 },
-    ]);
-  });
+  it.each(PROBE_PATHS)(
+    'rejects an unawaited File.write() in %s',
+    async (path) => {
+      expect(await floatingPromises(path, UNAWAITED_WRITE)).toEqual([
+        { ruleId: RULE, severity: ERROR, line: 4 },
+      ]);
+    },
+    TYPE_AWARE_LINT_TIMEOUT_MS
+  );
 
-  it.each(PROBE_PATHS)('accepts an awaited write and writeSync() in %s', async (path) => {
-    expect(await floatingPromises(path, AWAITED_WRITE)).toEqual([]);
-  });
+  it.each(PROBE_PATHS)(
+    'accepts an awaited write and writeSync() in %s',
+    async (path) => {
+      expect(await floatingPromises(path, AWAITED_WRITE)).toEqual([]);
+    },
+    TYPE_AWARE_LINT_TIMEOUT_MS
+  );
 });
