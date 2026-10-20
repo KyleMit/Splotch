@@ -619,9 +619,15 @@ AC1_MOVED = {
 }
 
 # The named test passes, but inspection shows the oracle covers the native arm only and RN web differs.
-AC1_FAILED = {
-    'L0161': (3008, 'test pins FEEDBACK_APP_VERSION to package.json, which is shipping\'s Capacitor '
-              'version only; shipping web shows deriveWebVersion (web/buildVersion.ts) and RN web does not'),
+AC1_FAILED = {}
+
+# Rows AC-1 failed whose fix adds a two-sided test. Each stays unverified until AC-1 is rerun
+# against a head whose CI run passed that test.
+AC1_FIXED = {
+    'L0161': (3008, [T + 'native-web-app-version.test.mjs'],
+              'failed (the test pinned FEEDBACK_APP_VERSION to package.json, shipping\'s Capacitor '
+              'version only); fixed by #3008\'s change: RN web shows and reports the version the export '
+              'writes from deriveWebVersion, and native-web-app-version reads both sides'),
 }
 
 # Rows mapped to AC-1 and other protocols: the AC-1 result is recorded and the status waits on the rest.
@@ -711,6 +717,11 @@ def ac1_result(rid, res):
         res['basis'] += f'; {run}: passed with a shipping oracle'
     elif rid in AC1_REPAIRED:
         res['basis'] += f'; {AC1_RUN}: a rule the module owns was hand-checked (review); a test change now runs or reads shipping\'s rule, awaiting its CI run'
+    elif rid in AC1_FIXED:
+        issue, extra, result = AC1_FIXED[rid]
+        res['tests'] += [t for t in extra if t not in res['tests']]
+        res['evidence'] = f'{AC1_RECORD};{ISSUE}{issue}'
+        res['basis'] += f'; {AC1_RUN}: {result}; awaits an AC-1 rerun'
     elif rid in AC1_FAILED:
         issue, reason = AC1_FAILED[rid]
         res['status'], res['evidence'] = 'failed', f'{AC1_RECORD};{ISSUE}{issue}'

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useOrientationLockApplies } from '../platform/deviceOrientation';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { APP_VERSION } from '../platform/appVersion';
 import type { OrientationChoice } from '../settings/orientation';
 import { TOOL_DRAWER_COPY } from '../settings/toolDrawerSection';
 import { RsdOrientationPicker } from './RsdOrientationPicker';
@@ -156,7 +156,7 @@ export function RsdSettingsCompact({
         <html.div role="img" aria-label="Splotch">
           <RsdSplotchyIcon size={SETTING_ICON_PX} />
         </html.div>
-        <html.span style={styles.version}>Version {FEEDBACK_APP_VERSION}</html.span>
+        <html.span style={styles.version}>Version {APP_VERSION}</html.span>
       </html.div>
     ),
   ];
