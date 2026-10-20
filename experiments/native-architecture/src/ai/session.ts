@@ -119,9 +119,15 @@ export class AiSession {
     );
   };
   private writing: Promise<unknown> = Promise.resolve();
-  // The AI consent epoch in which the server answered that the free creations are used up; turning
-  // AI off or on starts a new one, after which the grant is read again, as shipping's is.
-  protected usedUpEpoch: number | null = null;
+  // The AI-on span in which an authoritative answer (a grant, a creation's count, a used-up refusal)
+  // said no free creations are left. Turning AI off or on starts a new span, after which the grant
+  // is read again, as shipping's is.
+  protected usedUpSpan: number | null = null;
+  protected aiSpan = () => this.deps.parent?.consent().aiSpan ?? null;
+  // Records a free count an authoritative answer gave, in the span its request started in.
+  protected noteRemaining = (remaining: number, span: number | null) => {
+    this.usedUpSpan = remaining === 0 ? span : null;
+  };
   protected persist = (journal: AiJournal) => {
     const work = this.writing
       .catch(() => {})
@@ -193,11 +199,13 @@ export class AiSession {
     if (this.credential.kind === 'free' && known !== null)
       this.update({ remaining: known, availability: 'ready' });
     else if (this.credential.kind === 'free') {
+      const span = this.aiSpan();
       const reply = await this.grantRequest(this.credential.installationId);
       if (!permitted()) return;
-      if (reply.kind === 'grant')
+      if (reply.kind === 'grant') {
+        this.noteRemaining(reply.remaining, span);
         this.update({ remaining: reply.remaining, availability: 'ready' });
-      else
+      } else
         this.update({
           availability: 'unavailable',
           message:
@@ -275,16 +283,20 @@ export class AiSession {
       this.state.credential === 'free' &&
       this.state.availability === 'ready' &&
       this.state.remaining === 0 &&
-      this.usedUpEpoch === this.deps.parent?.consent().epoch;
+      this.usedUpSpan !== null &&
+      this.usedUpSpan === this.aiSpan();
     this.update({ credential: 'free' });
     if (!this.deps.parent?.consent().enabled || usedUp) return;
     this.update({ remaining: null });
+    const span = this.aiSpan();
     const id = await this.deps.vault.installationId();
     if (!current() || !isInstallationId(id)) return;
     const reply = await this.grantRequest(id);
     if (!current()) return;
-    if (reply.kind === 'grant') this.update({ remaining: reply.remaining, availability: 'ready' });
-    else this.update({ availability: 'unavailable' });
+    if (reply.kind === 'grant') {
+      this.noteRemaining(reply.remaining, span);
+      this.update({ remaining: reply.remaining, availability: 'ready' });
+    } else this.update({ availability: 'unavailable' });
   };
   // Saving or forgetting a credential is the parent's own act in Settings › AI Art, as in shipping,
   // so it waits for no grown-up check: only for AI to be on. Turning AI off, a Parent Center change
