@@ -6,7 +6,7 @@ import { css, html } from 'react-strict-dom';
 import { APP_HOME_SCREEN_NAME } from '../../../../web/src/lib/appIdentity';
 import { TABLET_MIN_SIDE_PX } from '../../../../web/src/lib/breakpoints';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { CONTROL_GAP, DRAWING_ON_BRAND, DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
+import { CONTROL_GAP, DRAWING_ON_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { installPrompt } from '../platform/installPrompt';
 import { INSTALL_BANNER_COPY, INSTALL_PROMPT_COPY } from '../install/installCopy';
@@ -14,6 +14,7 @@ import { useInstallBanner, type InstallBanner } from '../install/useInstallBanne
 import { styles as controlStyles } from './controls';
 import { HeaderControl } from './DialogHeader';
 import { EDGE_INSET_PX } from './edgeLayout';
+import { MODAL_CONTROL_SIZE_PX } from './modalGeometry';
 import {
   boxOf,
   shrinkTarget,
@@ -22,6 +23,7 @@ import {
   type Box,
 } from './installBannerMotion';
 import { RsdIcon } from './RsdIcon';
+import { CORNER_BUTTON_SIZE_PX } from './RsdIconButton';
 import { INSTALL_HINT_ID, RsdInstallHint, RsdInstallParting } from './RsdInstallText';
 import { RsdPressable } from './RsdPressable';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
@@ -34,6 +36,8 @@ const PREVIEW_ICON_PX = 52;
 const PREVIEW_COLUMN_PX = 60;
 const PREVIEW_LABEL_LINE_HEIGHT = 1.2;
 const COPY_LINE_HEIGHT = 1.25;
+// Shipping's .install-copy wraps pretty, keeping a word from standing alone on a last line.
+const COPY_TEXT_WRAP = 'pretty';
 const CTA_HEIGHT_PX = 44;
 const CTA_PRESS_SCALE = 0.96;
 const CTA_ICON_PX = 18;
@@ -50,6 +54,7 @@ export const INSTALL_BANNER_METRICS = {
   previewColumnPx: PREVIEW_COLUMN_PX,
   previewLabelLineHeight: PREVIEW_LABEL_LINE_HEIGHT,
   copyLineHeight: COPY_LINE_HEIGHT,
+  copyTextWrap: COPY_TEXT_WRAP,
   ctaHeightPx: CTA_HEIGHT_PX,
   ctaPressScale: CTA_PRESS_SCALE,
   ctaIconPx: CTA_ICON_PX,
@@ -57,6 +62,8 @@ export const INSTALL_BANNER_METRICS = {
   chevronTurnDeg: CHEVRON_TURN_DEG,
   previewLightShadow: PREVIEW_LIGHT_SHADOW,
 } as const;
+// The first row's room for the stacked layout's pinned close: one gap and the blob less its outset.
+const DISMISS_RESERVE_PX = DRAWING_SCALE.space3 + MODAL_CONTROL_SIZE_PX - DISMISS_OUTSET_PX;
 // The home-screen icon the web export serves from the shipping static files (build-native-web.mjs);
 // the native apps never show the banner, having no install step.
 export const INSTALL_PREVIEW_ICON_SRC = '/apple-touch-icon.png';
@@ -65,13 +72,11 @@ type DockInsets = Readonly<{ top: number; inline: number; bottom: number; stacke
 
 // The shipping bottom dock: below 600px wide in portrait the banner spans the screen less one
 // gutter and rides above the corner controls; wider, it stays between them on the bottom edge.
-// The corners here are this app's corner controls, at least the touch target and growing with
-// the drawer chevron's Button Size. The top bound keeps the card below Clear.
-export function installDockInsets(
-  window: Readonly<{ width: number; height: number }>,
-  controlSize: number
-): DockInsets {
-  const corner = EDGE_INSET_PX + Math.max(controlSize, TOUCH_TARGET);
+// The banner shows only while the drawer is closed, when each corner holds one corner-skin button
+// whose size Button Size leaves alone, as shipping's --corner-button-size does. The top bound keeps
+// the card below Clear.
+export function installDockInsets(window: Readonly<{ width: number; height: number }>): DockInsets {
+  const corner = EDGE_INSET_PX + CORNER_BUTTON_SIZE_PX;
   const top = corner + CONTROL_GAP;
   const stacked = window.width < TABLET_MIN_SIDE_PX && window.height >= window.width;
   return stacked
@@ -85,15 +90,13 @@ export function RsdInstallBanner({
   strokes,
   hidden,
   waiting,
-  controlSize,
 }: {
   strokes: number;
   hidden: boolean;
   waiting: boolean;
-  controlSize: number;
 }) {
   const banner = useInstallBanner(installPrompt, strokes, hidden, waiting);
-  const dock = installDockInsets(useWindowDimensions(), controlSize);
+  const dock = installDockInsets(useWindowDimensions());
   const area = useRef<Box | null>(null);
   const card = useRef<Box | null>(null);
   const { shown, gone } = useBannerPresence(banner.present, banner.parting);
@@ -139,29 +142,26 @@ export function RsdInstallBanner({
 
 function InstallCard({ banner, stacked }: { banner: InstallBanner; stacked: boolean }) {
   const copy = INSTALL_PROMPT_COPY[banner.stage];
-  const cta = <InstallCta banner={banner} stacked={stacked} />;
-  // React Native has no flex `order`, so the stacked phone layout writes the close before the
-  // full-width button that shipping reorders onto its own line.
-  const dismiss = (
-    <html.div style={styles.dismiss}>
-      <HeaderControl
-        kind="close"
-        label={INSTALL_BANNER_COPY.dismiss}
-        disabled={false}
-        onClick={banner.dismiss}
-      />
-    </html.div>
-  );
+  // The call to action precedes Not now in reading and focus order, as in shipping. React Native has
+  // no flex `order` to lift the close above the full-width button on a phone, so there it is pinned
+  // to the first row's end and the copy keeps its room.
   return (
     <>
       <html.div style={[styles.main, stacked && styles.mainStacked]}>
         <InstallPreview />
-        <html.div style={styles.copy}>
+        <html.div style={[styles.copy, stacked && styles.copyStacked(DISMISS_RESERVE_PX)]}>
           <html.strong style={[controlStyles.boldText, styles.heading]}>{copy.heading}</html.strong>
           <html.span style={styles.detail}>{copy.detail}</html.span>
         </html.div>
-        {stacked ? dismiss : cta}
-        {stacked ? cta : dismiss}
+        <InstallCta banner={banner} stacked={stacked} />
+        <html.div style={[styles.dismiss, stacked && styles.dismissStacked]}>
+          <HeaderControl
+            kind="close"
+            label={INSTALL_BANNER_COPY.dismiss}
+            disabled={false}
+            onClick={banner.dismiss}
+          />
+        </html.div>
       </html.div>
       <RsdInstallHint shown={banner.hintOpen && banner.mode !== 'oneTap'} mode={banner.mode} />
     </>
@@ -273,6 +273,7 @@ const styles = css.create({
     boxShadow: colors.floatShadow,
   },
   main: {
+    position: 'relative',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -317,7 +318,10 @@ const styles = css.create({
     gap: dimensions.space1,
     textAlign: 'left',
     lineHeight: COPY_LINE_HEIGHT,
+    textWrap: COPY_TEXT_WRAP,
   },
+  // A dynamic style: StyleX evaluates only this module's own constants statically.
+  copyStacked: (reservePx: number) => ({ marginRight: reservePx }),
   heading: {
     color: colors.textStrong,
     fontSize: dimensions.fontSizeMd,
@@ -371,4 +375,5 @@ const styles = css.create({
     marginTop: -DISMISS_OUTSET_PX,
     marginRight: -DISMISS_OUTSET_PX,
   },
+  dismissStacked: { position: 'absolute', top: 0, right: 0 },
 });

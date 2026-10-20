@@ -78,6 +78,7 @@ it('keeps the card, preview tile and copy geometry', () => {
     String(m.previewLabelLineHeight)
   );
   expect(declaration(bannerStyle, '.install-copy', 'line-height')).toBe(String(m.copyLineHeight));
+  expect(declaration(bannerStyle, '.install-copy', 'text-wrap')).toBe(m.copyTextWrap);
 });
 
 it('keeps the hint and parting text geometry', () => {
