@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing } from '../platform/animated';
+import { Animated } from '../platform/animated';
 import { keyframeTimeline } from '../rsdDrawing/keyframeMotion';
 import { useReduceMotion } from './useReduceMotion';
 import type { PaperFrame } from './paperGeometry';
@@ -29,11 +29,7 @@ export function UndoInkMotion({
   children: ReactNode;
 }) {
   const reduced = useReduceMotion();
-  const elapsedMs = Math.max(0, performance.now() - feedback.startedAt);
-  const expired = elapsedMs >= UNDO_GHOST_MS;
-  const progress = useRef(
-    new Animated.Value(Easing.bezier(...UNDO_GHOST_EASE)(Math.min(1, elapsedMs / UNDO_GHOST_MS)))
-  ).current;
+  const progress = useRef(new Animated.Value(0)).current;
   const [finished, setFinished] = useState(false);
   const lifecycle = useRef({ generation: 0 });
   useEffect(() => {
@@ -48,20 +44,17 @@ export function UndoInkMotion({
         feedback.onFinished();
       }
     };
-    if (reduced || expired) {
+    if (reduced) {
       reportFinished();
       return;
     }
     let motion: ReturnType<typeof Animated.timing> | undefined;
+    // Shipping's runWhenPainted (inkMotion.ts): the fly-away starts one frame after the frame that
+    // paints the ghost, never at the press. Timed from the press, the render and the ghost's build
+    // used up most of the eased fade before any of it reached the screen (#3073).
     const firstFrame = requestAnimationFrame(() => {
       secondFrame = requestAnimationFrame(() => {
-        const elapsed = Math.max(0, performance.now() - feedback.startedAt);
-        if (elapsed >= UNDO_GHOST_MS) {
-          setFinished(true);
-          reportFinished();
-          return;
-        }
-        motion = keyframeTimeline(progress, GHOST_TIMELINE, UNDO_GHOST_MS, 0, elapsed);
+        motion = keyframeTimeline(progress, GHOST_TIMELINE, UNDO_GHOST_MS);
         motion.start(({ finished: completed }) => {
           if (completed && !cancelled) {
             setFinished(true);
@@ -80,8 +73,8 @@ export function UndoInkMotion({
         if (lifetime.generation === generation) reportFinished();
       });
     };
-  }, [feedback, progress, reduced, expired]);
-  if (finished || feedback.reduced || reduced || expired) return null;
+  }, [feedback, progress, reduced]);
+  if (finished || feedback.reduced || reduced) return null;
   const target = feedback.towards;
   const dx =
     target && frame
