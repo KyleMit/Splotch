@@ -74,8 +74,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function show(strokes, hidden = false, size = TOUCH_TARGET) {
-  const element = createElement(RsdInstallBanner, { strokes, hidden, controlSize: size });
+async function show(strokes, hidden = false, size = TOUCH_TARGET, waiting = false) {
+  const element = createElement(RsdInstallBanner, {
+    strokes,
+    hidden,
+    waiting,
+    controlSize: size,
+  });
   if (root) await act(async () => root.render(element));
   else host = await mount(element);
 }
@@ -201,6 +206,28 @@ it('hands off to Settings after five ignored strokes and shrinks into it', async
   await act(async () => vi.advanceTimersByTime(PARTING_MESSAGE_MS));
   expect(moves()).toEqual([{ toValue: 0, duration: SHRINK_EXIT_MS }]);
   expect(host.textContent).not.toContain(INSTALL_BANNER_COPY.parting);
+});
+
+// Shipping keeps a parting message on screen through its visibility guards ({#if visible ||
+// parting}), so a save failure or a minimized AI picture that arrives during it does not cut it
+// short (#3021). Negative control: routing those guards through `hidden` drops it at once.
+it('keeps the parting message through a save failure that arrives during it', async () => {
+  vi.useFakeTimers();
+  await show(3);
+  for (const strokes of [4, 5, 6, 7, 8]) await show(strokes);
+  expect(host.textContent).toContain(INSTALL_BANNER_COPY.parting);
+  await show(8, false, TOUCH_TARGET, true);
+  expect(host.textContent).toContain(INSTALL_BANNER_COPY.parting);
+  await act(async () => vi.advanceTimersByTime(PARTING_MESSAGE_MS));
+  expect(host.textContent).not.toContain(INSTALL_BANNER_COPY.parting);
+  expect(stored.get(STORAGE_KEYS.installDismissed)).toBe('true');
+});
+
+it('waits without a parting message while a picture is not yet kept, and shows again after', async () => {
+  await show(3, false, TOUCH_TARGET, true);
+  expect(host.textContent).not.toContain(INSTALL_PROMPT_COPY.initial.heading);
+  await show(3);
+  expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
 });
 
 it('steps aside under other controls without motion and restarts its countdown when shown again', async () => {
