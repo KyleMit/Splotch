@@ -111,14 +111,11 @@ export const aiTransport: AiTransport = (request, signal) =>
       ...request.headers,
       Origin: Platform.OS === 'ios' ? 'capacitor://localhost' : 'https://localhost',
     },
+    // React Native's Blob rejects byte parts, so the bytes go to expo/fetch as a copy that its
+    // BodyInit type accepts (an ArrayBuffer-backed Uint8Array).
     ...(request.body === undefined
       ? {}
-      : {
-          body:
-            typeof request.body === 'string'
-              ? request.body
-              : new Blob([request.body.slice().buffer]),
-        }),
+      : { body: typeof request.body === 'string' ? request.body : request.body.slice() }),
     signal,
     credentials: 'omit',
     redirect: 'error',
@@ -133,6 +130,6 @@ export const aiDismissal: AiDismissalStore = {
   async write(id) {
     const file = new File(Paths.document, AI_DISMISSAL_FILE);
     if (!file.exists) file.create();
-    file.write(id);
+    await file.write(id);
   },
 };

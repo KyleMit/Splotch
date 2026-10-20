@@ -48,7 +48,7 @@ export const soundSettingsStorage: SoundSettingsStorage & { readSync(): string |
     const pending = new File(owner, `sound-${revision}.pending`);
     if (pending.exists) pending.delete();
     pending.create();
-    pending.write(snapshot);
+    await pending.write(snapshot);
     if ((await pending.text()) !== snapshot)
       throw new Error('Sound settings could not be saved completely.');
     const committed = new File(owner, `sound-${revision}.json`);

@@ -204,7 +204,7 @@ internal object SplotchAIImageDecoder {
             chunks == 1 -> check(type == "IHDR" && length == 13L && u(offset + 16) == 8 && u(offset + 17) in setOf(2, 6) && u(offset + 18) == 0 && u(offset + 19) == 0 && u(offset + 20) == 0)
             type == "IDAT" -> dataSeen = true
             type == "IEND" -> { check(length == 0L && dataSeen && end == bytes.size); ended = true }
-            else -> check(!dataSeen && type in setOf("cHRM", "gAMA", "sRGB", "sBIT", "pHYs", "PLTE"))
+            else -> check(!dataSeen && type in setOf("cHRM", "gAMA", "sRGB", "sBIT", "pHYs", "PLTE", "caBX"))
           }
           offset = end
         }

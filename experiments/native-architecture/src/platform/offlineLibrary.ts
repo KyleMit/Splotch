@@ -104,7 +104,7 @@ export function createLibraryPlatform(): LibraryBackgroundPlatform {
       ensureParent(path);
       const entry = file(path);
       if (!entry.exists) entry.create();
-      entry.write(bytes);
+      await entry.write(bytes);
     },
     async remove(prefix) {
       if (!root || !filesystem || !safePath(prefix))

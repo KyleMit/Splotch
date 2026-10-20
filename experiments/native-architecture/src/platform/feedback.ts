@@ -65,7 +65,7 @@ export const feedbackPolicyStorage: FeedbackPolicyStorage = {
     const file = new File(Paths.document, FEEDBACK_POLICY_FILE);
     const snapshot = feedbackPolicySnapshot(mode);
     if (!file.exists) file.create();
-    file.write(snapshot);
+    await file.write(snapshot);
     if ((await file.text()) !== snapshot) throw new Error('Feedback protection was not saved');
   },
 };

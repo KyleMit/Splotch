@@ -36,7 +36,9 @@ vi.mock('expo-file-system', () => {
       if (this.exists) throw new Error('exists');
       memory.files.set(this.path, '');
     }
-    write(snapshot) {
+    async write(snapshot) {
+      // Expo SDK 58's write() is asynchronous: the bytes land after it returns.
+      await Promise.resolve();
       if (memory.writeFailure) throw new Error('disk full');
       memory.files.set(this.path, memory.corruptWrite ? 'partial' : snapshot);
     }

@@ -57,7 +57,9 @@ vi.mock('expo-file-system', () => {
       if (this.exists) throw new Error('Exists');
       fixture.files.set(this.uri, new Uint8Array());
     }
-    write(value) {
+    async write(value) {
+      // Expo SDK 58's write() is asynchronous: the bytes land after it returns.
+      await Promise.resolve();
       fixture.files.set(
         this.uri,
         typeof value === 'string' ? new TextEncoder().encode(value) : value.slice()
@@ -161,6 +163,36 @@ it('resolves an absent iOS secure value as null, as Android does', async () => {
   await expect(aiVault.read('byok')).rejects.toThrow('could not be read');
   fixture.read.mockResolvedValue(null);
   await expect(aiVault.read('byok')).resolves.toBeNull();
+});
+it('uploads the drawing bytes without building a React Native Blob', async () => {
+  // React Native's BlobManager.createFromParts throws on ArrayBuffer and ArrayBufferView parts.
+  class ReactNativeBlob {
+    constructor(parts = []) {
+      if (parts.some((part) => part instanceof ArrayBuffer || ArrayBuffer.isView(part)))
+        throw new Error(
+          "Creating blobs from 'ArrayBuffer' and 'ArrayBufferView' are not supported"
+        );
+    }
+  }
+  vi.stubGlobal('Blob', ReactNativeBlob);
+  try {
+    const body = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x57, 0x45, 0x42, 0x50]);
+    await aiTransport(
+      {
+        path: '/api/generate-image',
+        method: 'POST',
+        headers: { 'Content-Type': 'image/webp' },
+        body,
+      },
+      new AbortController().signal
+    );
+    const init = nativeFetch.mock.calls.at(-1)[1];
+    expect(init.body).toBeInstanceOf(Uint8Array);
+    expect([...init.body]).toEqual([...body]);
+    expect(init.headers['Content-Type']).toBe('image/webp');
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 it('uses strict native secure readback for writes and removals, with no fallback on an ambiguous outcome', async () => {
   fixture.write.mockResolvedValue(true);

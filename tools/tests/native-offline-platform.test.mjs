@@ -78,7 +78,9 @@ vi.mock('expo-file-system', () => {
     create() {
       writeFileSync(this.path, '');
     }
-    write(bytes) {
+    async write(bytes) {
+      // Expo SDK 58's write() is asynchronous: the bytes land after it returns.
+      await Promise.resolve();
       writeFileSync(this.path, bytes);
     }
     async bytes() {

@@ -24,7 +24,7 @@ export function useOnline() {
       try {
         const file = new File(Paths.document, STORAGE_KEYS.lastNetworkOnline);
         if (!file.exists) file.create();
-        file.write(String(connected));
+        file.writeSync(String(connected));
       } catch (error) {
         console.warn('Network status could not be saved:', error);
       }
