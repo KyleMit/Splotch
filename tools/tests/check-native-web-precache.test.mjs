@@ -77,7 +77,7 @@ const lookup = (callback, url) =>
 
 // The worker as generateSW serializes it: one entry per precached file, pinned to
 // the integrity of the bytes the fixture exported unless an entry overrides it.
-function worker(urls, assets, { integrity = {}, fallbackUrl = SHELL.url } = {}) {
+function worker(urls, assets, { integrity = {}, fallbackUrl = SHELL.url, failureRoutes = 2 } = {}) {
   const entries = urls.map((url) => {
     const pinned =
       url in integrity
@@ -90,9 +90,11 @@ function worker(urls, assets, { integrity = {}, fallbackUrl = SHELL.url } = {}) 
     const pin = pinned === null ? '' : `,integrity:${JSON.stringify(pinned)}`;
     return `{url:${JSON.stringify(url)},revision:null${pin}}`;
   });
+  const failureOnly = `,plugins:[{${lookup('handlerDidError', fallbackUrl)}}]`;
   return (
     `precacheAndRoute([${entries.join(',')}]);` +
-    `plugins:[{${lookup('cachedResponseWillBeUsed', fallbackUrl)},${lookup('handlerDidError', fallbackUrl)}}]`
+    `plugins:[{${lookup('cachedResponseWillBeUsed', fallbackUrl)},${lookup('handlerDidError', fallbackUrl)}}]` +
+    failureOnly.repeat(failureRoutes - 1)
   );
 }
 
@@ -173,6 +175,12 @@ it.each([
     COMPLETE,
     { fallbackUrl: '/index.html' },
     /does not look up/,
+  ],
+  [
+    "the other pages' route lost its offline fallback",
+    COMPLETE,
+    { failureRoutes: 1 },
+    /handlerDidError does not look up/,
   ],
   [
     'an exported chunk is not precached',

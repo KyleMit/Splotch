@@ -204,13 +204,31 @@ export function pinPrecacheToExport(outputDir, shell) {
   });
 }
 
-// Workbox serializes the matcher, so native-web-not-found.test.mjs pins these paths to APP_PAGE_PATHS.
+// Workbox serializes each matcher on its own, so each carries the app paths inline;
+// native-web-not-found.test.mjs pins them to APP_PAGE_PATHS and holds the two matchers to at most
+// one route per page load.
 export function isNativeAppNavigation({ request, url }) {
   return (
     request.mode === 'navigate' &&
     ['/', '/index.html', '/privacy', '/changelog', '/feedback'].includes(url.pathname)
   );
 }
+
+// Any other page load except the hosted /admin console, which shipping's worker leaves alone. The
+// host answers it, its 404 status included; only when the network fails does the app shell answer,
+// and the shell shows shipping's not-found page for a path it does not know
+// (src/platform/appPath.web.ts). A slow answer is waited for, never replaced by the shell.
+export function isOtherNativeNavigation({ request, url }) {
+  return (
+    request.mode === 'navigate' &&
+    !['/', '/index.html', '/privacy', '/changelog', '/feedback'].includes(url.pathname) &&
+    !url.pathname.startsWith('/admin')
+  );
+}
+
+// How many navigation routes look up the app shell from each fallback callback:
+// check-native-web-precache.mjs holds the built worker to these counts.
+export const APP_SHELL_FALLBACK_ROUTES = { cachedResponseWillBeUsed: 1, handlerDidError: 2 };
 
 export function nativeWebServiceWorkerConfig(outputDir, shell) {
   return {
@@ -231,6 +249,18 @@ export function nativeWebServiceWorkerConfig(outputDir, shell) {
         options: {
           networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
           plugins: [createAppShellFallbackPlugin(shell.url, CACHE_BUST_VERSION_PARAM)],
+        },
+      },
+      {
+        urlPattern: isOtherNativeNavigation,
+        handler: 'NetworkOnly',
+        options: {
+          plugins: [
+            {
+              handlerDidError: createAppShellFallbackPlugin(shell.url, CACHE_BUST_VERSION_PARAM)
+                .handlerDidError,
+            },
+          ],
         },
       },
     ],
