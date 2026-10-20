@@ -17,6 +17,7 @@ import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessio
 import { AI_FLOW_IDLE, aiJournalWaiting } from './uiState';
 import { requestPersistentStorage } from '../platform/persistentStorage';
 export type { AiState, PreparedAiDrawing } from './sessionContract';
+const finished = (journal: AiJournal) => journal.phase === 'result' || journal.phase === 'failed';
 export class AiSession {
   protected deps: AiSessionDependencies;
   constructor(deps: AiSessionDependencies) {
@@ -137,9 +138,25 @@ export class AiSession {
         const receipt = await this.deps.storage.write(journal);
         this.journals.set(journal.id, receipt.journal);
         this.update({ journal: receipt.journal });
+        if (!this.state.open && finished(receipt.journal)) await this.release(receipt.journal);
       });
     this.writing = work;
     return work;
+  };
+  // Shipping keeps no AI picture once its card is closed, so storage holds a run only while it is
+  // in progress or on screen. A release that fails leaves the record for the next run to replace,
+  // and rereads storage so that run is not refused as unconfirmed.
+  private release = async (journal: AiJournal) => {
+    try {
+      await this.deps.storage.release(journal.id);
+    } catch {
+      await this.deps.storage.read().catch(() => null);
+    }
+  };
+  private releaseClosed = () => {
+    const journal = this.state.journal;
+    if (!journal || !finished(journal)) return;
+    this.writing = this.writing.catch(() => {}).then(() => this.release(journal));
   };
   protected persistPrepared = (journal: AiJournal, prepared: PreparedAiDrawing) => {
     const work = this.writing
@@ -441,6 +458,7 @@ export class AiSession {
       failures: 0,
       failure: null,
     });
+    this.releaseClosed();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   };

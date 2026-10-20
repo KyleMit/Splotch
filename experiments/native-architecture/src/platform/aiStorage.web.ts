@@ -172,6 +172,12 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
       return Object.freeze({ picture: receipt.journal.result, receipt });
     });
   }
+  release(id: number): Promise<void> {
+    return this.owner.queue(false, async () => {
+      await this.owner.ready();
+      await this.owner.release(id);
+    });
+  }
   pictures(): Promise<AiResult[]> {
     return this.owner.queue(true, async () => {
       const found = await this.owner.readState();

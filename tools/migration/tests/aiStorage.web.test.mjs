@@ -229,3 +229,54 @@ it('pins held credential references, commits intent and records only stable serv
   ).rejects.toThrow();
   expect((await createAiStorage().read()).receipt.recovery.expiry.expiresAt).toBe(status.expiresAt);
 });
+
+it('holds nothing once each of several closed pictures is released', async () => {
+  const storage = createAiStorage();
+  for (let id = 1; id <= 5; id++) {
+    await storage.prepare(journal(id), model, png);
+    if (id % 2) await storage.retain(id, png, 'image/png');
+    else await storage.write(journal(id, 'failed'));
+    expect(disk.raw.attempts).toHaveLength(1);
+    await storage.release(id);
+    expect(disk.raw.attempts).toEqual([]);
+  }
+  expect(await createAiStorage().read()).toBeNull();
+  expect(await createAiStorage().pictures()).toEqual([]);
+});
+
+it('keeps a run in progress or on screen through a release and a relaunch', async () => {
+  const storage = createAiStorage();
+  const receipt = await storage.prepare(journal(), model, png);
+  await storage.release(1);
+  const relaunched = createAiStorage();
+  const stored = await relaunched.read();
+  expect(stored.receipt).toEqual(receipt);
+  expect(await relaunched.readPreparedUpload(stored.receipt)).toEqual(png);
+  const retained = await relaunched.retain(1, png, 'image/png');
+  expect(await createAiStorage().pictures()).toEqual([retained.picture]);
+});
+
+it('reads past a run another tab released after last seeing it unfinished', async () => {
+  const closing = createAiStorage();
+  const other = createAiStorage();
+  await closing.prepare(journal(), model, png);
+  await other.read();
+  await closing.retain(1, png, 'image/png');
+  await closing.release(1);
+  expect(await other.read()).toBeNull();
+  await expect(other.prepare(journal(2), model, png)).resolves.toMatchObject({
+    journal: { id: 2 },
+  });
+});
+
+it('keeps the record when a release does not commit, and releases it after a reread', async () => {
+  const storage = createAiStorage();
+  await storage.prepare(journal(), model, png);
+  await storage.retain(1, png, 'image/png');
+  disk.abort = true;
+  await expect(storage.release(1)).rejects.toThrow('transaction abort');
+  expect(disk.raw.attempts).toHaveLength(1);
+  await storage.read();
+  await storage.release(1);
+  expect(disk.raw.attempts).toEqual([]);
+});

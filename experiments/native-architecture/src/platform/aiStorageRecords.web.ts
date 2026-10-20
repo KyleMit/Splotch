@@ -85,7 +85,6 @@ export function parseWebAiState(raw: unknown): WebAiState {
     !Number.isSafeInteger(raw.revision) ||
     raw.revision < 1 ||
     !Array.isArray(raw.attempts) ||
-    !raw.attempts.length ||
     raw.attempts.length > MAX_AI_STORAGE_ATTEMPTS
   )
     invalidAiStorage();
