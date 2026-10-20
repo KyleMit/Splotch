@@ -77,6 +77,7 @@ export function drawingScreen(overrides = {}) {
     closeColorPicker: vi.fn(),
     openColorPicker: vi.fn(),
     selectInkBrush: vi.fn(),
+    notePaintChoice: vi.fn(),
     ...overrides,
   };
   caller.sound = { settings: { status: 'loading' }, owner: null, audioMessage: '' };

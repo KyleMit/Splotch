@@ -180,6 +180,7 @@ describe('the landscape phone Color Button and Color Menu', () => {
     expect(colorMenu().querySelector('[aria-label="Custom Color"]')).not.toBeNull();
     await act(async () => colorMenu().querySelector('[aria-label="Blue"]').click());
     expect(screen.selectInkBrush).toHaveBeenCalledOnce();
+    expect(screen.notePaintChoice).toHaveBeenCalledExactlyOnceWith('Blue');
     expect(colorMenu()).toBeNull();
     await act(async () => {
       caller.product.sound.owner.settings.setColor('#123ABC');

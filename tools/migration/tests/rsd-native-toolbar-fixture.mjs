@@ -37,6 +37,7 @@ export function toolbarScreen(overrides = {}) {
     openColorPicker: vi.fn(),
     toggleBrush: vi.fn(),
     selectInkBrush: vi.fn(),
+    notePaintChoice: vi.fn(),
     ...overrides,
   };
 }

@@ -37,6 +37,7 @@ export function drawingScreenPort(actual, caller, projectHistory) {
       brushControl: { kind: 'none' },
       availableBrushes: [],
       selectInkBrush() {},
+      notePaintChoice() {},
       currentDrawing: () => caller.screen.history.drawing,
       isDrawing: () => caller.screen.drawing,
       finishInput() {},
@@ -82,6 +83,7 @@ export function paperPort(React, strokeStyle, caller) {
       () => ({
         lockInput: () => () => {},
         finishInput() {},
+        notePaintChoice() {},
         refreshGeometry() {},
         departingInk: () => null,
         // A save's photo library copy; what the library does with it is the test's port.
