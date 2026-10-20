@@ -2,6 +2,7 @@ import { drawingPaper, type AdoptedPaper, type PaperReference } from './paperSpa
 import type { PaintColor } from './palette';
 import {
   cohortFrame,
+  nextCrayonSeed,
   sampleOutcome,
   strokeStyle,
   type Drawing,
@@ -29,7 +30,13 @@ export type LiveStroke = Stroke &
 export type LiveOp = InkStep<LiveStroke>;
 
 type EntryState = { flushed: number; cached: Stroke | null; done: boolean };
-type Entry = Readonly<{ stroke: LiveStroke; points: Point[]; ops: StrokeOp[]; state: EntryState }>;
+type Entry = Readonly<{
+  style: StrokeStyle;
+  stroke: LiveStroke;
+  points: Point[];
+  ops: StrokeOp[];
+  state: EntryState;
+}>;
 
 function liveEntry(style: StrokeStyle, first: Point): Entry {
   const points = [first];
@@ -43,7 +50,7 @@ function liveEntry(style: StrokeStyle, first: Point): Entry {
     snapshot: () =>
       (state.cached ??= ops.length ? { ...style, points, ops } : { ...style, points }),
   };
-  return { stroke, points, ops, state };
+  return { style, stroke, points, ops, state };
 }
 
 export function createContactCohort() {
@@ -79,6 +86,8 @@ export function createContactCohort() {
     return recorded;
   }
 
+  const lastCrayon = () => entries.findLast((entry) => entry.stroke.brush === 'crayon')?.stroke;
+
   function currentDrafts(): readonly Stroke[] {
     drafts ??= entries.map((entry) => entry.stroke.snapshot());
     return drafts;
@@ -113,7 +122,7 @@ export function createContactCohort() {
         if (!paper) throw new Error('The drawing paper is not ready.');
         if (entries.length === 0) frame = cohortFrame(drawing);
       }
-      const reserved = entries.findLast((entry) => entry.stroke.brush === 'crayon')?.stroke;
+      const reserved = lastCrayon();
       const style = strokeStyle(
         brush,
         color,
@@ -134,6 +143,25 @@ export function createContactCohort() {
       if (outcome !== 'appended') return;
       entry.points.push(point);
       entry.state.cached = null;
+      drafts = null;
+    },
+    // A contact whose stream resumed after a lift it never reported continues as a new stroke from
+    // the resumed point, in this cohort so one Undo still takes it. A crayon's new stroke is a fresh
+    // pass with the next grain seed, as shipping's crayonPasses.rollToNextPass gives it.
+    resume(identifier: string, point: Point) {
+      const index = active.get(identifier);
+      if (index === undefined) return;
+      const { style } = entries[index];
+      const reserved = lastCrayon();
+      active.set(identifier, entries.length);
+      entries.push(
+        liveEntry(
+          style.brush === 'crayon'
+            ? { ...style, seed: nextCrayonSeed(reserved ? [reserved] : []) }
+            : style,
+          point
+        )
+      );
       drafts = null;
     },
     finish(identifier: string): readonly Stroke[] | null {
