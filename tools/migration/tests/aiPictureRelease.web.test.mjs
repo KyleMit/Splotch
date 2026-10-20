@@ -17,10 +17,10 @@ afterEach(() => {
   for (const owner of owners.splice(0)) owner.dispose();
 });
 
-function aiOwner({ onGenerate = () => {} } = {}) {
+function aiOwner({ onGenerate = () => {}, storage = createAiStorage() } = {}) {
   let drawings = 0;
   const owner = createNativeAi({
-    storage: createAiStorage(),
+    storage,
     vault: {
       installationId: async () => 'a'.repeat(64),
       read: async () => null,
@@ -95,13 +95,31 @@ it('releases a picture that lands after its card was closed', async () => {
   await vi.waitFor(() => expect(storedRuns()).toBe(0));
 });
 
-it('releases a retained picture whose finishing journal write failed', async () => {
+it('releases a picture closed while storage was retaining it, and the next picture starts', async () => {
+  const storage = createAiStorage();
+  const retain = storage.retain.bind(storage);
+  let closeDuringRetain = true;
+  const owner = aiOwner({ storage });
+  storage.retain = (...args) => {
+    const retaining = retain(...args);
+    if (closeDuringRetain) owner.close();
+    closeDuringRetain = false;
+    return retaining;
+  };
+  await makePicture(owner);
+  expect(owner.getState().open).toBe(false);
+  await vi.waitFor(() => expect(storedRuns()).toBe(0));
+  await makePicture(owner);
+  expect(storedRuns()).toBe(1);
+});
+
+it('releases a picture whose retained commit was not confirmed', async () => {
   const owner = aiOwner();
-  const FINISHING_WRITE_REVISION = 3;
-  disk.failRevision = FINISHING_WRITE_REVISION;
+  const RETAIN_REVISION = 2;
+  disk.uncertainRevision = RETAIN_REVISION;
   await sendPicture(owner);
-  disk.failRevision = null;
-  expect(owner.getState().journal.phase).not.toBe('result');
+  disk.uncertainRevision = null;
+  expect(owner.getState().journal.phase).toBe('sent');
   expect(owner.getState().heldResult).not.toBeNull();
   expect(disk.raw.attempts[0].receipt.journal.phase).toBe('result');
   owner.dismiss();

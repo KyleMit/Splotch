@@ -28,11 +28,11 @@ export class NativeAiController extends AiRecoverySession {
     >
   ) => {
     const id = journal.id;
-    let result: AiResult;
+    let retained: Awaited<ReturnType<typeof this.deps.storage.retain>>;
     try {
-      result = (await this.deps.storage.retain(id, reply.bytes, reply.mime)).picture;
+      retained = await this.deps.storage.retain(id, reply.bytes, reply.mime);
     } catch {
-      result = {
+      const result = {
         uri: `data:${reply.mime};base64,${bytesBase64(reply.bytes)}`,
         mime: reply.mime,
       };
@@ -48,31 +48,18 @@ export class NativeAiController extends AiRecoverySession {
       };
       return;
     }
+    // Storage commits the picture and its finished journal together, so the session adopts that
+    // journal rather than writing it again: a card closed meanwhile may already have released it.
+    const result = retained.picture;
+    this.journals.set(id, retained.receipt.journal);
     this.reports.complete(id, reply.bytes, reply.mime, reply.reportToken, result.uri);
     this.update({
+      journal: retained.receipt.journal,
       heldResult: result,
       pictures: [...this.state.pictures.filter((picture) => picture.uri !== result.uri), result],
+      message: 'Your AI picture and original drawing are saved on this device.',
     });
-    try {
-      await this.persist({
-        ...journal,
-        phase: 'result',
-        result,
-      });
-      this.update({
-        message: 'Your AI picture and original drawing are saved on this device.',
-      });
-    } catch {
-      this.update({
-        message:
-          'The picture file is saved, but recovery could not be recorded. Keep this app open and retry saving it.',
-      });
-      this.heldBytes = {
-        id,
-        bytes: reply.bytes,
-        mime: reply.mime,
-      };
-    }
+    if (!this.state.open) this.releaseClosed();
   };
   protected schedule = (delay: number) => {
     if (this.timer) clearTimeout(this.timer);

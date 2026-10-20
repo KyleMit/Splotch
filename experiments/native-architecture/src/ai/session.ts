@@ -158,7 +158,7 @@ export class AiSession {
       await this.deps.storage.read().catch(() => null);
     }
   };
-  private releaseClosed = () => {
+  protected releaseClosed = () => {
     const id = this.state.journal?.id;
     if (id !== undefined) this.writing = this.writing.catch(() => {}).then(() => this.release(id));
   };
