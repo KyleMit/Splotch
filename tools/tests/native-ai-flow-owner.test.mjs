@@ -3,7 +3,10 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
 import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
-import { aiResultPhase } from '../../experiments/native-architecture/src/ai/uiState.ts';
+import {
+  aiButtonFace,
+  aiResultPhase,
+} from '../../experiments/native-architecture/src/ai/uiState.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
 import { FREE_DAILY_LIMIT_EXHAUSTED_CODE } from '../../web/src/lib/ai/generationResult.ts';
@@ -258,6 +261,31 @@ it.each([
     expect(f.owner.getState().open).toBe(false);
   }
 );
+
+// Shipping's known grant is never asked for again, so a used-up answer from a generation stays
+// used up when Settings opens and reads the credential (#3024). Negative control: a Settings read
+// that asks the grant endpoint again shows the stale allowance here.
+it('keeps a used-up answer when Settings reads the allowance afterwards', async () => {
+  const f = await fixture({
+    generate: () =>
+      new Response(
+        JSON.stringify({ ok: false, code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+        { status: 403 }
+      ),
+  });
+  await sendStyle(f);
+  expect(f.owner.getState()).toMatchObject({ credential: 'free', remaining: 0 });
+  const grants = () =>
+    f.transport.mock.calls.filter(([request]) => request.path === '/api/free-generation-grant');
+  const asked = grants().length;
+  await f.owner.inspect();
+  expect(f.owner.getState()).toMatchObject({ remaining: 0, availability: 'ready' });
+  expect(aiButtonFace(f.owner.getState(), false)).toMatchObject({
+    label: 'Set up AI image',
+    badge: 0,
+  });
+  expect(grants()).toHaveLength(asked);
+});
 
 it('reports a failed run behind the report check with its bounded details and no drawing', async () => {
   const f = await fixture({
