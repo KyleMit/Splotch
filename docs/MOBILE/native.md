@@ -10,6 +10,10 @@ see **[android.md](android.md)** and **[ios.md](ios.md)**.
 > Both platforms are active: the `android/` and `ios/` projects live in the repo. Android
 > development works on macOS or Linux; iOS builds require macOS + Xcode.
 
+The React Native migration app builds separately, from `experiments/native-architecture`. Its
+`DEVELOPMENT.md` covers the builds and how to check a JS-only change on a device without a native
+rebuild.
+
 ## 1. How the native build works
 
 Splotch is a SvelteKit app. For the web it builds with `adapter-netlify` (SSR + the

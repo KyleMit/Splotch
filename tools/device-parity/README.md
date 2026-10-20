@@ -32,13 +32,14 @@ output path comes from a flag; nothing is defaulted to a rig.
 | `analyze-motion-timeline.mjs`     | A recording's motion bursts                                                                     |
 | `recompute-motion-sidecars.mjs`   | Rewrites the `motion` field of every step sidecar from its recording                            |
 | `analyze-accessibility-trees.mjs` | A11Y-2: role differences, targets under 48 pt, and names only one arm exposes                   |
+| `swap-js-bundle.mjs`              | Rebuilds only the JavaScript and installs it into an existing Release probe; see below          |
 
 Supporting modules live in `lib/`: the Appium client and session file (`appium-session.mjs`), host
 commands (`device-commands.mjs`), Display0 reads (`android-display.mjs`), the foreground guard
 (`app-foreground.mjs`), W3C pointer chains (`pointer-chains.mjs`), the crash targets, scenarios,
 driver, verdicts, and tally, and the parity arms manifest, driver, lifecycle, settle rule, paper
-scan, recording, and motion analysis. `lib/slices/` holds one step list per parity slice, registered
-in `lib/parity-slices.mjs`.
+scan, recording, and motion analysis, and the Release JavaScript bundle build (`js-bundle.mjs`).
+`lib/slices/` holds one step list per parity slice, registered in `lib/parity-slices.mjs`.
 
 ## Inputs
 
@@ -89,6 +90,8 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
   (`crash pull --remote-file`), and its unified log.
 * `ffmpeg` and `ffprobe` for motion timelines; ImageMagick `magick` for `compare-parity-states.mjs`.
   `sharp` comes from the repo's dependencies.
+* `swap-js-bundle.mjs`: the newest Android SDK build-tools (`aapt2`, `zipalign`, `apksigner`), `zip`
+  and `unzip` for Android; `codesign` and `plutil` for iOS.
 * The parity drivers run on an iOS simulator or Android emulator: they install builds and screenshot
   through `simctl` and `adb`.
 
@@ -107,6 +110,46 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
   `failure.png` and `failure.xml` in its directory. A slice step whose action throws keeps its
   recording, capture, and sidecar, the batch runs on, and the step's error fails its arm.
 * Verdict probes read only state created after a run starts and never clear a log.
+
+## Checking a JS-only change without a native build
+
+`swap-js-bundle.mjs` puts freshly built JavaScript into a Release probe that a full Gradle or Xcode
+build already produced, then installs that copy. A change to TS or TSX reaches the device in about
+ten seconds instead of a native rebuild, and the device stays on a Release build, so timing checks
+still hold (issue 3083).
+
+```sh
+# Android: the base APK from `./gradlew assembleRelease`, signed again with the same keystore so
+# `adb install -r` keeps the app's data
+node tools/device-parity/swap-js-bundle.mjs --platform=android --base=<app-release.apk> \
+  --bundle=<probe id> --keystore=<candidate-release.keystore> --key-alias=<alias> \
+  --ks-pass=env:<VAR> --out=<new dir> --device=<serial>
+# iOS: the base .app from `xcodebuild … -configuration Release`, signed again with the identity
+# that signed it
+node tools/device-parity/swap-js-bundle.mjs --platform=ios --base=<HelloWorld.app> \
+  --bundle=<probe id> --identity="Apple Development" --out=<new dir> --device=<udid>
+```
+
+Relaunch the app afterwards. `--ks-pass` and `--key-pass` take apksigner's forms (`env:NAME`,
+`file:PATH`, `pass:VALUE`); without `--device` the tool only writes the swapped build into `--out`.
+
+* **It builds what the native build builds.** The bundle step and Hermes flags are the ones React
+  Native's Gradle task and Xcode script pass for Release (`lib/js-bundle.mjs`), and
+  `tests/js-bundle.test.mjs` fails when React Native changes them. At an unchanged commit the
+  Android bundle is byte for byte the one Gradle packaged. The iOS one differs only in the path
+  Hermes records for its source. The tool prints whether the JavaScript differs from the base
+  build's, which catches a forgotten save.
+* **Native code and Android resources come from the base build.** A Kotlin, Swift or native config
+  change needs a full build. On Android, an image or sound the base APK lacks is refused, because
+  React Native compiles those into the APK's resources; an edited one under an unchanged name is not
+  detected. On iOS the bundle's images and sounds are plain files in the app, so they travel with
+  the swap.
+* **Use a full build for committed performance captures**, whose provenance names a built commit.
+* The tool refuses `art.splotch.app`, an artifact whose bundle id is not `--bundle`, a bundle built
+  for a different Hermes bytecode version, and an `--out` that already holds files.
+
+React Native's Debug build loading from Metro is the other way to skip a native build, for
+functional checks only; `experiments/native-architecture/DEVELOPMENT.md` describes it.
 
 ## Rules the device work learned
 
