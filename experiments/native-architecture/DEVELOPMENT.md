@@ -56,6 +56,23 @@ cd experiments/native-architecture/android
 The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; install it with
 `adb install -r`. A local keystore supports development only and is not store signing.
 
+## Checking a JS-only change on a device
+
+A change to TS or TSX alone needs no native rebuild. Build the Release probe once per device as
+above, then put each change's JavaScript into it with `tools/device-parity/swap-js-bundle.mjs`:
+
+```sh
+node tools/device-parity/swap-js-bundle.mjs --platform=android --base=<app-release.apk> \
+  --bundle=<probe id> --keystore=<candidate-release.keystore> --key-alias=<alias> \
+  --ks-pass=env:<VAR> --out=<new dir> --device=<serial>
+```
+
+It bundles and compiles the JavaScript exactly as the Release build does, in about ten seconds, and
+the device keeps running a Release build, so the result holds for timing too.
+`tools/device-parity/README.md` has the iOS form and the limits. A Kotlin, Swift or native config
+change, an Android image or sound that is new, and a committed performance capture still take the
+full build.
+
 ## Performance probe
 
 A Release bundle built with `EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1` in the environment counts the live
@@ -91,7 +108,8 @@ Read the lines from the host:
   ```sh
   T0=$(date +%s)   # just before launching the app
   pymobiledevice3 syslog collect --udid <udid> --start-time $((T0 - 2)) run.logarchive
-  log show --archive run.logarchive --style compact \
+  # The full path: zsh, the macOS default shell, has its own `log` builtin.
+  /usr/bin/log show --archive run.logarchive --style compact \
     --predicate 'process == "HelloWorld" AND eventMessage CONTAINS "SplotchPerf"'
   ```
 
