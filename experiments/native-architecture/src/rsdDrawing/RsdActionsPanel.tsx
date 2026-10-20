@@ -7,6 +7,7 @@ import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { refocusFlyoutTrigger, useFlyoutEscape } from '../platform/flyoutFocus';
 import { RsdIconButton } from './RsdIconButton';
+import { RsdUndoTile } from './RsdUndoTile';
 import { useDrawerOpening } from './RsdDrawerCascade';
 import { RsdDrawerTools, type DrawerTool as Tool } from './RsdDrawerTools';
 import { useModalPresence } from './useModalPresence';
@@ -243,15 +244,7 @@ function panelTools(context: ToolContext): Tool[] {
     tools.push({
       key: 'undo',
       render: (face) => (
-        <RsdIconButton
-          skin="tile"
-          {...face}
-          icon="undo"
-          label="Undo"
-          disabled={disabled || screen.history.undo.length === 0}
-          undoFeedback={screen.undoFeedback}
-          onPress={() => screen.undoFromButton(context.reduced)}
-        />
+        <RsdUndoTile face={face} screen={screen} disabled={disabled} reduced={context.reduced} />
       ),
     });
   return tools;

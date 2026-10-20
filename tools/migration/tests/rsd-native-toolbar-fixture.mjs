@@ -28,6 +28,7 @@ export function toolbarScreen(overrides = {}) {
     undoFromButton: vi.fn(),
     undoTile: { current: null },
     undoFeedback: null,
+    unavailableFeedback: null,
     clear: vi.fn(async () => {}),
     departingInk: vi.fn(() => null),
     save: vi.fn(async () => {}),

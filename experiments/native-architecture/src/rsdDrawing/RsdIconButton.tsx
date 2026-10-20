@@ -10,7 +10,8 @@ import type { OptionOutlineProps } from './optionOutline';
 import { RsdPressable } from './RsdPressable';
 import { RsdCameraFeedback } from './cameraFeedbackSurface';
 import { RsdUndoFeedback } from './undoFeedbackSurface';
-import type { UndoFeedback } from '../drawing/undoFeedback';
+import { RsdUnavailableCue } from './RsdUnavailableCue';
+import type { UnavailableFeedback, UndoFeedback } from '../drawing/undoFeedback';
 import type { ScreenshotFeedback } from '../useSavePicture';
 import type { NativeIconName } from './icons.generated';
 import { useBareToolbar } from './toolbarSkin';
@@ -320,9 +321,21 @@ function iconSize(
 export type InkKeyline = 'white' | 'dark';
 
 type Selection = { selected?: boolean };
+// Undo at the end of history reads and looks disabled yet takes the press (shipping's
+// aria-disabled, not disabled), which answers with the unavailable cue.
 type TileCue =
-  | { captureFeedback?: ScreenshotFeedback | null; undoFeedback?: never }
-  | { undoFeedback: UndoFeedback | null; captureFeedback?: never };
+  | {
+      captureFeedback?: ScreenshotFeedback | null;
+      undoFeedback?: never;
+      unavailable?: never;
+      unavailableFeedback?: never;
+    }
+  | {
+      undoFeedback: UndoFeedback | null;
+      unavailable: boolean;
+      unavailableFeedback: UnavailableFeedback | null;
+      captureFeedback?: never;
+    };
 
 type Common = {
   icon: NativeIconName;
@@ -406,7 +419,9 @@ export function RsdIconButton(props: IconButtonProps) {
   const { skin, ink, selected = false } = props;
   const face = faceGeometry(props, bare);
   const { size, padding } = face;
-  const disabled = skin === 'tile' && props.disabled === true;
+  const inert = skin === 'tile' && props.disabled === true;
+  const refusal = skin === 'tile' && props.unavailableFeedback !== undefined ? props : null;
+  const disabled = inert || refusal?.unavailable === true;
   const expanded = skin === 'tile' ? props.expanded : undefined;
   const dimmed = skin === 'tile' && props.dimmed === true;
   const busy = skin === 'tile' && props.busy === true;
@@ -428,7 +443,8 @@ export function RsdIconButton(props: IconButtonProps) {
       filter={paint.filter}
     />
   );
-  return (
+  const lit = <RsdIcon name={icon} size={glyphPx} ink={ink} muted={false} keyline={keyline} />;
+  const tile = (
     // A Button style switch remounts the face. A Raised face fades its opacity on the native
     // driver, which leaves the value on the view; the Flat face's opacity equals the one React last
     // committed, so React never sends it and the old fade would stay.
@@ -441,7 +457,7 @@ export function RsdIconButton(props: IconButtonProps) {
       aria-expanded={expanded}
       aria-disabled={disabled}
       aria-busy={busy || undefined}
-      disabled={disabled}
+      disabled={inert}
       style={
         bare
           ? [
@@ -496,4 +512,14 @@ export function RsdIconButton(props: IconButtonProps) {
       ) : null}
     </RsdPressable>
   );
+  if (!refusal) return tile;
+  return (
+    <RsdUnavailableCue feedback={refusal.unavailableFeedback} {...cueFace(size, bare)} lit={lit}>
+      {tile}
+    </RsdUnavailableCue>
+  );
+}
+
+function cueFace(size: number, bare: boolean) {
+  return { size, radius: size * ACTION_TILE_RADIUS_RATIO, borderPx: faceBorderPx(bare) };
 }

@@ -300,21 +300,31 @@ it('tucks the shipping tools, in order, into a drawer the chevron after them rev
   expect(resolved((props) => props.testID === 'rsd-drawer-dock').bottom).toBe(EDGE_INSET_PX);
 });
 
+const undoState = () =>
+  records.props.findLast((props) => props.accessibilityLabel === 'Undo').accessibilityState;
+
 it('fades Undo and the screenshot camera on a page with no visible ink and wakes them once it has some', async () => {
   await mountToolbar(
     toolbarScreen({ history: { undo: [], drawing: emptyDrawing() }, inkVisible: false })
   );
   await expandControls();
   for (const label of ['Save screenshot', 'Undo']) {
-    expect(button(label).disabled, label).toBe(true);
     expect(resolved((props) => props.accessibilityLabel === label).opacity, label).toBe(
       ACTION_TILE_DISABLED_OPACITY
     );
   }
+  expect(button('Save screenshot').disabled).toBe(true);
+  // Shipping's Undo is aria-disabled, not disabled, so the press reaches it and plays the
+  // unavailable cue. Negative control: a plain disabled Undo tile fails here.
+  expect(button('Undo').disabled).toBe(false);
+  expect(undoState().disabled).toBe(true);
+  await act(async () => button('Undo').click());
+  expect(caller.screen.undoFromButton).toHaveBeenCalledOnce();
   expect(button('Coloring books').disabled).toBe(false);
   caller.screen.history = { undo: [emptyDrawing()], drawing: inked() };
   caller.screen.inkVisible = true;
   await act(async () => root.render(createElement(RsdDrawingScreen)));
+  expect(undoState().disabled).toBe(false);
   for (const label of ['Save screenshot', 'Undo']) {
     expect(button(label).disabled, label).toBe(false);
     expect(resolved((props) => props.accessibilityLabel === label).opacity, label).not.toBe(
