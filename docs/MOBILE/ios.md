@@ -118,14 +118,16 @@ app in place. The export settings live in `experiments/native-architecture/ios/E
 checks the exported `.ipa`'s bundle ID and version. The Capacitor `ios:*` scripts above still build
 the WebView app; the release tooling neither versions nor publishes it.
 
-An unsigned compile of the store configuration needs no team:
+An unsigned simulator build of the store configuration needs no team. It is what the
+`Native compile` workflow builds on pull requests and what the iOS deploy smoke installs:
 
 ```bash
-cd experiments/native-architecture/ios
-xcodebuild -workspace Splotch.xcworkspace -scheme Splotch -configuration Release \
-  -destination "generic/platform=iOS Simulator" -derivedDataPath build/sim \
-  -xcconfig Store.xcconfig CODE_SIGNING_ALLOWED=NO build
+npm run native:ios:simulator # -> experiments/native-architecture/ios/build/simulator/Build/Products/Release-iphonesimulator/Splotch.app
 ```
+
+It runs `pod install`, then a Release `xcodebuild` for the generic iOS Simulator destination with
+`-xcconfig Store.xcconfig` and `CODE_SIGNING_ALLOWED=NO`, for this Mac's architecture only. The
+result is `art.splotch.app`, but the Simulator SDK binary installs on no device.
 
 Regenerate launcher icons / splash after changing artwork in `assets/`:
 
@@ -135,13 +137,18 @@ npx @capacitor/assets generate --ios
 
 ## 3. Testing
 
-* **Native smoke test**: `npm run test:ios` boots a simulator, builds + installs, runs the Maestro
-  flow, and tears down. No signing required. See the `testing` skill for Maestro installation and
-  the full three-tier strategy.
-* **Release configuration**: the tagged deploy workflow runs `ios:build:release` before the Debug
-  boot smoke. This catches Release-only Swift/compiler and project-setting failures under the
-  simulator SDK without store signing; device-SDK-only code and settings remain covered by the local
-  signed archive. The separate smoke keeps the established simulator boot signal unchanged.
+* **Native smoke test**: `npm run test:ios` builds the React Native app's store-identity Release
+  simulator app (`native:ios:simulator`), boots an iPhone simulator that nothing else has booted,
+  installs the app, runs the Maestro boot check (the drawing screen's `Settings` button paints,
+  ADR-0120), and shuts that simulator down. It never reuses or shuts down a simulator someone else
+  booted. `--skip-build` installs the app an earlier `native:ios:simulator` built. No signing
+  required. See the `testing` skill for Maestro installation and the full three-tier strategy.
+* **Release configuration**: the `Native compile` workflow builds `native:ios:simulator` on every
+  pull request that touches the app, and the tagged deploy workflow builds it once and installs that
+  same app for the smoke (`test:ios -- --skip-build`). This catches Release-only Swift, C++,
+  CocoaPods and project-setting failures, and the embedded JavaScript bundle, under the simulator
+  SDK without store signing; device-SDK-only code and settings remain covered by the local signed
+  archive.
 
 ### Rotating and screenshotting a simulator
 
@@ -188,14 +195,15 @@ The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver di
 
    The Universal Simulator download is about 6.2 GB. A physical iOS 16.4 device does not need this
    download.
-2. Run `npm run cap:ios`. In Xcode, select an iPhone simulator on iOS 16.4 or a connected physical
-   iOS 16.4 device, choose **Run ▶**, and verify that the `Settings` control paints.
+2. On a simulator, run `npm run native:ios:simulator`, boot an iPhone simulator on iOS 16.4, then
+   `xcrun simctl install <udid> experiments/native-architecture/ios/build/simulator/Build/Products/Release-iphonesimulator/Splotch.app`
+   and `xcrun simctl launch <udid> art.splotch.app`. On a physical iOS 16.4 device, open
+   `experiments/native-architecture/ios/Splotch.xcworkspace` and **Run ▶** the `Splotch` scheme,
+   which installs `art.splotch.app.dev`. Verify that the drawing screen's `Settings` button paints.
 3. Record the tested OS version, simulator/device, and pass result in the tag's GitHub Release notes
    before publishing its signed artifacts.
 
-`npm run test:ios` remains useful as an optional diagnostic after booting the floor simulator and
-shutting down other booted iPhones, but its Maestro driver is unreliable on iOS 16.4 and is not the
-required floor gate unless a successful run is captured.
+`npm run test:ios` always boots an iPhone on the newest installed runtime, so it is no floor check.
 
 ## 4. Release checklist
 
@@ -220,15 +228,6 @@ required floor gate unless a successful run is captured.
       the tag's GitHub Release notes, and confirm both iOS rows in the shared
       [native support matrix](native.md#6-native-support-matrix) passed before publishing signed
       artifacts.
-* [ ] Run the **commit-latency contract check** on the physical iPad before publishing signed
-      artifacts ([ADR-0173](../adrs/0173-physical-ipad-holds-the-commit-contract.md)). With the rig
-      armed, run `npm run perf:ios:webkit:commit`. It runs one paced crayon session per deposition
-      arm (`restamp`, `glaze-direct`) and exits non-zero unless both arms' commit P95 is ≤ 25 ms
-      (`COMMIT_GATE_MS`). A NOT EVALUATED arm is a refusal, not a pass. Pass `--port=N` when the
-      preview port is taken. The baseline is P95 0–2 ms and max ≤ 4 ms on iPadOS 26.5. Record the
-      iPadOS and Safari versions, build SHA, and each arm's figures that it prints in the tag's
-      GitHub Release notes. The CI WebKit commit gate is advisory and does not stand in for this
-      check.
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip against
       `https://splotch.art`), offline airplane mode (AI button hides; Farm and installed coloring
       packs remain), disable Coloring Book during a background download and confirm it cancels while

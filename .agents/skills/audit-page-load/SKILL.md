@@ -7,9 +7,10 @@ description: Run a Lighthouse page-load audit of the Splotch web app emulated on
 
 Measures **page load** (how fast the app becomes usable) on a throttled device, as opposed to the
 `profiling` skill, which measures **drawing interaction** once loaded. The LCP element is the full
-drawing surface (currently `.paper-sheet`; earlier builds used `<canvas#drawingCanvas>`) — "loaded"
-means that surface has painted. Confirm the element from each report instead of assuming it stayed
-the same across UI changes.
+drawing surface (currently the `paper-texture` layer of the React Native web export; the SvelteKit
+build's was `.paper-sheet`, and earlier ones `<canvas#drawingCanvas>`) — "loaded" means that surface
+has painted. Confirm the element from each report instead of assuming it stayed the same across UI
+changes.
 
 The driver [`run-audit.mjs`](run-audit.mjs) runs Lighthouse via `npx lighthouse@12` (no install
 needed) for two form factors × two visit types under a fixed slow-device/slow-internet profile,
@@ -59,12 +60,12 @@ which on this app is whichever tiny chunk happens to run first (a 670-byte safe-
 whole 206 ms boot task). The trace's `RunTask` children tell the truth: `v8.evaluateModule` is
 module evaluation (the engine boot), `RunMicrotasks` under
 `BlinkScheduler_PerformMicrotaskCheckpoint` is SvelteKit hydration, and Lighthouse's trace carries
-no CPU samples. For function-level attribution run `npm run perf:web:mount` (its trace has the V8
-sampler) on a build made with `node tools/run-web-tool.mjs vite build --minify false` (then
-`--no-build`), and for the caller of a forced style recalc trace with
-`disabled-by-default-devtools.timeline.stack` so `UpdateLayoutTree` events carry a stack; the
-sampler's clock trails the trace clock by up to ~20 ms, which is enough to blame the wrong native
-call.
+no CPU samples. For function-level attribution record the load in Chrome DevTools' Performance panel
+(its trace has the V8 sampler) on an export built with `expo export --no-minify` (the call in
+`tools/migration/build-native-web.mjs` passes neither that nor `--source-maps`), and for the caller
+of a forced style recalc trace with `disabled-by-default-devtools.timeline.stack` so
+`UpdateLayoutTree` events carry a stack; the sampler's clock trails the trace clock by up to ~20 ms,
+which is enough to blame the wrong native call.
 
 **What's fixed** (the "slow device + slow internet" definition): Lighthouse's default mobile
 emulation — **simulated Slow 4G + 4× CPU throttle** — for every run. Form factors: **phone
@@ -77,11 +78,11 @@ warm-cache load: the driver primes a persistent Chrome profile with a first pass
 There are three things you can point Lighthouse at; they answer different questions. **For any score
 you report or track, use production (or a branch preview) — nothing else is accurate.**
 
-| Target                                             | How                            | Use it for                                                                                                                                                                                                                                                                                                                                    |
-| -------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Production** `splotch.art`                       | default                        | The real number. Real minified bundles + Netlify CDN + HTTP/2 + real cache headers.                                                                                                                                                                                                                                                           |
-| **Branch preview** `<slug>--splotchy.netlify.app`  | `--url`                        | Production-accurate numbers for **unmerged** work (same Netlify serving). The way to measure a perf change before merge. In restricted preview mode only `feature/*` branches deploy — see [Claude Code Cloud § Two preview modes](../../../docs/CLOUD/Claude-Code.md#two-preview-modes--check-which-one-is-active) for how to get a preview. |
-| **Local prod preview** `npm run build` + `preview` | `--url http://localhost:4173/` | Measuring the *bundle* in isolation (bytes, DOM count). **Ignore its LCP/network/score** — its HTTP/1.1 no-CDN serving is unrepresentative.                                                                                                                                                                                                   |
+| Target                                                                                                                        | How                              | Use it for                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Production** `splotch.art`                                                                                                  | default                          | The real number. Real minified bundles + Netlify CDN + HTTP/2 + real cache headers.                                                                                                                                                                                                                                                           |
+| **Branch preview** `<slug>--splotchy.netlify.app`                                                                             | `--url`                          | Production-accurate numbers for **unmerged** work (same Netlify serving). The way to measure a perf change before merge. In restricted preview mode only `feature/*` branches deploy — see [Claude Code Cloud § Two preview modes](../../../docs/CLOUD/Claude-Code.md#two-preview-modes--check-which-one-is-active) for how to get a preview. |
+| **Local export host** `npm run build:site` + `node --experimental-strip-types tools/page-load/serve-export.mjs --port <port>` | `--url http://127.0.0.1:<port>/` | Measuring the *export* in isolation (bytes, DOM count), and comparing two builds on one machine: it is the host the CI gate times, serving what Netlify serves with brotli and ETag revalidation. **Ignore its absolute LCP/network/score** — HTTP/1.1 on loopback with no CDN is not the public number.                                      |
 
 **Do not audit the dev server (`npm run dev`) for scores.** It serves hundreds of unbundled ES
 modules with the HMR client and dev-mode Svelte checks — that distorts the request graph, TBT and
@@ -92,10 +93,11 @@ Perf 91 — the preview's serving layer was the whole gap.)
 For the *diagnostic* questions production is bad at, don't reach for the dev server — use the
 better-suited tool:
 
-* **Which JS/CSS is unused, and where in source** → audit the **preview build with source maps**
-  (real bytes + readable attribution).
-* **Why is the main thread busy / drawing jank** → the `profiling` skill (`npm run perf:web`), which
-  profiles the production bundle with named marks.
+* **Which JS/CSS is unused, and where in source** → audit a **local export with source maps**
+  (`expo export --source-maps`; real bytes + readable attribution).
+* **Why is the main thread busy / drawing jank** → the `profiling` skill, whose probe replays
+  measure the native app's drawing; for the web export, record the interaction in Chrome DevTools'
+  Performance panel.
 
 ## Running from a Claude-Code-on-web sandbox (the proxy/TLS workaround)
 
@@ -134,7 +136,8 @@ you pull `dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakd
 `bootup-time` `details.items` without opening the 464 KB HTML. Always inspect `long-tasks` too. If
 every item is attributed to `_lighthouse-eval.js`, the reported TBT and derived performance score
 include Lighthouse's own injected work; the driver marks those TBT values with `*`. Do not turn that
-value into an app finding — use `npm run perf:web:mount` for an independent startup trace first.
+value into an app finding — record an independent startup trace in Chrome DevTools' Performance
+panel first.
 
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
@@ -174,8 +177,8 @@ audit and how to read the numbers*; the findings live in `docs/AUDIT.md` (then t
 can be scaled and counted in TBT even though Lighthouse excludes the same URL from `bootup-time`.
 This reproduced in both Lighthouse 12.8.2 and 13.4.0. When every `long-tasks` item has that URL,
 treat TBT and the derived Perf score as contaminated, inspect the observed `main-thread-tasks`, and
-confirm any startup concern with `npm run perf:web:mount` before filing it. If an app URL also
-appears, investigate that app-attributed work normally.
+confirm any startup concern with an independent DevTools startup trace before filing it. If an app
+URL also appears, investigate that app-attributed work normally.
 
 **False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit currently
 flags *"`fetchpriority=high` should be applied: false"*. The LCP is `.paper-sheet`, whose tiny CSS

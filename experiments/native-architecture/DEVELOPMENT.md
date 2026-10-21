@@ -1,7 +1,8 @@
 # Native app development
 
-This is the React Native (Expo) Splotch app. It is separate from the shipping Capacitor app and its
-native smoke flow.
+This is the React Native (Expo) Splotch app. CI builds it on every pull request that touches it, and
+the native smoke flow (`.maestro/smoke.yaml`, `docs/TESTING.md`) boots its store-identity Release
+builds on an emulator and a simulator.
 
 ## Setup
 

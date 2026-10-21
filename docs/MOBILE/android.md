@@ -217,18 +217,22 @@ gateway and those tools fail — the working path is a self-hosted chisel revers
 
 ## 3. Testing
 
-* **Native smoke test**: `npm run test:android` boots an emulator, builds + installs, and runs the
-  Maestro flow. See the `testing` skill for Maestro installation and the full three-tier strategy.
-* **Release configuration**: the tagged deploy workflow creates a disposable test key, builds
-  `android:apk:release` once, uploads the APK, and boots that same artifact through the Maestro
-  matrix on the current API 33 emulator and the declared API 24 floor. This exercises R8,
-  `proguard-android-optimize.txt`, and resource shrinking without putting the Play upload key in CI.
+* **Native smoke test**: `npm run test:android` builds the React Native app's `.dev` Release APK
+  (`native:android:apk`), boots a headless emulator, installs the APK, and runs the Maestro boot
+  check: the drawing screen's `Settings` button paints (ADR-0120). Locally it smokes `.dev` because
+  a store-identity APK signs with whatever key `keystore.properties` names, which on a developer's
+  machine is the upload key or nothing. See the `testing` skill for Maestro installation and the
+  full three-tier strategy.
+* **Pull requests**: the `Native compile` workflow builds the `.dev` Release APK
+  (`native:android:apk`, one ABI) on every pull request that touches the app, so a Kotlin, C++,
+  Gradle, R8 or JavaScript bundling failure fails its own PR.
+* **Release configuration**: the tagged deploy workflow creates a disposable test key, builds the
+  store-identity Release APK (`native:android:apk:store`, all four ABIs) once, uploads the APK, and
+  boots that same artifact through the Maestro matrix on the current API 33 emulator and the
+  declared API 24 floor. This exercises R8, `proguard-android-optimize.txt`, and resource shrinking
+  without putting the Play upload key in CI.
 
 ### Performance profiling with Chrome DevTools (remote debugging)
-
-> For an **automated** capture + report (drives a scripted session and writes a machine-readable
-> profile), use `npm run perf:android` — see the `profiling` skill (ADR-0032). The manual flow below
-> is for interactive, free-form profiling.
 
 Remote debugging lets you run Chrome DevTools on your desktop while drawing on the phone with real
 multi-touch input — the best way to get accurate profiles.

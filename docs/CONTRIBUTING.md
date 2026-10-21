@@ -106,7 +106,7 @@ file with Node's `--env-file=web/.env` option on the tool's entry point.
 | --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | `CAPACITOR`                 | `svelte.config.js`, `vite.config.ts` | `true` switches to `adapter-static`, disables the PWA plugin, sets `__NATIVE_API_BASE__`                                         |
 | `PUBLIC_ENABLE_DEV_HARNESS` | `vite.config.ts`                     | Compiles the `/dev/*` routes in, via the `__DEV_HARNESS__` literal                                                               |
-| `PERF_MARKS`                | `vite.config.ts`                     | Compiles the engine's `performance.mark` instrumentation in, for `npm run perf:web`                                              |
+| `PERF_MARKS`                | `vite.config.ts`                     | Compiles the engine's `performance.mark` instrumentation in                                                                      |
 | `TUNNEL_HOST`               | `vite.config.ts`                     | Adds the tunnel hostname to `server.allowedHosts` for cloud preview                                                              |
 | `GEMINI_API_KEY`            | `tools/asset-gen/`, `model-eval`     | **Not read by the app.** These read `process.env` directly with no `.env` loading, so a `web/.env` entry needs `node --env-file` |
 | `CLAUDE_CODE_OAUTH_TOKEN`   | Claude CLI                           | Optional plan authentication; the CLI does not load `web/.env`. An existing Claude plan login may already supply authentication  |

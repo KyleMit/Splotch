@@ -87,12 +87,12 @@ Measure before choosing; candidates in rising order of invasiveness:
 
 #### Verification
 
-`npm run perf:web:mount -- --device=phone` on a `PERF_MARKS=true` build made with
-`node tools/run-web-tool.mjs vite build --minify false`, then attribute the boot task with a CPU
-sample aggregate restricted to that task's window (the PR's `lighthouse-reports/cpuwindow.mjs`
-approach: sum `ProfileChunk` self time by function inside the `RunTask`). The boot task's
-`RunMicrotasks` slice is the number to move. Confirm on the Lighthouse phone-first cell against a
-`feature/*` preview: TBT is the only sub-95 weighted audit left.
+A throttled startup trace (Chrome DevTools' Performance panel at the phone profile's CPU throttle)
+on a `PERF_MARKS=true` build made with `node tools/run-web-tool.mjs vite build --minify false`, then
+attribute the boot task with a CPU sample aggregate restricted to that task's window (the PR's
+`lighthouse-reports/cpuwindow.mjs` approach: sum `ProfileChunk` self time by function inside the
+`RunTask`). The boot task's `RunMicrotasks` slice is the number to move. Confirm on the Lighthouse
+phone-first cell against a `feature/*` preview: TBT is the only sub-95 weighted audit left.
 
 ### [Performance] Palette bottom padding is prerendered as 8 px and recomputed at hydration
 

@@ -43,21 +43,12 @@ have stopped to ask: the agent's own calls are locked after a `run-rival-agent` 
 unreviewed if none can run), and the user's are parked for them. The last link of the chain,
 `reconcile-adrs`, lives with the other reconcile skills under Recurring maintenance.
 
-## Performance — interaction matrices and page load
+## Performance — drawing and page load
 
-| Skill                        | Measures or drives                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `start-capture-session`      | **Start here for physical-device work** — takes the iPad/Android rig over and proves it will capture           |
-| `release-capture-session`    | The mirror image — stops every rig process any checkout owns and resets the phone, for a clean next start      |
-| `profiling`                  | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)                       |
-| `capture-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets                       |
-| `improve-performance-matrix` | Freshly inventory the matrix, improve current scoreable reds, and ship causal clusters as reviewed stacked PRs |
-| `audit-page-load`            | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer                      |
-
-`capture-performance-matrix` is the capture and refresh workflow. `improve-performance-matrix`
-consumes that evidence and owns the sustained improvement campaign through zero current, scoreable,
-unexplained reds on the release-gate rows (a red cell with an ADR-recorded, evidence-backed
-disposition counts as explained — ADR-0160) or a user-requested merge-ready wrap-up.
+| Skill             | Measures or drives                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `profiling`       | Drawing **interaction** performance: the in-app probe, replay traces, jank, regressions   |
+| `audit-page-load` | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer |
 
 ## Recurring maintenance — audit → vet → burn down / fix, reconcile
 
@@ -210,10 +201,10 @@ chased into a third round — then drives CI to green, reconciles conflicts, and
 shippable-or-leftovers verdict. It never opens a PR, never merges, and never files an issue: it
 drafts the follow-ups for the user. Every skill that opens PRs reaches it by name and states only
 its own overrides — `create-stacked-prs` runs it on each layer while that layer is the tip,
-`ship-issue` and `fix-audits` run it with no overrides, `improve-performance-matrix` makes round two
-unconditional — so reviewer independence and the CI-failure policy read the same everywhere: the
-rival is the reviewer (a same-runner subagent only as a named, weaker fallback), and a failure the
-PR did not introduce is named in the thread and drafted, never absorbed or filed.
+`ship-issue` and `fix-audits` run it with no overrides — so reviewer independence and the CI-failure
+policy read the same everywhere: the rival is the reviewer (a same-runner subagent only as a named,
+weaker fallback), and a failure the PR did not introduce is named in the thread and drafted, never
+absorbed or filed.
 
 `ship-issue` is the single-unit pipeline through this whole group: it takes one issue number or a
 free-form task, implements it, opens the PR, and hands it to `drive-pr-to-mergeable`. Both modes
@@ -228,8 +219,9 @@ time. Every unit merges before the next branches from the new `main`, so the riv
 change as it lands instead of a premise compounding through a stack. What it adds is the campaign's
 own discipline: a preflight run while the user is still present, quarantining a stuck unit instead
 of stalling the queue, never ending the turn to ask, and a morning report verified against GitHub.
-`profile=performance` wraps `improve-performance-matrix`'s causal-cluster unit. `parallel=<n>` runs
-up to `n` file-disjoint units at once, with the session as orchestrator:
+`profile=performance` adds the device lane and the rig lock for units that need the physical
+devices. `parallel=<n>` runs up to `n` file-disjoint units at once, with the session as
+orchestrator:
 
 * it admits a unit only when that unit shares no files and no import dependency with any unit in
   flight;

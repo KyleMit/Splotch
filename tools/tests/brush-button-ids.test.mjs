@@ -2,16 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BRUSH_BUTTON_BY_MODE } from '../perf/lib/brush-buttons.mjs';
 
 // Drift guard for the Brush Menu's button ids (BRUSH_OPTIONS in
-// web/src/lib/state/tool.svelte.ts). The app driver, the perf captures, and the
-// browser probes select a brush by clicking its button, and none of them can
-// import the app's Svelte rune module; the probes are injected into the page
-// and cannot import at all. A renamed id would leave them clicking nothing —
-// the toddler session's erase beat, for one, then draws ink instead of
-// erasing, and the run still reports numbers. Extraction is a regex over the
-// file text.
+// web/src/lib/state/tool.svelte.ts). The app driver selects a brush by clicking
+// its button, and cannot import the app's Svelte rune module. A renamed id would
+// leave it clicking nothing — an erase step then draws ink instead of erasing,
+// and the run still produces output. Extraction is a regex over the file text.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const toolSource = readFileSync(join(repoRoot, 'web/src/lib/state/tool.svelte.ts'), 'utf8');
 const brushOptionsBlock = /export const BRUSH_OPTIONS\b[^=]*=\s*\[([\s\S]*?)\];/.exec(
@@ -66,14 +62,6 @@ describe('brush button ids in tools match the app', () => {
     expect(Object.keys(APP_BUTTON_ID_BY_BRUSH)).toEqual(['pen', 'crayon', 'magic', 'eraser']);
   });
 
-  it('selects each brush through its own button in the shared capture map', () => {
-    expect(BRUSH_BUTTON_BY_MODE).toEqual(
-      Object.fromEntries(
-        Object.entries(APP_BUTTON_ID_BY_BRUSH).map(([brush, id]) => [brush, `#${id}`])
-      )
-    );
-  });
-
   it('flags a brush paired with another brush’s button, as a key or a literal', () => {
     const { crayon, eraser } = APP_BUTTON_ID_BY_BRUSH;
 
@@ -97,13 +85,6 @@ describe('brush button ids in tools match the app', () => {
     }
 
     expect(problems).toEqual([]);
-    expect(filesNamingIds).toEqual(
-      expect.arrayContaining([
-        'tools/app-driver/lib/app-driver.mjs',
-        'tools/perf/lib/toddler-session.mjs',
-        'tools/perf/probes/input-recorder.js',
-        'tools/perf/probes/real-screen-probe.js',
-      ])
-    );
+    expect(filesNamingIds).toEqual(expect.arrayContaining(['tools/app-driver/lib/app-driver.mjs']));
   });
 });
