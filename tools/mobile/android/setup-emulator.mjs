@@ -2,13 +2,14 @@
 // One-time emulator setup for local Android work: installs the Play-Store
 // system image for the API level in lib/android-toolchain.mjs, creates the
 // Pixel 7 Pro AVD, writes
-// android/local.properties, and installs the Maestro smoke-test CLI. Checks the
+// the React Native Android project's local.properties, and installs the Maestro smoke-test CLI. Checks the
 // required SDK tools are on PATH first and prints per-platform fix instructions
 // if not. Safe to re-run.
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, hasCommand, run, capture, fail } from '../../lib/proc.mjs';
+import { ANDROID_PROJECT_DIR } from '../../release/lib/native-app.mjs';
 import { maestroInstalled } from '../lib/maestro.mjs';
 import { CURRENT_ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android-toolchain.mjs';
 
@@ -82,10 +83,10 @@ if (avds.includes(AVD_NAME)) {
   );
 }
 
-const localProps = join(ROOT, 'android', 'local.properties');
+const localProps = join(ROOT, ANDROID_PROJECT_DIR, 'local.properties');
 if (!existsSync(localProps)) {
   writeFileSync(localProps, `sdk.dir=${ANDROID_HOME}\n`);
-  console.log(`[setup-emulator] Wrote android/local.properties (sdk.dir=${ANDROID_HOME})`);
+  console.log(`[setup-emulator] Wrote ${ANDROID_PROJECT_DIR}/local.properties (sdk.dir=${ANDROID_HOME})`);
 }
 
 // Maestro drives the native smoke test (npm run test:android). It's a
@@ -99,4 +100,4 @@ if (maestroInstalled()) {
   run('bash', ['-c', 'curl -fsSL https://get.maestro.mobile.dev | bash']);
 }
 
-console.log('[setup-emulator] Done — run "npm run android:boot" then "npm run android:emulator".');
+console.log('[setup-emulator] Done — run "npm run test:android" for the smoke test, or "npm run android:boot" for an emulator to use by hand.');

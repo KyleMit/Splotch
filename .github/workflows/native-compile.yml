@@ -96,7 +96,7 @@ jobs:
       - name: Build Android Release APK
         env:
           ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
-        run: npm run native:android:apk
+        run: npm run android:apk
 
   ios:
     name: iOS Release simulator build
@@ -122,4 +122,4 @@ jobs:
       # The same store-identity, unsigned simulator build the iOS deploy smoke
       # installs, so a compile failure here is the one that smoke would hit.
       - name: Build iOS Release simulator app
-        run: npm run native:ios:simulator
+        run: npm run ios:simulator

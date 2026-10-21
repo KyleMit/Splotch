@@ -23,7 +23,7 @@ this app's shape.
 | Parental gate on every external link                                          | Required — 1.3 Kids Category          | Not required (shipped anyway)             | ADR-0094; issue 844                                                               |
 | Parental gate on data-out actions (AI generate, image report, feedback)       | Required — 1.3, 5.1.4                 | Required — Families "adult action"        | ADR-0094, ADR-0104                                                                |
 | No third-party ads or analytics SDKs at all                                   | Required — 1.3                        | Required — Families self-certified SDKs   | Never shipped; `/privacy` commits to it                                           |
-| Privacy policy in listing metadata and reachable in-app                       | Required — 5.1.1, 5.1.4(b)            | Required — Families                       | `/privacy` route, bundled into both native builds and link-checked by `build:cap` |
+| Privacy policy in listing metadata and reachable in-app                       | Required — 5.1.1, 5.1.4(b)            | Required — Families                       | `/privacy` route, bundled into both native builds (Capacitor-era link check gone) |
 | COPPA / GDPR-K posture (no accounts, no child name/email/location)            | Required — 5.1.4(a)                   | Required — Families                       | Whole-app design; `/privacy` "Children's privacy"                                 |
 | No device identifiers to third parties (no AAID, IDFA, fingerprinting)        | Required — 1.3                        | Required — Families identifier list       | ADR-0105 pseudonym design                                                         |
 | In-app reporting of AI-generated content                                      | Defensive — 1.2 targets shared UGC    | Required — AI-Generated Content policy    | ADR-0104; issue 848                                                               |
@@ -32,7 +32,7 @@ this app's shape.
 | Business model answered for the 2.1(b) probe (no IAP, BYOK, free codes)       | Required — 2.1(b)                     | N/A                                       | Submission c730ff1d; `ios.md` review notes                                        |
 | China mainland storefront deselected (deep-synthesis permitting)              | Required — 5 Legal (China)            | N/A                                       | Submission c730ff1d                                                               |
 | No other-platform references inside the iOS binary                            | Required — 2.3.10                     | N/A                                       | ADR-0112; `web/nativeExcludedRoutes.ts` + bundle guard                            |
-| iOS privacy manifest (`PrivacyInfo.xcprivacy`)                                | Required — ITMS-91053 upload gate     | N/A                                       | `ios/App/App/PrivacyInfo.xcprivacy`                                               |
+| iOS privacy manifest (`PrivacyInfo.xcprivacy`)                                | Required — ITMS-91053 upload gate     | N/A                                       | `ios/Splotch/PrivacyInfo.xcprivacy`                                               |
 | Data-disclosure agreement across manifest, labels, forms, and `/privacy`      | Required — nutrition label            | Required — Data safety form               | Consistency chain (below); issue 846                                              |
 | AI provider whose terms permit child-directed use                             | Required — 5.1.4 (COPPA conduct)      | Required — Families APIs/SDKs + User Data | ADR-0113, ADR-0114; issue 845                                                     |
 | Reviewer access to the gated AI feature (working access code + steps)         | Required — 2.1                        | Required — Play Console "App access"      | Issue 851 submission checklist                                                    |
@@ -130,9 +130,9 @@ this shape, inside a children's app.
 
 **Decisions.** ADR-0101: the admin console is web-only and unlinked — the gesture, the persisted
 reveal flag, and the prerendered `/admin/native` page are gone; `/admin` is in
-`NATIVE_EXCLUDED_ROUTES`, and `tools/mobile/check-static-bundle.mjs` fails `build:cap` if console
-copy (sentinels derived from `AdminConsole.svelte` placeholders, so the guard can't pass vacuously)
-survives into built output.
+`NATIVE_EXCLUDED_ROUTES`, and the Capacitor build's bundle guard (removed with the Capacitor shell)
+failed the build if console copy (sentinels derived from `AdminConsole.svelte` placeholders, so the
+guard couldn't pass vacuously) survived into built output.
 
 ### 2.3.8 Metadata age-appropriateness
 
@@ -153,10 +153,10 @@ its HTML while the JS chunk still ships, so those strings were landing inside th
 reviewer's string scan finds them.
 
 **Decisions.** `web/nativeExcludedRoutes.ts` stubs the route modules at build time
-(`NATIVE_EXCLUDED_ROUTES`: `beta`, `android-beta`, `ios-beta`, `admin`, `feedback`), and
-`tools/mobile/check-static-bundle.mjs` scans built output for `FORBIDDEN_NATIVE_HOSTS` by host — the
-unit the guideline is about. ADR-0112 records the tabbed `/beta` consolidation
-(ed186a02dbdb69b0804ffc6f8882c89791abfa1d).
+(`NATIVE_EXCLUDED_ROUTES`: `beta`, `android-beta`, `ios-beta`, `admin`, `feedback`), and the
+Capacitor build's bundle guard (removed with the Capacitor shell) scanned built output for
+`FORBIDDEN_NATIVE_HOSTS` by host — the unit the guideline is about. ADR-0112 records the tabbed
+`/beta` consolidation (ed186a02dbdb69b0804ffc6f8882c89791abfa1d).
 
 ### 3.1.1 In-App Purchase
 
@@ -220,12 +220,12 @@ it.
 
 **Impact / decisions.** `/privacy` is live at splotch.art/privacy, bundled into both native builds,
 and linked from the listing. "Easily accessible" is the half a bundled file does not satisfy on its
-own, so `build:cap` enforces both: `requiredNativePageProblems` in
-`tools/mobile/check-static-bundle.mjs` fails the build if `privacy.html` is missing from the static
-export, and `requiredNativePageLinkProblems` fails it if nothing in the shipped bundle links to
-`/privacy` — the in-app path is Settings → About → Privacy Policy. ADR-0120 records why that is a
-build-time assertion rather than a step in the native smoke. Consent is structured as adult action:
-the App Store build requires its grown-up check before each AI generation by default, including the
+own, so the Capacitor build's bundle guard (removed with the Capacitor shell) enforced both:
+`requiredNativePageProblems` failed the build if `privacy.html` was missing from the static export,
+and `requiredNativePageLinkProblems` failed it if nothing in the shipped bundle linked to `/privacy`
+— the in-app path is Settings → About → Privacy Policy. ADR-0120 records why that is a build-time
+assertion rather than a step in the native smoke. Consent is structured as adult action: the App
+Store build requires its grown-up check before each AI generation by default, including the
 ten-creation free allowance; the feedback device snapshot is opt-in and off-by-default; and image
 reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
 gate protects action boundaries and is not itself legal consent.
@@ -273,12 +273,15 @@ but the list and the stale store-assets claim were removed (issue 851, "already 
 ### Privacy manifest (upload requirement, not a numbered guideline)
 
 Uploads without a `PrivacyInfo.xcprivacy` fail with **ITMS-91053** before review begins.
-`ios/App/App/PrivacyInfo.xcprivacy` declares: no tracking, no tracking domains; the one
-required-reason API in the dependency tree (`NSPrivacyAccessedAPICategoryUserDefaults`, reason
-`CA92.1`, via `@capacitor/preferences`); and five collected data types — Other User Content,
-Customer Support, Other Diagnostic Data, Device ID, and Product Interaction. All five are not
-linked, not tracking, and used for App Functionality, matching the nutrition label, the Play Data
-safety form, and `/privacy`.
+`ios/Splotch/PrivacyInfo.xcprivacy` in the React Native project declares: no tracking, no tracking
+domains; the three required-reason APIs in the dependency tree
+(`NSPrivacyAccessedAPICategoryUserDefaults` `CA92.1`, `NSPrivacyAccessedAPICategoryFileTimestamp`
+`C617.1`, `NSPrivacyAccessedAPICategorySystemBootTime` `35F9.1`); and five collected data types —
+Other User Content, Customer Support, Other Diagnostic Data, Device ID, and Product Interaction. All
+five are not linked, not tracking, and used for App Functionality, matching the nutrition label, the
+Play Data safety form, and `/privacy`. `tools/mobile/ios/tests/ios-privacy-manifest.test.mjs` holds
+the file to `tools/mobile/privacy-permission-inventory.json`. The shipping Capacitor app declared
+the same five types and only `CA92.1` (via `@capacitor/preferences`).
 
 ## Google Play — Developer Policy Center
 
@@ -446,15 +449,14 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 | Under-18 obligations named and disclosed; `store: false`                                                      | ADR-0114; 7a7cb68c608fdea6358f74535fac86e59f9beda2, 88b0899e5d4bbefe86764cec5b5ae0a2f759dec4                                                                        |
 | Native external links gated, `/privacy` included                                                              | PR 1030 (5b5c1ed60038c152ca54731f3c54d11ad6d61240)                                                                                                                  |
 | Beta pages consolidated; Play URLs kept out of the iOS build                                                  | ADR-0112; PR 1034 (ed186a02dbdb69b0804ffc6f8882c89791abfa1d)                                                                                                        |
-| Mobile tooling consolidated (bundle guard's current home)                                                     | 661ee3153bd8aff6753cb3923199dad9cd4f2328 → `tools/mobile/check-static-bundle.mjs`                                                                                   |
+| Mobile tooling consolidated (the bundle guard's home)                                                         | 661ee3153bd8aff6753cb3923199dad9cd4f2328 (the guard was removed with the Capacitor shell)                                                                           |
 | BYOK how-to reworded as configuration                                                                         | Issue 849; c2ee6446e3a294cd4a55cfc148f37f1f01c8dc04                                                                                                                 |
 | 2.1(b) business-model answer written down; China mainland storefront deselected                               | Submission c730ff1d-1a03-40cf-831d-2804513a1830, reviewed 2026-09-12                                                                                                |
 
 **Enforced by tests:** `web/src/lib/state/parentalGate.svelte.test.ts`,
 `web/src/lib/state/parentalGate.mash.test.ts`, `web/src/lib/state/parentalGate.lockout.test.ts`,
 `e2e/specs/grown-ups-gate.spec.ts`, `e2e/specs/parent-center.spec.ts`,
-`web/tests/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`,
-`tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
+`web/tests/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`, `web/tests/admin.spec.ts`,
 `e2e/specs/feedback-page.spec.ts`, `web/tests/beta.spec.ts`.
 
 **Machine-checked consistency.** `tools/mobile/privacy-permission-inventory.json` declares the

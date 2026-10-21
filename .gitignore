@@ -194,11 +194,12 @@ __pycache__/
 /tools/centerline-tracing/benchmark/promoted/
 .centerline-tracing-*/
 
-# android studio
-android/.idea
-
-# iOS personal signing (DEVELOPMENT_TEAM) — included by ios/debug.xcconfig, passed to ios:archive
-ios/local.xcconfig
+# The shipping Play upload key stays at the root android/ folder on the release machine: the React
+# Native app's keystore.properties.example names it there. The Capacitor project that owned that
+# folder, and the .gitignore inside it, are gone, so these keep the key and its passwords out of
+# git status.
+/android/upload-keystore.jks
+/android/keystore.properties
 
 # Maestro smoke-test screenshots (npm run test:android) — takeScreenshot writes
 # these relative to the repo root (Maestro's cwd); keep them out of the tree.

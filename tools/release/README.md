@@ -6,12 +6,12 @@ store artifacts. The committed release Markdown is the source of truth for every
 
 ## Entry points
 
-| Entry point                     | Public command                                     | Purpose                                                                                         |
-| ------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `cut-release.mjs`               | `npm run release <version>`                        | Version, commit, tag, and optionally publish                                                    |
-| `gen-release-notes.mjs`         | `npm run gen:releases`                             | Regenerate app and store release notes                                                          |
-| `build-native-release.mjs`      | `npm run native:android:*`, `npm run native:ios:*` | Build the React Native app's store `.aab` / `.xcarchive` / `.ipa`, or its `.dev` Release `.apk` |
-| `publish-release-artifacts.mjs` | `npm run release:publish`                          | Verify and attach built `.aab` / `.ipa` files                                                   |
+| Entry point                     | Public command                       | Purpose                                                                                         |
+| ------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `cut-release.mjs`               | `npm run release <version>`          | Version, commit, tag, and optionally publish                                                    |
+| `gen-release-notes.mjs`         | `npm run gen:releases`               | Regenerate app and store release notes                                                          |
+| `build-native-release.mjs`      | `npm run android:*`, `npm run ios:*` | Build the React Native app's store `.aab` / `.xcarchive` / `.ipa`, or its `.dev` Release `.apk` |
+| `publish-release-artifacts.mjs` | `npm run release:publish`            | Verify and attach built `.aab` / `.ipa` files                                                   |
 
 The public commands remain stable during the tools naming migration. The `cut-release`, `build`, and
 `publish-artifacts` skills own the human approval and signed-build workflow around these scripts.
@@ -68,8 +68,8 @@ copy. `tools/release/tests/native-app.test.mjs` fails when the native projects s
 identity or another package script reaches the opt-in.
 
 ```sh
-npm run native:android:bundle   # needs experiments/native-architecture/android/keystore.properties
-npm run native:ios:ipa          # needs experiments/native-architecture/ios/local.xcconfig
+npm run android:bundle   # needs experiments/native-architecture/android/keystore.properties
+npm run ios:ipa          # needs experiments/native-architecture/ios/local.xcconfig
 ```
 
 ## Publish native artifacts
