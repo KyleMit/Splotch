@@ -11,8 +11,10 @@
 # that touches no build input. No branch rule requires it, so a PR it skips is
 # not left waiting on a check that will never report. macOS minutes are the
 # scarce ones, so the filter leaves out the app's Markdown, and the shared
-# web/src and web/static modules the bundle imports: the Quality job
-# type-checks the app against them on every pull request.
+# web/src/lib and web/static trees the bundle imports from: most web pull
+# requests touch them, and the Quality job type-checks the app against them on
+# every pull request. Every other module the bundle imports from outside the
+# app is listed by path.
 name: Native compile
 
 on:
@@ -24,6 +26,8 @@ on:
     paths:
       - 'experiments/native-architecture/**'
       - '!experiments/native-architecture/**/*.md'
+      - 'web/src/routes/privacy/contents.ts'
+      - 'web/src/routes/privacy/sectionLink.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -40,6 +44,8 @@ on:
     paths:
       - 'experiments/native-architecture/**'
       - '!experiments/native-architecture/**/*.md'
+      - 'web/src/routes/privacy/contents.ts'
+      - 'web/src/routes/privacy/sectionLink.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'

@@ -918,18 +918,19 @@ cut off by its timeout still files, and only that reporter holds `issues: write`
 The Native compile workflow (`native-compile.yml`) is the pre-merge half of those tag gates. Its
 path filter is the React Native app (`experiments/native-architecture/**`, minus its Markdown), the
 pnpm inputs (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `patches/**`), the release
-build script and its imports, `setup-pnpm`, and the workflow itself.
-`tools/mobile/tests/native-release-configurations.test.mjs` fails when a build input falls outside
-it. The shared `web/src/lib` and `web/static` modules the bundle imports are left out on purpose:
-the Quality job type-checks the app against them on every PR, and including them would spend macOS
-minutes on most web-tree PRs. A match costs runner minutes, not merge wall clock. Both jobs are
-Release builds, so each also bundles the JavaScript as the store build embeds it. Android builds the
-`.dev` Release APK (`native:android:apk`) for one ABI, set through
-`ORG_GRADLE_PROJECT_reactNativeArchitectures`; the tagged smoke builds all four. iOS builds
-`native:ios:simulator` — `pod install`, then the unsigned store-identity Release build for the
-simulator, for the runner's architecture only — the same app the iOS deploy smoke installs. Neither
-job is required by a branch rule. ADR-0008's 2026-09-28 amendment records the Capacitor-era jobs'
-measured wall time against the slowest `test.yml` job.
+build script and its imports, `setup-pnpm`, the workflow itself, and each module the bundle imports
+from elsewhere in the repository by path (the privacy page's `contents.ts` and `sectionLink.ts`).
+`tools/mobile/tests/native-release-configurations.test.mjs` fails when a build input, or a module
+the app imports from outside its own tree, falls outside it. The shared `web/src/lib` and
+`web/static` trees the bundle imports from are left out on purpose: the Quality job type-checks the
+app against them on every PR, and including them would spend macOS minutes on most web-tree PRs. A
+match costs runner minutes, not merge wall clock. Both jobs are Release builds, so each also bundles
+the JavaScript as the store build embeds it. Android builds the `.dev` Release APK
+(`native:android:apk`) for one ABI, set through `ORG_GRADLE_PROJECT_reactNativeArchitectures`; the
+tagged smoke builds all four. iOS builds `native:ios:simulator` — `pod install`, then the unsigned
+store-identity Release build for the simulator, for the runner's architecture only — the same app
+the iOS deploy smoke installs. Neither job is required by a branch rule. ADR-0008's 2026-09-28
+amendment records the Capacitor-era jobs' measured wall time against the slowest `test.yml` job.
 
 ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
 The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside

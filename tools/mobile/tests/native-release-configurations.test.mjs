@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -97,6 +97,36 @@ function localImportClosure(entryPoints) {
     }
   }
   return [...visited];
+}
+
+const IMPORT_SPECIFIER =
+  /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)['"](\.[^'"]+)['"]/g;
+const SOURCE_FILE = /\.(?:[cm]?js|tsx?)$/;
+const RESOLVED_EXTENSIONS = ['', '.ts', '.tsx', '.mjs', '.js', '.cjs', '/index.ts', '/index.tsx'];
+
+/** A relative specifier resolved as Metro and Node would, or undefined when no file answers. */
+function resolveSpecifier(fromFile, specifier) {
+  const base = join(dirname(fromFile), specifier);
+  return RESOLVED_EXTENSIONS.map((extension) => `${base}${extension}`).find((candidate) => {
+    try {
+      return statSync(join(repoRoot, candidate)).isFile();
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** Repo paths outside the app that its tracked sources import, with the importer of each. */
+export function appExternalImports(appFiles) {
+  return appFiles
+    .filter((file) => SOURCE_FILE.test(file))
+    .flatMap((file) =>
+      [...read(file).matchAll(IMPORT_SPECIFIER)].map(([, specifier]) => ({
+        file,
+        target: resolveSpecifier(file, specifier) ?? join(dirname(file), specifier),
+      }))
+    )
+    .filter(({ target }) => !target.startsWith(`${NATIVE_APP_DIR}/`));
 }
 
 const trackedFiles = (...paths) =>
@@ -272,6 +302,33 @@ describe('native release configuration gates', () => {
       expect(tracked, input).toBeTruthy();
       expect(filter(tracked), tracked).toBe(false);
     }
+  });
+
+  // The bundle reaches outside the app by relative import, and an edit to such a
+  // module changes what both Release builds embed. Each one is either filtered by
+  // path or under a tree left out on purpose.
+  it('filters every module the bundle imports from outside the app, bar the trees it names', () => {
+    const filter = nativeCompileFilter();
+    const external = appExternalImports(trackedFiles(NATIVE_APP_DIR));
+    expect(external.length, 'the walk finds the app imports outside its own tree').toBeGreaterThan(
+      0
+    );
+    for (const { file, target } of external) {
+      expect(existsSync(join(repoRoot, target)), `${file} imports ${target}`).toBe(true);
+    }
+    const unfiltered = external.filter(
+      ({ target }) =>
+        !filter(target) && !UNFILTERED_BUNDLE_INPUTS.some((tree) => target.startsWith(tree))
+    );
+    expect(unfiltered, 'app imports no native-compile.yml path matches').toEqual([]);
+  });
+
+  it('resolves an extensionless import to the module it names', () => {
+    expect(
+      appExternalImports([join(NATIVE_APP_DIR, 'src', 'rsdDrawing', 'RsdPrivacyContent.tsx')]).map(
+        ({ target }) => target
+      )
+    ).toContain('web/src/routes/privacy/contents.ts');
   });
 
   it('retains XCTest startup diagnostics and the flow screenshot alongside Maestro flow evidence', () => {
