@@ -65,6 +65,9 @@ and passed five fresh repetitions. Neither observation is hidden by the latest p
 Each has two fresh reproductions per engine, evidence and a minimal failing repro; SvelteKit
 comparisons distinguish the shared issue from RN regressions. [Full records](findings.jsonl).
 
+WEB-003 to WEB-006 were filed as #3136 and fixed by #3138 after this run; the results above describe
+the candidate this run tested.
+
 ## Regression tests and checks
 
 Two added mounted feedback tests verify the delivered success page and **Send another** restoring a
