@@ -228,6 +228,16 @@ describe("the page document's boot script", () => {
     expect(root.querySelector('a').getAttribute('href')).toBe('#counting');
   });
 
+  it('reads a section URL copied without JavaScript as the page’s own fragment', () => {
+    window.happyDOM.setURL('http://localhost/privacy?x=1#counting~desktop-light');
+    boot({ width: 412, height: 915 });
+    expect(location.pathname + location.search + location.hash).toBe('/privacy?x=1#counting');
+    window.happyDOM.setURL('http://localhost/privacy#counting~elsewhere');
+    boot({ width: 412, height: 915 });
+    expect(location.hash).toBe('#counting~elsewhere');
+    window.happyDOM.setURL('http://localhost/privacy');
+  });
+
   it('follows a saved theme over the system one', () => {
     expect(
       boot({ width: 1280, height: 800, theme: 'light', scheme: 'dark' }).getAttribute(

@@ -113,6 +113,13 @@ export function pageVariantCss() {
 // strips it from the variant it keeps before hydration, so the hydrated markup is the page's own.
 export const VARIANT_FRAGMENT_SEPARATOR = '~';
 
+// A section URL copied without JavaScript carries its variant's key; a visit with JavaScript reads
+// the page's own fragment instead.
+function variantFragmentPattern() {
+  const layouts = Object.keys(PAGE_VARIANT_VIEWPORTS).join('|');
+  return `/${VARIANT_FRAGMENT_SEPARATOR}(?:${layouts})-(?:${FIRST_FRAME_THEMES.join('|')})$/`;
+}
+
 export function withVariantFragments(html, key) {
   const linked = new Set([...html.matchAll(/ href="#([^"]+)"/g)].map((match) => match[1]));
   const targets = new Set(
@@ -140,6 +147,8 @@ export function withoutScriptCss() {
 export function pageBootScript() {
   return [
     '(function(){var painted=false;try{',
+    `var k=location.hash.match(${variantFragmentPattern()});`,
+    "if(k)history.replaceState(history.state,'',location.pathname+location.search+location.hash.slice(0,-k[0].length));",
     'var w=innerWidth,h=innerHeight;',
     `var c=w<=${PHONE_MAX_WIDTH_PX}?'phone':h<=${SHORT_PAGE_HEIGHT_PX}?'short':w<=${PAGE_FRAMED_MAX_WIDTH_PX}?'framed':'desktop';`,
     `var t=document.documentElement.getAttribute(${JSON.stringify(BOOT_THEME_ATTRIBUTE)});`,
