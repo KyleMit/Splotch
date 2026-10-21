@@ -1,0 +1,16 @@
+diff --git a/android/CMakeLists.txt b/android/CMakeLists.txt
+index 6a50c5880f72082314ededd5aaa2b0e3ade2fd2c..ffb575379c77902116275d9fbd56705bf4ff70fd 100644
+--- a/android/CMakeLists.txt
++++ b/android/CMakeLists.txt
+@@ -216,3 +216,11 @@ endif()
+ if(CMAKE_ANDROID_NDK_VERSION VERSION_LESS "27")
+     target_link_options(${PACKAGE_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
+ endif()
++
++# Splotch: nothing links against librnskia.so and Java enters only through JNI_OnLoad (JNIEXPORT),
++# so every other symbol is hidden, which drops the dynamic symbol table and lets --gc-sections
++# collect code that was kept only because it was exported. --icf=all folds identical functions;
++# --pack-dyn-relocs=android packs the relocation table (API 23+; the app's minSdk is 24).
++target_compile_options(${PACKAGE_NAME} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
++target_link_options(${PACKAGE_NAME} PRIVATE
++    -Wl,--exclude-libs,ALL -Wl,--icf=all -Wl,--pack-dyn-relocs=android)
