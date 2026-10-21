@@ -93,18 +93,20 @@ the React Native projects, with manual store upload as today (#3158). The `build
 `publish-artifacts` skills are rewritten for those scripts.
 
 Today there is no fastlane setup. `fastlane/` holds only store-listing text (`fastlane/metadata/`),
-store upload is manual, and CI never signs. ADR-0020 rejected fastlane as "a Ruby dependency for
-what is currently two `xcodebuild` invocations".
+store upload is manual, and CI never holds the shipping signing credentials. The Android deploy
+smoke signs its Release APK with a throwaway key generated on the runner (ADR-0124). ADR-0020
+rejected fastlane as "a Ruby dependency for what is currently two `xcodebuild` invocations".
 
 Alternatives considered:
 
-* **EAS.** It is Expo's default, and it supports bare projects. It would add an Expo account, cloud
-  builds and new credentials held at Expo (a Play service account and an App Store Connect API key).
-  It would also need the monorepo uploaded as an archive, and it would fight the custom signing
-  config.
+* **EAS.** It is Expo's default, and it supports bare projects. EAS Build would add an Expo account
+  and cloud builds, and the shipping signing credentials would move into Expo's credential store. It
+  would also need the monorepo uploaded as an archive, and it would fight the custom signing config.
+  Automating upload through EAS Submit would add new credentials: a Play service account and an App
+  Store Connect API key.
 * **fastlane.** Ruby is already present for CocoaPods (the React Native app's `Gemfile` pins it), so
-  ADR-0020's "no Ruby" reason is weaker now. But upload automation would still need the same new
-  credentials.
+  ADR-0020's "no Ruby" reason is weaker now. But upload automation through fastlane would still need
+  the same two new credentials.
 
 Neither solves a problem the solo, manual-upload flow has. Either can be added later for upload
 automation.
@@ -228,8 +230,9 @@ helpers. Svelte components, runes state and the Svelte drawing engine are delete
 * − Once the Capacitor projects are deleted (#3162), `codex/native-migration` can no longer build or
   release a Capacitor app. Until the branch merges, only `main` can; after it merges, a Capacitor
   release means reverting the merge.
-* − Store upload stays manual, by one person signed in to both stores. Adding EAS or fastlane later
-  means creating the Play service account and App Store Connect API key this decision avoids.
+* − Store upload stays manual, by one person signed in to both stores. Automating it later, through
+  EAS Submit or fastlane, means creating the Play service account and App Store Connect API key this
+  decision avoids.
 * − A `.dev` build is a separate app on the device, with its own storage, beside the store copy.
 * − The root move lands last (#3163), after the deletions. Until then the app stays in
   `experiments/native-architecture/`, and its paths change once more.
