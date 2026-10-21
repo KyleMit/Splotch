@@ -999,3 +999,166 @@ applies only to stated assertions. BLOCKED includes harness failures pending tri
   and stays unproven. No actual browser zoom verdict."} Evidence:
   [screenshot](../evidence/webkit-phone-X01-X03-W09-W10-cssZoom200-1792556794623.webp),
   [tree](../evidence/webkit-phone-X01-X03-W09-W10-cssZoom200-1792556794623.aria.txt).
+
+- 2026-10-21T08:07:39.884Z — phone A01-A03-A08-fixture-success: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived:
+  0\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate"} Evidence:
+  [screenshot](../evidence/webkit-phone-A01-A03-A08-fixture-success-1792570071431.webp),
+  [tree](../evidence/webkit-phone-A01-A03-A08-fixture-success-1792570071431.aria.txt).
+
+- 2026-10-21T08:07:52.980Z — tablet A01-A03-A08-fixture-success: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived:
+  0\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate"} Evidence:
+  [screenshot](../evidence/webkit-tablet-A01-A03-A08-fixture-success-1792570084738.webp),
+  [tree](../evidence/webkit-tablet-A01-A03-A08-fixture-success-1792570084738.aria.txt).
+
+- 2026-10-21T08:08:06.441Z — desktop A01-A03-A08-fixture-success: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived:
+  0\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate"} Evidence:
+  [screenshot](../evidence/webkit-desktop-A01-A03-A08-fixture-success-1792570098001.webp),
+  [tree](../evidence/webkit-desktop-A01-A03-A08-fixture-success-1792570098001.aria.txt).
+
+- 2026-10-21T08:08:19.647Z — phone A04-A05-serverError: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 0"}
+  Evidence: [screenshot](../evidence/webkit-phone-A04-A05-serverError-1792570106116.webp),
+  [tree](../evidence/webkit-phone-A04-A05-serverError-1792570106116.aria.txt).
+
+- 2026-10-21T08:08:27.637Z — phone A04-A05-bare502: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 0"}
+  Evidence: [screenshot](../evidence/webkit-phone-A04-A05-bare502-1792570114147.webp),
+  [tree](../evidence/webkit-phone-A04-A05-bare502-1792570114147.aria.txt).
+
+- 2026-10-21T08:08:35.704Z — phone A04-A05-malformedJson: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 0"}
+  Evidence: [screenshot](../evidence/webkit-phone-A04-A05-malformedJson-1792570122214.webp),
+  [tree](../evidence/webkit-phone-A04-A05-malformedJson-1792570122214.aria.txt).
+
+- 2026-10-21T08:08:43.762Z — phone A04-A05-wrongType: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 0"}
+  Evidence: [screenshot](../evidence/webkit-phone-A04-A05-wrongType-1792570130328.webp),
+  [tree](../evidence/webkit-phone-A04-A05-wrongType-1792570130328.aria.txt).
+
+- 2026-10-21T08:08:51.880Z — phone A04-A05-throttled: **BLOCKED**.
+  {"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 0"}
+  Evidence: [screenshot](../evidence/webkit-phone-A04-A05-throttled-1792570138365.webp),
+  [tree](../evidence/webkit-phone-A04-A05-throttled-1792570138365.aria.txt).
+
+- 2026-10-21T08:08:59.931Z — phone A04-A05-refusal: **BLOCKED**.
+  {"error":"expect(locator).toBeVisible() failed\n\nLocator: getByRole('button', { name: 'Report
+  this refusal', exact: true })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not
+  found\n\nCall log:\n - Expect \"toBeVisible\" getByRole('button', { name: 'Report this refusal',
+  exact: true }) with timeout 15000ms\n - waiting for getByRole('button', { name: 'Report this
+  refusal', exact: true })\n"} Evidence:
+  [screenshot](../evidence/webkit-phone-A04-A05-refusal-1792570161443.webp),
+  [tree](../evidence/webkit-phone-A04-A05-refusal-1792570161443.aria.txt).
+
+- 2026-10-21T08:09:23.012Z — phone S07-dummy-key-persistence: **PASS**.
+  {"dummyOnly":true,"verifiedThroughFixture":true,"masked":true,"noPlaintextLocalStorage":true,"reloadRetained":true,"forgetPersisted":true,"fieldShortcutDidNotUndoInk":true,"requests":[{"at":1792570167335,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570167590,"method":"POST","host":"127.0.0.1:6150","path":"/api/verify-key","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"application/json","bytes":53},"credential":[],"reply":200},{"at":1792570171691,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570172514,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200}],"limits":"No
+  real key; encryption implementation covered by existing vault tests, not inferred from masking."}
+  Evidence: [screenshot](../evidence/webkit-phone-S07-dummy-key-persistence-1792570174987.webp),
+  [tree](../evidence/webkit-phone-S07-dummy-key-persistence-1792570174987.aria.txt).
+
+- 2026-10-21T08:09:36.536Z — phone A06-ticket-poll-success: **BLOCKED**.
+  {"error":"expect(locator).toBeVisible() failed\n\nLocator: getByRole('button', { name: 'Download',
+  exact: true })\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n -
+  Expect \"toBeVisible\" getByRole('button', { name: 'Download', exact: true }) with timeout
+  30000ms\n - waiting for getByRole('button', { name: 'Download', exact: true })\n"} Evidence:
+  [screenshot](../evidence/webkit-phone-A06-ticket-poll-success-1792570213024.webp),
+  [tree](../evidence/webkit-phone-A06-ticket-poll-success-1792570213024.aria.txt).
+
+- 2026-10-21T08:10:14.594Z — phone A07-offline-reconnect: **BLOCKED**.
+  {"error":"expect(locator).toBeVisible() failed\n\nLocator: getByRole('button', { name: 'Download',
+  exact: true })\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n -
+  Expect \"toBeVisible\" getByRole('button', { name: 'Download', exact: true }) with timeout
+  15000ms\n - waiting for getByRole('button', { name: 'Download', exact: true })\n"} Evidence:
+  [screenshot](../evidence/webkit-phone-A07-offline-reconnect-1792570236059.webp),
+  [tree](../evidence/webkit-phone-A07-offline-reconnect-1792570236059.aria.txt).
+
+- 2026-10-21T08:10:37.618Z — phone W13-ai-idb-quota: **BLOCKED**.
+  {"error":"expect(locator).toBeVisible() failed\n\nLocator: getByRole('heading', { name: 'Out of
+  space', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall
+  log:\n - Expect \"toBeVisible\" getByRole('heading', { name: 'Out of space', exact: true }) with
+  timeout 5000ms\n - waiting for getByRole('heading', { name: 'Out of space', exact: true })\n"}
+  Evidence: [screenshot](../evidence/webkit-phone-W13-ai-idb-quota-1792570249106.webp),
+  [tree](../evidence/webkit-phone-W13-ai-idb-quota-1792570249106.aria.txt).
+
+- 2026-10-21T08:11:17.290Z — phone A01-A03-A08-fixture-success: **PASS**.
+  {"requests":[{"at":1792570280638,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570283954,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200},{"at":1792570290634,"method":"POST","host":"127.0.0.1:6150","path":"/api/report-image","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"multipart/form-data","bytes":0},"credential":["x-installation-id","x-report-token"],"reply":200}],"storage":[{"name":"splotch-beta-ai-vault-v1","stores":["vault"]},{"name":"splotch-beta-ai-jobs-v1","stores":["state"],"attempts":[{"originalModelBytes":774,"inputLength":32563,"resultLength":112370,"phase":"result"}]},{"name":"splotch-beta-offline-library-v1","stores":["files"]},{"name":"splotch-candidate-unsaved-pictures","stores":["held"]}],"oneUpload":true,"minimizedAndDrew":true,"cancelSentNothing":true,"reportSentOnce":true,"limits":"Original
+  model text measured in IndexedDB; image byte lengths are stored receipts rather than byte-for-byte
+  image validation."} Evidence:
+  [screenshot](../evidence/webkit-phone-A01-A03-A08-fixture-success-1792570290738.webp),
+  [tree](../evidence/webkit-phone-A01-A03-A08-fixture-success-1792570290738.aria.txt).
+
+- 2026-10-21T08:11:32.346Z — tablet A01-A03-A08-fixture-success: **PASS**.
+  {"requests":[{"at":1792570295886,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570299634,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200},{"at":1792570306136,"method":"POST","host":"127.0.0.1:6150","path":"/api/report-image","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"multipart/form-data","bytes":0},"credential":["x-installation-id","x-report-token"],"reply":200}],"storage":[{"name":"splotch-beta-ai-vault-v1","stores":["vault"]},{"name":"splotch-beta-ai-jobs-v1","stores":["state"],"attempts":[{"originalModelBytes":757,"inputLength":80575,"resultLength":112370,"phase":"result"}]},{"name":"splotch-beta-offline-library-v1","stores":["files"]},{"name":"splotch-candidate-unsaved-pictures","stores":["held"]}],"oneUpload":true,"minimizedAndDrew":true,"cancelSentNothing":true,"reportSentOnce":true,"limits":"Original
+  model text measured in IndexedDB; image byte lengths are stored receipts rather than byte-for-byte
+  image validation."} Evidence:
+  [screenshot](../evidence/webkit-tablet-A01-A03-A08-fixture-success-1792570306242.webp),
+  [tree](../evidence/webkit-tablet-A01-A03-A08-fixture-success-1792570306242.aria.txt).
+
+- 2026-10-21T08:11:47.835Z — desktop A01-A03-A08-fixture-success: **PASS**.
+  {"requests":[{"at":1792570311191,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570315016,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200},{"at":1792570321623,"method":"POST","host":"127.0.0.1:6150","path":"/api/report-image","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"multipart/form-data","bytes":0},"credential":["x-installation-id","x-report-token"],"reply":200}],"storage":[{"name":"splotch-beta-ai-vault-v1","stores":["vault"]},{"name":"splotch-beta-ai-jobs-v1","stores":["state"],"attempts":[{"originalModelBytes":771,"inputLength":82397,"resultLength":88588,"phase":"result"}]},{"name":"splotch-beta-offline-library-v1","stores":["files"]},{"name":"splotch-candidate-unsaved-pictures","stores":["held"]}],"oneUpload":true,"minimizedAndDrew":true,"cancelSentNothing":true,"reportSentOnce":true,"limits":"Original
+  model text measured in IndexedDB; image byte lengths are stored receipts rather than byte-for-byte
+  image validation."} Evidence:
+  [screenshot](../evidence/webkit-desktop-A01-A03-A08-fixture-success-1792570321727.webp),
+  [tree](../evidence/webkit-desktop-A01-A03-A08-fixture-success-1792570321727.aria.txt).
+
+- 2026-10-21T08:12:03.234Z — phone A04-A05-serverError: **PASS**.
+  {"requests":[{"at":1792570326506,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570329872,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":500},{"at":1792570330483,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/webkit-phone-A04-A05-serverError-1792570331585.webp),
+  [tree](../evidence/webkit-phone-A04-A05-serverError-1792570331585.aria.txt).
+
+- 2026-10-21T08:12:13.203Z — phone A04-A05-bare502: **PASS**.
+  {"requests":[{"at":1792570336482,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570339802,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":502},{"at":1792570340364,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/webkit-phone-A04-A05-bare502-1792570341508.webp),
+  [tree](../evidence/webkit-phone-A04-A05-bare502-1792570341508.aria.txt).
+
+- 2026-10-21T08:12:23.154Z — phone A04-A05-malformedJson: **PASS**.
+  {"requests":[{"at":1792570346432,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570349723,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200},{"at":1792570350312,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/webkit-phone-A04-A05-malformedJson-1792570351436.webp),
+  [tree](../evidence/webkit-phone-A04-A05-malformedJson-1792570351436.aria.txt).
+
+- 2026-10-21T08:12:33.053Z — phone A04-A05-wrongType: **PASS**.
+  {"requests":[{"at":1792570356271,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570359595,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200},{"at":1792570360194,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/webkit-phone-A04-A05-wrongType-1792570361336.webp),
+  [tree](../evidence/webkit-phone-A04-A05-wrongType-1792570361336.aria.txt).
+
+- 2026-10-21T08:12:42.940Z — phone A04-A05-throttled: **PASS**.
+  {"requests":[{"at":1792570366163,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570369462,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":429},{"at":1792570370061,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"429
+  behavior recorded; whether immediate retry is intentional requires source/shipping comparison."}
+  Evidence: [screenshot](../evidence/webkit-phone-A04-A05-throttled-1792570371191.webp),
+  [tree](../evidence/webkit-phone-A04-A05-throttled-1792570371191.aria.txt).
+
+- 2026-10-21T08:12:52.814Z — phone A04-A05-refusal: **PASS**.
+  {"requests":[{"at":1792570376099,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570379381,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":422}],"recovered":false,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/webkit-phone-A04-A05-refusal-1792570380374.webp),
+  [tree](../evidence/webkit-phone-A04-A05-refusal-1792570380374.aria.txt).
+
+- 2026-10-21T08:13:01.923Z — phone S07-dummy-key-persistence: **PASS**.
+  {"dummyOnly":true,"verifiedThroughFixture":true,"masked":true,"noPlaintextLocalStorage":true,"reloadRetained":true,"forgetPersisted":true,"fieldShortcutDidNotUndoInk":true,"requests":[{"at":1792570386386,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570386646,"method":"POST","host":"127.0.0.1:6150","path":"/api/verify-key","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"application/json","bytes":53},"credential":[],"reply":200},{"at":1792570390733,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570391538,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200}],"limits":"No
+  real key; encryption implementation covered by existing vault tests, not inferred from masking."}
+  Evidence: [screenshot](../evidence/webkit-phone-S07-dummy-key-persistence-1792570394027.webp),
+  [tree](../evidence/webkit-phone-S07-dummy-key-persistence-1792570394027.aria.txt).
+
+- 2026-10-21T08:13:15.563Z — phone A06-ticket-poll-success: **PASS**.
+  {"uploads":1,"polls":2,"requests":[{"at":1792570398822,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570402145,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":202},{"at":1792570405157,"method":"GET","host":"127.0.0.1:6150","path":"/api/generation-result","query":"?job=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","origin":null,"upload":null,"credential":["x-installation-id"],"reply":202},{"at":1792570408160,"method":"GET","host":"127.0.0.1:6150","path":"/api/generation-result","query":"?job=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200}],"limits":"Ticket
+  then pending then image; long timeout and reload-mid-poll remain separate."} Evidence:
+  [screenshot](../evidence/webkit-phone-A06-ticket-poll-success-1792570410478.webp),
+  [tree](../evidence/webkit-phone-A06-ticket-poll-success-1792570410478.aria.txt).
+
+- 2026-10-21T08:13:32.082Z — phone A07-offline-reconnect: **PASS**.
+  {"offlineDidNotUpload":true,"reconnectedGenerationSucceeded":true,"requests":[{"at":1792570415354,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570418660,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"limits":"Playwright
+  network-offline signal; no real endpoint delivery claimed."} Evidence:
+  [screenshot](../evidence/webkit-phone-A07-offline-reconnect-1792570419474.webp),
+  [tree](../evidence/webkit-phone-A07-offline-reconnect-1792570419474.aria.txt).
+
+- 2026-10-21T08:13:41.069Z — phone W13-ai-idb-quota: **PASS**.
+  {"quotaHits":1,"uploadBeforeDurableStorage":false,"retrySucceeded":true,"requests":[{"at":1792570424329,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570428222,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/png","bytes":0},"credential":["x-installation-id"],"reply":200}],"limits":"Named
+  IDB put QuotaExceededError fixture; actual origin storage not filled."} Evidence:
+  [screenshot](../evidence/webkit-phone-W13-ai-idb-quota-1792570429329.webp),
+  [tree](../evidence/webkit-phone-W13-ai-idb-quota-1792570429329.aria.txt).

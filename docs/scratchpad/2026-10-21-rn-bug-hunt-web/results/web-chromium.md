@@ -1332,3 +1332,84 @@ assertions stated. BLOCKED includes harness failures pending triage, not a produ
   and stays unproven. No actual browser zoom verdict."} Evidence:
   [screenshot](../evidence/chromium-phone-X01-X03-W09-W10-cssZoom200-1792556788334.webp),
   [tree](../evidence/chromium-phone-X01-X03-W09-W10-cssZoom200-1792556788334.aria.txt).
+
+- 2026-10-21T08:04:50.520Z — phone A01-A03-A08-fixture-success: **PASS**.
+  {"requests":[{"at":1792569893822,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569897432,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200},{"at":1792569904506,"method":"POST","host":"127.0.0.1:6150","path":"/api/report-image","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"multipart/form-data","bytes":148289,"parts":["kind","drawing:image/png","output:image/jpeg","style"]},"credential":["x-installation-id","x-report-token"],"reply":200}],"storage":[{"name":"splotch-beta-ai-jobs-v1","stores":["state"],"attempts":[{"originalModelBytes":779,"inputLength":35507,"resultLength":112370,"phase":"result"}]},{"name":"splotch-beta-ai-vault-v1","stores":["vault"]},{"name":"splotch-beta-offline-library-v1","stores":["files"]},{"name":"splotch-candidate-unsaved-pictures","stores":["held"]}],"oneUpload":true,"minimizedAndDrew":true,"cancelSentNothing":true,"reportSentOnce":true,"limits":"Original
+  model text measured in IndexedDB; image byte lengths are stored receipts rather than byte-for-byte
+  image validation."} Evidence:
+  [screenshot](../evidence/chromium-phone-A01-A03-A08-fixture-success-1792569904595.webp),
+  [tree](../evidence/chromium-phone-A01-A03-A08-fixture-success-1792569904595.aria.txt).
+
+- 2026-10-21T08:05:06.235Z — tablet A01-A03-A08-fixture-success: **PASS**.
+  {"requests":[{"at":1792569909422,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569913495,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":10096,"format":"webp","width":1640,"height":2210},"credential":["x-installation-id"],"reply":200},{"at":1792569921086,"method":"POST","host":"127.0.0.1:6150","path":"/api/report-image","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"multipart/form-data","bytes":203521,"parts":["kind","drawing:image/png","output:image/jpeg","style"]},"credential":["x-installation-id","x-report-token"],"reply":200}],"storage":[{"name":"splotch-beta-ai-jobs-v1","stores":["state"],"attempts":[{"originalModelBytes":739,"inputLength":90739,"resultLength":112370,"phase":"result"}]},{"name":"splotch-beta-ai-vault-v1","stores":["vault"]},{"name":"splotch-beta-offline-library-v1","stores":["files"]},{"name":"splotch-candidate-unsaved-pictures","stores":["held"]}],"oneUpload":true,"minimizedAndDrew":true,"cancelSentNothing":true,"reportSentOnce":true,"limits":"Original
+  model text measured in IndexedDB; image byte lengths are stored receipts rather than byte-for-byte
+  image validation."} Evidence:
+  [screenshot](../evidence/chromium-tablet-A01-A03-A08-fixture-success-1792569921169.webp),
+  [tree](../evidence/chromium-tablet-A01-A03-A08-fixture-success-1792569921169.aria.txt).
+
+- 2026-10-21T08:05:22.954Z — desktop A01-A03-A08-fixture-success: **PASS**.
+  {"requests":[{"at":1792569926125,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569929891,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":11076,"format":"webp","width":2392,"height":1600},"credential":["x-installation-id"],"reply":200},{"at":1792569936888,"method":"POST","host":"127.0.0.1:6150","path":"/api/report-image","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"multipart/form-data","bytes":183014,"parts":["kind","drawing:image/png","output:image/jpeg","style"]},"credential":["x-installation-id","x-report-token"],"reply":200}],"storage":[{"name":"splotch-beta-ai-jobs-v1","stores":["state"],"attempts":[{"originalModelBytes":764,"inputLength":94014,"resultLength":88588,"phase":"result"}]},{"name":"splotch-beta-ai-vault-v1","stores":["vault"]},{"name":"splotch-beta-offline-library-v1","stores":["files"]},{"name":"splotch-candidate-unsaved-pictures","stores":["held"]}],"oneUpload":true,"minimizedAndDrew":true,"cancelSentNothing":true,"reportSentOnce":true,"limits":"Original
+  model text measured in IndexedDB; image byte lengths are stored receipts rather than byte-for-byte
+  image validation."} Evidence:
+  [screenshot](../evidence/chromium-desktop-A01-A03-A08-fixture-success-1792569936972.webp),
+  [tree](../evidence/chromium-desktop-A01-A03-A08-fixture-success-1792569936972.aria.txt).
+
+- 2026-10-21T08:05:38.496Z — phone A04-A05-serverError: **PASS**.
+  {"requests":[{"at":1792569941609,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569945150,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":500},{"at":1792569945794,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/chromium-phone-A04-A05-serverError-1792569946859.webp),
+  [tree](../evidence/chromium-phone-A04-A05-serverError-1792569946859.aria.txt).
+
+- 2026-10-21T08:05:48.462Z — phone A04-A05-bare502: **PASS**.
+  {"requests":[{"at":1792569951630,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569955193,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":502},{"at":1792569955846,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/chromium-phone-A04-A05-bare502-1792569956936.webp),
+  [tree](../evidence/chromium-phone-A04-A05-bare502-1792569956936.aria.txt).
+
+- 2026-10-21T08:05:58.553Z — phone A04-A05-malformedJson: **PASS**.
+  {"requests":[{"at":1792569961734,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569965350,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200},{"at":1792569965969,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/chromium-phone-A04-A05-malformedJson-1792569967070.webp),
+  [tree](../evidence/chromium-phone-A04-A05-malformedJson-1792569967070.aria.txt).
+
+- 2026-10-21T08:06:08.682Z — phone A04-A05-wrongType: **PASS**.
+  {"requests":[{"at":1792569971832,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569975376,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200},{"at":1792569975979,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/chromium-phone-A04-A05-wrongType-1792569977072.webp),
+  [tree](../evidence/chromium-phone-A04-A05-wrongType-1792569977072.aria.txt).
+
+- 2026-10-21T08:06:18.700Z — phone A04-A05-throttled: **PASS**.
+  {"requests":[{"at":1792569981831,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569985359,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":429},{"at":1792569985996,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"recovered":true,"limits":"429
+  behavior recorded; whether immediate retry is intentional requires source/shipping comparison."}
+  Evidence: [screenshot](../evidence/chromium-phone-A04-A05-throttled-1792569987072.webp),
+  [tree](../evidence/chromium-phone-A04-A05-throttled-1792569987072.aria.txt).
+
+- 2026-10-21T08:06:28.705Z — phone A04-A05-refusal: **PASS**.
+  {"requests":[{"at":1792569991836,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792569995348,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":422}],"recovered":false,"limits":"Fixture
+  only; no live transport proven."} Evidence:
+  [screenshot](../evidence/chromium-phone-A04-A05-refusal-1792569996351.webp),
+  [tree](../evidence/chromium-phone-A04-A05-refusal-1792569996351.aria.txt).
+
+- 2026-10-21T08:06:37.904Z — phone S07-dummy-key-persistence: **PASS**.
+  {"dummyOnly":true,"verifiedThroughFixture":true,"masked":true,"noPlaintextLocalStorage":true,"reloadRetained":true,"forgetPersisted":true,"fieldShortcutDidNotUndoInk":true,"requests":[{"at":1792570002406,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570002670,"method":"POST","host":"127.0.0.1:6150","path":"/api/verify-key","query":"","origin":"http://127.0.0.1:6150","upload":{"contentType":"application/json","bytes":53},"credential":[],"reply":200},{"at":1792570006787,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570007142,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570007192,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200}],"limits":"No
+  real key; encryption implementation covered by existing vault tests, not inferred from masking."}
+  Evidence: [screenshot](../evidence/chromium-phone-S07-dummy-key-persistence-1792570010106.webp),
+  [tree](../evidence/chromium-phone-S07-dummy-key-persistence-1792570010106.aria.txt).
+
+- 2026-10-21T08:06:51.602Z — phone A06-ticket-poll-success: **PASS**.
+  {"uploads":1,"polls":2,"requests":[{"at":1792570014765,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570018361,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":202},{"at":1792570021365,"method":"GET","host":"127.0.0.1:6150","path":"/api/generation-result","query":"?job=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","origin":null,"upload":null,"credential":["x-installation-id"],"reply":202},{"at":1792570024372,"method":"GET","host":"127.0.0.1:6150","path":"/api/generation-result","query":"?job=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200}],"limits":"Ticket
+  then pending then image; long timeout and reload-mid-poll remain separate."} Evidence:
+  [screenshot](../evidence/chromium-phone-A06-ticket-poll-success-1792570026775.webp),
+  [tree](../evidence/chromium-phone-A06-ticket-poll-success-1792570026775.aria.txt).
+
+- 2026-10-21T08:07:08.385Z — phone A07-offline-reconnect: **PASS**.
+  {"offlineDidNotUpload":true,"reconnectedGenerationSucceeded":true,"requests":[{"at":1792570031499,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570035021,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"limits":"Playwright
+  network-offline signal; no real endpoint delivery claimed."} Evidence:
+  [screenshot](../evidence/chromium-phone-A07-offline-reconnect-1792570035842.webp),
+  [tree](../evidence/chromium-phone-A07-offline-reconnect-1792570035842.aria.txt).
+
+- 2026-10-21T08:07:17.466Z — phone W13-ai-idb-quota: **PASS**.
+  {"quotaHits":1,"uploadBeforeDurableStorage":false,"retrySucceeded":true,"requests":[{"at":1792570040600,"method":"GET","host":"127.0.0.1:6150","path":"/api/free-generation-grant","query":"","origin":null,"upload":null,"credential":["x-installation-id"],"reply":200},{"at":1792570044811,"method":"POST","host":"127.0.0.1:6150","path":"/api/generate-image","query":"?style=Sticker","origin":"http://127.0.0.1:6150","upload":{"contentType":"image/webp","bytes":4612,"format":"webp","width":780,"height":1538},"credential":["x-installation-id"],"reply":200}],"limits":"Named
+  IDB put QuotaExceededError fixture; actual origin storage not filled."} Evidence:
+  [screenshot](../evidence/chromium-phone-W13-ai-idb-quota-1792570045888.webp),
+  [tree](../evidence/chromium-phone-W13-ai-idb-quota-1792570045888.aria.txt).

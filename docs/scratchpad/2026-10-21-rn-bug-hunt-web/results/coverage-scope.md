@@ -98,3 +98,17 @@ Farm Cat. This extends the S02/S05/W08 visual evidence for those named states. O
 subsections, gates/results, every orientation-lock choice and physical browser identities remain
 outside that matrix. See [visual-parity.md](visual-parity.md) for every pair and numeric
 observation.
+
+## Run 4 addition
+
+At cbfa2dc91a861aa41ba64219c34feb0875a37ce7 the rebuilt site export replaces the SPA-only QA host.
+All eighteen AI units blocked in run 3 pass, alongside fixture success at all three profiles in all
+engines and simulated quota recovery without reload. [AI verification](ai-run4.md).
+
+Standalone pages are in scope for this run: eight exported documents, pretty URLs, deep unknown
+paths, beta OS queries, fixture feedback/admin, full text and local anchors, scripts on/off,
+light/dark/forced colors, 320 px, ordinary motion, saved themes, short landscape and controlled
+service-worker navigation. [Page coverage and limitations](pages.md) contains the exact recorder
+counts, confirmed findings and preserved stress flags. These additions do not revalidate the whole
+older drawing ledger or visual matrix at the new head, and do not remove the physical/OS limits
+above.

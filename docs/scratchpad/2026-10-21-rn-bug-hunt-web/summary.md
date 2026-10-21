@@ -1,131 +1,97 @@
-# RN web regression hunt summary
+# RN web QA — run 4
 
-Candidate b236d639160459eecd60900926c759af5d4ae080. Run 3 capture complete; updated
-2026-10-21T07:59:22.819Z. The shipping SvelteKit web build and RN export were rebuilt from this
-worktree. Both build commands and their post-build guards exited zero.
-[Build receipts](evidence/build-run3.json) bind the artifacts to this source. This compares the
-shipping implementation in this worktree; it does not establish independent deployed-production
-equivalence.
+Candidate cbfa2dc91a861aa41ba64219c34feb0875a37ce7. Fresh `npm run build:site` and reference
+`npm run build` both pass. [Build receipt](evidence/run4/build-and-ownership.json). Product source
+is unchanged; changes are QA artifacts and two regression tests. No commits, GitHub writes, devices,
+real secrets or real AI generation were used.
 
-Product source is unchanged. Only tests and QA artifacts were edited; no commits, pushes, GitHub
-writes or devices were used. All app servers used ports 6150–6189 on 127.0.0.1. The orchestrator's
-browser server on 6190 is excluded from cleanup. All owned servers are stopped;
-[cleanup receipt](evidence/cleanup-run3.json).
+## AI fixes
 
-## Functional results
+**All eighteen previously blocked units pass.** The accepted AI batch has 39/39 passing recorder
+units, thirteen per engine. WebKit and Firefox complete fixture generation at phone, tablet and
+desktop sizes. Each engine shows **Out of space** after one simulated failed IndexedDB write, then
+**Try again** completes exactly one fixture generation without reloading.
 
-| Surface  | Case/profile units | Pass | Previously confirmed fail | Blocked |
-| -------- | -----------------: | ---: | ------------------------: | ------: |
-| chromium |                 87 |   86 |                         1 |       0 |
-| webkit   |                114 |  102 |                         3 |       9 |
-| firefox  |                111 |   99 |                         3 |       9 |
+Three additional actual HTTP captures prove uploads reach the local AI-1 fixture: WebKit sends a
+32,563-byte PNG; Chromium and Firefox send WebP. All decode to 780×1538. This closes the remote
+WebKit request object's zero-body observability gap.
 
-The combined ledger contains 312 latest unique **engine/profile/case** recorder units: 287 pass, 7
-previously confirmed failures, 18 blocked. These are not independent plan requirements or exhaustive
-acceptance. Some cases group several assertions; physical/OS limits and unexecuted axes stay in the
-[coverage inventory](results/coverage-scope.md).
+WEB-001 (#3110/#3116) and WEB-002 (#3111/#3112) remain as historical records, with run-4 fixed
+verification attached. [AI report and every blocked unit](results/ai-run4.md).
 
-Run 3 reconciled every one of the previous 38 blocked units: twenty now have passing observations;
-eighteen remain blocked by issue #3111, nine downstream AI cases in each of WebKit and Firefox. The
-[blocked-case table](results/blocked-run3.md) gives every original unit its resolution or exact
-remaining limit. Three offline-shell resolutions reuse the prior same-profile server-loss evidence
-and overlap the separately recorded host-loss units; they are not three new independent behaviours.
-Raw failed harness takes remain in [observations.jsonl](evidence/observations.jsonl).
+## Standalone pages
 
-The history oracle now expects the shared twenty-step Undo limit after twenty-five commands. Fresh
-ready contexts, landed overlays, the current public AI button name and the documented one-pixel
-Eraser Undo antialias envelope resolve the other Chromium harness blocks. Firefox's brush and Farm
-Magic/Eraser comparisons now complete in fresh contexts; this does not prove an intermittent
-retained halo can never occur.
+The RN export is served with file → `<path>.html` → HTTP-404-document resolution and local API
+fixtures. The eight documents, beta OS queries and an unknown deep path run in all three engines,
+four layouts including 320 px, JavaScript on/off, light, dark and forced colors.
 
-The CSS-zoom surrogate passes only its stated scope: Settings entry, Escape dismissal, a contact
-constrained to visible paper and keyboard Undo. Pointer Close remains outside that surrogate
-viewport. **Actual browser-chrome zoom and enlarged pointer Close reachability are unproven.**
+| Engine   | Main combinations | Clean | Admin width flags |
+| -------- | ----------------: | ----: | ----------------: |
+| Chromium |               240 |   234 |                 6 |
+| WebKit   |               240 |   234 |                 6 |
+| Firefox  |               240 |   234 |                 6 |
+| Total    |               720 |   702 |                18 |
 
-## Existing findings
+All eighteen flags describe WEB-004 below. The main matrix has zero runtime errors, CSP events or
+automatic cross-origin requests. Its 36 feedback flows cover failure/draft retention/retry/success/
+reset. Its 36 admin flows cover wrong-secret rejection, login, tokens/stats, add/remove, reload and
+sign-out. No-script forms provide their explicit explanation; they are not executed submissions.
 
-* **WEB-001 / issue #3110, S2:** a simulated full-disk IndexedDB preparation failure leaves AI retry
-  and reopening blocked until reload. [Existing repro evidence](evidence/ai-quota-recovery.json).
-* **WEB-002 / issue #3111, S2:** RN rejects metadata in WebKit's and Firefox's own canvas PNGs
-  before upload. [WebKit reader evidence](evidence/webkit-png-reader.json),
-  [Firefox reader evidence](evidence/firefox-original-png-reader.json).
+Another 540 accepted combinations cover ordinary motion, forced colors with dark system, and 915×412
+short landscape. Nine repeat the admin width flag; the rest are clean. Other supplements cover full
+contents sweeps, 48 beta disclosure contexts, 84 saved-theme visits, 72 latest passing keyboard
+combinations, all 48 engine/script/direct-file visits, and 24 controlled-worker document responses
+with exact artifact hashes. These counts overlap in behaviour and are not independent requirements.
 
-These issue reproductions were not retested in run 3, as instructed. The eighteen affected
-downstream cases remain blocked by #3111. Chromium's two formerly blocked tablet/desktop success
-cases use local fixtures and do not exercise either failure. 0 new confirmed findings were added in
-run 3. [findings.jsonl](findings.jsonl) retains the full two-reproduction records and shipping
-comparisons. No real generation, credentials or actual full disk was used.
+The local-link ledger's latest 168 source/profile/script observations contain 120 clean rows and 48
+reproductions of WEB-003. Rapid navigation before React's deferred entry commits can log hydration
+errors on unload. Failed stress takes and attributed lifecycle traces remain in the evidence; the
+clean main matrix is not a blanket zero-console claim. One keyboard changelog jump timed out once
+and passed five fresh repetitions. Neither observation is hidden by the latest passing rows.
 
-## Drawing-screen visual matrix
+[Complete page results and limits](results/pages.md) ·
+[filterable screenshots](evidence/run4/pages-gallery.html).
 
-[Visual parity report](results/visual-parity.md) ·
-[filterable image gallery](evidence/visual/index.html).
+## New confirmed findings
 
-Requested: **1,472 pairs** — Chromium at all nine viewports, WebKit/Firefox at the seven phone and
-desktop viewports, each with both themes, Raised/Flat, Button Size 100%/130%, and eight
-drawing-screen states. Current: **1472 recorded, 1472 compared, 0 blocked, 0 unsettled**.
+* **WEB-003, S3:** no-script canonical section URLs and the footer release link lose their target;
+  copied variant-specific anchors can point to hidden content at another layout/theme.
+* **WEB-004, S4:** `/admin` overflows at 320 px and clips the right end of its masthead.
+* **WEB-005, S4, shared with SvelteKit:** the no-script design picker loses its selected backing,
+  leaving white text on gray at about 1.21:1 contrast.
+* **WEB-006, S3:** the desktop design sidebar's final Contents label is below the viewport at its
+  own maximum scroll position. Its section remains reachable by keyboard or the anchor's sliver.
 
-Each pair has lossless shipping/RN PNGs, a highlighted pixel diff, both DOM receipts and every box
-difference >2 CSS px or missing/extra control. Raw exact pixel differences, thresholded differences
-(maximum RGB channel delta >16) and mean channel differences are retained. DPR 1, engine-default
-user agents, touch-enabled phone/tablet viewports and no notch emulation are identical within each
-pair. The matrix establishes responsive viewport comparisons; physical-device/browser-identity
-acceptance remains separate.
-
-No measured drawing-control box differs by more than 2 px in the compared pairs. The first 448-pair
-WebKit pass is preserved under evidence/visual-discarded and excluded from these counts. Its request
-guard wrongly blocked same-origin blob images. The accepted WebKit pass permits those local
-resources and waits for decoded shipping coloring art; all arms deny remote/API requests.
-
-Settings hub typography and row geometry, backdrop blur and coloring-art rasterization are
-documented as numerical observations. A difference becomes a finding only after two reproductions
-establish a user-visible disadvantage under the owner's “whatever is better” rule. The
-[adjudication notes](results/visual-adjudication.md) name the samples actually inspected; manual
-review is representative, not a claim that every pixel of every pair was judged by eye.
-
-[Visual integrity verification](evidence/visual-verification.json) validates 1472 pair IDs, image
-dimensions and hashes, settled frames, held-drag receipts, recalculated box lists and fixture
-changes in bounds/decoded pixels.
+Each has two fresh reproductions per engine, evidence and a minimal failing repro; SvelteKit
+comparisons distinguish the shared issue from RN regressions. [Full records](findings.jsonl).
 
 ## Regression tests and checks
 
-Three passing regressions extend
-[native-paper-input-web.test.mjs](../../../tools/tests/native-paper-input-web.test.mjs): cancel all
-held contacts on window blur and accept a fresh stroke; keep the peer active when one contact is
-canceled; retain the latest pointer position when a coalesced batch omits the current endpoint. The
-targeted file passes **14 tests**. Every added case fails its intended assertion against a separate
-copied-source deliberate break. Production source is never mutated by the negative controls.
+Two added mounted feedback tests verify the delivered success page and **Send another** restoring a
+clean draft. The targeted file passes five tests; the related pair passes 32. Both added cases fail
+their intended assertions against separate in-memory source mutations; production bytes never
+change. [Tests](../../../tools/migration/tests/rsd-native-web-feedback-page.test.mjs) ·
+[positive log](evidence/run4/feedback-related.log.txt) ·
+[negative controls](evidence/run4/feedback-negative-recheck.log.txt).
 
-* [Run 3 positive test log](evidence/pointer-positive-final-run3.log.txt).
-* [Three negative controls](evidence/pointer-negative-final-run3.log.txt),
-  [coalesced endpoint assertion](evidence/pointer-negative-coalesced-tail.log.txt).
-* [Run 3 lint](evidence/lint-run3.log.txt) exits zero with two baseline warnings.
+The existing browser-PNG tests pass two cases. `npm run check`, `npm run check:migration:types` and
+`npm run lint` pass. Lint has three warnings in unchanged files.
+[Final lint](evidence/run4/lint-final.log.txt). The full formatting check also passes;
+[format log](evidence/run4/format-full-final.log.txt).
 
-* format-code: exit 0; [log](evidence/format-code-run3.log.txt).
-* format-markdown: exit 0; [log](evidence/format-markdown-run3.log.txt).
-* pointer-positive-final: exit 0; [log](evidence/pointer-positive-final-run3.log.txt).
-* pointer-negative-final: exit 0; [log](evidence/pointer-negative-final-run3.log.txt).
-* check-final: exit 0; [log](evidence/check-final-run3.log.txt).
-* lint-final: exit 0; [log](evidence/lint-final-run3.log.txt).
-* format-full-final: exit 1; [log](evidence/format-full-final-run3.log.txt).
-* format-code-refresh: exit 0; [log](evidence/format-code-refresh-run3.log.txt).
-* format-markdown-refresh: exit 0; [log](evidence/format-markdown-refresh-run3.log.txt).
-* format-full-recheck: exit 0; [log](evidence/format-full-recheck-run3.log.txt).
+## Evidence and residual scope
 
-The first full-format check caught the check runner's own incrementally written JSON receipt. The
-writer was corrected to format each update; the final formatting recheck is recorded separately
-without deleting the failed attempt.
+Run-4 bulk evidence is outside the checkout at `/private/tmp/splotch-bughunt-web-run4-evidence`,
+linked through `evidence/run4/`. Prior failed harness takes remain alongside corrected runs. Browser
+viewports, touch/media emulation, simulated disk exhaustion and local transport fixtures do not
+establish physical devices, real full disk, hosted Netlify delivery, screen readers or provider
+delivery. Actual browser-chrome zoom and the previous OS-only limits remain unproven.
 
-[Evidence integrity verification](evidence/verification-run3.json) checks local Markdown targets,
-screenshot references, artifact tracking, source scope and build hashes.
+The previous 1,472-pair drawing visual matrix and broader drawing regression results belong to the
+earlier candidate; they were not silently promoted to this head. [Archived run 3](summary-run3.md) ·
+[coverage inventory](results/coverage-scope.md).
 
-## Residual scope
-
-Spoken screen readers, audible sound/haptics, OS install UI, real pen/touch fidelity, real quota
-exhaustion, process eviction, actual browser-chrome zoom and the complete auto-save/folder-picker
-matrix remain unproven. Update/visibility/install/storage/media fixtures are labelled substitutes,
-not proof of those OS properties. Read [coverage-scope.md](results/coverage-scope.md) for each plan
-row's remaining axes. Only the / drawing app was tested; information routes were excluded.
-
-See [status.md](status.md) for timestamped phases, corrections and discarded takes, and
-[evidence/manifest.json](evidence/manifest.json) for file hashes.
+Final integrity and cleanup receipts accompany the report. All owned servers are stopped; the
+orchestrator's browser server on 6190 is left running. [Integrity](evidence/run4/verification.json)
+· [cleanup](evidence/run4/cleanup.json) · [file hashes](evidence/manifest.json) ·
+[timestamped status](status.md).

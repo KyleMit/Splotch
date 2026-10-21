@@ -1446,3 +1446,690 @@
   Evidence link/source/build integrity passes. All owned servers stopped, shared 6190 retained;
   product source unchanged, no commits or GitHub activity. Final report formatting and manifest
   hashing follow this line.
+
+- 2026-10-21T08:04:02.427418+00:00 — RUN 4 started at cbfa2dc91a861aa41ba64219c34feb0875a37ce7. Read
+  prior briefs and summary. Rebuilding Netlify site export; planned AI unblock reruns, standalone
+  pages across engines/JS/layout/theme, and passing regression tests. Product source unchanged; no
+  commits/GitHub/device access.
+
+- 2026-10-21T08:07:27.471Z — chromium AI batch ended: fixture success/minimize/report and
+  error/retry cases attempted. All /api calls intercepted; request receipts saved.
+
+- 2026-10-21T08:08:18.029322+00:00 — RUN 4 Chromium AI batch: 13 units PASS, including Out of space
+  / Try again with one simulated failed IDB write and one successful upload after recovery. Initial
+  WebKit success take hit the known same-origin blob guard flaw in the shared driver. Fixed harness
+  guard; initial takes retained for audit, and WebKit will be rerun before verdict. No product
+  change.
+
+- 2026-10-21T08:10:50.569Z — webkit AI batch ended: fixture success/minimize/report and error/retry
+  cases attempted. All /api calls intercepted; request receipts saved.
+
+- 2026-10-21T08:12:35.765648+00:00 — RUN 4 feedback mounted regressions PASS (5 total including 2
+  added). Both new tests fail their intended assertion with a separate in-memory source mutation;
+  product bytes unchanged. Corrected WebKit fixture generation passes phone/tablet/desktop;
+  downstream error/retry batch still running. Page matrix plan recorded in results/pages.md.
+
+- 2026-10-21T08:13:50.842Z — webkit AI batch ended: fixture success/minimize/report and error/retry
+  cases attempted. All /api calls intercepted; request receipts saved.
+
+- 2026-10-21T08:16:30.410Z — firefox AI batch ended: fixture success/minimize/report and error/retry
+  cases attempted. All /api calls intercepted; request receipts saved.
+
+- 2026-10-21T08:16:39.401Z — RUN 4 pages chromium: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T08:16:39.579308+00:00 — RUN 4 AI completed: 39/39 accepted recorder units PASS (13 each
+  engine), all 18 previously blocked units resolved. Chromium/WebKit/Firefox each show Out of space
+  with simulated quota, then Try again reaches a fixture image without reload and without a
+  pre-storage upload. WebKit initial blob-guard takes excluded and retained. Page pilot started on
+  Chromium phone, both JS modes.
+
+- 2026-10-21T08:17:14.215Z — RUN 4 pages chromium: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T08:18:25.435Z — RUN 4 pages chromium: completed phone/light/JS false/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T08:18:44.688Z — RUN 4 pages chromium: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T08:18:45.095583+00:00 — RUN 4 page pilots complete: Chromium phone JS-on and JS-off
+  pages pass after correcting the cold-visit Start drawing label and removing an rAF wait that
+  cannot complete with scripts disabled. Beta track toggling uses its actual radio role. Full
+  Chromium page matrix started; prior pilots excluded from accepted counts. Reference preview on
+  owned port6151 uses test-only environment.
+
+- 2026-10-21T08:21:19.578Z — RUN 4 pages webkit: completed phone/light/JS true/drawing; raw verdicts
+  and captures saved.
+
+- 2026-10-21T08:21:37.142574+00:00 — RUN 4 Chromium page matrix completed: 240 units, 231 initial
+  PASS and 9 review flags, all in /admin. Six narrow-phone rows hit a 3px masthead overflow before
+  form checks; dark/no-JS rows expose a label-selector ambiguity across prerendered theme variants.
+  Adjusted harness to finish form checks before recording geometry and to inspect the disabled field
+  directly while retaining label association evidence. WebKit matrix started.
+
+- 2026-10-21T08:23:58.421Z — RUN 4 START pages-firefox. One connected browser at a time; local
+  fixtures and request guards remain active.
+
+- 2026-10-21T08:23:59.836Z — RUN 4 pages firefox: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T08:26:08.467405+00:00 — RUN 4 Firefox initial page job interrupted through its owned
+  tool handle after its no-JS settle wait hung. Diagnostic proves the document is readable, fonts
+  loaded and animations empty, but Promise callbacks evaluated in the disabled page realm never
+  settle. Screenshots work. Replaced page-realm promises with Node-side polling of synchronous
+  browser state; no product change. Prior ten pass rows and diagnostic retained; restarting
+  serialized queue.
+
+- 2026-10-21T08:26:08.488Z — RUN 4 START pages-firefox. One connected browser at a time; local
+  fixtures and request guards remain active.
+
+- 2026-10-21T08:26:09.854Z — RUN 4 pages firefox: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T08:28:28.992Z — RUN 4 END pages-firefox: process exit 0; assertion/observation verdicts
+  are in the separate case ledger.
+
+- 2026-10-21T08:28:28.993Z — RUN 4 START admin-chromium-recheck. One connected browser at a time;
+  local fixtures and request guards remain active.
+
+- 2026-10-21T08:28:30.513Z — RUN 4 pages chromium: completed phone/light/JS true/admin; raw verdicts
+  and captures saved.
+
+- 2026-10-21T08:28:39.015Z — RUN 4 END admin-chromium-recheck: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:28:39.016Z — RUN 4 START deep-links-rn-chromium. One connected browser at a time;
+  local fixtures and request guards remain active.
+
+- 2026-10-21T08:28:41.526Z — RUN 4 END deep-links-rn-chromium: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:28:41.526Z — RUN 4 START deep-links-rn-webkit. One connected browser at a time;
+  local fixtures and request guards remain active.
+
+- 2026-10-21T08:28:48.645Z — RUN 4 END deep-links-rn-webkit: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:28:48.646Z — RUN 4 START deep-links-rn-firefox. One connected browser at a time;
+  local fixtures and request guards remain active.
+
+- 2026-10-21T08:28:53.428Z — RUN 4 END deep-links-rn-firefox: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:28:53.429Z — RUN 4 START deep-links-reference-chromium. One connected browser at a
+  time; local fixtures and request guards remain active.
+
+- 2026-10-21T08:28:57.637Z — RUN 4 END deep-links-reference-chromium: process exit 0;
+  assertion/observation verdicts are in the separate case ledger.
+
+- 2026-10-21T08:28:57.637Z — RUN 4 START deep-links-reference-webkit. One connected browser at a
+  time; local fixtures and request guards remain active.
+
+- 2026-10-21T08:29:05.118Z — RUN 4 END deep-links-reference-webkit: process exit 0;
+  assertion/observation verdicts are in the separate case ledger.
+
+- 2026-10-21T08:29:05.118Z — RUN 4 START deep-links-reference-firefox. One connected browser at a
+  time; local fixtures and request guards remain active.
+
+- 2026-10-21T08:30:39.796Z — RUN 4 END deep-links-reference-firefox: process exit 0;
+  assertion/observation verdicts are in the separate case ledger.
+
+- 2026-10-21T08:30:39.798Z — RUN 4 START anchors-chromium. One connected browser at a time; local
+  fixtures and request guards remain active.
+
+- 2026-10-21T08:33:14.512865+00:00 — RUN 4 checkpoint: all 720 main page units recorded (latest 702
+  PASS, 18 geometry flags for the same 320px admin masthead). All 18 AI blockers resolved;
+  results/ai-run4.md written. WEB-003 canonical no-script section-link regression reproduced twice
+  in all engines against shipping, recorded in findings.jsonl. Type check and lint exit zero; two
+  new mounted feedback regressions and their negative controls pass. Full contents sweeps continue.
+
+- 2026-10-21T08:39:00.692Z — RUN 4 END anchors-chromium: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:39:00.693Z — RUN 4 START anchors-webkit. One connected browser at a time; local
+  fixtures and request guards remain active.
+
+- 2026-10-21T08:45:49.654Z — RUN 4 END anchors-webkit: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:45:49.655Z — RUN 4 START anchors-firefox. One connected browser at a time; local
+  fixtures and request guards remain active.
+
+- 2026-10-21T08:56:04.271Z — RUN 4 END anchors-firefox: process exit 0; assertion/observation
+  verdicts are in the separate case ledger.
+
+- 2026-10-21T08:56:46.166Z — RUN 4 EXTRA START reference-firefox-fonts-only; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T08:56:50.409Z — RUN 4 EXTRA END reference-firefox-fonts-only: exit 0, expected 0;
+  per-case assertions remain separate.
+
+- 2026-10-21T08:56:50.409Z — RUN 4 EXTRA START anchors-chromium-hydration-corrected; one connected
+  browser, local fixtures only.
+
+- 2026-10-21T09:03:24.094Z — RUN 4 EXTRA END anchors-chromium-hydration-corrected: exit 0, expected
+  0; per-case assertions remain separate.
+
+- 2026-10-21T09:03:24.095Z — RUN 4 EXTRA START admin-rn-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:27.887Z — RUN 4 EXTRA END admin-rn-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:27.887Z — RUN 4 EXTRA START admin-rn-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:33.728Z — RUN 4 EXTRA END admin-rn-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:33.728Z — RUN 4 EXTRA START admin-rn-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:42.595Z — RUN 4 EXTRA END admin-rn-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:42.596Z — RUN 4 EXTRA START admin-shipping-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:44.054Z — RUN 4 EXTRA END admin-shipping-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:44.055Z — RUN 4 EXTRA START admin-shipping-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:46.846Z — RUN 4 EXTRA END admin-shipping-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:46.846Z — RUN 4 EXTRA START admin-shipping-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:49.868Z — RUN 4 EXTRA END admin-shipping-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:49.868Z — RUN 4 EXTRA START sidebar-rn-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:51.805Z — RUN 4 EXTRA END sidebar-rn-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:51.806Z — RUN 4 EXTRA START sidebar-rn-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:54.355Z — RUN 4 EXTRA END sidebar-rn-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:54.355Z — RUN 4 EXTRA START sidebar-rn-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:03:56.998Z — RUN 4 EXTRA END sidebar-rn-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:03:56.999Z — RUN 4 EXTRA START sidebar-shipping-chromium; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:04:17.630Z — RUN 4 EXTRA END sidebar-shipping-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:04:17.630Z — RUN 4 EXTRA START sidebar-shipping-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:04:39.615Z — RUN 4 EXTRA END sidebar-shipping-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:04:39.615Z — RUN 4 EXTRA START sidebar-shipping-firefox; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:05:01.088Z — RUN 4 EXTRA END sidebar-shipping-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:01.088Z — RUN 4 EXTRA START segments-rn-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:05:02.410Z — RUN 4 EXTRA END segments-rn-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:02.411Z — RUN 4 EXTRA START segments-rn-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:05:04.737Z — RUN 4 EXTRA END segments-rn-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:04.737Z — RUN 4 EXTRA START segments-rn-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:05:06.844Z — RUN 4 EXTRA END segments-rn-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:06.844Z — RUN 4 EXTRA START segments-shipping-chromium; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:05:08.163Z — RUN 4 EXTRA END segments-shipping-chromium: exit 0, expected 0;
+  per-case assertions remain separate.
+
+- 2026-10-21T09:05:08.163Z — RUN 4 EXTRA START segments-shipping-webkit; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:05:10.586Z — RUN 4 EXTRA END segments-shipping-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:10.586Z — RUN 4 EXTRA START segments-shipping-firefox; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:05:12.768Z — RUN 4 EXTRA END segments-shipping-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:12.768Z — RUN 4 EXTRA START normal-motion-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:05:13.510Z — RUN 4 pages chromium: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:05:42.607Z — RUN 4 EXTRA END normal-motion-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:05:42.607Z — RUN 4 EXTRA START normal-motion-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:05:43.582Z — RUN 4 pages webkit: completed phone/light/JS true/drawing; raw verdicts
+  and captures saved.
+
+- 2026-10-21T09:06:13.639Z — RUN 4 EXTRA END normal-motion-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:06:13.639Z — RUN 4 EXTRA START normal-motion-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:06:14.972Z — RUN 4 pages firefox: completed phone/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:06:39.027Z — RUN 4 EXTRA END normal-motion-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:06:39.027Z — RUN 4 EXTRA START ai-wire-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:06:47.179Z — RUN 4 EXTRA END ai-wire-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:06:47.179Z — RUN 4 EXTRA START ai-wire-webkit; one connected browser, local fixtures
+  only.
+
+- 2026-10-21T09:06:55.331Z — RUN 4 EXTRA END ai-wire-webkit: exit 0, expected 0; per-case assertions
+  remain separate.
+
+- 2026-10-21T09:06:55.331Z — RUN 4 EXTRA START ai-wire-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:07:03.536Z — RUN 4 EXTRA END ai-wire-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:07:03.536Z — RUN 4 EXTRA START forced-dark-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:07:04.273Z — RUN 4 pages chromium: completed phone/forcedDark/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:07:42.052Z — RUN 4 EXTRA END forced-dark-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:07:42.053Z — RUN 4 EXTRA START forced-dark-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:07:42.915Z — RUN 4 pages webkit: completed phone/forcedDark/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:08:27.873Z — RUN 4 EXTRA END forced-dark-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:08:27.873Z — RUN 4 EXTRA START forced-dark-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:08:29.205Z — RUN 4 pages firefox: completed phone/forcedDark/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:09:09.943Z — RUN 4 EXTRA END forced-dark-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:09:09.943Z — RUN 4 EXTRA START saved-themes-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:09:25.240Z — RUN 4 EXTRA END saved-themes-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:09:25.240Z — RUN 4 EXTRA START saved-themes-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:09:42.556Z — RUN 4 EXTRA END saved-themes-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:09:42.556Z — RUN 4 EXTRA START saved-themes-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:00.805Z — RUN 4 EXTRA END saved-themes-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:00.805Z — RUN 4 EXTRA START worker-pages-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:05.770Z — RUN 4 EXTRA END worker-pages-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:05.770Z — RUN 4 EXTRA START worker-pages-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:10.886Z — RUN 4 EXTRA END worker-pages-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:10.886Z — RUN 4 EXTRA START worker-pages-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:17.387Z — RUN 4 EXTRA END worker-pages-firefox: exit 1, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:17.387Z — RUN 4 EXTRA START beta-details-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:22.383Z — RUN 4 EXTRA END beta-details-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:22.383Z — RUN 4 EXTRA START beta-details-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:30.266Z — RUN 4 EXTRA END beta-details-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:30.266Z — RUN 4 EXTRA START beta-details-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:37.474Z — RUN 4 EXTRA END beta-details-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:37.475Z — RUN 4 EXTRA START local-links-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:10:52.908Z — RUN 4 EXTRA END local-links-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:10:52.908Z — RUN 4 EXTRA START local-links-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:11:18.601Z — RUN 4 EXTRA END local-links-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:11:18.601Z — RUN 4 EXTRA START local-links-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:12:00.622Z — RUN 4 EXTRA END local-links-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:12:00.623Z — RUN 4 EXTRA START web003-minimal-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:12:01.395Z — RUN 4 EXTRA END web003-minimal-chromium: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:12:01.396Z — RUN 4 EXTRA START web003-minimal-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:12:02.603Z — RUN 4 EXTRA END web003-minimal-webkit: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:12:02.603Z — RUN 4 EXTRA START web003-minimal-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:12:04.138Z — RUN 4 EXTRA END web003-minimal-firefox: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:35.493Z — RUN 4 EXTRA START web004-minimal-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:36.086Z — RUN 4 EXTRA END web004-minimal-chromium: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:36.087Z — RUN 4 EXTRA START web005-minimal-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:36.772Z — RUN 4 EXTRA END web005-minimal-chromium: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:36.772Z — RUN 4 EXTRA START web004-minimal-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:37.794Z — RUN 4 EXTRA END web004-minimal-webkit: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:37.794Z — RUN 4 EXTRA START web005-minimal-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:38.991Z — RUN 4 EXTRA END web005-minimal-webkit: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:38.991Z — RUN 4 EXTRA START web004-minimal-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:40.403Z — RUN 4 EXTRA END web004-minimal-firefox: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:40.403Z — RUN 4 EXTRA START web005-minimal-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:41.873Z — RUN 4 EXTRA END web005-minimal-firefox: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:15:41.873Z — RUN 4 EXTRA START short-pages-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:15:42.615Z — RUN 4 pages chromium: completed short/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:16:09.592Z — RUN 4 EXTRA END short-pages-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:16:09.592Z — RUN 4 EXTRA START short-pages-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:16:10.561Z — RUN 4 pages webkit: completed short/light/JS true/drawing; raw verdicts
+  and captures saved.
+
+- 2026-10-21T09:16:44.874Z — RUN 4 EXTRA END short-pages-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:16:44.875Z — RUN 4 EXTRA START short-pages-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:16:46.312Z — RUN 4 pages firefox: completed short/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:17:19.096Z — RUN 4 EXTRA END short-pages-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:17:19.097Z — RUN 4 EXTRA START sidebar-rn-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:17:28.058Z — RUN 4 EXTRA END sidebar-rn-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:17:28.058Z — RUN 4 EXTRA START sidebar-rn-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:17:34.109Z — RUN 4 EXTRA END sidebar-rn-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:17:34.109Z — RUN 4 EXTRA START sidebar-rn-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:17:43.936Z — RUN 4 EXTRA END sidebar-rn-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:17:43.936Z — RUN 4 EXTRA START sidebar-shipping-chromium; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:17:52.905Z — RUN 4 EXTRA END sidebar-shipping-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:17:52.905Z — RUN 4 EXTRA START sidebar-shipping-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:17:58.966Z — RUN 4 EXTRA END sidebar-shipping-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:17:58.966Z — RUN 4 EXTRA START sidebar-shipping-firefox; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:18:08.713Z — RUN 4 EXTRA END sidebar-shipping-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:19:29.329Z — RUN 4 pages firefox: completed short/light/JS true/beta; raw verdicts
+  and captures saved.
+
+- 2026-10-21T09:20:46.857Z — RUN 4 EXTRA START web006-minimal-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:20:48.523Z — RUN 4 EXTRA END web006-minimal-chromium: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:20:48.524Z — RUN 4 EXTRA START web006-minimal-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:20:50.392Z — RUN 4 EXTRA END web006-minimal-webkit: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:20:50.392Z — RUN 4 EXTRA START web006-minimal-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:20:52.721Z — RUN 4 EXTRA END web006-minimal-firefox: exit 1, expected 1; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:20:52.721Z — RUN 4 EXTRA START worker-settled-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:21:07.159Z — RUN 4 EXTRA END worker-settled-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:21:07.159Z — RUN 4 EXTRA START worker-settled-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:21:21.602Z — RUN 4 EXTRA END worker-settled-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:21:21.603Z — RUN 4 EXTRA START worker-settled-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:21:44.307Z — RUN 4 EXTRA END worker-settled-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:21:44.307Z — RUN 4 EXTRA START sidebar-shipping-firefox; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:21:59.196Z — RUN 4 EXTRA END sidebar-shipping-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:23:04.464Z — RUN 4 EXTRA START keyboard-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:23:21.478Z — RUN 4: 39/39 AI units and three actual-wire fixture generations pass;
+  all eighteen prior blocked units resolve. Main page matrix 702 pass / 18 geometry flags across 720
+  rows. WEB-003/004/005 confirmed; WEB-006 added after two fresh contexts per engine establish the
+  desktop design sidebar’s final label below the viewport. Settled controlled-worker documents pass
+  all three engines; Firefox rapid-unload errors are retained separately. Keyboard and
+  short-viewport readiness follow-ups active.
+
+- 2026-10-21T09:24:02.680Z — RUN 4 EXTRA END keyboard-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:24:02.682Z — RUN 4 EXTRA START keyboard-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:24:14.424Z — RUN 4 EXTRA END keyboard-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:24:14.425Z — RUN 4 EXTRA START keyboard-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:24:26.356Z — RUN 4 EXTRA END keyboard-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:24:26.356Z — RUN 4 EXTRA START short-firefox-ready-recheck; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:24:27.744Z — RUN 4 pages firefox: completed short/light/JS true/drawing; raw
+  verdicts and captures saved.
+
+- 2026-10-21T09:25:02.368Z — RUN 4 EXTRA END short-firefox-ready-recheck: exit 0, expected 0;
+  per-case assertions remain separate.
+
+- 2026-10-21T09:25:27.271Z — RUN 4 EXTRA START anchors-keyboard-chromium; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:25:48.682Z — RUN 4 EXTRA END anchors-keyboard-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:25:48.683Z — RUN 4 EXTRA START anchors-keyboard-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:26:10.804Z — RUN 4 EXTRA END anchors-keyboard-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:26:10.804Z — RUN 4 EXTRA START anchors-keyboard-firefox; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:26:33.497Z — RUN 4 EXTRA END anchors-keyboard-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:26:33.497Z — RUN 4 EXTRA START keyboard-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:26:59.424Z — RUN 4 EXTRA END keyboard-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:29:20.731Z — RUN 4 EXTRA START local-links-hydrated-chromium; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:29:50.497Z — RUN 4 EXTRA END local-links-hydrated-chromium: exit 0, expected 0;
+  per-case assertions remain separate.
+
+- 2026-10-21T09:29:50.498Z — RUN 4 EXTRA START local-links-hydrated-webkit; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:30:15.696Z — RUN 4 EXTRA END local-links-hydrated-webkit: exit 0, expected 0;
+  per-case assertions remain separate.
+
+- 2026-10-21T09:30:15.696Z — RUN 4 EXTRA START local-links-hydrated-firefox; one connected browser,
+  local fixtures only.
+
+- 2026-10-21T09:31:36.610Z — RUN 4 EXTRA END local-links-hydrated-firefox: exit 0, expected 0;
+  per-case assertions remain separate.
+
+- 2026-10-21T09:32:21.594Z — RUN 4 EXTRA START file-aliases-chromium; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:32:24.615Z — RUN 4 EXTRA END file-aliases-chromium: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:32:24.617Z — RUN 4 EXTRA START file-aliases-webkit; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:32:30.778Z — RUN 4 EXTRA END file-aliases-webkit: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:32:30.778Z — RUN 4 EXTRA START file-aliases-firefox; one connected browser, local
+  fixtures only.
+
+- 2026-10-21T09:32:36.171Z — RUN 4 EXTRA END file-aliases-firefox: exit 0, expected 0; per-case
+  assertions remain separate.
+
+- 2026-10-21T09:37:34.880Z — RUN 4 capture complete: all eighteen AI blocks resolved, 39/39 AI units
+  pass, three actual-wire local fixture uploads pass. Main pages 702 clean / 18 admin-width flags;
+  540 supplemental combinations have only nine repeats of that width issue. Four new findings
+  reproduced twice per engine. Two mounted feedback regressions and both negative controls pass
+  their intended checks; type checks and lint exit zero. Owned servers stopped via recorded tool
+  handles; ports 6150/6151/6152 closed and orchestrator 6190 still listening. Final evidence
+  verifier passes (including 1,008 coloring files and 1,043 Markdown targets); formatting and final
+  hashes follow.
+
+- 2026-10-21T09:39:04.070Z — RUN 4 FINAL: full npm run format:check exited zero; type checks and
+  final lint already passed. Summary and page report complete, raw diagnostic failures retained,
+  prior summary archived. All owned servers are stopped and 6190 remains available. Final integrity
+  receipt and the complete evidence manifest are regenerated after the last formatting write; no
+  commits or GitHub actions.

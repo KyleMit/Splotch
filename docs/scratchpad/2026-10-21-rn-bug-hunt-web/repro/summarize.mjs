@@ -174,7 +174,7 @@ const files = [];
 function inventory(dir) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, e.name);
-    if (e.isDirectory()) inventory(path);
+    if (e.isDirectory() || (e.isSymbolicLink() && statSync(path).isDirectory())) inventory(path);
     else if (path !== join(out, 'evidence/manifest.json')) {
       const bytes = readFileSync(path);
       files.push({

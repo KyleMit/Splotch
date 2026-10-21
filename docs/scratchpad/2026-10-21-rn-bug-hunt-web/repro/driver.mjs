@@ -48,6 +48,7 @@ export async function open(browser, profile, options = {}) {
     errors = [];
   await ctx.route('**/*', (route) => {
     const url = new URL(route.request().url());
+    if (url.protocol === 'blob:' && url.origin === new URL(BASE).origin) return route.continue();
     if (['127.0.0.1', 'localhost'].includes(url.hostname) && !url.pathname.startsWith('/api/'))
       return route.continue();
     external.push(`${route.request().method()} ${url.origin}${url.pathname}`);
