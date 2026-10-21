@@ -65,6 +65,16 @@ defaults, not secrets. An APK signed with a different key cannot replace the ins
 (`adb install -r` refuses the update), so uninstall the probe first, which deletes its data. Never
 touch the store-installed `art.splotch.app`.
 
+### Configuration changes
+
+The drawing and its Undo history live in `MainActivity`'s React tree, so any configuration change
+Android handles by recreating the activity erases them (issue 3135). `android:configChanges` in the
+manifest therefore declares every change a parent can make mid-drawing: shipping's list plus
+`fontScale`, `fontWeightAdjustment` (Bold text) and `layoutDirection`, which arrives with a locale
+change. `tools/migration/tests/native-config-changes.test.mjs` fails if one goes missing. Font size
+relays out live; Bold text applies at the next launch; a dialog open while Display size changes
+keeps its old position until it reopens.
+
 ## Checking a JS-only change on a device
 
 A change to TS or TSX alone needs no native rebuild. Build the Release probe once per device as
