@@ -486,7 +486,8 @@ entry 87. Paths under `web/src/` unless noted.*
     from frame 0 on reveal), with base `opacity: 0` so a mid-cycle dismissal vanishes in place, and
     reduced-motion overrides at matching specificity. Measured: 5,847 → 0 Animation invalidations;
     emulator theme-flip post-p95 median 100.1 → 66.7 ms (n=3/arm). `ClearCoachmark.svelte`, pinned
-    by `clear-tutorial.spec.ts`.
+    by the SvelteKit suite's `clear-tutorial.spec.ts` (retired; the React Native coachmark is held
+    by `tools/migration/tests/rsd-native-clear.test.mjs`).
 88. **Action Drawer motion canceled before device rotation** — `orientationchange` clears an armed
     drawer transition before the viewport breakpoint flips, so a stale motion marker cannot animate
     the drawer's axis margins through the drawing's rotation frames. A physical Android Chrome

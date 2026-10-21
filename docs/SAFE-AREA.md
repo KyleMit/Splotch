@@ -65,8 +65,10 @@ Three tests hold the seam together:
 * `safe-area-matrix.spec.ts` — at runtime, `var(--safe-area-top)` resolves to the same number as
   `env(safe-area-inset-top)`. The static guard proves nobody bypassed the properties; this proves
   the properties still carry the value when Capacitor has not supplied one.
-* `capacitor-safe-area.spec.ts` — injected portrait/landscape values and explicit zero override
-  conflicting `env()` values; removing an injected property restores the web fallback.
+* `capacitor-safe-area.spec.ts` (retired with the Capacitor shell) — injected portrait/landscape
+  values and explicit zero override conflicting `env()` values; removing an injected property
+  restores the web fallback. The React Native export has no such override seam; its insets are held
+  at every matrix device by `tools/migration/check-native-web-safe-area.mjs`.
 
 `measureSafeAreaInsets()` (`lib/platform/safeArea.ts`) reads the numbers with a hidden
 fixed-position probe rather than `getComputedStyle` on the custom property — the property read is

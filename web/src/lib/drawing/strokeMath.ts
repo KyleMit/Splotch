@@ -65,8 +65,8 @@ export const STROKE_SPEED_WINDOW_MS = 100;
 // point of use, so they stay constant in CSS px across backing-store densities;
 // the inset arrives already in CSS px. See engine.ts for the full story.
 export const EDGE_SWIPE_BAND_PX = 24;
-export const EDGE_SWIPE_DECISION_PX = 12;
-export const GESTURE_INSET_MIN_PX = 16;
+const EDGE_SWIPE_DECISION_PX = 12;
+const GESTURE_INSET_MIN_PX = 16;
 
 export interface GuardEdgeDims {
   width: number;

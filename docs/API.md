@@ -842,8 +842,9 @@ real issue is created), `csp-report`'s two payload formats + caps, and `generate
 image → 400 — every case is rejected before the model call), then tears the server down. No model
 key or Netlify Blobs needed; successful generation and `verify-key` (which make live model calls)
 are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the cheap
-counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `browserless`
-job of `test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
+counterpart to the Playwright admin E2E in `e2e/specs/admin.spec.ts`. CI runs it in the
+`browserless` job of `test.yml` on every push/PR, so a contract regression fails the PR instead of
+shipping.
 
 `test:api:smoke` deliberately runs against that local host, which has **no** Blobs or deployed CDN
 configuration. The normal real-deploy gate is `npm run test:deploy:smoke`:
@@ -888,5 +889,6 @@ persistence contract.
   an in-memory list (seeded from `ALLOWED_TOKENS_LIST`) that resets on restart.
 * Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
   unset, every login fails (there is nothing to authenticate against).
-* E2E coverage lives in `tests/admin.spec.ts`; the Playwright web server starts with
-  `ADMIN_ACCESS_TOKEN=test-admin-secret`.
+* E2E coverage lives in `e2e/specs/admin.spec.ts` and `tools/migration/check-native-web-admin.mjs`;
+  the Playwright web server starts with `ADMIN_ACCESS_TOKEN=test-admin-secret`
+  (`e2e/server/serverEnv.ts`).

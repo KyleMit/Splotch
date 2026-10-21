@@ -49,9 +49,9 @@ paths:
   routes the spec to Chromium silently while both smoke jobs stay green on the other specs —
   `tools/tests/e2e-engine-tags.test.mjs` rejects tag literals and unknown tags for that reason.
 * Adult-facing surfaces (`/privacy`, `/admin`, Settings dialog) get axe-core scans in
-  `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
-  of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
-  the `testing` skill.
+  `e2e/specs/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is
+  out of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details
+  in the `testing` skill.
 * Parametrized tests import the constant/manifest they exercise — never re-declare the value (a
   mirrored copy keeps passing for the wrong reason). Prove the derivation: temporarily change the
   source and confirm the test tracks it. If the source executes at import time, move the constant to

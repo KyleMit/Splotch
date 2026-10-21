@@ -184,7 +184,7 @@ export async function openSettings(page: Page): Promise<Locator> {
   return dialog;
 }
 
-export const ADMIN_PATH = '/admin';
+const ADMIN_PATH = '/admin';
 const ADMIN_LOGIN_PATH = '/api/admin/login';
 
 /** The access codes the suite's server lists: the managed code and nothing else. */
@@ -240,7 +240,7 @@ const AI_REQUEST_TIMEOUT_MS = 15_000;
 
 type AiStroke = Awaited<ReturnType<DrawingScreen['drawStroke']>>;
 
-export type AiUpload = {
+type AiUpload = {
   method: string;
   path: string;
   contentType: string | undefined;
@@ -351,7 +351,7 @@ export async function stubFreeGrant(page: Page): Promise<void> {
 }
 
 /** The address a managed access code's invite link opens. */
-export const INVITE_PATH = `/?ai_access_token=${MANAGED_ACCESS_CODE}`;
+const INVITE_PATH = `/?ai_access_token=${MANAGED_ACCESS_CODE}`;
 
 /** Opens the drawing through an invite link and turns AI pictures on in Settings. */
 export async function enableAi(screen: DrawingScreen): Promise<void> {
