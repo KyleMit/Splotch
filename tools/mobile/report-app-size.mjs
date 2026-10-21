@@ -33,6 +33,8 @@ import {
 // so size numbers line up with the devices every other comparison is measured on.
 export const ANDROID_REFERENCE_SPEC = join(ROOT, 'tools/mobile/android-reference-device-spec.json');
 export const IOS_REFERENCE_DEVICE = 'iPad13,8';
+// The OS the profiling iPad runs; thinning picks the variant this OS can install.
+export const IOS_REFERENCE_OS = '26.5';
 
 const THINNING_REPORT_NAME = 'App Thinning Size Report.txt';
 const APKANALYZER = join(ANDROID_HOME, 'cmdline-tools', 'latest', 'bin', 'apkanalyzer');
@@ -46,6 +48,7 @@ const OPTIONS = {
   'ios-rn': { type: 'string' },
   'android-device-spec': { type: 'string', default: ANDROID_REFERENCE_SPEC },
   'ios-device': { type: 'string', default: IOS_REFERENCE_DEVICE },
+  'ios-os': { type: 'string', default: IOS_REFERENCE_OS },
   'allow-provisioning-updates': { type: 'boolean', default: false },
   json: { type: 'string' },
 };
@@ -82,6 +85,7 @@ export function parseAppSizeArgs(argv) {
     inputs,
     androidDeviceSpec: values['android-device-spec'],
     iosDevice: values['ios-device'],
+    iosOs: values['ios-os'],
     allowProvisioningUpdates: values['allow-provisioning-updates'],
     json: values.json,
   };
@@ -197,16 +201,25 @@ function exportThinningReport(archive, allowProvisioningUpdates, scratch) {
   return readFileSync(join(exportPath, THINNING_REPORT_NAME), 'utf8');
 }
 
-/** @param {string} input @param {string} deviceModel @param {boolean} allowProvisioningUpdates @param {string} scratch */
-function measureIos(input, deviceModel, allowProvisioningUpdates, scratch) {
-  const report = input.endsWith('.xcarchive')
+/**
+ * An .xcarchive is a directory, whatever its spelling (a trailing slash from shell
+ * completion included); anything else is read as a thinning report file.
+ * @param {string} input
+ */
+export function isArchiveInput(input) {
+  return statSync(input).isDirectory();
+}
+
+/** @param {string} input @param {string} deviceModel @param {string} osVersion @param {boolean} allowProvisioningUpdates @param {string} scratch */
+function measureIos(input, deviceModel, osVersion, allowProvisioningUpdates, scratch) {
+  const report = isArchiveInput(input)
     ? exportThinningReport(input, allowProvisioningUpdates, scratch)
     : readFileSync(input, 'utf8');
   const variants = parseThinningReport(report);
-  const variant = selectThinningVariant(variants, deviceModel);
+  const variant = selectThinningVariant(variants, deviceModel, osVersion);
   return {
     method: 'Xcode app thinning',
-    device: deviceModel,
+    device: `${deviceModel}, iOS ${osVersion}`,
     download: variant.compressed,
     install: variant.uncompressed,
     downloadRange: thinnedVariantRange(variants).download,
@@ -219,7 +232,13 @@ function measure(options, { platform, path }) {
   const scratch = mkdtempSync(join(tmpdir(), 'splotch-app-size-'));
   try {
     if (platform === 'ios') {
-      return measureIos(path, options.iosDevice, options.allowProvisioningUpdates, scratch);
+      return measureIos(
+        path,
+        options.iosDevice,
+        options.iosOs,
+        options.allowProvisioningUpdates,
+        scratch
+      );
     }
     return path.endsWith('.apk')
       ? measureUniversalApk(path)

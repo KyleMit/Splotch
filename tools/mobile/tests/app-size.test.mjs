@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -13,6 +13,8 @@ import {
 import {
   ANDROID_REFERENCE_SPEC,
   IOS_REFERENCE_DEVICE,
+  IOS_REFERENCE_OS,
+  isArchiveInput,
   parseAppSizeArgs,
 } from '../report-app-size.mjs';
 
@@ -111,15 +113,25 @@ describe('thinning report', () => {
   });
 
   it('selects the variant that lists the device model', () => {
-    expect(selectThinningVariant(variants, 'iPhone17,5').name).toBe('App-3D4E5F.ipa');
+    expect(selectThinningVariant(variants, 'iPhone17,5', '26.5').name).toBe('App-3D4E5F.ipa');
   });
 
-  it('selects the newest-OS variant when a model appears in several', () => {
-    expect(selectThinningVariant(variants, 'iPad13,8').name).toBe('App-3D4E5F.ipa');
+  it('selects the newest variant the device OS can install', () => {
+    expect(selectThinningVariant(variants, 'iPad13,8', '26.5').name).toBe('App-3D4E5F.ipa');
+  });
+
+  it('skips a variant whose minimum OS is newer than the device', () => {
+    expect(selectThinningVariant(variants, 'iPad13,8', '17.4').name).toBe('App-0A1B2C.ipa');
+  });
+
+  it('rejects a device OS older than every variant for the model', () => {
+    expect(() => selectThinningVariant(variants, 'iPad13,8', '15.0')).toThrow(
+      /installs on OS 15.0; it is listed for 16.4, 17.0, 26.0/
+    );
   });
 
   it('names the covered models when the device is missing', () => {
-    expect(() => selectThinningVariant(variants, 'iPad99,1')).toThrow(
+    expect(() => selectThinningVariant(variants, 'iPad99,1', '26.5')).toThrow(
       /iPad13,8, iPad13,9, iPhone17,5/
     );
   });
@@ -175,7 +187,16 @@ describe('parseAppSizeArgs', () => {
       inputs: [{ platform: 'android', app: 'rn', path: artifact }],
       androidDeviceSpec: ANDROID_REFERENCE_SPEC,
       iosDevice: IOS_REFERENCE_DEVICE,
+      iosOs: IOS_REFERENCE_OS,
     });
+  });
+
+  it('treats an archive directory as an archive with or without a trailing slash', () => {
+    const archive = mkdtempSync(join(tmpdir(), 'App-')) + '.xcarchive';
+    mkdirSync(archive);
+    expect(isArchiveInput(archive)).toBe(true);
+    expect(isArchiveInput(`${archive}/`)).toBe(true);
+    expect(isArchiveInput(artifact)).toBe(false);
   });
 
   it('requires at least one artifact', () => {

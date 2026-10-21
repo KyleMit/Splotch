@@ -53,7 +53,9 @@ Pass any subset; a platform with both apps also gets an RN-vs-shipping delta lin
 * **iOS** exports the archive with `<thin-for-all-variants>` through `xcodebuild -exportArchive`
   (method `debugging`, automatic signing) and reads Xcode's `App Thinning Size Report.txt`: download
   is the variant's compressed size, install its uncompressed size, for the profiling iPad
-  (`iPad13,8`) unless `--ios-device` names another model. `--allow-provisioning-updates` passes the
+  (`iPad13,8` on iPadOS 26.5) unless `--ios-device` and `--ios-os` name another model and OS. A
+  variant's os-version is its minimum OS, so the report takes the newest variant that OS can
+  install, never a newer one the device could not run. `--allow-provisioning-updates` passes the
   same flag to `xcodebuild` when export needs a profile created. A thinning report `.txt` is also
   accepted directly. The App Store encrypts the executable before delivery, which compresses worse,
   so App Store Connect reports a somewhat larger download than the thinning report.

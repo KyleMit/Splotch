@@ -86,23 +86,36 @@ export function parseThinningReport(text) {
 }
 
 /**
- * The variant a device downloads. When variants split one model by OS version, the
- * newest OS wins, since that is what the reference device runs.
+ * The variant a device on a given OS downloads. A descriptor's os-version is the
+ * variant's minimum OS, so the device gets the highest one it meets; a newer variant
+ * is bytes it cannot install.
  * @param {ReturnType<typeof parseThinningReport>} variants
  * @param {string} deviceModel e.g. "iPad13,8"
+ * @param {string} osVersion the device's OS, e.g. "26.5"
  */
-export function selectThinningVariant(variants, deviceModel) {
-  const candidates = variants.flatMap((variant) =>
+export function selectThinningVariant(variants, deviceModel, osVersion) {
+  const forModel = variants.flatMap((variant) =>
     variant.descriptors
       .filter((descriptor) => descriptor.device === deviceModel)
-      .map((descriptor) => ({ variant, os: versionKey(descriptor.osVersion) }))
+      .map((descriptor) => ({ variant, os: descriptor.osVersion }))
   );
-  if (candidates.length > 0)
-    return candidates.reduce((best, c) => (c.os > best.os ? c : best)).variant;
-  const known = [
-    ...new Set(variants.flatMap((variant) => variant.descriptors.map((d) => d.device))),
-  ].sort();
-  throw new Error(`No thinned variant lists ${deviceModel}. Variants cover: ${known.join(', ')}`);
+  if (forModel.length === 0) {
+    const known = [
+      ...new Set(variants.flatMap((variant) => variant.descriptors.map((d) => d.device))),
+    ].sort();
+    throw new Error(`No thinned variant lists ${deviceModel}. Variants cover: ${known.join(', ')}`);
+  }
+  const compatible = forModel.filter((c) => versionKey(c.os) <= versionKey(osVersion));
+  if (compatible.length === 0) {
+    const listed = [...new Set(forModel.map((c) => c.os))].sort(
+      (a, b) => versionKey(a) - versionKey(b)
+    );
+    throw new Error(
+      `No thinned variant for ${deviceModel} installs on OS ${osVersion}; it is listed for ${listed.join(', ')}`
+    );
+  }
+  return compatible.reduce((best, c) => (versionKey(c.os) > versionKey(best.os) ? c : best))
+    .variant;
 }
 
 /** @param {number[]} values */
