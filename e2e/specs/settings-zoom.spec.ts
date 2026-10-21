@@ -23,6 +23,20 @@ const PHONE = { width: 460, height: 852 };
 const zoomNode = (page: Page) => page.getByTestId('settings-text-zoom').first();
 
 // The inline CSS zoom the gesture sets; blank means normal size.
+// A pointer-synthesized click carries detail >= 1; detail 0 is keyboard or assistive activation,
+// which the pinch's ghost-click latch lets through, so a probe without it could never see the latch.
+function pointerClicksPrevented(page: Page, count: number): Promise<boolean[]> {
+  return zoomNode(page).evaluate(
+    (node, times) =>
+      Array.from({ length: times }, () => {
+        const event = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 });
+        node.dispatchEvent(event);
+        return event.defaultPrevented;
+      }),
+    count
+  );
+}
+
 function paneZoom(page: Page): Promise<number> {
   return zoomNode(page).evaluate((node) => {
     const zoom = (node as HTMLElement).style.zoom;
@@ -227,19 +241,8 @@ test('a pinch swallows the trailing click, so it never toggles the control benea
 
   // A two-finger gesture leaves the pinch primed to eat the primary finger's click, which would
   // otherwise open a section or flip a toggle under the finger. Exactly one click is swallowed; the
-  // next is a real tap again. A pointer-synthesized click carries detail >= 1; detail 0 is keyboard
-  // or assistive activation, which passes.
-  const { first, second } = await zoomNode(page).evaluate((node) => {
-    const clickOnce = () => {
-      const event = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 });
-      node.dispatchEvent(event);
-      return event.defaultPrevented;
-    };
-    return { first: clickOnce(), second: clickOnce() };
-  });
-
-  expect(first).toBe(true);
-  expect(second).toBe(false);
+  // next is a real tap again.
+  expect(await pointerClicksPrevented(page, 2)).toEqual([true, false]);
 });
 
 test('a one-finger drag scrolls the pane, so native scrolling survives', async ({ page }) => {
@@ -313,13 +316,7 @@ test('a tap after a pinch finger lifted outside the pane is not swallowed', asyn
 
   // That fresh one-finger gesture disarms the pinch's ghost-click latch, unless a still-tracked
   // finger holds the count at two, which re-arms it on every pointerdown and eats every later tap.
-  const swallowed = await zoomNode(page).evaluate((node) => {
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
-    node.dispatchEvent(event);
-    return event.defaultPrevented;
-  });
-
-  expect(swallowed).toBe(false);
+  expect(await pointerClicksPrevented(page, 1)).toEqual([false]);
 });
 
 test('a mouse pinch is ignored', async ({ page }) => {

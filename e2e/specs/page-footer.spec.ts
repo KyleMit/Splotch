@@ -83,9 +83,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
       nodes.map((node) => Math.round(node.getBoundingClientRect().top))
     );
     expect(new Set(tops).size).toBe(1);
-    const heights = await items.evaluateAll((nodes) =>
-      nodes.map((node) => node.getBoundingClientRect().height)
-    );
+    // The links themselves, not their list items: a flex row stretches every item to the tallest
+    // one, so an item can be full height around a link that is not.
+    const heights = await nav
+      .locator('a, [aria-current]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+    expect(heights.length).toBeGreaterThan(0);
     expect(heights.every((height) => height >= TAP_TARGET_PX)).toBe(true);
   });
 }
