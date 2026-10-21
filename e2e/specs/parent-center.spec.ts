@@ -8,6 +8,7 @@ import {
   goToSettingsSection,
   openSettings,
   solveGate,
+  waitUntilSettled,
 } from '../support/group-b.ts';
 
 test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
@@ -26,6 +27,16 @@ const PARENT_CENTER_INTRO = /Choose when Splotch should ask/;
 const PARENT_CENTER_LOCK = /Parent Center decides when Splotch asks for a grown-up check/;
 const MANAGING_SUBTITLE = 'Solve the problem to manage grown-up checks';
 const UNPROTECTED_CONSEQUENCE = /Anyone using this device can open Parent Center/;
+
+const SMALL_PHONE = { width: 320, height: 568 };
+// Wide enough that Settings keeps its table of contents beside the pane and the pane lays the
+// policies out as a matrix.
+const WIDE_SETTINGS = { width: 1133, height: 744 };
+// A degenerate box is skipped: a visually-hidden label is a clipped one-pixel square holding a whole
+// word, so it always overruns itself without ever being able to push the layout sideways.
+const VISUALLY_HIDDEN_MAX_PX = 1;
+const SUBPIXEL_OVERRUN_PX = 1;
+const ALL_POLICY_GROUPS = /parental gate frequency$/;
 
 type GateMode = 'Every time' | 'Per session' | 'Never';
 
@@ -198,5 +209,85 @@ test.describe('Parent Center', () => {
 
     await expect(confirm).toBeHidden();
     await expectMode(settings, PARENT_CENTER, 'Per session');
+  });
+});
+
+// The widest overrun any box holding the policies forces on its own content, measured from the
+// smallest box that holds every policy group.
+function worstOverrunAroundPolicies(settings: Locator): Promise<number> {
+  return settings
+    .getByRole('radiogroup', { name: ALL_POLICY_GROUPS })
+    .evaluateAll((groups, degeneratePx) => {
+      let root: Element = groups[0];
+      while (!groups.every((group) => root.contains(group))) {
+        if (!root.parentElement) throw new Error('The policy groups share no ancestor');
+        root = root.parentElement;
+      }
+      return [root, ...root.querySelectorAll<HTMLElement>('*')]
+        .filter((element) => element.clientWidth > degeneratePx)
+        .reduce((worst, element) => Math.max(worst, element.scrollWidth - element.clientWidth), 0);
+    }, VISUALLY_HIDDEN_MAX_PX);
+}
+
+async function boxOf(locator: Locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('Nothing is laid out to measure');
+  return box;
+}
+
+test.describe('Parent Center layout', () => {
+  test.describe('on a small phone', () => {
+    test.use({ viewport: SMALL_PHONE });
+
+    test('the policy cards stack inside the screen without scrolling sideways', async ({
+      drawingScreen,
+    }) => {
+      const { page } = drawingScreen;
+      const hub = await openSettings(page);
+      await hub.getByRole('button', { name: /^Parent Center, / }).click();
+      const pane = page.getByRole('dialog', { name: 'Parent Center' });
+      await waitUntilSettled(pane.getByRole('button', { name: 'Back', exact: true }));
+
+      await expect(pane.getByRole('radiogroup', { name: ALL_POLICY_GROUPS })).toHaveCount(
+        PROTECTED_FEATURES.length
+      );
+      const tops: number[] = [];
+      for (const feature of PROTECTED_FEATURES) {
+        const box = await boxOf(gatePolicy(pane, feature));
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(SMALL_PHONE.width);
+        tops.push(Math.round(box.y));
+      }
+      expect(new Set(tops).size).toBe(PROTECTED_FEATURES.length);
+      expect(await worstOverrunAroundPolicies(pane)).toBeLessThanOrEqual(SUBPIXEL_OVERRUN_PX);
+      expect(
+        await pane.evaluate((element) => element.scrollWidth - element.clientWidth)
+      ).toBeLessThanOrEqual(SUBPIXEL_OVERRUN_PX);
+    });
+  });
+
+  test.describe('in a wide Settings', () => {
+    test.use({ viewport: WIDE_SETTINGS });
+
+    test('every policy lands in one shared column of the matrix, inside the dialog', async ({
+      drawingScreen,
+    }) => {
+      const settings = await openParentCenter(drawingScreen.page);
+
+      const dialog = await boxOf(settings);
+      const lefts = new Set<number>();
+      await expect
+        .poll(async () => {
+          lefts.clear();
+          for (const feature of PROTECTED_FEATURES) {
+            const box = await boxOf(gatePolicy(settings, feature));
+            lefts.add(Math.round(box.x));
+            if (box.x + box.width > dialog.x + dialog.width) return -1;
+          }
+          return lefts.size;
+        })
+        .toBe(1);
+      expect(await worstOverrunAroundPolicies(settings)).toBeLessThanOrEqual(SUBPIXEL_OVERRUN_PX);
+    });
   });
 });
