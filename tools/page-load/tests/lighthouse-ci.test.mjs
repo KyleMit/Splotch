@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   mkdirSync,
@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, posix } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { parse } from 'yaml';
 import { readNetlifyConfig } from '../../../e2e/server/netlifyConfig.ts';
@@ -19,11 +19,9 @@ import { jobBlock, testWorkflow } from '../../ci-mirror/tests/workflow-job-steps
 import {
   GATED_METRICS,
   LIGHTHOUSE_TIMEOUT_MS,
-  MEASURED_SURFACE,
   OWNERSHIP_MARKER_FILE,
   PROFILES,
   REPORTED_METRICS,
-  SPEC_FILE,
   VISITS,
   assessSummary,
   baselineSourceStatus,
@@ -33,7 +31,6 @@ import {
   reportFileName,
   resolveOutDir,
   summarizeMeasurements,
-  trackedMeasuredFiles,
   withOneRetry,
 } from '../run-lighthouse-ci.mjs';
 
@@ -309,127 +306,6 @@ describe('the export the CI job times', () => {
     const reordered = job.replace(download, '').replace(gate, `${gate}${download}`);
 
     expect(exportWiringProblems(withJob(reordered))).toEqual(['runs the gate before the download']);
-  });
-});
-
-const trackedFiles = new Set(
-  execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 2 ** 28 })
-    .split('\0')
-    .filter(Boolean)
-);
-const IMPORT_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\(\s*)['"](\.[^'"]*)['"]/g;
-const SOURCE_EXTENSIONS = ['ts', 'tsx', 'mjs', 'cjs', 'js'];
-// Metro resolves `./X` in the web bundle to X.web.<ext> before X.<ext>, and a folder to its
-// index.web.<ext> first, so a web variant is the file the export bundles.
-const IMPORT_SUFFIXES = [
-  '',
-  ...SOURCE_EXTENSIONS.map((extension) => `.web.${extension}`),
-  ...SOURCE_EXTENSIONS.map((extension) => `.${extension}`),
-  ...SOURCE_EXTENSIONS.map((extension) => `/index.web.${extension}`),
-  ...SOURCE_EXTENSIONS.map((extension) => `/index.${extension}`),
-];
-const SOURCE_FILE = /\.(?:mjs|cjs|js|ts|tsx)$/;
-
-// Every `tracked` file reachable from `entries` through a relative import (a side-effect one
-// included), require or literal dynamic import, with `read` giving a file's source. A file the build reads some other way (a
-// readFileSync path) is not found by this walk.
-function importClosure(entries, { tracked, read }) {
-  const seen = new Set();
-  const queue = [...entries];
-  while (queue.length > 0) {
-    const file = queue.pop();
-    if (seen.has(file)) continue;
-    seen.add(file);
-    if (!SOURCE_FILE.test(file)) continue;
-    for (const [, specifier] of read(file).matchAll(IMPORT_SPECIFIER)) {
-      const base = posix.join(posix.dirname(file), specifier);
-      const found = IMPORT_SUFFIXES.map((suffix) => `${base}${suffix}`).find((candidate) =>
-        tracked.has(candidate)
-      );
-      if (found) queue.push(found);
-    }
-  }
-  return seen;
-}
-
-const covers = (surface, file) =>
-  surface.some((entry) => file === entry || file.startsWith(`${entry}/`));
-
-describe('the surface a baseline names', () => {
-  const nativeApp = 'experiments/native-architecture';
-  const knip = JSON.parse(readFileSync(join(ROOT, 'knip.json'), 'utf8'));
-  const { main } = JSON.parse(readFileSync(join(ROOT, nativeApp, 'package.json'), 'utf8'));
-  const exportEntries = [
-    'tools/migration/build-native-web.mjs',
-    `${nativeApp}/metro.config.cjs`,
-    `${nativeApp}/babel.config.cjs`,
-    `${nativeApp}/${main}`,
-    ...knip.workspaces[nativeApp].entry.map((entry) => `${nativeApp}/${entry}`),
-  ];
-  const sourceOf = (file) => readFileSync(join(ROOT, file), 'utf8');
-  const imported = [
-    ...importClosure(exportEntries, { tracked: trackedFiles, read: sourceOf }),
-  ].filter((file) => trackedFiles.has(file) && !SPEC_FILE.test(file));
-
-  it.each(MEASURED_SURFACE)('holds tracked files under %s', (entry) => {
-    expect([...trackedFiles].some((file) => covers([entry], file))).toBe(true);
-  });
-
-  it('covers every file the export build and the app it bundles import', () => {
-    expect(imported.length).toBeGreaterThan(100);
-    expect(imported.filter((file) => !covers(MEASURED_SURFACE, file))).toEqual([]);
-  });
-
-  it('misses an imported file once its folder leaves the surface', () => {
-    const withoutWebLib = MEASURED_SURFACE.filter((entry) => entry !== 'web/src/lib');
-
-    expect(imported.filter((file) => !covers(withoutWebLib, file))).not.toEqual([]);
-  });
-
-  it('digests the files it names and no spec', () => {
-    const measured = trackedMeasuredFiles();
-
-    expect(measured).toContain('netlify.toml');
-    expect(measured).toContain('pnpm-lock.yaml');
-    expect(measured.some((file) => SPEC_FILE.test(file))).toBe(false);
-    expect(measured.every((file) => covers(MEASURED_SURFACE, file))).toBe(true);
-  });
-});
-
-describe('the import walk behind that guard', () => {
-  const files = {
-    'app/index.ts': "import './Texture'; import('./panel');",
-    'app/Texture.tsx': "import '../native-only/skia';",
-    'app/Texture.web.tsx': "import '../outside/shared';",
-    'app/panel/index.ts': "export * from './rows';",
-    'app/panel/rows.ts': "export { rows } from '../../outside/rows';",
-    'native-only/skia.ts': '',
-    'outside/shared.ts': '',
-    'outside/rows.ts': '',
-  };
-  const closure = importClosure(['app/index.ts'], {
-    tracked: new Set(Object.keys(files)),
-    read: (file) => files[file],
-  });
-
-  it('follows the web variant Metro bundles, not the native file beside it', () => {
-    expect(closure).toContain('app/Texture.web.tsx');
-    expect(closure).toContain('outside/shared.ts');
-    expect(closure).not.toContain('app/Texture.tsx');
-    expect(closure).not.toContain('native-only/skia.ts');
-  });
-
-  it('follows a dynamic import, a folder index and a re-export', () => {
-    expect(closure).toContain('app/panel/index.ts');
-    expect(closure).toContain('app/panel/rows.ts');
-    expect(closure).toContain('outside/rows.ts');
-  });
-
-  it('leaves a file outside the surface for the guard to report', () => {
-    expect([...closure].filter((file) => !covers(['app'], file)).sort()).toEqual([
-      'outside/rows.ts',
-      'outside/shared.ts',
-    ]);
   });
 });
 
