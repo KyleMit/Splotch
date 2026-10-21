@@ -106,7 +106,7 @@ npm run native:ios:archive # store archive -> experiments/native-architecture/io
 npm run native:ios:ipa     # native:ios:archive + export -> experiments/native-architecture/ios/build/ipa/Splotch.ipa
 ```
 
-Store identity is opt-in. Debug is `art.splotch.app.dev`, and Release is
+Store identity is opt-in (ADR-0182). Debug is `art.splotch.app.dev`, and Release is
 `art.splotch.app$(SPLOTCH_APP_ID_SUFFIX)` with the suffix `.dev` set on the target, so a plain
 Release build, including one installed for testing or device performance, installs beside the store
 copy. Only the two scripts pass `-xcconfig Store.xcconfig`, which clears the suffix. The team comes

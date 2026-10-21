@@ -4,8 +4,8 @@ description: Attach the built .aab/.ipa to the GitHub Release for a version, ver
 ---
 
 You are attaching Splotch's **built store artifacts** — the React Native app's, from
-`experiments/native-architecture` — to an existing GitHub Release. This is the third and last phase
-of shipping:
+`experiments/native-architecture`, under the store identity ADR-0182 gives it — to an existing
+GitHub Release. This is the third and last phase of shipping:
 
 | Phase      | Skill               | Produces                                                |
 | ---------- | ------------------- | ------------------------------------------------------- |

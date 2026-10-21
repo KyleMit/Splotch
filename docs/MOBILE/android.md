@@ -139,11 +139,12 @@ npm run native:android:bundle # store AAB -> experiments/native-architecture/and
 npm run native:android:apk    # art.splotch.app.dev Release APK -> experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-Store identity is opt-in. A Gradle build of that project is `art.splotch.app.dev`, signed with the
-local debug key, unless it is given `-Psplotch.store=true`, and only `native:android:bundle` gives
-it. So a Debug build, `native:android:apk`, and any Release build installed for testing or device
-performance install beside the store copy, never over it. The store build signs with the upload key
-named in `experiments/native-architecture/android/keystore.properties` (git-ignored; template
+Store identity is opt-in (ADR-0182). A Gradle build of that project is `art.splotch.app.dev`, signed
+with the local debug key, unless it is given `-Psplotch.store=true`, and only
+`native:android:bundle` gives it. So a Debug build, `native:android:apk`, and any Release build
+installed for testing or device performance install beside the store copy, never over it. The store
+build signs with the upload key named in
+`experiments/native-architecture/android/keystore.properties` (git-ignored; template
 `keystore.properties.example` beside it), whose `storeFile` points at the shipping
 `android/upload-keystore.jks`: Play accepts the update only under that key. Without the file the
 build fails at configuration rather than writing an unsigned bundle. The script then runs the

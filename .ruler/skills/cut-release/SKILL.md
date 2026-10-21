@@ -12,8 +12,8 @@ The stores ship the React Native app in `experiments/native-architecture`, so th
 native version into its projects (`tools/release/lib/native-version.mjs`): `versionName` and
 `versionCode` in `android/app/build.gradle`, and `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`
 in `ios/Splotch.xcodeproj`. They continue the shipping app's lineage, so each store build upgrades
-the installed `art.splotch.app` in place. The Capacitor `android/` and `ios/` projects are not
-versioned.
+the installed `art.splotch.app` in place (ADR-0182). The Capacitor `android/` and `ios/` projects
+are not versioned.
 
 Optional argument: a target version (e.g. `1.2.0`). If omitted, you will propose one.
 

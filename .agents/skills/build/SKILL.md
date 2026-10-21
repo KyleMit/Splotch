@@ -18,8 +18,8 @@ of three, and the phases are ordered for a reason:
 afterwards by `publish-artifacts` (ADR-0077). `build` on its own is also fine any time you just want
 a fresh local build.
 
-**Store identity is opt-in.** Only the store scripts below build `art.splotch.app`, the ID that
-installs over the store copy. Every other build of the app, Release included, is
+**Store identity is opt-in** (ADR-0182). Only the store scripts below build `art.splotch.app`, the
+ID that installs over the store copy. Every other build of the app, Release included, is
 `art.splotch.app.dev`. A store artifact reaches a device only through the stores: installed by hand,
 it collides with the store-installed copy and puts the drawings that copy holds at risk. For a
 Release build to install, use `npm run native:android:apk` or a plain `xcodebuild`, which stay
