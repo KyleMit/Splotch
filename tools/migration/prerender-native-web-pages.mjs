@@ -481,10 +481,14 @@ export async function checkDrawingEntryBoundary() {
 // The CSS React Strict DOM compiles from an entry's own style sources, which strict.css leaves out.
 // Its PostCSS plugin reads the app's Babel config from the working directory, as `expo export`
 // runs it.
+// The plugin package exports one process-wide builder, which keeps every file's rules it has
+// compiled and drops a file it no longer includes by the wrong key, so a second compile in this
+// process (the admin console's) would carry these rules too. This compile takes a builder of its
+// own from the package's plugin factory.
 export async function documentStyleSheet(styleSources) {
   if (styleSources === null) return '';
   const { default: postcss } = await import('postcss');
-  const { default: reactStrictPlugin } = await import('react-strict-dom/postcss-plugin');
+  const reactStrictPlugin = require('postcss-react-strict-dom/src/plugin.js')();
   const cwd = process.cwd();
   process.chdir(NATIVE_APP_DIR);
   try {
