@@ -1,8 +1,8 @@
 import { createWebAiVault } from './aiVault.web';
-import { aiUrl, type AiTransport } from '../ai/transport';
+import { aiPath, type AiTransport } from '../ai/transport';
 import type { AiDismissalStore } from '../ai/sessionContract';
 export const aiTransport: AiTransport = (request, signal) =>
-  fetch(aiUrl(request), {
+  fetch(aiPath(request), {
     method: request.method,
     headers: request.headers,
     body:

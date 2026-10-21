@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import { APP_SHELL_FILE, NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
 import { startupScriptList } from './prerender-native-web.mjs';
+import { writtenPageDocuments } from './prerender-native-web-pages.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 // An empty app (registerRootComponent of one View) exported by this Expo and React Native Web
@@ -51,6 +52,33 @@ export const MAX_NATIVE_WEB_CORE_CONTROLS_BYTES = 827_535;
 // the 1,649-byte boot script that holds the bundle, so undoing one fails here. A document that
 // loads the bundle itself again fails by the whole bundle.
 export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
+// Each page document's budgets, by page (documentPages in prerender-native-web-pages.mjs). Its first
+// paint is its executable inline scripts and inline CSS, since it names no file before it paints;
+// its page entry is the bundle its boot script loads after that paint. The owner set each from
+// the page's first measured build plus 10%, rounded up (issue 3007, 2026-10-20); ratcheting
+// them down is later work.
+// * privacy: first paint 33,026 measured (1,295 boot JS; 31,731 CSS, 26,866 of it strict.css);
+//   page entry 754,181 measured (Expo's runtime and the entry chunk). A document that names its
+//   page bundle again fails by the whole bundle.
+// * feedback: first paint 33,538 measured (1,732 boot JS; 31,806 CSS); page entry 768,782
+//   measured, the shared page entry with the feedback form's owner.
+// * changelog, beta and notFound (the host's 404.html), first measured 2026-10-21: first paint
+//   33,574, 34,948 (its head's platform stamp and panel filter included) and 33,497; the page
+//   entry every page document shares, 781,172 by then.
+// * design: first paint 42,708 measured (1,663 boot JS; 41,045 CSS, strict.css plus the
+//   styleguide's own sheet); page entry 867,757 measured, its own entry with every specimen.
+// * admin: first paint 17,072 measured (1,280 boot JS; 15,792 CSS: its own compiled rules, the
+//   tokens and the Quicksand faces, never strict.css); page entry 262,531 measured, one chunk of
+//   React DOM and the console without React Native Web (prerender-native-web-admin.mjs).
+export const MAX_NATIVE_WEB_PAGE_BYTES = {
+  privacy: { firstPaint: 36_329, pageEntry: 829_600 },
+  changelog: { firstPaint: 36_932, pageEntry: 859_290 },
+  feedback: { firstPaint: 36_892, pageEntry: 845_661 },
+  beta: { firstPaint: 38_443, pageEntry: 859_290 },
+  design: { firstPaint: 46_979, pageEntry: 954_533 },
+  notFound: { firstPaint: 36_847, pageEntry: 859_290 },
+  admin: { firstPaint: 18_780, pageEntry: 288_785 },
+};
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(
@@ -187,16 +215,17 @@ export function nativeWebStartupProblems({
   return problems;
 }
 
-export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR) {
-  const indexPath = join(exportDir, APP_SHELL_FILE);
-  if (!existsSync(indexPath)) throw new Error(`The export has no app shell: ${indexPath}`);
+export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR, file = APP_SHELL_FILE) {
+  const indexPath = join(exportDir, file);
+  const name = file === APP_SHELL_FILE ? 'app shell' : file;
+  if (!existsSync(indexPath)) throw new Error(`The export has no ${name}: ${indexPath}`);
   const { files, paintFiles, inlineScripts, inlineStyles, inlineScriptBytes, inlineStyleBytes } =
     startupResources(readFileSync(indexPath, 'utf8'));
   if (!files.some((file) => file.endsWith('.js')) && inlineScripts.length === 0)
     throw new Error(`${indexPath} loads no script`);
-  for (const file of files)
-    if (!existsSync(join(exportDir, file)))
-      throw new Error(`The app shell loads a missing file: ${file}`);
+  for (const loaded of files)
+    if (!existsSync(join(exportDir, loaded)))
+      throw new Error(`The ${name} loads a missing file: ${loaded}`);
   const inlineImageCount = inlinedImageCount(inlineScripts);
   const inlineStyleImageCount = inlinedImageCount(inlineStyles, exceptedImagePayloads());
   const sizeOf = (list) =>
@@ -211,12 +240,12 @@ export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR) {
     coreControlsBytes: sizeOf(files),
     startupBytes: inlineBytes + sizeOf(files),
     inlinedImages: [
-      ...files.map((file) => ({
-        file,
-        count: inlinedImageCount(readFileSync(join(exportDir, file), 'utf8')),
+      ...files.map((loaded) => ({
+        file: loaded,
+        count: inlinedImageCount(readFileSync(join(exportDir, loaded), 'utf8')),
       })),
-      { file: `${APP_SHELL_FILE} inline scripts`, count: inlineImageCount },
-      { file: `${APP_SHELL_FILE} inline styles`, count: inlineStyleImageCount },
+      { file: `${file} inline scripts`, count: inlineImageCount },
+      { file: `${file} inline styles`, count: inlineStyleImageCount },
     ].filter(({ count }) => count > 0),
   };
 }
@@ -240,4 +269,51 @@ export function checkNativeWebStartup({
   );
 }
 
-if (isMain(import.meta.url)) runMain(async () => checkNativeWebStartup());
+export function nativeWebPageDocumentProblems({ file, measurement, budget }) {
+  const problems = [];
+  if (measurement.firstPaintBytes > budget.firstPaint)
+    problems.push(
+      `${file}'s first-paint JS/CSS is ${measurement.firstPaintBytes} bytes, above its ${budget.firstPaint}-byte budget: a page document paints from its inline markup and CSS alone and loads its page entry after it paints (prerender-native-web-pages.mjs), instead of raising MAX_NATIVE_WEB_PAGE_BYTES`
+    );
+  if (measurement.coreControlsBytes > budget.pageEntry)
+    problems.push(
+      `${file}'s page entry is ${measurement.coreControlsBytes} bytes, above its ${budget.pageEntry}-byte budget: load what the page shows only on request with a dynamic import, instead of raising MAX_NATIVE_WEB_PAGE_BYTES`
+    );
+  for (const { file: source, count } of measurement.inlinedImages)
+    problems.push(`${source} inlines ${count} images as data URIs`);
+  return problems;
+}
+
+// Holds every page document the build writes to its own budgets, and the table to exactly those
+// pages.
+export function checkNativeWebPageDocuments({
+  exportDir = NATIVE_WEB_EXPORT_DIR,
+  pages = writtenPageDocuments(),
+  budgets = MAX_NATIVE_WEB_PAGE_BYTES,
+  log = console.log,
+} = {}) {
+  const budgeted = Object.keys(budgets).sort();
+  const named = pages.map(({ page }) => page).sort();
+  if (budgeted.join() !== named.join())
+    throw new Error(
+      `MAX_NATIVE_WEB_PAGE_BYTES budgets [${budgeted.join(', ')}] but the route table writes page documents for [${named.join(', ')}]`
+    );
+  const problems = [];
+  for (const { page, file } of pages) {
+    const measurement = measureNativeWebStartup(exportDir, file);
+    const budget = budgets[page];
+    const found = nativeWebPageDocumentProblems({ file, measurement, budget });
+    problems.push(...found);
+    if (found.length === 0)
+      log(
+        `[native-web-startup] ${file} first paint ${measurement.firstPaintBytes}/${budget.firstPaint} bytes (${measurement.inlineScriptBytes} inline JS and ${measurement.inlineStyleBytes} inline CSS bytes plus ${measurement.paintFiles.length} files); page entry ${measurement.coreControlsBytes}/${budget.pageEntry} bytes after it paints (${measurement.files.length} files)`
+      );
+  }
+  if (problems.length) throw new Error(problems.join('\n'));
+}
+
+if (isMain(import.meta.url))
+  runMain(async () => {
+    checkNativeWebStartup();
+    checkNativeWebPageDocuments();
+  });

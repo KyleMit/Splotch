@@ -44,8 +44,13 @@ function knipEnumeratedFolders() {
 
 const netlifyToml = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
 
-/** prebuild/build/postbuild with every `npm run <name>` they delegate to expanded in place. */
-function buildPhaseScripts() {
+const buildCommand = netlifyToml.match(/^\s*command = "(.+)"$/m)?.[1] ?? '';
+
+/**
+ * Every npm script the Netlify build command runs, with the pre/post hooks npm runs around it and
+ * every `npm run <name>` they delegate to expanded in place.
+ */
+function deployPhaseScripts() {
   const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
   const expand = (name, seen = new Set()) => {
     if (seen.has(name) || !scripts[name]) return '';
@@ -54,7 +59,10 @@ function buildPhaseScripts() {
     const nested = [...body.matchAll(/npm run ([\w:-]+)/g)].map((match) => match[1]);
     return [body, ...nested.map((child) => expand(child, seen))].join(' ');
   };
-  return ['prebuild', 'build', 'postbuild'].map((name) => expand(name)).join(' ');
+  return [...buildCommand.matchAll(/npm run ([\w:-]+)/g)]
+    .flatMap(([, name]) => [`pre${name}`, name, `post${name}`])
+    .map((name) => expand(name))
+    .join(' ');
 }
 
 describe('knip project enumeration', () => {
@@ -82,7 +90,7 @@ describe('netlify deploy-skip filter', () => {
   });
 
   it('watches every tools/ path the production build actually runs', () => {
-    const buildPhase = buildPhaseScripts();
+    const buildPhase = deployPhaseScripts();
 
     // Walk the import graph too: the build reaches tools/lib/ only through the
     // entry points' imports, so a text scan alone would let a shared-helper
@@ -95,7 +103,7 @@ describe('netlify deploy-skip filter', () => {
       if (visited.has(file) || !existsSync(join(repoRoot, file))) continue;
       visited.add(file);
       const segments = file.split('/');
-      if (segments.length > 2) folders.add(segments[1]);
+      if (segments[0] === 'tools' && segments.length > 2) folders.add(segments[1]);
       const source = readFileSync(join(repoRoot, file), 'utf8');
       for (const [, spec] of source.matchAll(/from\s*'(\.[^']*\.mjs)'/g)) {
         queue.push(
@@ -118,9 +126,8 @@ describe('netlify deploy-skip filter', () => {
 // would stay green while Netlify's --prod install breaks the deploy.
 describe('knip production entries', () => {
   it('name exactly the tools/ scripts the Netlify deploy runs', () => {
-    const buildCommand = netlifyToml.match(/^\s*command = "(.+)"$/m)?.[1];
-    expect(buildCommand).toContain('npm run build');
-    const deployText = `${buildCommand} ${buildPhaseScripts()}`;
+    expect(buildCommand).toContain('npm run build:site');
+    const deployText = `${buildCommand} ${deployPhaseScripts()}`;
     const deployTools = new Set(
       [...deployText.matchAll(/(tools\/[\w./-]+\.mjs)/g)].map((match) => match[1])
     );
@@ -131,6 +138,22 @@ describe('knip production entries', () => {
 
     expect(deployTools.size).toBeGreaterThan(0);
     expect(entryTools.slice().sort()).toEqual([...deployTools].sort());
+  });
+
+  // The prerender reaches into Expo's and React Strict DOM's own packages, which the React Native
+  // app's dependencies install (experiments/native-architecture/package.json, a workspace knip
+  // ignores here), and the bundled Farm generator loads Prettier only to regenerate its modules,
+  // never in the deploy. CI's production-install build is what proves each one installs.
+  it('ignores only packages the React Native app provides or the deploy never loads', () => {
+    const knipProduction = JSON.parse(readFileSync(join(repoRoot, 'knip.production.json'), 'utf8'));
+    expect(knipProduction.ignoreDependencies).toEqual([
+      '@expo/cli',
+      '@expo/metro',
+      '@expo/router-server',
+      'postcss',
+      'postcss-react-strict-dom',
+      'prettier',
+    ]);
   });
 
   const { dependencies, devDependencies } = JSON.parse(

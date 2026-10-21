@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DeviceProfile } from './deviceProfile';
+  import type { DeviceProfile } from '$lib/safeAreaMatrix/deviceProfile';
   import DeviceChrome from './DeviceChrome.svelte';
   import {
     BAND_GAP_EXPLANATIONS,
@@ -7,9 +7,13 @@
     bandVerdict,
     diagnose,
     unreclaimedInsetPx,
-  } from './diagnostics';
+  } from '$lib/safeAreaMatrix/diagnostics';
   import { isFrameReady } from './frameReady';
-  import { ORIENTATION_LABELS, isLandscape, type Orientation } from './orientations';
+  import {
+    ORIENTATION_LABELS,
+    isLandscape,
+    type Orientation,
+  } from '$lib/safeAreaMatrix/orientations';
 
   // One device held one way: the live HUD in an iframe at the device's own CSS
   // viewport, scaled down to thumbnail size, with the hardware drawn over it and

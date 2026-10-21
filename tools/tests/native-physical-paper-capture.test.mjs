@@ -43,9 +43,9 @@ vi.mock('react-native-svg', async () => {
   return svgRasterSdk(state);
 });
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
-  composePicture: async (layer, picture) => {
-    state.composed.push({ layer, picture });
-    return `composed:${layer}`;
+  composePicture: async (layers, picture, includePaperTexture) => {
+    state.composed.push({ layers, picture, includePaperTexture });
+    return `composed:${layers.join('+')}`;
   },
 }));
 vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
@@ -221,13 +221,13 @@ describe('the saved picture', () => {
   // The 390x844 phone's paper: a 519x1024 sheet that shipping saves at 780x1538 on a 1x screen.
   const phonePaper = adoptPaper(390, 769, 1);
 
-  async function exportPicture(paper, theme = 'light') {
+  async function exportPicture(paper, theme = 'light', kind = 'export') {
     const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
     const request = createPngCapture().begin(drawing, () => true);
     const packet = {
       id: 1,
       request,
-      kind: 'export',
+      kind,
       pixelRatio: state.pixelRatio,
       plan: {
         paper,
@@ -267,7 +267,11 @@ describe('the saved picture', () => {
       expect(state.captures[1].options).toEqual(grid);
       await expect(request.promise).resolves.toMatchObject({ base64: 'composed:ink-and-outline' });
       expect(state.composed).toEqual([
-        { layer: 'ink-and-outline', picture: { size: grid, scale: 2, paper } },
+        {
+          layers: ['ink-and-outline'],
+          picture: { size: grid, scale: 2, paper },
+          includePaperTexture: true,
+        },
       ]);
     }
   );
@@ -287,21 +291,49 @@ describe('the saved picture', () => {
     });
   });
 
-  it('decodes the Android ink pass at the shipping grid before composing', async () => {
+  // Issue 3125: react-native-svg on Android draws an image only from Fresco's memory cache, which
+  // refuses a bitmap its budget has no room for, so an SVG image of the ink saved bare paper.
+  it('composes the Android ink beneath the captured line art, never through an SVG image', async () => {
     state.platform.OS = 'android';
     state.pixelRatio = 2.625;
     const request = await exportPicture(adoptPaper(411.4286, 805.7143, 2.625));
     const grid = { width: 1080, height: 2114 };
     expect(state.captures[0].options).toEqual(grid);
+    const images = state.svgTiles.length;
     await act(async () => state.captures[0].callback('ink'));
-    const decoded = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
-    await act(async () =>
-      decoded.onLoad({ nativeEvent: { source: { uri: decoded.source.uri, ...grid } } })
-    );
-    await finishOutput('android-layer');
+    await finishOutput('outline');
+    expect(state.svgTiles.slice(images)).toEqual([]);
+    expect(state.nativeImages.some((image) => image.resizeMethod === 'none')).toBe(false);
     expect(state.captures[1].options).toEqual(grid);
-    await expect(request.promise).resolves.toMatchObject({ base64: 'composed:android-layer' });
-    expect(state.composed[0].picture).toMatchObject({ size: grid, scale: 2.625 });
+    await expect(request.promise).resolves.toMatchObject({ base64: 'composed:ink+outline' });
+    expect(state.composed).toEqual([
+      {
+        layers: ['ink', 'outline'],
+        picture: { size: grid, scale: 2.625, paper: '#fcfbf8' },
+        includePaperTexture: true,
+      },
+    ]);
+  });
+
+  it('composes an Android picture on its capture grid over the plain paper', async () => {
+    state.platform.OS = 'android';
+    state.pixelRatio = 2;
+    const request = await exportPicture(adoptPaper(390, 704, 2), 'dark', 'picture');
+    const grid = { width: 780, height: 1408 };
+    expect(state.captures[0].options).toEqual(grid);
+    await act(async () => state.captures[0].callback('ink'));
+    await finishOutput('outline');
+    await expect(request.promise).resolves.toMatchObject({
+      base64: 'composed:ink+outline',
+      size: grid,
+    });
+    expect(state.composed).toEqual([
+      {
+        layers: ['ink', 'outline'],
+        picture: { size: grid, scale: 2, paper: '#211f29' },
+        includePaperTexture: false,
+      },
+    ]);
   });
 });
 

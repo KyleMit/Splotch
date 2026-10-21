@@ -4,14 +4,10 @@
 // (tools/marketing-assets/gen-store-assets.mjs, which imports this under
 // `node --experimental-strip-types` — relative imports only).
 
-import type { StoreTargetName } from './targets.ts';
-import type { StorePageId } from './pages.ts';
+import type { StoreTargetName } from '$lib/storeFrames/targets';
+import type { StorePageId } from '$lib/storeFrames/pages';
 
 const STORE_FRAME_ASSET_BASE = '/dev/store-frames/assets';
-
-// Identity probe for the generator's server-reuse check: proves which checkout
-// a running server is serving before its renders overwrite committed finals.
-export const STORE_FRAME_IDENTITY_PATH = '/dev/store-frames/identity';
 
 export const captureAssetFile = (target: StoreTargetName, page: StorePageId) =>
   `captures/${target}/${page}.png`;

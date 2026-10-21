@@ -114,6 +114,15 @@ it('keeps the address off a policy link while its check is due, and a link by ro
   expect(policyLink().tabIndex).toBe(0);
 });
 
+// A prerendered page document read without JavaScript cannot run the check, so the address it
+// keeps off the link is named beside it as plain text, which no script-enabled browser shows.
+it('names a policy link’s address beside it for a reader without JavaScript', async () => {
+  await loadPolicyLinks();
+  const note = policyLink().nextElementSibling;
+  expect(note.tagName).toBe('NOSCRIPT');
+  expect(note.textContent).toBe(' (openai.com/policies/services-agreement)');
+});
+
 it('gives a policy link its address, and opens it at once, when the parent asks for no check', async () => {
   await loadPolicyLinks();
   await chooseExternalLinks('never');

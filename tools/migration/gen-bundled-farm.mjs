@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { format, resolveConfig } from 'prettier';
 import { isMain } from '../lib/proc.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 
@@ -220,6 +219,9 @@ function generatedModules() {
 
 export async function generateBundledFarm(argv) {
   if (argv.some((arg) => arg !== '--check')) throw new Error('Only --check is supported.');
+  // The deploy's precache check reads this module's file lists from a production install, which
+  // has no Prettier; only regenerating the modules formats them.
+  const { format, resolveConfig } = await import('prettier');
   const modules = generatedModules();
   for (const [file, source] of modules) {
     const path = `${BUNDLED_FARM_DIR}${file}`;

@@ -137,6 +137,36 @@ it('keeps compact contents closed and jumps after its measured collapse without 
   ).not.toBeNull();
 });
 
+// Issue 3108: React Native ignores whiteSpace and textOverflow, so on Android the readout wrapped
+// inside the fixed-height row, which clipped its second line ("What stays on your device").
+it.each(['ios', 'android'])(
+  'truncates the %s compact readout to one line in a row that grows with the OS font',
+  async (os) => {
+    records.os = os;
+    records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 2 };
+    records.journalHostProps = true;
+    await mount(content(0));
+    const readout = () => {
+      const summary = host.querySelector('[aria-label^="Privacy policy contents, "]');
+      const label = [...summary.querySelectorAll('span')].at(-2);
+      return { text: label.textContent, ...JSON.parse(label.getAttribute('data-committed-props')) };
+    };
+    expect(readout()).toMatchObject({ text: 'sections', numberOfLines: 1 });
+    const summary = records.props.findLast(
+      (entry) => entry.accessibilityState?.expanded !== undefined
+    ).style;
+    expect(summary).toMatchObject({ minHeight: PAGE_CONTENTS.row, width: '100%' });
+    expect(summary.height).toBeUndefined();
+    await act(async () => {
+      layout('privacy-details', 700, 2000);
+      layout('page-contents-disclosure', 300, 86);
+      SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
+    });
+    await act(async () => root.render(content(700)));
+    expect(readout()).toMatchObject({ text: SECTIONS[1].label, numberOfLines: 1 });
+  }
+);
+
 it('renders the shipping metadata row and compact contents geometry', async () => {
   const policy = readFileSync(
     join(import.meta.dirname, '../../../web/src/routes/privacy/+page.svelte'),

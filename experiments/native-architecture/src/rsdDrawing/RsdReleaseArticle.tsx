@@ -12,6 +12,7 @@ import { blobPath } from './blob';
 import { mixSrgb } from './colorMix';
 import { releaseBlockRuns } from './RsdWhatsNewSection';
 import { styles as controls } from './controls';
+import { usePrerenderedMarkup } from './pageDocumentState';
 import { colors, dimensions, fonts } from './tokens.css';
 
 export const RELEASE_PAGE = {
@@ -86,7 +87,10 @@ const styles = css.create({
     lineHeight: LINE_HEIGHT,
     minHeight: '1.62em',
   },
+  // Positioned so the web paints the title over the absolutely placed tape, as React Native's
+  // order does.
   tapeText: {
+    position: 'relative',
     margin: 0,
     paddingBlock: TAPE_PADDING_PX.block,
     paddingInline: TAPE_PADDING_PX.inline,
@@ -206,6 +210,9 @@ export function RsdReleaseArticle({
   latest: boolean;
 }) {
   const narrow = useWindowDimensions().width <= RELEASE_PAGE.narrowHeader;
+  // The build cannot know the reading date, so a prerendered page fills it in after hydration, as
+  // shipping's changelog does.
+  const ago = usePrerenderedMarkup() ? '' : formatReleaseAgo(datetime, new Date());
   return (
     <View testID={`changelog-${release.version}`}>
       <html.header style={[styles.header, narrow && styles.narrow]}>
@@ -218,7 +225,7 @@ export function RsdReleaseArticle({
         <html.div style={[styles.date, narrow && styles.narrowDate]}>
           <html.span style={styles.dateText}>{release.dateLabel}</html.span>
           <html.span aria-hidden style={[controls.boldText, styles.ago]}>
-            {formatReleaseAgo(datetime, new Date())}
+            {ago}
           </html.span>
         </html.div>
       </html.header>

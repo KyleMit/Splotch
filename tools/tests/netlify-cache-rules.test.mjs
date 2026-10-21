@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { coloringPackManifestPath } from '../../web/src/lib/coloringPacks/manifest.ts';
-import { PAGE_CACHE_CLEANUP_SCRIPT_PREFIX } from '../../web/src/lib/pwa/pageCacheCleanup.ts';
+import { IMMUTABLE_EXPORT_DIRECTORIES } from '../migration/check-native-web-precache.mjs';
 import { VERSION_JSON_PATH } from '../../web/src/lib/pwa/versionEndpoint.ts';
 
 // A browser reuses a fresh cached file without asking the server, so a rule that
@@ -10,15 +9,11 @@ import { VERSION_JSON_PATH } from '../../web/src/lib/pwa/versionEndpoint.ts';
 // netlify.toml as literal TOML, so it cannot import the names below.
 const STABLE_NAME_MAX_AGE_SECONDS = 604_800;
 
-// Each name carries a content hash or the app version, so its bytes never change.
-const FIXED_CONTENT_GLOBS = [
-  // vite-plugin-pwa's Workbox runtime filename; no repo constant owns its prefix.
-  '/workbox-*.js',
-  `/${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}*.js`,
-  coloringPackManifestPath('*'),
-];
+// Each name carries a content hash, so its bytes never change: the post-build precache check fails
+// an export that holds a file under these without one.
+const FIXED_CONTENT_GLOBS = IMMUTABLE_EXPORT_DIRECTORIES.map((directory) => `/${directory}*`);
 
-// vite-plugin-pwa's worker and the deployed-version probe revalidate on every request.
+// The service worker and the deployed-version probe revalidate on every request.
 const REVALIDATED_PATHS = ['/sw.js', VERSION_JSON_PATH];
 const REVALIDATE_EVERY_REQUEST = 'no-cache, no-store, must-revalidate';
 

@@ -212,6 +212,29 @@ describe('androidVerdict', () => {
     expect(verdict.fatal).toEqual([crash[0], crash[1], crash[3]]);
   });
 
+  it('hands logcat the start stamp unquoted, in the MM-DD hh:mm:ss.mmm form its -T documents', () => {
+    // `logcat --help` on platform-tools 37: -T '<time>' takes 'MM-DD hh:mm:ss.mmm…'; the quotes
+    // there are the help text's shell quoting, which adb's argv never passes through.
+    const LOGCAT_T_FORMAT = /^\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/;
+
+    verdictFor([]);
+
+    const logcat = execFileSync.mock.calls.find(([, args]) => args.includes('logcat'));
+    expect(logcat[1]).toEqual([
+      '-s',
+      'emulator-0000',
+      'logcat',
+      '-d',
+      '-T',
+      '10-19 22:15:00.000',
+      '-b',
+      'crash,main,system',
+      '-v',
+      'threadtime',
+    ]);
+    expect(logcat[1][logcat[1].indexOf('-T') + 1]).toMatch(LOGCAT_T_FORMAT);
+  });
+
   it('classifies the whole log, so a fatal after 200 lines of recoverable errors still counts', () => {
     const noise = Array.from({ length: NOISE_LINES }, (_, i) =>
       logLine(RESTARTED_PID, 'E', 'ReactNativeJS', `Error: recoverable ${i}`)

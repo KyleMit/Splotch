@@ -53,14 +53,15 @@ and request status do not survive termination; both callers disclose this limita
 * `platform/feedback.ts` uses the already-installed released `expo/fetch` streaming response and
   app-private Expo file storage. Its `.web.ts` counterpart uses browser fetch and local storage.
 
-The only transport URL is `https://splotch.art/api/report`, with omitted credentials and rejected
-redirects. The request vocabulary and device formatting belong to `web/src/lib/report.ts` and
-`web/src/lib/platform/deviceReport.ts` under the API contract and ADR-0060. Candidate import
-isolation prevents importing the hosted application's graph. Exact whole-file projection tests
-therefore pin these dependency-free owners, `truncate.ts` and the pure parental lockout owner,
-allowing only the isolated relative import. The origin and application version also have guards. No
-hosted Svelte API, admin, PWA or existing server runtime file is changed. The sole new web file is a
-controlled handler fixture test.
+The native transport URL is `https://splotch.art/api/report`; the web export posts to its own
+origin's `/api/report`, which the host serving its page documents routes to the report function.
+Both omit credentials and reject redirects. The request vocabulary and device formatting belong to
+`web/src/lib/report.ts` and `web/src/lib/platform/deviceReport.ts` under the API contract and
+ADR-0060. Candidate import isolation prevents importing the hosted application's graph. Exact
+whole-file projection tests therefore pin these dependency-free owners, `truncate.ts` and the pure
+parental lockout owner, allowing only the isolated relative import. The origin and application
+version also have guards. No hosted Svelte API, admin, PWA or existing server runtime file is
+changed. The sole new web file is a controlled handler fixture test.
 
 ## Qualified local validation
 

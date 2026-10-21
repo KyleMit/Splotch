@@ -4,48 +4,39 @@
 //
 //   1. CAPTURE — drive the real Splotch app in a headless browser through the
 //      scenes below and write each app screenshot to store-assets/captures/
-//      (committed, so frame-only iteration and the /dev/store-frames harness
-//      work without re-driving the app).
-//   2. RENDER — screenshot the live /dev/store-frames/render route (the frame
-//      design system lives in web/src/routes/dev/store-frames/lib/) at each
-//      store slot's exact pixel size into store-assets/.
+//      (committed, so frame-only iteration works without re-driving the app).
+//   2. RENDER — screenshot each composition (lib/store-frame-document.mjs,
+//      laying out web/src/lib/storeFrames/) at each store slot's exact pixel
+//      size into store-assets/. The documents are answered from memory and the
+//      repo's own files, so this stage needs no server.
 //
 //   npm run gen:store-assets            # both stages
 //   npm run gen:store-assets:frames     # stage 2 only, from committed captures
 //
-// Runs against a PRODUCTION build served by `vite preview` on --port (default
-// 4173) — the coloring-pack manifest (the 8-book grid) only exists in a build,
-// and the build must retain the dev-harness seam pickBrush waits on, so the
-// script builds with PUBLIC_ENABLE_DEV_HARNESS=true when the port is free. A
-// server already on the port is reused only after its identity route proves it
-// serves this checkout; any other responder fails the run. The preview server
-// itself also gets PUBLIC_ENABLE_DEV_HARNESS=true so the server-side gate
-// opens the /dev/store-frames route.
+// The capture stage drives a PRODUCTION build served by `vite preview` on
+// --port (default 4173) — the coloring-pack manifest (the 8-book grid) only
+// exists in a build, and the build must retain the dev-harness seam pickBrush
+// waits on, so the script builds with PUBLIC_ENABLE_DEV_HARNESS=true. A port
+// something already holds fails the run: an answering server says nothing
+// about which checkout's build it serves, so the run only ever drives the
+// server it started, proven by the listener's pid.
 //
 // Output lands in store-assets/ at the exact pixel sizes each store wants:
 //   Google Play  phone 1080x1920 (9:16)   tablet 1920x1080 (16:9)
 //   App Store    iPhone 6.9" 1290x2796    iPad 13" 2732x2048
 
 import { chromium } from '@playwright/test';
-import { copyFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { FREE_GENERATION_LIMIT } from '../../web/src/lib/freeGenerations.ts';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
-import {
-  STORE_TARGETS,
-  FEATURE_GRAPHIC,
-} from '../../web/src/routes/dev/store-frames/lib/targets.ts';
-import { frameGeometry } from '../../web/src/routes/dev/store-frames/lib/geometry.ts';
-import { STORE_PAGES, pageHasCapture } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
-import {
-  FEATURE_GRAPHIC_PAGE_PARAM,
-  renderPath,
-  STORE_FRAME_IDENTITY_PATH,
-} from '../../web/src/routes/dev/store-frames/lib/paths.ts';
+import { STORE_TARGETS, FEATURE_GRAPHIC } from '../../web/src/lib/storeFrames/targets.ts';
+import { frameGeometry } from '../../web/src/lib/storeFrames/geometry.ts';
+import { STORE_PAGES, pageHasCapture } from '../../web/src/lib/storeFrames/pages.ts';
 import { ROOT, isMain, sh, sleep } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
-import { spawnViteServer } from '../lib/vite-server.mjs';
+import { portListenerPids, spawnViteServer } from '../lib/vite-server.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { drawDinosaurWide, drawIslandTall } from '../store-drawings/generated/store-drawings.mjs';
 import { magicScribbleScene } from '../store-drawings/lib/magic-scribbles.mjs';
@@ -65,10 +56,18 @@ import {
   waitForColoringOverlay,
 } from '../app-driver/lib/app-driver.mjs';
 import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-override.mjs';
+import { openStaticDocument, settleStaticDocument } from './lib/static-document.mjs';
+import {
+  STORE_FRAME_WEIGHTS,
+  featureGraphicDocument,
+  storeCaptureFile,
+  storeFrameDocument,
+  storeFrameFiles,
+} from './lib/store-frame-document.mjs';
 
 const OUT = join(ROOT, 'store-assets');
-const CAPTURES = join(OUT, 'captures');
 const DEFAULT_PORT = 4173;
+const PREVIEW_READY_TIMEOUT_MS = 60_000;
 
 // Play allows the 7" tablet slot to reuse the 10" images (same 1920x1080 spec).
 const TABLET7_DIR = 'screenshots/tablet7';
@@ -80,9 +79,6 @@ const SCREENSHOT_SETTLE_MS = 500;
 const BOOK_GRID_RETRY_LIMIT = 5;
 const PAGE_PICK_RETRY_LIMIT = 4;
 const PAGE_PICK_CONFIRM_TIMEOUT_MS = 4000;
-// The render route reports data-render-state once fonts are loaded and every
-// image (served from disk by the harness's asset endpoint) has decoded.
-const RENDER_STATE_TIMEOUT_MS = 30_000;
 
 // ── Scene setup mocks ───────────────────────────────────────────────────────
 
@@ -304,59 +300,23 @@ const SCENES = {
 
 // ── Server + render plumbing ────────────────────────────────────────────────
 
-const isUp = async (url) => {
-  try {
-    return (await fetch(url)).ok;
-  } catch {
-    return false;
-  }
-};
-
-// Which checkout an already-running server is serving, via the harness's
-// identity route — null when the responder doesn't answer it (a stale build,
-// or not Splotch at all).
-async function servedRepoRoot(base) {
-  try {
-    const response = await fetch(new URL(STORE_FRAME_IDENTITY_PATH, base));
-    if (!response.ok) return null;
-    return (await response.json()).repoRoot ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// Reuse a server already on the port only if its identity route proves it
-// serves THIS checkout — the frames now render from the server's components,
-// so an arbitrary root-200 responder (a stale server, a concurrent worktree's)
-// would silently write another branch's frame design into this checkout's
-// committed finals. Otherwise build the instrumented production bundle and
-// serve it.
-async function ensurePreviewServer(port) {
-  const base = `http://localhost:${port}/`;
-  if (await isUp(base)) {
-    const thisRoot = realpathSync(ROOT);
-    const served = await servedRepoRoot(base);
-    if (served !== thisRoot) {
-      throw new Error(
-        `Port ${port} is already serving ${served ?? 'something that is not this checkout (no store-frames identity route)'}, ` +
-          `not ${thisRoot}. Stop that server, or rerun with --port <unused port>.`
-      );
-    }
-    console.log(`Reusing this checkout's server at ${base}`);
-    return { base, stop: () => {} };
+// Builds the instrumented production bundle and serves it on a port nothing
+// else holds, then proves the answering listener is the server this run
+// started before any capture is taken from it.
+async function startPreviewServer(port) {
+  if (portListenerPids(port).length > 0) {
+    throw new Error(`Port ${port} is already in use; rerun with --port <unused port>.`);
   }
   console.log('Building production bundle (PUBLIC_ENABLE_DEV_HARNESS=true)…');
   await sh('PUBLIC_ENABLE_DEV_HARNESS=true npm run build');
   console.log('Starting preview server…');
-  const { stop } = spawnViteServer(port, {
-    command: 'preview',
-    // The client seam is baked in at build time; the server-side route gate
-    // (requireDevHarness) reads the env at request time, so the preview
-    // process needs it too or /dev/store-frames 404s.
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-  });
+  const base = `http://localhost:${port}/`;
+  const { server, stop } = spawnViteServer(port, { command: 'preview' });
   try {
-    await waitForUrl(base, 60_000);
+    await waitForUrl(base, PREVIEW_READY_TIMEOUT_MS);
+    if (!portListenerPids(port).includes(server.pid)) {
+      throw new Error(`Port ${port} answered, but not from the preview server this run started.`);
+    }
   } catch (err) {
     stop();
     throw err;
@@ -364,23 +324,19 @@ async function ensurePreviewServer(port) {
   return { base, stop };
 }
 
-const captureFile = (target, page) => join(CAPTURES, target.name, `${page.id}.png`);
-
-// Screenshots the /dev/store-frames render surface at an exact pixel size,
-// waiting on its explicit ready/error signal rather than network idle.
-async function renderRoutePage(browser, base, path, width, height, outFile) {
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
-  const page = await ctx.newPage();
-  await page.goto(new URL(path, base).href);
-  const surface = page.locator('[data-render-state="ready"], [data-render-state="error"]');
-  await surface.waitFor({ timeout: RENDER_STATE_TIMEOUT_MS });
-  if ((await surface.getAttribute('data-render-state')) === 'error') {
-    const message = (await page.locator('.error').textContent())?.trim();
-    await ctx.close();
-    throw new Error(`Render route reported an error for ${path}: ${message}`);
+// Screenshots one composition at an exact pixel size.
+async function renderDocument(browser, html, width, height, outFile) {
+  const opened = await openStaticDocument(browser, {
+    html,
+    files: storeFrameFiles(),
+    viewport: { width, height },
+  });
+  try {
+    await settleStaticDocument(opened, STORE_FRAME_WEIGHTS);
+    await opened.page.screenshot({ path: outFile });
+  } finally {
+    await opened.context.close();
   }
-  await page.screenshot({ path: outFile });
-  await ctx.close();
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -404,7 +360,7 @@ export async function generateStoreAssets({
 
   if (framesOnly) {
     const missing = targets
-      .flatMap((t) => pages.filter(pageHasCapture).map((p) => captureFile(t, p)))
+      .flatMap((t) => pages.filter(pageHasCapture).map((p) => storeCaptureFile(t.name, p.id)))
       .filter((file) => !existsSync(file));
     if (missing.length > 0) {
       throw new Error(
@@ -413,24 +369,23 @@ export async function generateStoreAssets({
     }
   }
 
-  const { base, stop } = await ensurePreviewServer(port);
+  const capturing = !framesOnly && pages.some((page) => SCENES[page.id]);
+  const { base, stop } = capturing ? await startPreviewServer(port) : { base: '', stop: () => {} };
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   try {
-    const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
-
     for (const target of targets) {
       const geo = frameGeometry(target);
       mkdirSync(join(OUT, target.dir), { recursive: true });
-      mkdirSync(join(CAPTURES, target.name), { recursive: true });
+      mkdirSync(dirname(storeCaptureFile(target.name, STORE_PAGES[0].id)), { recursive: true });
       for (const page of pages) {
         const scene = SCENES[page.id];
         if (scene && !framesOnly) {
           const shot = await scene(browser, base, geo.capture, target.orientation);
-          writeFileSync(captureFile(target, page), shot);
+          writeFileSync(storeCaptureFile(target.name, page.id), shot);
         }
-        await renderRoutePage(
+        await renderDocument(
           browser,
-          base,
-          renderPath(page.id, target.name),
+          storeFrameDocument(target.name, page.id),
           target.width,
           target.height,
           join(OUT, target.dir, `${page.id}.png`)
@@ -450,19 +405,17 @@ export async function generateStoreAssets({
       }
       console.log('tablet7 copied from tablet10');
 
-      await renderRoutePage(
+      await renderDocument(
         browser,
-        base,
-        renderPath(FEATURE_GRAPHIC_PAGE_PARAM),
+        featureGraphicDocument(),
         FEATURE_GRAPHIC.width,
         FEATURE_GRAPHIC.height,
         join(OUT, 'feature-graphic.png')
       );
       console.log('feature-graphic done');
     }
-
-    await browser.close();
   } finally {
+    await browser.close();
     stop();
   }
   console.log('DONE');

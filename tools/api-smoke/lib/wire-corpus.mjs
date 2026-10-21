@@ -14,6 +14,7 @@
 import { ADMIN_SECRET, WIRE_ORIGIN, wireCases } from './wire-cases.mjs';
 
 export { API_PATHS } from './wire-cases.mjs';
+export { ADDED_API_PATHS, addedWireCases } from './wire-added-cases.mjs';
 
 // Every private variable the API reads, declared so neither host inherits one from
 // the ambient environment. `applyWireEnv` deletes the empty ones.
@@ -71,14 +72,15 @@ async function normalizeResponse(response) {
  * Drive every case through `handle` (a V2 function: (Request, Context) => Response)
  * and return the normalized responses, keyed by case name. `session` is the admin
  * session the host's login case returned, substituted into the bearer cases.
+ * `cases` defaults to the corpus SvelteKit answered; addedWireCases() is the other.
  */
-export async function driveWireCorpus(handle) {
+export async function driveWireCorpus(handle, cases = wireCases()) {
   const results = {};
   let session = 'unset';
   const realNow = Date.now;
   Date.now = () => WIRE_CLOCK_MS;
   try {
-    for (const testCase of wireCases()) {
+    for (const testCase of cases) {
       const context = { ip: testCase.ip, waitUntil: () => {} };
       const response = await handle(buildRequest(testCase, session), context);
       const normalized = await normalizeResponse(response);

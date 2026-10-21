@@ -56,9 +56,9 @@ export const STARTUP_SCRIPTS_ELEMENT_ID = 'startup-scripts';
 const FIRST_PAINT_FALLBACK_MS = 2000;
 // Expo links its extracted style sheet render-blocking. The frame is inlined in its place, as the
 // shipping drawing route inlines its CSS (ADR-0176): otherwise first paint waits one more round trip.
-const EXPO_STYLESHEET =
+export const EXPO_STYLESHEET =
   /<link rel="preload" href="([^"]+\.css)" as="style">\s*<link rel="stylesheet" href="\1">/g;
-const EXPO_SCRIPT = /<script src="([^"]+)" defer><\/script>/g;
+export const EXPO_SCRIPT = /<script src="([^"]+)" defer><\/script>/g;
 const STARTUP_SCRIPTS_ELEMENT = new RegExp(
   `<script type="application/json" id="${STARTUP_SCRIPTS_ELEMENT_ID}">([^<]*)</script>`
 );
@@ -86,7 +86,7 @@ export function variantKey(viewport, theme) {
   return `${sizeClass(viewport)}${viewport.width > viewport.height ? 'l' : 'p'}${theme}`;
 }
 
-function expoBundleRequestFactory() {
+export function expoBundleRequestFactory() {
   return require('@expo/cli/build/src/export/embed/exportEmbedAsync.js')
     .createMetroServerAndBundleRequestAsync;
 }
@@ -96,13 +96,15 @@ export function hydrationFlagScriptContents() {
 }
 
 // Expo's SSR loader turns the bundle's final run call into its exports the same way.
-function asCommonJsModule(bundle) {
+export function asCommonJsModule(bundle) {
   return bundle.replace(/^(__r\(.*\);)$/gm, 'module.exports = $1');
 }
 
-export async function bundleFirstFrameRenderer() {
+// Metro bundles an entry for Node the way Expo Router's ssrLoadModule does: Babel folds
+// `typeof window` to 'undefined', so every guard takes its server branch.
+export async function bundleForNode(entryFile, customResolverOptions = {}) {
   const { server, bundleRequest } = await expoBundleRequestFactory()(NATIVE_APP_DIR, {
-    entryFile: FIRST_FRAME_ENTRY,
+    entryFile,
     platform: 'web',
     dev: false,
     minify: false,
@@ -112,7 +114,11 @@ export async function bundleFirstFrameRenderer() {
     const { code } = await server.build({
       ...bundleRequest,
       customTransformOptions: { ...bundleRequest.customTransformOptions, environment: 'node' },
-      customResolverOptions: { ...bundleRequest.customResolverOptions, environment: 'node' },
+      customResolverOptions: {
+        ...bundleRequest.customResolverOptions,
+        ...customResolverOptions,
+        environment: 'node',
+      },
     });
     return asCommonJsModule(code);
   } finally {
@@ -120,16 +126,32 @@ export async function bundleFirstFrameRenderer() {
   }
 }
 
+export function bundleFirstFrameRenderer() {
+  return bundleForNode(FIRST_FRAME_ENTRY);
+}
+
 // The icons' SvgXml parses its markup with the browser's DOMParser (platform/svg.web.ts). The build
 // lends the render a standards parser, and only that: no window or document, so every other module
 // still takes its server branch.
-async function lendXmlParser() {
+export async function lendXmlParser() {
   const { Window } = await import('happy-dom');
   const { DOMParser, Element, Node } = new Window();
   Object.assign(globalThis, { DOMParser, Element, Node });
 }
 
-function evaluateRenderer(source) {
+// Metro's runtime sets itself up only when no runtime is installed, so a second render module
+// evaluated in this process would define its modules into the first one's registry and run the
+// first one's entry. Each evaluation starts with the runtime globals cleared.
+const METRO_RUNTIME_GLOBALS = [
+  '__r',
+  '__d',
+  '__c',
+  '__registerSegment',
+  '__requireCycleIgnorePatterns',
+];
+
+export function evaluateRenderer(source) {
+  for (const name of METRO_RUNTIME_GLOBALS) delete globalThis[name];
   const directory = mkdtempSync(join(tmpdir(), 'native-web-prerender-'));
   const filename = join(directory, 'first-frame.js');
   writeFileSync(filename, source);
@@ -293,6 +315,16 @@ export function firstFrameBootScript(variants) {
     "painted=document.visibilityState==='visible';",
     earlyInputScript(),
     '}}}catch(e){}',
+    ...startupScriptsAfterPaint(),
+    '})();',
+  ].join('');
+}
+
+// The tail of a boot script that holds a document's bundle until its markup has painted: it loads
+// the STARTUP_SCRIPTS_ELEMENT_ID list, in order, at first contentful paint, at once when `painted`
+// is false (nothing painted, or a hidden page), and after FIRST_PAINT_FALLBACK_MS at the latest.
+export function startupScriptsAfterPaint() {
+  return [
     'function load(){',
     `var l=JSON.parse(document.getElementById(${JSON.stringify(STARTUP_SCRIPTS_ELEMENT_ID)}).textContent);`,
     "for(var i=0;i<l.length;i++){var x=document.createElement('script');x.src=l[i];x.async=false;document.body.appendChild(x)}}",
@@ -300,8 +332,7 @@ export function firstFrameBootScript(variants) {
     'var done=false;function go(){if(!done){done=true;load()}}',
     "try{new PerformanceObserver(function(l,o){if(l.getEntriesByName('first-contentful-paint').length){o.disconnect();setTimeout(go)}}).observe({type:'paint',buffered:true})}catch(e){go()}",
     `setTimeout(go,${FIRST_PAINT_FALLBACK_MS});`,
-    '})();',
-  ].join('');
+  ];
 }
 
 export function renderFirstFrames(prerenderFirstFrame) {

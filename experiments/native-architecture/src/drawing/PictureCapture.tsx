@@ -11,7 +11,6 @@ import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
 import { PAPER_THEMES } from './theme';
 import { InkPaperScope } from './InkPaper';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
-import { DecodedPng } from './DecodedPng';
 import {
   pictureExport,
   boundedRasterSize,
@@ -64,14 +63,35 @@ function inkGrid(packet: PictureRequest, raster: PaperSize): PaperSize {
   };
 }
 
-function composeExport(
-  layer: string,
-  exported: PictureExport | null,
-  includePaperTexture: boolean
+// react-native-svg on Android draws an <Image> only from Fresco's decoded-bitmap memory cache
+// (ImageView.draw), and Fresco caches a bitmap only while its budget, a share of the app's memory
+// class, has room for it. A capture taken while the ink was uncached left it out, and the picture
+// saved bare paper (issue 3125). Android composes the ink beneath the captured line art instead.
+function composesInk(): boolean {
+  return Platform.OS === 'android';
+}
+
+// The capture's output, composed onto the saved picture or, when this capture composes the ink,
+// onto its own grid over the plain paper.
+function composeOutput(
+  output: string,
+  ink: string,
+  packet: PictureRequest,
+  target: CaptureTarget
 ): Promise<string> {
-  if (!exported) return Promise.resolve(layer);
+  const withInk = composesInk();
+  const picture =
+    target.exported ??
+    (withInk
+      ? {
+          size: target.raster,
+          scale: packet.pixelRatio,
+          paper: PAPER_THEMES[packet.appearance.theme].paper,
+        }
+      : null);
+  if (!picture) return Promise.resolve(output);
   return import('./pictureCompose').then(({ composePicture }) =>
-    composePicture(layer, exported, includePaperTexture)
+    composePicture(withInk ? [ink, output] : [output], picture, packet.kind === 'export')
   );
 }
 
@@ -171,19 +191,21 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
     return () => job.cancel();
   }, [ready, base64, captures, packet, target.raster, accept, fail]);
 
+  const withInk = composesInk();
+  const inkPlaced = base64 !== null && (withInk || imageLoaded);
   useEffect(() => {
-    if (!imageLoaded || !outlineReady) return;
+    if (!inkPlaced || !outlineReady || base64 === null) return;
     if (!packet.isCurrent()) {
       fail(new Error('The picture changed before capture finished.'));
       return;
     }
     const job = captures.capture(output.current, target.raster);
     void job.promise
-      .then((pixels) => composeExport(pixels, target.exported, packet.kind === 'export'))
+      .then((pixels) => composeOutput(pixels, base64, packet, target))
       .then((pixels) => accept(pixels, 'picture'))
       .catch(fail);
     return () => job.cancel();
-  }, [imageLoaded, outlineReady, captures, packet, target, accept, fail]);
+  }, [inkPlaced, outlineReady, base64, captures, packet, target, accept, fail]);
 
   useCaptureLifetime(captures, request, fail, current);
 
@@ -197,9 +219,6 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
           ]}
           pointerEvents="none"
         >
-          {base64 ? (
-            <DecodedPng base64={base64} size={target.raster} onLoad={loaded} onError={fail} />
-          ) : null}
           {!base64 ? (
             committedInk ? null : (
               <FixedInkCapture
@@ -218,7 +237,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
               viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
               preserveAspectRatio="xMidYMid meet"
             >
-              {target.exported ? null : (
+              {target.exported || withInk ? null : (
                 <Rect
                   x={size.x}
                   y={size.y}
@@ -227,14 +246,14 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
                   fill={PAPER_THEMES[packet.appearance.theme].paper}
                 />
               )}
-              <Image
-                href={`data:image/png;base64,${base64}`}
-                {...paperRasterBounds(packet.plan.projection, raster)}
-                preserveAspectRatio="none"
-                onLoad={() => {
-                  if (Platform.OS !== 'android') loaded();
-                }}
-              />
+              {withInk ? null : (
+                <Image
+                  href={`data:image/png;base64,${base64}`}
+                  {...paperRasterBounds(packet.plan.projection, raster)}
+                  preserveAspectRatio="none"
+                  onLoad={loaded}
+                />
+              )}
               <PageOutline pageId={request.drawing.pageId} size={size} />
             </CaptureSvg>
           )}

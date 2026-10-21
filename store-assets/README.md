@@ -14,7 +14,7 @@ store-assets/
 ├── icon-512.png              # Play app icon  512×512   (Play limit: ≤1 MB)
 ├── feature-graphic.png       # Play feature graphic 1024×500 (Play limit: ≤15 MB)
 ├── captures/                 # Committed app-capture intermediates, one per target × scene —
-│                             # what /dev/store-frames composes into the frames
+│                             # what the frame documents compose into the frames
 └── screenshots/
     ├── phone/     01–05  1080×1920 (9:16 portrait)    Google Play phone
     ├── tablet7/   01–05  1920×1080 (16:9 landscape)   Google Play 7" tablet
@@ -40,9 +40,9 @@ doodle→masterpiece showcase read diagonally — doodle top-left, print bottom-
 stepping-stone connector (palette dots in, growing sparkles out); page 5 is the one dark-mode frame.
 Captures are driven in capture mode (`web/src/lib/storeCapture.ts`), which drops the wand button's
 free-generation count so no per-install number lands in a marketing shot. The design system —
-geometry, copy, marks, colors — lives in the app as the `/dev/store-frames` dev harness
-(`web/src/routes/dev/store-frames/lib/`), where every composition renders live and hot-reloads for
-design iteration.
+geometry, copy, marks, colors — is framework-free data in `web/src/lib/storeFrames/`, laid out as
+one self-contained HTML document per composition by
+`tools/marketing-assets/lib/store-frame-document.mjs`.
 
 ## What each screenshot shows
 
@@ -80,11 +80,10 @@ npm run gen:store-assets
 The script (`tools/marketing-assets/gen-store-assets.mjs`) needs a **production build** on port 4173
 — the coloring-pack manifest behind the 8-book grid only exists in a build, and the capture driver
 waits on the dev-harness seam — so it builds with `PUBLIC_ENABLE_DEV_HARNESS=true` and serves it
-with `vite preview` (a server already on 4173 is reused only after its `/dev/store-frames/identity`
-route proves it serves this checkout; pass `--port` for an unused port otherwise). It then drives
-the app in headless Chromium at each target's capture size, writes each app capture to `captures/`
-(committed), and screenshots the live `/dev/store-frames/render` route at the exact store pixel
-sizes — the frames and the Play feature graphic are real Svelte components, not composed rasters.
+with `vite preview` (it refuses a port something already holds; pass `--port` for an unused one). It
+then drives the app in headless Chromium at each target's capture size, writes each app capture to
+`captures/` (committed), and screenshots each composition's document at the exact store pixel sizes
+— the frames and the Play feature graphic are laid-out HTML, not composed rasters.
 
 Frame-only iteration (copy, layout, marks — nothing the app renders):
 
@@ -92,8 +91,7 @@ Frame-only iteration (copy, layout, marks — nothing the app renders):
 npm run gen:store-assets:frames
 ```
 
-re-renders every final from the committed captures without driving the app, and the
-`/dev/store-frames` harness shows the same compositions hot-reloading under `npm run dev`.
+re-renders every final from the committed captures in seconds, with no build, server or app.
 
 Iterate on a subset with `--target` / `--page` substring filters, e.g.
 `npm run gen:store-assets -- --target tablet10 --page 03`.
