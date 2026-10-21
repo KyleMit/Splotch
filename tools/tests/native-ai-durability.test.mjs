@@ -8,8 +8,8 @@ import {
 import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
 const root = new URL('../../', import.meta.url);
 const candidate = new URL('experiments/native-architecture/', root);
-const android = 'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt';
-const apple = 'ios/HelloWorld/SplotchAIJournal.swift';
+const android = 'android/app/src/main/java/art/splotch/app/SplotchAIJournal.kt';
+const apple = 'ios/Splotch/SplotchAIJournal.swift';
 it('closes the transitive native operation vocabulary and preserves the legacy generation wire', () => {
   const storage = readFileSync(new URL('src/platform/durableAiStorage.ts', candidate), 'utf8');
   const vocabulary = storage.match(/type Operation\s*=([\s\S]*?);/)[1];

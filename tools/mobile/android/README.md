@@ -58,23 +58,21 @@ npm run test:tools -- tools/mobile/android
 
 ## Direct accessibility-action diagnostic
 
-`npm run android:accessibility:build -- --output <fresh-private-directory> --signing-init <existing-opaque-Gradle-init>`
-builds `probes/accessibility-action` through the RN Android project's existing SDK/plugin and
-candidate Release signing configuration. The supplied init file makes the existing signing
-configuration available to Gradle. The handler never opens or prints credential values. No identity
-is created, and nothing is installed or launched. Commit source first; output must be new and
-outside the checkout. A failed build keeps its output, log and record for diagnosis. The settings
-injection applies only to the admitted main project, including when React Native has its own
-included Gradle builds.
+`npm run android:accessibility:build -- --output <fresh-private-directory>` builds
+`probes/accessibility-action` through the RN Android project's existing SDK and plugin, signed with
+the local debug key that also signs the app's non-store builds. Nothing is installed or launched.
+Commit source first; output must be new and outside the checkout. A failed build keeps its output,
+log and record for diagnosis. The settings injection applies only to the admitted main project,
+including when React Native has its own included Gradle builds.
 
 The resulting package is `art.splotch.parity.driver`, with self-targeted instrumentation
 `art.splotch.parity.driver.AccessibilityActionProbe`. It observes only the foreground
-`art.splotch.migration.probe` app. `operation=inspect` returns native names, geometry, semantics and
-action lists; `operation=click label=<exact-name>` invokes `ACTION_CLICK` only for one enabled,
-visible exact match. It records whether the action was listed and whether activation succeeded. A
-raw text descendant is distinct from its activatable button. Duplicate names remain an error. An
-optional `class=<exact-native-class>` explicitly narrows candidates before the uniqueness check; the
-result records both selector fields. It never silently filters by accessibility importance. Refusals
+`art.splotch.app.dev` app. `operation=inspect` returns native names, geometry, semantics and action
+lists; `operation=click label=<exact-name>` invokes `ACTION_CLICK` only for one enabled, visible
+exact match. It records whether the action was listed and whether activation succeeded. A raw text
+descendant is distinct from its activatable button. Duplicate names remain an error. An optional
+`class=<exact-native-class>` explicitly narrows candidates before the uniqueness check; the result
+records both selector fields. It never silently filters by accessibility importance. Refusals
 include a bounded candidate summary with the total count and a truncation flag. Oversized snapshots
 refuse before dispatch; an exception after attempted activation reports an unknown outcome in a
 fresh, small error bundle.
@@ -89,7 +87,7 @@ foreground identity. Below API30, output records `display: null` and
 installs remain read-only.
 
 A local invocation after those checks is
-`adb -s <owned-emulator> shell am instrument -w -r -e expectedPackage art.splotch.migration.probe -e operation inspect art.splotch.parity.driver/art.splotch.parity.driver.AccessibilityActionProbe`.
+`adb -s <owned-emulator> shell am instrument -w -r -e expectedPackage art.splotch.app.dev -e operation inspect art.splotch.parity.driver/art.splotch.parity.driver.AccessibilityActionProbe`.
 For a click, set `operation` to `click` and supply the complete exact `label`, shell-quoted as one
 argument. The driver does not launch or navigate to the app, provide coordinate fallback, grant
 permissions, force internal state, or recover a failed route. Check the resulting public UI

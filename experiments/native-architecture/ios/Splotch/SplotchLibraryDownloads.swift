@@ -11,7 +11,7 @@ private struct SplotchLibraryJob: Codable {
 
 final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
   static let shared = SplotchLibraryDownloads()
-  private static let sessionPrefix = "art.splotch.migration.probe.library."
+  private static let sessionPrefix = "art.splotch.app.library."
   private static let storageReserveBytes: Int64 = 8388608
   private let queue = DispatchQueue(label: "art.splotch.library-downloads", qos: .utility)
   private lazy var delegateQueue: OperationQueue = {

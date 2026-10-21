@@ -8,6 +8,13 @@ source of truth; everything else (in-app About tab, store changelogs, GitHub rel
 numbers) is generated from it by `tools/release/cut-release.mjs` and
 `tools/release/gen-release-notes.mjs`. Read `releases/README.md` if you need the format.
 
+The stores ship the React Native app in `experiments/native-architecture`, so the cut writes the
+native version into its projects (`tools/release/lib/native-version.mjs`): `versionName` and
+`versionCode` in `android/app/build.gradle`, and `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`
+in `ios/Splotch.xcodeproj`. They continue the shipping app's lineage, so each store build upgrades
+the installed `art.splotch.app` in place. The Capacitor `android/` and `ios/` projects are not
+versioned.
+
 Optional argument: a target version (e.g. `1.2.0`). If omitted, you will propose one.
 
 Follow these steps:
@@ -52,9 +59,10 @@ Follow these steps:
    * Local only (commit + tag, no push/GitHub): `npm run release <version> -- --no-publish`
    * Dry run (regenerate files only, no git): `npm run release <version> -- --dry-run`
 
-7. **Report the result** — the new version, the versionCode that was assigned, and the GitHub
-   release URL if published. Remind the user that the Play / App Store "What's new" text is ready to
-   paste from `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and
+7. **Report the result** — the new version, the versionCode that was assigned (it is also the iOS
+   build number), and the GitHub release URL if published. Remind the user that the Play / App Store
+   "What's new" text is ready to paste from
+   `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and
    `fastlane/metadata/en-US/release_notes.txt`.
 
    **The GitHub Release is created with no artifacts attached, and that is correct.** Do not try to
@@ -86,5 +94,5 @@ Follow these steps:
    and the item is on the release checklist in `docs/MOBILE/ios.md`.
 
    Tell the user to run **`build`** next, then **`publish-artifacts`**. The publish step verifies
-   each artifact's embedded version against the release and refuses a mismatch, so the stale-upload
-   failure cannot recur silently.
+   each artifact's embedded app ID and version against the release and refuses a mismatch, so
+   neither a stale upload nor a local `.dev` build can recur silently.

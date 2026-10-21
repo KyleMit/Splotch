@@ -18,7 +18,7 @@ const NATIVE_BUNDLE_INPUTS = [
   'android/gradle.properties',
   'android/app/build.gradle',
   'ios/.xcode.env',
-  'ios/HelloWorld.xcodeproj/project.pbxproj',
+  'ios/Splotch.xcodeproj/project.pbxproj',
 ];
 
 function granularEligibility(serializerSource) {

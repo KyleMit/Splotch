@@ -3,14 +3,27 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
-def releaseSigningNames = ['splotch.probe.release.storeFile', 'splotch.probe.release.storePassword', 'splotch.probe.release.keyAlias', 'splotch.probe.release.keyPassword']
-def releaseSigning = releaseSigningNames.collect { findProperty(it) }
-if (releaseSigning.any { !it }) {
-    throw new GradleException("Candidate Release signing inputs are required")
+// Store identity is opt-in. A build is art.splotch.app.dev, signed with the local
+// debug key, unless the store release scripts pass -Psplotch.store=true: only then
+// does Release take art.splotch.app and the upload key named in the untracked
+// keystore.properties (see keystore.properties.example). So no plain build, Release
+// included, can install over the store copy on a device.
+def storeProperty = findProperty('splotch.store')
+if (storeProperty != null && storeProperty != 'true') {
+    throw new GradleException("splotch.store must be true when set, got '${storeProperty}'")
 }
-def releaseStore = new File(releaseSigning[0].toString())
-if (!releaseStore.isAbsolute() || !releaseStore.isFile() || releaseStore.canonicalPath.startsWith(projectRoot + File.separator) || releaseStore.name != 'candidate-release.keystore') {
-    throw new GradleException("Candidate Release keystore must be an external owned file")
+def storeBuild = storeProperty == 'true'
+def uploadKeyFile = rootProject.file('keystore.properties')
+def uploadKey = new Properties()
+if (storeBuild) {
+    if (!uploadKeyFile.isFile()) {
+        throw new GradleException("A store build signs with the upload key: create ${uploadKeyFile} from keystore.properties.example")
+    }
+    uploadKeyFile.withInputStream { uploadKey.load(it) }
+    def missing = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].findAll { !uploadKey[it] }
+    if (missing) {
+        throw new GradleException("${uploadKeyFile} lacks ${missing.join(', ')}")
+    }
 }
 
 react {
@@ -27,26 +40,34 @@ android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
-    namespace "art.splotch.migration.probe"
+    namespace "art.splotch.app"
     defaultConfig {
-        applicationId "art.splotch.migration.probe"
+        applicationId "art.splotch.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 8
+        versionName "1.6.0"
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", '"stable"'
     }
     signingConfigs {
-        candidateRelease {
-            storeFile releaseStore
-            storePassword releaseSigning[1].toString()
-            keyAlias releaseSigning[2].toString()
-            keyPassword releaseSigning[3].toString()
+        if (storeBuild) {
+            upload {
+                storeFile rootProject.file(uploadKey['storeFile'])
+                storePassword uploadKey['storePassword']
+                keyAlias uploadKey['keyAlias']
+                keyPassword uploadKey['keyPassword']
+            }
         }
     }
     buildTypes {
+        debug {
+            applicationIdSuffix ".dev"
+        }
         release {
-            signingConfig signingConfigs.candidateRelease
+            if (!storeBuild) {
+                applicationIdSuffix ".dev"
+            }
+            signingConfig storeBuild ? signingConfigs.upload : signingConfigs.debug
             shrinkResources true
             minifyEnabled true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"

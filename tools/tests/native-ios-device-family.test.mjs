@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
 const SHIPPING_PROJECT = 'ios/App/App.xcodeproj/project.pbxproj';
-const NATIVE_PROJECT = 'experiments/native-architecture/ios/HelloWorld.xcodeproj/project.pbxproj';
+const NATIVE_PROJECT = 'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj';
 const SHIPPING_PLIST = 'ios/App/App/Info.plist';
-const NATIVE_PLIST = 'experiments/native-architecture/ios/HelloWorld/Info.plist';
+const NATIVE_PLIST = 'experiments/native-architecture/ios/Splotch/Info.plist';
 const ORIENTATION_KEYS = [
   'UISupportedInterfaceOrientations',
   'UISupportedInterfaceOrientations~ipad',

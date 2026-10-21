@@ -6,11 +6,12 @@ store artifacts. The committed release Markdown is the source of truth for every
 
 ## Entry points
 
-| Entry point                     | Public command              | Purpose                                       |
-| ------------------------------- | --------------------------- | --------------------------------------------- |
-| `cut-release.mjs`               | `npm run release <version>` | Version, commit, tag, and optionally publish  |
-| `gen-release-notes.mjs`         | `npm run gen:releases`      | Regenerate app and store release notes        |
-| `publish-release-artifacts.mjs` | `npm run release:publish`   | Verify and attach built `.aab` / `.ipa` files |
+| Entry point                     | Public command                                     | Purpose                                                                                         |
+| ------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `cut-release.mjs`               | `npm run release <version>`                        | Version, commit, tag, and optionally publish                                                    |
+| `gen-release-notes.mjs`         | `npm run gen:releases`                             | Regenerate app and store release notes                                                          |
+| `build-native-release.mjs`      | `npm run native:android:*`, `npm run native:ios:*` | Build the React Native app's store `.aab` / `.xcarchive` / `.ipa`, or its `.dev` Release `.apk` |
+| `publish-release-artifacts.mjs` | `npm run release:publish`                          | Verify and attach built `.aab` / `.ipa` files                                                   |
 
 The public commands remain stable during the tools naming migration. The `cut-release`, `build`, and
 `publish-artifacts` skills own the human approval and signed-build workflow around these scripts.
@@ -54,12 +55,29 @@ not push or create the GitHub Release. Unknown flags fail closed so a misspelled
 fall through to publishing. This command deliberately never attaches native artifacts: the new
 version must be committed before a correctly versioned binary can be built.
 
+## Build native artifacts
+
+The stores ship the React Native app in `experiments/native-architecture`;
+`tools/release/lib/native-app.mjs` names its identity, projects, and artifact paths.
+`build-native-release.mjs` deletes a target's previous output, then runs Gradle or `pod install` and
+`xcodebuild` in the app's project. Store identity is opt-in: Gradle's `splotch.store` property and
+`experiments/native-architecture/ios/Store.xcconfig` are the only switches from
+`art.splotch.app.dev` to `art.splotch.app`, and the `bundle`, `archive`, and `ipa` targets are their
+only callers. The `apk` target is the Release-optimized `.dev` app for installing beside the store
+copy. `tools/release/tests/native-app.test.mjs` fails when the native projects stop declaring that
+identity or another package script reaches the opt-in.
+
+```sh
+npm run native:android:bundle   # needs experiments/native-architecture/android/keystore.properties
+npm run native:ios:ipa          # needs experiments/native-architecture/ios/local.xcconfig
+```
+
 ## Publish native artifacts
 
 `publish-release-artifacts.mjs` needs an existing GitHub Release, authenticated `gh`, and at least
-one built native artifact. It reads embedded versions from the Android bundle and iOS archive,
-compares them with `package.json` and the pinned Android version code in the release document, and
-refuses mismatches before uploading anything.
+one built native artifact. It reads the embedded app ID and version from the Android bundle and iOS
+archive, compares them with `art.splotch.app`, `package.json`, and the pinned Android version code
+in the release document, and refuses mismatches before uploading anything.
 
 ```sh
 npm run release:publish -- --dry-run
@@ -69,7 +87,7 @@ npm run release:publish
 
 Pass an explicit semver to publish a version other than `package.json`; use `--only=android` or
 `--only=ios` for a deliberate single-platform upload. Uploads use GitHub's clobber behavior only
-after every selected artifact passes its embedded-version check.
+after every selected artifact passes its embedded app ID and version checks.
 
 ## Retain released coloring-pack files
 
@@ -106,12 +124,13 @@ catalog.
 ## Libraries and failure behavior
 
 `lib/release-frontmatter.mjs` owns frontmatter, the version-matches-filename rule, semver ordering,
-and deep writes; `lib/native-version.mjs` owns reading and editing the Android/iOS project versions;
-`lib/artifact-version.mjs` owns embedded native-artifact inspection (the aapt2 protobuf scan, the
-`plutil` plist read, and the `.aab`/`.ipa` version semantics); `lib/aab-r8-mapping.mjs` requires
-Android's embedded R8 compiler metadata and class mappings before publishing (including a dry run);
-and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing read-only `readEntry`. Keep
-version parsing and validation in these owned modules rather than duplicating it in entry points.
+and deep writes; `lib/native-version.mjs` owns reading and editing the React Native app's
+Android/iOS project versions; `lib/artifact-version.mjs` owns embedded native-artifact inspection
+(the aapt2 protobuf scan, the `plutil` plist read, and the `.aab`/`.ipa` version semantics);
+`lib/aab-r8-mapping.mjs` requires Android's embedded R8 compiler metadata and class mappings before
+publishing (including a dry run); and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing
+read-only `readEntry`. Keep version parsing and validation in these owned modules rather than
+duplicating it in entry points.
 
 The R8 mapping guard rejects unmapped bundles even when their version matches. It does not measure
 performance or prove all optimizer settings: the native release configuration tests pin code and

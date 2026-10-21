@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readReleases } from '../gen-release-notes.mjs';
+import { IOS_PROJECT_DIR, IOS_PROJECT_NAME } from '../lib/native-app.mjs';
 import {
   ANDROID_GRADLE_PATH,
   bumpAndroidGradle,
@@ -31,6 +32,21 @@ it('keeps the committed package, native, and newest release versions in agreemen
   expect(Number(newest.meta.androidVersionCode)).toBe(android.versionCode);
 });
 
+// The pbxproj values reach the built app only through these two substitutions; a literal
+// here would ship that literal whatever version the cut wrote.
+it('builds the iOS app version from the project values the bump writes', () => {
+  const plist = readFileSync(
+    join(repoRoot, IOS_PROJECT_DIR, IOS_PROJECT_NAME, 'Info.plist'),
+    'utf8'
+  );
+  expect(plist).toMatch(
+    /<key>CFBundleShortVersionString<\/key>\s*<string>\$\(MARKETING_VERSION\)<\/string>/
+  );
+  expect(plist).toMatch(
+    /<key>CFBundleVersion<\/key>\s*<string>\$\(CURRENT_PROJECT_VERSION\)<\/string>/
+  );
+});
+
 // The shapes the bump refuses to rewrite. The reader refuses the same ones, so a cut
 // never chooses its versionCode from a line the bump would then reject or miss.
 const REFUSED_GRADLE_SHAPES = [
@@ -52,7 +68,7 @@ const REFUSED_GRADLE_SHAPES = [
   [
     'a duplicate versionName assignment',
     `${realGradle}\nversionName "2.0.0"\n`,
-    /Expected exactly one "versionName" in android\/app\/build\.gradle, found 2/,
+    /Expected exactly one "versionName" in .*android\/app\/build\.gradle, found 2/,
   ],
   [
     'a missing versionName',

@@ -8,12 +8,11 @@ import { readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { basename, dirname, extname, join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
+import { IOS_PROJECT_DIR, NATIVE_APP_DIR } from '../../release/lib/native-app.mjs';
 
-export const APP_DIR = join(ROOT, 'experiments', 'native-architecture');
-const IOS_DIR = join(APP_DIR, 'ios');
+export const APP_DIR = join(ROOT, NATIVE_APP_DIR);
+const IOS_DIR = join(ROOT, IOS_PROJECT_DIR);
 export const PLATFORMS = ['android', 'ios'];
-// The Play Store and App Store app. A swapped bundle never goes near it.
-export const STORE_BUNDLE_ID = 'art.splotch.app';
 
 // Where each native build puts the bundle. Hermes records the compiled file's source name, so the
 // intermediate JavaScript file carries the same name.

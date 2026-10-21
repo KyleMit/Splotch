@@ -104,7 +104,7 @@ describe('parseExpected', () => {
 describe('inspectArtifact on an Android bundle', () => {
   const unsigned =
     'unsigned: no META-INF/*.RSA, *.DSA or *.EC signature block; ' +
-    'rebuild it with android/keystore.properties in place';
+    'rebuild it with experiments/native-architecture/android/keystore.properties in place';
   let dir;
 
   beforeAll(() => {
@@ -123,7 +123,7 @@ describe('inspectArtifact on an Android bundle', () => {
     'accepts a bundle whose JAR signature block is %s',
     (signatureBlock) => {
       expect(inspectBundle(releaseBundle({ signatureBlock }))).toEqual({
-        actual: { versionName: '1.6.0', versionCode: '8' },
+        actual: { appId: 'art.splotch.app', versionName: '1.6.0', versionCode: '8' },
         problems: [],
       });
     }
@@ -141,6 +141,17 @@ describe('inspectArtifact on an Android bundle', () => {
       expect(inspectBundle(releaseBundle({ signatureBlock })).problems).toEqual([unsigned]);
     }
   );
+
+  // The opt-in is what separates the store build from a Release build installed for
+  // testing; a bundle built without it would upload as a different Play app.
+  it.each([
+    ['the .dev app ID of a local build', 'art.splotch.app.dev', 'art.splotch.app.dev'],
+    ['no app ID', null, 'none'],
+  ])('refuses a bundle with %s', (_name, appId, reported) => {
+    expect(inspectBundle(releaseBundle({ appId })).problems).toEqual([
+      `app ID is ${reported}, expected art.splotch.app`,
+    ]);
+  });
 
   it('refuses a bundle whose manifest carries no versionCode', () => {
     expect(inspectBundle(releaseBundle({ versionCode: null })).problems).toEqual([
@@ -190,7 +201,7 @@ describe('cut-release.mjs', () => {
   const source = readFileSync(join(ROOT, 'tools', 'release', 'cut-release.mjs'), 'utf8');
 
   it('never attaches a build artifact to the GitHub release it creates', () => {
-    expect(source).not.toMatch(/RELEASE_AAB|RELEASE_IPA|app-release\.aab|App\.ipa/);
+    expect(source).not.toMatch(/RELEASE_AAB|RELEASE_IPA|app-release\.aab|(?:App|Splotch)\.ipa/);
   });
 
   it('points at the separate publish step instead', () => {

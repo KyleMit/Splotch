@@ -247,8 +247,8 @@ describe('releaseSetPaths', () => {
   it('is exactly the version files, the release document, and every generator output', () => {
     expect(RELEASE_SET).toEqual([
       'package.json',
-      'android/app/build.gradle',
-      'ios/App/App.xcodeproj/project.pbxproj',
+      'experiments/native-architecture/android/app/build.gradle',
+      'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj',
       'releases/1.7.0.md',
       'web/src/lib/releaseHues.ts',
       'web/src/lib/releases.json',
@@ -269,9 +269,12 @@ describe('findStrayReleasePaths', () => {
   });
 
   it('refuses a changed file beside the version files, such as Info.plist', () => {
-    expect(findStrayReleasePaths(listing(' M ios/App/App/Info.plist'), RELEASE_SET)).toEqual([
-      'ios/App/App/Info.plist',
-    ]);
+    expect(
+      findStrayReleasePaths(
+        listing(' M experiments/native-architecture/ios/Splotch/Info.plist'),
+        RELEASE_SET
+      )
+    ).toEqual(['experiments/native-architecture/ios/Splotch/Info.plist']);
   });
 
   // The generator reads every releases/*.md, so a draft of the next release would
@@ -450,6 +453,7 @@ const RELEASE_SCRIPTS = [
   'tools/lib/proc.mjs',
   'tools/release/cut-release.mjs',
   'tools/release/gen-release-notes.mjs',
+  'tools/release/lib/native-app.mjs',
   'tools/release/lib/native-version.mjs',
   'tools/release/lib/release-frontmatter.mjs',
   'tools/release/lib/release-markdown.mjs',
@@ -472,7 +476,8 @@ describe('a release cut in a scratch checkout', () => {
         RELEASE_SCRIPTS.map((path) => [path, readFileSync(join(repoRoot, path), 'utf8')])
       ),
       ...HEAD_VERSION_FILES,
-      'ios/App/App/Info.plist': '<plist version="1.0"><dict/></plist>\n',
+      'experiments/native-architecture/ios/Splotch/Info.plist':
+        '<plist version="1.0"><dict/></plist>\n',
       'releases/1.6.0.md': releaseDocument('1.6.0', 8),
     });
     execFileSync('node', ['tools/release/gen-release-notes.mjs'], { cwd: root });
@@ -497,14 +502,15 @@ describe('a release cut in a scratch checkout', () => {
   it('refuses a stray change before writing anything', { timeout: SCRATCH_CUT_TIMEOUT_MS }, () => {
     const { root, git, cut, contents } = scratchCheckout();
     writeFiles(root, {
-      'ios/App/App/Info.plist': '<plist version="1.0"><dict/><!-- x --></plist>\n',
+      'experiments/native-architecture/ios/Splotch/Info.plist':
+        '<plist version="1.0"><dict/><!-- x --></plist>\n',
     });
     const before = contents();
 
     const result = cut('--no-publish');
 
     expect(result.stderr).toContain(
-      'Working tree has changes outside the release set:\n  ios/App/App/Info.plist\n'
+      'Working tree has changes outside the release set:\n  experiments/native-architecture/ios/Splotch/Info.plist\n'
     );
     expect(result.status).toBe(1);
     expect(contents()).toEqual(before);
@@ -523,11 +529,11 @@ describe('a release cut in a scratch checkout', () => {
       expect(release.status, release.stderr).toBe(0);
 
       expect(git('show', '--name-only', '--format=', 'HEAD').trim().split('\n').sort()).toEqual([
-        'android/app/build.gradle',
+        'experiments/native-architecture/android/app/build.gradle',
+        'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj',
         'experiments/native-architecture/src/information/releaseNotes.generated.json',
         'fastlane/metadata/android/en-US/changelogs/9.txt',
         'fastlane/metadata/en-US/release_notes.txt',
-        'ios/App/App.xcodeproj/project.pbxproj',
         'package.json',
         'releases/1.7.0.md',
         'web/src/lib/components/page/ReleaseHistory.svelte',
@@ -608,7 +614,7 @@ describe('a release cut in a scratch checkout', () => {
 
   it('fails a cut whose iOS project is missing', { timeout: SCRATCH_CUT_TIMEOUT_MS }, () => {
     const { root, git, cut } = scratchCheckout();
-    rmSync(join(root, 'ios'), { recursive: true });
+    rmSync(join(root, dirname(IOS_PBXPROJ_PATH)), { recursive: true });
     git('add', '-A');
     git('commit', '-qm', 'no iOS project');
 

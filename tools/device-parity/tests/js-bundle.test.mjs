@@ -31,8 +31,8 @@ const native = {
   configuration: read(`${KOTLIN}/TaskConfiguration.kt`),
   appGradle: read('experiments/native-architecture/android/app/build.gradle'),
   gradleProperties: read('experiments/native-architecture/android/gradle.properties'),
-  xcodeProject: read('experiments/native-architecture/ios/HelloWorld.xcodeproj/project.pbxproj'),
-  infoPlist: read('experiments/native-architecture/ios/HelloWorld/Info.plist'),
+  xcodeProject: read('experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj'),
+  infoPlist: read('experiments/native-architecture/ios/Splotch/Info.plist'),
   expoEmbedOptions: read('node_modules/@expo/cli/build/src/export/embed/resolveOptions.js'),
 };
 const PATH = '<path>';
@@ -201,7 +201,7 @@ describe('Android assets', () => {
 
   it('reads resource names from aapt2’s dump', () => {
     const dump = [
-      'Package name=art.splotch.migration.probe id=7f',
+      'Package name=art.splotch.app.dev id=7f',
       '  type raw id=11 entryCount=2',
       '    resource 0x7f110005 raw/src_audio_tap',
       '      () (file) res/Aa.wav type=UNKNOWN',

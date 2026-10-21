@@ -6,7 +6,7 @@ const argvFor = (target, fingers) => [
   '--session=no/such/session.json',
   `--target=${target}`,
   '--bundle=art.example.app',
-  '--process-name=HelloWorld',
+  '--process-name=Splotch',
   '--out=no/such/out',
   `--fingers=${fingers}`,
 ];

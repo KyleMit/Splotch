@@ -1,10 +1,11 @@
 ---
 name: publish-artifacts
-description: Attach the built .aab/.ipa to the GitHub Release for a version, verifying each artifact's embedded version first. Use after the cut-release and build skills, or whenever a GitHub Release is missing its binaries or has the wrong ones attached.
+description: Attach the built .aab/.ipa to the GitHub Release for a version, verifying each artifact's embedded app ID and version first. Use after the cut-release and build skills, or whenever a GitHub Release is missing its binaries or has the wrong ones attached.
 ---
 
-You are attaching Splotch's **built store artifacts** to an existing GitHub Release. This is the
-third and last phase of shipping:
+You are attaching Splotch's **built store artifacts** — the React Native app's, from
+`experiments/native-architecture` — to an existing GitHub Release. This is the third and last phase
+of shipping:
 
 | Phase      | Skill               | Produces                                                |
 | ---------- | ------------------- | ------------------------------------------------------- |
@@ -28,10 +29,14 @@ which is the one `cut-release` last bumped to.
    — if the expected artifacts are all there, say so and ask whether the user wants to re-upload
    (the script clobbers by design, so re-running is safe and is the right fix for a wrong asset).
 
-2. **Verify before uploading.** Run `npm run release:publish -- --dry-run`. This reads the version
-   out of each artifact's own bytes (the `.aab`'s protobuf `AndroidManifest.xml`, the `.ipa`'s
-   `Info.plist`) and compares both versionName and versionCode against `releases/<version>.md`.
-   Report exactly what it found before doing anything else.
+2. **Verify before uploading.** Run `npm run release:publish -- --dry-run`. This reads the app ID
+   and version out of each artifact's own bytes (the `.aab`'s protobuf `AndroidManifest.xml`, the
+   `.ipa`'s `Info.plist`), compares the app ID against the store's `art.splotch.app` and both
+   versionName and versionCode against `releases/<version>.md`, and requires the `.aab`'s signature
+   block and R8 mapping. It reads
+   `experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab` and
+   `experiments/native-architecture/ios/build/ipa/Splotch.ipa`. Report exactly what it found before
+   doing anything else.
 
 3. **Handle the outcomes.** Do not work around a refusal — every one of them means the upload would
    have been wrong:
@@ -40,6 +45,9 @@ which is the one `cut-release` last bumped to.
      version's file. Tell the user which artifact and which version, and that the fix is to run
      `build` for this version. Never delete the stale file and upload the other one silently, and
      never pass a flag to skip the check.
+   * **A `.dev` app ID** — the artifact is a local build, not the store build. The fix is the
+     `build` skill's store scripts (`npm run native:android:bundle`, `npm run native:ios:ipa`),
+     which are the only builds that opt into `art.splotch.app`.
    * **Nothing built** — no artifacts on disk at all. Point at `build`.
    * **Only one platform built** — normal (iOS needs macOS + Xcode). Use `--only=android` /
      `--only=ios` to publish just the one that is ready, and say which platform is still missing so

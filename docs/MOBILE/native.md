@@ -10,9 +10,11 @@ see **[android.md](android.md)** and **[ios.md](ios.md)**.
 > Both platforms are active: the `android/` and `ios/` projects live in the repo. Android
 > development works on macOS or Linux; iOS builds require macOS + Xcode.
 
-The React Native migration app builds separately, from `experiments/native-architecture`. Its
-`DEVELOPMENT.md` covers the builds and how to check a JS-only change on a device without a native
-rebuild.
+The store release builds the React Native app in `experiments/native-architecture`, under the
+shipping identity `art.splotch.app` (the `native:*` release scripts in
+[android.md](android.md#react-native-store-build) and [ios.md](ios.md#react-native-store-build)).
+Every other build of it is `art.splotch.app.dev`. Its `DEVELOPMENT.md` covers development builds and
+how to check a JS-only change on a device without a native rebuild.
 
 ## 1. How the native build works
 

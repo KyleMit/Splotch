@@ -1,0 +1,5 @@
+// Copy this file to "local.xcconfig" (same folder) and fill in the team.
+// local.xcconfig is git-ignored. Splotch.xcconfig includes it in every build and
+// Store.xcconfig includes it in the store archive.
+// The store app must keep the shipping app's team so the archive updates it in place.
+DEVELOPMENT_TEAM = YOUR10CHARID

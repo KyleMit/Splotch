@@ -9,7 +9,7 @@ const shipping = {
 };
 const candidate = {
   activity: read(
-    'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/MainActivity.kt'
+    'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainActivity.kt'
   ),
   manifest: read('experiments/native-architecture/android/app/src/main/AndroidManifest.xml'),
   gradle: read('experiments/native-architecture/android/gradle.properties'),

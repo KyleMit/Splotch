@@ -1,0 +1,7 @@
+// The store opt-in. Only the release scripts pass this file (`xcodebuild -xcconfig`),
+// and only they produce the art.splotch.app binary that installs over the App Store
+// copy; every other build keeps the target's SPLOTCH_APP_ID_SUFFIX of .dev.
+// A -xcconfig file applies to every target in the build, so the team in
+// local.xcconfig reaches the Pods targets too.
+SPLOTCH_APP_ID_SUFFIX =
+#include? "local.xcconfig"

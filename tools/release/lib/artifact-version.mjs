@@ -48,7 +48,11 @@ export function readAabVersion(aabPath) {
   const versionName = readManifestAttribute(manifest, 'versionName');
   const versionCode = readManifestAttribute(manifest, 'versionCode');
   if (!versionName) throw new Error(`${aabPath}: no versionName in ${ANDROID_MANIFEST}`);
-  return { versionName, versionCode: versionCode ?? null };
+  return {
+    appId: readManifestAttribute(manifest, 'package'),
+    versionName,
+    versionCode: versionCode ?? null,
+  };
 }
 
 export function readIpaVersion(ipaPath) {
@@ -68,6 +72,7 @@ export function readIpaVersion(ipaPath) {
   const versionName = info.CFBundleShortVersionString;
   if (!versionName) throw new Error(`${ipaPath}: no CFBundleShortVersionString in Info.plist`);
   return {
+    appId: info.CFBundleIdentifier ?? null,
     versionName,
     versionCode: info.CFBundleVersion == null ? null : String(info.CFBundleVersion),
   };

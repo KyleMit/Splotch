@@ -17,7 +17,7 @@ const NATIVE_BRANDING_TREES = [
   },
   {
     shipping: 'ios/App/App/Assets.xcassets',
-    native: `${NATIVE}/ios/HelloWorld/Images.xcassets`,
+    native: `${NATIVE}/ios/Splotch/Images.xcassets`,
     branding: /^(?:AppIcon\.appiconset|Splash\.imageset)\//,
   },
 ];
@@ -25,7 +25,7 @@ const NATIVE_BRANDING_TREES = [
 // Info.plist's UILaunchStoryboardName names the native launch screen; its contents are shipping's.
 export const NATIVE_LAUNCH_SCREEN = {
   shipping: 'ios/App/App/Base.lproj/LaunchScreen.storyboard',
-  native: `${NATIVE}/ios/HelloWorld/SplashScreen.storyboard`,
+  native: `${NATIVE}/ios/Splotch/SplashScreen.storyboard`,
 };
 
 function brandingFiles(root, tree, side) {

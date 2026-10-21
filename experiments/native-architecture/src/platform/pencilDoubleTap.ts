@@ -1,6 +1,6 @@
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 
-// Emitted by ios/HelloWorld/SplotchPencil.swift; native-pencil-double-tap.test.mjs reads both sides.
+// Emitted by ios/Splotch/SplotchPencil.swift; native-pencil-double-tap.test.mjs reads both sides.
 export const PENCIL_DOUBLE_TAP_EVENT = 'pencilDoubleTap';
 
 type PencilEmitter = {

@@ -6,9 +6,9 @@ import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/dra
 const APP = join(import.meta.dirname, '../../../experiments/native-architecture');
 const read = (path) => readFileSync(join(APP, path), 'utf8');
 const JS = read('src/platform/backdropBlur.tsx');
-const SWIFT = read('ios/HelloWorld/SplotchBackdropBlur.swift');
-const OBJC = read('ios/HelloWorld/SplotchBackdropBlur.m');
-const PROJECT = read('ios/HelloWorld.xcodeproj/project.pbxproj');
+const SWIFT = read('ios/Splotch/SplotchBackdropBlur.swift');
+const OBJC = read('ios/Splotch/SplotchBackdropBlur.m');
+const PROJECT = read('ios/Splotch.xcodeproj/project.pbxproj');
 
 const sorted = (values) => [...new Set(values)].sort();
 const jsKeys = () =>

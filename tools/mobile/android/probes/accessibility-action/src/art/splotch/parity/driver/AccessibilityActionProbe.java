@@ -164,8 +164,8 @@ public final class AccessibilityActionProbe extends Instrumentation {
 
     private JSONObject runProbe() throws Exception {
         String expected = arguments.getString("expectedPackage", "");
-        if (!expected.equals("art.splotch.migration.probe")) {
-            throw new IllegalArgumentException("Only the mutable migration probe is admitted");
+        if (!expected.equals("art.splotch.app.dev")) {
+            throw new IllegalArgumentException("Only the .dev app is admitted");
         }
         String operation = arguments.getString("operation", "inspect");
         if (!operation.equals("inspect") && !operation.equals("click")) {

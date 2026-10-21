@@ -5,7 +5,7 @@ const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url)
 
 const hubRowFace = read('experiments/native-architecture/src/rsdDrawing/hubRowFace.native.ts');
 const application = read(
-  'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt'
+  'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainApplication.kt'
 );
 
 // The family the hub rows name natively, and the one Android registers as the system typeface.

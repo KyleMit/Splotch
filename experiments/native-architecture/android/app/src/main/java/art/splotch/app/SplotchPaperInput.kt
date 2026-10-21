@@ -1,4 +1,4 @@
-package art.splotch.migration.probe
+package art.splotch.app
 
 import android.view.MotionEvent
 import androidx.core.view.ViewCompat

@@ -4,7 +4,7 @@ import type { PaperInput } from './paperInput';
 // The native log tag (Android) and category (iOS) every line is written under, and the line's
 // own `probe` field, so a host filter on either finds it.
 export const PERF_LOG_TAG = 'SplotchPerf';
-// SplotchPerfLog (ios/HelloWorld/SplotchPerfLog.swift, android .../SplotchPerfLog.kt) writes one
+// SplotchPerfLog (ios/Splotch/SplotchPerfLog.swift, android .../SplotchPerfLog.kt) writes one
 // line to the device log under PERF_LOG_TAG; native-perf-probe.test.mjs reads both sides.
 export const PERF_LOG_MODULE = 'SplotchPerfLog';
 export const PERF_LINE_VERSION = 3;

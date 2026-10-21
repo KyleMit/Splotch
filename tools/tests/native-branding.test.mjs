@@ -57,8 +57,8 @@ describe('native launcher icon and splash copied from the shipping Capacitor ass
         `${NATIVE_RES}/drawable/ic_launcher_monochrome.xml`,
         `${NATIVE_RES}/drawable/splash.png`,
         `${NATIVE_RES}/drawable-land-night-xxhdpi/splash.png`,
-        `${NATIVE_IOS}/HelloWorld/Images.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`,
-        `${NATIVE_IOS}/HelloWorld/Images.xcassets/Splash.imageset/Default@3x~universal~anyany-dark.png`,
+        `${NATIVE_IOS}/Splotch/Images.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`,
+        `${NATIVE_IOS}/Splotch/Images.xcassets/Splash.imageset/Default@3x~universal~anyany-dark.png`,
         NATIVE_LAUNCH_SCREEN.native,
       ])
     );
@@ -74,10 +74,10 @@ describe('native launcher icon and splash copied from the shipping Capacitor ass
     expect(manifest).toContain('android:icon="@mipmap/ic_launcher"');
     expect(manifest).toContain('android:roundIcon="@mipmap/ic_launcher_round"');
     expect(manifest).toContain('android:theme="@style/Theme.App.SplashScreen"');
-    expect(read(`${NATIVE_IOS}/HelloWorld/Info.plist`)).toMatch(
+    expect(read(`${NATIVE_IOS}/Splotch/Info.plist`)).toMatch(
       /<key>UILaunchStoryboardName<\/key>\s*<string>SplashScreen<\/string>/
     );
-    expect(read(`${NATIVE_IOS}/HelloWorld.xcodeproj/project.pbxproj`)).toContain(
+    expect(read(`${NATIVE_IOS}/Splotch.xcodeproj/project.pbxproj`)).toContain(
       'ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;'
     );
   });
@@ -101,11 +101,11 @@ describe('native launcher icon and splash copied from the shipping Capacitor ass
     write(root, splash, 'edited splash');
     write(root, `${NATIVE_RES}/mipmap-xxhdpi/ic_launcher_round.webp`, 'template launcher');
     rmSync(
-      join(root, `${NATIVE_IOS}/HelloWorld/Images.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`)
+      join(root, `${NATIVE_IOS}/Splotch/Images.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`)
     );
     expect(nativeBrandingDrift(root)).toEqual([
       `differs from shipping: ${splash}`,
-      `differs from shipping: ${NATIVE_IOS}/HelloWorld/Images.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`,
+      `differs from shipping: ${NATIVE_IOS}/Splotch/Images.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`,
       `no shipping counterpart: ${NATIVE_RES}/mipmap-xxhdpi/ic_launcher_round.webp`,
     ]);
     expect(() => generateNativeBranding(['--check'], root)).toThrow(

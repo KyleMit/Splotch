@@ -1,4 +1,4 @@
-package art.splotch.migration.probe
+package art.splotch.app
 
 import androidx.lifecycle.Observer
 import androidx.work.Constraints

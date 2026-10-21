@@ -265,12 +265,10 @@ it('binds both native paper views to the same direct event and public metadata A
   const adapter = read('src/drawing/PaperInputView.tsx');
   const surface = read('src/drawing/DrawingSurface.tsx');
   const webAdapter = read('src/drawing/PaperInputView.web.tsx');
-  const android = read(
-    'android/app/src/main/java/art/splotch/migration/probe/SplotchPaperInput.kt'
-  );
-  const ios = read('ios/HelloWorld/SplotchPaperInput.swift');
-  const bridge = read('ios/HelloWorld/SplotchPaperInput.m');
-  const project = read('ios/HelloWorld.xcodeproj/project.pbxproj');
+  const android = read('android/app/src/main/java/art/splotch/app/SplotchPaperInput.kt');
+  const ios = read('ios/Splotch/SplotchPaperInput.swift');
+  const bridge = read('ios/Splotch/SplotchPaperInput.m');
+  const project = read('ios/Splotch.xcodeproj/project.pbxproj');
   expect(adapter).toContain("requireNativeComponent<NativeProps>('SplotchPaperInput')");
   expect(adapter).toContain("Omit<ViewProps, 'pointerEvents'>");
   expect(surface).not.toContain('pointerEvents="box-only"');
