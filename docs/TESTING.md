@@ -21,8 +21,8 @@ that touches a native input, in a path-filtered workflow nothing waits on.
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL       |
 | Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (RN web export)            |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (RN web export)            |
-| Compile (Android)     | Gradle javac        | `npm run android:compile`              | PRs touching native inputs (path-filtered) |
-| Compile (iOS)         | xcodebuild          | `npm run ios:build:release`            | PRs touching native inputs (macOS runner)  |
+| Build (Android)       | Gradle Release APK  | `npm run native:android:apk`           | PRs touching the RN app (path-filtered)    |
+| Build (iOS)           | xcodebuild          | `npm run native:ios:simulator`         | PRs touching the RN app (macOS runner)     |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`                 | **tagged releases only** (API 33 + API 24) |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                     | **tagged releases only** (macOS runner)    |
 
@@ -767,20 +767,22 @@ run — no separate command or workflow:
 ### What it does and why
 
 The web E2E suite runs in a browser, so it can't tell you whether the *shipped native app* actually
-boots. The smoke test fills that gap: it installs the app on a real Android emulator or iOS
-simulator, launches it, and asserts that the UI renders — proving the Capacitor WebView started
-**and** loaded the production web bundle (not a white screen or a crash).
+boots. The smoke test fills that gap: it installs the React Native app's Release build under the
+store identity (`art.splotch.app`) on a real Android emulator or iOS simulator, launches it, and
+asserts that the UI renders — proving native startup and the embedded JavaScript bundle worked (not
+a blank screen or a crash).
 
-The assertion is a single, meaningful signal: the **"Settings"** button (the always-present corner
-button, `web/src/lib/components/SettingsButton.svelte`) must become visible. Seeing its
-accessibility label means real UI painted, not just that the process launched.
+The assertion is a single, meaningful signal: the **"Settings"** button (the drawing screen's corner
+button, `experiments/native-architecture/src/rsdDrawing/RsdEdgeControls.tsx`) must become visible.
+Seeing its accessibility label means real UI painted, not just that the process launched.
 
 That the flow stops there is a decision, not an omission — **ADR-0120**. Steps that navigated the UI
 broke on a UI change within three releases every time they were added, and because these workflows
 are tag-only, each break surfaced as a red release gate instead of a failing PR. Coverage of what
 the UI *does* belongs in Playwright, which runs on every push and can select elements properly. Do
-not grow this flow; `tools/tests/native-smoke-flow.test.mjs` fails on `npm test` if it selects a
-string the app no longer renders, or selects by pattern instead of by exact label.
+not grow this flow; `tools/tests/native-smoke-flow.test.mjs` fails on `npm test` if the component
+that owns a selected label stops declaring it, or if the flow selects by pattern instead of by exact
+label.
 
 ### The flow
 
@@ -798,9 +800,9 @@ appId: art.splotch.app
 ```
 
 `takeScreenshot` writes `smoke-launch.png` under `.maestro/screenshots/`; it's git-ignored. On CI
-the whole Maestro report — flow log plus the screenshot taken at a failing step — is uploaded as a
-build artifact, and a failure on a **tag** push files or comments on a GitHub issue, since nobody is
-watching a tag-triggered run at the moment it goes red.
+the whole Maestro report — flow log, that screenshot, and the screenshot taken at a failing step —
+is uploaded as a build artifact, and a failure on a **tag** push files or comments on a GitHub
+issue, since nobody is watching a tag-triggered run at the moment it goes red.
 
 The iOS job budgets XCTest driver startup with `MAESTRO_DRIVER_STARTUP_TIMEOUT` separately from the
 flow's app-paint timeout. Its report also retains `~/Library/Logs/maestro/xctest_runner_logs/`:
@@ -812,22 +814,22 @@ with no flow execution or screenshot.
 
 After a Maestro failure, `test:ios` also captures a bounded diagnostic relaunch of the installed app
 in `~/.maestro/tests/ios-app-relaunch.log` before simulator teardown. The console can expose native
-or WebView startup errors; it describes a second launch and does not replace the original failure
+or JavaScript startup errors; it describes a second launch and does not replace the original failure
 evidence. A successful relaunch never changes the smoke result.
 
 ### npm scripts
 
 ```bash
-npm run test:android          # headless one-shot: boot → build+install → test → tear down
-npm run test:android:device   # run against an emulator you already have running
+npm run test:android          # headless one-shot: build → boot → install → test → tear down
+npm run test:android:device   # run against the store-identity app on an emulator you already have running
 npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
-| Script                | What happens                                                                                                                                                                                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
-| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                      |
-| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.      |
+| Script                | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: builds the `.dev` Release APK (`native:android:apk`), boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`) on a console port no other emulator holds, installs the APK with `adb -s`, runs Maestro against `art.splotch.app.dev`, and **always** kills that emulator afterward — even on failure. It smokes `.dev` because a store-identity APK signs with whatever key `keystore.properties` names, which locally is the upload key or nothing; the flow runs from a copy whose only change is its `appId`. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected, for the store-identity app (`art.splotch.app`). Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                                                                                                                                                                                                                                           |
+| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: builds the store-identity Release simulator app (`native:ios:simulator`), boots a shut-down iPhone simulator on the newest runtime — never one someone else booted — installs via `simctl`, runs the same Maestro flow, and shuts that simulator down. `--skip-build` installs the app an earlier `native:ios:simulator` built. No signing required.                                                                                                                                                                  |
 
 > The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
@@ -878,10 +880,14 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 # Simplest — one command, nothing to clean up:
 npm run test:android
 
-# Fast iteration — boot once, run many times:
-npm run android:emulator        # boot + build + install (or: boot an AVD, then npm run android:run)
+# Fast iteration — boot once, install the store-identity APK, run many times:
+npm run android:boot            # boot the AVD
+npm run native:android:apk:store  # needs experiments/native-architecture/android/keystore.properties
+adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 npm run test:android:device     # re-run as often as you like
 ```
+
+Install a store-identity build on an emulator or simulator only, never on a physical device.
 
 ---
 
@@ -890,9 +896,9 @@ npm run test:android:device     # re-run as often as you like
 | Workflow                                    | Trigger                                           | What it runs                                                                                                                                                      |
 | ------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.github/workflows/test.yml`                | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs                                                           |
-| `.github/workflows/android-deploy.yml`      | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                      |
-| `.github/workflows/ios-deploy.yml`          | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                     |
-| `.github/workflows/native-compile.yml`      | PRs and `main` pushes touching native inputs      | Android Release Java compile (no web build) and iOS Release simulator compile, in parallel with `test.yml`; no emulator or simulator boots                        |
+| `.github/workflows/android-deploy.yml`      | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed, store-identity React Native Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                 |
+| `.github/workflows/ios-deploy.yml`          | **`v*` tag push** + manual `workflow_dispatch`    | Store-identity React Native Release simulator build without signing, then the Maestro boot smoke on that same app (macOS runner)                                  |
+| `.github/workflows/native-compile.yml`      | PRs and `main` pushes touching the RN app         | Android `.dev` Release APK build (one ABI) and iOS store-identity Release simulator build, in parallel with `test.yml`; no emulator or simulator boots            |
 | `.github/workflows/hosted-deploy-smoke.yml` | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
@@ -927,21 +933,27 @@ admin secret; without it the automatic job fails at the login step. A manually s
 use that same secret. Production never creates a probe token. A process-level interruption of a
 preview check can strand an unguessable but live `blobs-smoke-*` credential; inspect and remove one
 manually from the admin console because an automatic prefix sweep could race a smoke against another
-URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the debug build targets the
-simulator, so no signing secrets are involved. Both deploy workflows file a tag failure from a
-downstream `report-failure` job keyed on the build and smoke jobs' results, so a job cut off by its
-timeout still files, and only that reporter holds `issues: write`.
+URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the Release build targets the
+simulator without signing, so no signing secrets are involved. Both deploy workflows file a tag
+failure from a downstream `report-failure` job keyed on the build and smoke jobs' results, so a job
+cut off by its timeout still files, and only that reporter holds `issues: write`.
 
 The Native compile workflow (`native-compile.yml`) is the pre-merge half of those tag gates. Its
-path filter is `android/**`, `ios/**`, `capacitor.config.json`, `package.json` (which holds both
-compile commands), `pnpm-lock.yaml`, the Gradle helper and its imports, and the workflow itself. A
-match costs runner minutes, not merge wall clock. Android compiles only the Release Java (the app
-and every Capacitor plugin module): `cap update` regenerates the gitignored Cordova plugin project
-that `settings.gradle` includes, and an empty Android web-assets directory stops it from copying a
-web build that javac never reads. iOS runs the tag gate's `ios:build:release`, web build included,
-because Xcode copies the synced `public/` and `capacitor.config.json` as bundle resources. Neither
-job is required by a branch rule. ADR-0008's 2026-09-28 amendment records both jobs' measured wall
-time against the slowest `test.yml` job.
+path filter is the React Native app (`experiments/native-architecture/**`, minus its Markdown), the
+pnpm inputs (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `patches/**`), the release
+build script and its imports, `setup-pnpm`, the workflow itself, and each module the bundle imports
+from elsewhere in the repository by path (the privacy page's `contents.ts` and `sectionLink.ts`).
+`tools/mobile/tests/native-release-configurations.test.mjs` fails when a build input, or a module
+the app imports from outside its own tree, falls outside it. The shared `web/src/lib` and
+`web/static` trees the bundle imports from are left out on purpose: the Quality job type-checks the
+app against them on every PR, and including them would spend macOS minutes on most web-tree PRs. A
+match costs runner minutes, not merge wall clock. Both jobs are Release builds, so each also bundles
+the JavaScript as the store build embeds it. Android builds the `.dev` Release APK
+(`native:android:apk`) for one ABI, set through `ORG_GRADLE_PROJECT_reactNativeArchitectures`; the
+tagged smoke builds all four. iOS builds `native:ios:simulator` — `pod install`, then the unsigned
+store-identity Release build for the simulator, for the runner's architecture only — the same app
+the iOS deploy smoke installs. Neither job is required by a branch rule. ADR-0008's 2026-09-28
+amendment records the Capacitor-era jobs' measured wall time against the slowest `test.yml` job.
 
 A timing failure is not product evidence until it is causal. Compare the failing head and its exact
 base with the same command and runner class; for noisy gates, use repeated or interleaved runs. If
@@ -952,16 +964,16 @@ gate.
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
 The Android workflow runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
-runners hit an HVF init failure). Its build job generates a disposable test key, builds the
-**Release** APK once with R8 and resource shrinking, and uploads that shared artifact. Both matrix
-legs download and boot the same APK on the current API 33 emulator and the declared API 24 floor.
-The matrix reads those levels from their source modules rather than carrying a second floor literal
-in YAML. Each leg runs `npm run test:android:device` through
-`reactivecircus/android-emulator-runner`; the Play upload key never enters CI. The iOS job first
-compiles a Release simulator app without store signing, with `CODE_SIGNING_ALLOWED=NO`, then runs
-`npm run test:ios` on a macOS runner, which boots a simulator, builds the Debug app, and runs the
-same Maestro flow. The Release compile catches configuration-only failures while the established
-Debug smoke remains the boot signal. Each Maestro leg uploads its own report artifact.
+runners hit an HVF init failure). Its build job generates a disposable test key, builds the React
+Native app's **Release** APK once under the store identity (`native:android:apk:store`), with R8 and
+resource shrinking, and uploads that shared artifact. Both matrix legs download and boot the same
+APK on the current API 33 emulator and the declared API 24 floor. The matrix reads those levels from
+their source modules rather than carrying a second floor literal in YAML. Each leg runs
+`npm run test:android:device` through `reactivecircus/android-emulator-runner`; the Play upload key
+never enters CI. The iOS job builds the store-identity Release simulator app without signing
+(`native:ios:simulator`, `CODE_SIGNING_ALLOWED=NO`), then runs `npm run test:ios -- --skip-build`,
+which boots a simulator, installs that same app, and runs the same Maestro flow. Each Maestro leg
+uploads its own report artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
 > provides a booted emulator — the one-shot would try to boot a second one.
