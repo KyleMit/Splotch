@@ -6,6 +6,7 @@ import { disk, model, resetAiDisk } from './aiStorageHarness.mjs';
 
 import { createAiStorage } from '../../../experiments/native-architecture/src/platform/aiStorage.web.ts';
 import { createNativeAi } from '../../../experiments/native-architecture/src/ai/generation.ts';
+import { aiResultPhase } from '../../../experiments/native-architecture/src/ai/uiState.ts';
 
 const PICTURES = 4;
 const GRANT = '{"ok":true,"remaining":10,"limit":10}';
@@ -140,4 +141,46 @@ it('closes the card when a release fails, and the next picture still starts', as
   );
   owner.dismiss();
   await vi.waitFor(() => expect(storedRuns()).toBe(0));
+});
+
+async function pickSticker(owner) {
+  owner.open();
+  const { x, y } = owner.getState().gate;
+  owner.gateInput(String(x * y));
+  owner.gateAnswer();
+  await vi.waitFor(() => expect(owner.getState().authorized).toBe(true));
+  await vi.waitFor(() => expect(owner.getState().busy).toBe(false));
+  owner.pickStyle('Sticker');
+  await vi.waitFor(() => expect(owner.getState().attempt?.kind).not.toBe('starting'));
+}
+
+const fullDisk = () => new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+
+it('names a full device, and Try again rereads storage and makes the picture once space is freed', async () => {
+  let sent = 0;
+  const owner = aiOwner({ onGenerate: () => (sent += 1) });
+  disk.abort = fullDisk();
+  await pickSticker(owner);
+  expect(sent).toBe(0);
+  expect(aiResultPhase(owner.getState())).toEqual({ kind: 'error', reason: 'storage' });
+  expect(owner.getState().failure).toMatchObject({ storageFull: true });
+  expect(disk.abort).toBe(false);
+
+  owner.retry();
+  await vi.waitFor(() => expect(owner.getState().journal?.phase).toBe('result'));
+  expect(sent).toBe(1);
+  expect(aiResultPhase(owner.getState()).kind).toBe('result');
+});
+
+it('starts a new run from a reopened wand after a refused preparation write', async () => {
+  let sent = 0;
+  const owner = aiOwner({ onGenerate: () => (sent += 1) });
+  disk.abort = true;
+  await pickSticker(owner);
+  expect(aiResultPhase(owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
+  owner.dismiss();
+
+  await pickSticker(owner);
+  await vi.waitFor(() => expect(owner.getState().journal?.phase).toBe('result'));
+  expect(sent).toBe(1);
 });

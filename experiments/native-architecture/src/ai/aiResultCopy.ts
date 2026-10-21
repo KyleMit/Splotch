@@ -38,6 +38,15 @@ export const AI_ERROR_CARD_COPY = {
   },
 } as const;
 
+// The error card for a run the device's storage refused. Shipping keeps no prepared run on disk,
+// so it has no such card: this one names the cause and keeps Try again.
+export const AI_STORAGE_FULL_COPY = {
+  title: 'Out of space',
+  body: 'This device is too full to save the drawing. Free up some space, then try again.',
+  action: 'Try again',
+  note: null,
+} as const;
+
 const REPORT_PROMISE = `We look within ${AI_REPORT_REVIEW_HOURS} hours, and the report is deleted after ${AI_REPORT_RETENTION_DAYS} days.`;
 
 export const AI_REPORT_CONFIRM_COPY = {
