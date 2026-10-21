@@ -187,7 +187,7 @@ export async function openSettings(page: Page): Promise<Locator> {
 const ADMIN_PATH = '/admin';
 const ADMIN_LOGIN_PATH = '/api/admin/login';
 
-/** The access codes the suite's server lists: the managed code and nothing else. */
+/** The signed-in console's heading, which names how many access codes it lists. */
 export const ADMIN_CODE_HEADING = /^Access codes/;
 
 export function adminSignInForm(page: Page) {

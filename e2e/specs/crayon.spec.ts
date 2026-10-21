@@ -1,6 +1,10 @@
 import { expect, test } from '../fixtures.ts';
 import { chooseBrush } from '../support/group-a.ts';
 
+// Measured on the paper: one pass of crayon covers about three quarters of what pen ink does over the
+// same path, and a second pass fills in about a fifth more. Pen ink gains nothing from a second pass.
+const TOOTH_MAX_RATIO_TO_PEN = 0.9;
+const BUILD_UP_MIN_RATIO = 1.1;
 const ROW_A = 0.3;
 const ROW_B = 0.5;
 const ROW_C = 0.7;
@@ -27,7 +31,7 @@ test.describe('the crayon brush', () => {
 
     await expect.poll(() => drawingScreen.inkedPixels(crayon)).toBeGreaterThan(crayon.lengthPx);
     expect(await drawingScreen.inkedPixels(crayon)).toBeLessThan(
-      await drawingScreen.inkedPixels(pen)
+      (await drawingScreen.inkedPixels(pen)) * TOOTH_MAX_RATIO_TO_PEN
     );
   });
 
@@ -40,7 +44,7 @@ test.describe('the crayon brush', () => {
     await expect.poll(() => drawingScreen.inkedPixels(once)).toBeGreaterThan(once.lengthPx);
 
     expect(await drawingScreen.inkedPixels(twice)).toBeGreaterThan(
-      await drawingScreen.inkedPixels(once)
+      (await drawingScreen.inkedPixels(once)) * BUILD_UP_MIN_RATIO
     );
   });
 

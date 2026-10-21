@@ -20,10 +20,10 @@ import {
 } from '../support/group-a.ts';
 
 // Axe-core scans the adult-facing surfaces (issue 458): /privacy, /changelog, /beta, /feedback,
-// /admin in both states, and the Settings dialog. The toddler-facing canvas chrome is out of scope:
-// its rules (giant wordless buttons, no reading order) are not WCAG's, so a dialog's scan is scoped
-// to the dialog. Only serious and critical violations fail, and the failure message names every
-// violation axe found.
+// /admin in both states, the Settings dialog and the AI dialogs. The toddler-facing canvas chrome is
+// out of scope: its rules (giant wordless buttons, no reading order) are not WCAG's, so a dialog's
+// scan is scoped to the dialog. Only serious and critical violations fail, and the failure message
+// names each of them with its selectors.
 //
 // /design is not scanned: its scroll-cue specimens are scrollable regions with no keyboard access
 // (axe's scrollable-region-focusable), which the disposition table records as a gap.
