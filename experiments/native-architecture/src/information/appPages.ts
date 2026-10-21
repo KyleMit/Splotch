@@ -40,8 +40,8 @@ export function isAppPage(value: string): value is AppPage {
 
 // The table's pages in lookup order: a page the table gains fails to compile until it is listed.
 type AppPageOrder = readonly ['drawing', 'privacy', 'changelog', 'feedback'];
-type Covered<Missing extends never> = Missing;
-export type AppPageOrderMissing = Covered<Exclude<AppPage, AppPageOrder[number]>>;
+type Covering<Order extends readonly AppPage[]> =
+  Exclude<AppPage, Order[number]> extends never ? Order : never;
 
 export function appPageAt(path: string): AppLocation {
   if (path === '/index.html') return 'drawing';
@@ -50,7 +50,7 @@ export function appPageAt(path: string): AppLocation {
     'privacy',
     'changelog',
     'feedback',
-  ] as const satisfies AppPageOrder) {
+  ] as const satisfies Covering<AppPageOrder>) {
     if (APP_PAGE_PATHS[page] === path) return page;
   }
   return 'notFound';

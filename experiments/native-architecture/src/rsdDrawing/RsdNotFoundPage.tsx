@@ -217,7 +217,7 @@ function startDrawing() {
   openAppPage('drawing');
 }
 
-export type OpenAppPage = (page: AppPage, fragment?: string) => void;
+type OpenAppPage = (page: AppPage, fragment?: string) => void;
 
 // Where an information page's own links lead. In the drawing screen's document every page opens
 // over the paper (platform/appPath); a page document provides one that loads any other page's

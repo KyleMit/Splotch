@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -41,15 +40,14 @@ import {
   NATIVE_APP_DOCUMENT_PATHS,
   isNativeAppNavigation,
 } from '../migration/build-native-web.mjs';
-import { ROOT } from '../lib/proc.mjs';
-
-const require = createRequire(import.meta.url);
-const APP_DIR = join(ROOT, 'experiments/native-architecture');
-const {
+import {
   PAGE_DOCUMENT_EAGER_MODULES,
   PAGE_DOCUMENT_RESOLVER_OPTION,
   withPageDocumentResolution,
-} = require(join(APP_DIR, 'scripts/page-document-resolution.cjs'));
+} from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
+import { ROOT } from '../lib/proc.mjs';
+
+const APP_DIR = join(ROOT, 'experiments/native-architecture');
 
 const STYLESHEET = '/_expo/static/css/strict-1.css';
 const EXPORTED_DOCUMENT = [

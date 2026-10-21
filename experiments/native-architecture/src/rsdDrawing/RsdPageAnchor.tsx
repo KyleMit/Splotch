@@ -126,6 +126,6 @@ export function RsdGatedAnchor({
 
 // Without JavaScript nothing can hold a link to the grown-up check, so a prerendered page document
 // leaves the link without its address and names the address beside it as plain text.
-export function plainAddress(href: string) {
+function plainAddress(href: string) {
   return href.replace(/^[a-z]+:(\/\/)?(www\.)?/i, '').replace(/\/$/, '');
 }

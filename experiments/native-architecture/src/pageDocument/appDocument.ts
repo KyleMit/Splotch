@@ -7,7 +7,7 @@ import {
 } from '../information/appPages';
 import { APP_DOCUMENT_ATTRIBUTE } from './appDocumentContract';
 
-export function isDocumentPage(value: string | null): value is DocumentPage {
+function isDocumentPage(value: string | null): value is DocumentPage {
   return value !== null && isAppPage(value) && APP_PAGE_DOCUMENTS[value].document === 'page';
 }
 

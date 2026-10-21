@@ -30,6 +30,7 @@ import {
   PAGE_FRAMED_MAX_WIDTH_PX,
   SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
 } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
+import { PAGE_DOCUMENT_RESOLVER_OPTION } from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
   EXPO_SCRIPT,
@@ -48,9 +49,6 @@ import {
 
 const require = createRequire(import.meta.url);
 const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
-const { PAGE_DOCUMENT_RESOLVER_OPTION } = require(
-  join(NATIVE_APP_DIR, 'scripts/page-document-resolution.cjs')
-);
 export const PAGE_DOCUMENT_DIR = 'src/pageDocument';
 // The drawing screen's entry, which `expo export` bundles (the app's package.json main).
 const DRAWING_ENTRY = 'src/index.ts';
