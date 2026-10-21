@@ -26,10 +26,10 @@ import {
   isMain,
   parseOrFail,
   rejectUnknownFlags,
+  run,
   runMain,
 } from '../lib/proc.mjs';
-import { MEASURED_SURFACE, SPEC_FILE } from '../perf/check-matrix-staleness.mjs';
-import { buildAndPreview } from '../perf/lib/profile-preview.mjs';
+import { startExportHost } from './lib/export-host.mjs';
 
 export const PROFILE_VERSION = 1;
 export const PROFILES = {
@@ -38,7 +38,8 @@ export const PROFILES = {
 };
 export const VISITS = ['first', 'repeat'];
 export const GATED_METRICS = ['fcpMs', 'lcpMs'];
-export const REPORTED_METRICS = ['tbtMs', 'performanceScore'];
+export const REPORTED_METRICS = ['tbtMs', 'cls', 'performanceScore'];
+const CLS_DECIMAL_PLACES = 3;
 
 const DEFAULT_BASELINE = 'tools/page-load/baseline.json';
 const DEFAULT_OUT = 'lighthouse-reports/ci';
@@ -46,6 +47,41 @@ const DEFAULT_PORT = 4197;
 const DEFAULT_SAMPLES = 3;
 export const LIGHTHOUSE_TIMEOUT_MS = 120_000;
 const LIGHTHOUSE_CLI = fileURLToPath(import.meta.resolve('lighthouse/cli/index.js'));
+
+// The product surface a capture measures, so a baseline names the sources it was taken from: what
+// `npm run build:site` reads to make the export, the config the host serves it by, and the resolved
+// dependency tree. An enumerated directory scope misses by the margin an enumeration always does, so
+// the scope is whole folders where the export reads most of one, and lighthouse-ci.test.mjs fails
+// when a file the build imports falls outside it. A spec is excluded because it cannot affect the
+// product, and the root `package.json` in favour of `pnpm-lock.yaml`, which moves when
+// dependencies do rather than for every script added.
+export const MEASURED_SURFACE = [
+  'experiments/native-architecture/src',
+  'experiments/native-architecture/assets',
+  'experiments/native-architecture/scripts',
+  'experiments/native-architecture/app.json',
+  'experiments/native-architecture/babel.config.cjs',
+  'experiments/native-architecture/metro.config.cjs',
+  'experiments/native-architecture/package.json',
+  'experiments/native-architecture/postcss.config.mjs',
+  'tools/lib/proc.mjs',
+  'tools/migration/build-native-web.mjs',
+  'tools/migration/lib/native-web-csp.mjs',
+  'tools/migration/page-fragments.mjs',
+  'tools/migration/prerender-native-web-admin.mjs',
+  'tools/migration/prerender-native-web-pages.mjs',
+  'tools/migration/prerender-native-web.mjs',
+  'web/buildVersion.ts',
+  'web/securityPolicy.ts',
+  'web/src/app.html',
+  'web/src/lib',
+  'web/src/routes/privacy',
+  'web/static',
+  'netlify.toml',
+  'pnpm-lock.yaml',
+];
+// Unit tests are colocated beside their source, so spec-only drift is filtered out by name.
+export const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
 
 // A name alone proves nothing about who wrote a file, so the runner leaves this in every folder
 // it makes and replaces no folder without it.
@@ -197,7 +233,7 @@ export function replaceOutDir(out, root = ROOT) {
   return outDir;
 }
 
-function trackedMeasuredFiles() {
+export function trackedMeasuredFiles() {
   return execFileSync('git', ['ls-files', '-z', '--', ...MEASURED_SURFACE], {
     cwd: ROOT,
     encoding: 'utf8',
@@ -259,6 +295,13 @@ function lighthouseResult(path, profile, visit, sample) {
     }
     return Math.round(value);
   };
+  const layoutShift = () => {
+    const value = audits['cumulative-layout-shift']?.numericValue;
+    if (!Number.isFinite(value)) {
+      throw new Error(`${profile} ${visit} sample ${sample} has no cumulative-layout-shift`);
+    }
+    return Number(value.toFixed(CLS_DECIMAL_PLACES));
+  };
   const performanceScore = report.categories.performance?.score;
   if (!Number.isFinite(performanceScore)) {
     throw new Error(`${profile} ${visit} sample ${sample} has no performance score`);
@@ -270,6 +313,7 @@ function lighthouseResult(path, profile, visit, sample) {
     fcpMs: metric('first-contentful-paint'),
     lcpMs: metric('largest-contentful-paint'),
     tbtMs: metric('total-blocking-time'),
+    cls: layoutShift(),
     performanceScore: Math.round(performanceScore * 100),
   };
 }
@@ -339,6 +383,7 @@ function renderSummary(summary, baseline, reportOnly) {
         'LCP ms': Math.round(result.lcpMs),
         'LCP limit': reportOnly ? 'report' : limits.lcpMs,
         'TBT ms (report)': Math.round(result.tbtMs),
+        'CLS (report)': result.cls,
         'score (report)': Math.round(result.performanceScore),
       });
     }
@@ -350,14 +395,14 @@ function renderSummary(summary, baseline, reportOnly) {
 function appendGitHubSummary(rows, sourceStatus) {
   if (!process.env.GITHUB_STEP_SUMMARY) return;
   const header =
-    '| Profile | Visit | FCP / limit (ms) | LCP / limit (ms) | TBT (ms, report) | Score (report) |\n' +
-    '| --- | --- | ---: | ---: | ---: | ---: |\n';
+    '| Profile | Visit | FCP / limit (ms) | LCP / limit (ms) | TBT (ms, report) | CLS (report) | Score (report) |\n' +
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: |\n';
   const body = rows
     .map(
       (row) =>
         `| ${row.profile} | ${row.visit} | ${row['FCP ms']} / ${row['FCP limit']} | ` +
         `${row['LCP ms']} / ${row['LCP limit']} | ${row['TBT ms (report)']} | ` +
-        `${row['score (report)']} |`
+        `${row['CLS (report)']} | ${row['score (report)']} |`
     )
     .join('\n');
   const provenance = sourceStatus.matches
@@ -387,7 +432,11 @@ export async function runLighthouseCi({
   reportBaselineSourceStatus(sourceStatus);
 
   const absoluteOut = parseOrFail(() => replaceOutDir(out));
-  const preview = await buildAndPreview(port, { build });
+  if (build) {
+    console.log('Building the web export…');
+    run('npm', ['run', 'build:site']);
+  }
+  const host = await startExportHost(port);
   const measurements = [];
   try {
     for (let sample = 1; sample <= samples; sample += 1) {
@@ -397,7 +446,7 @@ export async function runLighthouseCi({
         for (const visit of VISITS) {
           console.log(`${profileName} ${visit} sample ${sample}/${samples}`);
           const runOptions = {
-            base: preview.base,
+            base: host.base,
             out: absoluteOut,
             profileName,
             visit,
@@ -423,7 +472,7 @@ export async function runLighthouseCi({
       }
     }
   } finally {
-    preview.stop();
+    await host.stop();
     rmSync(join(absoluteOut, CHROME_PROFILES_FOLDER), { recursive: true, force: true });
   }
 

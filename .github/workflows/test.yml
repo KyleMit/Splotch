@@ -1,8 +1,3 @@
-# The tiled renderer has no cold blob-encoding path, so ADR-0100's structural
-# half retired with that legacy history implementation. The millisecond P95
-# still needs WebKit and a stable host, so it runs post-merge on macOS over
-# multi-finger (the sole multi-pointer exerciser) plus crayon-scribbles (the sole
-# mid-stroke pass-split exerciser), and release tags run all seven scenarios.
 name: Tests
 
 on:
@@ -10,18 +5,7 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
-  # Fires the WebKit commit gates on demand — they otherwise run only
-  # post-merge (fast) and on release tags (full), so exercising the gate
-  # itself (a threshold change, a #1250-class investigation) previously
-  # required a merge or a tag. A dispatch also runs the standard suite, since
-  # every other job's condition already admits non-push events.
   workflow_dispatch:
-    inputs:
-      gate:
-        description: Which WebKit commit gate(s) to run
-        type: choice
-        options: [fast, full, both]
-        default: both
 
 permissions:
   actions: read
@@ -33,10 +17,8 @@ defaults:
 
 concurrency:
   # Pull requests collapse per ref, so a new push cancels the run it supersedes.
-  # Pushes get a per-commit group instead: the WebKit commit gate runs
-  # post-merge (ADR-0100), and a same-ref cancel would drop a commit's only
-  # coverage precisely when merges land back to back — a silent hole exactly
-  # when the safety net matters most.
+  # Pushes get a per-commit group instead, so merges that land back to back
+  # each keep their own run on main rather than cancelling the earlier one.
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
   cancel-in-progress: true
 
@@ -252,11 +234,14 @@ jobs:
 
   # Lighthouse's scheduler-derived TBT and score are too noisy to gate on a
   # shared runner. Three samples make the median resilient to one outlier; the
-  # stable FCP/LCP medians keep deliberately wide regression thresholds. This
-  # is a production BUILD comparison, not a claim about the local preview's
-  # HTTP/1.1 numbers matching Netlify's CDN.
+  # stable FCP/LCP medians keep deliberately wide regression thresholds. It
+  # times the export the Native web build job uploaded, which tools/page-load/
+  # serves as the Netlify deploy does (headers, redirects, brotli, ETag
+  # revalidation) on a loopback host: a regression harness for the shipped
+  # bytes, not a claim that the numbers match the CDN's.
   page-load-performance:
     name: Page-load performance
+    needs: native-web-build
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -269,8 +254,14 @@ jobs:
         with:
           browsers: chromium
 
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: experiments/native-architecture/dist/web/
+
       - name: Run page-load performance gate
-        run: npm run test:lighthouse:ci -- --port=4197
+        run: npm run test:lighthouse:ci -- --no-build --port=4197
 
       - name: Upload Lighthouse reports
         if: ${{ !cancelled() }}
@@ -482,355 +473,3 @@ jobs:
           path: playwright-report/
           if-no-files-found: error
           retention-days: 7
-
-  # Post-merge, not per-PR (ADR-0100). This tier's verdict is a millisecond P95
-  # on a shared macOS runner: it is the wall-clock floor of a run, and its
-  # observed record on the pull-request path is false positives rather than
-  # catches. Landing it on main trades an immediate signal for a fast one, so
-  # the failure path files an issue rather than relying on someone noticing.
-  webkit-commit-gate-fast:
-    name: WebKit commit gate (fast)
-    if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && contains(fromJSON('["fast", "both"]'), inputs.gate))
-    runs-on: macos-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    outputs:
-      gate-outcome: ${{ steps.verdict.outputs.gate }}
-      gate-failures: ${{ steps.verdict.outputs.failures }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup-playwright-webkit
-
-      - name: Run fast WebKit commit gate
-        id: gate
-        run: npm run perf:web:undo:webkit:fast
-
-      # The retry job keys on THIS STEP's outcome, not on failure() — at job
-      # scope failure() also fires for a checkout or setup failure, and a
-      # setup-failed retry would file "gate failed on main" for a gate that
-      # never ran (the PR 1381 review).
-      #
-      # `failures` carries WHAT failed, not just that something did, so the retry
-      # can compare like with like. Reading the artifact rather than the exit code
-      # is the point: on 2026-09-02 this runner skipped crayon-scribbles on a
-      # settle timeout while measuring multi-finger clean, the retry runner
-      # completed crayon-scribbles and breached multi-finger, and an
-      # outcome-only comparison read two unrelated failures as a reproduction.
-      - name: Record the gate verdict
-        id: verdict
-        if: always()
-        run: |
-          echo "gate=${{ steps.gate.outcome }}" >> "$GITHUB_OUTPUT"
-          if raw_fingerprint=$(node tools/perf/report-undo-gate-failures.mjs); then
-            echo "failures=$(printf '%s' "$raw_fingerprint" | tr -d '\n')" >> "$GITHUB_OUTPUT"
-            echo 'reporter-failed=false' >> "$GITHUB_OUTPUT"
-          else
-            echo 'failures=' >> "$GITHUB_OUTPUT"
-            echo 'reporter-failed=true' >> "$GITHUB_OUTPUT"
-          fi
-
-      # A green gate run can retain a failure fingerprint. Surface that evidence
-      # on the run page without changing the gate outcome, retry condition, or
-      # issue-filing policy.
-      - name: Surface WebKit gate finding on green runs
-        if: >-
-          steps.gate.outcome == 'success' &&
-          (steps.verdict.outputs.failures != '' || steps.verdict.outputs.reporter-failed == 'true')
-        env:
-          GATE_FAILURES: ${{ steps.verdict.outputs.failures }}
-          REPORTER_FAILED: ${{ steps.verdict.outputs.reporter-failed }}
-        run: |
-          {
-            echo '### WebKit commit gate: finding on a green job'
-            echo
-            if [[ "$REPORTER_FAILED" == 'true' ]]; then
-              echo '* Fingerprint reporter failed; inspect the gate log and diagnostics artifact.'
-            else
-              printf '* Failure fingerprint: `%s`\n' "$GATE_FAILURES"
-            fi
-            echo '* Green job status does not clear this finding. The physical iPad holds the commit contract; this job is advisory (ADR-0173).'
-            echo '* Raw distributions are in the webkit-undo-fast-diagnostics artifact on this run.'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      # Uploaded on green runs too (issue 1250): the noise investigation had
-      # outcomes but no distributions, because only failures kept their tables.
-      - name: Upload WebKit undo diagnostics
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: webkit-undo-fast-diagnostics
-          path: |
-            perf-profiles/**/undo-scenarios.json
-            perf-profiles/**/undo-scenarios.md
-          if-no-files-found: warn
-          retention-days: 7
-
-      # A post-merge gate nobody is watching is not a gate — but a breach on
-      # this job alone no longer files: a shared macOS runner can stall long
-      # enough to span this whole job, measure and confirmation both, so a
-      # same-VM confirmation cannot acquit it (issue 1250: two post-merge
-      # failures on main — one on a docs-only merge — against five consecutive
-      # clean dispatch reruns of the same code). The fresh-runner retry job
-      # below re-measures on a new VM and owns the filing decision.
-
-  webkit-commit-gate-fast-retry:
-    name: WebKit commit gate (fast, fresh-runner retry)
-    needs: webkit-commit-gate-fast
-    # Push arm only: a dispatch failure is delivered by the red run itself, to
-    # the person who fired it. Keyed on the GATE STEP's outcome, not failure():
-    # a checkout/setup/upload failure on the first VM is not a breach, and a
-    # retry started for one could file "gate failed on main" for a gate that
-    # never ran. always() is required for the job to be considered at all
-    # behind a failed needs.
-    if: >-
-      always() && needs.webkit-commit-gate-fast.outputs.gate-outcome == 'failure' &&
-      github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: macos-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    outputs:
-      gate-outcome: ${{ steps.gate.outcome }}
-      compare-outcome: ${{ steps.compare.outcome }}
-      reproduced: ${{ steps.compare.outputs.reproduced }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup-playwright-webkit
-
-      # The variable that matters is the VM, not the retry: ADR-0140's in-job
-      # confirmation already re-measures, and the 2026-08-26 failure breached
-      # both halves with a 197 ms stall spanning them. A fresh runner is the
-      # only rerun that changes the environment the breach happened in.
-      # continue-on-error so the comparison/acquittal steps below run from
-      # this step's recorded outcome; the last step re-fails the job when the
-      # breach reproduced, so a real regression still lands a red retry.
-      - name: Re-run the fast WebKit commit gate on a fresh runner
-        id: gate
-        continue-on-error: true
-        run: npm run perf:web:undo:webkit:fast
-
-      - name: Upload WebKit undo retry diagnostics
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: webkit-undo-fast-retry-diagnostics
-          path: |
-            perf-profiles/**/undo-scenarios.json
-            perf-profiles/**/undo-scenarios.md
-          if-no-files-found: warn
-          retention-days: 7
-
-      # A second failure is only a reproduction if it is the SAME failure. This
-      # compares the two runners' failure fingerprints and reports the overlap;
-      # an empty overlap means the two runs failed for unrelated reasons, which
-      # is host noise rather than a broken main (ADR-0158). A pair that cannot be
-      # compared at all reports `unknown:not-comparable`, which is non-empty and
-      # therefore files — the fail-closed direction.
-      #
-      # Only on this runner's own failure: a green retry has nothing to compare,
-      # and asking anyway would report the uncomparable sentinel for a run that
-      # reproduced nothing because there was nothing to reproduce.
-      #
-      # continue-on-error lets the remaining retry steps read this outcome.
-      # The comparator deliberately rethrows TypeError/ReferenceError rather
-      # than let a malformed artifact masquerade as no failures (issue 1296).
-      # Non-reproduction requires a successful comparison; the downstream
-      # reporter reads its outcome and files a failed comparison fail-closed.
-      - name: Compare this runner's failure with the first runner's
-        id: compare
-        if: steps.gate.outcome == 'failure'
-        continue-on-error: true
-        env:
-          FIRST_FAILURES: ${{ needs.webkit-commit-gate-fast.outputs.gate-failures }}
-        run: |
-          mine="$(node tools/perf/report-undo-gate-failures.mjs | tr -d '\n')"
-          reproduced="$(node tools/perf/report-undo-gate-failures.mjs --first="$FIRST_FAILURES" | tr -d '\n')"
-          {
-            echo "mine=${mine}"
-            echo "reproduced=${reproduced}"
-          } >> "$GITHUB_OUTPUT"
-          echo "first runner: ${FIRST_FAILURES:-<none>}"
-          echo "this runner:  ${mine:-<none>}"
-          echo "reproduced:   ${reproduced:-<nothing>}"
-
-      # Deliberately "not reproduced", not "acquitted": the first job stays
-      # red on main as telemetry (the noisy first run is a real observation
-      # worth counting), and this summary is where a reader of that red job
-      # learns no issue was filed and why. A step whose `if` names no status
-      # function still carries an implicit success(), so a crashed comparison
-      # skips this too rather than acquitting on an empty output.
-      - name: Record the non-reproduction
-        if: >-
-          steps.gate.outcome == 'success' ||
-          (steps.compare.outcome == 'success' && steps.compare.outputs.reproduced == '')
-        env:
-          FIRST_FAILURES: ${{ needs.webkit-commit-gate-fast.outputs.gate-failures }}
-          MINE: ${{ steps.compare.outputs.mine }}
-        run: |
-          {
-            echo '## WebKit commit gate: failure not reproduced on a fresh runner'
-            echo
-            echo 'The post-merge gate failed on its first runner, and this runner did not'
-            echo 'reproduce that failure — it either passed, or failed at something else.'
-            echo
-            echo "* First runner failed at: \`${FIRST_FAILURES:-<none recorded>}\`"
-            echo "* This runner failed at: \`${MINE:-<nothing; it passed>}\`"
-            echo '* Reproduced: nothing'
-            echo
-            echo 'Recorded as host noise per issue 1250; no issue filed. The first job'
-            echo 'stays red as deliberate telemetry; a real regression fails both runners'
-            echo 'on the same scenario.'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      # continue-on-error above kept this job green so far; a reproduced
-      # breach must still land a red retry job.
-      - name: Fail on a reproduced breach
-        if: >-
-          steps.gate.outcome == 'failure' &&
-          (steps.compare.outcome == 'failure' || steps.compare.outputs.reproduced != '')
-        run: exit 1
-
-  webkit-commit-gate-fast-report:
-    name: WebKit commit gate (failure report)
-    needs: webkit-commit-gate-fast-retry
-    if: >-
-      !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.webkit-commit-gate-fast-retry.outputs.gate-outcome == 'failure' &&
-      (needs.webkit-commit-gate-fast-retry.outputs.compare-outcome == 'failure' ||
-      needs.webkit-commit-gate-fast-retry.outputs.reproduced != '')
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    # Check-then-create must run under one constant lock to prevent duplicate
-    # issues. queue:max retains up to 100 pending reporters rather than replacing
-    # an existing pending reporter; additional pending jobs can still be canceled.
-    concurrency:
-      group: webkit-commit-gate-fast-report
-      cancel-in-progress: false
-      queue: max
-    permissions:
-      contents: read
-      issues: write
-    steps:
-      # A post-merge gate nobody is watching is not a gate. One open issue
-      # collects every red commit until it is closed, so a broken main does not
-      # file one issue per merge.
-      #
-      # The body goes to a file rather than into a variable: a heredoc inside
-      # "$(...)" makes bash scan the substitution for its closing paren, and an
-      # apostrophe in the prose below reads as an unterminated quote during that
-      # scan. tools/tests/workflow-hygiene.test.mjs executes this step.
-      # Push-arm only: the issue this files says main broke, and a manual
-      # dispatch of the gate against an investigation branch failing must not
-      # open or append a false production-breakage report. A dispatch failure
-      # is delivered by the red run itself, to the person who fired it.
-      - name: File the failure
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REPRODUCED: ${{ needs.webkit-commit-gate-fast-retry.outputs.reproduced }}
-          COMPARE_OUTCOME: ${{ needs.webkit-commit-gate-fast-retry.outputs.compare-outcome }}
-        run: |
-          verdict="on two runners, in the same way: ${REPRODUCED}"
-          if [[ "$COMPARE_OUTCOME" != 'success' ]]; then
-            verdict='on two runners, and the comparison between the two failures could not be run. This is filed fail-closed: establish whether both runners failed at the same thing before reading it as a regression'
-          fi
-          title='WebKit commit gate failed on main'
-          body_file="${RUNNER_TEMP}/webkit-commit-gate-failure.md"
-          cat >"$body_file" <<EOF
-          The post-merge WebKit commit gate failed on main at commit ${GITHUB_SHA}, ${verdict}.
-
-          * Run: ${RUN_URL}
-          * Evidence: the webkit-undo-fast-diagnostics artifact on that run holds the scenario
-            table (undo-scenarios.md) and every raw commit sample (undo-scenarios.json), and the
-            confirmations array holds the re-measured distribution behind each breach.
-
-          This tier gates a millisecond P95 on a shared macOS runner. Nothing is normalized: every
-          fast-tier score is the raw commit P95 against the budget COMMIT_GATE_MS declares, because
-          ADR-0140 retired the crayon divisor rather than recalibrate it. So read the raw P95 and
-          the sample distribution rather than looking for a normalized value — over a scenario's
-          ~22 samples that P95 resolves to the SECOND-HIGHEST sample, so the question is whether
-          the whole distribution shifted (a regression) or two samples spiked (a stalled runner).
-          ADR-0158 records why a failure reaching this issue had to fail the same way on two
-          separate runners.
-          EOF
-          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
-          if [[ -n "$existing" ]]; then
-            gh issue comment "$existing" --body-file "$body_file"
-          else
-            gh issue create --title "$title" --label type:bug --label area:ci-testing --body-file "$body_file"
-          fi
-
-  webkit-commit-gate-full:
-    name: WebKit commit gate (full)
-    if: >-
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-      (github.event_name == 'workflow_dispatch' && contains(fromJSON('["full", "both"]'), inputs.gate))
-    runs-on: macos-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup-playwright-webkit
-
-      # Every path that ends on the committed seed warns. The seed restarts the
-      # run-to-run record the fast-set checks read, so a run that started from
-      # it has to say so in its own log. tools/tests/workflow-gates.test.mjs
-      # executes this step.
-      - name: Restore fast-set history
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p .perf-state
-          artifact_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=webkit-undo-full-history&per_page=20" --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == .workflow_run.repository_id and (.workflow_run.head_branch | startswith("v")))][0].id // empty')"
-          restore_ok=0
-          if [[ -n "$artifact_id" ]]; then
-            archive_path="${RUNNER_TEMP}/webkit-undo-full-history.zip"
-            if gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$archive_path" \
-              && unzip -q "$archive_path" -d .perf-state; then
-              restore_ok=1
-            else
-              echo "::warning::fast-set history restore failed; starting from the committed seed"
-            fi
-          else
-            echo "::warning::no release-tag fast-set history artifact found; starting from the committed seed"
-          fi
-          if [[ "$restore_ok" -eq 0 ]]; then
-            cp tools/perf/fixtures/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
-          fi
-
-      - name: Run full WebKit commit gate
-        run: npm run perf:web:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json
-
-      # Release tags only. The restore step reads this artifact back from tag
-      # runs alone, so a dispatch run's copy would never be restored; it would
-      # only take a place in the newest-first list that step reads one page of.
-      # A dispatch run's history still uploads with the diagnostics below.
-      - name: Persist WebKit full-run history
-        if: >-
-          always() && github.event_name == 'push' &&
-          startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: webkit-undo-full-history
-          path: .perf-state/undo-fast-set-history.json
-          include-hidden-files: true
-          if-no-files-found: warn
-          retention-days: 90
-
-      - name: Upload WebKit full-run diagnostics
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: webkit-undo-full-diagnostics
-          path: |
-            perf-profiles/**/undo-scenarios.json
-            perf-profiles/**/undo-scenarios.md
-            perf-profiles/**/undo-fast-set-history.json
-          if-no-files-found: warn
-          retention-days: 90

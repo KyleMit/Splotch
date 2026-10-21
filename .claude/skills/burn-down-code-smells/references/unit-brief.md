@@ -149,8 +149,7 @@ read goes out before the read's output does.
   * The API smoke uses `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`.
   * A test that spawns a tool calling `adb` keeps it off real devices with `ANDROID_HOME` set to an
     empty directory when the tool finds `adb` through the SDK, and with a `PATH` of logging shims
-    when it finds `adb` on `PATH` (`release-capture.mjs`, `prepare-capture.mjs`). Both are in
-    `tools/perf/tests/cli-inputs.test.mjs`.
+    when it finds `adb` on `PATH`.
   * While other lanes run tests, `npm run test:browserless` can time out spawn-heavy tools tests at
     Vitest's 5 s default. Rerun the failing files alone before blaming your change.
 * **Posting the rival's review:** `tools/rival-agent/post-review.mjs` blocks a finding whose text

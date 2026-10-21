@@ -97,11 +97,13 @@ describe('the release build targets', () => {
   const optsIn = ({ steps }) =>
     steps.some(({ args }) => args.includes(STORE_GRADLE_PROPERTY) || args.includes(STORE_XCCONFIG));
 
-  it('opt into the store identity exactly for the store artifacts', () => {
+  // The store artifacts, plus the two Release builds the deploy smokes install, which carry the
+  // store identity because that is what ships and which no device accepts over the store copy.
+  it('opt into the store identity exactly for the store artifacts and the smoke builds', () => {
     const store = Object.entries(TARGETS)
       .filter(([, target]) => optsIn(target))
       .map(([name]) => name);
-    expect(store).toEqual(['bundle', 'archive', 'ipa']);
+    expect(store).toEqual(['bundle', 'store-apk', 'archive', 'ipa', 'simulator']);
     for (const [name, target] of Object.entries(TARGETS)) {
       expect(target.appId, name).toBe(optsIn(target) ? STORE_APP_ID : DEV_APP_ID);
     }
@@ -110,12 +112,16 @@ describe('the release build targets', () => {
   it('are the only package scripts that reach the store identity', () => {
     const { scripts } = JSON.parse(read('package.json'));
     const optIns = Object.entries(scripts).filter(([, body]) =>
-      /splotch\.store|Store\.xcconfig|build-native-release\.mjs (bundle|archive|ipa)$/.test(body)
+      /splotch\.store|Store\.xcconfig|build-native-release\.mjs (bundle|store-apk|archive|ipa|simulator)$/.test(
+        body
+      )
     );
     expect(Object.fromEntries(optIns)).toEqual({
       'native:android:bundle': 'node tools/release/build-native-release.mjs bundle',
+      'native:android:apk:store': 'node tools/release/build-native-release.mjs store-apk',
       'native:ios:archive': 'node tools/release/build-native-release.mjs archive',
       'native:ios:ipa': 'node tools/release/build-native-release.mjs ipa',
+      'native:ios:simulator': 'node tools/release/build-native-release.mjs simulator',
     });
   });
 });

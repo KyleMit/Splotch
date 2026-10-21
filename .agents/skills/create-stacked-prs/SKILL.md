@@ -53,8 +53,8 @@ There is no documented or enforced maximum stack size — a 13-PR chain linked i
 * **Plan the sweep-up PR.** The final PR collects every surviving issue from the earlier ones in one
   pass. Expect to write it; plan for it rather than treating it as a failure. One carve-out: a
   finding against a **performance-gate or calibration change** is fixed in an immediate child of the
-  PR that introduced it, accepting the rebase cascade — see "Gate-semantics changes ship as their
-  own campaign" in `docs/PROFILING-CAMPAIGNS.md`.
+  PR that introduced it, accepting the rebase cascade, because every number measured above an
+  unfixed gate change has to be re-measured.
 * **Open each PR as soon as its first commit lands.** Do not batch them to the end — an unopened PR
   is invisible to review and to CI.
 * **Treat each opened PR as the review gate before building above it.** When the task requires

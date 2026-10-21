@@ -7,7 +7,10 @@ inputs:
     required: true
   path:
     description: Report paths, including platform driver diagnostics when available
-    default: ~/.maestro/tests/
+    # Maestro's run logs and failure screenshots, and the screenshots the flow takes itself.
+    default: |
+      ~/.maestro/tests/
+      .maestro/screenshots/
 
 runs:
   using: composite

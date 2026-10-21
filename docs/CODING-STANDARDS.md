@@ -90,11 +90,11 @@ with two homes eventually has two answers.
 The 2026-09-29 evening campaign found the same failure in tooling, where the copies had already
 disagreed:
 
-* PR #2504, a real bug: which Android device a capture drives was decided in
-  `tools/perf/lib/android-serial.mjs` and again in an entry script, and `perf:android` had a third
-  parser that only counted devices. With a phone and an emulator attached, its `adb` calls failed
-  into ignored stderr, and the run ended 25 s later blaming the app build. `requireCaptureSerial`
-  and `resolveAndroidDevice` in that module now own the rule.
+* PR #2504, a real bug: which Android device a capture drives was decided in the capture harness's
+  serial module and again in an entry script, and `perf:android` had a third parser that only
+  counted devices. With a phone and an emulator attached, its `adb` calls failed into ignored
+  stderr, and the run ended 25 s later blaming the app build. That module owned the rule from then
+  until #3160 retired the harness.
 * PR #2505: the Chromium self-heal was written in `tools/lib/playwright.mjs` and again in
   `web/playwright.shared.ts`, under a "Mirror …" comment. The copies already disagreed on the
   override variable. The E2E config now imports the tools copy across the tree boundary, typed by
@@ -110,14 +110,14 @@ run before it:
   discard as a pass. It now calls production's `classifyOpenAiResponse`, the response half of the
   fix PR #2511 made to the same adapter's request.
 * PR #2662: `perf:rescore` judged input fidelity by a different rule from the matrix, and so failed
-  all twelve desktop captures of one corpus that the matrix holds to no fidelity verdict.
-  `drawingVerdicts` in `tools/perf/lib/capture-verdicts.mjs` is the one rule both read.
+  all twelve desktop captures of one corpus that the matrix holds to no fidelity verdict. One
+  verdict function became the rule both read, until #3160 retired both readers.
 * PR #2661: `perf:release` named the capture drivers that block it in two hand lists, and both
-  missed the person session. `CAPTURE_DRIVER_SCRIPTS` in `tools/perf/release-capture.mjs` is the one
-  list; rule 8 has what the gap cost.
+  missed the person session. One list replaced them, until #3160 retired the rig; rule 8 has what
+  the gap cost.
 * PR #2679: the iPad grant log spelled the automation-grant failure differently from the two modules
-  that classify it, and its copy missed 17 of the 21 recorded denials.
-  `AUTOMATION_MODE_TIMEOUT_PATTERN` in `tools/perf/lib/capture-readiness.mjs` is the one spelling.
+  that classify it, and its copy missed 17 of the 21 recorded denials. One exported pattern became
+  the one spelling, until #3160 retired the rig.
 * PR #2680: the hosted deploy smoke's workflow decided "is this production?" in YAML, its library
   decided it again, and the two disagreed about production's aliases. `isPreviewTarget` in
   `tools/api-smoke/lib/deployed-admin-target.mjs` now decides both the Blobs write and the version
@@ -164,8 +164,7 @@ injected. Since PR #2482 it holds both saves, settles the closed card's save, an
 tapping the next result again starts no second save of it. Where a tool must agree with production
 or with another tool, one test feeds each input to every reader and compares the answers:
 `tools/model-eval/tests/image-providers.test.mjs` holds each response shape to production's
-classifier, and `tools/perf/tests/capture-verdicts.test.mjs` runs each fixture through both the
-matrix and the rescorer (PRs #2657, #2662).
+classifier (PR #2657).
 
 ## 2. One union per mode
 
@@ -368,15 +367,12 @@ programs' output, and the status of their own commands:
 cast to the expected shape (PR #2410 replaced a `style as StyleName` cast with
 `parseGenerationJobContext`). The boundary test includes the missing and malformed inputs as
 fixtures, for example the blank-pin and missing-Gradle-code cases in
-`tools/release/tests/cut-release.test.mjs` and the index written as `{` in
-`tools/perf/tests/rescore-captures.test.mjs`. A failed read or write is a fixture too:
+`tools/release/tests/cut-release.test.mjs`. A failed read or write is a fixture too:
 `web/src/lib/state/saveFailure.svelte.test.ts` makes the store's `read` reject and asserts that no
 held picture is replaced (PR #2474); `web/src/lib/server/tokens.test.ts` and
 `web/src/lib/server/api/verifyAccessCode.test.ts` pin the 503 and which failures spend a guess (PR
 #2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject inside
-a temporary repository (PR #2471). A failure's message is asserted, not only its status: the
-device-selection cases in `tools/perf/tests/android-serial.test.mjs` spawn `perf:android` against a
-fake `adb` and pin the refusal and the one call it made.
+a temporary repository (PR #2471). A failure's message is asserted, not only its status:
 `tools/mobile/tests/mobile-build-scripts.test.mjs` asserts the coloring-asset CLI's stderr ahead of
 its exit status, so a failing gate shows the checker's own line, and
 `tools/redteam/tests/run-safety-evaluation.test.mjs` feeds the runner an error with a `cause` and
@@ -631,14 +627,14 @@ unproved premise in tools that stop processes and drive devices:
   is armed on process exit (PR #2684).
 
 **Enforcement.** `tools/tests/tool-specifier-resolution.test.mjs` (library → entry edges);
-`rejectUnknownFlags` and `parseNumberFlag` in `tools/lib/proc.mjs`, `parsePerfArgs` in
-`tools/perf/lib/cli-args.mjs`, and `tools/tests/tool-entry-flags.test.mjs` (which also fails a flag
-read in an exported function's parameter default and, since PR #2515, an accepted flag that the
-entry's `npm run info` text leaves out); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES` in
-`eslint.config.js`; `no-undef` across `tools/` and the skill-package scripts; `freePort` in
-`tools/lib/vite-server.mjs` throws on a listener outside the checkout, and `ensureDevServer` in
-`tools/app-driver/lib/app-driver.mjs` starts its own server and rejects an answer from any other
-process (`tools/app-driver/tests/ensure-dev-server.test.mjs`). `generateFromValidatedSources` in
+`rejectUnknownFlags` and `parseNumberFlag` in `tools/lib/proc.mjs`, and
+`tools/tests/tool-entry-flags.test.mjs` (which also fails a flag read in an exported function's
+parameter default and, since PR #2515, an accepted flag that the entry's `npm run info` text leaves
+out); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES` in `eslint.config.js`; `no-undef` across
+`tools/` and the skill-package scripts; `freePort` in `tools/lib/vite-server.mjs` throws on a
+listener outside the checkout, and `ensureDevServer` in `tools/app-driver/lib/app-driver.mjs` starts
+its own server and rejects an answer from any other process
+(`tools/app-driver/tests/ensure-dev-server.test.mjs`). `generateFromValidatedSources` in
 `tools/ruler/apply-ruler.mjs` runs read-only plans before generating, and the bad-source cases in
 `tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
 `main()` parses the arguments and `chooseVersionCode` decides the version code before the first
@@ -654,11 +650,7 @@ server, and asserts that neither a plain-http target without the test flag nor a
 receives the login (PR #2476). `tools/redteam/tests/fixture-crypto.test.mjs` imports the red-team
 library directly (PR #2480).
 
-From the 2026-10-03 campaign: `FLAG_REFUSING_ENTRIES` in `tools/perf/tests/cli-inputs.test.mjs`
-spawns each of the eight perf entries with an unknown flag and asserts exit 1, the exact refusal,
-and empty stdout, which shows the refusal came first; behind `PATH` shims that log every call, it
-asserts that a value flag given bare is refused before any command runs (PR #2667).
-`tools/audit-burndown/tests/burndown-config.test.mjs` and
+From the 2026-10-03 campaign: `tools/audit-burndown/tests/burndown-config.test.mjs` and
 `tools/model-eval/tests/model-eval.test.mjs` refuse malformed knobs with exact messages, and the
 second also spawns both bake-off runners with one, since the bug lived in the entries' wiring rather
 than in a parser (PRs #2655, #2660). The scratch-checkout cuts in
@@ -668,11 +660,8 @@ Each stop is driven against a target it must spare: a listener that changes owne
 period (`tools/tests/stop-dev-servers.test.mjs`), a real listener in a nested worktree
 (`tools/tests/port-ownership.test.mjs`), an unrelated `claude -p` beside a stand-in driver tree
 (`tools/audit-burndown/tests/driver-process-pattern.test.mjs`), and an open emulator and an attached
-phone (`tools/mobile/android/tests/run-smoke-test.test.mjs`).
-`tools/perf/tests/release-capture.test.mjs` requires every top-level `tools/perf/run-*.mjs` to be
-inventoried and judged a live capture driver, which the release stops only under `--stop-campaigns`.
-The import tests in `tools/audit-burndown/tests/backfill-comments.test.mjs`,
-`tools/perf/tests/cli-inputs.test.mjs`,
+phone (`tools/mobile/android/tests/run-smoke-test.test.mjs`). The import tests in
+`tools/audit-burndown/tests/backfill-comments.test.mjs`,
 `tools/marketing-assets/tests/promotional-image-svg.test.mjs`, and
 `tools/mobile/android/tests/run-smoke-test.test.mjs` assert that importing the entry starts nothing.
 
@@ -744,10 +733,10 @@ Gates that passed without checking what they claimed:
   `latestStatus` in `tools/check-github-action-versions.mjs` now prints ✓ only after a comparison,
   pinned by `tools/tests/check-github-action-versions.test.mjs`.
 * PR #2450: the perf instrument fingerprint's tests checked only that each command's module list was
-  non-empty, and the lists left out the modules that dispatch every action tap.
-  `tools/perf/tests/instrument-import-graph.test.mjs` now walks each command's imports against its
-  list. The AI ready-cue matcher under test was also not the copy the page ran; the page script now
-  serialises the tested `isAiReadyCueAnimation` (`aiReadyCueWaitScript`).
+  non-empty, and the lists left out the modules that dispatch every action tap. The fix walked each
+  command's imports against its list. The AI ready-cue matcher under test was also not the copy the
+  page ran, and the fix serialised the tested matcher into the page script. Both retired with the
+  harness in #3160.
 * PR #2445: an E2E spec slept 900 ms and then read the swatch rings before `<html>` carried the new
   Reduce Motion answer. With the regression injected, it passed 3 runs of 3. The specs now sync on a
   state change the app exposes: `getAnimations(...)` `finished`, the request's
@@ -803,9 +792,8 @@ Source-text guards that a comment, another job, or another spelling could satisf
   padding, and a call nested in `max()`.
 * PR #2511: a first-cut guard that read the iPad gates probe's source literals passed with a
   scenario hard-coded to two strokes, and regexes over engine measure names read comments and
-  skipped template literals. `tools/perf/tests/probe-undo-depth.test.mjs` now runs the probe and
-  counts what it draws, and `tools/perf/tests/engine-measure-names.test.mjs` parses both sides with
-  the TypeScript compiler API.
+  skipped template literals. The fixes ran the probe and counted what it drew, and parsed both sides
+  with the TypeScript compiler API; both retired with the harness in #3160.
 * PR #2518: the dialog retirement settles on the `close` event or a one-frame fallback, and with the
   `close` listener removed every test still passed. `web/src/lib/actions/modalDialog.svelte.test.ts`
   now holds the fallback's frame and settles on `close` alone.
@@ -836,12 +824,11 @@ The 2026-10-03 campaign found doubles that were not the code they stood in for:
   ignore a failed commit. The harness's `git` override can now fail any step.
 * PR #2668: the workflow step executors ran scripts under `pipefail`, which CI did not give those
   steps, so the suite could not see a crashed reporter acquit a breach. The executors in
-  `tools/tests/workflow-gates.test.mjs` and `tools/tests/workflow-hygiene.test.mjs` take
-  `BASH_STEP_ARGS` from `tools/ci-mirror/tests/workflow-job-steps.mjs`, the argv a declared
-  `shell: bash` gets.
+  `tools/tests/workflow-hygiene.test.mjs` take `BASH_STEP_ARGS` from
+  `tools/ci-mirror/tests/workflow-job-steps.mjs`, the argv a declared `shell: bash` gets.
 * PR #2679: the grant log's denial double was a hand-typed copy of an old wording that matched none
-  of the recorded rows it stood for. `tools/perf/tests/grant-log.test.mjs` builds it with the live
-  producer, `classifyAppiumLog`.
+  of the recorded rows it stood for. The fix built it with the live producer; the grant log retired
+  with the rig in #3160.
 * PR #2672: the first version of an import test recorded the generator's start on a `vi.fn`, and
   Vitest's default `clearMocks` erased that import-time call before the test read it, so the test
   passed with the `isMain` gate removed. It records into a plain list.
@@ -867,9 +854,9 @@ TOML escapes and respellings `tools/tests/netlify-cache-rules.test.mjs` refuses,
 fixture that holds spaces (`tools/tests/playwright-report-folder.test.mjs`), and the seed's own
 fallback form (`web/src/lib/platform/safeAreaProperties.test.ts`). Mocking only what the subject
 loads is review; PR #2508's throwing factories are the control for a double suspected dead. A double
-that copies a producer's output is built from the producer where it can be:
-`tools/perf/tests/grant-log.test.mjs` builds its denial with `classifyAppiumLog`, so rewording the
-producer fails the tests that use it (PR #2679). The git temp-repo fixture,
+that copies a producer's output is built from the producer where it can be, so rewording the
+producer fails the tests that use it (PR #2679); that is review-enforced since its test retired with
+the capture rig in #3160. The git temp-repo fixture,
 `tools/git-housekeeping/tests/fixtures/temp-repo.mjs`, pins `GIT_CONFIG_GLOBAL` and
 `GIT_CONFIG_NOSYSTEM`, and the real-git suites of PRs #2652, #2666, and #2677 also clear
 `GIT_CONFIG_COUNT` and `GIT_CONFIG_PARAMETERS`, which outrank repository config. Lint cannot see an
@@ -937,8 +924,7 @@ regression.
 * The asset-gen coupling table in `tools/asset-gen/README.md` is the allowlist
   `tools/asset-gen/tests/import-boundary.test.mjs` enforces; an undocumented import or a stale row
   fails (PR #2435).
-* `AUDITED_SWALLOWS` (`tools/perf/tests/silent-catch-inventory.test.mjs`) pins each silent catch by
-  identity, so a swap or a new one fails; PR #2401 shrank it by two.
+
 * `TOOLS_GRANDFATHERED_MAX_LINES` (`eslint.config.js`) freezes each oversized tool at its size, so
   growth fails lint. Lowering a cap after a shrink is review-enforced: `tools/CLAUDE.md` asks the
   shrinking PR to lower it, and PR #2405 rejected an equality test that would conflict on every

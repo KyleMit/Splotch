@@ -16,55 +16,6 @@ const ENTRIES = [
     'tools/page-load/run-lighthouse-ci.mjs',
     ['baseline', 'out', 'port', 'samples', 'no-build', 'report-only'],
   ],
-  ['tools/perf/campaign-status.mjs', ['target', 'output-root', 'ledger', 'modes', 'items']],
-  ['tools/perf/check-matrix-staleness.mjs', ['manifest', 'base', 'strict', 'release-gate-age']],
-  ['tools/perf/gen-crayon-glaze-sheet.mjs', ['returns', 'passes', 'out-dir', 'engine', 'port']],
-  ['tools/perf/gen-performance-matrix.mjs', ['strict']],
-  [
-    'tools/perf/keep-capture-evidence.mjs',
-    [
-      'corpus',
-      'campaign',
-      'product-commit',
-      'target',
-      'filter',
-      'force',
-      'keep-all',
-      'study',
-      'allow-failed',
-    ],
-  ],
-  [
-    'tools/perf/rescore-captures.mjs',
-    ['corpus', 'filter', 'target', 'json', 'include-unattributable'],
-  ],
-];
-
-// Device entries, each with the argv of its offline mode: spawned in it, an
-// entry whose refusal went missing prints a checklist instead of waking a phone.
-const DEVICE_ENTRIES = [
-  [
-    'tools/perf/run-operator-session.mjs',
-    ['--plan'],
-    [
-      'plan',
-      'steps',
-      'brushes',
-      'orientations',
-      'theme',
-      'seconds',
-      'probe-port',
-      'android-serial',
-      'ios-udid',
-    ],
-  ],
-  // No build, and a serial adb cannot list: a missing refusal stops at the
-  // device listing instead of rebuilding the app and driving a phone.
-  [
-    'tools/perf/android/capture-webview-session.mjs',
-    ['--no-build', '--device-id=no-such-device'],
-    ['no-build', 'device-id'],
-  ],
 ];
 
 const runEntry = (script, args) =>
@@ -82,58 +33,33 @@ function expectUnknownFlagRefused(result, known) {
   );
 }
 
-describe('non-device tool entries', () => {
+describe('tool entries', () => {
   // An empty stdout is the proof the refusal came first: every one of these
   // prints, builds, or writes as soon as it starts work.
   it.each(ENTRIES)('%s refuses an unknown flag before doing any work', (script, known) => {
     expectUnknownFlagRefused(runEntry(script, ['--definitely-not-a-flag']), known);
   });
 
-  // gen:performance-matrix takes its manifest positionally; given the staleness
-  // checker's `--manifest=` it regenerated the DEFAULT matrix and exited 0.
-  it('refuses the staleness checker spelling of a manifest on the generator', () => {
-    const manifest =
-      '--manifest=scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
-    const result = runEntry('tools/perf/gen-performance-matrix.mjs', [manifest]);
-
-    expect(result.status).toBe(1);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toBe(`Unknown flag ${manifest} — known flags: strict\n`);
-  });
-
   // Each entry reads its flags in its isMain branch and hands them to the
   // function it runs; every row fails on a value only the flag could supply.
-  it.each([
-    ['tools/perf/campaign-status.mjs', ['--target=no-such-target'], 'no-such-target'],
-    ['tools/perf/check-matrix-staleness.mjs', ['--manifest=no/such.json'], 'no/such.json'],
-    ['tools/perf/gen-performance-matrix.mjs', ['no/such.json'], 'no/such.json'],
-    ['tools/perf/keep-capture-evidence.mjs', ['--corpus=x'], '--campaign=<name> is required'],
-    ['tools/perf/rescore-captures.mjs', ['--corpus=tools/perf', '--filter=no-such'], 'no-such'],
-    ['tools/page-load/run-lighthouse-ci.mjs', ['--samples=4'], '--samples must be an odd'],
-  ])('%s hands %j to the function it runs', (script, args, expected) => {
-    const result = runEntry(script, args);
+  it.each([['tools/page-load/run-lighthouse-ci.mjs', ['--samples=4'], '--samples must be an odd']])(
+    '%s hands %j to the function it runs',
+    (script, args, expected) => {
+      const result = runEntry(script, args);
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain(expected);
-  });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(expected);
+    }
+  );
 
-  // `--strict=true` read as absent, so the lenient gate ran and passed.
+  // A switch written with a value once read as absent, so a lenient gate ran and passed.
   it('refuses a switch written with a value', () => {
-    const result = runEntry('tools/perf/check-matrix-staleness.mjs', ['--strict=true']);
+    const result = runEntry('tools/page-load/run-lighthouse-ci.mjs', ['--no-build=true']);
 
     expect(result.status).toBe(1);
     expect(result.stdout).toBe('');
-    expect(result.stderr).toBe('--strict is a switch: write --strict with no value\n');
+    expect(result.stderr).toBe('--no-build is a switch: write --no-build with no value\n');
   });
-});
-
-describe('device tool entries', () => {
-  it.each(DEVICE_ENTRIES)(
-    '%s refuses an unknown flag before doing any work',
-    (script, offline, known) => {
-      expectUnknownFlagRefused(runEntry(script, [...offline, '--definitely-not-a-flag']), known);
-    }
-  );
 });
 
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
@@ -147,22 +73,19 @@ const bareScriptsRunning = (script) =>
     .map(([name]) => name);
 
 describe('npm run info', () => {
-  it.each([...ENTRIES, ...DEVICE_ENTRIES.map(([script, , known]) => [script, known])])(
-    'names every flag %s accepts',
-    (script, known) => {
-      const scripts = bareScriptsRunning(script);
-      const unnamed = scripts.flatMap((name) =>
-        known
-          .filter(
-            (flag) => !new RegExp(`--${flag}(?![a-z-])`).test(packageJson['scripts-info'][name])
-          )
-          .map((flag) => `${name}: --${flag}`)
-      );
+  it.each(ENTRIES)('names every flag %s accepts', (script, known) => {
+    const scripts = bareScriptsRunning(script);
+    const unnamed = scripts.flatMap((name) =>
+      known
+        .filter(
+          (flag) => !new RegExp(`--${flag}(?![a-z-])`).test(packageJson['scripts-info'][name])
+        )
+        .map((flag) => `${name}: --${flag}`)
+    );
 
-      expect(scripts).not.toEqual([]);
-      expect(unnamed).toEqual([]);
-    }
-  );
+    expect(scripts).not.toEqual([]);
+    expect(unnamed).toEqual([]);
+  });
 });
 
 const hasExportModifier = (node) =>
@@ -243,16 +166,11 @@ describe('exported tool functions', () => {
   });
 
   // A flag read in a parameter default runs whenever a caller leaves that
-  // option out, so an in-process caller answers to its own process's argv:
-  // prepare-capture never passes verifyAndroidInput a gesture count, so its
-  // own --gesture-repeats would have set the preflight's. The entry's isMain
-  // branch reads the flags and passes them in instead. The capture entries
-  // below still read theirs in place; the list can only shrink.
-  const KNOWN_FLAG_READING_DEFAULTS = [
-    'tools/perf/android/capture-bundled-frames.mjs: captureBundledFrames',
-    'tools/perf/split-capture/capture-device-frames.mjs: captureDeviceFrames',
-    'tools/perf/split-capture/capture-hand-input.mjs: captureHandInput',
-  ];
+  // option out, so an in-process caller answers to its own process's argv: a
+  // preflight that never passed a gesture count once had its own
+  // --gesture-repeats set the count of the check it called. The entry's isMain
+  // branch reads the flags and passes them in instead. The list can only shrink.
+  const KNOWN_FLAG_READING_DEFAULTS = [];
   const flagReadingDefaults = parameterReads(FLAG_READ);
 
   it('read no single flag in a parameter default', () => {

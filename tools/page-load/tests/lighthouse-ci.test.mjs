@@ -13,6 +13,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
+import { parse } from 'yaml';
+import { readNetlifyConfig } from '../../../e2e/server/netlifyConfig.ts';
 import { jobBlock, testWorkflow } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import {
   GATED_METRICS,
@@ -38,7 +40,7 @@ const PAGE_LOAD_JOB = 'page-load-performance';
 // Whole lines of the job, indentation aside, so a commented-out line is not mistaken for one.
 const WIRED_LINES = [
   'browsers: chromium',
-  'run: npm run test:lighthouse:ci -- --port=4197',
+  'run: npm run test:lighthouse:ci -- --no-build --port=4197',
   'path: lighthouse-reports/ci/',
   'if-no-files-found: warn',
 ];
@@ -58,6 +60,7 @@ function measurements(value) {
         fcpMs: value + offset,
         lcpMs: value + 100 + offset,
         tbtMs: value + 200 + offset,
+        cls: offset / 100,
         performanceScore: 90 - offset,
       }))
     )
@@ -118,7 +121,7 @@ describe('the Lighthouse CI metric contract', () => {
 
   it('gates stable paints and reports noisy scheduler-derived values', () => {
     expect(GATED_METRICS).toEqual(['fcpMs', 'lcpMs']);
-    expect(REPORTED_METRICS).toEqual(['tbtMs', 'performanceScore']);
+    expect(REPORTED_METRICS).toEqual(['tbtMs', 'cls', 'performanceScore']);
   });
 
   it('uses the median so one shared-runner outlier cannot fail the gate', () => {
@@ -133,6 +136,7 @@ describe('the Lighthouse CI metric contract', () => {
       fcpMs: 1_001,
       lcpMs: 1_101,
       tbtMs: 1_201,
+      cls: 0.01,
       performanceScore: 89,
     });
     expect(Object.keys(summary)).toEqual(Object.keys(PROFILES));
@@ -207,13 +211,13 @@ describe('the Lighthouse CI metric contract', () => {
     expect(LIGHTHOUSE_TIMEOUT_MS).toBe(120_000);
   });
 
-  it('gives the recurring first-visit LCP mode equal headroom on both viewports', () => {
-    expect(committedBaseline.profiles['tablet-landscape'].first.limits.lcpMs).toBe(
-      committedBaseline.profiles['phone-portrait'].first.limits.lcpMs
-    );
+  it.each(VISITS)('holds both viewports to the same %s-visit limits', (visit) => {
+    const { 'phone-portrait': phone, 'tablet-landscape': tablet } = committedBaseline.profiles;
+
+    expect(tablet[visit].limits).toEqual(phone[visit].limits);
   });
 
-  it('keeps the production-build CI job wired to Chromium, an explicit port, and artifacts', () => {
+  it('keeps the CI job wired to Chromium, an explicit port, the served export, and artifacts', () => {
     expect(unwiredLines(testWorkflow)).toEqual([]);
   });
 
@@ -241,6 +245,67 @@ describe('the Lighthouse CI metric contract', () => {
 
     expect(readBaseline(copy)).toEqual(committedBaseline);
     expect(readBaseline('tools/page-load/baseline.json')).toEqual(committedBaseline);
+  });
+});
+
+// The job times the export the Native web build job uploaded, at the directory the suite's server
+// publishes from (e2e/server/netlifySite.ts reads it from netlify.toml). A job that built its own,
+// or unpacked it anywhere else, would time something the deploy never ships.
+const EXPORT_ARTIFACT = 'rn-web-export';
+const { publish } = readNetlifyConfig(readFileSync(join(ROOT, 'netlify.toml'), 'utf8'));
+
+function exportWiringProblems(workflow) {
+  const job = parse(workflow).jobs[PAGE_LOAD_JOB];
+  const problems = [];
+  if (job.needs !== 'native-web-build') problems.push('does not wait for the export build');
+  const download = job.steps.findIndex(
+    (step) =>
+      step.uses?.startsWith('actions/download-artifact@') && step.with?.name === EXPORT_ARTIFACT
+  );
+  if (download < 0) return [...problems, 'never downloads the export'];
+  if (job.steps[download].with.path !== `${publish}/`) {
+    problems.push('unpacks it off the publish path');
+  }
+  const gate = job.steps.findIndex((step) => step.run?.startsWith('npm run test:lighthouse:ci'));
+  if (gate < download) problems.push('runs the gate before the download');
+  return problems;
+}
+
+const DOWNLOAD_STEP = / {6}- name: Download the export\n[\s\S]*?\n\n/;
+const GATE_STEP = / {6}- name: Run page-load performance gate\n[\s\S]*?\n\n/;
+
+describe('the export the CI job times', () => {
+  const job = jobBlock(testWorkflow, PAGE_LOAD_JOB);
+  const withJob = (edited) => testWorkflow.replace(job, () => edited);
+
+  it('is the one the Native web build job uploaded, unpacked at the publish path', () => {
+    expect(exportWiringProblems(testWorkflow)).toEqual([]);
+  });
+
+  it('is missed once the job stops waiting for that build', () => {
+    expect(exportWiringProblems(withJob(job.replace('    needs: native-web-build\n', '')))).toEqual(
+      ['does not wait for the export build']
+    );
+  });
+
+  it('is missed once the job stops downloading it', () => {
+    expect(exportWiringProblems(withJob(job.replace(DOWNLOAD_STEP, '')))).toEqual([
+      'never downloads the export',
+    ]);
+  });
+
+  it('is missed once it is unpacked anywhere but the publish path', () => {
+    const elsewhere = job.replace(`path: ${publish}/`, 'path: somewhere/else/');
+
+    expect(exportWiringProblems(withJob(elsewhere))).toEqual(['unpacks it off the publish path']);
+  });
+
+  it('is missed once the gate runs before the download', () => {
+    const [download] = job.match(DOWNLOAD_STEP);
+    const [gate] = job.match(GATE_STEP);
+    const reordered = job.replace(download, '').replace(gate, `${gate}${download}`);
+
+    expect(exportWiringProblems(withJob(reordered))).toEqual(['runs the gate before the download']);
   });
 });
 

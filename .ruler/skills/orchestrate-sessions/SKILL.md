@@ -87,10 +87,9 @@ Full suites, fixed-port Netlify flows, performance captures, and native runs are
 different ports do not make them safe to overlap. Record who owns the host/rig before dispatching
 that work; a worker must wait or report the missing slot rather than competing for it.
 
-For device work, name the `start-capture-session` preflight and whether this worker must **keep the
-rig running and verified idle** for the next worker or **release it** with
-`release-capture-session`. Do not start/stop the rig from the orchestrator. Confirm the receiving
-worker was given an amended policy before blaming it for following an older prompt.
+For device work, name which devices the worker may drive and whether it must **leave them attached,
+unlocked and idle** for the next worker. Do not drive the devices from the orchestrator. Confirm the
+receiving worker was given an amended policy before blaming it for following an older prompt.
 
 ## Build one prompt
 
