@@ -7,6 +7,8 @@ const RGBA_CHANNELS = 4;
 // A pixel this dark is the black stroke the spec drew, never the paper's grain.
 const INK_MAX_CHANNEL = 40;
 const SAFETY_REFUSAL_STATUS = 422;
+// Far enough along that a dial restarted from nothing could not be mistaken for it.
+const MIN_FILLED_SLICES = 3;
 
 // The AI result dialog, driven through the real chrome with the generation endpoint stood in for
 // below the client pipeline, so canvas export, upload encoding, response parsing and the result's
@@ -134,6 +136,29 @@ test.describe('a generation sent to the corner', () => {
     await polaroid.click();
     await expect(result).toBeVisible();
     await expect(polaroid).toBeHidden();
+  });
+
+  test('keeps the run where it got to while it waited', async ({ drawingScreen }) => {
+    const { page } = drawingScreen;
+    const { result } = await openAiResult(drawingScreen);
+    const dial = result.getByRole('progressbar');
+    // The dial paints what is left to fill as one wedge slice per few degrees, so a dial that has
+    // filled further has fewer slices; the slices are what a child sees, since the dial itself
+    // exposes no value.
+    const unfilledSlices = () => dial.locator('path').count();
+    await expect(dial).toBeVisible();
+    const atStart = await unfilledSlices();
+    await expect.poll(unfilledSlices).toBeLessThanOrEqual(atStart - MIN_FILLED_SLICES);
+    const before = await unfilledSlices();
+
+    await result.getByRole('button', { name: 'Keep drawing while you wait' }).click();
+    await expect(result).toBeHidden();
+    await page.getByRole('button', { name: 'Your picture is being made — tap to watch' }).click();
+    await expect(dial).toBeVisible();
+
+    // Read once, as the dial reappears: a dial that restarted would read near `atStart`, and
+    // polling for it to climb back past `before` would pass against that restart.
+    expect(await unfilledSlices()).toBeLessThanOrEqual(before);
   });
 
   test('is what the picture button reopens while it is still running', async ({

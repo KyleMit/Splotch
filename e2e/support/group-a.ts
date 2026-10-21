@@ -1,7 +1,7 @@
 // Helpers the group A specs share (ported from web/tests, issue 3154). The suite's common helpers
 // are fixtures.ts, support/app.ts and support/drawing.ts; a helper only one spec uses stays in
 // that spec.
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Download, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
 import { test as base } from '../fixtures.ts';
@@ -145,6 +145,32 @@ export async function openDrawer(page: Page): Promise<void> {
   const expand = page.getByRole('button', { name: 'Expand controls' });
   if (await expand.isVisible()) await expand.click();
   await expect(page.getByRole('button', { name: 'Collapse controls' })).toBeVisible();
+}
+
+const DOWNLOAD_TIMEOUT_MS = 15_000;
+// A pixel this dark is the black stroke a spec drew, never the paper's grain.
+const SAVED_INK_MAX_CHANNEL = 60;
+
+/** Saves the picture from the drawer and answers the PNG the browser downloads. */
+export async function savePicture(page: Page): Promise<Download> {
+  await openDrawer(page);
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: DOWNLOAD_TIMEOUT_MS }),
+    page.getByRole('button', { name: 'Save screenshot', exact: true }).click(),
+  ]);
+  return download;
+}
+
+/** How many pixels of a saved picture are dark enough to be a black stroke. */
+export async function inkInSavedPicture(download: Download): Promise<number> {
+  const { data } = await sharp(await download.path())
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let inked = 0;
+  for (let offset = 0; offset < data.length; offset += RGB_CHANNELS)
+    if (Math.max(data[offset], data[offset + 1], data[offset + 2]) < SAVED_INK_MAX_CHANNEL) inked++;
+  return inked;
 }
 
 /** Picks a brush from the drawer's Brushes menu and waits for the menu to name it pressed. */

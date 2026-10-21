@@ -1,16 +1,16 @@
-import type { Download, Page } from '@playwright/test';
-import sharp from 'sharp';
+import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures.ts';
-import { openDrawer, openSettingsSection } from '../support/group-a.ts';
+import {
+  inkInSavedPicture,
+  openDrawer,
+  openSettingsSection,
+  savePicture,
+} from '../support/group-a.ts';
 
 type ButtonStyle = 'Raised' | 'Flat';
 
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 1180, height: 820 };
-const DOWNLOAD_TIMEOUT_MS = 15_000;
-const RGB_CHANNELS = 3;
-// A pixel this dark is the black stroke the spec drew, never the paper's grain.
-const INK_MAX_CHANNEL = 60;
 
 async function chooseButtonStyle(page: Page, style: ButtonStyle) {
   const section = await openSettingsSection(page, 'Appearance');
@@ -19,26 +19,6 @@ async function chooseButtonStyle(page: Page, style: ButtonStyle) {
   await expect(picker.getByRole('radio', { name: style, exact: true })).toBeChecked();
   await section.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(section).toBeHidden();
-}
-
-async function inkIn(download: Download): Promise<number> {
-  const { data } = await sharp(await download.path())
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  let inked = 0;
-  for (let offset = 0; offset < data.length; offset += RGB_CHANNELS)
-    if (Math.max(data[offset], data[offset + 1], data[offset + 2]) < INK_MAX_CHANNEL) inked++;
-  return inked;
-}
-
-async function savedPictureInk(page: Page): Promise<number> {
-  await openDrawer(page);
-  const [download] = await Promise.all([
-    page.waitForEvent('download', { timeout: DOWNLOAD_TIMEOUT_MS }),
-    page.getByRole('button', { name: 'Save screenshot', exact: true }).click(),
-  ]);
-  return inkIn(download);
 }
 
 // The drawing and the page it sits on belong to the screen, not to how its buttons are dressed: a
@@ -59,7 +39,7 @@ for (const layout of [PHONE, TABLET]) {
 
       await openDrawer(page);
       await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
-      expect(await savedPictureInk(page)).toBeGreaterThan(stroke.lengthPx);
+      expect(await inkInSavedPicture(await savePicture(page))).toBeGreaterThan(stroke.lengthPx);
 
       await page.reload();
       const section = await openSettingsSection(page, 'Appearance');
@@ -87,7 +67,7 @@ for (const layout of [PHONE, TABLET]) {
 
       await openDrawer(page);
       await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
-      expect(await savedPictureInk(page)).toBeGreaterThan(stroke.lengthPx);
+      expect(await inkInSavedPicture(await savePicture(page))).toBeGreaterThan(stroke.lengthPx);
       await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
       await expect(
         page.getByRole('button', { name: 'Clear active coloring page: Cat' })

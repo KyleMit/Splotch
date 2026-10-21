@@ -20,10 +20,11 @@ const SETTLE_POLL_MS = 400;
 const WHOLE_SWEEP_TIMEOUT_MS = 180_000;
 const SETTLE_TIMEOUT_MS = 20_000;
 
-// Reference screens whose live layout still lands off the frame; each is a gap the disposition
-// table records. The test holds the drift to exactly this list: a listed screen that stops
+// Reference screens whose live layout still lands off the frame, each with the most pixels it may
+// differ by (the swatches there sit a few pixels off, against ADR-0180's none); each is a gap the
+// disposition table records. The cap holds the drift from growing, and a listed screen that stops
 // differing fails until its entry is deleted.
-const DRIFTING_REFERENCE_SCREENS: readonly string[] = ['1366x1024'];
+const KNOWN_DRIFT_MAX_PIXELS: Readonly<Record<string, number>> = { '1366x1024': 7000 };
 
 type Screen = { width: number; height: number; name: string };
 
@@ -114,9 +115,10 @@ test('the settled screen lands on the prerendered first frame at every reference
   for (const screen of screens) {
     for (const colorScheme of SCHEMES) {
       const differing = await differingPixels(browser, screen, colorScheme);
-      expect(differing > 0, `${screen.name} ${colorScheme} differs in ${differing} pixels`).toBe(
-        DRIFTING_REFERENCE_SCREENS.includes(screen.name)
-      );
+      const cap = KNOWN_DRIFT_MAX_PIXELS[screen.name] ?? 0;
+      const where = `${screen.name} ${colorScheme}`;
+      expect(differing, `${where} differs by more than its ${cap} pixels`).toBeLessThanOrEqual(cap);
+      expect(differing > 0, `${where} no longer differs: delete its drift entry`).toBe(cap > 0);
     }
   }
 });

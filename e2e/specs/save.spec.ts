@@ -1,27 +1,17 @@
-import type { Download, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import sharp from 'sharp';
 import { expect, test } from '../fixtures.ts';
-import { expectPaperCleared, openDrawer } from '../support/group-a.ts';
+import {
+  expectPaperCleared,
+  inkInSavedPicture,
+  openDrawer,
+  savePicture,
+} from '../support/group-a.ts';
 
 const PICTURE_FILENAME = /^splotch-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$/;
-const RGB_CHANNELS = 3;
-// A pixel this dark is the black stroke the spec drew, never the paper's grain.
-const INK_MAX_CHANNEL = 60;
-const DOWNLOAD_TIMEOUT_MS = 15_000;
 
 function saveButton(page: Page) {
   return page.getByRole('button', { name: 'Save screenshot', exact: true });
-}
-
-async function inkInSavedPicture(download: Download): Promise<number> {
-  const { data } = await sharp(await download.path())
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  let inked = 0;
-  for (let offset = 0; offset < data.length; offset += RGB_CHANNELS)
-    if (Math.max(data[offset], data[offset + 1], data[offset + 2]) < INK_MAX_CHANNEL) inked++;
-  return inked;
 }
 
 test.describe('saving the picture', () => {
@@ -41,12 +31,8 @@ test.describe('saving the picture', () => {
     const { page } = drawingScreen;
     await drawingScreen.pickColor('Black');
     const stroke = await drawingScreen.drawStroke();
-    await openDrawer(page);
 
-    const [download] = await Promise.all([
-      page.waitForEvent('download', { timeout: DOWNLOAD_TIMEOUT_MS }),
-      saveButton(page).click(),
-    ]);
+    const download = await savePicture(page);
 
     expect(download.suggestedFilename()).toMatch(PICTURE_FILENAME);
     expect((await sharp(await download.path()).metadata()).format).toBe('png');
@@ -59,11 +45,7 @@ test.describe('saving the picture', () => {
     const { page } = drawingScreen;
     await drawingScreen.pickColor('Black');
     const stroke = await drawingScreen.drawStroke();
-    await openDrawer(page);
-    const [download] = await Promise.all([
-      page.waitForEvent('download', { timeout: DOWNLOAD_TIMEOUT_MS }),
-      saveButton(page).click(),
-    ]);
+    const download = await savePicture(page);
 
     await page.getByRole('button', { name: 'Clear drawing', exact: true }).focus();
     await page.keyboard.press('Enter');

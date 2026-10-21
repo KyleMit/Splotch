@@ -12,6 +12,7 @@ import {
   openAiResult,
   openDrawer,
   openSettings,
+  openSettingsSection,
   setGateFrequency,
   solveParentalGate,
   startAiGeneration,
@@ -73,62 +74,66 @@ function parseRgb(value: string) {
   return match.slice(1, 1 + RGB_CHANNELS).map(Number);
 }
 
-test.describe('adult-facing pages have no serious accessibility violations', () => {
-  test('/privacy', async ({ page }) => {
-    await openDocument(page, '/privacy');
-    await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible();
-    await expectNoSeriousViolations(page);
-  });
+for (const colorScheme of SCHEMES) {
+  test.describe(`adult-facing pages have no serious accessibility violations in ${colorScheme} mode`, () => {
+    test.use({ colorScheme });
 
-  test('/changelog', async ({ page }) => {
-    await openDocument(page, '/changelog');
-    await expect(page.getByRole('heading', { level: 1, name: 'Changelog' })).toBeVisible();
-    await expectNoSeriousViolations(page);
-  });
-
-  // Both tabs are scanned: the panel that is not on show is display:none, so axe skips it.
-  for (const [tab, heading] of [
-    ['Android', 'How to join on Android'],
-    ['iPhone / iPad', 'How to join on iPhone or iPad'],
-  ] as const) {
-    test(`/beta on the ${tab} tab`, async ({ page }) => {
-      await openDocument(page, '/beta');
-      const option = page.getByRole('radio', { name: tab });
-      await expectWired(option);
-      await option.click();
-      await expect(option).toBeChecked();
-      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    test('/privacy', async ({ page }) => {
+      await openDocument(page, '/privacy');
+      await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible();
       await expectNoSeriousViolations(page);
     });
-  }
 
-  test('/feedback, with its device-info panel open', async ({ page }) => {
-    await openDocument(page, '/feedback');
-    await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
-    const deviceInfo = page.getByRole('checkbox');
-    await expectWired(deviceInfo);
-    await deviceInfo.check();
-    await expect(page.getByText('What will be sent?')).toBeVisible();
-    await expectNoSeriousViolations(page);
-  });
+    test('/changelog', async ({ page }) => {
+      await openDocument(page, '/changelog');
+      await expect(page.getByRole('heading', { level: 1, name: 'Changelog' })).toBeVisible();
+      await expectNoSeriousViolations(page);
+    });
 
-  test('/admin signed out', async ({ page }) => {
-    await openDocument(page, '/admin');
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-    // A disabled control is skipped by axe, and the live button fades in from its parked grey,
-    // so the scan waits for the button to be live and painted.
-    await expect(adminSignInForm(page).submit).toBeEnabled();
-    await expectColorsSettled(adminSignInForm(page).submit);
-    await expectNoSeriousViolations(page);
-  });
+    // Both tabs are scanned: the panel that is not on show is display:none, so axe skips it.
+    for (const [tab, heading] of [
+      ['Android', 'How to join on Android'],
+      ['iPhone / iPad', 'How to join on iPhone or iPad'],
+    ] as const) {
+      test(`/beta on the ${tab} tab`, async ({ page }) => {
+        await openDocument(page, '/beta');
+        const option = page.getByRole('radio', { name: tab });
+        await expectWired(option);
+        await option.click();
+        await expect(option).toBeChecked();
+        await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+        await expectNoSeriousViolations(page);
+      });
+    }
 
-  test('/admin signed in', async ({ adminPage: page }) => {
-    const add = page.getByRole('button', { name: 'Add code', exact: true });
-    await expect(add).toBeEnabled();
-    await expectColorsSettled(add);
-    await expectNoSeriousViolations(page);
+    test('/feedback, with its device-info panel open', async ({ page }) => {
+      await openDocument(page, '/feedback');
+      await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
+      const deviceInfo = page.getByRole('checkbox');
+      await expectWired(deviceInfo);
+      await deviceInfo.check();
+      await expect(page.getByText('What will be sent?')).toBeVisible();
+      await expectNoSeriousViolations(page);
+    });
+
+    test('/admin signed out', async ({ page }) => {
+      await openDocument(page, '/admin');
+      await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+      // A disabled control is skipped by axe, and the live button fades in from its parked grey,
+      // so the scan waits for the button to be live and painted.
+      await expect(adminSignInForm(page).submit).toBeEnabled();
+      await expectColorsSettled(adminSignInForm(page).submit);
+      await expectNoSeriousViolations(page);
+    });
+
+    test('/admin signed in', async ({ adminPage: page }) => {
+      const add = page.getByRole('button', { name: 'Add code', exact: true });
+      await expect(add).toBeEnabled();
+      await expectColorsSettled(add);
+      await expectNoSeriousViolations(page);
+    });
   });
-});
+}
 
 test.describe('the Settings dialog', () => {
   for (const colorScheme of SCHEMES) {
@@ -139,6 +144,59 @@ test.describe('the Settings dialog', () => {
       const settings = await openSettings(drawingScreen.page);
       await expectSettled(settings);
       await expectNoSeriousViolations(drawingScreen.page, '[role="dialog"]');
+    });
+  }
+});
+
+// Parent Center lays its choices out as a matrix of bare rings, which axe does not read as text, so
+// each ring's contrast against its track is measured here, to the 3:1 non-text floor. The phone
+// shows the choices as labelled segments instead, which axe does scan.
+const NON_TEXT_CONTRAST_MIN = 3;
+const TABLET_PORTRAIT = { width: 1032, height: 1376 };
+const PHONE = { width: 375, height: 812 };
+
+test.describe('Parent Center', () => {
+  for (const colorScheme of SCHEMES) {
+    test.describe(`in ${colorScheme} mode`, () => {
+      test.use({ colorScheme });
+
+      test('draws its matrix rings above the non-text contrast floor', async ({
+        drawingScreen,
+      }) => {
+        const { page } = drawingScreen;
+        await page.setViewportSize(TABLET_PORTRAIT);
+        const section = await openSettingsSection(page, 'Parent Center');
+        const choices = section
+          .getByRole('radiogroup', { name: /parental gate frequency$/ })
+          .first();
+        await expect(choices).toBeVisible();
+        await expectSettled(choices);
+
+        const { ring, track } = await choices.evaluate((group) => {
+          const mark = group.querySelector(
+            '[role="radio"][aria-checked="false"] span[aria-hidden]'
+          );
+          if (!mark) throw new Error('the matrix draws no ring');
+          return {
+            ring: getComputedStyle(mark).borderColor,
+            track: getComputedStyle(group).backgroundColor,
+          };
+        });
+
+        expect(contrastRatio(parseRgb(ring), parseRgb(track))).toBeGreaterThanOrEqual(
+          NON_TEXT_CONTRAST_MIN
+        );
+      });
+
+      test('has no serious accessibility violations on a phone', async ({ drawingScreen }) => {
+        const { page } = drawingScreen;
+        await page.setViewportSize(PHONE);
+        const section = await openSettingsSection(page, 'Parent Center');
+        await expect(section).toBeVisible();
+        await expectSettled(section);
+
+        await expectNoSeriousViolations(page, '[role="dialog"]');
+      });
     });
   }
 });
