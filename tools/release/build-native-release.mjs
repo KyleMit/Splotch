@@ -1,13 +1,20 @@
-// Builds the React Native app's release artifacts, the build skill's phase 2 (ADR-0077).
+// Builds the React Native app's release artifacts, the build skill's phase 2 (ADR-0077), and
+// the store-identity Release builds the native smoke installs (ADR-0124).
 //
-//   node tools/release/build-native-release.mjs bundle    store .aab, signed with the upload key
-//   node tools/release/build-native-release.mjs apk       Release-optimized .dev .apk to install
-//   node tools/release/build-native-release.mjs archive   store .xcarchive, signed with the team
-//   node tools/release/build-native-release.mjs ipa       store archive, then its App Store export
+//   node tools/release/build-native-release.mjs bundle      store .aab, signed with the upload key
+//   node tools/release/build-native-release.mjs apk         Release-optimized .dev .apk to install
+//   node tools/release/build-native-release.mjs store-apk   store-identity Release .apk to smoke
+//   node tools/release/build-native-release.mjs archive     store .xcarchive, signed with the team
+//   node tools/release/build-native-release.mjs ipa         store archive, then its App Store export
+//   node tools/release/build-native-release.mjs simulator   store-identity Release simulator .app
 //
 // Store identity is opt-in. Gradle's splotch.store property and ios/Store.xcconfig are the only
 // switches to art.splotch.app, and the store targets here are their only callers, so the .apk
 // stays art.splotch.app.dev and installs beside the store copy for testing or device performance.
+// The two smoke targets carry the store identity because that is what ships. store-apk signs with
+// whatever key keystore.properties names; the deploy smoke writes a throwaway one on its runner,
+// and Android refuses the result as an update to a Play-installed copy, whose signature differs.
+// simulator builds for the iOS Simulator SDK without signing, so no device accepts it.
 // Each target first deletes what it writes, so a failed build cannot leave an older version's
 // file where the publish step looks for this one.
 
@@ -29,6 +36,15 @@ import {
 
 export const STORE_GRADLE_PROPERTY = '-Psplotch.store=true';
 export const STORE_XCCONFIG = 'Store.xcconfig';
+
+const RELEASE_SIMULATOR_DERIVED_DATA = join(IOS_PROJECT_DIR, 'build', 'simulator');
+export const RELEASE_SIMULATOR_APP = join(
+  RELEASE_SIMULATOR_DERIVED_DATA,
+  'Build',
+  'Products',
+  'Release-iphonesimulator',
+  `${IOS_PROJECT_NAME}.app`
+);
 
 const gradle = (...tasks) => ({
   cmd: join(ROOT, ANDROID_PROJECT_DIR, 'gradlew'),
@@ -68,6 +84,29 @@ const storeArchive = ios(
   'archive'
 );
 
+// The generic destination builds the Release app without a booted simulator. A simulator app
+// runs only on this Mac's simulators, so it builds for this Mac's architecture alone, which
+// halves the compile against the destination's default of every simulator architecture.
+const SIMULATOR_ARCH = process.arch === 'arm64' ? 'arm64' : 'x86_64';
+const simulatorBuild = ios(
+  'xcodebuild',
+  '-workspace',
+  `${IOS_PROJECT_NAME}.xcworkspace`,
+  '-scheme',
+  IOS_PROJECT_NAME,
+  '-configuration',
+  'Release',
+  '-destination',
+  'generic/platform=iOS Simulator',
+  '-derivedDataPath',
+  join(ROOT, RELEASE_SIMULATOR_DERIVED_DATA),
+  '-xcconfig',
+  STORE_XCCONFIG,
+  `ARCHS=${SIMULATOR_ARCH}`,
+  'CODE_SIGNING_ALLOWED=NO',
+  'build'
+);
+
 const appStoreExport = ios(
   'xcodebuild',
   '-exportArchive',
@@ -93,6 +132,12 @@ export const TARGETS = {
     outputs: [RELEASE_APK],
     steps: [gradle(':app:assembleRelease')],
   },
+  'store-apk': {
+    appId: STORE_APP_ID,
+    artifact: RELEASE_APK,
+    outputs: [RELEASE_APK],
+    steps: [gradle(STORE_GRADLE_PROPERTY, ':app:assembleRelease')],
+  },
   archive: {
     appId: STORE_APP_ID,
     artifact: RELEASE_ARCHIVE,
@@ -104,6 +149,12 @@ export const TARGETS = {
     artifact: RELEASE_IPA,
     outputs: [RELEASE_ARCHIVE, RELEASE_IPA_DIR],
     steps: [podInstall, storeArchive, appStoreExport],
+  },
+  simulator: {
+    appId: STORE_APP_ID,
+    artifact: RELEASE_SIMULATOR_APP,
+    outputs: [RELEASE_SIMULATOR_APP],
+    steps: [podInstall, simulatorBuild],
   },
 };
 

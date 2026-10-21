@@ -1,16 +1,23 @@
-// One-shot local Android smoke test. Boots a HEADLESS emulator on a console
-// port no other emulator holds, builds + installs the app, runs the Maestro
-// smoke flow, then ALWAYS shuts that emulator down — even if the test fails.
-// This is `npm run test:android`.
+// One-shot local Android smoke test of the React Native app. Builds the
+// Release APK, boots a HEADLESS emulator on a console port no other emulator
+// holds, installs the APK, runs the Maestro smoke flow, then ALWAYS shuts that
+// emulator down — even if the test fails. This is `npm run test:android`.
 //
 // Every device step names the emulator this run started, `emulator-<port>`:
-// adb gets `-s`, Gradle's install gets ANDROID_SERIAL, and Maestro gets
-// `--device`. An emulator that is already open, or a phone that is plugged in,
-// is never driven, installed to, or shut down.
+// adb gets `-s` and Maestro gets `--device`. An emulator that is already open,
+// or a phone that is plugged in, is never driven, installed to, or shut down.
 //
-// It's just emulator-lifecycle glue: Maestro does the actual assertions
-// (the shared flow in ../lib/mobile-smoke-test.mjs). For a faster inner loop against an
-// emulator you keep running yourself, use `npm run test:android:device`.
+// The APK is the .dev Release build (`native:android:apk`), signed with the
+// local debug key. The deploy workflow smokes the store identity instead, which
+// signs with whatever key keystore.properties names: on its runner a throwaway
+// key, but on a developer's machine either the real upload key or nothing, and
+// this run neither requires the upload key nor writes a key file into the tree.
+// The two builds differ only in that suffix and key; the flow runs against the
+// suffix (../lib/mobile-smoke-test.mjs).
+//
+// It's just emulator-lifecycle glue: Maestro does the actual assertions. For a
+// faster inner loop against an emulator you keep running yourself, use
+// `npm run test:android:device`.
 //
 // Assumes the standard local setup (see `npm run android:setup`): the AVD named
 // by AVD_NAME in lib/android-toolchain.mjs, the SDK in its default location, Maestro
@@ -19,11 +26,14 @@
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { portIsFree } from '../../lib/net.mjs';
-import { isMain, pollUntil, runMain, sh } from '../../lib/proc.mjs';
-import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android-toolchain.mjs';
+import { join } from 'node:path';
+import { ROOT, isMain, pollUntil, runMain, sh } from '../../lib/proc.mjs';
+import { DEV_APP_ID, RELEASE_APK } from '../../release/lib/native-app.mjs';
+import { ADB, EMULATOR, AVD_NAME } from './lib/android-toolchain.mjs';
 import { runMaestroSmoke } from '../lib/mobile-smoke-test.mjs';
 
 const execFileAsync = promisify(execFile);
+export const BUILD_RELEASE_APK = 'node tools/release/build-native-release.mjs apk';
 const EMULATOR_BOOT_TIMEOUT_MS = 5 * 60 * 1000;
 const EMULATOR_BOOT_POLL_INTERVAL_MS = 2000;
 // `emulator -port` accepts only even console ports in this range, and reserves the
@@ -152,12 +162,10 @@ function requireRunningEmulator(serial, emulator) {
 }
 
 async function installAndRunSmoke(serial, emulator) {
-  await sh('npm run cap:sync');
   requireRunningEmulator(serial, emulator);
-  // AGP's install tasks read ANDROID_SERIAL; without it, installDebug installs on every device.
-  await sh(`ANDROID_SERIAL=${serial} "${GRADLEW}" :app:installDebug`, ANDROID_DIR);
+  await adb(serial, ['install', '-r', join(ROOT, RELEASE_APK)]);
   requireRunningEmulator(serial, emulator);
-  await runMaestroSmoke({ device: serial });
+  await runMaestroSmoke({ device: serial, appId: DEV_APP_ID });
 }
 
 // Stops only what this run started: by serial once it booted, otherwise the
@@ -173,8 +181,10 @@ async function shutDownEmulator({ serial, emulator, booted }) {
   await adb(serial, ['emu', 'kill']);
 }
 
+// The build needs no device, so it runs before this run holds an emulator.
 export async function runAndroidSmokeTest() {
   await checkHardwareAcceleration();
+  await sh(BUILD_RELEASE_APK);
   const consolePort = await pickConsolePort({
     adbDevices: await listAdbDevices(),
     probe: portIsFree,

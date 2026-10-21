@@ -1,26 +1,28 @@
 # Deployment smoke test (Maestro), shared by Android and iOS. It answers exactly
-# one question the web E2E suite structurally cannot: does the *shipped* app
-# boot? Installing the built artifact on a device and launching it exercises the
-# Capacitor WebView start plus the production static export — a crash, a bad
-# native config, or a white screen fails here and nowhere else.
+# one question the web E2E suite structurally cannot: does the *shipped* React
+# Native app boot? Installing the store-identity Release build on an emulator or
+# simulator and launching it exercises native startup and the embedded
+# JavaScript bundle — a crash, a bad native config, an R8 rule that strips a
+# class, or a bundle that throws at startup fails here and nowhere else.
 #
-# "Settings" is the accessibility label of the always-present corner button
-# (web/src/lib/components/SettingsButton.svelte). Waiting on it proves real UI
-# painted rather than that the process merely started, and it is the whole
-# assertion on purpose (ADR-0120): this flow deliberately does not navigate the
-# UI. Every step past the launch check that this flow has ever carried broke on
-# a UI change within three releases, and because these workflows are tag-only,
-# each break surfaced as a red release gate rather than a failing PR. Coverage
-# of what the UI *does* belongs in Playwright, which runs on every push and can
-# select elements properly; what stays here is what only a device can answer.
+# "Settings" is the accessibility label of the drawing screen's corner Settings
+# button (experiments/native-architecture/src/rsdDrawing/RsdEdgeControls.tsx).
+# Waiting on it proves real UI painted rather than that the process merely
+# started, and it is the whole assertion on purpose (ADR-0120): this flow
+# deliberately does not navigate the UI. Every step past the launch check that
+# this flow has ever carried broke on a UI change within three releases, and
+# because these workflows are tag-only, each break surfaced as a red release
+# gate rather than a failing PR. Coverage of what the UI *does* belongs in the
+# suites that run on every push; what stays here is what only a device can
+# answer.
 #
-# tools/tests/native-smoke-flow.test.mjs fails on `npm test` if this flow ever
-# selects a string the app no longer renders.
+# tools/tests/native-smoke-flow.test.mjs fails on every push if the component
+# that owns this label stops declaring it.
 #
-# Self-contained runs (boot device, build, install, test, tear down):
-#   npm run test:android    # headless Android emulator
-#   npm run test:ios        # iOS simulator (macOS-only)
-# Or ad-hoc against an app already installed on a running emulator/simulator:
+# Self-contained runs (build, boot a device, install, test, tear down):
+#   npm run test:android    # headless Android emulator, .dev Release APK
+#   npm run test:ios        # iOS simulator, store-identity Release app (macOS-only)
+# Or against the store-identity app already installed on a running emulator or simulator:
 #   npm run test:android:device
 appId: art.splotch.app
 ---
