@@ -13,8 +13,8 @@ vi.mock('$lib/server/rateLimit', () => ({ rateLimit, peekRateLimit }));
 vi.mock('$lib/server/ai/provider', () => ({ aiProvider: { verifyKey } }));
 vi.mock('$lib/server/tokens', () => ({ checkAccessToken }));
 
-import { POST as verifyKeyRoute } from '../../routes/api/verify-key/+server';
-import { POST as verifyAccessCodeRoute } from '../../routes/api/verify-access-code/+server';
+import { POST as verifyKeyRoute } from '../server/api/verifyKey';
+import { POST as verifyAccessCodeRoute } from '../server/api/verifyAccessCode';
 import { verifyCredential } from './verifyCredential';
 
 // Every request the client builds is handed to the real route handler for its

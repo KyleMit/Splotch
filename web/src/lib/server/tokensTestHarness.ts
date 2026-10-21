@@ -75,12 +75,12 @@ const { devState, envState, blobsState, storeFor } = vi.hoisted(() => {
 vi.mock('@netlify/blobs', () => ({
   getStore: ({ name }: { name: string }) => storeFor(name),
 }));
-vi.mock('$app/environment', () => ({
+vi.mock('$lib/server/runtimeMode', () => ({
   get dev() {
     return devState.value;
   },
 }));
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 export { envState, storeFor };
 

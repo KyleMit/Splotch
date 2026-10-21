@@ -19,7 +19,7 @@ const REGISTER_HEADING = '## API risk register';
 
 // Server endpoints and dev harnesses never ship to a floor browser, so their
 // probes say nothing about the floor.
-const EXCLUDED_SOURCE_DIRS = ['lib/server', 'routes/api', 'routes/dev'];
+const EXCLUDED_SOURCE_DIRS = ['lib/server', 'routes/dev'];
 const SOURCE_EXTENSIONS = /\.(?:ts|svelte)$/;
 const TEST_FILE = /\.(?:test|spec)\.ts$/;
 

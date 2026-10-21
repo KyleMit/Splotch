@@ -56,6 +56,9 @@ Where things live (full file-by-file map: `architecture` skill):
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;
   excluded from the native bundle. Server-only packages (`sharp`, `openai`, `@netlify/blobs`) are
   imported only here, in `+server.ts`/`*.server.ts` files, and in tests (lint-enforced).
+  `lib/server/api/` — the `/api/*` endpoint modules, all served by the one
+  `netlify/functions/api.ts` function through `api/apiFunction.ts` (see `api` skill). Everything
+  they import uses relative paths, never a SvelteKit alias, so Netlify can bundle the functions.
   `lib/server/ai/` — the provider-agnostic AI seam (ADR-0047): routes import `aiProvider` from
   `ai/provider.ts`; the `openai` SDK is only touched inside that directory.
 * `lib/storage.ts` — dual-layer persistence (localStorage + Capacitor Preferences mirror on native,
@@ -66,8 +69,8 @@ Where things live (full file-by-file map: `architecture` skill):
   load — this or an inline `import()` in a component — must sit behind the literal
   `__IS_CAPACITOR__` so Rollup drops the chunk from the web bundle (`isNative()` alone can't
   tree-shake); see the `mobile` skill's plugin-loading section.
-* `routes/api/*` — serverless endpoints (see `api` skill). `routes/admin` — token console.
-  `routes/dev/*` — test harnesses, unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`.
+* `routes/admin` — token console. `routes/dev/*` — test harnesses, unlocked by
+  `PUBLIC_ENABLE_DEV_HARNESS=true`.
 
 Compile-time constants from Vite (ADR-0010): `__APP_VERSION__`, `__BUILD_TIME__`,
 `__NATIVE_API_BASE__`, `__IS_CAPACITOR__` (true in the native build — prefer it over a runtime

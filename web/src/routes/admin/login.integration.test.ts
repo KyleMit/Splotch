@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { envState } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
 }));
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 // The /admin page module pulls these in for its loader and token actions; the
 // login action touches neither, so stubbing them keeps the import off Netlify
@@ -22,7 +22,7 @@ vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
 
 import { ADMIN_FORM_FIELDS } from '$lib/adminForm';
 import { MAX_ADMIN_LOGIN_BODY_BYTES, sessionToken } from '$lib/server/admin';
-import { POST } from '../api/admin/login/+server';
+import { POST } from '$lib/server/api/adminLogin';
 import { actions } from './+page.server';
 
 const SECRET = 'the-raw-secret';

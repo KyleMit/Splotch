@@ -12,7 +12,7 @@
 // tools/api-smoke/run-local-contract.mjs loads this file in plain Node, where
 // `$lib` does not resolve, so its imports stay type-only.
 
-import type { DeviceInfo } from '$lib/platform/deviceReport';
+import type { DeviceInfo } from './platform/deviceReport';
 
 export type ReportKind = 'bug' | 'feature';
 

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { getStoreMock } = vi.hoisted(() => ({ getStoreMock: vi.fn() }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
-vi.mock('$app/environment', () => ({ dev: true }));
+vi.mock('$lib/server/runtimeMode', () => ({ dev: true }));
 vi.mock('./sleep', () => ({ sleep: vi.fn(async () => {}) }));
 import { API_KEY_HEADER, INSTALLATION_ID_HEADER, REPORT_TOKEN_HEADER } from '../apiHeaders';
 import {

@@ -13,7 +13,7 @@ const root = join(import.meta.dirname, '../..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 const candidate = 'experiments/native-architecture/src/feedback/';
 const projections = [
-  ['web/src/lib/report.ts', 'report.ts', "'$lib/platform/deviceReport'", "'./deviceReport'"],
+  ['web/src/lib/report.ts', 'report.ts', "'./platform/deviceReport'", "'./deviceReport'"],
   ['web/src/lib/platform/deviceReport.ts', 'deviceReport.ts', "'../truncate'", "'./truncate'"],
   ['web/src/lib/truncate.ts', 'truncate.ts', '', ''],
   ['web/src/lib/state/parentalGateLockout.ts', 'gateLockout.ts', '', ''],

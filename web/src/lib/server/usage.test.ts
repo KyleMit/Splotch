@@ -6,7 +6,7 @@ const { envState, getStoreMock } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
   getStoreMock: vi.fn(),
 }));
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 
 import type { TokenUsage } from '../usageRecord';

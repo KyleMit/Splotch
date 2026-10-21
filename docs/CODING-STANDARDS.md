@@ -372,9 +372,9 @@ fixtures, for example the blank-pin and missing-Gradle-code cases in
 `tools/perf/tests/rescore-captures.test.mjs`. A failed read or write is a fixture too:
 `web/src/lib/state/saveFailure.svelte.test.ts` makes the store's `read` reject and asserts that no
 held picture is replaced (PR #2474); `web/src/lib/server/tokens.test.ts` and
-`web/src/routes/api/verify-access-code/server.test.ts` pin the 503 and which failures spend a guess
-(PR #2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject
-inside a temporary repository (PR #2471). A failure's message is asserted, not only its status: the
+`web/src/lib/server/api/verifyAccessCode.test.ts` pin the 503 and which failures spend a guess (PR
+#2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject inside
+a temporary repository (PR #2471). A failure's message is asserted, not only its status: the
 device-selection cases in `tools/perf/tests/android-serial.test.mjs` spawn `perf:android` against a
 fake `adb` and pin the refusal and the one call it made.
 `tools/mobile/tests/mobile-build-scripts.test.mjs` asserts the coloring-asset CLI's stderr ahead of
@@ -403,11 +403,11 @@ not restated here.
 production.
 
 **Earned by.** The AI generation ticket: `GenerationStartedBody`, with
-`web/src/routes/api/generation-result/settlementTestHarness.ts` parsing every server ticket through
-the client's `readAiImageResponse` (PR #2383). Report field names and kinds
-(`IMAGE_REPORT_FORM_FIELDS`, `REPORT_FORM_FIELDS`; `web/src/lib/reportClient.test.ts` sends the
-client's requests to the real handlers; PRs #2387, #2406). The job-id format, owned by `isJobId` (PR
-#2393). Privacy-policy claims against the purge functions' schedules (`IMAGE_REPORT_REVIEW_HOURS`;
+`web/src/lib/server/api/settlementTestHarness.ts` parsing every server ticket through the client's
+`readAiImageResponse` (PR #2383). Report field names and kinds (`IMAGE_REPORT_FORM_FIELDS`,
+`REPORT_FORM_FIELDS`; `web/src/lib/reportClient.test.ts` sends the client's requests to the real
+handlers; PRs #2387, #2406). The job-id format, owned by `isJobId` (PR #2393). Privacy-policy claims
+against the purge functions' schedules (`IMAGE_REPORT_REVIEW_HOURS`;
 `tools/mobile/tests/privacy-consistency.test.mjs`; PR #2411). Native plugin names and registrations
 (`web/src/lib/plugins/registration.test.ts`, PR #2402), and since PR #2436 the fields each native
 method resolves. The verify-key and verify-access-code request bodies (`VerifyKeyRequestBody`,

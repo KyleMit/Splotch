@@ -1,9 +1,9 @@
-import { env } from '$env/dynamic/private';
+import { env } from './privateEnv';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { rateLimit } from './rateLimit';
 import { adminLoginBucket } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
-import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
+import { AI_ACCESS_TOKEN_PARAM } from '../inviteLink';
 
 // Shared admin-auth core used by both front doors into token management:
 // the server-rendered /admin console (cookie session, form actions) and its

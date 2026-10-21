@@ -1,6 +1,6 @@
 import { getStore } from '@netlify/blobs';
-import { dev } from '$app/environment';
-import { FREE_GENERATION_LIMIT, type FreeGenerationFailureKind } from '$lib/freeGenerations';
+import { dev } from './runtimeMode';
+import { FREE_GENERATION_LIMIT, type FreeGenerationFailureKind } from '../freeGenerations';
 import {
   isFailureKind,
   normalizeRecoveryGrantOperations,

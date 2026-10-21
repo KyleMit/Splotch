@@ -5,7 +5,7 @@ const { envState } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
 }));
 
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 import { issueReportToken, verifyReportToken } from './reportToken';
 

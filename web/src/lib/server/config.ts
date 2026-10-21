@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { env } from './privateEnv';
 import { recoveryServiceEnabled } from './generationAttemptPolicy';
 
 // The private feedback repo user reports land in (ADR-0060). .env.example's

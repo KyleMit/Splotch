@@ -175,12 +175,12 @@ const WEB_SRC_SYNTAX_RESTRICTIONS = [
 // apiHandler call, so a wrapped handler exported by another name or specifier is flagged too. A
 // selector matches the callee by name, not binding, so the second set pins that name to the
 // http.ts import: a local or differently imported apiHandler is flagged where it is bound.
-const API_HANDLER_EXEMPT_ROUTE = 'web/src/routes/api/csp-report/+server.ts';
+const API_HANDLER_EXEMPT_ROUTE = 'web/src/lib/server/api/cspReport.ts';
 const API_METHOD_EXPORT = '/^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD|fallback)$/';
 const API_HANDLER_MESSAGE =
-  'Export every /api method handler as apiHandler(...) from $lib/server/http, so a thrown failure answers { ok:false, error } and is logged (docs/API.md). csp-report is the one exemption.';
+  'Export every /api method handler as apiHandler(...) from lib/server/http, so a thrown failure answers { ok:false, error } and is logged (docs/API.md). csp-report is the one exemption.';
 const API_HANDLER_BINDING_MESSAGE =
-  'In an /api route, apiHandler is the $lib/server/http import and nothing else, so an apiHandler(...) export is the real wrapper.';
+  'In an /api endpoint module, apiHandler is the ../http import and nothing else, so an apiHandler(...) export is the real wrapper.';
 const API_HANDLER_WRAPPED = [
   ...[
     `ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=${API_METHOD_EXPORT}]:not([init.type="CallExpression"][init.callee.name="apiHandler"])`,
@@ -188,7 +188,7 @@ const API_HANDLER_WRAPPED = [
     `ExportSpecifier[exported.name=${API_METHOD_EXPORT}]`,
   ].map((selector) => ({ selector, message: API_HANDLER_MESSAGE })),
   ...[
-    'ImportDeclaration[source.value!="$lib/server/http"] > ImportSpecifier[local.name="apiHandler"]',
+    'ImportDeclaration[source.value!="../http"] > ImportSpecifier[local.name="apiHandler"]',
     'ImportSpecifier[local.name="apiHandler"][imported.name!="apiHandler"]',
     ':matches(ImportDefaultSpecifier, ImportNamespaceSpecifier)[local.name="apiHandler"]',
     ':matches(VariableDeclarator, FunctionDeclaration, ClassDeclaration)[id.name="apiHandler"]',
@@ -477,10 +477,11 @@ export default tseslint.config(
     rules: { 'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS] },
   },
   {
-    // Adds the apiHandler guard to the /api routes. Recomposes the whole web/src set, which this
-    // block's entry would otherwise replace for these files.
-    files: ['web/src/routes/api/**/+server.ts'],
-    ignores: [API_HANDLER_EXEMPT_ROUTE],
+    // Adds the apiHandler guard to the /api endpoint modules (each served by a
+    // netlify/functions/api.ts function). Recomposes the whole web/src set, which this block's
+    // entry would otherwise replace for these files.
+    files: ['web/src/lib/server/api/*.ts'],
+    ignores: [API_HANDLER_EXEMPT_ROUTE, '**/*.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS, ...API_HANDLER_WRAPPED],
     },

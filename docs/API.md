@@ -1,22 +1,38 @@
 # Splotch HTTP API
 
-The hosted SvelteKit app (Netlify, `https://splotch.art`) serves a small JSON API under `/api/*`. On
-the web it's called same-origin; the native apps (a static export with no server) call the hosted
-endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at build time as
-`__NATIVE_API_BASE__`).
+The hosted site (Netlify, `https://splotch.art`) serves a small JSON API under `/api/*`, all from
+one plain Netlify Function, `netlify/functions/api.ts`, whose `config.path` lists every endpoint
+path and which calls each endpoint's module in `web/src/lib/server/api/`. It is one function so the
+endpoints share one instance's in-memory rate-limit buckets, as they did inside SvelteKit's single
+function: `verify-access-code`, `generate-image`, `generation-attempt` and `report-image` spend one
+per-IP failed-guess budget (see Rate limiting). On the web it's called same-origin; the native apps
+(a static export with no server) call the hosted endpoints cross-origin via `apiUrl()`
+(`web/src/lib/api.ts`, base injected at build time as `__NATIVE_API_BASE__`).
 
-**CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
-`/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
-`X-Access-Token` / `X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token`
-headers allowed, plus `X-Free-Generations-Remaining` and `X-Report-Token` exposed and
-`Access-Control-Max-Age: 86400` so native clients can read the updated allowance and cache the
-preflight instead of paying an OPTIONS round trip per request. Recovery admission metadata headers
-are also allowed, and the recovery version, expiry, digest and receipt response headers are exposed;
-their exact names are listed in the recovery v1 section below. The wildcard is safe because every
-endpoint is either gated by a credential the caller must already hold (access token, OpenAI key, or
-admin session) or rate-limited and bounded. The credential-less `report` endpoint creates a
-sanitized private support issue; `csp-report` is size-capped and bounded to log lines. Nothing under
-`/api` uses cookies. See ADR-0007.
+**One wrapper:** the function is `apiFunction(...)` (`web/src/lib/server/api/apiFunction.ts`). The
+endpoints were SvelteKit routes until issue 3007, and installed native builds keep calling them, so
+the wrapper answers as SvelteKit and `hooks.server.ts` did, in their order: SvelteKit's CSRF guard
+(a form content type posted from an origin other than the site's own, `https://localhost` or
+`capacitor://localhost` gets a bare `403` before any handler runs; `web/src/lib/server/csrf.ts`),
+the `308` from a trailing slash to the bare path, the CORS preflight, a `405` with `Allow` for a
+method the endpoint lacks, and on every other answer the CORS set, the `no-store` default and
+`nosniff`. `tools/api-smoke/tests/wire-diff.test.mjs` holds every function to the answers SvelteKit
+gave a recorded request corpus (`tools/api-smoke/lib/wire-corpus.mjs`), status, headers and body.
+
+**CORS:** `apiFunction` answers preflights and adds `Access-Control-Allow-Origin: *` to every
+`/api/*` response (the set is `API_CORS_HEADERS` in `web/src/lib/server/apiCors.ts`, which
+`hooks.server.ts` also stamps on the 404 SvelteKit gives an `/api/` path no function claims), with
+`GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` / `X-Access-Token` /
+`X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
+`X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
+native clients can read the updated allowance and cache the preflight instead of paying an OPTIONS
+round trip per request. Recovery admission metadata headers are also allowed, and the recovery
+version, expiry, digest and receipt response headers are exposed; their exact names are listed in
+the recovery v1 section below. The wildcard is safe because every endpoint is either gated by a
+credential the caller must already hold (access token, OpenAI key, or admin session) or rate-limited
+and bounded. The credential-less `report` endpoint creates a sanitized private support issue;
+`csp-report` is size-capped and bounded to log lines. Nothing under `/api` uses cookies. See
+ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -30,11 +46,11 @@ shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `4
 The `error` field is user-facing (clients surface it directly). That `{ ok: false, error }` body is
 the **one client-facing JSON error shape** across `/api/*`, built by the same module's
 `fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)` (a lint rule,
-`API_HANDLER_WRAPPED` in `eslint.config.js`, rejects an unwrapped export), which converts every
-thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status and
-message, and an unexpected exception becomes a 500 with the generic error text — so neither
-throw-based control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one
-exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
+`API_HANDLER_WRAPPED` in `eslint.config.js`, rejects an unwrapped export from an endpoint module),
+which converts every thrown failure into the same shape at the boundary — a SvelteKit `error(...)`
+keeps its status and message, and an unexpected exception becomes a 500 with the generic error text
+— so neither throw-based control flow nor a crashed dependency can leak a `{ message }` body. The
+one exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
 module's `readJsonBody(request, maxBytes)` is the shared bounded JSON-body parser — every caller
 supplies a named endpoint cap, an oversized body is a uniform `413 "Request body is too large"`, and
 a malformed body is a uniform `400 "Expected a JSON body"`. The shared raw-body reader consumes
@@ -56,13 +72,16 @@ the core module both front doors share (`MAX_ADMIN_LOGIN_BODY_BYTES` in
 stop reading at the same size.
 
 **Caching:** every `/api/*` response carries `Cache-Control: no-store` unless its route sets its own
-Cache-Control — `handleApiCaching` in `hooks.server.ts` applies the default after the route answers.
-No route opts out today. Several responses carry a credential (the admin token list with its invite
-URLs, a report token) or one installation's state (its remaining free allowance), and none benefits
-from a cache, so the rule is a default a new route inherits rather than a header each route has to
-remember. The `OPTIONS` preflight returns before the hook and is cached through
-`Access-Control-Max-Age` instead. Every `/api/*` route is served by the SvelteKit function, which
-runs the hook; Netlify's `netlify.toml` header rules reach only static files.
+Cache-Control — `applyApiCacheDefault` (`web/src/lib/server/apiCors.ts`) applies the default after
+the endpoint answers. No route opts out today. Several responses carry a credential (the admin token
+list with its invite URLs, a report token) or one installation's state (its remaining free
+allowance), and none benefits from a cache, so the rule is a default a new route inherits rather
+than a header each route has to remember. The `OPTIONS` preflight returns before the hook and is
+cached through `Access-Control-Max-Age` instead. Every `/api/*` endpoint is served by that function,
+whose wrapper applies it; Netlify's `netlify.toml` header rules reach only static files. The deploy
+staging (`tools/stage-netlify-functions.mjs`) adds every `/api` path to the SvelteKit catch-all
+function's `excludedPath`, because Netlify's documentation orders neither of two functions that
+match one path ahead of the other.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
@@ -100,11 +119,11 @@ the finished picture is at rest until the poll that hands it over deletes it. Th
 stores those raw bytes without first base64-encoding them, and the drawing stays bytes through the
 provider seam; the single base64 encode happens inside the adapter, which needs it for the vendor's
 data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was never collected.
-The server still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured
-signing secret) and whenever the handoff fails with no worker owning the job (the job store could
-not take it, or the worker refused it), and a client that never sends the header always gets the
-synchronous shape. A generation slower than the synchronous deadline ends in the controlled `502`
-there, and the shipped model's slow tail reaches it
+The server still answers in-line wherever there is no worker (`vite dev`, whose function host serves
+no background function, or an unconfigured signing secret) and whenever the handoff fails with no
+worker owning the job (the job store could not take it, or the worker refused it), and a client that
+never sends the header always gets the synchronous shape. A generation slower than the synchronous
+deadline ends in the controlled `502` there, and the shipped model's slow tail reaches it
 (`docs/scratchpad/image-model-bakeoff-2026-09-10.md`). After a failed handoff the in-line call gets
 only what the request has left of that deadline, counted from when the handler began, so the
 reservations and the handoff both come out of it and a slow store is less likely to let the platform
@@ -132,7 +151,7 @@ deliberately generous limit (30/min), because the branch is otherwise unauthenti
 502-vs-200 result is a key-validity oracle. Invalid managed tokens are an access-code oracle, so
 failed guesses share `/api/verify-access-code`'s per-IP budget: a limited IP gets the standard 429
 before the token is even checked (no allowlist read), while valid tokens never touch that bucket.
-See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
+See `web/src/lib/server/api/generateImage.ts` and ADR-0006 / ADR-0014.
 
 Managed access-code requests also update a durable abuse-prevention tally keyed by a dedicated-key
 HMAC grant ID: count, first/latest use, fixed deletion time, latest validated style category, and
@@ -604,7 +623,7 @@ target of the site's composed Content Security Policy (SvelteKit's resource poli
 meta-unsupported subset in root `netlify.toml`, which also sends the matching
 `Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured `[csp-report]`
 lines in the Netlify function log — the app's only telemetry sink (no third-party reporting by
-design; same stance as `handleError` in `hooks.server.ts`).
+design; same stance as `handleError` in `hooks.server.ts` and its twin in `apiFunction`).
 
 Delivery is browser-best-effort rather than complete telemetry. SSR policies are response headers
 and carry both `report-uri` and `report-to`. Prerendered resource policies are meta-delivered, where
@@ -744,7 +763,8 @@ curl -s https://splotch.art/api/admin/tokens \
 ## Validating the API
 
 Run `npm run test:api:smoke` to check the local `/api/*` contract end-to-end. It's self-contained —
-it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
+it boots a throwaway `vite dev`, which serves the `/api` functions through
+`web/netlifyFunctionsHost.ts`, with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
 (login success/failure, the bearer gate, and a token add/remove round-trip), the CORS contract
 (`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
 that non-`OPTIONS` response also carrying `API_RESPONSE_HEADERS` — the `nosniff` subset of
@@ -795,9 +815,11 @@ persistence contract.
 
 ## Local development
 
-* `vite dev` / `netlify dev` run all endpoints same-origin — no CORS in play. Token mutations
-  without Netlify Blobs credentials fall back to an in-memory list (seeded from
-  `ALLOWED_TOKENS_LIST`) that resets on restart.
+* `vite dev` and `vite preview` serve the `/api` function same-origin ahead of SvelteKit
+  (`web/netlifyFunctionsHost.ts`, which also loads `web/.env` under the shell's environment, as
+  Netlify hands a function the site's environment) — no CORS in play. `netlify dev` proxies `/api`
+  to that same host. Token mutations without Netlify Blobs credentials fall back to an in-memory
+  list (seeded from `ALLOWED_TOKENS_LIST`) that resets on restart.
 * Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
   unset, every login fails (there is nothing to authenticate against).
 * E2E coverage lives in `tests/admin.spec.ts`; the Playwright web server starts with

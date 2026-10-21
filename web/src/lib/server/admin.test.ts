@@ -7,7 +7,7 @@ import { createHmac } from 'node:crypto';
 const { envState } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
 }));
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 import {
   sessionToken,

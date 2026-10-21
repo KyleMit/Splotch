@@ -1,4 +1,4 @@
-import { GITHUB_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import { GITHUB_REQUEST_TIMEOUT_MS } from '../ai/limits';
 import { config } from './config';
 
 // Server-only seam for the one thing we do with GitHub: open an issue from an

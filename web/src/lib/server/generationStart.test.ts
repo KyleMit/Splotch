@@ -22,7 +22,7 @@ vi.mock('./generationJobs', async (importOriginal) => ({
   newJobId: () => 'a'.repeat(64),
 }));
 vi.mock('./config', () => ({ config: { reportTokenSecret: () => 'test-secret' } }));
-vi.mock('$env/dynamic/private', () => ({ env: {} }));
+vi.mock('$lib/server/privateEnv', () => ({ env: {} }));
 
 import { deadlineAfterFailedHandoffMs, startBackgroundGeneration } from './generationStart';
 import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';

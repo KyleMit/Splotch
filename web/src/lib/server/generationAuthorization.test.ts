@@ -11,7 +11,7 @@ const { envState, checkAccessToken, peekRateLimit, rateLimit } = vi.hoisted(() =
   rateLimit: vi.fn<typeof import('./rateLimit').rateLimit>(),
 }));
 
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ checkAccessToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 

@@ -1,0 +1,2032 @@
+{
+  "OPTIONS /api/admin/login": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/admin/tokens": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/csp-report": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/free-generation-grant": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/generate-image": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/generation-attempt/v1": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/generation-result": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/report": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/report-image": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/verify-access-code": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/verify-key": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/admin/login from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/admin/tokens from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/csp-report from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/free-generation-grant from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/generate-image from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/generation-attempt/v1 from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/generation-result from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/report from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/report-image from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/verify-access-code from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "OPTIONS /api/verify-key from the iOS WebView": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"]
+    ],
+    "body": ""
+  },
+  "admin login, wrong key": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "44"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Incorrect access key.\"}"
+  },
+  "admin login, right key": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "88"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":true,\"session\":\"4d68dc8cd5c5b919581514fd15a0bd484384b7019419a85ab0836be23101e4a1\"}"
+  },
+  "admin login, malformed body": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Expected a JSON body\"}"
+  },
+  "admin login, oversized body": {
+    "status": 413,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "48"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Request body is too large\"}"
+  },
+  "admin login, GET": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "POST"],
+      ["cache-control", "no-store"],
+      ["content-length", "22"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "GET method not allowed"
+  },
+  "admin login, trailing slash": {
+    "status": 308,
+    "headers": [
+      ["location", "/api/admin/login?x=1"],
+      ["x-sveltekit-normalize", "1"]
+    ],
+    "body": ""
+  },
+  "admin login, cross-site text/plain form post": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "tokens, no auth": {
+    "status": 401,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "35"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unauthorized\"}"
+  },
+  "tokens, bad bearer": {
+    "status": 401,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "35"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unauthorized\"}"
+  },
+  "tokens, list": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "204"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":true,\"tokens\":[\"alpha\",\"beta\"],\"invites\":[{\"token\":\"alpha\",\"url\":\"https://splotch.art/?ai_access_token=alpha\"},{\"token\":\"beta\",\"url\":\"https://splotch.art/?ai_access_token=beta\"}],\"persistent\":false}"
+  },
+  "tokens, add": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "102"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Token storage is unavailable right now — nothing was saved. Please try again.\"}"
+  },
+  "tokens, remove": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "102"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Token storage is unavailable right now — nothing was saved. Please try again.\"}"
+  },
+  "tokens, malformed mutation": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Expected a JSON body\"}"
+  },
+  "tokens, PUT": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "GET, POST, DELETE, HEAD"],
+      ["cache-control", "no-store"],
+      ["content-length", "22"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "PUT method not allowed"
+  },
+  "verify-access-code, empty": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "46"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"No access code provided\"}"
+  },
+  "verify-access-code, wrong": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "verify-access-code, seeded": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "32"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":true,\"accessCode\":\"alpha\"}"
+  },
+  "verify-access-code, malformed": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Expected a JSON body\"}"
+  },
+  "verify-access-code, from the Android WebView": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "verify-key, empty": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "42"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"No API key provided\"}"
+  },
+  "verify-key, malformed": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Expected a JSON body\"}"
+  },
+  "verify-key, GET": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "POST"],
+      ["cache-control", "no-store"],
+      ["content-length", "22"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "GET method not allowed"
+  },
+  "free grant, no installation": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "53"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Installation grant unavailable\"}"
+  },
+  "free grant, no grant store": {
+    "status": 500,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "44"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Something went wrong.\"}"
+  },
+  "free grant, HEAD": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "53"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Installation grant unavailable\"}"
+  },
+  "free grant, POST": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "GET, HEAD"],
+      ["cache-control", "no-store"],
+      ["content-length", "23"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "POST method not allowed"
+  },
+  "report, empty message": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "55"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Please type a short description.\"}"
+  },
+  "report, bad kind": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "52"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Please choose bug or feature.\"}"
+  },
+  "report, unconfigured": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "84"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Reporting is not available right now. Please try again later.\"}"
+  },
+  "report, honeypot": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "84"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Reporting is not available right now. Please try again later.\"}"
+  },
+  "report, cross-site text/plain form post": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "report, cross-site urlencoded form post accepting JSON": {
+    "status": 403,
+    "headers": [
+      ["content-length", "60"],
+      ["content-type", "application/json"]
+    ],
+    "body": "{\"message\":\"Cross-site POST form submissions are forbidden\"}"
+  },
+  "report, text/plain form post with no Origin": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "report, same-origin text/plain post": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "55"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Please type a short description.\"}"
+  },
+  "report, iOS WebView text/plain post": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "55"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Please type a short description.\"}"
+  },
+  "report, DELETE": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "POST"],
+      ["cache-control", "no-store"],
+      ["content-length", "25"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "DELETE method not allowed"
+  },
+  "report-image, unconfigured": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "87"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"AI reporting is not available right now. Please try again later.\"}"
+  },
+  "report-image, multipart with no Origin": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "csp-report, report-uri": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": ""
+  },
+  "csp-report, reporting api": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": ""
+  },
+  "csp-report, wrong type": {
+    "status": 415,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": ""
+  },
+  "csp-report, oversized": {
+    "status": 413,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": ""
+  },
+  "csp-report, garbage": {
+    "status": 204,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": ""
+  },
+  "csp-report, cross-site text/plain": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "csp-report, GET": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "POST"],
+      ["cache-control", "no-store"],
+      ["content-length", "22"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "GET method not allowed"
+  },
+  "generate-image, invalid token": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "generate-image, no credential": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "53"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Installation grant unavailable\"}"
+  },
+  "generate-image, valid token, no image": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "36"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Missing image\"}"
+  },
+  "generate-image, valid token, untyped image": {
+    "status": 415,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "45"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unsupported image type\"}"
+  },
+  "generate-image, valid token, oversized image": {
+    "status": 413,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "41"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Image is too large\"}"
+  },
+  "generate-image, valid token, gif": {
+    "status": 415,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "45"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unsupported image type\"}"
+  },
+  "generate-image, free door, no grant store": {
+    "status": 500,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "44"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Something went wrong.\"}"
+  },
+  "generate-image, legacy multipart from the iOS WebView, invalid token": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "generate-image, legacy multipart from the Android WebView, valid token, gif": {
+    "status": 415,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "45"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unsupported image type\"}"
+  },
+  "generate-image, legacy multipart, cross-site": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "generate-image, legacy multipart, no Origin": {
+    "status": 403,
+    "headers": [["content-length", "46"]],
+    "body": "Cross-site POST form submissions are forbidden"
+  },
+  "generate-image, GET": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "POST"],
+      ["cache-control", "no-store"],
+      ["content-length", "22"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "GET method not allowed"
+  },
+  "generation-result, no job": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "41"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unknown generation\"}"
+  },
+  "generation-result, malformed job": {
+    "status": 400,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "41"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Unknown generation\"}"
+  },
+  "generation-result, well-formed job, no store": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"code\":\"GENERATION_UNAVAILABLE\",\"error\":\"That creation could not be collected just now\"}"
+  },
+  "generation-attempt, capability": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That creation could not be recovered just now\",\"code\":\"RECOVERY_UNAVAILABLE\"}"
+  },
+  "generation-attempt, no version": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That creation could not be recovered just now\",\"code\":\"RECOVERY_UNAVAILABLE\"}"
+  },
+  "generation-attempt, admission": {
+    "status": 503,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That creation could not be recovered just now\",\"code\":\"RECOVERY_UNAVAILABLE\"}"
+  },
+  "generation-attempt, DELETE": {
+    "status": 405,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["allow", "GET, POST, HEAD"],
+      ["cache-control", "no-store"],
+      ["content-length", "25"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "DELETE method not allowed"
+  },
+  "shared guess budget, wrong code 1 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 2 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 3 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 4 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 5 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 6 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 7 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 8 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 9 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 10 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong token 1 from 198.51.100.10": {
+    "status": 429,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "58"],
+      ["content-type", "application/json"],
+      ["retry-after", "60"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Too many attempts. Please wait 60s.\"}"
+  },
+  "shared guess budget, wrong token 1 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 2 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 3 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 4 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 5 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 6 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 7 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 8 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 9 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 10 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong code 1 from 198.51.100.20": {
+    "status": 429,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "58"],
+      ["content-type", "application/json"],
+      ["retry-after", "60"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Too many attempts. Please wait 60s.\"}"
+  }
+}

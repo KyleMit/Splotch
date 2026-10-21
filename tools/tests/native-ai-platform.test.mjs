@@ -132,8 +132,8 @@ it.each([
   ['android', 'https://localhost'],
 ])('sends the shipping trusted Origin on %s AI reports', async (platform, origin) => {
   Platform.OS = platform;
-  const config = await readFile(new URL('../../web/svelte.config.js', import.meta.url), 'utf8');
-  const trusted = config.match(/trustedOrigins: \[([^\]]+)\]/)[1];
+  const policy = await readFile(new URL('../../web/securityPolicy.ts', import.meta.url), 'utf8');
+  const trusted = policy.match(/CSRF_TRUSTED_ORIGINS: readonly string\[\] = \[([^\]]+)\]/)[1];
   expect(trusted).toContain(`'${origin}'`);
   await aiTransport(
     { path: '/api/report-image', method: 'POST', headers: { 'X-Report-Token': 'proof' } },

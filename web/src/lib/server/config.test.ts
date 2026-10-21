@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 // config.ts reads $env/dynamic/private at call time, same seam as github.test.ts.
 const envState = vi.hoisted(() => ({}) as Record<string, string | undefined>);
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 import { config, DEFAULT_GITHUB_ISSUE_REPO } from './config';
 

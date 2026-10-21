@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { envState } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
 }));
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 vi.mock('$lib/server/tokens', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/server/tokens')>()),

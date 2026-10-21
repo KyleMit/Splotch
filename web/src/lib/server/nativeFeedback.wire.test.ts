@@ -7,7 +7,7 @@ vi.mock('$lib/server/github', async (original) => ({
   isReportingConfigured: () => true,
   createIssue,
 }));
-import { POST } from '../../routes/api/report/+server';
+import { POST } from './api/report';
 import { createNativeFeedback } from '../../../../experiments/native-architecture/src/feedback/feedback';
 import { feedbackTransport } from '../../../../experiments/native-architecture/src/platform/feedback.web';
 import { FEEDBACK_URL } from '../../../../experiments/native-architecture/src/feedback/feedbackTransport';
