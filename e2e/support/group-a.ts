@@ -119,13 +119,8 @@ export async function regionPixels(page: Page, region: ScreenRegion): Promise<Bu
     .toBuffer();
 }
 
-/** How many pixels of the region differ markedly from `before`. */
-export async function inkedPixelsSince(
-  page: Page,
-  region: ScreenRegion,
-  before: Buffer
-): Promise<number> {
-  const after = await regionPixels(page, region);
+/** How many pixels differ markedly between two captures of the same region. */
+export function pixelsInkedBetween(before: Buffer, after: Buffer): number {
   let inked = 0;
   for (let offset = 0; offset < before.length; offset += RGB_CHANNELS) {
     const delta = Math.max(
@@ -136,6 +131,22 @@ export async function inkedPixelsSince(
     if (delta > INK_CHANNEL_DELTA) inked++;
   }
   return inked;
+}
+
+/** How many pixels of the region differ markedly from `before`. */
+export async function inkedPixelsSince(
+  page: Page,
+  region: ScreenRegion,
+  before: Buffer
+): Promise<number> {
+  return pixelsInkedBetween(before, await regionPixels(page, region));
+}
+
+/** The screen rectangle an element covers now. */
+export async function regionOf(element: Locator): Promise<ScreenRegion> {
+  const box = await element.boundingBox();
+  if (!box) throw new Error('The element is not laid out');
+  return box;
 }
 
 export type BrushName = 'Pen' | 'Crayon' | 'Magic brush' | 'Eraser';
