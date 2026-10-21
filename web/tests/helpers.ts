@@ -1,6 +1,5 @@
 import { expect, type JSHandle, type Locator, type Page } from '@playwright/test';
 
-import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { compositeVisibleLiveTiles } from '../src/lib/drawing/liveTileComposite';
 import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 import { paletteHex } from '../src/lib/palette';
@@ -9,8 +8,7 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import type { HistoryDebug } from '../src/lib/drawing/undoHistory';
 
 // Shared E2E helpers used across specs. Keep this module cross-engine portable — no
-// CDP sessions or dev-harness routes — because engine-smoke.spec.ts imports it
-// (see web/tests/CLAUDE.md).
+// CDP sessions or dev-harness routes (see web/tests/CLAUDE.md).
 
 // User agents for the specs that exercise the app's OS detection (isIosDevice /
 // isAndroidBrowser, behind installDeviceOs). A spec picks one with `test.use`;
@@ -19,10 +17,6 @@ export const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36';
 export const IPAD_UA =
   'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
-// Chrome on iOS — an iOS device whose Share sheet is not the one the manual
-// install steps describe (the CriOS token is what marks it).
-export const IPHONE_CHROME_UA =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124 Mobile/15E148 Safari/604.1';
 
 // Looked up rather than copied, so a retuned hue can't leave a spec clicking a
 // selector that matches nothing (the swatch carries its hex as data-color).
@@ -43,9 +37,6 @@ export const TEST_PALETTE = {
   grey: paletteHex('Grey'),
   black: paletteHex('Black'),
 };
-
-export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
-export const CUSTOM_SWATCH_COLOR = 'custom';
 
 export type Rgba = readonly [number, number, number, number];
 
@@ -124,7 +115,7 @@ export async function enforceProductionCsp(page: Page) {
  *  wants rather than leaning on that: `never` (the default) so an unrelated spec
  *  reaches its target directly, `always` for the specs that exercise the real
  *  challenge, and `default` to seed nothing and assert what the build ships. */
-export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'always' | 'default') {
+async function seedParentalGatePolicies(page: Page, mode: 'never' | 'always' | 'default') {
   if (mode !== 'default') {
     await page.addInitScript(
       ({ mode, modeKeys }) => {
@@ -214,55 +205,6 @@ async function waitForCommittedDrawingHistory(
 
 /** Navigate to the drawing app and wait for its hydrated engine and rendered
  *  composite to become drawable. Early-boot specs navigate directly. */
-/**
- * Enters real element fullscreen — the state Chromium demands before it honors
- * `screen.orientation.lock()`, and so the state the Settings Orientation picker
- * renders in at all (`orientationLockApplies`).
- *
- * The app's own Fullscreen Toggle cannot do this from a spec: it renders only
- * for Android user agents. `requestFullscreen()` needs a user gesture, which
- * `evaluate()` does not carry, so the activation comes from a keypress the app
- * binds nothing to. A keypress rather than a click deliberately: a click needs
- * something to land on, and an overlay over an open dialog trips outside-click
- * handling and the launch dead zone. The viewport keeps its size, so layout
- * assertions still measure the box they were written against. Call it after
- * `gotoApp` — navigating leaves fullscreen.
- */
-export async function enterFullscreen(page: Page) {
-  await page.evaluate(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'F2') return;
-      document.removeEventListener('keydown', onKey, true);
-      void document.documentElement.requestFullscreen();
-    };
-    document.addEventListener('keydown', onKey, true);
-  });
-  await page.keyboard.press('F2');
-  await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
-}
-
-/**
- * Leaves element fullscreen. Chromium backs it with a fullscreen browser window
- * and then refuses `setViewportSize` with "restore it to normal state first", so
- * a spec that measures a second viewport has to exit between cases. Navigating
- * does not exit on its own. Exiting needs no user gesture.
- */
-export async function exitFullscreen(page: Page) {
-  await page.evaluate(() => (document.fullscreenElement ? document.exitFullscreen() : undefined));
-  await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
-}
-
-/**
- * Changes the viewport while leaving the page in fullscreen either side of it,
- * for a spec that measures a second viewport and needs the state Chromium
- * honors an orientation lock in at both.
- */
-export async function resizeInFullscreen(page: Page, size: { width: number; height: number }) {
-  await exitFullscreen(page);
-  await page.setViewportSize(size);
-  await enterFullscreen(page);
-}
-
 export async function gotoApp(
   page: Page,
   path = '/',
@@ -272,19 +214,6 @@ export async function gotoApp(
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   await waitForDrawableRenderedCanvas(page);
-}
-
-export async function registerServiceWorkerAndControl(page: Page) {
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
-    if (navigator.serviceWorker.controller) return;
-    await new Promise<void>((resolve) => {
-      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
-        once: true,
-      });
-    });
-  });
 }
 
 /** Drive a real SvelteKit client-side navigation. The sentinel survives a SPA
@@ -360,14 +289,13 @@ export async function settleFlyIn(dialog: Locator) {
 // (issue #918). A healthy fill is a frame or two per section plus that staging,
 // so this is more than an order of magnitude past it: a bound on a fill that has
 // genuinely stopped, never a schedule a live one can outrun.
-export const SETTINGS_FILL_FRAME_BUDGET = 300;
+const SETTINGS_FILL_FRAME_BUDGET = 300;
 
 // Wait for the wide Settings pane to stop reporting itself busy, i.e. for every
 // section to be in it — which is what makes an offset read off the pane, or a
 // node an axe scan walks, the final one. Sampled a frame at a time from inside
 // the page, on the fill's own clock: a round trip to the test process measures
-// the harness instead, and on a starved worker one can span the whole fill
-// (settings-mount.spec.ts watches the same fill the same way).
+// the harness instead, and on a starved worker one can span the whole fill.
 //
 // The frame budget is the whole of this wait's own bound, and it needs to be:
 // none of Playwright's timeouts reach the sampling. `locator.evaluate`'s
@@ -377,7 +305,7 @@ export const SETTINGS_FILL_FRAME_BUDGET = 300;
 // measured 10s in-page promise run to completion — and `actionTimeout` defaults
 // to 0 under the test runner anyway. So a fill that never finishes is bounded by
 // the test timeout, and the budget is what turns that into a pointed failure.
-export async function settleSettingsPane(pane: Locator) {
+async function settleSettingsPane(pane: Locator) {
   await pane.evaluate(
     (el, budget) =>
       new Promise<void>((resolve, reject) => {
@@ -433,37 +361,6 @@ export async function openHubSection(page: Page, section: string, expectedField:
   }).toPass({ timeout: 10_000 });
 }
 
-// The highlighted Settings row's own seat, measured against the column that
-// holds it. Read off the nav rather than the browser viewport: the column is its
-// own scroller wherever the section list outgrows it, and that clipping is the
-// thing at stake.
-export function activeNavRowInsideColumn(page: Page) {
-  return page.locator('.settings-nav .toc-row.active').evaluate((row) => {
-    const box = row.closest('.settings-nav')!.getBoundingClientRect();
-    const seat = row.getBoundingClientRect();
-    return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
-  });
-}
-
-// The widest a jumped-to heading may sit below the pane's top edge and still
-// count as landed. Deliberately looser than the shell's own
-// `SECTION_JUMP_INSET_PX` so retuning that inset stays a design decision rather
-// than a spec edit — a tolerance, not a mirrored copy of it. A section that did
-// not scroll at all sits hundreds of pixels away.
-export const SECTION_LANDED_MAX_PX = 24;
-
-// How far a Settings section's heading sits below the scrolling pane's top edge
-// — the measurement the wide shell's click-to-jump landing and its scrollspy are
-// both specified in.
-export function headingOffsetFromPaneTop(page: Page, section: string) {
-  return page
-    .locator(`.settings-section[data-section="${section}"]`)
-    .evaluate(
-      (el) =>
-        el.getBoundingClientRect().top - el.closest('.settings-pane')!.getBoundingClientRect().top
-    );
-}
-
 // How much of the engine's dropped-pointer jump threshold one dispatched sample
 // may cover. The engine reads "far from the previous sample AND more than
 // POINTER_RESUME_GAP_MS after it" as a finger that lifted and set down
@@ -508,40 +405,6 @@ export async function dragStroke(
 export async function draw(page: Page, points: { x: number; y: number }[]) {
   const box = await page.locator('#drawingCanvas').boundingBox();
   await dragStroke(page, box, points);
-}
-
-// SETTLED_IN_STROKES (state/canvas.svelte.ts) earns the install banner, and
-// STROKES_BEFORE_AUTO_CLEAR (state/install.svelte.ts) more strokes part it. Both
-// live in rune modules the Playwright loader cannot import, so these copies are
-// literals; state/install.e2eThresholds.test.ts reads them as text and fails
-// when either differs from its owner.
-export const INSTALL_BANNER_EARNING_STROKES = 3;
-export const INSTALL_BANNER_AUTO_CLEAR_STROKES = 5;
-
-// The banner prewarms near the end of the interaction-quiet overlay pump. If
-// the earning strokes beat it, the earned state demands it in the same flush
-// that releases deferred service-worker registration (routes/+page.svelte). The
-// demand path keeps that network work from delaying the visible banner, while
-// this timeout still covers a loaded worker's component import and rendering.
-export const BANNER_MOUNT_TIMEOUT_MS = 20_000;
-
-const INSTALL_BANNER_STROKE_SPACING_PX = 30;
-
-/** Draws `count` short strokes down the canvas, by default enough to earn the
- *  install banner. It waits for nothing: a dismissed banner stays unmounted. */
-export async function drawInstallBannerStrokes(page: Page, count = INSTALL_BANNER_EARNING_STROKES) {
-  for (let stroke = 0; stroke < count; stroke += 1) {
-    const y = 180 + (stroke % INSTALL_BANNER_EARNING_STROKES) * INSTALL_BANNER_STROKE_SPACING_PX;
-    await draw(page, [
-      { x: 230, y },
-      { x: 300, y: y + 15 },
-    ]);
-  }
-}
-
-export async function earnInstallBanner(page: Page) {
-  await drawInstallBannerStrokes(page);
-  await page.locator('.install-banner').waitFor({ timeout: BANNER_MOUNT_TIMEOUT_MS });
 }
 
 export async function drawCommittedStroke(page: Page, points: { x: number; y: number }[]) {
@@ -589,27 +452,6 @@ export async function firstOpaquePixel(page: Page): Promise<Rgba | null> {
         if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
       }
       return null;
-    });
-  } finally {
-    await canvas.dispose();
-  }
-}
-
-/**
- * Count of non-transparent pixels on the canvas. A composite with no area reads
- * as 0 rather than throwing, so callers can poll across a zero-area resize.
- */
-export async function opaquePixelCount(page: Page): Promise<number> {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return await canvas.evaluate((c) => {
-      if (c.width === 0 || c.height === 0) return 0;
-      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-      let count = 0;
-      for (let i = 3; i < data.length; i += 4) {
-        if (data[i] > 0) count++;
-      }
-      return count;
     });
   } finally {
     await canvas.dispose();

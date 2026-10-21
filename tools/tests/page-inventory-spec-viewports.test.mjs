@@ -11,18 +11,8 @@ import { PAGE_INVENTORY_VIEWPORTS } from '../page-inventory/lib/page-inventory-r
 // constant would cost each spec its type checking — which makes this the drift
 // guard that replaces the import. A device-list refresh that leaves a spec
 // behind fails here instead of silently testing sizes nothing screenshots any
-// more.
+// more. Keyed by path from the repository root.
 const SPECS = {
-  'scroll-cue.spec.ts': [
-    'ipad-mini-7',
-    'ipad-pro-13-m4',
-    'iphone-13-mini-landscape',
-    'iphone-16-pro-max-landscape',
-  ],
-};
-
-// The RN web suite's specs at inventory sizes, keyed by their path from the repository root.
-const E2E_SPECS = {
   'e2e/specs/grown-ups-gate.spec.ts': ['iphone-13-mini-landscape', 'iphone-16-pro-max-landscape'],
 };
 
@@ -34,12 +24,7 @@ function declaredViewports(source) {
   );
 }
 
-const TRACKED = [
-  ...Object.entries(SPECS).map(([file, ids]) => [join('web/tests', file), ids]),
-  ...Object.entries(E2E_SPECS),
-];
-
-for (const [file, expectedIds] of TRACKED) {
+for (const [file, expectedIds] of Object.entries(SPECS)) {
   describe(`${file} tracks the page-inventory device list`, () => {
     const spec = readFileSync(join(import.meta.dirname, '..', '..', file), 'utf8');
     const declared = declaredViewports(spec);

@@ -317,11 +317,10 @@ Configured in `tools/store-drawings/vitest.config.mjs`. These run in Node agains
 samples and static instruction module. They cover the supported SVG subset, coordinate fitting,
 closed width/color vocabularies, and exact generator drift without launching a browser.
 
-`web/tests/store-drawing-replay.spec.ts` is the complementary browser contract for ADR-0122's hero
-capture seam: it invokes one stroke on the real drawing route and asserts that the engine commits a
-rendered history command without leaving synthetic pointer chrome behind. A small three-stroke scene
-then runs through both the pointer and engine paths on separate live pages and requires their
-composited canvases to retain greater than 0.9998 soft color fidelity.
+ADR-0122's hero capture seam (`window.__replayStroke`) and its browser contract, the
+`store-drawing-replay` spec, belonged to the SvelteKit app and retired with it. The React Native
+export replays strokes through its in-app probe, which `tools/tests/native-replay-probe.test.mjs`
+and `tools/tests/native-replay-traces.test.mjs` pin.
 
 ## Opt-in centerline tracing
 
@@ -497,8 +496,8 @@ Write specs that can't race in the first place:
   load**: (a) deliberately idling *past* a known threshold to reproduce a timing bug (e.g. the
   stroke-resume gap in `engine-pointer-recovery.spec.ts`), or (b) proving a *negative* — that state
   must **not** change within a window (e.g. the "SW never registers" check in
-  `pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases, so they
-  can't false-red. Comment the reason when you keep one.
+  `e2e/specs/pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases,
+  so they can't false-red. Comment the reason when you keep one.
 * **Use the drawing app's durable ready state.** `gotoApp()` does not return merely because the
   prerendered `#drawingCanvas` is visible: it waits for the hydrated drawing debug seam and a
   non-zero rendered composite. Specs intentionally covering first paint or hydration navigate with
@@ -696,16 +695,16 @@ CI's Firefox and WebKit jobs run the RN web suite's `@smoke` specs (above). The 
 own cross-engine subset is retired: `e2e/specs/smoke.spec.ts` covers its boot and stroke cases in
 every engine, and its Settings and Color Picker cases are Chromium specs in
 `e2e/specs/settings.spec.ts` and `e2e/specs/palette.spec.ts`. The rest of this section describes the
-tagging convention both suites share, until the SvelteKit suite is deleted.
+RN suite's tagging convention.
 
-The full suite is Chromium-only. A tiny critical-path subset (boot, draw a stroke, Settings dialog,
-Color Picker dialog) also runs in the `firefox` and `webkit` Playwright projects so every declared
-browser engine has an automated push/PR signal:
+Chromium runs the whole suite. A tiny critical-path subset (boot, draw a stroke, Undo, the privacy
+page) also runs in the `firefox` and `webkit` Playwright projects so every declared browser engine
+has an automated push/PR signal:
 
 * Each project joins only when its binary is installed, so Chromium-only local and cloud checkouts
   keep working. CI explicitly installs the selected browser and sets `REQUIRE_FIREFOX` or
   `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with
-  `npm run test:e2e -- --project firefox` or `--project webkit`.
+  `npm run test:firefox:smoke` or `npm run test:webkit:smoke`.
 * CI keeps `firefox-smoke` and `webkit-smoke` parallel to the sharded Chromium Tests job. Firefox is
   the cheaper leg because it needs none of WebKit's GStreamer/ffmpeg stack. WebKit adds ~110 system
   packages, and installing them lands on every run; the setup action's apt cache removes network
@@ -718,17 +717,16 @@ browser engine has an automated push/PR signal:
   rotates, and `warm-playwright-cache.yml` repopulates the default-branch caches daily and on
   dependency merges so PR runs rarely take it. A setup step dragged out by a network-starved runner
   is bounded only by the job's `timeout-minutes` — re-run it by hand for a fresh machine.
-* **Routing is by tag, not filename.** `ENGINE_SMOKE_TAG` (`tests/tags.ts`) sits on the spec's
-  `test.describe`; Firefox and WebKit `grep` for it while Chromium `grepInvert`s it. Add portable
-  cross-engine coverage by tagging it; an untagged spec runs under Chromium.
+* **Routing is by tag, not filename.** `SMOKE_TAG` (`e2e/tags.ts`) sits on the spec's
+  `test.describe`; Firefox and WebKit `grep` for it, and Chromium runs every spec, tagged or not.
+  Add portable cross-engine coverage by tagging it; an untagged spec runs under Chromium only.
 * **Import the tag, never type it.** Playwright validates no tag, so a typo can route a spec to
   Chromium alone while both smoke jobs remain green on the correctly tagged tests.
   `tools/tests/e2e-engine-tags.test.mjs` rejects literals and unknown tags, requires a tagged spec,
   and guards agreement among the project, script, and CI-job names.
 * Keep the spec cross-engine portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and
-  the `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
-  assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
-  already in the full suite.
+  the `touchDriver` in `e2e/specs/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes,
+  no assertions tied to Chromium's rasterizer.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 

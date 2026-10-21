@@ -125,7 +125,7 @@ BRANCH=audit/burndown
 CHECK_CMD='npm run check'      # per-finding type-check gate
 TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the layered gate below)
 E2E_CMD='npm run test:e2e -- --retries=1'  # per-finding targeted E2E (retry past flakes), UI findings only
-BUNDLE_SPEC='tests/startup-bundle.spec.ts' # joins the E2E gate when a fix adds a static import under web/src; '' disables
+BUNDLE_SPEC=''        # a spec that joins the E2E gate when a fix adds a static import under web/src; off since the startup-bundle spec retired
 LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed files
 PUSH_TEST_CMD=''      # local full-suite gate before a push — OFF; CI on the draft PR is the backstop
 COMMENT_STORE=.audit-work/pending-comments.jsonl   # per-commit comment records awaiting your MCP post
@@ -256,13 +256,14 @@ run is impossible until the base is green.
   adds a static import edge under `web/src` can re-partition Rollup's chunks however small the
   imported module, and the fallout lands in a chunk the fix never touched — PR 771's one CI
   regression was a six-line predicate hoist that pulled the save pipeline onto the startup critical
-  path, red only on `startup-bundle.spec.ts` with a failing marker naming a module the commit never
+  path, red only on the `startup-bundle` spec with a failing marker naming a module the commit never
   edited, attributable only by `git bisect`. The driver now scans the range's diff at each review
   round and, when it adds a static import / re-export in a client-bundle file (type-only imports,
   server modules, and tests excluded — `diffAddsClientStaticImport` in `lib/burndown-core.mjs`),
-  appends `BUNDLE_SPEC` (default `tests/startup-bundle.spec.ts`) to that finding's E2E gate. The
-  cost is a production build per import-adding finding, paid via Playwright's web server; set
-  `BUNDLE_SPEC=''` to fall back to CI-only detection if a backlog makes that too slow.
+  appends `BUNDLE_SPEC` (default empty: the `startup-bundle` spec retired with the SvelteKit suite,
+  ADR-0182) to that finding's E2E gate. The cost is a production build per import-adding finding,
+  paid via Playwright's web server; set `BUNDLE_SPEC=''` to fall back to CI-only detection if a
+  backlog makes that too slow.
 * **Cross-finding interactions the per-finding specs can't see are CI's job, not the driver's.**
   `PUSH_TEST_CMD` (the local full-suite gate) defaults to empty and does not run. Every finding is
   pushed to the draft PR, and the PR's CI runs the whole suite on that push — in parallel, off the
@@ -1063,7 +1064,7 @@ Notes from real runs — set these before a large run rather than discovering th
   the rest of the run, and each one pays for it three times over — the retried spec's wall-clock, an
   implementer that stops to diagnose a failure it did not cause, and the review round it burns
   arguing the point. The 2026-07-28 canary watched its very first finding do exactly that: the
-  implementer independently reproduced a `multitouch.spec.ts` readiness flake against a reverted
+  implementer independently reproduced a `multitouch` spec readiness flake against a reverted
   working tree to prove it was pre-existing — correct, thorough, and pure waste to repeat 400 more
   times. `--retries=1` actively hides this, because the gate goes green and the run logs nothing.
 
@@ -1072,7 +1073,7 @@ Notes from real runs — set these before a large run rather than discovering th
   suite does not produce one.** `npm run test:e2e` carries no `--retries` (only the driver's
   `E2E_CMD` adds it), and without retries Playwright has nothing to call flaky: a load-dependent
   flake is reported as a plain `1 failed`, identical to a genuine breakage. The 2026-07-29 baseline
-  did exactly this — one `pwa-registration.spec.ts` failure that looked like a red base commit.
+  did exactly this — one `pwa-registration` spec failure that looked like a red base commit.
 
   **So classify every failure before believing it**: re-run the failing spec alone a few times.
   Green in isolation and red under the full suite means load-dependent flake — the specs run at a
