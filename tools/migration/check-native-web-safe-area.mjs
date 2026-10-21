@@ -123,7 +123,11 @@ function readScenario({ controls, fullscreenSelector }) {
     const rect = element.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   };
-  const shown = (element) => element.checkVisibility() && element.getBoundingClientRect().width > 0;
+  // Only what a person could see counts: an element hidden, or transparent through its own opacity
+  // or an ancestor's, is neither a control to press nor a strip that covers an inset.
+  const seen = (element) =>
+    element.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+  const shown = (element) => seen(element) && element.getBoundingClientRect().width > 0;
   const boxes = Object.fromEntries(
     controls.map(({ name, selector }) => {
       const element = [...document.querySelectorAll(selector)].find(shown);
@@ -136,7 +140,7 @@ function readScenario({ controls, fullscreenSelector }) {
   const layers = [...document.querySelectorAll('[aria-hidden="true"]')]
     .filter((element) => {
       const style = getComputedStyle(element);
-      return style.position === 'absolute' && style.pointerEvents === 'none';
+      return style.position === 'absolute' && style.pointerEvents === 'none' && seen(element);
     })
     .map((element) => ({
       box: boxOf(element),
@@ -346,6 +350,43 @@ export function galleryIndex(scenarios) {
 `;
 }
 
+// The band reader's positive control, run in the same Chromium before the matrix: one painted top
+// strip must read as painted, and the same strip hidden, see-through, inside a see-through parent
+// or unfilled must not, so a reader that stopped looking cannot pass the band rule vacuously.
+const READER_CONTROL = { width: 400, height: 800, inset: 40 };
+const controlStrip = (style) =>
+  `<div aria-hidden="true" style="position:absolute;top:0;left:0;width:${READER_CONTROL.width}px;height:${READER_CONTROL.inset}px;pointer-events:none;background:red;${style}"></div>`;
+const READER_CONTROLS = [
+  ['a painted strip', controlStrip(''), [READER_CONTROL.inset]],
+  ['a hidden strip', controlStrip('visibility:hidden'), []],
+  ['a see-through strip', controlStrip('opacity:0'), []],
+  ['a strip in a hidden parent', `<div style="visibility:hidden">${controlStrip('')}</div>`, []],
+  ['a strip in a see-through parent', `<div style="opacity:0">${controlStrip('')}</div>`, []],
+  ['an unfilled strip', controlStrip('background:transparent'), []],
+];
+
+async function checkBandReader(browser) {
+  const { width, height } = READER_CONTROL;
+  const context = await browser.newContext({ viewport: { width, height } });
+  try {
+    const page = await context.newPage();
+    const failures = [];
+    for (const [name, markup, expected] of READER_CONTROLS) {
+      await page.setContent(`<body style="margin:0;overflow:hidden">${markup}</body>`);
+      const { bands } = await page.evaluate(readScenario, {
+        controls: [],
+        fullscreenSelector: 'none',
+      });
+      if (JSON.stringify(bands.top) !== JSON.stringify(expected))
+        failures.push(`${name} reads as ${JSON.stringify(bands.top)}`);
+    }
+    if (failures.length)
+      throw new Error(`The Notch Band reader fails its own control: ${failures.join('; ')}`);
+  } finally {
+    await context.close();
+  }
+}
+
 export async function checkNativeWebSafeArea({
   exportDir = NATIVE_WEB_EXPORT_DIR,
   scenarios = safeAreaScenarios(),
@@ -358,6 +399,7 @@ export async function checkNativeWebSafeArea({
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const problems = [];
   try {
+    await checkBandReader(browser);
     const queue = [...scenarios];
     const worker = async () => {
       for (let scenario = queue.shift(); scenario; scenario = queue.shift())
