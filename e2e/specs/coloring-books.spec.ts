@@ -207,6 +207,20 @@ const WHEEL_TRAVEL_PX = 3000;
 const PHONE_PORTRAIT = { width: 375, height: 812 };
 const ROOMY_PORTRAIT = { width: 900, height: 1600 };
 
+// How far the cue's foot sits above the foot of the card that clips the tiles. Zero means the fade
+// meets the card's own edge, with no undimmed strip of tile below it.
+function scrollCueGapToCardFoot(page: Page) {
+  return page.getByTestId(SCROLL_CUE_TEST_ID).evaluate((cue) => {
+    let card = cue.parentElement;
+    while (card && getComputedStyle(card).overflowY === 'visible') card = card.parentElement;
+    if (!card) throw new Error('Nothing clips the picker');
+    const clipEdge =
+      card.getBoundingClientRect().bottom -
+      Number.parseFloat(getComputedStyle(card).borderBottomWidth);
+    return clipEdge - cue.getBoundingClientRect().bottom;
+  });
+}
+
 function scrollCueOpacity(page: Page) {
   return page
     .getByTestId(SCROLL_CUE_TEST_ID)
@@ -260,6 +274,20 @@ test.describe("the picker's scroll cue", () => {
 
     await wheelOverPicker(page, -WHEEL_TRAVEL_PX);
     await expect.poll(() => scrollCueOpacity(page)).toBe(1);
+  });
+
+  test('the fade runs to the foot of the card, not to a padding above it', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await page.setViewportSize(PHONE_PORTRAIT);
+    await openColoringBooks(page);
+    const farm = page.getByRole('dialog', { name: 'Farm' });
+    await expect(farm).toBeVisible();
+    await waitUntilSettled(farm.getByRole('button', { name: 'Close', exact: true }));
+    await expect.poll(() => scrollCueOpacity(page)).toBe(1);
+
+    await expect.poll(() => scrollCueGapToCardFoot(page)).toBeCloseTo(0, 0);
   });
 
   test('a window with room for every page shows no cue', async ({ drawingScreen }) => {
