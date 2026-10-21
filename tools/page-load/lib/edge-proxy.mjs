@@ -115,11 +115,18 @@ export async function edgeAnswer(
   };
 }
 
+// The host is asked for the body even on HEAD: the E2E host answers a HEAD with a length of 0, and
+// only the body says what length and encoding the GET would carry.
+const hostMethod = (method) => (method === 'HEAD' ? 'GET' : method);
+
 function askHost(origin, request) {
   return new Promise((resolve, reject) => {
     const forward = httpRequest(
       new URL(request.url ?? '/', origin),
-      { method: request.method, headers: without(request.headers, WITHHELD_REQUEST_HEADERS) },
+      {
+        method: hostMethod(request.method),
+        headers: without(request.headers, WITHHELD_REQUEST_HEADERS),
+      },
       (response) => {
         const chunks = [];
         response.on('data', (chunk) => chunks.push(chunk));
@@ -144,14 +151,13 @@ export function createEdgeProxy(origin) {
   const answer = async (request) => {
     const fromHost = await askHost(origin, request);
     const edge = await edgeAnswer(
-      { method: request.method, requestHeaders: request.headers },
+      { method: hostMethod(request.method), requestHeaders: request.headers },
       fromHost,
       encoded
     );
-    // A HEAD answer has no body and reports the length the GET would send.
-    const length =
-      request.method === 'HEAD' ? (fromHost.headers['content-length'] ?? 0) : edge.body.length;
-    return { ...edge, headers: { ...edge.headers, 'content-length': length } };
+    // A 304 states no length; a HEAD states the length of the GET it stands for.
+    if (edge.status === 304) return edge;
+    return { ...edge, headers: { ...edge.headers, 'content-length': edge.body.length } };
   };
   return createServer((request, response) => {
     answer(request)

@@ -65,10 +65,15 @@ export on disk is this checkout's, and one passes against code that no longer ex
 
 Both paints are decided by the prerendered first frame, a document of inline HTML and CSS that
 paints before the bundle arrives (ADR-0180). The gate therefore moves with the first document's
-size, with anything that blocks the paint, and with how a repeat visit is answered (cache headers,
-revalidation, the service worker). It does not move with the entry bundle's size, which the startup
-caps in `tools/migration/check-native-web-startup.mjs` hold at build time: an export that grew its
-entry chunk by 400 KB left every cell within a few milliseconds of its baseline.
+size, with anything that blocks the paint, and with how a repeat visit is answered (cache headers
+and revalidation). It does not move with the entry bundle's size, which the startup caps in
+`tools/migration/check-native-web-startup.mjs` hold at build time: an export that grew its entry
+chunk by 400 KB left every cell within a few milliseconds of its baseline.
+
+The service worker is not part of either visit. It registers once the child has drawn a few strokes
+(`web/src/lib/pwa/updates.ts`), which no Lighthouse load does, and no `sw.js` request appears in any
+report. The repeat cell is therefore a returning visitor who has not drawn yet, served by the HTTP
+cache and a 304 for the document; a visitor whose worker is installed loads faster than it shows.
 
 Negative controls on 2026-10-21 against the limits committed with this change (first-visit FCP 1,300
 ms and LCP 1,700 ms), each run with `--no-build` over a built export edited afterwards:

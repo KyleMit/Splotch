@@ -175,11 +175,10 @@ describe('edgeAnswer', () => {
     expect(encoded.size).toBe(1);
   });
 
-  it.each([
-    ['a POST', { method: 'POST', requestHeaders: { 'accept-encoding': 'br' } }],
-    ['a HEAD', { method: 'HEAD', requestHeaders: { 'accept-encoding': 'br' } }],
-  ])('passes %s through untouched', async (_, request) => {
-    const answer = await edgeAnswer(request, hostAnswer('text/html', BUNDLE));
+  it('passes a POST through untouched', async () => {
+    const post = { method: 'POST', requestHeaders: { 'accept-encoding': 'br' } };
+
+    const answer = await edgeAnswer(post, hostAnswer('text/html', BUNDLE));
 
     expect(answer.headers['content-encoding']).toBeUndefined();
     expect(answer.body).toEqual(BUNDLE);
@@ -230,7 +229,8 @@ describe('createEdgeProxy', () => {
         if (request.url === '/app.js') {
           response.setHeader('Content-Type', 'application/javascript');
           response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          response.end(BUNDLE);
+          // Like e2e/server/netlifySite.ts, which answers a HEAD with no body and so a length of 0.
+          response.end(request.method === 'HEAD' ? undefined : BUNDLE);
         } else if (request.url === '/api/echo') {
           response.setHeader('Content-Type', 'application/json');
           response.end(JSON.stringify({ host: request.headers.host }));
@@ -264,6 +264,21 @@ describe('createEdgeProxy', () => {
     expect(brotliDecompressSync(first.body)).toEqual(BUNDLE);
     expect(again.status).toBe(304);
     expect(again.body).toHaveLength(0);
+    expect(again.headers['content-length']).toBeUndefined();
+  });
+
+  it('answers a HEAD with the headers its GET carries, and no body', async () => {
+    const { edge } = await proxiedHost();
+    const headers = { 'accept-encoding': CHROME_ACCEPT_ENCODING };
+
+    const get = await fetchRaw(edge, { path: '/app.js', headers });
+    const head = await fetchRaw(edge, { path: '/app.js', method: 'HEAD', headers });
+
+    expect(head.status).toBe(200);
+    expect(head.body).toHaveLength(0);
+    expect(head.headers['content-length']).toBe(String(get.body.length));
+    expect(head.headers['content-encoding']).toBe('br');
+    expect(head.headers.etag).toBe(get.headers.etag);
   });
 
   it('keeps the host status for a missing file', async () => {

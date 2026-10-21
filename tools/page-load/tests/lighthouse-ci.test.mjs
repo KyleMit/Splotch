@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, posix } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { parse } from 'yaml';
 import { readNetlifyConfig } from '../../../e2e/server/netlifyConfig.ts';
@@ -317,13 +317,23 @@ const trackedFiles = new Set(
     .split('\0')
     .filter(Boolean)
 );
-const IMPORT_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\(\s*)['"](\.[^'"]*)['"]/g;
-const IMPORT_SUFFIXES = ['', '.ts', '.tsx', '.mjs', '.cjs', '.js', '/index.ts', '/index.tsx'];
+const IMPORT_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\(\s*)['"](\.[^'"]*)['"]/g;
+const SOURCE_EXTENSIONS = ['ts', 'tsx', 'mjs', 'cjs', 'js'];
+// Metro resolves `./X` in the web bundle to X.web.<ext> before X.<ext>, and a folder to its
+// index.web.<ext> first, so a web variant is the file the export bundles.
+const IMPORT_SUFFIXES = [
+  '',
+  ...SOURCE_EXTENSIONS.map((extension) => `.web.${extension}`),
+  ...SOURCE_EXTENSIONS.map((extension) => `.${extension}`),
+  ...SOURCE_EXTENSIONS.map((extension) => `/index.web.${extension}`),
+  ...SOURCE_EXTENSIONS.map((extension) => `/index.${extension}`),
+];
 const SOURCE_FILE = /\.(?:mjs|cjs|js|ts|tsx)$/;
 
-// Every tracked file reachable from `entries` through a relative import, require or literal dynamic
-// import. A file the build reads some other way (a readFileSync path) is not found by this walk.
-function importClosure(entries) {
+// Every `tracked` file reachable from `entries` through a relative import (a side-effect one
+// included), require or literal dynamic import, with `read` giving a file's source. A file the build reads some other way (a
+// readFileSync path) is not found by this walk.
+function importClosure(entries, { tracked, read }) {
   const seen = new Set();
   const queue = [...entries];
   while (queue.length > 0) {
@@ -331,11 +341,10 @@ function importClosure(entries) {
     if (seen.has(file)) continue;
     seen.add(file);
     if (!SOURCE_FILE.test(file)) continue;
-    const source = readFileSync(join(ROOT, file), 'utf8');
-    for (const [, specifier] of source.matchAll(IMPORT_SPECIFIER)) {
-      const base = resolve(ROOT, dirname(file), specifier);
-      const found = IMPORT_SUFFIXES.map((suffix) => relative(ROOT, `${base}${suffix}`)).find(
-        (candidate) => trackedFiles.has(candidate)
+    for (const [, specifier] of read(file).matchAll(IMPORT_SPECIFIER)) {
+      const base = posix.join(posix.dirname(file), specifier);
+      const found = IMPORT_SUFFIXES.map((suffix) => `${base}${suffix}`).find((candidate) =>
+        tracked.has(candidate)
       );
       if (found) queue.push(found);
     }
@@ -357,9 +366,10 @@ describe('the surface a baseline names', () => {
     `${nativeApp}/${main}`,
     ...knip.workspaces[nativeApp].entry.map((entry) => `${nativeApp}/${entry}`),
   ];
-  const imported = [...importClosure(exportEntries)].filter(
-    (file) => trackedFiles.has(file) && !SPEC_FILE.test(file)
-  );
+  const sourceOf = (file) => readFileSync(join(ROOT, file), 'utf8');
+  const imported = [
+    ...importClosure(exportEntries, { tracked: trackedFiles, read: sourceOf }),
+  ].filter((file) => trackedFiles.has(file) && !SPEC_FILE.test(file));
 
   it.each(MEASURED_SURFACE)('holds tracked files under %s', (entry) => {
     expect([...trackedFiles].some((file) => covers([entry], file))).toBe(true);
@@ -383,6 +393,43 @@ describe('the surface a baseline names', () => {
     expect(measured).toContain('pnpm-lock.yaml');
     expect(measured.some((file) => SPEC_FILE.test(file))).toBe(false);
     expect(measured.every((file) => covers(MEASURED_SURFACE, file))).toBe(true);
+  });
+});
+
+describe('the import walk behind that guard', () => {
+  const files = {
+    'app/index.ts': "import './Texture'; import('./panel');",
+    'app/Texture.tsx': "import '../native-only/skia';",
+    'app/Texture.web.tsx': "import '../outside/shared';",
+    'app/panel/index.ts': "export * from './rows';",
+    'app/panel/rows.ts': "export { rows } from '../../outside/rows';",
+    'native-only/skia.ts': '',
+    'outside/shared.ts': '',
+    'outside/rows.ts': '',
+  };
+  const closure = importClosure(['app/index.ts'], {
+    tracked: new Set(Object.keys(files)),
+    read: (file) => files[file],
+  });
+
+  it('follows the web variant Metro bundles, not the native file beside it', () => {
+    expect(closure).toContain('app/Texture.web.tsx');
+    expect(closure).toContain('outside/shared.ts');
+    expect(closure).not.toContain('app/Texture.tsx');
+    expect(closure).not.toContain('native-only/skia.ts');
+  });
+
+  it('follows a dynamic import, a folder index and a re-export', () => {
+    expect(closure).toContain('app/panel/index.ts');
+    expect(closure).toContain('app/panel/rows.ts');
+    expect(closure).toContain('outside/rows.ts');
+  });
+
+  it('leaves a file outside the surface for the guard to report', () => {
+    expect([...closure].filter((file) => !covers(['app'], file)).sort()).toEqual([
+      'outside/rows.ts',
+      'outside/shared.ts',
+    ]);
   });
 });
 
