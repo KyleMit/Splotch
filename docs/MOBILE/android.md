@@ -140,18 +140,18 @@ npm run native:android:apk    # art.splotch.app.dev Release APK -> experiments/n
 ```
 
 Store identity is opt-in (ADR-0182). A Gradle build of that project is `art.splotch.app.dev`, signed
-with the local debug key, unless it is given `-Psplotch.store=true`, and only
-`native:android:bundle` gives it. So a Debug build, `native:android:apk`, and any Release build
-installed for testing or device performance install beside the store copy, never over it. The store
-build signs with the upload key named in
-`experiments/native-architecture/android/keystore.properties` (git-ignored; template
-`keystore.properties.example` beside it), whose `storeFile` points at the shipping
-`android/upload-keystore.jks`: Play accepts the update only under that key. Without the file the
-build fails at configuration rather than writing an unsigned bundle. The script then runs the
-`jarsigner` check `android:verify` runs, and `npm run release:publish -- --only=android --dry-run`
-checks the bundle's embedded app ID, version, signature block and R8 mapping. The Capacitor
-`android:*` scripts above still build the WebView app; the release tooling neither versions nor
-publishes it.
+with the local debug key, unless its command line carries `-Psplotch.store=true`, and only
+`native:android:bundle` passes it; a `splotch.store` in `gradle.properties` or the environment fails
+the build instead. So a Debug build, `native:android:apk`, and any Release build installed for
+testing or device performance install beside the store copy, never over it. The store build signs
+with the upload key named in `experiments/native-architecture/android/keystore.properties`
+(git-ignored; template `keystore.properties.example` beside it), whose `storeFile` points at the
+shipping `android/upload-keystore.jks`: Play accepts the update only under that key. Without the
+file the build fails at configuration rather than writing an unsigned bundle. The script then runs
+the `jarsigner` check `android:verify` runs, and
+`npm run release:publish -- --only=android --dry-run` checks the bundle's embedded app ID, version,
+signature block and R8 mapping. The Capacitor `android:*` scripts above still build the WebView app;
+the release tooling neither versions nor publishes it.
 
 ### Running the web app on a real device
 

@@ -40,7 +40,13 @@ describe('the React Native app identity', () => {
   it('is what the Android project declares, with .dev on every build but the store one', () => {
     expect(gradle).toMatch(new RegExp(`^\\s*namespace "${STORE_APP_ID}"$`, 'm'));
     expect(gradle).toMatch(new RegExp(`^\\s*applicationId "${STORE_APP_ID}"$`, 'm'));
-    expect(gradle).toContain("def storeProperty = findProperty('splotch.store')");
+    // Only this invocation's -P may opt in; gradle.properties and the environment cannot.
+    expect(gradle).toContain(
+      "def storeProperty = gradle.startParameter.projectProperties['splotch.store']"
+    );
+    expect(gradle).toMatch(
+      /storeProperty == null && findProperty\('splotch\.store'\) != null\) \{\n\s+throw/
+    );
     expect(STORE_GRADLE_PROPERTY).toBe('-Psplotch.store=true');
     expect(gradle).toMatch(/debug \{\n\s+applicationIdSuffix "\.dev"\n\s+\}/);
     expect(gradle).toMatch(/if \(!storeBuild\) \{\n\s+applicationIdSuffix "\.dev"\n\s+\}/);

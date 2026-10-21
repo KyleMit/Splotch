@@ -7,8 +7,13 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 // debug key, unless the store release scripts pass -Psplotch.store=true: only then
 // does Release take art.splotch.app and the upload key named in the untracked
 // keystore.properties (see keystore.properties.example). So no plain build, Release
-// included, can install over the store copy on a device.
-def storeProperty = findProperty('splotch.store')
+// included, can install over the store copy on a device. Only this invocation's -P
+// counts: a copy in gradle.properties or the environment would turn every build into
+// a store build, so it is refused.
+def storeProperty = gradle.startParameter.projectProperties['splotch.store']
+if (storeProperty == null && findProperty('splotch.store') != null) {
+    throw new GradleException("splotch.store counts only as -Psplotch.store=true on the command line; remove it from gradle.properties and the environment")
+}
 if (storeProperty != null && storeProperty != 'true') {
     throw new GradleException("splotch.store must be true when set, got '${storeProperty}'")
 }
