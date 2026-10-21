@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Self-contained smoke test for the /api/* HTTP contract (see the `api` skill).
-// Boots a throwaway `vite dev` with test env, whose function host
-// (web/netlifyFunctionsHost.ts) serves the /api Netlify Function, exercises the CORS/preflight
+// Serves the /api Netlify Function on a throwaway plain Node host with test env
+// (tools/lib/netlify-function-host.mjs: no SvelteKit, no vite dev), exercises the CORS/preflight
 // contract, the admin auth flow, the public oracles, the csp-report receiver,
 // and generate-image's auth gate against the documented shapes, then tears the
 // server down. No model key or Netlify Blobs needed — every case here is
@@ -12,8 +12,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
-import { spawnViteServer } from '../lib/vite-server.mjs';
-import { waitForUrl } from '../lib/net.mjs';
+import { startNetlifyFunctionHost } from '../lib/netlify-function-host.mjs';
 import { check, fatal, summarize, json } from '../lib/smoke.mjs';
 import { adminClient } from './lib/admin-client.mjs';
 import { recordApiCaching } from './lib/api-caching.mjs';
@@ -29,11 +28,11 @@ import {
   SECURITY_HEADERS,
 } from '../../web/src/lib/server/securityHeaders.ts';
 import { MAX_IMAGE_BYTES } from '../../web/src/lib/server/generateImagePolicy.ts';
-import { tinyPngBuffer } from '../../web/tests/fixtures.ts';
 import { REPORT_HONEYPOT_FIELD } from '../../web/src/lib/report.ts';
+import { tinyPngBuffer } from './lib/tiny-png.mjs';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
-const BASE = `http://localhost:${PORT}`;
+const BASE = `http://127.0.0.1:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
 const OVERSIZED_IMAGE_BYTES = MAX_IMAGE_BYTES + 1;
@@ -186,11 +185,11 @@ async function checkTokensCrud(admin, auth) {
       Array.isArray(listBody?.invites),
     `got ${list.status}`
   );
-  // vite dev has no Netlify Blobs, so the snapshot must report the in-memory
+  // The local host has no Netlify Blobs, so the snapshot must report the in-memory
   // fallback. The hosted deploy contract asserts the opposite —
   // persistent:true — against a real function.
   check(
-    'tokens GET → persistent:false under vite dev',
+    'tokens GET → persistent:false on the local host',
     listBody?.persistent === false,
     `got ${listBody?.persistent}`
   );
@@ -263,7 +262,7 @@ async function checkAdminStats(auth) {
 
   const res = await fetch(`${BASE}/api/admin/stats`, { headers: auth });
   const body = await json(res);
-  // vite dev has no Netlify Blobs, so no tally store and an in-memory grant ledger.
+  // The local host has no Netlify Blobs, so no tally store and an in-memory grant ledger.
   check(
     'stats GET → 200 {ok, usageAvailable:false, codes[], in-memory freeGrantStats}',
     res.status === 200 &&
@@ -298,9 +297,9 @@ async function checkVerifyAccessCode(base) {
 }
 
 // --- report: validation + honeypot + graceful-unconfigured. GITHUB_ISSUE_TOKEN is
-// force-cleared in the server env (see spawnViteServer below), so reporting is always
+// force-cleared in the server env (see startNetlifyFunctionHost below), so reporting is always
 // unconfigured here and a valid submission gets a 503 — never a real issue. Without
-// that clear, a developer's local web/.env token would make the valid case open real
+// that clear, a token exported in the developer's shell would make the valid case open real
 // issues on every run. The burst loop below carries its own payload-level guard. ---
 async function checkReport(base) {
   const report = (payload) => postJson(base, '/api/report', payload);
@@ -668,13 +667,16 @@ async function run() {
   checkApiCaching();
 }
 
-let stop;
+let host;
 try {
-  console.log('Starting test dev server…');
-  ({ stop } = spawnViteServer(PORT, {
-    // Every private env var the app reads is declared, never inherited from the
-    // ambient env or web/.env — a value passed here wins over any .env one, and a
-    // name left out is a credential this script's checks would run against for real.
+  console.log('Starting the /api function host…');
+  // The deployed function's view would close the in-memory stores the admin CRUD cases write.
+  host = await startNetlifyFunctionHost({
+    mode: 'development',
+    port: PORT,
+    // Every private env var the app reads is declared, never inherited from the ambient
+    // env — the host reads no dotenv file, and a name left out is a credential this
+    // script's checks would run against for real.
     // tools/tests/e2e-server-env.test.mjs holds this list to the app's reads.
     env: {
       ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
@@ -698,15 +700,13 @@ try {
       USAGE_GRANT_ID_SECRET: 'smoke-usage-grant-id-secret',
       AI_RECOVERY_V1_ENABLED: '',
     },
-  }));
-
-  await waitForUrl(`${BASE}/api/admin/tokens`, 45_000, (res) => res.status === 401);
-  console.log(`Server ready on ${BASE}\n`);
+  });
+  console.log(`Server ready on ${host.origin}\n`);
   await run();
 } catch (err) {
   fatal(err);
 } finally {
-  if (stop) stop();
+  await host?.close();
 }
 
 summarize();

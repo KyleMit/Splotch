@@ -1,6 +1,63 @@
-import { isHttpError, json } from '@sveltejs/kit';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '../errorLog';
 import { loggableFailure } from './logRedaction';
+
+// The response and error helpers the /api endpoints used to take from @sveltejs/kit, byte for
+// byte: installed native builds read these answers, and tools/api-smoke/tests/wire-diff.test.mjs
+// holds them to the ones SvelteKit gave.
+
+const MIN_ERROR_STATUS = 400;
+const MAX_ERROR_STATUS = 599;
+
+const encoder = new TextEncoder();
+
+/** What `error()` throws. Not an Error, as SvelteKit's was not: it is an answer, not a fault. */
+class HttpError {
+  readonly status: number;
+  readonly body: { message: string };
+
+  constructor(status: number, message: string) {
+    this.status = status;
+    this.body = { message };
+  }
+
+  toString(): string {
+    return JSON.stringify(this.body);
+  }
+}
+
+/** Ends the handler with an HTTP error answer: apiHandler sends it as `{ ok:false, error }`. */
+export function error(status: number, message: string): never {
+  if (Number.isNaN(status) || status < MIN_ERROR_STATUS || status > MAX_ERROR_STATUS) {
+    throw new Error(
+      `HTTP error status codes must be between ${MIN_ERROR_STATUS} and ${MAX_ERROR_STATUS} — ${status} is invalid`
+    );
+  }
+  throw new HttpError(status, message);
+}
+
+export function isHttpError(value: unknown): value is HttpError {
+  return value instanceof HttpError;
+}
+
+function withContentLength(init: ResponseInit | undefined, bytes: Uint8Array): Headers {
+  const headers = new Headers(init?.headers);
+  if (!headers.has('content-length')) headers.set('content-length', String(bytes.byteLength));
+  return headers;
+}
+
+/** A JSON response, with the `Content-Length` and `Content-Type` SvelteKit's `json()` set. */
+export function json(data: unknown, init?: ResponseInit): Response {
+  const body = JSON.stringify(data);
+  const headers = withContentLength(init, encoder.encode(body));
+  if (!headers.has('content-type')) headers.set('content-type', 'application/json');
+  return new Response(body, { ...init, headers });
+}
+
+/** A plain-text response with a `Content-Length` and, as SvelteKit's `text()`, no `Content-Type`. */
+export function text(body: string, init?: ResponseInit): Response {
+  const bytes = encoder.encode(body);
+  return new Response(bytes, { ...init, headers: withContentLength(init, bytes) });
+}
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
@@ -141,8 +198,8 @@ export function throttledMessage(retryAfter: number): string {
   return `Too many attempts. Please wait ${retryAfter}s.`;
 }
 
-export function fail(status: number, error: string, headers?: HeadersInit) {
-  return json({ ok: false, error }, { status, headers });
+export function fail(status: number, message: string, headers?: HeadersInit) {
+  return json({ ok: false, error: message }, { status, headers });
 }
 
 /**
@@ -157,11 +214,10 @@ export function throttled(retryAfter: number) {
 /**
  * Wraps an /api/* handler so every thrown failure leaves the wire as the same
  * canonical `{ ok:false, error }` body every returned failure uses. A thrown
- * SvelteKit `error()` keeps its status and message; an unexpected non-HttpError
- * becomes `fail(500, GENERIC_ERROR_MESSAGE)` — SvelteKit's `{ message }` shape
- * can't reach a client either way. Catching here bypasses hooks.server.ts's
- * handleError, whose console record is the only trace of an unexpected /api
- * failure, so the same-format log line is emitted here instead. csp-report is
+ * `error()` keeps its status and message; anything else becomes
+ * `fail(500, GENERIC_ERROR_MESSAGE)`, logged in the `[server error]` format
+ * SvelteKit's handleError used, since that line is the only trace of an
+ * unexpected /api failure. csp-report is
  * the one unwrapped endpoint: its responses are deliberately bodyless
  * (browsers ignore them). eslint.config.js's API_HANDLER_WRAPPED rejects any
  * other /api method handler exported without this wrapper.

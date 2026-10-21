@@ -1,9 +1,10 @@
 # API smoke tooling
 
-This capability exercises Splotch's HTTP API as a running system. One entry point boots a local
-throwaway Vite server and checks the documented request/response contract without live model or
-storage credentials. The hosted check verifies the built site, safe API failures, and durable
-storage together. A narrower entry point remains available when only Blobs persistence is relevant.
+This capability exercises Splotch's HTTP API as a running system. One entry point serves the
+function on a local throwaway Node host and checks the documented request/response contract without
+live model or storage credentials. The hosted check verifies the built site, safe API failures, and
+durable storage together. A narrower entry point remains available when only Blobs persistence is
+relevant.
 
 ## Entry points
 
@@ -26,17 +27,18 @@ entry points. Assertions remain in the contract layers rather than in the reques
 
 ## Local contract inputs and outputs
 
-`run-local-contract.mjs` needs no external credentials. It starts a Vite dev server on `SMOKE_PORT`
-(default `5199`), whose function host (`web/netlifyFunctionsHost.ts`) serves the `/api` Netlify
-Functions, with explicit safe test values, exercises CORS, authentication, validation, rate limits,
-reporting, and public-oracle behavior, then tears the server down. Every non-`OPTIONS` `/api/*`
-response either entry point's checks receive must carry `Cache-Control: no-store`;
-`lib/api-caching.mjs` records them at the fetch boundary. It prints pass/fail diagnostics and writes
-no artifact. The process exits nonzero on any failed check or startup error.
+`run-local-contract.mjs` needs no external credentials. It serves the `/api` Netlify Function on
+`127.0.0.1:SMOKE_PORT` (default `5199`) through `tools/lib/netlify-function-host.mjs` — plain
+`node:http`, in dev mode, with no SvelteKit, no `vite dev` and no dotenv file — with explicit safe
+test values, exercises CORS, authentication, validation, rate limits, reporting, and public-oracle
+behavior, then tears the server down. Every non-`OPTIONS` `/api/*` response either entry point's
+checks receive must carry `Cache-Control: no-store`; `lib/api-caching.mjs` records them at the fetch
+boundary. It prints pass/fail diagnostics and writes no artifact. The process exits nonzero on any
+failed check or startup error.
 
 Keep its server environment in agreement with every private environment variable read by the web
-app. `tools/tests/e2e-server-env.test.mjs` enforces that agreement so a developer's `web/.env`
-cannot make the smoke test reach a real service accidentally.
+app. `tools/tests/e2e-server-env.test.mjs` enforces that agreement so a credential exported in a
+developer's shell cannot make the smoke test reach a real service accidentally.
 
 ## Wire-diff inputs and outputs
 

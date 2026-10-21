@@ -1,4 +1,3 @@
-import { error, isHttpError } from '@sveltejs/kit';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER } from '../../apiHeaders';
 import { GENERATION_STYLE_PARAM } from '../../apiParams';
 import type { ReportTokenBinding } from '../reportToken';
@@ -26,7 +25,14 @@ import {
   resolveGenerationPrompt,
   resolveGenerationStyle,
 } from '../generateImagePolicy';
-import { apiHandler, contentTypeOf, readBodyWithinLimit, readFormBody } from '../http';
+import {
+  apiHandler,
+  contentTypeOf,
+  error,
+  isHttpError,
+  readBodyWithinLimit,
+  readFormBody,
+} from '../http';
 import { loggableError } from '../logRedaction';
 import {
   clientAcceptsBackgroundGeneration,
