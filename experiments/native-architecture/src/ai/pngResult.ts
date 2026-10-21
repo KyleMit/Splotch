@@ -1,4 +1,5 @@
 import { inflatePng } from '../drawing/pngInflate';
+import { captureMetadataFits, isCaptureMetadata } from '../drawing/pngCaptureMetadata';
 import type { PngWork } from '../drawing/pngWork';
 import { ascii, imageGrid, invalidImage, MAX_AI_IMAGE_METADATA_BYTES } from './imageBounds';
 import type { PngGrid } from '../drawing/pngLimits';
@@ -62,6 +63,10 @@ function metadata(chunk: Chunk, channels: number) {
   } else if (chunk.type === 'caBX') {
     // The provider's C2PA content credentials. Its pictures carry one; it is kept, never read.
     if (!n) invalidImage();
+  } else if (isCaptureMetadata(chunk.type)) {
+    // The original is the app's own canvas capture, which WebKit encodes with an eXIf chunk.
+    const tiffHeader = () => new DataView(chunk.data.buffer, chunk.data.byteOffset, n).getUint32(0);
+    if (!captureMetadataFits(chunk.type, n, tiffHeader)) invalidImage();
   } else invalidImage();
 }
 export async function pngResultGrid(
