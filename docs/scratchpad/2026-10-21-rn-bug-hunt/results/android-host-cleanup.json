@@ -1,0 +1,51 @@
+{
+  "at": "2026-10-21T07:56:20.273532+00:00",
+  "privateServerStopped": true,
+  "privateToolSession": 95849,
+  "sharedServerRestarted": false,
+  "emulatorProcessRestarted": false,
+  "phoneChecks": [
+    {
+      "args": ["reconnect"],
+      "exit": 0,
+      "stdout": "reconnecting emulator-5680 [device]\n\n",
+      "stderr": ""
+    },
+    {
+      "args": ["get-state"],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "error: device 'emulator-5680' not found\n"
+    },
+    {
+      "args": ["shell", "true"],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "adb: device 'emulator-5680' not found\n"
+    },
+    {
+      "args": ["shell", "true"],
+      "afterExactRegistration": true,
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "ownedSocketDirectoryRemoved": true,
+  "phoneRegistrationReply": "",
+  "primaryPhoneShellAvailable": true,
+  "firewallVerification": [
+    {
+      "binary": "iptables",
+      "ownedRulesRemaining": 0
+    },
+    {
+      "binary": "ip6tables",
+      "ownedRulesRemaining": 0
+    }
+  ],
+  "finalReviewAt": "2026-10-21T08:19:18.020628+00:00",
+  "allOwnedTestProcessesComplete": true,
+  "probeStoppedOnAllApprovedDevices": true,
+  "guestStateNote": "Earlier serial-scoped guest reboot request timed out; later recent guest boot/package absence was observed. The cause of the guest state change is not established; emulatorProcessRestarted refers to the unowned host emulator process, which this worker never restarted."
+}

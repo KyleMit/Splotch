@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-21T08:19:18.020628+00:00",
+  "check": 0,
+  "lint": 0,
+  "docReferences": 0,
+  "formatCheck": 0,
+  "qaHelperLint": 0,
+  "existingLintWarnings": 2,
+  "findingEvidencePaths": 49,
+  "findingEvidenceMissing": 0,
+  "formalTestsUnchangedSincePositiveRun": true,
+  "productSourceChanged": false,
+  "commitsCreated": 0
+}

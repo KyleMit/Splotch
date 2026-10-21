@@ -1,0 +1,136 @@
+[
+  {
+    "id": "boot",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded core check; see detailed Chromium results",
+    "evidence": ["evidence/chromium-androidremote-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D01",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded core check; see detailed Chromium results",
+    "evidence": ["evidence/chromium-androidremote-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D02-stroke",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded core check; see detailed Chromium results",
+    "evidence": ["evidence/chromium-androidremote-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S01-core-sections",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded core check; see detailed Chromium results",
+    "evidence": ["evidence/chromium-androidremote-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L01-reload",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded core check; see detailed Chromium results",
+    "evidence": ["evidence/chromium-androidremote-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A01-prompt",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "AI style prompt under fixture",
+    "evidence": [
+      "evidence/chromium-androidremote-ai-prompt.png",
+      "evidence/chromium-androidremote-ai-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A02-result",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded fixture result/report/original-storage check",
+    "evidence": ["evidence/chromium-androidremote-ai-followup.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A03-report",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded fixture result/report/original-storage check",
+    "evidence": ["evidence/chromium-androidremote-ai-followup.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A08-idb-original",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Bounded fixture result/report/original-storage check",
+    "evidence": ["evidence/chromium-androidremote-ai-followup.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A04-server500",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Fixture error/refusal handling; explicit retry where offered",
+    "evidence": [
+      "evidence/chromium-androidremote-error-results.json",
+      "evidence/chromium-androidremote-errors-server500-error.png",
+      "evidence/chromium-androidremote-errors-server500-retry-success.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A04-bare502",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Fixture error/refusal handling; explicit retry where offered",
+    "evidence": [
+      "evidence/chromium-androidremote-error-bare502-results.json",
+      "evidence/chromium-androidremote-errors-bare502-bare502-error.png",
+      "evidence/chromium-androidremote-errors-bare502-bare502-retry-success.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A04-malformed",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Fixture error/refusal handling; explicit retry where offered",
+    "evidence": [
+      "evidence/chromium-androidremote-error-results.json",
+      "evidence/chromium-androidremote-errors-malformed-error.png",
+      "evidence/chromium-androidremote-errors-malformed-retry-success.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A04-wrongtype",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Fixture error/refusal handling; explicit retry where offered",
+    "evidence": [
+      "evidence/chromium-androidremote-error-results.json",
+      "evidence/chromium-androidremote-errors-wrongtype-error.png",
+      "evidence/chromium-androidremote-errors-wrongtype-retry-success.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "A04-refusal422",
+    "surface": "android-chrome-supplemental",
+    "status": "pass",
+    "description": "Fixture error/refusal handling; explicit retry where offered",
+    "evidence": [
+      "evidence/chromium-androidremote-error-results.json",
+      "evidence/chromium-androidremote-errors-refusal422-safe.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  }
+]

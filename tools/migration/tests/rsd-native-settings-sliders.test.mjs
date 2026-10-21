@@ -252,3 +252,79 @@ it('clamps Button Size to the live panel ceiling without rewriting a larger save
   expect(sliderProps('Button Size')['aria-valuenow']).toBe(130);
   expect(settings.storage.write).not.toHaveBeenCalled();
 });
+
+it('stops a terminated Volume preview and ignores moves from the canceled contact', async () => {
+  const fixture = pencilLoop();
+  const settings = storedSettings({ soundEnabled: true });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Sound');
+  await grab('Volume');
+  await drag('Volume', SLIDER_WIDTH_PX / 4);
+  const loop = fixture.current();
+  expect(loop.start).toHaveBeenCalledOnce();
+  expect(sliderProps('Volume')['aria-valuenow']).toBe(75);
+  await act(async () => sliderProps('Volume').onResponderTerminate(touch(1, 0)));
+  expect(loop.stop).toHaveBeenCalledOnce();
+  const writes = settings.storage.write.mock.calls.length;
+  await drag('Volume', SLIDER_WIDTH_PX / 2);
+  expect(settings.storage.write).toHaveBeenCalledTimes(writes);
+  expect(settings.stored().soundVolume).toBe(75);
+  expect(sliderProps('Volume')['aria-valuenow']).toBe(75);
+  await grab('Volume');
+  expect(loop.start).toHaveBeenCalledTimes(2);
+  await letGo('Volume');
+  expect(loop.stop).toHaveBeenCalledTimes(2);
+});
+
+it('folds the Button Size preview after responder termination without accepting stale movement', async () => {
+  const settings = storedSettings();
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Accessibility');
+  await grab('Button Size');
+  await drag('Button Size', SLIDER_WIDTH_PX / 4);
+  const settled = sliderProps('Button Size')['aria-valuenow'];
+  expect(settled).toBeGreaterThan(100);
+  expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]').length).toBeGreaterThan(0);
+  await act(async () => sliderProps('Button Size').onResponderTerminate(touch(1, 0)));
+  expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]')).toHaveLength(0);
+  expect(host.querySelector('[aria-label="Expand controls"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Collapse controls"]')).toBeNull();
+  const writes = settings.storage.write.mock.calls.length;
+  await drag('Button Size', SLIDER_WIDTH_PX / 2);
+  expect(settings.storage.write).toHaveBeenCalledTimes(writes);
+  expect(settings.stored().buttonScale).toBe(settled);
+  expect(sliderProps('Button Size')['aria-valuenow']).toBe(settled);
+});
+
+it.each([
+  ['Volume', 'Sound', 'soundVolume', 60],
+  ['Button Size', 'Accessibility', 'buttonScale', 106],
+])(
+  'keeps %s attached to its first finger when another finger moves or remains',
+  async (label, section, key, expected) => {
+    pencilLoop();
+    const settings = storedSettings({ soundEnabled: true });
+    drawingScreen();
+    await mount(createElement(RsdDrawingScreen));
+    await openSettingsSection(section);
+    await grab(label);
+    const tracked = { identifier: 1, pageX: SLIDER_WIDTH_PX / 10 };
+    const other = { identifier: 2, pageX: SLIDER_WIDTH_PX };
+    await act(async () =>
+      sliderProps(label).onResponderMove({
+        nativeEvent: { ...other, changedTouches: [other], touches: [tracked, other] },
+      })
+    );
+    expect(sliderProps(label)['aria-valuenow']).toBe(expected);
+    await act(async () =>
+      sliderProps(label).onResponderMove({
+        nativeEvent: { ...other, changedTouches: [other], touches: [other] },
+      })
+    );
+    expect(sliderProps(label)['aria-valuenow']).toBe(expected);
+    await letGo(label);
+    expect(settings.stored()[key]).toBe(expected);
+  }
+);
