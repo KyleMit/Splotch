@@ -588,10 +588,7 @@ export default tseslint.config(
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
-    ignores: [
-      'tools/store-drawings/generated/**',
-      'tools/asset-gen/ideas-exploration/**',
-    ],
+    ignores: ['tools/store-drawings/generated/**', 'tools/asset-gen/ideas-exploration/**'],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
     },
