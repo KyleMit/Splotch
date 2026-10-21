@@ -102,18 +102,43 @@ function localImportClosure(entryPoints) {
 const IMPORT_SPECIFIER =
   /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)['"](\.[^'"]+)['"]/g;
 const SOURCE_FILE = /\.(?:[cm]?js|tsx?)$/;
-const RESOLVED_EXTENSIONS = ['', '.ts', '.tsx', '.mjs', '.js', '.cjs', '/index.ts', '/index.tsx'];
+// Expo's Metro source extensions, in its order. Both native builds bundle, so
+// an import counts once per platform.
+const METRO_SOURCE_EXTENSIONS = ['ts', 'tsx', 'mjs', 'js', 'jsx', 'json', 'cjs'];
+const NATIVE_PLATFORMS = ['ios', 'android'];
 
-/** A relative specifier resolved as Metro and Node would, or undefined when no file answers. */
-function resolveSpecifier(fromFile, specifier) {
+/** The files Metro tries for `base` on `platform`, in its order: platform, then native, then plain. */
+export function metroCandidates(base, platform) {
+  const suffixes = METRO_SOURCE_EXTENSIONS.flatMap((extension) => [
+    `.${platform}.${extension}`,
+    `.native.${extension}`,
+    `.${extension}`,
+  ]);
+  return [
+    base,
+    ...suffixes.map((suffix) => `${base}${suffix}`),
+    ...suffixes.map((suffix) => `${base}/index${suffix}`),
+  ];
+}
+
+const isRepoFile = (path) => {
+  try {
+    return statSync(join(repoRoot, path)).isFile();
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The module each native build bundles for a relative specifier, deduplicated; the unresolved
+ * path when neither platform finds a file, so a broken import still reaches the coverage check.
+ */
+export function resolveNativeTargets(fromFile, specifier, exists = isRepoFile) {
   const base = join(dirname(fromFile), specifier);
-  return RESOLVED_EXTENSIONS.map((extension) => `${base}${extension}`).find((candidate) => {
-    try {
-      return statSync(join(repoRoot, candidate)).isFile();
-    } catch {
-      return false;
-    }
-  });
+  const targets = NATIVE_PLATFORMS.map((platform) =>
+    metroCandidates(base, platform).find((candidate) => exists(candidate))
+  );
+  return [...new Set(targets.map((target) => target ?? base))];
 }
 
 /** Repo paths outside the app that its tracked sources import, with the importer of each. */
@@ -121,10 +146,9 @@ export function appExternalImports(appFiles) {
   return appFiles
     .filter((file) => SOURCE_FILE.test(file))
     .flatMap((file) =>
-      [...read(file).matchAll(IMPORT_SPECIFIER)].map(([, specifier]) => ({
-        file,
-        target: resolveSpecifier(file, specifier) ?? join(dirname(file), specifier),
-      }))
+      [...read(file).matchAll(IMPORT_SPECIFIER)].flatMap(([, specifier]) =>
+        resolveNativeTargets(file, specifier).map((target) => ({ file, target }))
+      )
     )
     .filter(({ target }) => !target.startsWith(`${NATIVE_APP_DIR}/`));
 }
@@ -321,6 +345,37 @@ describe('native release configuration gates', () => {
         !filter(target) && !UNFILTERED_BUNDLE_INPUTS.some((tree) => target.startsWith(tree))
     );
     expect(unfiltered, 'app imports no native-compile.yml path matches').toEqual([]);
+  });
+
+  it.each([
+    [
+      'a .native file over the plain one',
+      ['web/x/contents.native.ts', 'web/x/contents.ts'],
+      ['web/x/contents.native.ts'],
+    ],
+    [
+      'each platform its own file',
+      ['web/x/contents.ios.ts', 'web/x/contents.android.ts', 'web/x/contents.ts'],
+      ['web/x/contents.ios.ts', 'web/x/contents.android.ts'],
+    ],
+    [
+      'a platform file only one platform has',
+      ['web/x/contents.ios.ts', 'web/x/contents.ts'],
+      ['web/x/contents.ios.ts', 'web/x/contents.ts'],
+    ],
+    // metro-resolver's resolveSourceFile walks the extensions outermost.
+    [
+      'a plain .ts over a platform .tsx',
+      ['web/x/contents.android.tsx', 'web/x/contents.ts'],
+      ['web/x/contents.ts'],
+    ],
+    ['a directory index', ['web/x/contents/index.ts'], ['web/x/contents/index.ts']],
+    ['no file at all as the unresolved path', [], ['web/x/contents']],
+  ])('resolves as Metro does for both native builds: %s', (_case, files, expected) => {
+    const present = new Set(files);
+    expect(
+      resolveNativeTargets('app/src/Page.tsx', '../../web/x/contents', (path) => present.has(path))
+    ).toEqual(expected);
   });
 
   it('resolves an extensionless import to the module it names', () => {
