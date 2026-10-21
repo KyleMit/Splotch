@@ -9,28 +9,32 @@ export type FrameClock = Readonly<{
 // after it exists. Redrawing two display frames later lands on the drawable as it settled.
 const SETTLE_FRAMES = 2;
 
-// Redraws once, SETTLE_FRAMES display frames after the latest request; requests that arrive while
-// one is waiting restart its count rather than queueing another redraw.
+// Redraws once, SETTLE_FRAMES display frames after the latest request. A request supersedes the
+// one waiting, and a superseded or disposed wait never redraws, even if its frame still fires.
 export function createDeferredRedraw(clock: FrameClock, redraw: () => void) {
   let pending: number | null = null;
-  let remaining = 0;
-  const tick = () => {
-    remaining -= 1;
-    if (remaining > 0) {
-      pending = clock.requestFrame(tick);
-      return;
-    }
+  let generation = 0;
+  const cancel = () => {
+    if (pending !== null) clock.cancelFrame(pending);
     pending = null;
-    redraw();
+    generation += 1;
+  };
+  const wait = (frames: number, waiting: number) => {
+    pending = clock.requestFrame(() => {
+      if (waiting !== generation) return;
+      if (frames > 1) {
+        wait(frames - 1, waiting);
+        return;
+      }
+      pending = null;
+      redraw();
+    });
   };
   return {
     request() {
-      remaining = SETTLE_FRAMES;
-      if (pending === null) pending = clock.requestFrame(tick);
+      cancel();
+      wait(SETTLE_FRAMES, generation);
     },
-    dispose() {
-      if (pending !== null) clock.cancelFrame(pending);
-      pending = null;
-    },
+    dispose: cancel,
   };
 }

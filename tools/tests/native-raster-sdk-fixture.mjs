@@ -51,7 +51,8 @@ export function svgRasterSdk(state) {
   };
 }
 
-export async function nativeInkViewSdk(readPlane, loadImage) {
+// `accessibility` receives each AccessibilityInfo listener by event name, so a test can fire one.
+export async function nativeInkViewSdk(readPlane, loadImage, accessibility = new Map()) {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const View = ({ children, onLayout, testID }) => {
@@ -65,7 +66,10 @@ export async function nativeInkViewSdk(readPlane, loadImage) {
     Easing: easingPort,
     AccessibilityInfo: {
       isReduceMotionEnabled: async () => false,
-      addEventListener: () => ({ remove() {} }),
+      addEventListener: (event, listener) => {
+        accessibility.set(event, listener);
+        return { remove: () => accessibility.delete(event) };
+      },
     },
     PixelRatio: { get: () => 1 },
     Platform: { OS: 'web' },
