@@ -120,6 +120,29 @@ on each platform:
 Rechecking a fix that touches only TS or TSX takes about ten seconds through
 `node tools/device-parity/swap-js-bundle.mjs` (above).
 
+## The react-native-skia patch
+
+`patches/@shopify__react-native-skia@*.patch` shrinks `librnskia.so`, the app's largest native
+library, from 14.3 MB to 9.2 MB on arm64. It does two things:
+
+* **Link flags on Android:** it hides every symbol but `JNI_OnLoad`, folds identical code, and packs
+  relocations.
+* **Unused JSI bindings:** it stops installing the factories the app never calls: Skottie,
+  `ParagraphBuilder`, `TypefaceFontProvider`, the SVG DOM builder, `drawSvg`, and the recorder's
+  SVG, Paragraph and Skottie commands. With them gone, the linker drops Skottie, SkSG, SkParagraph,
+  HarfBuzz and the SVG DOM from the stock prebuilt Skia archives.
+
+Using any of those APIs throws, or finds the factory undefined.
+`tools/tests/native-skia-trim.test.mjs` fails if the app imports one, or if a factory the library
+binds at import time loses its getter.
+
+On a react-native-skia upgrade:
+
+1. Run `pnpm patch @shopify/react-native-skia@<new>` and reapply both parts.
+2. Run the test above.
+3. Build an arm64 Release.
+4. Compare `librnskia.so` and `npm run report:app-size` against the previous version.
+
 ## Performance probe
 
 A Release bundle built with `EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1` in the environment counts the live
