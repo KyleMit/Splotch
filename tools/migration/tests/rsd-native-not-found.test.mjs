@@ -157,6 +157,24 @@ it.each([
   expect(pageParts().topbar.firstElementChild.textContent).toBe('Back to drawing');
 });
 
+// Issue 3108: at Android font scale 1.6 the back label left the mark too little room, and its
+// word broke as "SPLOTC / H"; at 2.0 it stacked one letter per line.
+it.each(['ios', 'android'])(
+  'moves the %s masthead mark to its own trailing row rather than breaking its word',
+  async (os) => {
+    records.os = os;
+    records.dimensions = { width: 384, height: 874, scale: 1, fontScale: 2 };
+    records.journalHostProps = true;
+    await mount(pageTree('light', { backLabel: 'Back to drawing' }));
+    const { topbar } = pageParts();
+    const brand = topbar.lastElementChild;
+    expect(brand.textContent).toBe(NOT_FOUND_COPY.wordmark);
+    expect(sheetStyle(topbar)).toMatchObject({ flexWrap: 'wrap', justifyContent: 'space-between' });
+    expect(sheetStyle(brand).marginStart).toBe('auto');
+    expect(sheetStyle(topbar.firstElementChild).flexShrink).toBe(0);
+  }
+);
+
 it('pins the shipping short-height sheet, compact hero and optional lede disclosure', () => {
   const shell = read('web/src/lib/components/page/PageShell.svelte');
   const short = shell.slice(shell.lastIndexOf(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`));

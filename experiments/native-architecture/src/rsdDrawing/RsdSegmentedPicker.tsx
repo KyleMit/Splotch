@@ -5,7 +5,7 @@ import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import type { NativeIconName } from './icons.generated';
-import { optionFades, pressedState } from './pickerPlatform';
+import { optionFades, optionTabIndex, pressedState } from './pickerPlatform';
 import { TextZoomRevision } from '../platform/textZoomRevision';
 import { RsdIcon } from './RsdIcon';
 import { WholeWordText } from './WholeWordText';
@@ -233,7 +233,14 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
           role={radio ? 'radio' : undefined}
           aria-checked={radio ? active : undefined}
           {...(radio ? null : pressedState(active))}
-          tabIndex={radio ? (index === rovingIndex ? 0 : -1) : undefined}
+          tabIndex={
+            radio
+              ? optionTabIndex({
+                  rovingStop: index === rovingIndex,
+                  disabled: option.disabled === true,
+                })
+              : undefined
+          }
           onClick={() => onSelect(option.value)}
           style={[
             styles.option,

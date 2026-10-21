@@ -6,6 +6,12 @@ export function pressedState(pressed: boolean) {
   return { 'aria-pressed': pressed } as const;
 }
 
+// A radio group is one tab stop, as shipping's: the roving option takes Tab, and the arrow keys
+// move selection and focus together.
+export function optionTabIndex({ rovingStop }: { rovingStop: boolean; disabled: boolean }) {
+  return rovingStop ? 0 : -1;
+}
+
 // The shipping options fade their ink and fill over --duration-fast as the selection moves.
 export const optionFades = css.create({
   segment: {

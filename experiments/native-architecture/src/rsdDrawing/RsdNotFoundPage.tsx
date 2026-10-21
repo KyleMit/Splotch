@@ -135,11 +135,15 @@ const styles = css.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: TOPBAR_GAP_PX,
     paddingTop: TOPBAR_PADDING_PX,
     paddingBottom: TOPBAR_PADDING_PX,
   },
   shortTopbar: { paddingTop: SHORT_TOPBAR_PADDING_PX, paddingBottom: SHORT_TOPBAR_PADDING_PX },
+  // Native text follows the OS text size, so a large one can leave the mark too little room beside
+  // the back link: it takes its own row, at the end, instead of breaking inside its word.
+  nativeBrand: { marginInlineStart: 'auto' },
   back: (overhang: number) => ({
     flexShrink: 0,
     whiteSpace: 'nowrap',
@@ -284,7 +288,12 @@ export function RsdBrandMark({
   const crayon = CRAYON[phone ? 'phone' : 'wide'];
   const tracking = WORDMARK_TRACKING_EM[phone ? 'phone' : 'wide'];
   const mark = (
-    <html.div style={styles.brand(BRAND_GAP_PX[phone ? 'phone' : 'wide'])}>
+    <html.div
+      style={[
+        styles.brand(BRAND_GAP_PX[phone ? 'phone' : 'wide']),
+        Platform.OS !== 'web' && styles.nativeBrand,
+      ]}
+    >
       {!narrow && (
         <html.div aria-hidden style={styles.crayons(crayon.gap)}>
           {CRAYON_LABELS.map((label) => (
