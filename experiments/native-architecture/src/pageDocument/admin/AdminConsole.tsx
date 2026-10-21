@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, fonts, motion } from '../../rsdDrawing/tokens.css';
 import { SHOWN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../rsdDrawing/pageFrame';
-import type { AdminApi, AdminStats, TokenSnapshot } from './adminApi';
+import type { AdminApi, TokenSnapshot } from './adminApi';
 import { ADMIN_RESTORING_ATTRIBUTE, type AdminTheme } from './adminContract';
 import type { AdminSessionStore } from './adminSession';
 import {
@@ -16,7 +16,7 @@ import {
 } from './adminChrome';
 import { AdminLedger } from './AdminLedger';
 import { FreeGrants } from './FreeGrants';
-import { useAdminConsole, type Flash } from './useAdminConsole';
+import { useAdminConsole, type Figures, type Flash } from './useAdminConsole';
 
 const COMPACT = '@media (max-width: 560px)';
 const FIELD_PADDING = { block: '13px', inline: '16px' } as const;
@@ -120,7 +120,7 @@ export function AdminConsole({
       {view.mode === 'signedIn' ? (
         <AccessCodes
           snapshot={view.snapshot}
-          stats={view.stats}
+          figures={view.figures}
           flash={admin.flash}
           busy={admin.busy}
           draft={admin.draft}
@@ -200,7 +200,7 @@ function SignIn({
 
 function AccessCodes({
   snapshot,
-  stats,
+  figures,
   flash,
   busy,
   draft,
@@ -212,7 +212,7 @@ function AccessCodes({
   onCopy,
 }: {
   snapshot: TokenSnapshot;
-  stats: AdminStats | null;
+  figures: Figures;
   flash: Flash | null;
   busy: boolean;
   draft: string;
@@ -227,8 +227,11 @@ function AccessCodes({
   const add = () => {
     if (!busy && draft.trim()) onAdd();
   };
+  const stats = figures.kind === 'read' ? figures.stats : null;
   const usage = stats?.usage ?? null;
   const freeGrantStats = stats?.freeGrantStats ?? null;
+  const talliesUnavailable =
+    figures.kind === 'unavailable' || (figures.kind === 'read' && usage === null);
   return (
     <html.div style={styles.sections}>
       <AdminSection>
@@ -242,13 +245,13 @@ function AccessCodes({
             on the next restart.
           </AdminStatusMessage>
         )}
-        {usage ? null : (
+        {talliesUnavailable ? (
           <AdminStatusMessage status="warning">
             <html.strong>Generation tallies are unavailable.</html.strong> The Generations and Last
             used columns are hidden until the usage store is reachable again. The codes themselves
             are unaffected.
           </AdminStatusMessage>
-        )}
+        ) : null}
         {flash ? <AdminStatusMessage status={flash.kind}>{flash.text}</AdminStatusMessage> : null}
         <html.div style={styles.form}>
           <AdminHiddenLabel field={fieldId}>New access code</AdminHiddenLabel>

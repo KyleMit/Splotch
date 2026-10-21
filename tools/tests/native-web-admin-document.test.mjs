@@ -227,7 +227,10 @@ describe("the admin console's state", () => {
     );
     await mount({ stored: SESSION, request });
     expect(latest.view).toMatchObject({ mode: 'signedIn', session: SESSION });
-    expect(latest.view.stats.usage.get('alpha')).toEqual({ count: 3, lastUsed: USED.lastUsed });
+    expect(latest.view.figures.stats.usage.get('alpha')).toEqual({
+      count: 3,
+      lastUsed: USED.lastUsed,
+    });
     expect(request.mock.calls.map(([path]) => path).sort()).toEqual(
       [ADMIN_STATS_PATH, ADMIN_TOKENS_PATH].sort()
     );
@@ -241,7 +244,7 @@ describe("the admin console's state", () => {
           ? answer(500, { ok: false, error: 'Something went wrong' })
           : answer(200, SNAPSHOT),
     });
-    expect(latest.view).toMatchObject({ mode: 'signedIn', stats: null });
+    expect(latest.view).toMatchObject({ mode: 'signedIn', figures: { kind: 'unavailable' } });
   });
 
   it('keeps the figures it read across a write', async () => {
@@ -255,7 +258,7 @@ describe("the admin console's state", () => {
     await act(async () => latest.setDraft('gamma'));
     await act(async () => latest.add(SESSION));
     expect(latest.flash).toEqual({ kind: 'success', text: 'Added “gamma”' });
-    expect(latest.view.stats.freeGrantStats.dailyProviderStarts).toBe(4);
+    expect(latest.view.figures.stats.freeGrantStats.dailyProviderStarts).toBe(4);
   });
 
   it('forgets a stored session the API answers 401, and asks for the key', async () => {
@@ -314,6 +317,28 @@ describe("the admin console's state", () => {
     });
     expect(latest.view).toEqual({ mode: 'signedOut', error: null });
     expect(storage.items.has(ADMIN_SESSION_KEY)).toBe(false);
+  });
+
+  it('lists the codes without waiting on the figures, and adds them when they land', async () => {
+    const { pending, request } = deferredRequests();
+    await mount({ stored: SESSION, request });
+    const answerTo = (path, body) =>
+      act(async () => pending.find((call) => call.path === path).resolve(answer(200, body)));
+    await answerTo(ADMIN_TOKENS_PATH, SNAPSHOT);
+    expect(latest.view).toMatchObject({ mode: 'signedIn', figures: { kind: 'pending' } });
+    await answerTo(ADMIN_STATS_PATH, STATS);
+    expect(latest.view.figures.stats.freeGrantStats.dailyProviderStarts).toBe(4);
+  });
+
+  it('ignores figures that land after their session was signed out', async () => {
+    const { pending, request } = deferredRequests();
+    await mount({ stored: SESSION, request });
+    const tokens = pending.find((call) => call.path === ADMIN_TOKENS_PATH);
+    await act(async () => tokens.resolve(answer(200, SNAPSHOT)));
+    await act(async () => latest.signOut());
+    const stats = pending.find((call) => call.path === ADMIN_STATS_PATH);
+    await act(async () => stats.resolve(answer(200, STATS)));
+    expect(latest.view).toEqual({ mode: 'signedOut', error: null });
   });
 
   it("keeps a new session when the old one's late 401 lands", async () => {
