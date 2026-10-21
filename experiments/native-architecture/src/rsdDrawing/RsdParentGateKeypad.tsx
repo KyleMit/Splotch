@@ -19,14 +19,15 @@ const styles = css.create({
   keypad: (gap: number) => ({ display: 'flex', flexDirection: 'column', gap }),
   width: (width: number) => ({ width, flexShrink: 0 }),
   row: (gap: number) => ({ display: 'flex', flexDirection: 'row', gap }),
-  key: (height: number) => ({
+  // The shipping key height is a floor: at a large OS text size a key grows to hold its digit.
+  key: (minHeight: number) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
-    height,
+    minHeight,
     padding: 0,
     borderWidth: 0,
     borderRadius: dimensions.radiusMd,

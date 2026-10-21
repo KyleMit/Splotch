@@ -304,11 +304,10 @@ describe('Parent Center in Settings', () => {
   });
 });
 
-// The equation reads operand pair, operand pair, then one dab per answer digit.
-const OPERAND_PAIRS = 2;
+// The equation reads the question, then the answer: `=` and one dab per answer digit.
 function dabs() {
-  const equation = host.querySelector(`${GATE_MODAL} [role="img"]`);
-  return [...equation.children].slice(OPERAND_PAIRS).map((node) => node.textContent);
+  const answer = host.querySelector(`${GATE_MODAL} [role="img"]`).lastElementChild;
+  return [...answer.children].slice(1).map((node) => node.textContent);
 }
 
 // The mock renderer drops aria-disabled from the DOM; RSD hands it to native as accessibilityState.
