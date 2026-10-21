@@ -229,6 +229,17 @@ jobs:
       - name: Build the site from the production install
         run: npm run build:site
 
+      # The export every RN web E2E shard and both engine smokes serve, built once here from the
+      # deploy's own install rather than once per job. The path is netlify.toml's publish
+      # directory; tools/migration/tests/native-ci-wiring.test.mjs holds the two together.
+      - name: Upload the export
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rn-web-export
+          path: experiments/native-architecture/dist/web/
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Install development dependencies
         run: pnpm install --frozen-lockfile
 
@@ -331,11 +342,61 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Firefox uses the same small engine-smoke subset as WebKit but needs none of
-  # WebKit's GStreamer/ffmpeg stack. A separate parallel job closes the only
-  # remaining engine-family gap without adding another browser to every shard.
+  # The React Native web export in Chromium: every spec of the RN Playwright suite (e2e/README.md),
+  # dealt across shards by Playwright's --shard. Each shard serves the export the Native web build
+  # job uploaded instead of building its own, so the suite tests the bytes the deploy would publish.
+  # The SvelteKit Tests shards above keep running until their specs are ported or deleted.
+  rn-web-e2e:
+    name: RN web E2E (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: native-web-build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      # strategy.job-total is the shard denominator, so shard must remain the only matrix axis
+      # with no include/exclude entries. workflow-hygiene.test.mjs enforces it.
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: experiments/native-architecture/dist/web/
+
+      - name: Run RN web E2E
+        run: npm run test:e2e:rn -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          SPLOTCH_E2E_PREBUILT: 1
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          # The flaky digest finds this artifact by the job's name
+          # (REPORT_JOBS in tools/flaky-digest/lib/flaky-history.mjs).
+          name: playwright-report-rn-shard-${{ matrix.shard }}
+          # REPORT_FOLDER in e2e/playwright.config.ts. Drift-guarded by
+          # tools/tests/playwright-report-folder.test.mjs.
+          path: playwright-report/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The RN suite's @smoke specs in Firefox: the app boots, draws, undoes and serves a page. Firefox
+  # needs none of WebKit's GStreamer/ffmpeg stack, so it runs in its own job beside WebKit's, on
+  # the export the Native web build job uploaded.
   firefox-smoke:
     name: Firefox smoke
+    needs: native-web-build
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -348,9 +409,16 @@ jobs:
         with:
           browsers: firefox
 
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: experiments/native-architecture/dist/web/
+
       - name: Run Firefox smoke
         run: npm run test:firefox:smoke
         env:
+          SPLOTCH_E2E_PREBUILT: 1
           # Assert that the installed binary produced a Firefox project instead
           # of letting Playwright silently drop the smoke from this job.
           REQUIRE_FIREFOX: 1
@@ -364,18 +432,19 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # WebKit's apt dependencies are the expensive half of the Ubuntu browser
-  # install: WebKit adds the whole GStreamer/ffmpeg media stack (~110 packages /
-  # 60 MB) that Chromium doesn't need, and installing it lands on every run —
-  # setup-playwright's apt package cache takes the network out of that install,
-  # not the install itself. Paying it in a job parallel to Tests, rather than
-  # inside it, keeps ~40s off the critical path for what is four tests. The
-  # alternative — hand-listing the subset of WebKit's libraries this app
+  # The RN suite's @smoke specs in WebKit. WebKit's apt dependencies are the
+  # expensive half of the Ubuntu browser install: WebKit adds the whole
+  # GStreamer/ffmpeg media stack (~110 packages / 60 MB) that Chromium doesn't
+  # need, and installing it lands on every run — setup-playwright's apt package
+  # cache takes the network out of that install, not the install itself. Paying
+  # it in its own job keeps it off every Chromium shard for a handful of tests.
+  # The alternative — hand-listing the subset of WebKit's libraries this app
   # actually links against — was measured as the slower option and pins ~23 apt
   # package names that churn across Ubuntu releases, which
   # `playwright install-deps` tracks upstream for free.
   webkit-smoke:
     name: WebKit smoke
+    needs: native-web-build
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -388,13 +457,20 @@ jobs:
         with:
           browsers: webkit
 
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: experiments/native-architecture/dist/web/
+
       - name: Run WebKit smoke
         run: npm run test:webkit:smoke
         env:
+          SPLOTCH_E2E_PREBUILT: 1
           # Assert (not just assume) the WebKit project is in the run —
-          # playwright.config.ts throws if the binary is missing, so a bad cache
-          # or edited install line fails loudly instead of silently dropping
-          # WebKit coverage.
+          # e2e/playwright.config.ts throws if the binary is missing, so a bad
+          # cache or edited install line fails loudly instead of silently
+          # dropping WebKit coverage.
           REQUIRE_WEBKIT: 1
 
       - name: Upload report
