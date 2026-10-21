@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:f
 import { homedir, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { IOS_APP_RUNNING_FOREGROUND } from './app-foreground.mjs';
-import { readAdb, readCommand } from './device-commands.mjs';
+import { readAdb, readAdbOrThrow, readCommand } from './device-commands.mjs';
 
 export const VERDICTS = ['alive', 'crashed', 'error-screened'];
 const ERROR_SCREEN_TEXT = ['Oops!', 'Something went wrong.', 'Did not load'];
@@ -211,18 +211,26 @@ export function androidHeapMb(serial, pkg) {
   };
 }
 
+// adb runs logcat without a host shell and escapes each argument for the device shell itself, so
+// the stamp goes unquoted: quote characters would reach logcat as part of the time. A log that
+// cannot be read throws, because an empty one would leave the verdict on pidof and dropbox alone.
 function androidCrashLog(serial, startStamp, pkg) {
-  const out = readAdb(
-    serial,
-    'logcat',
-    '-d',
-    '-T',
-    `'${startStamp}'`,
-    '-b',
-    'crash,main,system',
-    '-v',
-    'threadtime'
-  );
+  let out;
+  try {
+    out = readAdbOrThrow(
+      serial,
+      'logcat',
+      '-d',
+      '-T',
+      startStamp,
+      '-b',
+      'crash,main,system',
+      '-v',
+      'threadtime'
+    );
+  } catch (error) {
+    throw new Error(`No verdict: logcat is unreadable (${error.message})`, { cause: error });
+  }
   return out
     .split('\n')
     .filter((line) => ANDROID_LOG_TAGS.test(line))
