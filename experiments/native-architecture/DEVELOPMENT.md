@@ -38,26 +38,25 @@ the `Splotch` scheme for a simulator or device.
   `--port`.
 
 Both install as `art.splotch.app.dev`, beside the store app. Only the store archive
-(`npm run native:ios:archive`, `docs/MOBILE/ios.md`) is `art.splotch.app`. A device build signs with
-the team in the untracked `ios/local.xcconfig`; copy `ios/local.xcconfig.example` to start one.
+(`npm run ios:archive`, `docs/MOBILE/ios.md`) is `art.splotch.app`. A device build signs with the
+team in the untracked `ios/local.xcconfig`; copy `ios/local.xcconfig.example` to start one.
 
 `Pods/` and `build/` are ignored; `Podfile.lock` and the workspace are committed.
 
 ## Android
 
 Every build is `art.splotch.app.dev`, signed with Android's local debug key, so it installs beside
-the store-installed `art.splotch.app` and never over it. `npm run native:android:apk` builds the
-Release APK, as does `./gradlew :app:assembleRelease` from
-`experiments/native-architecture/android`:
+the store-installed `art.splotch.app` and never over it. `npm run android:apk` builds the Release
+APK, as does `./gradlew :app:assembleRelease` from `experiments/native-architecture/android`:
 
 ```sh
-npm run native:android:apk
+npm run android:apk
 adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-Only the store bundle (`npm run native:android:bundle`, `docs/MOBILE/android.md`) is
-`art.splotch.app`; it signs with the upload key and is never installed on a device. Never touch the
-store-installed `art.splotch.app`.
+Only the store bundle (`npm run android:bundle`, `docs/MOBILE/android.md`) is `art.splotch.app`; it
+signs with the upload key and is never installed on a device. Never touch the store-installed
+`art.splotch.app`.
 
 ### Configuration changes
 

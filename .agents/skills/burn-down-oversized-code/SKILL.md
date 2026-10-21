@@ -116,8 +116,6 @@ All of these, judged by exit code:
 * `measure.mjs <mode> --check` — exits 0 once nothing is left inside the headroom band and no
   override is stale.
 * `npm run check:quality`, `npm run test:unit`, `npm run test:tools`.
-* `npm run build:cap` — a split that moves web-only code can defeat tree-shaking and leak it into
-  the native bundle, which no web-side gate sees.
 * `files` mode with E2E splits: the Playwright test count (`npm run test:e2e -- --list`) is equal at
   the base and the tip.
 * A split on a drawing or gesture hot path: name the probe replay that would confirm it (the
@@ -189,5 +187,5 @@ signature; a sub-factory that owns its own state (a timer set, a tap run, a re-p
   must not allocate. A helper that captures a closure or returns an object on that path is a
   regression — every split under `lib/drawing/` or a gesture action states its allocation impact.
 * Hoisting a factory's pieces to module scope can make the bundler unable to prove an unused
-  instance side-effect-free, keeping web-only code in the native build. That is what `build:cap` in
-  step 6 catches; the fix is a `/* @__NO_SIDE_EFFECTS__ */` annotation with a WHY comment.
+  instance side-effect-free. The fix is a `/* @__NO_SIDE_EFFECTS__ */` annotation with a WHY
+  comment.

@@ -412,10 +412,8 @@ it('reports an instrumented native count mismatch before rejecting an oversized 
   );
 });
 
-it.each([
-  'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build',
-  'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build:cap',
-])('keeps CI release build validation explicitly uninstrumented: %s', (step) => {
+it('keeps CI release build validation explicitly uninstrumented', () => {
+  const step = 'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build';
   const workflow = readFileSync(
     new URL('../../.github/workflows/test.yml', import.meta.url),
     'utf8'
@@ -423,10 +421,7 @@ it.each([
   expect(workflow.split('\n').map((line) => line.trim())).toContain(step);
 });
 
-it('is wired into both release build lifecycle hooks', () => {
+it('is wired into the release build lifecycle hook', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
   expect(packageJson.scripts.postbuild).toContain('node tools/check-bundle-budgets.mjs');
-  expect(packageJson.scripts['postbuild:cap']).toContain(
-    'node tools/check-bundle-budgets.mjs --native'
-  );
 });

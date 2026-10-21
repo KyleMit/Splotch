@@ -86,11 +86,9 @@ Everything else lives in the `lib/` of the capability that owns it, and another 
 across the boundary — cross-tool reuse is not a reason to erase ownership into `tools/lib/`:
 `tools/mobile/android/lib/android-toolchain.mjs` resolves the SDK and AVD locations per platform
 (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/mobile/lib/maestro.mjs` owns
-the Maestro location, and `tools/mobile/lib/static-export.mjs` owns what the native static export
-drops — the web-only static file list plus the head-tag rewrite that keeps `strip-static-assets.mjs`
-from leaving a tag pointing at a file it deleted; `tools/release/lib/release-frontmatter.mjs` the
-release frontmatter/semver parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login +
-token-CRUD request plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
+the Maestro location; `tools/release/lib/release-frontmatter.mjs` the release frontmatter/semver
+parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login + token-CRUD request
+plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
 concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag. A helper

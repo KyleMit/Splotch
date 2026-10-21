@@ -160,7 +160,7 @@ const trackedFiles = (...paths) =>
 
 describe('native release configuration gates', () => {
   it('builds and boots a test-signed store-identity Android Release APK', () => {
-    expect(packageJson.scripts['native:android:apk:store']).toBe(
+    expect(packageJson.scripts['android:apk:store']).toBe(
       'node tools/release/build-native-release.mjs store-apk'
     );
     const target = TARGETS['store-apk'];
@@ -176,7 +176,7 @@ describe('native release configuration gates', () => {
     expect(androidWorkflow).toContain('keytool -genkeypair -noprompt');
     expect(androidWorkflow).toContain('storeFile=$RUNNER_TEMP/splotch-release-smoke.p12');
     expect(androidWorkflow).toContain(`} > ${ANDROID_PROJECT_DIR}/keystore.properties`);
-    expect(androidWorkflow.match(/run: npm run native:android:apk:store$/gm)).toHaveLength(1);
+    expect(androidWorkflow.match(/run: npm run android:apk:store$/gm)).toHaveLength(1);
     expect(androidWorkflow).toContain(
       'uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1'
     );
@@ -195,7 +195,7 @@ describe('native release configuration gates', () => {
   });
 
   it('builds the store-identity iOS Release simulator app without a signing identity, then installs it', () => {
-    expect(packageJson.scripts['native:ios:simulator']).toBe(
+    expect(packageJson.scripts['ios:simulator']).toBe(
       'node tools/release/build-native-release.mjs simulator'
     );
     const target = TARGETS.simulator;
@@ -215,9 +215,9 @@ describe('native release configuration gates', () => {
     expect(args.join(' ')).not.toContain('DEVELOPMENT_TEAM');
     expect(args).not.toContain('-allowProvisioningUpdates');
 
-    expect(iosWorkflow).toContain('run: npm run native:ios:simulator');
+    expect(iosWorkflow).toContain('run: npm run ios:simulator');
     expect(iosWorkflow).toContain(`run: npm run test:ios -- ${SKIP_BUILD_FLAG}`);
-    expect(iosWorkflow.indexOf('run: npm run native:ios:simulator')).toBeLessThan(
+    expect(iosWorkflow.indexOf('run: npm run ios:simulator')).toBeLessThan(
       iosWorkflow.indexOf('run: npm run test:ios')
     );
     expect(iosSmokeRunner).toContain('if (!skipBuild) await sh(BUILD_SIMULATOR_APP);');
@@ -230,8 +230,8 @@ describe('native release configuration gates', () => {
   });
 
   it('builds both Release apps on the pull requests that touch them', () => {
-    expect(nativeCompileWorkflow).toContain('run: npm run native:android:apk\n');
-    expect(nativeCompileWorkflow).toContain('run: npm run native:ios:simulator\n');
+    expect(nativeCompileWorkflow).toContain('run: npm run android:apk\n');
+    expect(nativeCompileWorkflow).toContain('run: npm run ios:simulator\n');
   });
 
   it('budgets hosted XCTest startup independently of the app paint assertion', () => {

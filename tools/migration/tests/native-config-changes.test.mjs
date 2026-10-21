@@ -6,13 +6,20 @@ const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url)
 const nativeManifest = read(
   'experiments/native-architecture/android/app/src/main/AndroidManifest.xml'
 );
-const shippingManifest = read('android/app/src/main/AndroidManifest.xml');
 
 // The drawing and its Undo history live in the activity's React tree, so every configuration
-// change Android handles by recreating MainActivity erases them (issue 3135). Shipping's
-// Capacitor activity survives its own list; the native app also follows the OS text settings
-// shipping's WebView ignores.
-const NATIVE_ONLY_CONFIG_CHANGES = [
+// change Android handles by recreating MainActivity erases them (issue 3135).
+const HANDLED_CONFIG_CHANGES = [
+  'orientation',
+  'keyboardHidden',
+  'keyboard',
+  'screenSize',
+  'locale',
+  'smallestScreenSize',
+  'screenLayout',
+  'uiMode',
+  'navigation',
+  'density',
   // Settings › Display › Font size; text relays out live (DEVELOPMENT.md, "Large OS text").
   'fontScale',
   // Settings › Accessibility › Bold text; the new weight applies at the next launch.
@@ -32,15 +39,9 @@ function mainActivityConfigChanges(manifest) {
 }
 
 describe('MainActivity survives the configuration changes a parent can make mid-drawing', () => {
-  it('declares every change shipping declares', () => {
+  it('declares the font-size, bold-text and layout-direction changes beside the usual ones', () => {
     expect(mainActivityConfigChanges(nativeManifest)).toEqual(
-      expect.arrayContaining(mainActivityConfigChanges(shippingManifest))
-    );
-  });
-
-  it('declares the font-size, bold-text and layout-direction changes too', () => {
-    expect(mainActivityConfigChanges(nativeManifest)).toEqual(
-      expect.arrayContaining(NATIVE_ONLY_CONFIG_CHANGES)
+      expect.arrayContaining(HANDLED_CONFIG_CHANGES)
     );
   });
 

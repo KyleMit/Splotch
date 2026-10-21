@@ -97,10 +97,9 @@ it('rejects missing dependencies and a missing root error entry', () => {
   expect(() => eagerErrorResources({})).toThrow('Expected one root error node');
 });
 
-it('guards the real web and native release lifecycle hooks', () => {
+it('guards the real web release lifecycle hook', () => {
   const { scripts } = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)));
   expect(scripts.postbuild).toContain('node tools/check-eager-error-bundle.mjs');
-  expect(scripts['postbuild:cap']).toContain('node tools/check-eager-error-bundle.mjs --native');
 });
 
 it('counts unlinked error resources once alongside the linked files and inline CSS', () => {

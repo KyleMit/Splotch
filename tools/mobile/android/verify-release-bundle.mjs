@@ -9,12 +9,12 @@
 // This wrapper runs jarsigner, treats the literal `jar verified.` line as the
 // only success signal, and stays quiet on success. On failure it dumps the full
 // jarsigner output so the real problem is visible. Used by `npm run android:verify`
-// for the Capacitor bundle, and with a bundle path by tools/release/build-native-release.mjs.
+// for the React Native bundle, and with a bundle path by tools/release/build-native-release.mjs.
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { fail } from '../../lib/proc.mjs';
-import { RELEASE_AAB } from './lib/android-toolchain.mjs';
+import { ROOT, fail } from '../../lib/proc.mjs';
+import { RELEASE_AAB } from '../../release/lib/native-app.mjs';
 
 if (!process.env.JAVA_HOME)
   fail('[verify-release-bundle] JAVA_HOME is not set — cannot locate jarsigner.');
@@ -25,7 +25,7 @@ const {
   stderr = '',
   status,
   error,
-} = spawnSync(jarsigner, ['-verify', process.argv[2] ?? RELEASE_AAB], { encoding: 'utf8' });
+} = spawnSync(jarsigner, ['-verify', process.argv[2] ?? join(ROOT, RELEASE_AAB)], { encoding: 'utf8' });
 if (error) fail(`[verify-release-bundle] failed to run jarsigner: ${error.message}`);
 
 const output = stdout + stderr;

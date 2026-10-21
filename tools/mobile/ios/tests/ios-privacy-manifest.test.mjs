@@ -1,12 +1,14 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { IOS_PROJECT_DIR, IOS_PROJECT_NAME } from '../../../release/lib/native-app.mjs';
 
 const read = (p) => readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
 const privacyInventory = JSON.parse(read('tools/mobile/privacy-permission-inventory.json'));
 
-const MANIFEST_PATH = 'ios/App/App/PrivacyInfo.xcprivacy';
-const PROJECT_PATH = 'ios/App/App.xcodeproj/project.pbxproj';
-const INFO_PATH = 'ios/App/App/Info.plist';
+const MANIFEST_PATH = join(IOS_PROJECT_DIR, IOS_PROJECT_NAME, 'PrivacyInfo.xcprivacy');
+const PROJECT_PATH = join(IOS_PROJECT_DIR, `${IOS_PROJECT_NAME}.xcodeproj`, 'project.pbxproj');
+const INFO_PATH = join(IOS_PROJECT_DIR, IOS_PROJECT_NAME, 'Info.plist');
 
 // A privacy manifest that exists on disk but isn't in the target's Resources
 // build phase is not in the .ipa, and the upload still fails ITMS-91053 —
@@ -28,8 +30,6 @@ describe('iOS privacy manifest', () => {
   });
 
   it('matches the reviewed required-reason API inventory', () => {
-    // @capacitor/preferences writes through UserDefaults.standard and ships no
-    // manifest of its own, so the app target has to carry the declaration.
     const declarations = [
       ...manifest.matchAll(
         /<dict>\s*<key>NSPrivacyAccessedAPIType<\/key>\s*<string>([^<]+)<\/string>([\s\S]*?)<\/dict>/g
@@ -49,9 +49,7 @@ describe('iOS privacy manifest', () => {
 
   it('declares the complete collected-data set as unlinked, non-tracking app functionality', () => {
     const declaredDataTypes = [
-      ...manifest.matchAll(
-        /<string>(NSPrivacyCollectedDataType(?!Purpose)[^<]+)<\/string>/g
-      ),
+      ...manifest.matchAll(/<string>(NSPrivacyCollectedDataType(?!Purpose)[^<]+)<\/string>/g),
     ]
       .map((match) => match[1])
       .sort();
@@ -68,14 +66,10 @@ describe('iOS privacy manifest', () => {
 
       expect(declaration, category.id).toBeDefined();
       expect(declaration, category.id).toMatch(
-        new RegExp(
-          `<key>NSPrivacyCollectedDataTypeLinked</key>\\s*<${category.linked}/>`
-        )
+        new RegExp(`<key>NSPrivacyCollectedDataTypeLinked</key>\\s*<${category.linked}/>`)
       );
       expect(declaration, category.id).toMatch(
-        new RegExp(
-          `<key>NSPrivacyCollectedDataTypeTracking</key>\\s*<${category.tracking}/>`
-        )
+        new RegExp(`<key>NSPrivacyCollectedDataTypeTracking</key>\\s*<${category.tracking}/>`)
       );
       const purposes = [
         ...declaration.matchAll(/<string>(NSPrivacyCollectedDataTypePurpose[^<]+)<\/string>/g),

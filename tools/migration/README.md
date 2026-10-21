@@ -30,11 +30,6 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `node tools/migration/gen-native-icons.mjs`. Move a name into `NATIVE_STARTUP_ICONS` only when the
   drawing screen renders it as it mounts; the web export prewarms the deferred module after first
   paint, and a lazy sheet opens only once it has arrived (ADR-0179).
-* `gen-native-branding.mjs` copies the shipping launcher icon, adaptive icon, splash, and launch
-  screen (the `@capacitor/assets` output under `android/app/src/main/res` and `ios/App/App`) into
-  the native Android and iOS projects, removing stale copies; `--check` verifies them and
-  `tools/tests/native-branding.test.mjs` runs that check. Rerun it with
-  `node tools/migration/gen-native-branding.mjs` after regenerating the shipping assets.
 * `check:migration:rsd-drawing-tokens` checks the react-strict-dom drawing screen's token projection
   against the shared design owner. `gen-rsd-drawing-tokens.mjs` rewrites that projection
   (`experiments/native-architecture/src/rsdDrawing/tokens.css.ts`) after a shipping token changes:

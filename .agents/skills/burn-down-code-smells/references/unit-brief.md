@@ -43,8 +43,8 @@ orchestrator then pauses the queue and asks the user.
   `docs/audit-deferred/decisions/`. If a finding is wrong or already fixed, say so and ship nothing
   for it.
 * **Startup and hot path.**
-  * If you touch any module reachable at startup, run `npm run build` and `npm run build:cap`. Both
-    pin the startup modulepreload count exactly. Report both counts and the byte deltas.
+  * If you touch any module reachable at startup, run `npm run build`, which pins the startup
+    modulepreload count exactly. Report the count and the byte delta.
   * A runtime import from a startup module into a module that lazy code also imports can create a
     new startup chunk.
   * Leave the per-pointer drawing path unchanged unless you can measure it.

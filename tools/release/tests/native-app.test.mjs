@@ -31,9 +31,9 @@ function targetSettings(configuration) {
 const setting = (body, key) => new RegExp(`^\\s*${key} = ([^;\\n]*);$`, 'm').exec(body)?.[1];
 
 describe('the React Native app identity', () => {
-  // The store build replaces the installed Capacitor app only under its own application ID.
+  // The store build upgrades the installed shipping app only under its own application ID.
   it('is the shipping app identity', () => {
-    expect(JSON.parse(read('capacitor.config.json')).appId).toBe(STORE_APP_ID);
+    expect(STORE_APP_ID).toBe('art.splotch.app');
     expect(DEV_APP_ID).toBe(`${STORE_APP_ID}.dev`);
   });
 
@@ -117,11 +117,58 @@ describe('the release build targets', () => {
       )
     );
     expect(Object.fromEntries(optIns)).toEqual({
-      'native:android:bundle': 'node tools/release/build-native-release.mjs bundle',
-      'native:android:apk:store': 'node tools/release/build-native-release.mjs store-apk',
-      'native:ios:archive': 'node tools/release/build-native-release.mjs archive',
-      'native:ios:ipa': 'node tools/release/build-native-release.mjs ipa',
-      'native:ios:simulator': 'node tools/release/build-native-release.mjs simulator',
+      'android:bundle': 'node tools/release/build-native-release.mjs bundle',
+      'android:apk:store': 'node tools/release/build-native-release.mjs store-apk',
+      'ios:archive': 'node tools/release/build-native-release.mjs archive',
+      'ios:ipa': 'node tools/release/build-native-release.mjs ipa',
+      'ios:simulator': 'node tools/release/build-native-release.mjs simulator',
     });
+  });
+});
+
+// The documents and the Maestro flow that name an app ID: the store ID unless the entry names the
+// .dev one. Each is authored once under docs/ (ADR-0107), so a rename that misses one fails here
+// instead of leaving the guides wrong.
+const STORE_APP_ID_MENTIONS = [
+  [
+    'the /beta page Play Store links',
+    'web/src/lib/components/beta/androidBeta.ts',
+    /^export const PLAY_STORE_APP_ID = ['"]([^'"]+)['"];\s*$/m,
+  ],
+  ['the Maestro smoke flow', '.maestro/smoke.yaml', /^appId:\s*([^\s#]+)\s*$/m],
+  ['the documented Maestro appId', 'docs/TESTING.md', /^appId:\s*([^\s#]+)\s*$/m],
+  [
+    'the installed-package troubleshooting target',
+    'docs/MOBILE/android.md',
+    /a copy of\s+`([^`]+)`/,
+    DEV_APP_ID,
+  ],
+  [
+    'the documented adb uninstall target',
+    'docs/MOBILE/android.md',
+    /^\s*adb -s <serial> uninstall ([^\s#]+)\s+# <serial> from adb:devices$/m,
+    DEV_APP_ID,
+  ],
+  [
+    'the Android release-checklist app ID',
+    'docs/MOBILE/android.md',
+    /^\* \[x\] App ID `([^`]+)`, name/m,
+  ],
+  [
+    'the iOS release-checklist bundle ID',
+    'docs/MOBILE/ios.md',
+    /^\* \[x\] Bundle ID `([^`]+)`, display name/m,
+  ],
+  ['the App Store Connect bundle ID', 'docs/MOBILE/ios.md', /bundle ID `([^`]+)`, SKU `splotch`/],
+  [
+    'the documented fastlane bundle ID',
+    'docs/MOBILE/native.md',
+    /iOS bundle ID `([^`]+)`, the Android package name/,
+  ],
+];
+
+describe('every other place that names an app ID', () => {
+  it.each(STORE_APP_ID_MENTIONS)('%s', (_name, path, pattern, expected = STORE_APP_ID) => {
+    expect(read(path).match(pattern)?.[1]?.trim(), path).toBe(expected);
   });
 });

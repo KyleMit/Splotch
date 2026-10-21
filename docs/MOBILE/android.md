@@ -6,9 +6,10 @@ Android-specific toolchain, build/sign/run commands, on-device testing, Chrome r
 the Google Play release checklist. For the general build model and shared assets see
 **[native.md](native.md)**; iOS lives in **[ios.md](ios.md)**.
 
-> Minimum supported OS: **Android 7.0 / API 24** (`minSdkVersion` in `android/variables.gradle`).
-> This is safely older than the web floor because the System WebView updates via Play independently
-> of the OS — see [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
+> Minimum supported OS: **Android 7.0 / API 24** (`android.minSdkVersion` in
+> `experiments/native-architecture/android/gradle.properties`). This is safely older than the web
+> floor because the System WebView updates via Play independently of the OS — see
+> [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
 
 ## 1. Toolchain setup
 
@@ -74,9 +75,8 @@ transitive Core version.
    * **Web dev server over USB** (fastest iteration): `npm run dev`, then `npm run adb:reverse`,
      then open `http://localhost:5173` in Chrome on the phone. See "Running the web app on a real
      device" below.
-   * **Native debug build**: `npm run android:run` (cap:sync + build + install) — the `android:*`
-     scripts go through `tools/mobile/android/run-gradle.mjs`, which resolves the Gradle wrapper and
-     runs it from `android/` (ADR-0017). You can also use Capacitor's runner: `npx cap run android`.
+   * **Native Release build**: `npm run android:apk` builds the React Native app as
+     `art.splotch.app.dev`; install it with `adb install -r` (see Option B below).
 
 6. **Debug with Chrome DevTools**: on desktop Chrome open `chrome://inspect/#devices` and click
    **Inspect** on the phone's tab — see "Performance profiling with Chrome DevTools" below for the
@@ -95,28 +95,22 @@ transitive Core version.
 
 ## 2. Build / sign / run commands
 
-Each runs `cap:sync` first (the shared web build — see [native.md](native.md)), then Gradle:
+The scripts build the React Native app in `experiments/native-architecture`:
 
 ```bash
-npm run android:apk     # debug APK  -> android/app/build/outputs/apk/debug/app-debug.apk
-npm run android:apk:release # release APK -> android/app/build/outputs/apk/release/ (unsigned without §4)
-npm run android:run     # build + install the debug app onto the connected device/emulator
-npm run android:bundle  # SIGNED release AAB (see §4 Signing for the prerequisite)
-npm run android:clean   # gradle clean (no cap:sync)
+npm run android:apk       # art.splotch.app.dev Release APK -> experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+npm run android:apk:store # store-identity Release APK for the deploy smoke; never install it on a device
+npm run android:bundle    # SIGNED store AAB (see §4 Signing for the prerequisite)
+npm run android:verify    # jarsigner check of that AAB
 ```
 
-> **Prerequisites for the `android:*` scripts** (one-time, see §1):
+> **Prerequisites for the `android:*` build scripts** (one-time, see §1):
 >
-> 1. **Node ≥ 22** active (Capacitor 8 requires it).
+> 1. **Node ≥ 22** active.
 > 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it (set it in your shell profile
 >    per §1; reopen a terminal that was open before you set it).
-> 3. For a signed `android:apk:release` or `android:bundle`, `android/keystore.properties` must
->    exist (see §4). Without it, Gradle still compiles the Release configuration but leaves the
->    artifact unsigned.
->
-> These scripts run the Gradle wrapper through `tools/mobile/android/run-gradle.mjs`, which resolves
-> the wrapper to an absolute path and runs it from `android/` (ADR-0017), so `npm run android:*`
-> needs no inline `cd android && ./gradlew` dance.
+> 3. For `android:bundle`, `experiments/native-architecture/android/keystore.properties` must exist
+>    (see §4). Without it the build fails at configuration rather than writing an unsigned bundle.
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate Signed Bundle/APK** to
 produce a release `.aab`.
@@ -124,34 +118,28 @@ produce a release `.aab`.
 Before attaching a bundle, `npm run release:publish -- --only=android --dry-run` checks its embedded
 release version and requires an embedded R8 mapping with compiler metadata and class mappings. A
 mapping proves R8 processed the bundle; it does not independently prove every optimization setting
-or a runtime performance gain. Inspect `android/app/build/outputs/mapping/release/` for the
-effective configuration and mapping, and install/smoke the optimized Release APK when changing AGP
-or keep rules. Google Play recommendation clearance can only be checked after Play analyzes the next
+or a runtime performance gain. Inspect
+`experiments/native-architecture/android/app/build/outputs/mapping/release/` for the effective
+configuration and mapping, and install/smoke the optimized Release APK when changing AGP or keep
+rules. Google Play recommendation clearance can only be checked after Play analyzes the next
 uploaded bundle.
 
 ### React Native store build
 
-The store release builds the React Native app in `experiments/native-architecture`, with no
-`cap:sync`:
-
-```bash
-npm run native:android:bundle # store AAB -> experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab
-npm run native:android:apk    # art.splotch.app.dev Release APK -> experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
-```
+The store release builds the React Native app in `experiments/native-architecture`; its store AAB is
+`experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`.
 
 Store identity is opt-in (ADR-0182). A Gradle build of that project is `art.splotch.app.dev`, signed
 with the local debug key, unless its command line carries `-Psplotch.store=true`, and only
-`native:android:bundle` passes it; a `splotch.store` in `gradle.properties` or the environment fails
-the build instead. So a Debug build, `native:android:apk`, and any Release build installed for
-testing or device performance install beside the store copy, never over it. The store build signs
-with the upload key named in `experiments/native-architecture/android/keystore.properties`
-(git-ignored; template `keystore.properties.example` beside it), whose `storeFile` points at the
-shipping `android/upload-keystore.jks`: Play accepts the update only under that key. Without the
-file the build fails at configuration rather than writing an unsigned bundle. The script then runs
-the `jarsigner` check `android:verify` runs, and
-`npm run release:publish -- --only=android --dry-run` checks the bundle's embedded app ID, version,
-signature block and R8 mapping. The Capacitor `android:*` scripts above still build the WebView app;
-the release tooling neither versions nor publishes it.
+`android:bundle` passes it; a `splotch.store` in `gradle.properties` or the environment fails the
+build instead. So a Debug build, `android:apk`, and any Release build installed for testing or
+device performance install beside the store copy, never over it. The store build signs with the
+upload key named in `experiments/native-architecture/android/keystore.properties` (git-ignored;
+template `keystore.properties.example` beside it), whose `storeFile` points at the shipping
+`android/upload-keystore.jks`: Play accepts the update only under that key. Without the file the
+build fails at configuration rather than writing an unsigned bundle. The script then runs the
+`jarsigner` check `android:verify` runs, and `npm run release:publish -- --only=android --dry-run`
+checks the bundle's embedded app ID, version, signature block and R8 mapping.
 
 ### Running the web app on a real device
 
@@ -159,8 +147,8 @@ Two options depending on what you want to test:
 
 **Option A — Web dev server (fastest iteration, real touch input)**
 
-Useful when you want to test or profile the web build without a full Capacitor sync. The phone's
-browser hits your local dev server over USB.
+Useful when you want to test or profile the web build without a native build. The phone's browser
+hits your local dev server over USB.
 
 1. Start the dev server: `npm run dev`
 2. Connect the phone via USB and run:
@@ -181,29 +169,29 @@ If port 5173 is already in use from a stale dev server, kill it first:
 npm run dev:stop
 ```
 
-**Option B — Install the debug APK (tests the Capacitor shell)**
+**Option B — Install the Release APK (tests the native app)**
 
 ```bash
-npm run android:run
+npm run android:apk
+adb install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-This does a full `cap:sync` + Gradle build + ADB install. Use this when testing Capacitor plugins,
-storage, or the offline AI flow — not needed for canvas/perf work.
+This builds the Release app and installs it as `art.splotch.app.dev`, beside any store copy. Use
+this when testing native modules, storage, or the offline AI flow — not needed for canvas/perf work.
 
-#### Troubleshooting `android:run`
+#### Troubleshooting installs
 
 * **`adb: more than one device/emulator`** (or Gradle installs onto the wrong target) — you have
-  both a physical phone and an emulator connected. Set `ANDROID_SERIAL` to the phone's serial (from
-  `npm run adb:devices`) so adb and Gradle agree on the target, or run `npm run android:run:device`,
-  which resolves the sole attached physical phone itself (and honours `ANDROID_SERIAL` when several
-  are attached). Closing the emulator also resolves it.
-* **`INSTALL_FAILED_UPDATE_INCOMPATIBLE: … signatures do not match`** — a copy of `art.splotch.app`
-  is already installed that was signed with a *different* key (a Play Store build, or a debug build
-  from another machine — each machine's debug keystore is unique). Android won't overwrite across
-  signing keys. Uninstall the old copy first, then reinstall:
+  both a physical phone and an emulator connected. Pass `-s <serial>` (from `npm run adb:devices`)
+  to every adb call, or close the emulator.
+* **`INSTALL_FAILED_UPDATE_INCOMPATIBLE: … signatures do not match`** — a copy of
+  `art.splotch.app.dev` is already installed that was signed with a *different* key (a debug-signed
+  build from another machine — each machine's debug keystore is unique). Android won't overwrite
+  across signing keys. A Play Store build is a different app, `art.splotch.app`, which a `.dev`
+  install never replaces. Uninstall the old `.dev` copy first, then reinstall:
   ```bash
-  adb -s <serial> uninstall art.splotch.app   # <serial> from adb:devices
-  npm run android:run:device
+  adb -s <serial> uninstall art.splotch.app.dev   # <serial> from adb:devices
+  adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
   ```
   ⚠️ Uninstalling wipes that app's local data (drawings, saved settings, stored access code).
   Harmless on a throwaway test device; warn the user if it's their real phone.
@@ -218,19 +206,19 @@ gateway and those tools fail — the working path is a self-hosted chisel revers
 ## 3. Testing
 
 * **Native smoke test**: `npm run test:android` builds the React Native app's `.dev` Release APK
-  (`native:android:apk`), boots a headless emulator, installs the APK, and runs the Maestro boot
-  check: the drawing screen's `Settings` button paints (ADR-0120). Locally it smokes `.dev` because
-  a store-identity APK signs with whatever key `keystore.properties` names, which on a developer's
+  (`android:apk`), boots a headless emulator, installs the APK, and runs the Maestro boot check: the
+  drawing screen's `Settings` button paints (ADR-0120). Locally it smokes `.dev` because a
+  store-identity APK signs with whatever key `keystore.properties` names, which on a developer's
   machine is the upload key or nothing. See the `testing` skill for Maestro installation and the
   full three-tier strategy.
-* **Pull requests**: the `Native compile` workflow builds the `.dev` Release APK
-  (`native:android:apk`, one ABI) on every pull request that touches the app, so a Kotlin, C++,
-  Gradle, R8 or JavaScript bundling failure fails its own PR.
+* **Pull requests**: the `Native compile` workflow builds the `.dev` Release APK (`android:apk`, one
+  ABI) on every pull request that touches the app, so a Kotlin, C++, Gradle, R8 or JavaScript
+  bundling failure fails its own PR.
 * **Release configuration**: the tagged deploy workflow creates a disposable test key, builds the
-  store-identity Release APK (`native:android:apk:store`, all four ABIs) once, uploads the APK, and
-  boots that same artifact through the Maestro matrix on the current API 33 emulator and the
-  declared API 24 floor. This exercises R8, `proguard-android-optimize.txt`, and resource shrinking
-  without putting the Play upload key in CI.
+  store-identity Release APK (`android:apk:store`, all four ABIs) once, uploads the APK, and boots
+  that same artifact through the Maestro matrix on the current API 33 emulator and the declared API
+  24 floor. This exercises R8, `proguard-android-optimize.txt`, and resource shrinking without
+  putting the Play upload key in CI.
 
 ### Performance profiling with Chrome DevTools (remote debugging)
 
@@ -292,14 +280,15 @@ Three things that will waste your time here:
 
 ### App configuration (mostly done — verify)
 
-* [x] App ID `art.splotch.app`, name **Splotch** (`capacitor.config.json`,
-      `android/app/build.gradle`, `strings.xml`).
+* [x] App ID `art.splotch.app`, name **Splotch**
+      (`experiments/native-architecture/android/app/build.gradle`, `strings.xml`).
 * [x] Permissions declared: `INTERNET`, `ACCESS_NETWORK_STATE`, `WRITE_EXTERNAL_STORAGE` (maxSdk 28
       only) — `AndroidManifest.xml`.
 * [x] Placeholder launcher icons + splash generated from the logo.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
-      `assets/splash.png`), then rerun `npm run gen:android:assets`.
+      `assets/splash.png`), then regenerate the launcher icons and splash under
+      `experiments/native-architecture/android/app/src/main/res`.
 * [ ] Confirm `npm run release` bumped `versionCode` / `versionName` —
       `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into the
       React Native `experiments/native-architecture/android/app/build.gradle`, which is the source
@@ -307,9 +296,10 @@ Three things that will waste your time here:
 * [ ] Confirm both Android rows in the shared
       [native support matrix](native.md#6-native-support-matrix) passed for this tag before
       publishing signed artifacts.
-* [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
-      (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
-      each August against the
+* [x] `targetSdkVersion` meets the current Play requirement:
+      `experiments/native-architecture/android/gradle.properties` sets **36** (Android 16), which
+      satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck each August against
+      the
       [target API level policy](https://support.google.com/googleplay/android-developer/answer/11926878).
 * [ ] Test the AI flow on a real device: enter an access code in Settings, verify the image
       round-trips against `https://splotch.art`.
@@ -325,9 +315,9 @@ Three things that will waste your time here:
       denial every save still lands, without asking again, in app-specific storage that the
       uninstall removes.
 * [ ] Test App Pinning: pin Splotch, reopen Settings → the lock section shows a green ✓ + the unpin
-      steps (via the custom `DeviceLock` plugin,
-      `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java`, registered in
-      `MainActivity`).
+      steps (via the native device-lock module,
+      `experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchDeviceLock.kt`,
+      registered in `MainApplication`).
 * [ ] Test system Back, by button and by edge gesture (ADR-0165): it closes Settings, the coloring
       picker, the color picker, the AI cards, and the Grown-Ups Only check (without unlocking
       anything, and without ending a lockout); on an empty canvas it leaves Splotch; on a drawing it
@@ -342,26 +332,24 @@ Three things that will waste your time here:
       (`-Psplotch.store=true`) with the upload key named in
       `experiments/native-architecture/android/keystore.properties` (git-ignored; template beside
       it), and refuses to configure one without that file. Every other build is
-      `art.splotch.app.dev`, signed with the local debug key. The Capacitor
-      `android/app/build.gradle` reads `android/keystore.properties` and leaves its release unsigned
-      without it.
+      `art.splotch.app.dev`, signed with the local debug key.
 * [x] **Upload keystore created** at `android/upload-keystore.jks` (alias `upload`, RSA 2048, ~valid
       to 2053), and `android/keystore.properties` is filled in. Both are git-ignored. **Store the
       `.jks` + passwords in a password manager — losing them means you can't update the app.**
-  * To recreate from scratch: from `android/`,
+  * To recreate from scratch: from `android/` (the git-ignored folder that holds the upload key),
     ```bash
     keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
       -keyalg RSA -keysize 2048 -validity 10000
     ```
-    then `cp keystore.properties.example keystore.properties` and fill it in, in `android/` and in
-    `experiments/native-architecture/android/`, whose `storeFile` names this same keystore by its
-    path relative to that folder.
+    then `cp keystore.properties.example keystore.properties` in
+    `experiments/native-architecture/android/` and fill it in; its `storeFile` names this same
+    keystore by its path relative to that folder.
   * ⚠️ In `keystore.properties`, do **not** wrap values in quotes — Java `.properties` treats quotes
     as literal characters, so a quoted password fails with *"keystore password was incorrect"*.
 * [x] Enroll in **Play App Signing** (recommended) when creating the app. Done: Play makes it
       mandatory for apps created after August 2021 that upload an AAB, so the key Play registered
       for developer verification is the Play-held app signing key, not the upload key.
-* [ ] **Produce the signed release `.aab`:** `npm run native:android:bundle` →
+* [ ] **Produce the signed release `.aab`:** `npm run android:bundle` →
       `experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`
       (Play requires AAB). The script ends with the `jarsigner` check (expect `jar verified`; the
       self-signed / no-timestamp warnings are normal for an upload key).

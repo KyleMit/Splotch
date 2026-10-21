@@ -34,13 +34,13 @@ const ARTIFACTS = {
     label: 'Android bundle',
     path: resolve(ROOT, RELEASE_AAB),
     read: readAabVersion,
-    rebuild: 'npm run native:android:bundle',
+    rebuild: 'npm run android:bundle',
   },
   ios: {
     label: 'iOS app',
     path: resolve(ROOT, RELEASE_IPA),
     read: readIpaVersion,
-    rebuild: 'npm run native:ios:ipa',
+    rebuild: 'npm run ios:ipa',
   },
 };
 

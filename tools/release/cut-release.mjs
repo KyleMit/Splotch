@@ -320,9 +320,7 @@ function publish(version, body) {
     `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
   );
   console.log('\nNext: build the store artifacts for this version, then attach them:');
-  console.log(
-    '  the build skill           (or npm run native:android:bundle / npm run native:ios:ipa)'
-  );
+  console.log('  the build skill           (or npm run android:bundle / npm run ios:ipa)');
   console.log(`  npm run release:publish   attaches them to v${version}`);
 }
 

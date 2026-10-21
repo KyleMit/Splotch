@@ -1,10 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
-const SHIPPING_WORKER = new URL(
-  '../../android/app/src/main/java/art/splotch/app/ColoringPackWorker.java',
-  import.meta.url
-);
 const NATIVE_PROBE = new URL(
   '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/',
   import.meta.url
@@ -31,11 +27,6 @@ const DECISION_TABLE = [
 ];
 
 const HELPERS = {
-  'shipping ColoringPackWorker.java': {
-    source: SHIPPING_WORKER,
-    pattern:
-      /static boolean dataSaverDefers\(\s*boolean allowMetered, boolean activeNetworkMetered, int restrictBackgroundStatus\)\s*\{\s*return ([^;]+);\s*\}/,
-  },
   'React Native SplotchLibraryWorker.kt': {
     source: NATIVE_WORKER,
     pattern:
@@ -76,18 +67,8 @@ describe.each(Object.entries(HELPERS))('%s Data Saver deferral', (_, helper) => 
 
 const occurrences = (source, needle) => source.split(needle).length - 1;
 
-it('feeds worker admission from the active network and restriction status in both apps', async () => {
-  const [shipping, worker] = await Promise.all([
-    readFile(SHIPPING_WORKER, 'utf8'),
-    readFile(NATIVE_WORKER, 'utf8'),
-  ]);
-  expect(shipping).toContain(
-    'if (dataSaverDefers(job.getBoolean("allowMetered"))) return Result.retry();'
-  );
-  expect(shipping).toMatch(
-    /dataSaverDefers\(\s*allowMetered, manager\.isActiveNetworkMetered\(\), manager\.getRestrictBackgroundStatus\(\)\)/
-  );
-  expect(occurrences(shipping, 'getRestrictBackgroundStatus')).toBe(1);
+it('feeds worker admission from the active network and restriction status', async () => {
+  const worker = await readFile(NATIVE_WORKER, 'utf8');
   expect(worker).toContain(
     'if (dataSaverDefers(applicationContext, stored.getBoolean("allowMetered"))) return Result.retry()'
   );

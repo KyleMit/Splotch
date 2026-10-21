@@ -98,11 +98,11 @@
   active Node's `bin/`.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
   Netlify web build needs (runtime imports such as `sharp` and `openai` + vite/SvelteKit/adapter);
-  `devDependencies` = local/CI-only tooling (Playwright, dprint, the Capacitor CLIs, …). Netlify
-  installs with `--prod`, so a build-needed package filed under `devDependencies` breaks the deploy.
-  CI installs everything, so only `npm run lint:deps:prod` (knip over `knip.production.json`)
-  catches it; a new `tools/` script the build runs needs an entry there. When adding a dependency,
-  ask "does the Netlify web build import or execute this?"
+  `devDependencies` = local/CI-only tooling (Playwright, dprint, …). Netlify installs with `--prod`,
+  so a build-needed package filed under `devDependencies` breaks the deploy. CI installs everything,
+  so only `npm run lint:deps:prod` (knip over `knip.production.json`) catches it; a new `tools/`
+  script the build runs needs an entry there. When adding a dependency, ask "does the Netlify web
+  build import or execute this?"
 * **Formatting is split: Prettier owns code, dprint owns Markdown** (`*.md` is in `.prettierignore`;
   ADR-0057). The `format-edited-file.sh` PostToolUse hook auto-formats each file you edit through
   the right one, but if you write Markdown any other way (or aren't sure), run

@@ -65,8 +65,8 @@ pixels wide and is advertised as `1152w`. The catalog owns both paths and descri
 asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
 
 Invariant full-page SVG presentation overlays have no responsive derivatives. Raster fills, picker
-cover thumbnails, and page selectors retain responsive tiers. Native also stays canonical:
-`build:cap` removes every `max-{edge}px` directory because installed packs contain the 400 px
+cover thumbnails, and page selectors retain responsive tiers. Native also stays canonical: the
+Capacitor build removed every `max-{edge}px` directory because installed packs contain the 400 px
 selector fallback and no hosted responsive URLs.
 
 The retired WebP overlay tier was `max-1152px`, the largest measured downscale where every
