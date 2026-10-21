@@ -513,7 +513,7 @@ Write specs that can't race in the first place:
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
-  (`REVEAL_SETTLE_MS` in the retired `flows-magic-brush.spec.ts`); the engine debounces resize by
+  (`REVEAL_SETTLE_MS` in the retired magic-brush spec); the engine debounces resize by
   `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot
   `await page.evaluate(...)` + `expect(...)`.
 * **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
@@ -538,11 +538,10 @@ Write specs that can't race in the first place:
   `pointerleave` runs the app's handler but leaves the browser's hover target where the cursor is.
   Any later hover recompute — an overlay under the parked cursor unmounting, such as a flyout
   closing on the click that chose from it — then sends a trusted `pointerenter` back to the element,
-  on whichever frame the removal paints. The eraser-bubble spec in the retired
-  `flows-palette-brush.spec.ts` lost that race 3 in 60 single-worker runs (7 in 40 with event
-  logging slowing the frame): the flyout closed, the synthetic leave hid the bubble, and the
-  recompute re-entered the canvas a frame later. Hover a stable control instead (`locator.hover()`),
-  which moves the hit-test target itself.
+  on whichever frame the removal paints. The retired eraser-bubble spec lost that race 3 in 60
+  single-worker runs (7 in 40 with event logging slowing the frame): the flyout closed, the
+  synthetic leave hid the bubble, and the recompute re-entered the canvas a frame later. Hover a
+  stable control instead (`locator.hover()`), which moves the hit-test target itself.
 * **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
   engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
   through a Svelte `$effect` (`setBrush` in `DrawingCanvas`), so `aria-pressed=true` does not prove
@@ -616,15 +615,15 @@ Write specs that can't race in the first place:
   component's keyframe names with its hash, so match `animationName` by suffix, not equality.
 
   A spec that has to act *inside* an animation needs the mirror-image move: widen the animation
-  rather than timing the act. The retired halo lift-off specs (`halo-lift.spec.ts`) released the
-  stroke partway through a 120 ms grow-in, which no sleep can hit reliably, so they override
-  `--halo-in-duration` to 5 s through a `:root:root` rule that outranks the component's scoped
-  declaration — the lift keeps its real duration, and no slow frame can end the grow-in before the
-  release. The override has to come from a stylesheet rather than an inline style: the halo does not
-  exist until the press mounts it, so by the time a spec could reach the element a starved frame may
-  already have finished the grow-in. Those specs also resolve their outcome on the element's
-  *removal* as well as on its animation events, so the pre-fix product — which deleted the halo
-  before the lift could start — fails the assertion instead of hanging on an event that never comes.
+  rather than timing the act. The retired halo lift-off specs released the stroke partway through a
+  120 ms grow-in, which no sleep can hit reliably, so they override `--halo-in-duration` to 5 s
+  through a `:root:root` rule that outranks the component's scoped declaration — the lift keeps its
+  real duration, and no slow frame can end the grow-in before the release. The override has to come
+  from a stylesheet rather than an inline style: the halo does not exist until the press mounts it,
+  so by the time a spec could reach the element a starved frame may already have finished the
+  grow-in. Those specs also resolve their outcome on the element's *removal* as well as on its
+  animation events, so the pre-fix product — which deleted the halo before the lift could start —
+  fails the assertion instead of hanging on an event that never comes.
 * **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
   by any tap that repaints something else under the finger, so a spec can be swallowed well after
   the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's
@@ -681,7 +680,7 @@ SPLOTCH_E2E_PREBUILT=1 npm run test:firefox:smoke            # serves the export
 ### Cross-engine critical-path smoke — `e2e/specs/smoke.spec.ts`
 
 CI's Firefox and WebKit jobs run the RN web suite's `@smoke` specs (above). The SvelteKit suite's
-own subset, `engine-smoke.spec.ts`, is retired: `smoke.spec.ts` covers its boot and stroke cases in
+own cross-engine subset is retired: `e2e/specs/smoke.spec.ts` covers its boot and stroke cases in
 every engine, and its Settings and Color Picker cases are Chromium specs in
 `e2e/specs/settings.spec.ts` and `e2e/specs/palette.spec.ts`. The rest of this section describes the
 tagging convention both suites share, until the SvelteKit suite is deleted.
@@ -914,8 +913,8 @@ the `rn-web-e2e` shards and the Firefox and WebKit smokes download it and serve 
 `SPLOTCH_E2E_PREBUILT=1`, so CI builds that export once. With `fullyParallel` on, `--shard` deals
 out individual tests (not files) in a deterministic order, balanced by count and blind to duration —
 so the longest shard is bounded by the slowest single test, which lives among the deliberately heavy
-stress tests of the retired `flows-tile-history.spec.ts` (their header comment explained why their
-cost was intrinsic).
+stress tests of the retired tile-history spec (their header comment explained why their cost was
+intrinsic).
 
 The 2026-08-19 shard-count measurement is preserved in the
 [shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring

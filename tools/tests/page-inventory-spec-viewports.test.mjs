@@ -19,10 +19,11 @@ const SPECS = {
     'iphone-13-mini-landscape',
     'iphone-16-pro-max-landscape',
   ],
-  'flows-parental-gate-lockout.spec.ts': [
-    'iphone-13-mini-landscape',
-    'iphone-16-pro-max-landscape',
-  ],
+};
+
+// The RN web suite's specs at inventory sizes, keyed by their path from the repository root.
+const E2E_SPECS = {
+  'e2e/specs/grown-ups-gate.spec.ts': ['iphone-13-mini-landscape', 'iphone-16-pro-max-landscape'],
 };
 
 // Each viewport is declared with its inventory id in a trailing comment, which is
@@ -33,9 +34,14 @@ function declaredViewports(source) {
   );
 }
 
-for (const [file, expectedIds] of Object.entries(SPECS)) {
+const TRACKED = [
+  ...Object.entries(SPECS).map(([file, ids]) => [join('web/tests', file), ids]),
+  ...Object.entries(E2E_SPECS),
+];
+
+for (const [file, expectedIds] of TRACKED) {
   describe(`${file} tracks the page-inventory device list`, () => {
-    const spec = readFileSync(join(import.meta.dirname, '..', '..', 'web/tests', file), 'utf8');
+    const spec = readFileSync(join(import.meta.dirname, '..', '..', file), 'utf8');
     const declared = declaredViewports(spec);
 
     it('declares every viewport against a real inventory id', () => {

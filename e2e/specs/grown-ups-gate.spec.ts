@@ -24,11 +24,16 @@ const REPORT_MESSAGE = 'The purple crayon draws green';
 const WRONG_ANSWER_MESSAGE = 'Not quite — try this one';
 const MANAGE_FOOTER = /Manage these checks in/;
 const MANAGING_SUBTITLE = 'Solve the problem to manage grown-up checks';
-// The shortest landscape phone the card is tuned for, and two common larger ones.
+// The shortest landscape phone the card is tuned for, and the two landscape phones the page-inventory
+// critique found it cropped on. Each inventory size names its id in a trailing comment, which
+// tools/tests/page-inventory-spec-viewports.test.mjs holds to the inventory.
+const SHORTEST_LANDSCAPE_PHONE = { width: 568, height: 320 };
+const SMALL_IPHONE_LANDSCAPE = { width: 812, height: 375 }; // iphone-13-mini-landscape
+const LARGE_IPHONE_LANDSCAPE = { width: 956, height: 440 }; // iphone-16-pro-max-landscape
 const LANDSCAPE_PHONES = [
-  ['a short landscape phone', { width: 568, height: 320 }],
-  ['a small phone in landscape', { width: 812, height: 375 }],
-  ['a large phone in landscape', { width: 956, height: 440 }],
+  ['a short landscape phone', SHORTEST_LANDSCAPE_PHONE],
+  ['a small phone in landscape', SMALL_IPHONE_LANDSCAPE],
+  ['a large phone in landscape', LARGE_IPHONE_LANDSCAPE],
 ] as const;
 // The card is raised on a phone held upright, then the phone is turned to the shape under test.
 const PHONE_PORTRAIT = { width: 375, height: 812 };
