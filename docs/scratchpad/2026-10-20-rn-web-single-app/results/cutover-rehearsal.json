@@ -1,0 +1,264 @@
+{
+  "composedRoot": {
+    "title": "Splotch - Drawing for Kids",
+    "app": "rn",
+    "text": "Pick a color and draw."
+  },
+  "composedWorker": {
+    "controller": "http://127.0.0.1:5300/sw.js",
+    "active": "activated",
+    "waiting": null,
+    "installing": null,
+    "cached": {
+      "workbox-precache-v2-http://127.0.0.1:5300/": {
+        "count": 151,
+        "expo": 62,
+        "sveltekit": 0,
+        "shell": [
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
+        ]
+      }
+    }
+  },
+  "composedWorkerAfterReload": {
+    "controller": "http://127.0.0.1:5300/sw.js",
+    "active": "activated",
+    "waiting": null,
+    "installing": null,
+    "cached": {
+      "workbox-precache-v2-http://127.0.0.1:5300/": {
+        "count": 151,
+        "expo": 62,
+        "sveltekit": 0,
+        "shell": [
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
+        ]
+      }
+    }
+  },
+  "apiSameOrigin": {
+    "status": 200,
+    "servedBy": "function:composed"
+  },
+  "online /privacy": {
+    "status": 200,
+    "title": "Privacy Policy · Splotch",
+    "app": "sveltekit",
+    "text": "Back to drawing SPLOTCH Privacy policy Splotch is a drawing app made for little kids. We built it to"
+  },
+  "online /changelog": {
+    "status": 200,
+    "title": "Changelog · Splotch",
+    "app": "sveltekit",
+    "text": "Back to drawing SPLOTCH Changelog Every public Splotch release, newest first, with the notes that sh"
+  },
+  "online /beta": {
+    "status": 200,
+    "title": "Join the Splotch Beta · Splotch",
+    "app": "sveltekit",
+    "text": "Back to drawing SPLOTCH BETA Join the Splotch beta Joining is free and takes three quick steps — plu"
+  },
+  "online /feedback": {
+    "status": 404,
+    "title": "",
+    "app": "other",
+    "text": "function stub /feedback"
+  },
+  "online /admin": {
+    "status": 404,
+    "title": "",
+    "app": "other",
+    "text": "function stub /admin"
+  },
+  "online /no-such-page": {
+    "status": 404,
+    "title": "",
+    "app": "other",
+    "text": "function stub /no-such-page"
+  },
+  "links to / from /privacy": [
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    }
+  ],
+  "links to / from /changelog": [
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    }
+  ],
+  "links to / from /beta": [
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    },
+    {
+      "documents": ["/"],
+      "title": "Splotch - Drawing for Kids",
+      "app": "rn",
+      "text": "Pick a color and draw."
+    }
+  ],
+  "offline /": {
+    "status": 200,
+    "title": "Splotch - Drawing for Kids",
+    "app": "rn",
+    "text": "Pick a color and draw."
+  },
+  "offline /privacy": {
+    "status": 200,
+    "title": "Privacy Policy · Splotch",
+    "app": "rn",
+    "text": "Pick a color and draw. Back to drawing SPLOTCH Privacy policy Splotch is a drawing app made for litt"
+  },
+  "offline /beta": {
+    "status": 200,
+    "title": "Page not found · Splotch",
+    "app": "rn",
+    "text": "Back to drawing SPLOTCH This page wandered off The link may be old. These are still here: Start draw"
+  },
+  "offline /no-such-page": {
+    "status": 200,
+    "title": "Page not found · Splotch",
+    "app": "rn",
+    "text": "Back to drawing SPLOTCH This page wandered off The link may be old. These are still here: Start draw"
+  },
+  "nojs /": {
+    "status": 200,
+    "title": "Splotch - Drawing for Kids",
+    "app": "rn",
+    "text": "You need to enable JavaScript to run this app."
+  },
+  "nojs /privacy": {
+    "status": 200,
+    "title": "Privacy Policy · Splotch",
+    "app": "sveltekit",
+    "text": "Start drawing SPLOTCH Privacy policy Splotch is a drawing app made for little kids. We built it to b"
+  },
+  "nojs /changelog": {
+    "status": 200,
+    "title": "Changelog · Splotch",
+    "app": "sveltekit",
+    "text": "Start drawing SPLOTCH Changelog Every public Splotch release, newest first, with the notes that ship"
+  },
+  "nojs /beta": {
+    "status": 200,
+    "title": "Join the Splotch Beta · Splotch",
+    "app": "sveltekit",
+    "text": "Start drawing SPLOTCH BETA Join the Splotch beta Joining is free and takes three quick steps — plus "
+  },
+  "shippingWorker": {
+    "controller": "http://127.0.0.1:5300/sw.js",
+    "active": "activated",
+    "waiting": null,
+    "installing": null,
+    "cached": {
+      "coloring-packs-v2-compact": {
+        "count": 145,
+        "expo": 0,
+        "sveltekit": 0,
+        "shell": []
+      },
+      "workbox-precache-v2-http://127.0.0.1:5300/": {
+        "count": 276,
+        "expo": 0,
+        "sveltekit": 163,
+        "shell": ["http://127.0.0.1:5300/?app-shell-build=4d880baf-cc62-4928-b103-406ffbb4aeaa"]
+      }
+    }
+  },
+  "handoffFirstDocument": {
+    "title": "Splotch - Drawing for Kids",
+    "app": "rn",
+    "text": "Pick a color and draw."
+  },
+  "handoffWorker": {
+    "controller": "http://127.0.0.1:5300/sw.js",
+    "active": "activated",
+    "waiting": null,
+    "installing": null,
+    "cached": {
+      "coloring-packs-v2-compact": {
+        "count": 145,
+        "expo": 0,
+        "sveltekit": 0,
+        "shell": []
+      },
+      "workbox-precache-v2-http://127.0.0.1:5300/": {
+        "count": 151,
+        "expo": 62,
+        "sveltekit": 0,
+        "shell": [
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
+        ]
+      }
+    }
+  },
+  "handoffSecondLaunch": {
+    "title": "Splotch - Drawing for Kids",
+    "app": "rn",
+    "text": "Pick a color and draw.",
+    "controller": "http://127.0.0.1:5300/sw.js",
+    "active": "activated",
+    "waiting": null,
+    "installing": null,
+    "cached": {
+      "coloring-packs-v2-compact": {
+        "count": 145,
+        "expo": 0,
+        "sveltekit": 0,
+        "shell": []
+      },
+      "workbox-precache-v2-http://127.0.0.1:5300/": {
+        "count": 151,
+        "expo": 62,
+        "sveltekit": 0,
+        "shell": [
+          "http://127.0.0.1:5300/?app-shell-build=cbc962461dfd921a29f7a3dbdaa61c894629dbf32e4d38e228d28fba3985a6fe"
+        ]
+      }
+    }
+  },
+  "handoffOffline": {
+    "title": "Splotch - Drawing for Kids",
+    "app": "rn",
+    "text": "Pick a color and draw."
+  }
+}

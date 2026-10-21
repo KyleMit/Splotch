@@ -1,0 +1,50 @@
+{
+  "/privacy": {
+    "files": 31,
+    "bytes": 1685327,
+    "brotli": 410053,
+    "unthrottledMs": 201,
+    "biggest": [
+      ["index-595eec97daf50094dcc50083eb39c96d.js", 817620],
+      ["RsdSettingsRoute-8be5f1a3492fa1b86b68fb2a2c3559f2.js", 253477],
+      ["productChunk-ed16e11ebd5948db34918a40c305b7b1.js", 240562],
+      ["icons.deferred-c91b3d2be42a5b1f77413dfdadd0640c.js", 160872]
+    ]
+  },
+  "/changelog": {
+    "files": 31,
+    "bytes": 1685327,
+    "brotli": 410053,
+    "unthrottledMs": 114,
+    "biggest": [
+      ["index-595eec97daf50094dcc50083eb39c96d.js", 817620],
+      ["RsdSettingsRoute-8be5f1a3492fa1b86b68fb2a2c3559f2.js", 253477],
+      ["productChunk-ed16e11ebd5948db34918a40c305b7b1.js", 240562],
+      ["icons.deferred-c91b3d2be42a5b1f77413dfdadd0640c.js", 160872]
+    ]
+  },
+  "/feedback": {
+    "files": 32,
+    "bytes": 1687445,
+    "brotli": 411129,
+    "unthrottledMs": 114,
+    "biggest": [
+      ["index-595eec97daf50094dcc50083eb39c96d.js", 817620],
+      ["RsdSettingsRoute-8be5f1a3492fa1b86b68fb2a2c3559f2.js", 253477],
+      ["productChunk-ed16e11ebd5948db34918a40c305b7b1.js", 240562],
+      ["icons.deferred-c91b3d2be42a5b1f77413dfdadd0640c.js", 160872]
+    ]
+  },
+  "/no-such-page": {
+    "files": 21,
+    "bytes": 1396960,
+    "brotli": 335413,
+    "unthrottledMs": 80,
+    "biggest": [
+      ["index-595eec97daf50094dcc50083eb39c96d.js", 817620],
+      ["RsdSettingsRoute-8be5f1a3492fa1b86b68fb2a2c3559f2.js", 253477],
+      ["icons.deferred-c91b3d2be42a5b1f77413dfdadd0640c.js", 160872],
+      ["splotchy-5d92469eabda5fa4d04f52ed84cbf024.js", 88931]
+    ]
+  }
+}
