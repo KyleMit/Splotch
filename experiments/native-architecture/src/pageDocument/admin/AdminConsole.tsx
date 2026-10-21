@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, fonts, motion } from '../../rsdDrawing/tokens.css';
 import { SHOWN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../rsdDrawing/pageFrame';
-import type { AdminApi, TokenSnapshot } from './adminApi';
+import type { AdminApi, AdminStats, TokenSnapshot } from './adminApi';
 import { ADMIN_RESTORING_ATTRIBUTE, type AdminTheme } from './adminContract';
 import type { AdminSessionStore } from './adminSession';
 import {
@@ -15,6 +15,7 @@ import {
   AdminStatusMessage,
 } from './adminChrome';
 import { AdminLedger } from './AdminLedger';
+import { FreeGrants } from './FreeGrants';
 import { useAdminConsole, type Flash } from './useAdminConsole';
 
 const COMPACT = '@media (max-width: 560px)';
@@ -119,6 +120,7 @@ export function AdminConsole({
       {view.mode === 'signedIn' ? (
         <AccessCodes
           snapshot={view.snapshot}
+          stats={view.stats}
           flash={admin.flash}
           busy={admin.busy}
           draft={admin.draft}
@@ -198,6 +200,7 @@ function SignIn({
 
 function AccessCodes({
   snapshot,
+  stats,
   flash,
   busy,
   draft,
@@ -209,6 +212,7 @@ function AccessCodes({
   onCopy,
 }: {
   snapshot: TokenSnapshot;
+  stats: AdminStats | null;
   flash: Flash | null;
   busy: boolean;
   draft: string;
@@ -223,6 +227,8 @@ function AccessCodes({
   const add = () => {
     if (!busy && draft.trim()) onAdd();
   };
+  const usage = stats?.usage ?? null;
+  const freeGrantStats = stats?.freeGrantStats ?? null;
   return (
     <html.div style={styles.sections}>
       <AdminSection>
@@ -234,6 +240,13 @@ function AccessCodes({
             <html.code style={styles.code}>ALLOWED_TOKENS_LIST</html.code> env var. Any codes you
             add or remove here won&apos;t be saved — the change is either refused outright or lost
             on the next restart.
+          </AdminStatusMessage>
+        )}
+        {usage ? null : (
+          <AdminStatusMessage status="warning">
+            <html.strong>Generation tallies are unavailable.</html.strong> The Generations and Last
+            used columns are hidden until the usage store is reachable again. The codes themselves
+            are unaffected.
           </AdminStatusMessage>
         )}
         {flash ? <AdminStatusMessage status={flash.kind}>{flash.text}</AdminStatusMessage> : null}
@@ -258,6 +271,7 @@ function AccessCodes({
         </html.div>
         <AdminLedger
           invites={snapshot.invites}
+          usage={usage}
           busy={busy}
           copied={copied}
           onCopy={onCopy}
@@ -265,6 +279,7 @@ function AccessCodes({
         />
         <AdminAnnouncement>{announcement}</AdminAnnouncement>
       </AdminSection>
+      {freeGrantStats ? <FreeGrants stats={freeGrantStats} /> : null}
     </html.div>
   );
 }

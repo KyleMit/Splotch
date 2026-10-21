@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AdminApi, TokenSnapshot } from './adminApi';
+import type { AdminApi, AdminStats, TokenSnapshot } from './adminApi';
 import type { AdminSessionStore } from './adminSession';
 
 // What the console shows. The build renders `restoring` and so does hydration; the stored session
@@ -9,7 +9,13 @@ export type ConsoleView =
   | Readonly<{ mode: 'signedOut'; error: string | null }>
   | Readonly<{ mode: 'loading'; session: string }>
   | Readonly<{ mode: 'unavailable'; session: string }>
-  | Readonly<{ mode: 'signedIn'; session: string; snapshot: TokenSnapshot }>;
+  | Readonly<{
+      mode: 'signedIn';
+      session: string;
+      snapshot: TokenSnapshot;
+      // null: the usage figures could not be read, so the console says the tallies are unavailable.
+      stats: AdminStats | null;
+    }>;
 
 export type Flash = Readonly<{ kind: 'success' | 'error'; text: string }>;
 
@@ -65,10 +71,10 @@ export function useAdminConsole({
       const mine = generation.current;
       setView({ mode: 'loading', session });
       try {
-        const result = await api.list(session);
+        const [result, stats] = await Promise.all([api.list(session), readStats(api, session)]);
         if (generation.current !== mine) return;
         if (result.kind === 'unauthorized') signOutWith(SESSION_ENDED);
-        else setView({ mode: 'signedIn', session, snapshot: result.snapshot });
+        else setView({ mode: 'signedIn', session, snapshot: result.snapshot, stats });
       } catch {
         if (generation.current === mine) setView({ mode: 'unavailable', session });
       }
@@ -110,7 +116,12 @@ export function useAdminConsole({
         if (generation.current !== mine) return;
         if (result.kind === 'unauthorized') return signOutWith(SESSION_ENDED);
         if (result.kind === 'refused') return setFlash({ kind: 'error', text: result.message });
-        setView({ mode: 'signedIn', session, snapshot: result.snapshot });
+        setView((previous) => ({
+          mode: 'signedIn',
+          session,
+          snapshot: result.snapshot,
+          stats: previous.mode === 'signedIn' ? previous.stats : null,
+        }));
         setFlash({ kind: 'success', text: describe(result.changed) });
         onDone();
       },
@@ -154,6 +165,17 @@ export function useAdminConsole({
     remove,
     copy,
   };
+}
+
+// The figures are extra to the code list: when they cannot be read the console still lists, adds
+// and removes codes, and the tokens call alone decides whether the session still works.
+async function readStats(api: AdminApi, session: string): Promise<AdminStats | null> {
+  try {
+    const result = await api.stats(session);
+    return result.kind === 'read' ? result.stats : null;
+  } catch {
+    return null;
+  }
 }
 
 // The "Copied!" a row's button shows for COPY_FEEDBACK_MS after its clipboard write lands.

@@ -256,6 +256,26 @@ async function checkTokensCrud(admin, auth) {
   );
 }
 
+// --- admin stats: the tallies and grant figures beside the code list ---
+async function checkAdminStats(auth) {
+  const noAuth = await fetch(`${BASE}/api/admin/stats`);
+  check('stats without auth → 401', noAuth.status === 401, `got ${noAuth.status}`);
+
+  const res = await fetch(`${BASE}/api/admin/stats`, { headers: auth });
+  const body = await json(res);
+  // vite dev has no Netlify Blobs, so no tally store and an in-memory grant ledger.
+  check(
+    'stats GET → 200 {ok, usageAvailable:false, codes[], in-memory freeGrantStats}',
+    res.status === 200 &&
+      body?.ok === true &&
+      body.usageAvailable === false &&
+      Array.isArray(body.codes) &&
+      body.codes.every(({ usage }) => usage === null) &&
+      body.freeGrantStats?.persistent === false,
+    `got ${res.status} ${JSON.stringify(body)}`
+  );
+}
+
 // --- public oracle: verify-access-code against the seeded allowlist ---
 async function checkVerifyAccessCode(base) {
   const code = await postJson(base, '/api/verify-access-code', {
@@ -635,6 +655,7 @@ async function run() {
   const { auth, noAuth } = await checkAdminAuth(admin);
   await checkCorsContract(BASE, noAuth);
   await checkTokensCrud(admin, auth);
+  await checkAdminStats(auth);
   await checkVerifyAccessCode(BASE);
   await checkReport(BASE);
   await checkImageReport(BASE);
