@@ -2,6 +2,41 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Amendment (2026-10-21): the frames render as static documents
+
+Issue 3007 retires SvelteKit, so the compositions no longer render through the `/dev/store-frames`
+route. `tools/marketing-assets/lib/store-frame-document.mjs` lays the same data out as one
+self-contained HTML document per composition, and `gen-store-assets.mjs` screenshots each one
+through `lib/static-document.mjs`, which answers the page, the app's own Quicksand files and a
+closed map of repo files from memory and aborts every other request. The share cards
+(`lib/share-card-document.mjs`) moved the same way.
+
+What carries over unchanged:
+
+* The spec modules are still shared, not duplicated. They moved out of the route to
+  `web/src/lib/storeFrames/` (`targets`, `geometry`, `pages`, `marks`, `frameStyle`, `showcase`),
+  still relative-import only, and `geometry.test.ts` moved with them.
+* The per-value `Math.round(v * k)` scaling. The document reproduces the components' markup and CSS,
+  and every one of the 21 finals rendered pixel-identical to the Svelte route on the same inputs and
+  the same Chromium.
+
+What changed:
+
+* The render stage needs no server, so `npm run gen:store-assets:frames` runs in seconds with no
+  build. The `identity` and `assets` endpoints have no caller: the documents read repo files
+  directly, so no server can supply another checkout's frames. The capture stage still drives a
+  preview build; it refuses an occupied port and proves the answering listener is the preview it
+  started by pid, as `gen:readme-hero` does.
+* The hot-reloading design page is gone. Re-rendering one slot
+  (`npm run gen:store-assets:frames -- --target phone --page 03`) is the iteration loop.
+* None of this is a page the app serves, so nothing reaches production, the precache or the native
+  bundle.
+
+React Native was rejected for the frames: they render data, not the app's components, so React would
+add a bundle and a build step to reproduce markup the documents already hold. The app captures
+inside the frames still come from the shipping app; retargeting the capture flows to the React
+Native app is separate work.
+
 ## Amendment (2026-08-19): hero drawings replay at the engine boundary
 
 The free-draw hero scene now feeds the compiled store-drawing instructions through a dev-gated

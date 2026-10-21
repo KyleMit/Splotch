@@ -1,10 +1,9 @@
 import { chromium } from '@playwright/test';
-import { readFileSync, realpathSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
-import { STORE_FRAME_IDENTITY_PATH } from '../../web/src/routes/dev/store-frames/lib/paths.ts';
 import {
   canvasBox,
   expandDrawer,
@@ -58,28 +57,24 @@ const DEVICES = [
   },
 ];
 
-async function waitForCaptureServer(server, base) {
+// An answer on the port says nothing about which checkout serves it, so the capture waits for an
+// answer and then proves, by its pid, that the listener is the server this run started.
+async function waitForCaptureServer(server, base, port) {
   const deadline = Date.now() + SERVER_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (server.exitCode !== null)
       throw new Error('Capture server exited; inspect the startup error above.');
     let response;
     try {
-      response = await fetch(new URL(STORE_FRAME_IDENTITY_PATH, base), {
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+      response = await fetch(base, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
     } catch {
       await sleep(SERVER_POLL_MS);
       continue;
     }
     if (response.ok) {
-      const identity = await response.json().catch(() => null);
-      if (!identity || typeof identity.repoRoot !== 'string') {
-        throw new Error(`Invalid checkout identity from ${base}; choose an unused --port.`);
-      }
-      if (identity.repoRoot !== realpathSync(ROOT)) {
+      if (!portListenerPids(port).includes(server.pid)) {
         throw new Error(
-          `${base} is serving another checkout: ${identity.repoRoot}; choose an unused --port.`
+          `${base} answered, but not from the capture server this run started; choose an unused --port.`
         );
       }
       return;
@@ -188,11 +183,11 @@ export async function generateReadmeHero(args = process.argv.slice(2)) {
   if (portListenerPids(port).length)
     throw new Error(`Port ${port} is occupied; choose another --port.`);
   const base = `http://localhost:${port}/`;
-  const { server, stop } = spawnViteServer(port, { env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' } });
+  const { server, stop } = spawnViteServer(port);
   const temporaryOutput = `${output}.${process.pid}.tmp`;
   let browser;
   try {
-    await waitForCaptureServer(server, base);
+    await waitForCaptureServer(server, base, port);
     browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
     const frames = [];
     for (const device of DEVICES) {

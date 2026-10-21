@@ -18,7 +18,7 @@ import {
 } from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
-import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
+import { storePage } from '../../web/src/lib/storeFrames/pages.ts';
 import {
   inlineExecutableScriptBodies,
   nativeMetaCspDirectives,

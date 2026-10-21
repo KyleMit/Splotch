@@ -1,6 +1,6 @@
-import { actionButtonSizeClass, type ActionButtonSizeClass } from '$lib/breakpoints';
-import type { SafeAreaInsets } from '$lib/platform/safeArea';
-import type { Orientation } from './orientations';
+import { actionButtonSizeClass, type ActionButtonSizeClass } from '../breakpoints.ts';
+import type { SafeAreaInsets } from '../platform/safeArea.ts';
+import type { Orientation } from './orientations.ts';
 
 // A device class is one distinct safe-area profile, not one SKU: several models
 // that report the same insets at the same viewport collapse into a single entry,

@@ -403,7 +403,7 @@ function ModalCard({
     );
   const frame = useModalFrame(size);
   const { body } = frame;
-  const fit = frame.height === null ? layout.hug : layout.fill;
+  const fit = frame.height === null ? layout.hug : layout.cardBody;
   const maxHeight =
     heightBudget === null ? frame.maxHeight : Math.min(frame.maxHeight, heightBudget);
   return (
@@ -461,6 +461,9 @@ function ConfirmBody({
 
 const layout = StyleSheet.create({
   fill: { flex: 1 },
+  // CSS's `flex: 1`. React Native's never shrinks: under a card of fixed height its body kept the
+  // card's maximum height, so the scroller inside outgrew the card and had nothing to scroll.
+  cardBody: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minHeight: 0 },
   hug: { flexGrow: 0, flexShrink: 1 },
   cover: { position: 'absolute', inset: 0 },
   clear: { opacity: 0 },

@@ -7,7 +7,9 @@
 // and removes codes, and forgets the session on a 401 and on sign-out. Deployed it has no such
 // store without Netlify Blobs and its CSRF guard is on: the console's same-origin bearer writes
 // pass the guard and reach the store, which refuses them, while a cross-site form write is
-// refused before any handler runs. Without JavaScript the page reads and offers no live control,
+// refused before any handler runs. Signed in, the console reads the usage figures beside the
+// codes: with no tally store it says the tallies are unavailable, and it shows the free grants the
+// dev function holds in memory. Without JavaScript the page reads and offers no live control,
 // and it asks search engines to leave it out.
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -15,6 +17,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { Readable } from 'node:stream';
 import { chromium } from '@playwright/test';
 import { createServer as createViteServer } from 'vite';
+import { ADMIN_STATS_PATH } from '../../experiments/native-architecture/src/pageDocument/admin/adminApi.ts';
 import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
 import { SESSION_ENDED } from '../../experiments/native-architecture/src/pageDocument/admin/useAdminConsole.ts';
 import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
@@ -32,6 +35,10 @@ const ADMIN_PATH = UNLINKED_DOCUMENT_PATHS.admin;
 const TOKENS_PATH = '/api/admin/tokens';
 const FUNCTIONS_DIR = join(ROOT, 'netlify/functions');
 const RUNTIME_MODE_MODULE = join(ROOT, 'web/src/lib/server/runtimeMode.ts');
+const FREE_GRANTS_MODULE = join(ROOT, 'web/src/lib/server/freeGenerationGrants.ts');
+// A synthetic installation the dev function's in-memory grant ledger is seeded with.
+const SEEDED_INSTALLATION = 'f'.repeat(64);
+const TALLIES_UNAVAILABLE = 'Generation tallies are unavailable.';
 const STORAGE_UNAVAILABLE = 'Token storage is unavailable';
 const BLOBS_UNAVAILABLE = 'Netlify Blobs is unavailable';
 const SETTLE_MS = 10_000;
@@ -90,6 +97,9 @@ async function loadApiFunction(mode) {
     return {
       handlerFor: (pathname) =>
         routes.get(pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname) ?? null,
+      // A server module from the function's own module graph, so state it writes is the
+      // function's.
+      serverModule: (file) => vite.ssrLoadModule(file),
       close: () => vite.close(),
     };
   } catch (error) {
@@ -108,6 +118,7 @@ export async function startAdminHost({
 } = {}) {
   process.env.ADMIN_ACCESS_TOKEN = TEST_ADMIN_SECRET;
   process.env.ALLOWED_TOKENS_LIST = SEED_TOKENS.join(',');
+  delete process.env.USAGE_GRANT_ID_SECRET;
   const functions = await loadApiFunction(mode);
   const base = resolve(exportDir);
   const fileAt = (pathname) => {
@@ -156,6 +167,7 @@ export async function startAdminHost({
   return {
     origin: `http://127.0.0.1:${server.address().port}`,
     calls,
+    serverModule: functions.serverModule,
     close: async () => {
       server.close();
       await functions.close();
@@ -224,7 +236,45 @@ async function checkWithoutJavaScript(browser, { origin }, problems) {
   await context.close();
 }
 
-async function checkSessionAndCodes(browser, { origin, calls }, problems) {
+// One completed free generation in the dev function's in-memory grant ledger.
+async function seedFreeGrant(serverModule) {
+  const grants = await serverModule(FREE_GRANTS_MODULE);
+  const reservation = await grants.reserveFreeGeneration(SEEDED_INSTALLATION);
+  if (!reservation.reserved) throw new Error('The dev function refused a free generation');
+  await grants.completeFreeGeneration(SEEDED_INSTALLATION, reservation.reservationId);
+}
+
+async function checkFigures(tab, { calls }, session, problems) {
+  await reach(
+    tab.getByRole('heading', { name: 'Free generation grants · sample 1', exact: true }),
+    'the free generation grants panel'
+  );
+  check(
+    problems,
+    calls.some(
+      ({ path, authorization, status }) =>
+        path === ADMIN_STATS_PATH && authorization === `Bearer ${session}` && status === 200
+    ),
+    'The console did not read its figures with its bearer session'
+  );
+  check(
+    problems,
+    await tab.getByRole('status').filter({ hasText: TALLIES_UNAVAILABLE }).isVisible(),
+    `The console without a tally store does not say "${TALLIES_UNAVAILABLE}"`
+  );
+  const grant = tab
+    .getByRole('table', { name: 'Recent free generation grants' })
+    .getByRole('row')
+    .filter({ hasText: `${SEEDED_INSTALLATION.slice(0, 8)}…` });
+  check(
+    problems,
+    (await grant.isVisible()) && (await grant.textContent()).includes('1/10'),
+    'The free grant panel does not list the seeded grant as 1/10 used'
+  );
+}
+
+async function checkSessionAndCodes(browser, { origin, calls, serverModule }, problems) {
+  await seedFreeGrant(serverModule);
   const { context, tab } = await openConsole(browser);
   await tab.goto(`${origin}${ADMIN_PATH}`);
   await signIn(tab, 'not-the-key');
@@ -238,6 +288,7 @@ async function checkSessionAndCodes(browser, { origin, calls }, problems) {
   await reach(consoleHeading(tab), 'the console after signing in');
   const session = await storedSession(tab);
   check(problems, Boolean(session), 'Signing in stored no session');
+  await checkFigures(tab, { calls }, session, problems);
   for (const token of SEED_TOKENS)
     check(
       problems,
@@ -358,7 +409,7 @@ export async function checkNativeWebAdmin({
   }
   if (problems.length) throw new Error(problems.join('\n'));
   log(
-    `[native-web-admin] ${ADMIN_PATH} signs in on the local /api function, keeps its session across a reload, lists, adds and removes codes, forgets the session on a 401 and on sign-out; deployed, its same-origin bearer writes pass the CSRF guard; it reads without JavaScript and is noindex`
+    `[native-web-admin] ${ADMIN_PATH} signs in on the local /api function, keeps its session across a reload, lists, adds and removes codes, reads its usage figures and free grants, forgets the session on a 401 and on sign-out; deployed, its same-origin bearer writes pass the CSRF guard; it reads without JavaScript and is noindex`
   );
 }
 

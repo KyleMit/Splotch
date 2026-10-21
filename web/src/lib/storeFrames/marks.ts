@@ -3,7 +3,7 @@
 // whitespace so they never sit over the frame or copy. Positions are authored
 // in base-space coordinates (see geometry.ts) and scaled by the consumer.
 
-import { paletteHex } from '../../../../lib/palette.ts';
+import { paletteHex } from '../palette.ts';
 import type { StoreOrientation } from './targets.ts';
 import type { StorePageId } from './pages.ts';
 

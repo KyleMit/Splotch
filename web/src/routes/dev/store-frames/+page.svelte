@@ -6,8 +6,8 @@
     STORE_TARGETS,
     storeTarget,
     type StoreTargetName,
-  } from './lib/targets.ts';
-  import { STORE_PAGES } from './lib/pages.ts';
+  } from '$lib/storeFrames/targets';
+  import { STORE_PAGES } from '$lib/storeFrames/pages';
   import { FEATURE_GRAPHIC_PAGE_PARAM, renderPath } from './lib/paths.ts';
 
   // Live design surface for the store screenshots: every page of the selected
