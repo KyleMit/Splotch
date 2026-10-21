@@ -1,11 +1,9 @@
 // cSpell:ignore SLOWMO
-import { existsSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
-import { defineConfig, devices, firefox, webkit } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 import {
   allowedTokensList,
   chromiumLaunchOptions,
-  playwrightSlowMo,
   commonPlaywrightConfig,
   commonWebServer,
   developmentServerCommand,
@@ -15,28 +13,6 @@ import {
   productionPreviewCommand,
 } from './playwright.shared';
 import type { FlakyReporterOptions } from './playwright-flaky-reporter';
-import { ENGINE_SMOKE } from './tests/tags';
-
-// An engine-smoke project only joins when its browser binary is installed: CI
-// installs each engine explicitly, while local checkouts often have Chromium
-// only and `npm test` must keep working there. The standalone jobs set the
-// corresponding REQUIRE_* variable so a bad install fails instead of quietly
-// dropping that engine's project.
-function engineAvailable(
-  engineName: 'Firefox' | 'WebKit',
-  executablePath: () => string,
-  requirement: 'REQUIRE_FIREFOX' | 'REQUIRE_WEBKIT'
-): boolean {
-  try {
-    if (existsSync(executablePath())) return true;
-  } catch {
-    // An absent or unreadable browser path means the engine is unavailable unless required.
-  }
-  if (process.env[requirement]) {
-    throw new Error(`${requirement} is set but the ${engineName} binary is not installed`);
-  }
-  return false;
-}
 
 // A Playwright worker is a whole Chromium (browser, renderer, GPU, network and
 // utility processes) plus a Node runner, and demands ~2 cores to run
@@ -138,38 +114,15 @@ export default defineConfig({
     ...commonPlaywrightConfig.use,
     trace: 'on-first-retry',
   },
-  // launchOptions live per-project: the Chromium executable-path fallback must
-  // not leak into another engine's launch. SLOWMO applies to every engine (ms), e.g.
-  // `SLOWMO=500 npm run test:e2e:headed`.
+  // SLOWMO applies to the launch (ms), e.g. `SLOWMO=500 npm run test:e2e:headed`.
   projects: [
     {
       name: 'chromium',
-      // The full suite covers this critical behavior elsewhere; tagged smoke
-      // specs are reserved for the non-Blink engine projects.
-      grepInvert: ENGINE_SMOKE,
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: chromiumLaunchOptions(),
       },
     },
-    ...(engineAvailable('Firefox', () => firefox.executablePath(), 'REQUIRE_FIREFOX')
-      ? [
-          {
-            name: 'firefox',
-            grep: ENGINE_SMOKE,
-            use: { ...devices['Desktop Firefox'], launchOptions: { slowMo: playwrightSlowMo } },
-          },
-        ]
-      : []),
-    ...(engineAvailable('WebKit', () => webkit.executablePath(), 'REQUIRE_WEBKIT')
-      ? [
-          {
-            name: 'webkit',
-            grep: ENGINE_SMOKE,
-            use: { ...devices['Desktop Safari'], launchOptions: { slowMo: playwrightSlowMo } },
-          },
-        ]
-      : []),
   ],
   webServer: {
     ...commonWebServer,

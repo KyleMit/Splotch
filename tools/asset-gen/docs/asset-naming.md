@@ -99,8 +99,9 @@ Key implementation points:
   the dark generator's review samples in `.coloring-samples-dark/` stay bare (`dog-wide.webp`) — the
   `.night.raw` suffix is added at ship time (the night-fill runbook, now
   `../legacy/night-fills.md`).
-* The E2E overlay assertions (`web/tests/flows-coloring-book.spec.ts`) pin the full-page overlay
-  `src` to the theme-matched SVG and the selector surface to raster `srcset` candidates.
+* The SvelteKit E2E overlay assertions, retired with that suite (the RN picker's themed art is
+  checked by `e2e/specs/coloring-books.spec.ts`), pinned the full-page overlay `src` to the
+  theme-matched SVG and the selector surface to raster `srcset` candidates.
 
 ## Consequences
 

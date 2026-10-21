@@ -40,13 +40,14 @@ paths:
   `tools/tests/e2e-server-env.test.mjs` fails when either is missing a name. Both Playwright configs
   disable server reuse and use Vite `strictPort`; `tests/global-setup.ts` also probes
   `/api/verify-access-code` for a harness-only access code as defense in depth.
-* `tests/engine-smoke.spec.ts` is the Firefox/WebKit critical-path subset (boot, stroke, the two
-  dialogs). CI installs and requires one engine per smoke job; locally each project joins only when
-  its binary is installed. Keep that spec free of CDP and dev-harness dependencies. Engine routing
-  is by tag, not filename: `ENGINE_SMOKE_TAG` (`tests/tags.ts`) on the spec's `test.describe` is
-  what Firefox/WebKit grep for and Chromium greps out. An untagged spec runs under Chromium.
-  **Import the tag; never write the string.** Playwright validates no tag, so a typo'd literal
-  routes the spec to Chromium silently while both smoke jobs stay green on the other specs —
+* `e2e/specs/smoke.spec.ts` is the Firefox/WebKit critical-path subset (boot, stroke, Undo, the
+  privacy page); the SvelteKit suite's own subset is retired. CI installs and requires one engine
+  per smoke job; locally each project joins only when its binary is installed. Keep that spec free
+  of CDP and dev-harness dependencies. Engine routing is by tag, not filename: `SMOKE_TAG`
+  (`e2e/tags.ts`) on the spec's `test.describe` is what the Firefox and WebKit projects in
+  `e2e/playwright.config.ts` grep for. Chromium runs every spec, tagged or not. **Import the tag;
+  never write the string.** Playwright validates no tag, so a typo'd literal drops the spec from
+  both non-Blink jobs while they stay green on the other specs —
   `tools/tests/e2e-engine-tags.test.mjs` rejects tag literals and unknown tags for that reason.
 * Adult-facing surfaces (`/privacy`, `/admin`, Settings dialog) get axe-core scans in
   `e2e/specs/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is

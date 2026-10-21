@@ -60,7 +60,7 @@ For a representative browser check:
 
 ```bash
 SPLOTCH_E2E_PORT=$(npm --silent run show:free-port)
-SPLOTCH_E2E_PORT="$SPLOTCH_E2E_PORT" npm run test:e2e -- flows-undo-persistence.spec.ts --project=chromium --workers=1 -g 'the undo button enables|pen and eraser keep|the picked brush persists'
+SPLOTCH_E2E_PORT="$SPLOTCH_E2E_PORT" npm run test:e2e:rn -- persistence.spec.ts --project=chromium --workers=1
 ```
 
 The default Playwright path builds and serves the application with isolated test credentials. Avoid

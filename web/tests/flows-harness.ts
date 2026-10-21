@@ -402,21 +402,3 @@ export async function openSettingsSection(page: Page, label: string, expectedFie
     await expect(field).toBeInViewport({ timeout: 2000 });
   }).toPass({ timeout: 10_000 });
 }
-
-export async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
-  await openSettingsSection(page, 'AI Art', '#aiImageToggle');
-  const toggle = page.locator('#aiImageToggle');
-  if ((await toggle.getAttribute('aria-checked')) === 'false') await toggle.click();
-  const field = page.locator(expectedField);
-  await field.scrollIntoViewIfNeeded();
-  await expect(field).toBeInViewport();
-}
-
-export async function submitAiKey(page: Page, value: string) {
-  const save = page.getByRole('button', { name: 'Save' });
-  await expect(async () => {
-    await page.locator('#aiKeyInput').fill(value);
-    await expect(save).toBeEnabled({ timeout: 1000 });
-  }).toPass({ timeout: 5000 });
-  await save.click();
-}

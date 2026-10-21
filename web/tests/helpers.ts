@@ -1,6 +1,5 @@
 import { expect, type JSHandle, type Locator, type Page } from '@playwright/test';
 
-import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { compositeVisibleLiveTiles } from '../src/lib/drawing/liveTileComposite';
 import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 import { paletteHex } from '../src/lib/palette';
@@ -8,8 +7,7 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import type { HistoryDebug } from '../src/lib/drawing/undoHistory';
 
 // Shared E2E helpers used across specs. Keep this module cross-engine portable — no
-// CDP sessions or dev-harness routes — because engine-smoke.spec.ts imports it
-// (see web/tests/CLAUDE.md).
+// CDP sessions or dev-harness routes (see web/tests/CLAUDE.md).
 
 // User agents for the specs that exercise the app's OS detection (isIosDevice /
 // isAndroidBrowser, behind installDeviceOs). A spec picks one with `test.use`;
@@ -38,9 +36,6 @@ export const TEST_PALETTE = {
   grey: paletteHex('Grey'),
   black: paletteHex('Black'),
 };
-
-export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
-export const CUSTOM_SWATCH_COLOR = 'custom';
 
 export type Rgba = readonly [number, number, number, number];
 
@@ -86,7 +81,7 @@ export function touchEventPrevented(
  *  wants rather than leaning on that: `never` (the default) so an unrelated spec
  *  reaches its target directly, `always` for the specs that exercise the real
  *  challenge, and `default` to seed nothing and assert what the build ships. */
-export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'always' | 'default') {
+async function seedParentalGatePolicies(page: Page, mode: 'never' | 'always' | 'default') {
   if (mode !== 'default') {
     await page.addInitScript(
       ({ mode, modeKeys }) => {
@@ -176,40 +171,6 @@ export async function gotoApp(
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   await waitForDrawableRenderedCanvas(page);
-}
-
-// ADR-0168 keeps one shallow history entry per open dialog and retires it with a
-// `history.back()` as the dialog closes. That traversal commits asynchronously,
-// and a reload issued while it is still pending is cancelled by it — Chromium
-// either aborts the reload's document request (net::ERR_ABORTED) or drops the
-// reload without issuing one, and Playwright then waits on a load that never
-// comes. So a spec that closes a dialog and then relaunches waits here for the
-// retired layers to leave history.state before it reloads. The marker key is
-// the web back handler's WEB_BACK_PAGE_STATE_KEY, repeated here because that
-// module imports $app/navigation and cannot load in the test process.
-export async function reloadAfterDialogClose(page: Page) {
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const marker = history.state?.['sveltekit:states']?.splotchBackNavigation;
-        return typeof marker?.dialogs === 'number' ? marker.dialogs : 0;
-      })
-    )
-    .toBe(0);
-  await page.reload();
-}
-
-export async function registerServiceWorkerAndControl(page: Page) {
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
-    if (navigator.serviceWorker.controller) return;
-    await new Promise<void>((resolve) => {
-      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
-        once: true,
-      });
-    });
-  });
 }
 
 /** Drive a real SvelteKit client-side navigation. The sentinel survives a SPA
@@ -346,37 +307,6 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
-// The highlighted Settings row's own seat, measured against the column that
-// holds it. Read off the nav rather than the browser viewport: the column is its
-// own scroller wherever the section list outgrows it, and that clipping is the
-// thing at stake.
-export function activeNavRowInsideColumn(page: Page) {
-  return page.locator('.settings-nav .toc-row.active').evaluate((row) => {
-    const box = row.closest('.settings-nav')!.getBoundingClientRect();
-    const seat = row.getBoundingClientRect();
-    return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
-  });
-}
-
-// The widest a jumped-to heading may sit below the pane's top edge and still
-// count as landed. Deliberately looser than the shell's own
-// `SECTION_JUMP_INSET_PX` so retuning that inset stays a design decision rather
-// than a spec edit — a tolerance, not a mirrored copy of it. A section that did
-// not scroll at all sits hundreds of pixels away.
-export const SECTION_LANDED_MAX_PX = 24;
-
-// How far a Settings section's heading sits below the scrolling pane's top edge
-// — the measurement the wide shell's click-to-jump landing and its scrollspy are
-// both specified in.
-export function headingOffsetFromPaneTop(page: Page, section: string) {
-  return page
-    .locator(`.settings-section[data-section="${section}"]`)
-    .evaluate(
-      (el) =>
-        el.getBoundingClientRect().top - el.closest('.settings-pane')!.getBoundingClientRect().top
-    );
-}
-
 // How much of the engine's dropped-pointer jump threshold one dispatched sample
 // may cover. The engine reads "far from the previous sample AND more than
 // POINTER_RESUME_GAP_MS after it" as a finger that lifted and set down
@@ -421,40 +351,6 @@ export async function dragStroke(
 export async function draw(page: Page, points: { x: number; y: number }[]) {
   const box = await page.locator('#drawingCanvas').boundingBox();
   await dragStroke(page, box, points);
-}
-
-// SETTLED_IN_STROKES (state/canvas.svelte.ts) earns the install banner, and
-// STROKES_BEFORE_AUTO_CLEAR (state/install.svelte.ts) more strokes part it. Both
-// live in rune modules the Playwright loader cannot import, so these copies are
-// literals; state/install.e2eThresholds.test.ts reads them as text and fails
-// when either differs from its owner.
-export const INSTALL_BANNER_EARNING_STROKES = 3;
-export const INSTALL_BANNER_AUTO_CLEAR_STROKES = 5;
-
-// The banner prewarms near the end of the interaction-quiet overlay pump. If
-// the earning strokes beat it, the earned state demands it in the same flush
-// that releases deferred service-worker registration (routes/+page.svelte). The
-// demand path keeps that network work from delaying the visible banner, while
-// this timeout still covers a loaded worker's component import and rendering.
-const BANNER_MOUNT_TIMEOUT_MS = 20_000;
-
-const INSTALL_BANNER_STROKE_SPACING_PX = 30;
-
-/** Draws `count` short strokes down the canvas, by default enough to earn the
- *  install banner. It waits for nothing: a dismissed banner stays unmounted. */
-export async function drawInstallBannerStrokes(page: Page, count = INSTALL_BANNER_EARNING_STROKES) {
-  for (let stroke = 0; stroke < count; stroke += 1) {
-    const y = 180 + (stroke % INSTALL_BANNER_EARNING_STROKES) * INSTALL_BANNER_STROKE_SPACING_PX;
-    await draw(page, [
-      { x: 230, y },
-      { x: 300, y: y + 15 },
-    ]);
-  }
-}
-
-export async function earnInstallBanner(page: Page) {
-  await drawInstallBannerStrokes(page);
-  await page.locator('.install-banner').waitFor({ timeout: BANNER_MOUNT_TIMEOUT_MS });
 }
 
 export async function drawCommittedStroke(page: Page, points: { x: number; y: number }[]) {
@@ -502,47 +398,6 @@ export async function firstOpaquePixel(page: Page): Promise<Rgba | null> {
         if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
       }
       return null;
-    });
-  } finally {
-    await canvas.dispose();
-  }
-}
-
-/**
- * Count of non-transparent pixels on the canvas. A composite with no area reads
- * as 0 rather than throwing, so callers can poll across a zero-area resize.
- */
-export async function opaquePixelCount(page: Page): Promise<number> {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return await canvas.evaluate((c) => {
-      if (c.width === 0 || c.height === 0) return 0;
-      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-      let count = 0;
-      for (let i = 3; i < data.length; i += 4) {
-        if (data[i] > 0) count++;
-      }
-      return count;
-    });
-  } finally {
-    await canvas.dispose();
-  }
-}
-
-export function isBlueDominant(px: Rgba) {
-  return px[2] > px[0];
-}
-
-export async function hasRedDominantPixel(page: Page): Promise<boolean> {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return await canvas.evaluate((c) => {
-      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120)
-          return true;
-      }
-      return false;
     });
   } finally {
     await canvas.dispose();
