@@ -6,6 +6,7 @@ import {
   goToSettingsSection,
   openDrawer,
   openSettings,
+  paperShade,
   undoButton,
 } from '../support/group-b.ts';
 
@@ -97,5 +98,20 @@ test.describe('what the drawing screen remembers across a reload', () => {
 
     await expect(undoButton(page)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Stroke width', exact: true })).toBeVisible();
+  });
+
+  test('a theme chosen in Settings beats the system theme after a reload', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await expect.poll(() => paperShade(page)).toBe('light');
+    const settings = await openSettings(page);
+    await settings.getByRole('radio', { name: 'Dark', exact: true }).click();
+    await closeDialog(settings);
+    await expect.poll(() => paperShade(page)).toBe('dark');
+
+    await reloadDrawingScreen(page);
+
+    await expect.poll(() => paperShade(page)).toBe('dark');
   });
 });

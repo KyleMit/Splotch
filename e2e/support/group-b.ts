@@ -28,6 +28,10 @@ const HUE_SECTOR_MIN_PIXELS = 40;
 // overlap the paper's edges, so measuring inside the band keeps chrome out of an ink count.
 const CENTRAL_BAND = { left: 0.15, top: 0.1, right: 0.85, bottom: 0.75 } as const;
 const CLEAR_DRAG_STEPS = 12;
+const PAPER_SAMPLE_SIDE_PX = 24;
+const RGB_CHANNEL_COUNT = 3;
+// The light paper's mean sits near 240 and the dark paper's near 30; anything under this is dark.
+const DARK_PAPER_LUMINANCE_MAX = 128;
 const REACT_PROPS_KEY = '__reactProps$';
 
 /** Decides whether one pixel's red, green and blue channels read as the ink a spec looks for. */
@@ -100,6 +104,23 @@ export async function inkHuesInCentralBand(page: Page): Promise<number> {
 /** Black ink pixels in the paper's central band. */
 export function blackInkInCentralBand(page: Page): Promise<number> {
   return inkInCentralBand(page, BLACK_INK);
+}
+
+/** Whether the paper under the middle of the screen is the light theme's or the dark theme's. */
+export async function paperShade(page: Page): Promise<'light' | 'dark'> {
+  const box = await page.getByTestId(PAPER_INPUT_TEST_ID).boundingBox();
+  if (!box) throw new Error('The drawing paper is not laid out');
+  const png = await page.screenshot({
+    clip: {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2,
+      width: PAPER_SAMPLE_SIDE_PX,
+      height: PAPER_SAMPLE_SIDE_PX,
+    },
+  });
+  const { channels } = await sharp(png).stats();
+  const luminance = (channels[0].mean + channels[1].mean + channels[2].mean) / RGB_CHANNEL_COUNT;
+  return luminance < DARK_PAPER_LUMINANCE_MAX ? 'dark' : 'light';
 }
 
 /** Drags the Clear control toward the middle of the screen, past where it commits, and lets go. */
