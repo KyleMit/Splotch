@@ -827,25 +827,25 @@ curl -s https://splotch.art/api/admin/tokens \
 ## Validating the API
 
 Run `npm run test:api:smoke` to check the local `/api/*` contract end-to-end. It's self-contained —
-it boots a throwaway `vite dev`, which serves the `/api` functions through
-`web/netlifyFunctionsHost.ts`, with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
-(login success/failure, the bearer gate, and a token add/remove round-trip), the CORS contract
-(`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
-that non-`OPTIONS` response also carrying `API_RESPONSE_HEADERS` — the `nosniff` subset of
-`SECURITY_HEADERS` that means something on a non-document body — and neither carrying the rest of
-the SSR set; the preflight returns before the header hook and so carries neither), `no-store` on
-every non-`OPTIONS` `/api/*` response its checks receive (`tools/api-smoke/lib/api-caching.mjs`),
-the `verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
-`GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), `csp-report`'s two payload
-formats + caps, and `generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
-once the verify budget is burned; valid token minus image → 400 — every case is rejected before the
-model call), then tears the server down. No model key or Netlify Blobs needed; successful generation
-and `verify-key` (which make live model calls) are out of scope. Use it to sanity-check the contract
-after changing any endpoint — it's the cheap counterpart to the Playwright admin E2E in
-`tests/admin.spec.ts`. CI runs it in the `browserless` job of `test.yml` on every push/PR, so a
-contract regression fails the PR instead of shipping.
+it serves the `/api` function in process on a throwaway plain Node host
+(`tools/lib/netlify-function-host.mjs`: dev mode, no SvelteKit, no `vite dev`, no dotenv file), with
+a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow (login success/failure, the bearer gate,
+and a token add/remove round-trip), the CORS contract (`OPTIONS /api/*` → 204 carrying the CORS set,
+a non-`OPTIONS` `/api/*` response carrying it too, that non-`OPTIONS` response also carrying
+`API_RESPONSE_HEADERS` — the `nosniff` subset of `SECURITY_HEADERS` that means something on a
+non-document body — and neither carrying the rest of the SSR set; the preflight returns before the
+header hook and so carries neither), `no-store` on every non-`OPTIONS` `/api/*` response its checks
+receive (`tools/api-smoke/lib/api-caching.mjs`), the `verify-access-code` shape, `report`'s
+validation + honeypot + graceful-unconfigured path (no `GITHUB_ISSUE_TOKEN` in the smoke env, so no
+real issue is created), `csp-report`'s two payload formats + caps, and `generate-image`'s auth gate
+(invalid token → 403, then the shared per-IP 429 once the verify budget is burned; valid token minus
+image → 400 — every case is rejected before the model call), then tears the server down. No model
+key or Netlify Blobs needed; successful generation and `verify-key` (which make live model calls)
+are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the cheap
+counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `browserless`
+job of `test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
 
-`test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs or deployed CDN
+`test:api:smoke` deliberately runs against that local host, which has **no** Blobs or deployed CDN
 configuration. The normal real-deploy gate is `npm run test:deploy:smoke`:
 
 ```bash
@@ -882,8 +882,10 @@ persistence contract.
 * `vite dev` and `vite preview` serve the `/api` function same-origin ahead of SvelteKit
   (`web/netlifyFunctionsHost.ts`, which also loads `web/.env` under the shell's environment, as
   Netlify hands a function the site's environment) — no CORS in play. `netlify dev` proxies `/api`
-  to that same host. Token mutations without Netlify Blobs credentials fall back to an in-memory
-  list (seeded from `ALLOWED_TOKENS_LIST`) that resets on restart.
+  to that same host. The plugin shares its request adapter, and its preview's production loader,
+  with the SvelteKit-free host in `tools/lib/netlify-function-host.mjs`, which the API smoke and the
+  native admin check run on directly. Token mutations without Netlify Blobs credentials fall back to
+  an in-memory list (seeded from `ALLOWED_TOKENS_LIST`) that resets on restart.
 * Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
   unset, every login fails (there is nothing to authenticate against).
 * E2E coverage lives in `tests/admin.spec.ts`; the Playwright web server starts with

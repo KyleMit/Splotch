@@ -1,9 +1,8 @@
-import { json } from '@sveltejs/kit';
 import { checkAccessToken } from '../tokens';
 import { peekRateLimit, rateLimit } from '../rateLimit';
 import { verifyAccessCodeBucket } from '../rateLimitKeys';
 import { rateLimitPolicy } from '../rateLimitPolicy';
-import { apiHandler, readJsonBody, stringField, throttled } from '../http';
+import { apiHandler, json, readJsonBody, stringField, throttled } from '../http';
 import {
   KEY_CHECK_UNAVAILABLE_CODE,
   type KeyCheckUnavailable,

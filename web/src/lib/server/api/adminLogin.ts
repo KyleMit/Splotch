@@ -1,6 +1,5 @@
-import { json } from '@sveltejs/kit';
 import { beginAdminLogin, MAX_ADMIN_LOGIN_BODY_BYTES } from '../admin';
-import { apiHandler, readJsonBody, stringField, throttled } from '../http';
+import { apiHandler, json, readJsonBody, stringField, throttled } from '../http';
 import type { ApiHandler } from './apiEvent';
 
 type LoginResponse = { ok: true; session: string } | { ok: false; error: string };

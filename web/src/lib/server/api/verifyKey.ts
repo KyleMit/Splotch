@@ -1,8 +1,7 @@
-import { json } from '@sveltejs/kit';
 import { rateLimit } from '../rateLimit';
 import { verifyKeyBucket } from '../rateLimitKeys';
 import { rateLimitPolicy } from '../rateLimitPolicy';
-import { apiHandler, readJsonBody, stringField, throttled } from '../http';
+import { apiHandler, json, readJsonBody, stringField, throttled } from '../http';
 import { aiProvider } from '../ai/provider';
 import {
   KEY_CHECK_UNAVAILABLE_CODE,

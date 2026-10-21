@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { commonWebServer } from '../../web/playwright.shared.ts';
 
 // Both throwaway servers that boot this app — the Playwright web server and the
-// one tools/api-smoke/run-local-contract.mjs spawns — must declare every private env
-// var the app reads, never inherit it. Vite gives process.env precedence over
-// web/.env, so a
-// name missing from either object silently picks up whatever a developer put in
+// function host tools/api-smoke/run-local-contract.mjs starts — must declare every
+// private env var the app reads, never inherit it. Each server reads process.env,
+// and the Playwright one fills its gaps from web/.env, so a name missing from
+// either object silently picks up whatever a developer exported or put in
 // their dotenv: that is how an ambient GITHUB_ISSUE_TOKEN turned the /feedback
 // failure-path spec into six real issues in the tracker (#646), and it is also
 // how a spec can pass locally on a credential CI doesn't have.
@@ -57,9 +57,12 @@ const unscannableReads = sources
   )
   .map(({ path }) => path);
 
-/** The object literal `spawnViteServer` is handed, sliced out at its braces. */
+/** The `env` literal `startNetlifyFunctionHost` is handed, sliced out at its braces. */
 function apiSmokeEnvLiteral(source) {
-  const open = source.indexOf('{', source.indexOf('env: {', source.indexOf('spawnViteServer(')));
+  const open = source.indexOf(
+    '{',
+    source.indexOf('env: {', source.indexOf('startNetlifyFunctionHost('))
+  );
   let depth = 0;
   let cursor = open;
   do {

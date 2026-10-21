@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error } from './http';
 import sharp from 'sharp';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER } from '../apiHeaders';
 import { GENERATION_STYLE_PARAM } from '../apiParams';
