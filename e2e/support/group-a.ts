@@ -112,6 +112,22 @@ export async function chooseBrush(page: Page, brush: BrushName): Promise<void> {
   );
 }
 
+/**
+ * Opens one of Settings' sections and answers the dialog that holds it. The wide layout shows the
+ * section inside Settings under its title; the phone's hub names it with what it currently says
+ * ("Appearance, Night Mode · portrait lock") and opens it as a dialog of its own.
+ */
+export async function openSettingsSection(page: Page, title: string): Promise<Locator> {
+  const settings = await openSettings(page);
+  await settings
+    .getByRole('button', { name: new RegExp(`^${title}(,|$)`) })
+    .first()
+    .click();
+  const holder = page.getByRole('dialog', { name: new RegExp(`^(Settings|${title})$`) });
+  await expect(holder).toBeVisible();
+  return holder;
+}
+
 /** Opens Settings and answers its dialog. */
 export async function openSettings(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -362,11 +378,10 @@ export async function setGateFrequency(
     | 'Sending feedback',
   frequency: 'Every time' | 'Per session' | 'Never'
 ): Promise<void> {
-  const settings = await openSettings(page);
-  await settings.getByRole('button', { name: 'Parent Center', exact: true }).click();
-  const picker = settings.getByRole('radiogroup', { name: `${action} parental gate frequency` });
+  const section = await openSettingsSection(page, 'Parent Center');
+  const picker = section.getByRole('radiogroup', { name: `${action} parental gate frequency` });
   await picker.getByRole('radio', { name: frequency, exact: true }).click();
   await expect(picker.getByRole('radio', { name: frequency, exact: true })).toBeChecked();
-  await settings.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(settings).toBeHidden();
+  await section.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(section).toBeHidden();
 }
