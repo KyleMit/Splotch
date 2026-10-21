@@ -59,7 +59,6 @@ const styles = css.create({
     color: colors.textStrong,
     whiteSpace: 'nowrap',
   },
-  installation: { flexGrow: 2 },
   header: {
     color: colors.textSoft,
     fontFamily: fonts.semiboldFamily,
@@ -109,12 +108,8 @@ export function FreeGrants({ stats }: { stats: GrantStats }) {
           <html.div role="table" aria-label="Recent free generation grants" style={styles.table}>
             <html.div role="rowgroup">
               <html.div role="row" style={styles.row}>
-                {COLUMNS.map((column, index) => (
-                  <html.span
-                    key={column}
-                    role="columnheader"
-                    style={[styles.cell, styles.header, index === 0 && styles.installation]}
-                  >
+                {COLUMNS.map((column) => (
+                  <html.span key={column} role="columnheader" style={[styles.cell, styles.header]}>
                     {column}
                   </html.span>
                 ))}
@@ -123,7 +118,7 @@ export function FreeGrants({ stats }: { stats: GrantStats }) {
             <html.div role="rowgroup">
               {stats.recent.map((grant) => (
                 <html.div key={grant.installation} role="row" style={styles.row}>
-                  <html.span role="cell" style={[styles.cell, styles.installation]}>
+                  <html.span role="cell" style={styles.cell}>
                     <html.code style={styles.code}>{grant.installation}…</html.code>
                   </html.span>
                   <html.span role="cell" style={styles.cell}>

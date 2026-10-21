@@ -21,7 +21,7 @@ export type TokenSnapshot = Readonly<{
 // style and outcome categories as text instead of shipping their closed lists in its bundle.
 export type CodeUsage = Readonly<{ count: number; lastUsed: string }>;
 
-export type GrantActivity = Readonly<{
+type GrantActivity = Readonly<{
   installation: string;
   successful: number;
   attempts: number;

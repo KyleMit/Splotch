@@ -132,11 +132,11 @@ const styles = css.create({
   },
   noTally: {
     color: colors.textSoft,
-    fontSize: dimensions.fontSizeSm,
     fontFamily: fonts.mediumFamily,
     fontWeight: fonts.mediumWeight,
     fontStyle: 'italic',
   },
+  noGenerations: { fontSize: dimensions.fontSizeSm },
   actions: {
     display: 'flex',
     flexDirection: 'row',
@@ -268,7 +268,7 @@ function UsageCells({ usage }: { usage: CodeUsage | null }) {
   if (usage === null)
     return (
       <>
-        <html.span role="cell" style={[styles.generations, styles.noTally]}>
+        <html.span role="cell" style={[styles.generations, styles.noTally, styles.noGenerations]}>
           —
         </html.span>
         <html.span role="cell" style={[styles.lastUsed, styles.noTally]}>
