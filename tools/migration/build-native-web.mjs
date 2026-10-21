@@ -19,6 +19,7 @@ import {
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
 import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
 import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
@@ -29,7 +30,13 @@ import {
 } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 import { prerenderNativeWeb } from './prerender-native-web.mjs';
-import { pageOnlyChunks, prerenderNativeWebPages } from './prerender-native-web-pages.mjs';
+import {
+  EXPO_NOSCRIPT,
+  NOT_FOUND_FILE,
+  pageOnlyChunks,
+  prerenderNativeWebPages,
+} from './prerender-native-web-pages.mjs';
+import { prerenderNativeWebAdmin } from './prerender-native-web-admin.mjs';
 import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
@@ -43,9 +50,11 @@ const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 const EXPORT_METADATA_FILE = 'metadata.json';
 export const APP_SHELL_FILE = 'index.html';
 // What a static host answers any other path with (Netlify, GitHub Pages and most others look for
-// it): the app shell itself, which shows shipping's not-found page off the drawing route
-// (src/platform/appPath.web.ts). Only the host fetches it, so it stays out of the precache.
-export const NOT_FOUND_FILE = '404.html';
+// it): the not-found page's own prerendered document (prerender-native-web-pages.mjs), written over
+// a copy of the export's document. Only the host fetches it, so it stays out of the precache;
+// offline, the worker answers with the app shell, which shows the same page off the drawing route
+// (src/platform/appPath.web.ts).
+export { NOT_FOUND_FILE };
 
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish (the shipping value).
@@ -117,6 +126,24 @@ export function bootThemeHeadTags({
 
 export function bootAppSurfaceHeadTag() {
   return `<script>if(${JSON.stringify(DRAWING_PATHS)}.includes(location.pathname))document.documentElement.setAttribute(${JSON.stringify(APP_SURFACE_ATTRIBUTE)},'');</script>`;
+}
+
+// What the drawing screen's document shows without JavaScript, in place of Expo's bare "enable
+// JavaScript" line: the drawing needs a script, so it says so and links the pages that read without
+// one. Its own inline style attributes, never a <style>, keep it off the first-paint byte count;
+// the system colours follow the reader's light or dark scheme over the boot style's paper.
+const DRAWING_NOSCRIPT = [
+  '<noscript><div style="box-sizing:border-box;max-width:30rem;margin:0 auto;padding:48px 20px;font:16px/1.5 system-ui,sans-serif;color-scheme:light dark;color:CanvasText">',
+  '<h1 style="margin:0 0 8px;font-size:28px;line-height:1.2">Splotch needs JavaScript to draw</h1>',
+  '<p style="margin:0 0 16px">Turn JavaScript on for this site, then reload the page. These pages still work without it:</p>',
+  '<p style="margin:0"><a href="/changelog">Changelog</a> · <a href="/privacy">Privacy</a></p>',
+  '</div></noscript>',
+].join('');
+
+export function withDrawingNoscript(html) {
+  if (!EXPO_NOSCRIPT.test(html))
+    throw new Error('The app shell has no Expo <noscript> to replace.');
+  return html.replace(EXPO_NOSCRIPT, `\n${DRAWING_NOSCRIPT}`);
 }
 
 // A page document starts from the export's document without the drawing screen's surface lock,
@@ -235,12 +262,13 @@ export const isNativeAppNavigation = navigationMatcher(
   `${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname)`
 );
 
-// Any other page load except the hosted /admin console, which shipping's worker leaves alone. The
-// host answers it, its 404 status included; only when the network fails does the app shell answer,
-// and the shell shows shipping's not-found page for a path it does not know
-// (src/platform/appPath.web.ts). A slow answer is waited for, never replaced by the shell.
+// Any other page load except an unlinked document's (the /admin console), which the worker leaves
+// to the network alone, as shipping's does. The host answers it, its 404 status included; only
+// when the network fails does the app shell answer, and the shell shows shipping's not-found page
+// for a path it does not know (src/platform/appPath.web.ts). A slow answer is waited for, never
+// replaced by the shell.
 export const isOtherNativeNavigation = navigationMatcher(
-  `!${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname) && !url.pathname.startsWith('/admin')`
+  `!${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname) && !${JSON.stringify(Object.values(UNLINKED_DOCUMENT_PATHS))}.some(function (path) { return url.pathname.startsWith(path); })`
 );
 
 // How many navigation routes look up the app shell from each fallback callback:
@@ -293,12 +321,19 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
   copyShippingInstallAssets(outputDir, appVersion);
   copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
   await prerenderNativeWeb(join(outputDir, APP_SHELL_FILE));
-  const pageDocuments = await prerenderNativeWebPages(
-    outputDir,
-    pageDocumentTemplate(readFileSync(join(outputDir, NOT_FOUND_FILE), 'utf8'))
-  );
+  const shellPath = join(outputDir, APP_SHELL_FILE);
+  writeFileSync(shellPath, withDrawingNoscript(readFileSync(shellPath, 'utf8')));
+  const template = pageDocumentTemplate(readFileSync(join(outputDir, NOT_FOUND_FILE), 'utf8'));
+  const pageDocuments = [
+    ...(await prerenderNativeWebPages(outputDir, template)),
+    await prerenderNativeWebAdmin(outputDir, template),
+  ];
   // Each document's policy hashes its own inline scripts, so it is written after their last edit.
-  for (const file of [APP_SHELL_FILE, NOT_FOUND_FILE, ...pageDocuments.map(({ file }) => file)]) {
+  for (const file of new Set([
+    APP_SHELL_FILE,
+    NOT_FOUND_FILE,
+    ...pageDocuments.map(({ file }) => file),
+  ])) {
     const path = join(outputDir, file);
     writeFileSync(path, withContentSecurityPolicy(readFileSync(path, 'utf8')));
   }

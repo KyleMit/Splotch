@@ -33,20 +33,22 @@ import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { startupScriptList } from './prerender-native-web.mjs';
 import { documentPolicyProblems } from './lib/native-web-csp.mjs';
-import { documentPages, pageOnlyChunks } from './prerender-native-web-pages.mjs';
+import { pageOnlyChunks, writtenPageDocuments } from './prerender-native-web-pages.mjs';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // The version endpoint must reach the network; the worker, build identity and host's not-found
 // answer are not page assets. A page document is answered by the network, and offline by the app
-// shell, which shows the same page over the paper (build-native-web.mjs's navigation routes).
+// shell, which shows the same page over the paper, or the not-found page for a document-only page
+// such as /beta (build-native-web.mjs's navigation routes); an unlinked document by the network
+// alone.
 const UNFETCHED_EXPORT_FILES = new Set([
   NATIVE_WEB_SERVICE_WORKER,
   'metadata.json',
   NOT_FOUND_FILE,
   VERSION_JSON_FILENAME,
-  ...documentPages().map(({ file }) => file),
+  ...writtenPageDocuments().map(({ file }) => file),
 ]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';
@@ -55,6 +57,8 @@ const PRECACHE_ENTRY = new RegExp(
   'g'
 );
 const SHELL_ASSET_REFERENCE = /(?:src|href)="\/([^"?#]+)"/g;
+// An anchor names a page to navigate to, never a file the shell loads.
+const ANCHOR_START_TAG = /<a\s[^>]*>/gi;
 const PATH_DATA = / d="([^"]+)"/;
 // Shorter path data (a lone circle or square) could recur in a startup icon by coincidence.
 const MIN_LAZY_ICON_SAMPLE_CHARS = 40;
@@ -137,7 +141,9 @@ export function precacheEntriesFromSource(source) {
 export function shellAssetReferences(indexHtml) {
   return [
     ...new Set([
-      ...[...indexHtml.matchAll(SHELL_ASSET_REFERENCE)].map((match) => match[1]),
+      ...[...indexHtml.replace(ANCHOR_START_TAG, '').matchAll(SHELL_ASSET_REFERENCE)].map(
+        (match) => match[1]
+      ),
       ...startupScriptList(indexHtml).map((src) => src.replace(/^\//, '')),
     ]),
   ];
@@ -304,8 +310,8 @@ export function checkNativeWebPrecache({
   });
   problems.push(
     ...documentPolicyProblems(indexHtml.toString('utf8'), APP_SHELL_FILE),
-    ...[NOT_FOUND_FILE, ...documentPages().map(({ file }) => file)].flatMap((file) =>
-      documentPolicyProblems(readFileSync(join(exportDir, file), 'utf8'), file)
+    ...[...new Set([NOT_FOUND_FILE, ...writtenPageDocuments().map(({ file }) => file)])].flatMap(
+      (file) => documentPolicyProblems(readFileSync(join(exportDir, file), 'utf8'), file)
     )
   );
   if (problems.length) throw new Error(problems.join('\n'));

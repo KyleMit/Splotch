@@ -15,7 +15,7 @@ canonical failure shape every endpoint returns.
 | AI generation | `POST /api/generate-image`, `/api/verify-access-code`, `/api/verify-key`, `GET /api/free-generation-grant` |
 | Feedback      | `POST /api/report`, `POST /api/report-image`                                                               |
 | Telemetry     | `POST /api/csp-report`                                                                                     |
-| Admin         | `POST /api/admin/login`, `/api/admin/tokens`                                                               |
+| Admin         | `POST /api/admin/login`, `/api/admin/tokens`, `GET /api/admin/stats`                                       |
 
 Also in the doc: **Validating the API** (the contract smoke tests to run after a change) and **Local
 development** (how `vite dev` and `vite preview` host the endpoint functions same-origin).

@@ -14,7 +14,7 @@ import {
   starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
-import { documentPages } from '../migration/prerender-native-web-pages.mjs';
+import { writtenPageDocuments } from '../migration/prerender-native-web-pages.mjs';
 import { withContentSecurityPolicy } from '../migration/lib/native-web-csp.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
@@ -63,14 +63,17 @@ const NOT_FOUND = withContentSecurityPolicy(
 const ASSETS = {
   'index.html': INDEX,
   '404.html': NOT_FOUND,
-  // The route table's page documents (prerender-native-web-pages.mjs), which the network answers.
+  // The page documents the build writes (prerender-native-web-pages.mjs and
+  // prerender-native-web-admin.mjs), which the network answers.
   ...Object.fromEntries(
-    documentPages().map(({ file }) => [
-      file,
-      withContentSecurityPolicy(
-        '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
-      ),
-    ])
+    writtenPageDocuments()
+      .filter(({ file }) => file !== '404.html')
+      .map(({ file }) => [
+        file,
+        withContentSecurityPolicy(
+          '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
+        ),
+      ])
   ),
   [ENTRY]: 'var app={};',
   [CAT]: `var d="${OUTLINES[0].sample}";`,
@@ -336,6 +339,12 @@ it('references the scripts a prerendered shell loads after its first frame paint
     '_expo/static/css/strict-1.css',
     '_expo/static/js/web/index-1.js',
   ]);
+});
+
+// The drawing shell's <noscript> links the pages that read without JavaScript.
+it('counts no page a shell links to as a file the shell loads', () => {
+  const shell = '<noscript><a href="/changelog">Changelog</a></noscript><img src="/assets/a.png">';
+  expect(shellAssetReferences(shell)).toEqual(['assets/a.png']);
 });
 
 // Chunks only a page document loads (prerender-native-web-pages.mjs's pageOnlyChunks).
