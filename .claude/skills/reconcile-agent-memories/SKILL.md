@@ -93,10 +93,9 @@ each retired memory to its destination or expiration reason.
   [walk-through-decision](../walk-through-decision/SKILL.md), and [design](../design/SKILL.md).
 * **Capture and secrets:** Verify an Android build's installed identity after an interrupted
   install, fix measured product bottlenecks before recapturing, and pass only the API key a
-  generator needs. See [Android profiling](../../../docs/PROFILING-ANDROID.md),
-  [performance campaigns](../../../docs/PROFILING-CAMPAIGNS.md), and
+  generator needs. See [profiling](../../../docs/PROFILING.md) and
   [asset-generator instructions](../../../tools/asset-gen/.ruler/AGENTS.md).
 * **Local authority:** Host permissions and device access can change. Read live settings and capture
   instructions instead of committing a permission snapshot; never promote credentials or private
-  device identifiers. See [iPad profiling](../../../docs/PROFILING-IPAD.md) and the
+  device identifiers. See the
   [reconciliation record](../../../docs/scratchpad/reconcile-agent-memories-2026-09-26.md).

@@ -15,8 +15,7 @@ import {
   redactHostAddresses,
   scanForHostAddresses,
 } from '../lib/host-addresses.mjs';
-import { checkTrackedTree } from '../check-device-identifiers.mjs';
-import { EVIDENCE_ROOT } from '../keep-capture-evidence.mjs';
+import { EVIDENCE_ROOT, checkTrackedTree } from '../check-device-identifiers.mjs';
 
 // Built by concatenation so this tracked file never contains a non-exempt
 // identifier-shaped literal for the repo-wide scan below to flag.

@@ -286,31 +286,6 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/page-inventory/capture-page-inventory.mjs': 1023,
   'tools/page-inventory/lib/page-inventory-report.mjs': 557,
   'tools/page-inventory/tests/page-inventory.test.mjs': 928,
-  'tools/perf/android/capture-bundled-frames.mjs': 761,
-  'tools/perf/gen-performance-matrix.mjs': 2874,
-  'tools/perf/ios/capture-xcuitest-actions.mjs': 2624,
-  'tools/perf/ios/capture-xcuitest-screen.mjs': 1163,
-  'tools/perf/lib/campaign-plan.mjs': 742,
-  'tools/perf/lib/person-session.mjs': 502,
-  'tools/perf/lib/real-screen-stats.mjs': 787,
-  'tools/perf/prepare-capture.mjs': 858,
-  'tools/perf/probes/real-screen-probe.js': 684,
-  'tools/perf/run-campaign.mjs': 631,
-  'tools/perf/split-capture/capture-device-frames.mjs': 811,
-  'tools/perf/split-capture/lib/page-bootstrap.mjs': 542,
-  'tools/perf/tests/bootstrap-theme.test.mjs': 834,
-  'tools/perf/tests/campaign-artifact-acceptance.test.mjs': 685,
-  'tools/perf/tests/campaign-plan.test.mjs': 1391,
-  'tools/perf/tests/campaign-sources.test.mjs': 1142,
-  'tools/perf/tests/capture-readiness.test.mjs': 579,
-  'tools/perf/tests/coloring-books-ready.test.mjs': 676,
-  'tools/perf/tests/performance-matrix.test.mjs': 2393,
-  'tools/perf/tests/real-screen.test.mjs': 1403,
-  'tools/perf/tests/rescore-captures.test.mjs': 837,
-  'tools/perf/tests/split-capture.test.mjs': 2105,
-  'tools/perf/tests/undo-scenarios.test.mjs': 626,
-  'tools/perf/tests/xcuitest-actions.test.mjs': 1795,
-  'tools/perf/web/run-undo-scenarios.mjs': 1081,
   'tools/scrapbook/clear-sound-sheet/sheet.js': 1716,
   'tools/scrapbook/lib/scrapbook-index.mjs': 738,
   'tools/scrapbook/proof-sheet-hub-assets/proof-sheet-hub.client.js': 571,
@@ -604,19 +579,15 @@ export default tseslint.config(
     // overrides each state why the file stays whole, and TOOLS_GRANDFATHERED_MAX_LINES freezes the
     // tools/ outliers at their size so they can only shrink. The burn-down-oversized-code skill's
     // measure.mjs reads this block as the one default scope, so tools/ shares it rather than taking
-    // its own. Excluded: generated pointer-instruction data, the frozen ideas-exploration archive,
-    // and the one-epic person-present session driver.
+    // its own. Excluded: generated pointer-instruction data and the frozen ideas-exploration
+    // archive.
     files: [
       'web/src/**',
       'web/tests/**',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
-    ignores: [
-      'tools/store-drawings/generated/**',
-      'tools/asset-gen/ideas-exploration/**',
-      'tools/perf/run-person-session.mjs',
-    ],
+    ignores: ['tools/store-drawings/generated/**', 'tools/asset-gen/ideas-exploration/**'],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
     },

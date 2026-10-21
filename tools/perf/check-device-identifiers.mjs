@@ -18,7 +18,9 @@ import { join } from 'node:path';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
 import { scanForDeviceIdentifiers } from './lib/device-identifiers.mjs';
 import { scanForHostAddresses } from './lib/host-addresses.mjs';
-import { EVIDENCE_ROOT } from './keep-capture-evidence.mjs';
+
+// The tracked evidence corpus campaigns promoted captures into.
+export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 
 const BINARY_EXTENSIONS = new Set([
   'png',

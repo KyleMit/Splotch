@@ -7,20 +7,19 @@ queue that mixes device work with device-free work is still a performance campai
 units run in the device-free lane below.
 
 Everything in `SKILL.md` still holds. This file covers only what running device units in an
-unattended queue adds. What a capture session needs to know lives where every capture session reads
-it: `start-capture-session` for the rig takeover, `docs/PROFILING-CAMPAIGNS.md` for the traps, and
-`improve-performance-matrix` for what a performance unit is and the evidence it must carry. A
-performance cluster is a free-form unit: its spec is the cluster's hypothesis and target cells, and
-the performance tracking issue carries the ledger.
+unattended queue adds. What a device session needs to know lives where every one reads it: the
+`profiling` skill and `docs/PROFILING.md` for the evidence a performance unit must carry and the
+device traps. A performance cluster is a free-form unit: its spec is the cluster's hypothesis and
+the number that would change the decision, and the performance tracking issue carries the ledger.
 
 ## Preflight additions
 
-* **Take the rig over with the user present.** Run `start-capture-session` and one known-good
-  control capture while the user can still unlock a device, tap an automation grant, or reseat a
+* **Prove the devices with the user present.** Install a probe Release and run one known-good
+  control replay on each device while the user can still unlock it, end Guided Access, or reseat a
   cable. Ask the user to leave the devices awake and unlocked. A unit whose device the preflight
   could not prove moves out of the queue now.
 * **Settle the human-only device steps first.** An OS update, a finger capture, or a watched probe
-  changes which units can run tonight, so ask about them before the takeover.
+  changes which units can run tonight, so ask about them before proving the devices.
 
 ## Two lanes and the rig lock
 
@@ -50,11 +49,9 @@ sweeps running beside host checks, and the one red they produced had to be recap
 
 ## Rig facts are campaign state
 
-Units change the rig for the units after them. A native A/B replaces the installed app build. A
-harness merge can change an instrument fingerprint, so a resumed `perf:campaign` then needs
-`--accept-instrument-change`. Every fold moves the open release-gate red count. Keep these facts
-current in one place, and hand every device unit the current copy along with the device ids, the
-resolved ports, and which services the campaign owns or borrows.
+Units change the rig for the units after them: a native A/B replaces the installed app build. Keep
+these facts current in one place, and hand every device unit the current copy along with the device
+ids, the resolved ports, and which services the campaign owns or borrows.
 
 Give every device unit a timebox: when its device work must stop, and when its merge gate must
 finish, both ahead of the deadline reserve. A candidate that wins but runs out of time ends as a
@@ -66,13 +63,14 @@ draft PR carrying its A/B evidence.
   not restore it, stop capturing. Continue with queued units that need no device, or wrap up.
   Evidence-only or harness-only PRs are never a substitute for the product work the rig was meant to
   measure.
-* **One gate gets a bounded share of the night.** After about eight hours on the same release-gate
-  cell without it passing, record the best measured version as that cell's outcome and move on;
-  further marginal tuning belongs to a later campaign that starts with a new hypothesis.
+* **One target gets a bounded share of the night.** After about eight hours on the same performance
+  target without reaching it, record the best measured version as its outcome and move on; further
+  marginal tuning belongs to a later campaign that starts with a new hypothesis.
 * **The ledger separates product, harness, and evidence commits.**
 
 ## Morning report additions
 
 * Say plainly whether any product change landed.
-* Give the open release-gate red count before and after the campaign.
-* End with `start-capture-session`'s rig-state block.
+* Give each target's measured number before and after the campaign.
+* End with the rig's state: each device, whether it is attached and unlocked, and the build
+  installed on it.

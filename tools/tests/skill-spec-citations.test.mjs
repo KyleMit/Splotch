@@ -37,7 +37,6 @@ const REFERENCE_DOCS = [
   'docs/API.md',
   'docs/TESTING.md',
   'docs/PROFILING.md',
-  'docs/PROFILING-IPAD.md',
   'docs/MOBILE/native.md',
   'docs/MOBILE/android.md',
   'docs/MOBILE/ios.md',
