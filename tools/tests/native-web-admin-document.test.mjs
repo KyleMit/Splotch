@@ -225,6 +225,39 @@ describe("the admin console's state", () => {
     expect(latest.view).toEqual({ mode: 'signedOut', error: null });
   });
 
+  // A list still loading when its session ends; `answers` resolves each request on demand.
+  function deferredRequests() {
+    const pending = [];
+    const request = (path, init) => new Promise((resolve) => pending.push({ path, init, resolve }));
+    return { pending, request };
+  }
+
+  it('ignores a list that lands after its session was signed out', async () => {
+    const { pending, request } = deferredRequests();
+    const storage = await mount({ stored: SESSION, request });
+    await act(async () => latest.signOut());
+    await act(async () => pending[0].resolve(answer(200, SNAPSHOT)));
+    expect(latest.view).toEqual({ mode: 'signedOut', error: null });
+    expect(storage.items.has(ADMIN_SESSION_KEY)).toBe(false);
+  });
+
+  it("keeps a new session when the old one's late 401 lands", async () => {
+    let lateAnswer;
+    const request = async (path, init) => {
+      if (init.headers.Authorization === 'Bearer old-session')
+        return new Promise((resolve) => (lateAnswer = resolve));
+      return path === ADMIN_LOGIN_PATH
+        ? answer(200, { ok: true, session: SESSION })
+        : answer(200, SNAPSHOT);
+    };
+    const storage = await mount({ stored: 'old-session', request });
+    await act(async () => latest.signOut());
+    await act(async () => latest.signIn('the-key'));
+    await act(async () => lateAnswer(answer(401, { ok: false, error: 'Unauthorized' })));
+    expect(storage.items.get(ADMIN_SESSION_KEY)).toBe(SESSION);
+    expect(latest.view).toMatchObject({ mode: 'signedIn', session: SESSION });
+  });
+
   it('removes a code only once its removal is confirmed', async () => {
     const request = vi.fn(async () => answer(200, { ...SNAPSHOT, changed: true }));
     const confirm = vi.fn(() => false);

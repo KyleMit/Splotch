@@ -41,13 +41,16 @@ export function useAdminConsole({
 }) {
   const [view, setView] = useState<ConsoleView>({ mode: 'restoring' });
   const [flash, setFlash] = useState<Flash | null>(null);
-  const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState('');
-  const busyRef = useRef(false);
+  const { busy, busyRef, run } = useOneRequestAtATime();
+  // Which session a pending answer belongs to. Ending or replacing a session moves it on, so an
+  // answer for the old one (a list still loading at sign-out, a late 401) changes nothing.
+  const generation = useRef(0);
   const { copied, copy, endCopyFeedback } = useCopyFeedback(writeClipboard);
 
   const signOutWith = useCallback(
     (error: string | null) => {
+      generation.current += 1;
       sessions.clear();
       endCopyFeedback();
       setDraft('');
@@ -59,13 +62,15 @@ export function useAdminConsole({
 
   const load = useCallback(
     async (session: string) => {
+      const mine = generation.current;
       setView({ mode: 'loading', session });
       try {
         const result = await api.list(session);
+        if (generation.current !== mine) return;
         if (result.kind === 'unauthorized') signOutWith(SESSION_ENDED);
         else setView({ mode: 'signedIn', session, snapshot: result.snapshot });
       } catch {
-        setView({ mode: 'unavailable', session });
+        if (generation.current === mine) setView({ mode: 'unavailable', session });
       }
     },
     [api, signOutWith]
@@ -77,21 +82,6 @@ export function useAdminConsole({
     else void load(stored);
   }, [sessions, load]);
 
-  // One request at a time: a second press while one is out does nothing.
-  const run = useCallback(async (work: () => Promise<void>, onFailure: () => void) => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    try {
-      await work();
-    } catch {
-      onFailure();
-    } finally {
-      busyRef.current = false;
-      setBusy(false);
-    }
-  }, []);
-
   const signIn = (key: string) =>
     run(
       async () => {
@@ -100,6 +90,7 @@ export function useAdminConsole({
           setView({ mode: 'signedOut', error: result.message });
           return;
         }
+        generation.current += 1;
         sessions.write(result.session);
         await load(result.session);
       },
@@ -111,18 +102,23 @@ export function useAdminConsole({
     change: () => ReturnType<AdminApi['add']>,
     describe: (changed: boolean) => string,
     onDone: () => void
-  ) =>
-    run(
+  ) => {
+    const mine = generation.current;
+    return run(
       async () => {
         const result = await change();
+        if (generation.current !== mine) return;
         if (result.kind === 'unauthorized') return signOutWith(SESSION_ENDED);
         if (result.kind === 'refused') return setFlash({ kind: 'error', text: result.message });
         setView({ mode: 'signedIn', session, snapshot: result.snapshot });
         setFlash({ kind: 'success', text: describe(result.changed) });
         onDone();
       },
-      () => setFlash({ kind: 'error', text: CONNECTION_ERROR })
+      () => {
+        if (generation.current === mine) setFlash({ kind: 'error', text: CONNECTION_ERROR });
+      }
     );
+  };
 
   const add = (session: string) => {
     const token = draft.trim();
@@ -190,4 +186,24 @@ function useCopyFeedback(writeClipboard: Clipboard) {
   };
 
   return { copied, copy, endCopyFeedback };
+}
+
+// One request at a time: a second press while one is out does nothing.
+function useOneRequestAtATime() {
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const run = useCallback(async (work: () => Promise<void>, onFailure: () => void) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await work();
+    } catch {
+      onFailure();
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }, []);
+  return { busy, busyRef, run };
 }
