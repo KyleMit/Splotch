@@ -46,11 +46,11 @@ vi.mock('$lib/server/generationJobs', async (original) => ({
 }));
 vi.mock('$lib/server/reportToken', () => ({ issueReportToken: () => null }));
 vi.mock('$lib/server/tokens', () => ({ checkAccessToken: fixture.code }));
-import { GET as pollHandler } from '../../routes/api/generation-result/+server';
-import { POST as verifyKeyHandler } from '../../routes/api/verify-key/+server';
-import { POST as verifyCodeHandler } from '../../routes/api/verify-access-code/+server';
-import { POST } from '../../routes/api/generate-image/+server';
-import { GET } from '../../routes/api/free-generation-grant/+server';
+import { GET as pollHandler } from './api/generationResult';
+import { POST as verifyKeyHandler } from './api/verifyKey';
+import { POST as verifyCodeHandler } from './api/verifyAccessCode';
+import { POST } from './api/generateImage';
+import { GET } from './api/freeGenerationGrant';
 import { aiTransport } from '../../../../experiments/native-architecture/src/platform/ai.web';
 import {
   requestAi,

@@ -1,5 +1,5 @@
-import { isStyleName, type StyleName } from '$lib/ai/styles';
-import { AI_REPORT_KINDS, IMAGE_REPORT_REVIEW_HOURS, type AiReportKind } from '$lib/imageReport';
+import { isStyleName, type StyleName } from '../ai/styles';
+import { AI_REPORT_KINDS, IMAGE_REPORT_REVIEW_HOURS, type AiReportKind } from '../imageReport';
 import type { ReportTokenContext } from './reportToken';
 import { createIssue, escapeIssueMarkdown } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';

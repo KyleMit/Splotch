@@ -160,12 +160,13 @@ the 2026-09 clean-code campaign found (rule 9 of `docs/CODING-STANDARDS.md`):
 
 Three Node smoke entry points guard the server contract:
 
-* **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
-  bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
-  apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
-  `browserless` job on every push/PR; run it locally after any endpoint change (see the `api`
-  skill). Its dev server listens on `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`; in a concurrent worktree,
-  set `SMOKE_PORT` to an unused port.
+* **`test:api:smoke`** boots a throwaway `vite dev`, whose function host serves the `/api` Netlify
+  Functions, and checks the `/api/*` shapes (admin auth flow, bearer gate, token add/remove,
+  `verify-access-code`) plus the CORS/preflight contract the native apps depend on. No Blobs, so it
+  asserts the snapshot's `persistent` is `false`. CI runs it in the `browserless` job on every
+  push/PR; run it locally after any endpoint change (see the `api` skill). Its dev server listens on
+  `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`; in a concurrent worktree, set `SMOKE_PORT` to an unused
+  port.
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
   SSR-rendered `/admin`, security and cache headers, `version.json` (exactly the checked-out
   commit's on a preview or loopback target), both native-origin CORS preflights, safe

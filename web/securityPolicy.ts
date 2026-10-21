@@ -39,6 +39,19 @@ export type ContentSecurityPolicyDirectives = Readonly<
 
 export const NATIVE_API_ORIGIN = SITE_ORIGIN;
 
+// The native WebView origins (Android https://localhost, iOS capacitor://localhost),
+// which SvelteKit's CSRF guard trusts (svelte.config.js) and the /api functions'
+// copy of it trusts too (src/lib/server/csrf.ts). Shipped native builds still post
+// the legacy multipart generate-image form (ADR-0064), and a form content type from
+// an untrusted origin is refused before any handler runs, so before the CORS
+// headers that would let the WebView read the refusal. Safe to trust: the AI
+// endpoints are credential-gated, and /admin's one cookie is SameSite=strict, so
+// these cross-site requests never carry it.
+export const CSRF_TRUSTED_ORIGINS: readonly string[] = [
+  'https://localhost',
+  'capacitor://localhost',
+];
+
 // app.html is shared by prerendered and SSR pages, so its synchronous pre-paint
 // stamp cannot use SvelteKit's SSR-only nonce placeholder. securityPolicy.test.ts
 // hashes the exact script body and guards this source against template drift.

@@ -56,6 +56,8 @@ vi.mock('$app/environment', () => ({
   building: false,
   version: 'test',
 }));
+// The server modules' own dev flag, false as in the deployed SSR bundle.
+vi.mock('$lib/server/runtimeMode', () => ({ dev: false }));
 vi.mock('$app/forms', () => ({
   applyAction: vi.fn(),
   deserialize: vi.fn(),

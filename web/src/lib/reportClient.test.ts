@@ -21,8 +21,8 @@ vi.mock('$lib/server/imageReport', async (original) => ({
 }));
 
 import { REPORT_HONEYPOT_FIELD } from '$lib/report';
-import { POST as reportRoute } from '../routes/api/report/+server';
-import { POST as reportImageRoute } from '../routes/api/report-image/+server';
+import { POST as reportRoute } from './server/api/report';
+import { POST as reportImageRoute } from './server/api/reportImage';
 import { postFeedbackReport, postImageReport, readReportReply } from './reportClient';
 
 // Every request the client builds is handed to the real route handler for its

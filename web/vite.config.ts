@@ -16,6 +16,7 @@ import {
   STARTER_COLORING_BOOK_ID,
 } from './src/lib/state/books';
 import { excludeNativeRoutes } from './nativeExcludedRoutes';
+import { netlifyFunctionsHost } from './netlifyFunctionsHost';
 import { buildColoringPackManifest } from './coloringPackManifest';
 import { nativeApiBaseFor } from './securityPolicy.ts';
 import {
@@ -132,6 +133,8 @@ export default defineConfig({
     : {}),
   plugins: [
     excludeNativeRoutes(isCapacitor),
+    // Before sveltekit(): the /api functions answer ahead of SvelteKit, as on Netlify.
+    ...(isCapacitor ? [] : [netlifyFunctionsHost()]),
     sveltekit(),
     // Emit a version.json on every build so the running app can detect
     // when the deployed version has moved on and force a fresh fetch.

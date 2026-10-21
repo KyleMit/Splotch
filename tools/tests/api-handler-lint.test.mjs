@@ -4,9 +4,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Every /api method handler is exported as apiHandler(...) (eslint.config.js API_HANDLER_WRAPPED).
-// The guard is a no-restricted-syntax block for the /api routes, and flat config REPLACES that
+// The guard is a no-restricted-syntax block for the /api endpoint modules, and flat config REPLACES that
 // rule's entry wherever a later block configures it, so this control seeds each unwrapped shape
-// into a route path and also checks the block still carries the web/src set it recomposes.
+// into an endpoint path and also checks the block still carries the web/src set it recomposes.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const eslint = new ESLint({
   cwd: repoRoot,
@@ -21,7 +21,7 @@ const eslint = new ESLint({
 
 // None of these paths exist on disk: ESLint reads a file path only to pick the config blocks that
 // match it.
-const ROUTE = 'web/src/routes/api/probe/+server.ts';
+const ROUTE = 'web/src/lib/server/api/probe.ts';
 
 const restrictions = async (fixture, source, messageFragment) => {
   const [result] = await eslint.lintText(source, { filePath: join(repoRoot, fixture) });
@@ -56,7 +56,7 @@ describe('the /api handler wrapping guard', () => {
     ],
     [
       'another export renamed to apiHandler',
-      "import { fail as apiHandler } from '$lib/server/http';\nexport const POST = apiHandler(inner);",
+      "import { fail as apiHandler } from '../http';\nexport const POST = apiHandler(inner);",
     ],
     [
       'a destructured apiHandler',
@@ -78,25 +78,25 @@ describe('the /api handler wrapping guard', () => {
     expect(await unwrapped(ROUTE, source)).toHaveLength(1);
   });
 
-  it('allows a wrapped handler and the non-handler exports a route carries', async () => {
+  it('allows a wrapped handler and the non-handler exports an endpoint carries', async () => {
     const source = [
-      "import { apiHandler } from '$lib/server/http';",
-      'export const prerender = false;',
+      "import { apiHandler } from '../http';",
       'export type ProbeResponse = { ok: true };',
-      'export const POST: RequestHandler = apiHandler(async () => new Response());',
+      'export const POST: ApiHandler = apiHandler(async () => new Response());',
       'export const GET = apiHandler(collect);',
     ].join('\n');
     expect(await unwrapped(ROUTE, source)).toHaveLength(0);
   });
 
   it('exempts csp-report, whose responses are deliberately bodyless', async () => {
-    const source = 'export const POST: RequestHandler = async () => new Response(null);';
-    expect(await unwrapped('web/src/routes/api/csp-report/+server.ts', source)).toHaveLength(0);
+    const source = 'export const POST: ApiHandler = async () => new Response(null);';
+    expect(await unwrapped('web/src/lib/server/api/cspReport.ts', source)).toHaveLength(0);
   });
 
-  it('leaves server routes outside /api alone', async () => {
+  it('leaves server modules outside the /api endpoints alone', async () => {
     const source = 'export const GET = async () => new Response();';
     expect(await unwrapped('web/src/routes/probe/+server.ts', source)).toHaveLength(0);
+    expect(await unwrapped('web/src/lib/server/probe.ts', source)).toHaveLength(0);
   });
 
   it('keeps the web/src set it recomposes', async () => {

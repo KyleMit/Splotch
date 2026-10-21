@@ -12,6 +12,7 @@ storage together. A narrower entry point remains available when only Blobs persi
 | `run-local-contract.mjs`      | `npm run test:api:smoke`    | Run the local `/api/*` contract smoke test           |
 | `check-deployed-contract.mjs` | `npm run test:deploy:smoke` | Validate the complete hosted deploy contract         |
 | `check-deployed-blobs.mjs`    | `npm run test:blobs:smoke`  | Validate only Blobs persistence on a real deployment |
+| `record-wire-baseline.mjs`    | none (run by hand)          | Record SvelteKit's answers to the wire-diff corpus   |
 
 `lib/admin-client.mjs` owns the shared `/api/admin` request plumbing and fails any admin request
 that is answered with a redirect, so an HTTPS target cannot bounce the secret onto another URL.
@@ -26,15 +27,28 @@ entry points. Assertions remain in the contract layers rather than in the reques
 ## Local contract inputs and outputs
 
 `run-local-contract.mjs` needs no external credentials. It starts a Vite dev server on `SMOKE_PORT`
-(default `5199`) with explicit safe test values, exercises CORS, authentication, validation, rate
-limits, reporting, and public-oracle behavior, then tears the server down. Every non-`OPTIONS`
-`/api/*` response either entry point's checks receive must carry `Cache-Control: no-store`;
+(default `5199`), whose function host (`web/netlifyFunctionsHost.ts`) serves the `/api` Netlify
+Functions, with explicit safe test values, exercises CORS, authentication, validation, rate limits,
+reporting, and public-oracle behavior, then tears the server down. Every non-`OPTIONS` `/api/*`
+response either entry point's checks receive must carry `Cache-Control: no-store`;
 `lib/api-caching.mjs` records them at the fetch boundary. It prints pass/fail diagnostics and writes
 no artifact. The process exits nonzero on any failed check or startup error.
 
 Keep its server environment in agreement with every private environment variable read by the web
 app. `tools/tests/e2e-server-env.test.mjs` enforces that agreement so a developer's `web/.env`
 cannot make the smoke test reach a real service accidentally.
+
+## Wire-diff inputs and outputs
+
+The `/api` endpoints moved from SvelteKit routes to a plain Netlify Function (issue 3007) with
+nothing allowed to change on the wire. `lib/wire-corpus.mjs` is a recorded request corpus — every
+endpoint's documented shapes, the legacy multipart `generate-image` body (ADR-0064), and the
+cross-site form posts SvelteKit's CSRF guard refuses — driven in process through a V2 function's
+`(Request, Context)` signature, with every case answered before a model call, a GitHub issue or a
+Blobs store. `record-wire-baseline.mjs <sveltekit-render.mjs>` drove it through the last
+adapter-netlify build that still served `/api` and wrote `fixtures/wire-baseline.json`;
+`tests/wire-diff.test.mjs` (in `npm run test:tools`) holds the function in `netlify/functions` to
+those answers, status, headers and body, and checks each `/api` path is claimed exactly once.
 
 ## Hosted deploy inputs and outputs
 
@@ -89,10 +103,11 @@ write persistence cannot be validated without a write and read-back.
 
 ## Maintenance
 
-The API contract is documented in `docs/API.md` and implemented under `web/src/routes/api/`. When an
-endpoint or response shape changes, update the reference, extend the local smoke assertions, and
-keep the owned admin client request-only. Changes to deployed persistence semantics must update the
-hosted deploy workflow and ADR-0025 expectations together.
+The API contract is documented in `docs/API.md` and implemented in `web/src/lib/server/api/` (one
+endpoint module each, all served by `netlify/functions/api.ts`). When an endpoint or response shape
+changes, update the reference, extend the local smoke assertions, and keep the owned admin client
+request-only. Changes to deployed persistence semantics must update the hosted deploy workflow and
+ADR-0025 expectations together.
 
 The [Hosted Deploy Smoke workflow](../../.github/workflows/hosted-deploy-smoke.yml) runs
 `check-deployed-contract.mjs` with `install: 'false'`. That entry point and everything it loads —

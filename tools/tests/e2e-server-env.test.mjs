@@ -15,7 +15,9 @@ import { commonWebServer } from '../../web/playwright.shared.ts';
 const repoRoot = join(import.meta.dirname, '..', '..');
 const appDir = join(repoRoot, 'web', 'src');
 const apiSmokePath = join(repoRoot, 'tools', 'api-smoke', 'run-local-contract.mjs');
-const PRIVATE_ENV_IMPORT = "from '$env/dynamic/private'";
+// The private env is web/src/lib/server/privateEnv.ts's `env`, imported by a
+// relative path so the /api Netlify Functions can bundle its readers.
+const PRIVATE_ENV_IMPORT = /from '(?:\.\.?\/)+(?:server\/)?privateEnv'/;
 // Only the bound `env` identifier. `process.env.X` and `import.meta.env.X` are
 // different objects that happen to end in the same characters, and demanding
 // one of those names be declared would have a harness blank a Node or Vite var
@@ -43,7 +45,7 @@ const sources = sourceFiles(appDir).map((path) => ({
 
 const privateEnvNames = new Set(
   sources
-    .filter(({ text }) => text.includes(PRIVATE_ENV_IMPORT))
+    .filter(({ text }) => PRIVATE_ENV_IMPORT.test(text))
     .flatMap(({ text }) => [...text.matchAll(PRIVATE_ENV_READ)].map((match) => match[1]))
 );
 
@@ -51,7 +53,7 @@ const unscannableReads = sources
   .filter(
     ({ text }) =>
       STATIC_PRIVATE_IMPORT.test(text) ||
-      (text.includes(PRIVATE_ENV_IMPORT) && DESTRUCTURED_PRIVATE_ENV.test(text))
+      (PRIVATE_ENV_IMPORT.test(text) && DESTRUCTURED_PRIVATE_ENV.test(text))
   )
   .map(({ path }) => path);
 
@@ -94,7 +96,7 @@ describe('throwaway server env', () => {
   it('finds every private env read in a shape it can scan', () => {
     expect(
       unscannableReads,
-      'read private env as `env.NAME` off $env/dynamic/private — the other shapes hide the name ' +
+      'read private env as `env.NAME` off lib/server/privateEnv — the other shapes hide the name ' +
         'from this guard, leaving it to arrive from a developer web/.env'
     ).toEqual([]);
   });

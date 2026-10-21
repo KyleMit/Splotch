@@ -57,31 +57,64 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
   };
 }
 
+// A take's first play() makes AVFoundation resolve the item's media selection with a synchronous
+// media-server call on the iPad main thread, up to a sixth of a second soon after launch (issue
+// 3028). Priming plays each take once at volume 0 while the screen is idle, so that wait lands
+// before any stroke. A take whose native player never reports playing is released from priming
+// after this long, so it can still sound.
+const PRIME_TIMEOUT_MS = 1000;
+
 // A play() that lands on a seek still in flight blocks the iPad main thread for a sixth of a second
 // or more (issue 3003), so a take moves to its next random start point only while it is paused: as
-// part of loading, and after each stroke it sounded in. A stroke that reaches a take mid-seek plays
-// it once the seek lands, unless the stroke has ended by then.
+// part of loading, and after each stroke it sounded in. A stroke that reaches a take mid-seek or
+// mid-prime plays it once that lands, unless the stroke has ended by then.
 function createCuedPlayback(player: AudioPlayer) {
-  let seeks = 0;
+  let busy = 0;
   let wanted = false;
   let sounded = false;
+  let played = false;
+  let priming: { done: (released: boolean) => void } | null = null;
   function play() {
-    if (!wanted || sounded || seeks > 0) return;
+    if (!wanted || sounded || busy > 0) return;
     sounded = true;
+    played = true;
     player.play();
   }
   function cue(): Promise<void> {
     const offset = pickPencilStart() * player.duration;
     if (!Number.isFinite(offset) || offset <= 0) return Promise.resolve();
-    seeks += 1;
+    busy += 1;
     return player.seekTo(offset).then(() => {
-      seeks -= 1;
+      busy -= 1;
       play();
+    });
+  }
+  // A take a stroke has already played needs no prime, and may be seeking: a play() then would land
+  // on that seek.
+  function prime(): Promise<void> {
+    if (played) return Promise.resolve();
+    played = true;
+    busy += 1;
+    return new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => done(false), PRIME_TIMEOUT_MS);
+      function done(released: boolean) {
+        clearTimeout(timeout);
+        priming = null;
+        busy -= 1;
+        resolve();
+        if (released) return;
+        if (!wanted) player.pause();
+        play();
+      }
+      priming = { done };
+      player.play();
     });
   }
   return {
     cue,
-    seeking: () => seeks > 0,
+    prime,
+    playing: () => priming?.done(false),
+    seeking: () => busy > 0,
     wanted: () => wanted,
     start() {
       wanted = true;
@@ -94,15 +127,16 @@ function createCuedPlayback(player: AudioPlayer) {
       sounded = false;
       return cue();
     },
-    // Teardown: a seek still in flight lands after release, and must not play the player.
+    // Teardown: a seek or prime still in flight lands after release, and must not touch the player.
     cancel() {
       wanted = false;
+      priming?.done(true);
     },
   };
 }
 
 type PencilSound = (typeof PENCIL_SOUNDS)[number];
-type PencilClip = DrawingLoop & { seeking: () => boolean };
+type PencilClip = DrawingLoop & { seeking: () => boolean; prime: () => Promise<void> };
 
 // Exported only so native-audio-adapter.test.mjs can drive one take's player lifecycle.
 export async function loadPencilClip(
@@ -170,6 +204,7 @@ export async function loadPencilClip(
             failed();
             return;
           }
+          if (status.playing) playback.playing();
           if (status.playing && !playback.wanted()) {
             gain.mute();
             player.pause();
@@ -195,6 +230,10 @@ export async function loadPencilClip(
                 void playback.stop().catch(failed);
               },
               seeking: playback.seeking,
+              prime() {
+                if (disposed) return Promise.resolve();
+                return playback.prime().catch(failed);
+              },
               dispose,
             });
           }, failed);
@@ -227,6 +266,8 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
     PENCIL_SOUNDS.map((sound) => loadPencilClip(sound, signal, onFailure))
   );
   const clips = usableTakes(loads);
+  // One take at a time, so no prime contends with another for the media server.
+  void clips.reduce<Promise<void>>((primed, clip) => primed.then(clip.prime), Promise.resolve());
   let playing: PencilClip | null = null;
   return {
     start() {

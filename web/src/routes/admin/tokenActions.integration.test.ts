@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { envState } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
 }));
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 // Only the mutations are stubbed: the action reads the real
 // MUTATION_FAILURE_STATUS, which is the shared mapping under test.

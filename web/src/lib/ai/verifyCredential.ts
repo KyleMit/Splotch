@@ -6,8 +6,8 @@ import {
   type VerifyAccessCodeRequestBody,
   type VerifyKeyRequestBody,
 } from '$lib/ai/keyFormat';
-import type { VerifyAccessCodeResponse } from '../../routes/api/verify-access-code/+server';
-import type { VerifyKeyResponse } from '../../routes/api/verify-key/+server';
+import type { VerifyAccessCodeResponse } from '../server/api/verifyAccessCode';
+import type { VerifyKeyResponse } from '../server/api/verifyKey';
 
 /** A credential that can pass verification, and so the only kinds a parent can hold. */
 export type VerifiedCredentialKind = 'apiKey' | 'accessCode';

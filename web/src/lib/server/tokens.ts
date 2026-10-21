@@ -1,5 +1,5 @@
-import { env } from '$env/dynamic/private';
-import { dev } from '$app/environment';
+import { env } from './privateEnv';
+import { dev } from './runtimeMode';
 import { getStore } from '@netlify/blobs';
 import { sleep } from './sleep';
 import { deleteUsage } from './usage';

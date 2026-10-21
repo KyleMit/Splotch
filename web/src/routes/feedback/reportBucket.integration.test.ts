@@ -16,7 +16,7 @@ vi.mock('$lib/server/github', async (original) => ({
 import { REPORT_FORM_FIELDS } from '$lib/report';
 import { throttledMessage } from '$lib/server/http';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { POST } from '../api/report/+server';
+import { POST } from '$lib/server/api/report';
 import { actions } from './+page.server';
 
 const { limit } = rateLimitPolicy.report;

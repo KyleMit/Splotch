@@ -92,7 +92,7 @@ describe('web/src domains', () => {
   it('files a co-located test and a test harness with the module they exercise', () => {
     expect(subjectOf('lib/storage.restore.integration.test.ts')).toBe('lib/storage');
     expect(subjectOf('lib/pwa/updatesTestHarness.ts')).toBe('lib/pwa/updates');
-    expect(subjectOf('routes/api/report/+server.ts')).toBe('routes/api/report/+server.ts');
+    expect(subjectOf('routes/admin/+page.server.ts')).toBe('routes/admin/+page.server.ts');
     expect(subjectOf('app.css')).toBe('app.css');
   });
 
@@ -109,10 +109,17 @@ describe('web/src domains', () => {
       'Client pipeline, state & shared contracts',
     ],
     [
-      'routes/api/generate-image/+server.ts',
+      'lib/server/api/generateImage.ts',
       'AI image generation',
       'Server authorization, jobs, storage & endpoints',
     ],
+    [
+      'lib/server/api/settlementTestHarness.ts',
+      'AI image generation',
+      'Server authorization, jobs, storage & endpoints',
+    ],
+    ['lib/server/api/adminTokens.ts', 'Admin console + token backend', null],
+    ['lib/server/api/report.ts', 'Server / API backend', null],
     ['lib/components/AiDial.svelte', 'AI image generation', 'Generation, result & reporting UI'],
     ['lib/state/tool.svelte.ts', 'App state (runes)', null],
     ['lib/components/NewWidget.svelte', 'Core UI controls', null],

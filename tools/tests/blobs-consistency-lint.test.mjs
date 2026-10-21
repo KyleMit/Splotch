@@ -52,7 +52,7 @@ describe('the Blobs consistency guard', () => {
 
   it('rejects an omission in a route module', async () => {
     expect(
-      await violations('web/src/routes/api/probe/+server.ts', "getStore('ai-usage')")
+      await violations('web/src/lib/server/api/probe.ts', "getStore('ai-usage')")
     ).toHaveLength(1);
   });
 
