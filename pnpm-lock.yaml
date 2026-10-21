@@ -18,7 +18,7 @@ overrides:
   tar: ^7.5.19
 
 patchedDependencies:
-  '@shopify/react-native-skia@2.14.0': 4cbdc13cc09efba962eea5664ec769b760224f3db6120a8cee9847b57154588a
+  '@shopify/react-native-skia@2.14.0': 386784f785eef26e3a74d64c2749a174ae6e76c5c73f4ce6fed8346f6c389f21
   '@stylexjs/stylex@0.15.4': 000aa8c8bf452ecaef823bb367360a37de2f818fe86cd389a6c089ff2f60b2f4
   expo-audio@58.0.9: da6533f2cc7624f787fd4fd791a3243f3e085976483f3a5f14ff80110530ed28
   expo-screen-orientation@58.0.3: 98ac5337958e0fc1424220b65b439170677e61f618982c097a8fc436352fdf8d
@@ -226,7 +226,7 @@ importers:
         version: 5.3.0
       '@shopify/react-native-skia':
         specifier: 2.14.0
-        version: 2.14.0(patch_hash=4cbdc13cc09efba962eea5664ec769b760224f3db6120a8cee9847b57154588a)(c06eaecdb0bac5c227d271c1d878afbf)
+        version: 2.14.0(patch_hash=386784f785eef26e3a74d64c2749a174ae6e76c5c73f4ce6fed8346f6c389f21)(c06eaecdb0bac5c227d271c1d878afbf)
       babel-preset-expo:
         specifier: 58.0.17
         version: 58.0.17(@babel/core@7.29.7(supports-color@10.2.2))(@babel/runtime@7.29.7)(expo@58.0.14)(react-refresh@0.14.2)(supports-color@10.2.2)
@@ -9887,7 +9887,7 @@ snapshots:
       '@sentry/conventions': 0.16.0
       '@sentry/core': 10.73.0
 
-  '@shopify/react-native-skia@2.14.0(patch_hash=4cbdc13cc09efba962eea5664ec769b760224f3db6120a8cee9847b57154588a)(c06eaecdb0bac5c227d271c1d878afbf)':
+  '@shopify/react-native-skia@2.14.0(patch_hash=386784f785eef26e3a74d64c2749a174ae6e76c5c73f4ce6fed8346f6c389f21)(c06eaecdb0bac5c227d271c1d878afbf)':
     dependencies:
       canvaskit-wasm: 0.41.0
       react: 19.3.0

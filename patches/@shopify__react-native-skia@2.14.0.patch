@@ -14,3 +14,146 @@ index 6a50c5880f72082314ededd5aaa2b0e3ade2fd2c..ffb575379c77902116275d9fbd56705b
 +target_compile_options(${PACKAGE_NAME} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
 +target_link_options(${PACKAGE_NAME} PRIVATE
 +    -Wl,--exclude-libs,ALL -Wl,--icf=all -Wl,--pack-dyn-relocs=android)
+diff --git a/cpp/api/JsiSkApi.h b/cpp/api/JsiSkApi.h
+index 548a24df644176e3a61e03b2cc95bd15b28a532d..1e0e2ebcd183bbb72697f027454730f4fbc62723 100644
+--- a/cpp/api/JsiSkApi.h
++++ b/cpp/api/JsiSkApi.h
+@@ -77,6 +77,10 @@ public:
+    */
+   explicit JsiSkApi(const std::shared_ptr<RNSkPlatformContext> &context)
+       : JsiSkNativeObject<JsiSkApi>(context),
++        // Splotch: Skottie, Paragraph and TypefaceFontProvider are never constructed or
++        // installed, and the SVG factory's DOM builder throws, so the linker drops Skottie, SkSG,
++        // SkParagraph, SkShaper/HarfBuzz and the SVG DOM from the prebuilt archives. SVG stays
++        // installed because lib/module/skia/core/SVG.js binds Skia.SVG.MakeFromData at import.
+         _svgFactory(std::make_shared<JsiSkSVGFactory>(context)),
+         _imageFactory(std::make_shared<JsiSkImageFactory>(context)),
+         _animatedImageFactory(
+@@ -96,11 +100,9 @@ public:
+         _surfaceFactory(std::make_shared<JsiSkSurfaceFactory>(context)),
+         _pictureFactory(std::make_shared<JsiSkPictureFactory>(context)),
+         _fontMgrFactory(std::make_shared<JsiSkFontMgrFactory>(context)),
+-        _skottieFactory(std::make_shared<JsiSkottieFactory>(context)),
+-        _typefaceFontProviderFactory(
+-            std::make_shared<JsiSkTypefaceFontProviderFactory>(context)),
+-        _paragraphBuilderFactory(
+-            std::make_shared<JsiSkParagraphBuilderFactory>(context)),
++        _skottieFactory(nullptr),
++        _typefaceFontProviderFactory(nullptr),
++        _paragraphBuilderFactory(nullptr),
+         _nativeBufferFactory(
+             std::make_shared<JsiNativeBufferFactory>(context)) {
+     // We create the system font manager eagerly since it has proven to be too
+@@ -298,11 +300,6 @@ public:
+     installGetter(runtime, prototype, "Surface", &JsiSkApi::getSurfaceFactory);
+     installGetter(runtime, prototype, "Picture", &JsiSkApi::getPictureFactory);
+     installGetter(runtime, prototype, "FontMgr", &JsiSkApi::getFontMgrFactory);
+-    installGetter(runtime, prototype, "Skottie", &JsiSkApi::getSkottieFactory);
+-    installGetter(runtime, prototype, "TypefaceFontProvider",
+-                  &JsiSkApi::getTypefaceFontProviderFactory);
+-    installGetter(runtime, prototype, "ParagraphBuilder",
+-                  &JsiSkApi::getParagraphBuilderFactory);
+     installGetter(runtime, prototype, "NativeBuffer",
+                   &JsiSkApi::getNativeBufferFactory);
+   }
+diff --git a/cpp/api/JsiSkCanvas.h b/cpp/api/JsiSkCanvas.h
+index c14f489c6dae511ffcd5eb3b2b300b85694cf2ac..aa69b6d3c47065b89db6f4807b787a93999dd0e5 100644
+--- a/cpp/api/JsiSkCanvas.h
++++ b/cpp/api/JsiSkCanvas.h
+@@ -585,7 +585,6 @@ public:
+     installMethod(runtime, prototype, "drawTextBlob",
+                   &JsiSkCanvas::drawTextBlob);
+     installMethod(runtime, prototype, "drawGlyphs", &JsiSkCanvas::drawGlyphs);
+-    installMethod(runtime, prototype, "drawSvg", &JsiSkCanvas::drawSvg);
+     installMethod(runtime, prototype, "clipPath", &JsiSkCanvas::clipPath);
+     installMethod(runtime, prototype, "clipRect", &JsiSkCanvas::clipRect);
+     installMethod(runtime, prototype, "clipRRect", &JsiSkCanvas::clipRRect);
+diff --git a/cpp/api/JsiSkSVGFactory.h b/cpp/api/JsiSkSVGFactory.h
+index 10802972ac699c5d1ef8ca112889b9d743da9983..005b7c95d27421773be8164513df5887969312a3 100644
+--- a/cpp/api/JsiSkSVGFactory.h
++++ b/cpp/api/JsiSkSVGFactory.h
+@@ -99,29 +99,7 @@ private:
+                                std::unique_ptr<SkMemoryStream> stream,
+                                sk_sp<SkFontMgr> fontMgr,
+                                SVGAssetProvider::AssetMap assets) {
+-    auto builder = SkSVGDOM::Builder();
+-
+-    if (fontMgr) {
+-      builder.setFontManager(fontMgr);
+-    }
+-
+-    auto baseProvider = SVGAssetProvider::Make(
+-        std::move(assets), skresources::ImageDecodeStrategy::kPreDecode);
+-    auto provider = skresources::DataURIResourceProviderProxy::Make(
+-        std::move(baseProvider), skresources::ImageDecodeStrategy::kPreDecode,
+-        fontMgr);
+-
+-    // TODO: this sk_sp subclassing issue needs to be fixed.
+-    provider->ref();
+-    builder.setResourceProvider(provider);
+-
+-    auto svg_dom = builder.make(*stream);
+-    if (!svg_dom) {
+-      return jsi::Value::null();
+-    }
+-
+-    return makeJsiObject(
+-        runtime, std::make_shared<JsiSkSVG>(getContext(), std::move(svg_dom)));
++    throw std::runtime_error("Skia.SVG is disabled in the Splotch build of react-native-skia");
+   }
+ 
+ public:
+diff --git a/cpp/api/recorder/RNRecorder.h b/cpp/api/recorder/RNRecorder.h
+index 130254b54c2bbd7df272e84ca7d7ff45485a855c..96c3b2551a613fd289be9780c44e6337a686957a 100644
+--- a/cpp/api/recorder/RNRecorder.h
++++ b/cpp/api/recorder/RNRecorder.h
+@@ -351,11 +351,11 @@ public:
+   }
+ 
+   void drawImageSVG(jsi::Runtime &runtime, const jsi::Object &props) {
+-    pushCommand(std::make_unique<ImageSVGCmd>(runtime, props, variables));
++    throw std::runtime_error("drawImageSVG is disabled in the Splotch build of react-native-skia");
+   }
+ 
+   void drawParagraph(jsi::Runtime &runtime, const jsi::Object &props) {
+-    pushCommand(std::make_unique<ParagraphCmd>(runtime, props, variables));
++    throw std::runtime_error("drawParagraph is disabled in the Splotch build of react-native-skia");
+   }
+ 
+   void drawAtlas(jsi::Runtime &runtime, const jsi::Object &props) {
+@@ -364,7 +364,7 @@ public:
+   }
+ 
+   void drawSkottie(jsi::Runtime &runtime, const jsi::Object &props) {
+-    pushCommand(std::make_unique<SkottieCmd>(runtime, props, variables));
++    throw std::runtime_error("drawSkottie is disabled in the Splotch build of react-native-skia");
+   }
+ 
+   void materializePaint() {
+@@ -730,26 +730,11 @@ inline void Recorder::playCommand(DrawingCtx *ctx, Command *cmd) {
+         pictureCmd->draw(ctx);
+         break;
+       }
+-      case CommandType::DrawImageSVG: {
+-        auto *imageSVGCmd = static_cast<ImageSVGCmd *>(cmd);
+-        imageSVGCmd->draw(ctx);
+-        break;
+-      }
+-      case CommandType::DrawParagraph: {
+-        auto *paragraphCmd = static_cast<ParagraphCmd *>(cmd);
+-        paragraphCmd->draw(ctx);
+-        break;
+-      }
+       case CommandType::DrawAtlas: {
+         auto *atlasCmd = static_cast<AtlasCmd *>(cmd);
+         atlasCmd->draw(ctx);
+         break;
+       }
+-      case CommandType::DrawSkottie: {
+-        auto *skottieCmd = static_cast<SkottieCmd *>(cmd);
+-        skottieCmd->draw(ctx);
+-        break;
+-      }
+       default:
+         break;
+       }
