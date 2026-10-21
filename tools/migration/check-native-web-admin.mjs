@@ -236,6 +236,40 @@ async function checkWithoutJavaScript(browser, { origin }, problems) {
   await context.close();
 }
 
+// The narrowest phone the page sheet serves: its masthead stays inside the window, with or
+// without a script, and keeps the brand link's suffix whole beside the back link.
+const NARROW_VIEWPORT = { width: 320, height: 740 };
+
+async function checkNarrowMasthead(browser, { origin }, problems) {
+  for (const javaScriptEnabled of [false, true]) {
+    const context = await browser.newContext({ javaScriptEnabled, viewport: NARROW_VIEWPORT });
+    const tab = await context.newPage();
+    await tab.goto(`${origin}${ADMIN_PATH}`);
+    await tab.evaluate(() => document.fonts.ready);
+    const fit = await tab.evaluate(() => {
+      const brand = [...document.querySelectorAll('a[href="/"]')].find((link) =>
+        link.textContent.includes('Admin')
+      );
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        brandRight: brand?.getBoundingClientRect().right ?? null,
+      };
+    });
+    const at = `${ADMIN_PATH} at ${NARROW_VIEWPORT.width} px (JavaScript ${javaScriptEnabled ? 'on' : 'off'})`;
+    check(
+      problems,
+      fit.scrollWidth <= NARROW_VIEWPORT.width,
+      `${at} scrolls ${fit.scrollWidth} px wide`
+    );
+    check(
+      problems,
+      fit.brandRight !== null && fit.brandRight <= NARROW_VIEWPORT.width,
+      `${at} ends its brand link at ${fit.brandRight} px, past the window`
+    );
+    await context.close();
+  }
+}
+
 // One completed free generation in the dev function's in-memory grant ledger.
 async function seedFreeGrant(serverModule) {
   const grants = await serverModule(FREE_GRANTS_MODULE);
@@ -400,6 +434,7 @@ export async function checkNativeWebAdmin({
   const problems = [];
   try {
     await checkWithoutJavaScript(browser, dev, problems);
+    await checkNarrowMasthead(browser, dev, problems);
     await checkSessionAndCodes(browser, dev, problems);
     await checkDeployedGuards(browser, deployed, problems);
   } finally {
@@ -409,7 +444,7 @@ export async function checkNativeWebAdmin({
   }
   if (problems.length) throw new Error(problems.join('\n'));
   log(
-    `[native-web-admin] ${ADMIN_PATH} signs in on the local /api function, keeps its session across a reload, lists, adds and removes codes, reads its usage figures and free grants, forgets the session on a 401 and on sign-out; deployed, its same-origin bearer writes pass the CSRF guard; it reads without JavaScript and is noindex`
+    `[native-web-admin] ${ADMIN_PATH} signs in on the local /api function, keeps its session across a reload, lists, adds and removes codes, reads its usage figures and free grants, forgets the session on a 401 and on sign-out; deployed, its same-origin bearer writes pass the CSRF guard; it reads without JavaScript and is noindex, and its masthead fits ${NARROW_VIEWPORT.width} px`
   );
 }
 

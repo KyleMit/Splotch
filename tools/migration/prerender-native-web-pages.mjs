@@ -43,6 +43,13 @@ import { PAGE_DOCUMENT_RESOLVER_OPTION } from '../../experiments/native-architec
 import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../../experiments/native-architecture/scripts/design-document-styles.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
+  VARIANT_FRAGMENT_SEPARATOR,
+  canonicalFragmentCss,
+  canonicalFragmentMarkup,
+  canonicalFragments,
+  withVariantFragments,
+} from './page-fragments.mjs';
+import {
   EXPO_SCRIPT,
   EXPO_STYLESHEET,
   FIRST_FRAME_THEMES,
@@ -181,32 +188,11 @@ export function pageVariantCss(layouts = INFORMATION_LAYOUTS) {
   ].join('');
 }
 
-// Every variant carries the page's fragment targets (its section ids), and a browser follows a
-// fragment to the first element with that id, which without a script is usually a hidden variant.
-// So each variant's targets, and the in-page links to them, carry the variant's key; the boot script
-// strips it from the variant it keeps before hydration, so the hydrated markup is the page's own.
-export const VARIANT_FRAGMENT_SEPARATOR = '~';
-
 // A section URL copied without JavaScript carries its variant's key; a visit with JavaScript reads
 // the page's own fragment instead.
 function variantFragmentPattern(viewports) {
   const layouts = Object.keys(viewports).join('|');
   return `/${VARIANT_FRAGMENT_SEPARATOR}(?:${layouts})-(?:${FIRST_FRAME_THEMES.join('|')})$/`;
-}
-
-export function withVariantFragments(html, key) {
-  const linked = new Set([...html.matchAll(/ href="#([^"]+)"/g)].map((match) => match[1]));
-  const targets = new Set(
-    [...html.matchAll(/ id="([^"]+)"/g)].map((match) => match[1]).filter((id) => linked.has(id))
-  );
-  const suffix = `${VARIANT_FRAGMENT_SEPARATOR}${key}`;
-  return html
-    .replace(/ id="([^"]+)"/g, (attribute, id) =>
-      targets.has(id) ? ` id="${id}${suffix}"` : attribute
-    )
-    .replace(/ href="#([^"]+)"/g, (attribute, id) =>
-      targets.has(id) ? ` href="#${id}${suffix}"` : attribute
-    );
 }
 
 // Without a script, what one would reveal shows, and the control that would reveal it hides, as
@@ -289,21 +275,28 @@ export function pageDocumentHtml(
   if (template.search(EXPO_STYLESHEET) < 0)
     throw new Error("The export's document links no style sheet to inline.");
   const markup = variants.map(({ html }) => html).join('');
-  const style = `<style id="${sheet.id}">${criticalSheetText(sheet.textContent, markup)}</style>`;
-  const pageStyle = `<style>${fontFaceRules}${pageVariantCss(layouts)}${documentCss}</style>\n<noscript><style>${withoutScriptCss()}</style></noscript>`;
+  const sheetText = criticalSheetText(sheet.textContent, markup);
+  const style = `<style id="${sheet.id}">${sheetText}</style>`;
+  const exportCss = [];
+  const inlined = template.replace(EXPO_STYLESHEET, (_, href) => {
+    const css = readExportFile(href).toString('utf8');
+    exportCss.push(css);
+    return `<style>${css}</style>`;
+  });
+  const fragments = canonicalFragments(
+    variants[0]?.html ?? '',
+    [sheetText, documentCss, ...exportCss].join('')
+  );
+  const pageStyle = `<style>${fontFaceRules}${pageVariantCss(layouts)}${documentCss}</style>\n<noscript><style>${withoutScriptCss()}${canonicalFragmentCss(fragments, PAGE_VARIANT_ATTRIBUTE)}</style></noscript>`;
   const body = variants.map(
     ({ key, viewport, html }) =>
       `<div ${PAGE_VARIANT_ATTRIBUTE}="${key}" ${FIRST_FRAME_VIEWPORT_ATTRIBUTE}="${formatFirstFrameViewport(viewport)}">${withVariantFragments(html, key)}</div>`
   );
-  return template
+  return inlined
     .replace(HTML_ELEMENT, (element) =>
       element.replace('<html', `<html ${APP_DOCUMENT_ATTRIBUTE}="${page}"`)
     )
     .replace(TITLE, `<title>${title}</title>`)
-    .replace(
-      EXPO_STYLESHEET,
-      (_, href) => `<style>${readExportFile(href).toString('utf8')}</style>`
-    )
     .replace('</head>', `${head}${style}\n${pageStyle}\n</head>`)
     .replace(EXPO_SCRIPT, '')
     .replace(EXPO_NOSCRIPT, '')
@@ -311,6 +304,7 @@ export function pageDocumentHtml(
       EMPTY_ROOT,
       [
         ...body,
+        ...canonicalFragmentMarkup(fragments),
         `<script type="application/json" id="${STARTUP_SCRIPTS_ELEMENT_ID}">${JSON.stringify(scripts)}</script>`,
         `<script>${pageBootScript(layouts)}</script>`,
       ].join('\n')

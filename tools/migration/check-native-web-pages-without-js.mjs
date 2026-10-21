@@ -1,8 +1,10 @@
 // Loads every page document the web export wrote with JavaScript disabled, at each layout and
 // colour scheme its variants cover, and fails unless the page reads in full: the one variant that
 // fits is the one shown, its heading and body text are the page's own, every link it must offer is
-// a link, and every link that would ask for the grown-up check names its address as plain text
-// instead of linking it (prerender-native-web-pages.mjs, RsdPageAnchor.tsx).
+// a link, every link that would ask for the grown-up check names its address as plain text
+// instead of linking it (prerender-native-web-pages.mjs, RsdPageAnchor.tsx), and a canonical
+// section address (a shared /privacy#contact, the footer's /changelog#release-…) opens on its
+// section in the shown variant.
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
@@ -15,10 +17,10 @@ import {
   DOCUMENT_ENTRIES,
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
-  VARIANT_FRAGMENT_SEPARATOR,
   documentEntry,
   documentPages,
 } from './prerender-native-web-pages.mjs';
+import { VARIANT_FRAGMENT_SEPARATOR } from './page-fragments.mjs';
 import releases from '../../web/src/lib/releases.json' with { type: 'json' };
 import {
   BETA_OPT_IN_URL,
@@ -122,6 +124,8 @@ export const PAGE_TEXT_WITHOUT_JS = {
       ],
       outsideLinks: [],
       followsSectionLinks: true,
+      // The sticky contents sidebar fits the window, its last label included, at the page's end.
+      fitsWindow: `nav[aria-label="${DESIGN_COPY.contents}"]`,
     };
   },
   // NOT_FOUND_COPY in RsdNotFoundPage.tsx, which a Node script cannot import.
@@ -230,6 +234,83 @@ export function sectionLinkProblems(at, followed) {
   return [];
 }
 
+// The section addresses a visitor brings from elsewhere: the canonical form of the in-page link
+// just followed (a shared /privacy#contact), and each shown link into another document's section
+// (the footer's /changelog#release-…).
+async function canonicalSectionAddresses(tab, variantAttribute, key, path, followed) {
+  const crossDocument = await tab
+    .locator(`[${variantAttribute}="${key}"] a[href^="/"][href*="#"]`)
+    .filter({ visible: true })
+    .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+  const own = followed ? [`${path}${followed.href.split(VARIANT_FRAGMENT_SEPARATOR)[0]}`] : [];
+  return [...new Set([...own, ...crossDocument])];
+}
+
+// Opens a section address with JavaScript off and reports where the shown variant's section landed,
+// and whether the canonical id also sits inside a variant.
+async function landCanonicalAddress(context, origin, address) {
+  const tab = await context.newPage();
+  await tab.goto(`${origin}${address}`);
+  await tab.evaluate(() => document.fonts.ready);
+  const landed = await tab.evaluate(
+    ({ variantAttribute, separator }) => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      const shown = [...document.querySelectorAll(`[${variantAttribute}]`)].find((variant) =>
+        variant.checkVisibility()
+      );
+      const section = shown
+        ? [...shown.querySelectorAll('[id]')].find(
+            (element) => element.id.split(separator)[0] === id
+          )
+        : undefined;
+      return {
+        found: section !== undefined,
+        visible: section?.checkVisibility() ?? false,
+        top: section?.getBoundingClientRect().top ?? null,
+        viewportHeight: innerHeight,
+        holdsLink: false,
+        variantsHoldCanonicalId: [...document.querySelectorAll(`[id="${CSS.escape(id)}"]`)].some(
+          (element) => element.closest(`[${variantAttribute}]`) !== null
+        ),
+      };
+    },
+    { variantAttribute: PAGE_VARIANT_ATTRIBUTE, separator: VARIANT_FRAGMENT_SEPARATOR }
+  );
+  await tab.close();
+  return { ...landed, href: address };
+}
+
+export function canonicalAddressProblems(at, landed) {
+  const problems = sectionLinkProblems(at, landed);
+  if (landed.variantsHoldCanonicalId)
+    problems.push(`${at} opens ${landed.href} with its canonical id inside a layout variant`);
+  return problems;
+}
+
+// How far the shown sticky element reaches while it is stuck at its offset, or null where the
+// layout does not show it. Its own scroll, not the page's, then brings its last item into view.
+function stickyFit(tab, selector) {
+  return tab.evaluate((selector) => {
+    const sticky = [...document.querySelectorAll(selector)].find(
+      (element) => element.checkVisibility() && getComputedStyle(element).position === 'sticky'
+    );
+    if (!sticky) return null;
+    const stuckTop = Number.parseFloat(getComputedStyle(sticky).top);
+    return {
+      bottom: stuckTop + sticky.getBoundingClientRect().height,
+      viewportHeight: innerHeight,
+    };
+  }, selector);
+}
+
+export function stickyFitProblems(at, fit) {
+  if (!fit) return [];
+  const { bottom, viewportHeight } = fit;
+  return bottom > viewportHeight + SUBPIXEL_PX
+    ? [`${at} ends its sticky contents at ${Math.round(bottom)} px, below the window`]
+    : [];
+}
+
 // A visible link's resolved address against an expected one: absolute, or a path on the page's own
 // origin.
 function sameAddress(link, href) {
@@ -285,6 +366,7 @@ export async function checkPageDocumentsWithoutJavaScript({
     for (const { page, path, file } of pages) {
       const expected = PAGE_TEXT_WITHOUT_JS[page]();
       const { layouts } = DOCUMENT_ENTRIES[documentEntry(page)];
+      let canonicalAddresses = 0;
       for (const viewport of Object.values(PAGE_VARIANT_VIEWPORTS))
         for (const colorScheme of FIRST_FRAME_THEMES) {
           const context = await browser.newContext({
@@ -304,23 +386,36 @@ export async function checkPageDocumentsWithoutJavaScript({
               await tab.evaluate(readPage, PAGE_VARIANT_ATTRIBUTE)
             )
           );
-          if (expected.followsSectionLinks)
-            problems.push(
-              ...sectionLinkProblems(
-                `${file} (${key}, JavaScript off)`,
-                await followSectionLink(
-                  tab,
-                  PAGE_VARIANT_ATTRIBUTE,
-                  key,
-                  expected.followsSectionLinks
-                )
+          const at = `${file} (${key}, JavaScript off)`;
+          const followed = expected.followsSectionLinks
+            ? await followSectionLink(
+                tab,
+                PAGE_VARIANT_ATTRIBUTE,
+                key,
+                expected.followsSectionLinks
               )
+            : null;
+          if (expected.followsSectionLinks) problems.push(...sectionLinkProblems(at, followed));
+          await tab.goto(`${origin}${path}`);
+          const addresses = await canonicalSectionAddresses(
+            tab,
+            PAGE_VARIANT_ATTRIBUTE,
+            key,
+            path,
+            followed
+          );
+          for (const address of addresses)
+            problems.push(
+              ...canonicalAddressProblems(at, await landCanonicalAddress(context, origin, address))
             );
+          canonicalAddresses += addresses.length;
+          if (expected.fitsWindow)
+            problems.push(...stickyFitProblems(at, await stickyFit(tab, expected.fitsWindow)));
           await context.close();
         }
       if (problems.length === 0)
         log(
-          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}${expected.hiddenText ? `, and ${expected.hiddenText.length} script-only texts hidden` : ''}`
+          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}${canonicalAddresses ? `, with ${canonicalAddresses} canonical section addresses opened into view` : ''}${expected.hiddenText ? `, and ${expected.hiddenText.length} script-only texts hidden` : ''}${expected.fitsWindow ? ', and its sticky contents fits the window' : ''}`
         );
     }
   } finally {

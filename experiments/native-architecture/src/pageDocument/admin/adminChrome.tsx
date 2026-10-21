@@ -31,6 +31,10 @@ const DRAWING_HREF = '/';
 // Exclusive bands, as StyleX does not order overlapping queries by width.
 const PHONE = '@media (max-width: 540px)';
 const FRAMED = '@media (min-width: 540.02px) and (max-width: 920px)';
+// NARROW_PHONE_MIN_WIDTH_PX less BREAKPOINT_EPSILON_PX (web/src/lib/breakpoints.ts), where
+// PageShell.svelte drops the crayon strip so the back link and the suffix share the row;
+// tools/tests/native-admin-narrow-breakpoint.test.mjs holds the two equal.
+const NARROW = '@media (max-width: 389.98px)';
 const SHEET_MAX_WIDTH_PX = 760;
 const PAGE_PADDING = { top: '32px', side: '16px', bottom: '72px' } as const;
 const GUTTER = 'clamp(20px, 5vw, 34px)';
@@ -128,8 +132,9 @@ const styles = css.create({
     gap: { default: dimensions.space2, [PHONE]: '6px' },
     textDecoration: 'none',
   },
+  // The strip is aria-hidden, so the link home keeps its whole accessible name.
   crayons: {
-    display: 'flex',
+    display: { default: 'flex', [NARROW]: 'none' },
     flexDirection: 'row',
     gap: { default: CRAYON.gap, [PHONE]: PHONE_CRAYON.gap },
   },

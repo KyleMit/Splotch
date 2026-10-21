@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 
 // The released RSD native renderer over a React Native stand-in for the shared controls: each host
 // view paints a DOM node carrying its accessibility props and resolved style, reports a layout the
-// test chooses, and keeps its latest props on the node so a test can drive the responder. The
+// test chooses (none when layoutOf answers null, as a prerendered page never lays out), and keeps its latest props on the node so a test can drive the responder. The
 // Reanimated stand-in records every shared-value write so a thumb's travel can be read.
 export const host = {
   windowWidth: 402,
@@ -25,7 +25,8 @@ vi.mock('react-native', async () => {
       React.useImperativeHandle(ref, () => node.current);
       React.useLayoutEffect(() => {
         node.current.__rn = { props, style: flat(props.style) };
-        props.onLayout?.({ nativeEvent: { layout: host.layoutOf(node.current) } });
+        const layout = host.layoutOf(node.current);
+        if (layout) props.onLayout?.({ nativeEvent: { layout } });
       });
       const children =
         typeof props.children === 'function'

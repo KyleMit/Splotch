@@ -272,6 +272,20 @@ describe('segment thumb', () => {
     }
   });
 
+  // Issue 3136: unmeasured, as on a prerendered page, the selected label sat white on the track.
+  it('backs the selected option with the thumb face until its cell is measured', async () => {
+    host.layoutOf = () => null;
+    await mount({ initial: 'light' });
+    expect(thumb()).toBeNull();
+    expect(native(option('Light')).style.backgroundColor).toBe(paint('segmentThumb', 'light'));
+    expect(native(option('Light')).style.boxShadow).toBe(rgba(scale.shadowControl));
+    expect(native(option('Dark')).style.backgroundColor).toBe('transparent');
+    host.layoutOf = cellLayout(CELL_WIDTH_PX);
+    await mount({ initial: 'light' });
+    expect(thumb()).not.toBeNull();
+    expect(native(option('Light')).style.backgroundColor).toBe('transparent');
+  });
+
   it('draws a 48px option with a 16px icon inked on-brand only while selected', async () => {
     await mount({ initial: 'light' });
     const light = native(option('Light')).style;
