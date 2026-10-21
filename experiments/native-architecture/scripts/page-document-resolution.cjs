@@ -11,6 +11,10 @@ const PAGE_DOCUMENT_RESOLVER_OPTION = 'pageDocument';
 const SRC = resolve(__dirname, '../src');
 const PAGE_DOCUMENT_EAGER_MODULES = new Map([
   [resolve(SRC, 'platform/ScrollView.web.ts'), resolve(SRC, 'platform/ScrollViewContent.web.ts')],
+  [
+    resolve(SRC, 'rsdDrawing/RsdStepNumber.web.tsx'),
+    resolve(SRC, 'rsdDrawing/RsdStepNumberContent.tsx'),
+  ],
 ]);
 
 function withPageDocumentResolution(context, moduleName, platform) {

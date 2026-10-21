@@ -9,6 +9,7 @@ import { RsdFeedbackSection } from './RsdFeedbackSection';
 import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdStatusMessage } from './RsdStatusMessage';
 import { RsdStepNumber } from './RsdStepNumber';
+import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from './pageFrame';
 import { styles as controls } from './controls';
 import { colors, dimensions, fonts } from './tokens.css';
 
@@ -28,7 +29,7 @@ const styles = css.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'flex-start',
-    gap: dimensions.space8,
+    gap: dimensions.space7,
   },
   form: {
     flexGrow: 1,
@@ -38,7 +39,10 @@ const styles = css.create({
     minWidth: 0,
   },
   stackedForm: { maxWidth: '100%' },
+  // Shipping sizes the rail border-box (its global reset), so its 250px basis holds the padding and
+  // rule, and the rail fits beside the form on a wide sheet.
   aside: {
+    boxSizing: 'border-box',
     flexGrow: 0,
     flexShrink: 1,
     flexBasis: RAIL_BASIS_PX,
@@ -115,6 +119,15 @@ export function RsdFeedbackPageContent({
               {FEEDBACK_PAGE_COPY.sendAnother}
             </html.span>
           </html.div>
+        ) : Platform.OS === 'web' ? (
+          <>
+            <noscript>
+              <RsdStatusMessage status="warning">{FEEDBACK_PAGE_COPY.needsScript}</RsdStatusMessage>
+            </noscript>
+            <html.div {...{ [HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE]: true }}>
+              <RsdFeedbackSection owner={owner} presentation="page" />
+            </html.div>
+          </>
         ) : (
           <RsdFeedbackSection owner={owner} presentation="page" />
         )}

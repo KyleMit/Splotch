@@ -4,30 +4,52 @@ import { openAppPage } from '../platform/appPath';
 import { ShippingFontGate } from '../platform/shippingFont';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import { createDrawingProduct, type DrawingProductOwner } from '../product/createDrawingProduct';
+import { createNativeFeedback, type NativeFeedbackOwner } from '../feedback/feedback';
+import { feedbackDevice, feedbackPolicyStorage, feedbackTransport } from '../platform/feedback';
+import type { DocumentPage } from '../information/appPages';
 import { RsdInformationPage } from '../rsdDrawing/RsdInformationPage';
 import { RsdScreenBoundary } from '../rsdDrawing/RsdScreenBoundary';
 import { PageNavigation } from '../rsdDrawing/RsdNotFoundPage';
 import { deferredIconsSettled } from '../rsdDrawing/iconRegistry';
 
-// The saved settings and the grown-up check a page's links answer to. The owner is created after
-// hydration, as the drawing screen's is (useDrawingProduct.ts), so the hydrating render equals
-// the build's render, which has none.
-function usePageProduct() {
-  const [owner, setOwner] = useState<DrawingProductOwner | null>(null);
+// The saved settings and the grown-up check a page's links answer to, and on the feedback page
+// the form's owner. Both are created after hydration, as the drawing screen's are
+// (useDrawingProduct.ts), so the hydrating render equals the build's render, which has neither.
+function usePageProduct(page: DocumentPage | null) {
+  const [owners, setOwners] = useState<{
+    product: DrawingProductOwner;
+    feedback: NativeFeedbackOwner | null;
+  } | null>(null);
   const [, update] = useState(0);
   useEffect(() => {
     let alive = true;
-    const created = createDrawingProduct(soundSettingsStorage, () => {
+    const product = createDrawingProduct(soundSettingsStorage, () => {
       if (alive) update((value) => value + 1);
     });
-    setOwner(created);
-    void created.settings.load();
+    const feedback =
+      page === 'feedback'
+        ? createNativeFeedback({
+            transport: feedbackTransport,
+            device: () => feedbackDevice(navigator.onLine),
+            policyStorage: feedbackPolicyStorage,
+            parent: product.port,
+          })
+        : null;
+    setOwners({ product, feedback });
+    void product.settings.load();
+    void feedback?.loadPolicy();
     return () => {
       alive = false;
-      created.dispose();
+      feedback?.dispose();
+      product.dispose();
     };
-  }, []);
-  return { owner, state: owner?.getState() ?? null, feedback: { owner: null, state: null } };
+  }, [page]);
+  const feedback = owners?.feedback ?? null;
+  return {
+    owner: owners?.product ?? null,
+    state: owners?.product.getState() ?? null,
+    feedback: { owner: feedback, state: feedback?.getState() ?? null },
+  };
 }
 
 const ignoreDrawingReturn = () => {};
@@ -46,7 +68,7 @@ export function PageDocument() {
   const [navigation] = useState(() =>
     page === null ? openAppPage : crossDocumentNavigation(page, openAppPage, documentLocation)
   );
-  const product = usePageProduct();
+  const product = usePageProduct(page);
   if (page === null) return null;
   return (
     <ShippingFontGate>

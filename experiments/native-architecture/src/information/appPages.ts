@@ -28,7 +28,7 @@ export const APP_PAGE_DOCUMENTS = {
   drawing: { render: 'ssg', document: 'drawing' },
   privacy: { render: 'ssg', document: 'page' },
   changelog: { render: 'client', document: 'drawing' },
-  feedback: { render: 'client', document: 'drawing' },
+  feedback: { render: 'ssg', document: 'page' },
 } as const satisfies Record<AppPage, AppPageDocument>;
 export type DocumentPage = {
   [Page in AppPage]: (typeof APP_PAGE_DOCUMENTS)[Page]['document'] extends 'page' ? Page : never;

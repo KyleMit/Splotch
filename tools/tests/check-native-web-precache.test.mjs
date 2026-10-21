@@ -14,6 +14,7 @@ import {
   starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
+import { writtenPageDocuments } from '../migration/prerender-native-web-pages.mjs';
 import { withContentSecurityPolicy } from '../migration/lib/native-web-csp.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
@@ -62,13 +63,15 @@ const NOT_FOUND = withContentSecurityPolicy(
 const ASSETS = {
   'index.html': INDEX,
   '404.html': NOT_FOUND,
-  // The route table's page document (prerender-native-web-pages.mjs), which the network answers.
-  'privacy.html': withContentSecurityPolicy(
-    '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
-  ),
-  // The unlinked admin document (prerender-native-web-admin.mjs), which only the network answers.
-  'admin.html': withContentSecurityPolicy(
-    '<!doctype html><html><head></head><body><script>var admin=1;</script></body></html>'
+  // The page documents the build writes (prerender-native-web-pages.mjs and
+  // prerender-native-web-admin.mjs), which the network answers.
+  ...Object.fromEntries(
+    writtenPageDocuments().map(({ file }) => [
+      file,
+      withContentSecurityPolicy(
+        '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
+      ),
+    ])
   ),
   [ENTRY]: 'var app={};',
   [CAT]: `var d="${OUTLINES[0].sample}";`,

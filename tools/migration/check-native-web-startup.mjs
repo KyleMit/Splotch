@@ -60,11 +60,14 @@ export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 // * privacy: first paint 33,026 measured (1,295 boot JS; 31,731 CSS, 26,866 of it strict.css);
 //   page entry 754,181 measured (Expo's runtime and the entry chunk). A document that names its
 //   page bundle again fails by the whole bundle.
+// * feedback: first paint 33,538 measured (1,732 boot JS; 31,806 CSS); page entry 768,782
+//   measured, the shared page entry with the feedback form's owner.
 // * admin: first paint 17,072 measured (1,280 boot JS; 15,792 CSS: its own compiled rules, the
 //   tokens and the Quicksand faces, never strict.css); page entry 262,531 measured, one chunk of
 //   React DOM and the console without React Native Web (prerender-native-web-admin.mjs).
 export const MAX_NATIVE_WEB_PAGE_BYTES = {
   privacy: { firstPaint: 36_329, pageEntry: 829_600 },
+  feedback: { firstPaint: 36_892, pageEntry: 845_661 },
   admin: { firstPaint: 18_780, pageEntry: 288_785 },
 };
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
