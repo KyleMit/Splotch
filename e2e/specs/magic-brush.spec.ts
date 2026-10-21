@@ -36,7 +36,7 @@ async function pickBrush(page: Page, brush: string) {
 async function pickFarmPage(page: Page, name: string) {
   await openDrawer(page);
   await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Farm' }).getByRole('button', { name: name }).click();
+  await page.getByRole('dialog', { name: 'Farm' }).getByRole('button', { name }).click();
   await expect(page.getByRole('status').filter({ hasText: 'ready.' })).toBeVisible();
 }
 
