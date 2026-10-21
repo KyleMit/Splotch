@@ -238,7 +238,7 @@ function withForcedBorder(xml: string, size: number) {
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
-function BackLink({
+export function RsdBackLink({
   label,
   short,
   onDrawingReturn,
@@ -293,7 +293,7 @@ function blobShadow(hex: string) {
 }
 
 // PageShell.svelte's masthead mark is a second anchor home on the web; native shows the mark alone.
-function BrandMark({
+export function RsdBrandMark({
   phone,
   narrow,
   onDrawingReturn,
@@ -419,8 +419,8 @@ export function RsdPageSheet({
             ]}
           >
             <html.div style={[styles.topbar, short && styles.shortTopbar]}>
-              <BackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
-              <BrandMark phone={phone} narrow={narrow} onDrawingReturn={onDrawingReturn} />
+              <RsdBackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
+              <RsdBrandMark phone={phone} narrow={narrow} onDrawingReturn={onDrawingReturn} />
             </html.div>
             {/* RN Web does not report position-only layout changes on the body. */}
             <View

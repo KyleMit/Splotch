@@ -12,10 +12,17 @@ import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { NATIVE_WEB_EXPORT_DIR, NOT_FOUND_FILE } from './build-native-web.mjs';
 import { FIRST_FRAME_THEMES } from './prerender-native-web.mjs';
 import {
+  DOCUMENT_ENTRIES,
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
+  documentEntry,
   documentPages,
 } from './prerender-native-web-pages.mjs';
+import {
+  DESIGN_COPY,
+  DESIGN_PARTS,
+  DESIGN_SECTIONS,
+} from '../../experiments/native-architecture/src/pageDocument/design/designSections.ts';
 import { FEEDBACK_PAGE_COPY } from '../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
 import { REPORT_FORM_COPY } from '../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
 import { REPORT_KINDS } from '../../experiments/native-architecture/src/feedback/report.ts';
@@ -59,6 +66,18 @@ export const PAGE_TEXT_WITHOUT_JS = {
       ],
       outsideLinks: [],
       followsSectionLinks: false,
+    };
+  },
+  design() {
+    return {
+      heading: DESIGN_COPY.title,
+      text: [
+        DESIGN_COPY.lede,
+        ...Object.values(DESIGN_PARTS).map(({ label }) => label),
+        ...DESIGN_SECTIONS.map(({ label }) => label),
+      ],
+      outsideLinks: [],
+      followsSectionLinks: true,
     };
   },
 };
@@ -123,9 +142,13 @@ async function followSectionLink(tab, variantAttribute, key) {
   await link.click();
   return tab.evaluate((followed) => {
     const target = document.getElementById(location.hash.slice(1));
+    const anchor = [...document.querySelectorAll('a')].find(
+      (candidate) => candidate.getAttribute('href') === followed && candidate.checkVisibility()
+    );
     return {
       href: followed,
       found: target !== null,
+      holdsLink: Boolean(target && anchor && target.contains(anchor)),
       visible: target?.checkVisibility() ?? false,
       top: target?.getBoundingClientRect().top ?? null,
       viewportHeight: innerHeight,
@@ -135,7 +158,11 @@ async function followSectionLink(tab, variantAttribute, key) {
 
 export function sectionLinkProblems(at, followed) {
   if (!followed) return [`${at} has no in-page section link to follow`];
-  const { href, found, visible, top, viewportHeight } = followed;
+  const { href, found, visible, top, viewportHeight, holdsLink } = followed;
+  // A target that holds the link, such as the page's own scroller, sits in view wherever the page
+  // is scrolled, and following a link to it never scrolls its content.
+  if (holdsLink)
+    return [`${at} follows ${href} to an element that holds the link, which no fragment scrolls`];
   if (!found || !visible || top <= -SUBPIXEL_PX || top >= viewportHeight)
     return [
       `${at} follows ${href} to ${found ? (visible ? `a target at ${Math.round(top)} px` : 'a hidden target') : 'no target'}, not into view`,
@@ -181,17 +208,18 @@ export async function checkPageDocumentsWithoutJavaScript({
   try {
     for (const { page, path, file } of pages) {
       const expected = PAGE_TEXT_WITHOUT_JS[page]();
-      for (const [layout, { width, height }] of Object.entries(PAGE_VARIANT_VIEWPORTS))
+      const { layouts } = DOCUMENT_ENTRIES[documentEntry(page)];
+      for (const viewport of Object.values(PAGE_VARIANT_VIEWPORTS))
         for (const colorScheme of FIRST_FRAME_THEMES) {
           const context = await browser.newContext({
             javaScriptEnabled: false,
-            viewport: { width, height },
+            viewport: { width: viewport.width, height: viewport.height },
             colorScheme,
           });
           const tab = await context.newPage();
           await tab.goto(`${origin}${path}`);
           await tab.evaluate(() => document.fonts.ready);
-          const key = `${layout}-${colorScheme}`;
+          const key = `${layouts.classOf(viewport)}-${colorScheme}`;
           problems.push(
             ...pageWithoutJsProblems(
               file,
