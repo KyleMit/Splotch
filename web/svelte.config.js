@@ -2,9 +2,8 @@ import adapterNetlify from '@sveltejs/adapter-netlify';
 import adapterStatic from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { buildMetadataOncePerProcess } from './buildVersion.ts';
-import { nativeCspDirectives, WEB_CSP_DIRECTIVES } from './securityPolicy.ts';
+import { CSRF_TRUSTED_ORIGINS, nativeCspDirectives, WEB_CSP_DIRECTIVES } from './securityPolicy.ts';
 import { standalonePageEntries } from './standalonePageEntries.ts';
-import { CSRF_TRUSTED_ORIGINS } from './src/lib/server/csrf.ts';
 
 // The web app ships to Netlify (SSR for the /admin token console and /feedback;
 // the /api/* endpoints are separate functions in netlify/functions). The native
@@ -42,9 +41,9 @@ const config = {
     // (FOUC). Infinity inlines every CSS file regardless of size.
     inlineStyleThreshold: Infinity,
     // The /api/* endpoints are Netlify Functions that repeat this guard
-    // (src/lib/server/csrf.ts holds the list and the reason for each origin);
-    // here it covers SvelteKit's own form actions, /feedback and /admin.
-    csrf: { trustedOrigins: CSRF_TRUSTED_ORIGINS },
+    // (src/lib/server/csrf.ts); here it covers SvelteKit's own form actions,
+    // /feedback and /admin. securityPolicy.ts says why each origin is trusted.
+    csrf: { trustedOrigins: [...CSRF_TRUSTED_ORIGINS] },
   },
 };
 

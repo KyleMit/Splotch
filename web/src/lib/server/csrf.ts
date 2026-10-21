@@ -1,15 +1,8 @@
-// SvelteKit's CSRF guard, which every /api route answered behind before the
-// endpoints became plain Netlify Functions, and which svelte.config.js still
-// configures for the pages SvelteKit serves. Self-contained: svelte.config.js
-// loads it through Node's type stripping, which resolves no extensionless import.
+import { CSRF_TRUSTED_ORIGINS } from '../../../securityPolicy.ts';
 
-// The native WebView origins (Android https://localhost, iOS capacitor://localhost).
-// Shipped native builds still post the legacy multipart generate-image form
-// (ADR-0064), and a form content-type from an untrusted origin is refused before
-// any handler runs — so before the CORS headers that would let the WebView read
-// the refusal. Safe to trust: the AI routes are credential-gated, and /admin's
-// one cookie is SameSite=strict, so these cross-site requests never carry it.
-export const CSRF_TRUSTED_ORIGINS = ['https://localhost', 'capacitor://localhost'];
+// SvelteKit's CSRF guard, which every /api route answered behind before the
+// endpoints became plain Netlify Functions; svelte.config.js still configures
+// SvelteKit's own for the pages it serves, from the same trusted origins.
 
 // Content types an HTML form can send without a preflight, plus SvelteKit's own
 // binary form encoding, which its guard lists with them.
