@@ -99,6 +99,24 @@ test.describe('the AI result', () => {
     await expect(result).toBeHidden();
     await expect(aiImageButton(drawingScreen.page)).toBeFocused();
   });
+
+  test('hands focus to the drawer toggle when the drawer was folded away meanwhile', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    const { result, endpoint } = await openAiResult(drawingScreen);
+    await result.getByRole('button', { name: 'Keep drawing while you wait' }).click();
+    await expect(result).toBeHidden();
+    await page.getByRole('button', { name: 'Collapse controls' }).click();
+    await page.getByRole('button', { name: 'Your picture is being made — tap to watch' }).click();
+    await endpoint.succeed();
+    await expect(result.getByRole('status')).toHaveText('Your picture is ready');
+
+    await result.getByRole('button', { name: 'Close', exact: true }).click();
+
+    await expect(result).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Expand controls' })).toBeFocused();
+  });
 });
 
 test.describe('a generation sent to the corner', () => {

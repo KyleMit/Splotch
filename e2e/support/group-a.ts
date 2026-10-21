@@ -77,6 +77,20 @@ export async function expectColorsSettled(element: Locator): Promise<void> {
     .toBe(true);
 }
 
+// The departing page flies across the paper before the paper is bare, so a first read of "no ink"
+// can land before the flight begins. A cleared page is one that reads bare and stays bare.
+const CLEARED_SETTLE_MS = 1500;
+
+/** Waits for a stroke to be gone from the paper, and for it to stay gone once the page has flown. */
+export async function expectPaperCleared(
+  screen: DrawingScreen,
+  stroke: Parameters<DrawingScreen['inkedPixels']>[0]
+): Promise<void> {
+  await expect.poll(() => screen.inkedPixels(stroke)).toBe(0);
+  await screen.page.waitForTimeout(CLEARED_SETTLE_MS);
+  expect(await screen.inkedPixels(stroke)).toBe(0);
+}
+
 export type BrushName = 'Pen' | 'Crayon' | 'Magic brush' | 'Eraser';
 
 /** Opens the tool drawer when it is folded; the drawer's own buttons answer once it is open. */
