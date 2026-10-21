@@ -51,34 +51,38 @@ async function signInThroughTheForm(page: Page) {
   await expect(page.getByRole('heading', { name: ADMIN_CODE_HEADING })).toBeVisible();
 }
 
+// What is wrong with the ledger's row at a window width: its actions at the touch floor, inside the
+// row, the row compact, and the page not scrolling sideways. Empty when nothing is.
+async function ledgerProblems(page: Page, width: number): Promise<string[]> {
+  const row = codeRow(page);
+  const box = await row.boundingBox();
+  const buttons = await row.getByRole('button').all();
+  const boxes = await Promise.all(buttons.map((button) => button.boundingBox()));
+  const problems: string[] = [];
+  if (!box) return [`the row is not laid out at ${width}px`];
+  if (box.height >= COMPACT_ROW_MAX_PX) problems.push(`the row is ${box.height}px tall`);
+  for (const action of boxes) {
+    if (!action) problems.push('an action is not laid out');
+    else if (action.height < TOUCH_TARGET_MIN_PX)
+      problems.push(`an action is ${action.height}px tall`);
+    else if (action.x + action.width > box.x + box.width) problems.push('an action leaves the row');
+  }
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  if (scrollWidth !== width) problems.push(`the page is ${scrollWidth}px wide`);
+  return problems;
+}
+
 test.describe('the admin console', () => {
   test('keeps its rows inside the ledger, with every action at the touch floor, at every width', async ({
     adminPage: page,
   }) => {
-    const row = codeRow(page);
     for (const width of LEDGER_WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
-      await expect(row).toBeVisible();
-      const [box, remove] = await Promise.all([
-        row.boundingBox(),
-        row
-          .getByRole('button', { name: `Remove ${MANAGED_ACCESS_CODE}`, exact: true })
-          .boundingBox(),
-      ]);
+      await expect(codeRow(page)).toBeVisible();
 
-      expect(remove?.height, `Remove at ${width}px`).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN_PX);
-      expect((remove?.x ?? 0) + (remove?.width ?? 0), `Remove at ${width}px`).toBeLessThanOrEqual(
-        (box?.x ?? 0) + (box?.width ?? 0)
-      );
-      expect(box?.height, `the row at ${width}px`).toBeLessThan(COMPACT_ROW_MAX_PX);
-      expect(
-        await page.evaluate(() => document.documentElement.scrollWidth),
-        `the page at ${width}px`
-      ).toBe(width);
-      for (const button of await row.getByRole('button').all()) {
-        const size = await button.boundingBox();
-        expect(size?.height).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN_PX);
-      }
+      await expect
+        .poll(() => ledgerProblems(page, width), { message: `at ${width}px` })
+        .toEqual([]);
     }
   });
 
