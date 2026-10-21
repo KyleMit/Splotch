@@ -1,7 +1,13 @@
 # ADR-0020: iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)
 
-**Status:** Active (amended by [0124](0124-exercise-native-release-configurations-in-tag-gates.md))
-**Date:** 2026-06
+**Status:** Active (amended by [0124](0124-exercise-native-release-configurations-in-tag-gates.md)
+and [0182](0182-splotch-is-one-react-native-app.md)) **Date:** 2026-06
+
+> **Amended by [ADR-0182](0182-splotch-is-one-react-native-app.md) (2026-10).** The scripted
+> `xcodebuild` archive and export, with automatic signing, apply to the React Native app's `ios/`
+> project instead of Capacitor's. That project resolves its native modules through CocoaPods (Expo
+> autolinking in its `Podfile`), so the Swift Package Manager choice below describes only the
+> retiring Capacitor project. The rejection of fastlane stands.
 
 ## Context
 
