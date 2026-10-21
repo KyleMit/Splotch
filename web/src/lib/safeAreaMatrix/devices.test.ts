@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { NOTCH_INSET_THRESHOLD_PX } from '$lib/platform/notchBand';
-import { DEVICE_PROFILES } from './devices';
-import { supportedOrientations, sizeClassOf } from './deviceProfile';
-import { ORIENTATIONS, isLandscape } from './orientations';
-import { bandVerdict, diagnose, unreclaimedInsetPx } from './diagnostics';
+import { NOTCH_INSET_THRESHOLD_PX } from '../platform/notchBand.ts';
+import { DEVICE_PROFILES } from './devices.ts';
+import { supportedOrientations, sizeClassOf } from './deviceProfile.ts';
+import { ORIENTATIONS, isLandscape } from './orientations.ts';
+import { bandVerdict, diagnose, unreclaimedInsetPx } from './diagnostics.ts';
 
 // The dataset is research, so the tests hold its shape and its internal
 // consistency rather than re-asserting the researched numbers — restating a

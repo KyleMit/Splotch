@@ -93,7 +93,7 @@ const CONTENT_TYPES = {
 };
 
 // A static host as Netlify answers the export: a file, else its pretty URL, else the 404 page.
-function serveExport(exportDir) {
+export function serveExport(exportDir) {
   const base = resolve(exportDir);
   const fileAt = (pathname) => {
     const candidate = resolve(base, `.${decodeURIComponent(pathname)}`);

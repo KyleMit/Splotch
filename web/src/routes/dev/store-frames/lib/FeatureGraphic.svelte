@@ -1,6 +1,6 @@
 <script lang="ts">
   import { paletteHex } from '$lib/palette';
-  import { FEATURE_GRAPHIC } from './targets.ts';
+  import { FEATURE_GRAPHIC } from '$lib/storeFrames/targets';
   import { assetUrl, PLAY_ICON_ASSET_FILE } from './paths.ts';
 
   const RAINBOW_GRADIENT = `linear-gradient(90deg,${(

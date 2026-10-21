@@ -2,15 +2,15 @@ import { expect, test, type Page } from '@playwright/test';
 import { isPhoneLandscape } from '../src/lib/breakpoints';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { overrideSafeAreaInsets } from './cdp';
-import { DEVICE_PROFILES } from '../src/routes/dev/notch/lib/devices';
-import { supportedOrientations } from '../src/routes/dev/notch/lib/deviceProfile';
+import { DEVICE_PROFILES } from '../src/lib/safeAreaMatrix/devices';
+import { supportedOrientations } from '../src/lib/safeAreaMatrix/deviceProfile';
 import {
   ORIENTATION_ANGLES,
   isLandscape,
   type Orientation,
-} from '../src/routes/dev/notch/lib/orientations';
-import { appliedInsets, diagnose } from '../src/routes/dev/notch/lib/diagnostics';
-import type { DeviceProfile } from '../src/routes/dev/notch/lib/deviceProfile';
+} from '../src/lib/safeAreaMatrix/orientations';
+import { appliedInsets, diagnose } from '../src/lib/safeAreaMatrix/diagnostics';
+import type { DeviceProfile } from '../src/lib/safeAreaMatrix/deviceProfile';
 import { openColoringBookGrid, openDrawer } from './flows-harness';
 
 // The whole device matrix, driven through the one seam that emulates real
@@ -19,9 +19,10 @@ import { openColoringBookGrid, openDrawer } from './flows-harness';
 // every inset as zero — so this spec is the only automated place the app is
 // exercised as anything other than a rectangle.
 //
-// The /dev/notch harness renders the same matrix for a human to look at; this
-// asserts the parts a human should not have to check tile by tile. Both read
-// one dataset, so a device added there is covered here on the next run.
+// This drives the shipping SvelteKit app. The React Native app's run of the
+// same matrix is tools/migration/check-native-web-safe-area.mjs, whose
+// --gallery shows every tile for a human to look at. Both read one dataset
+// (web/src/lib/safeAreaMatrix/), so a device added there is covered by both.
 
 // The Clear Button hangs deliberately off the right edge (a circle the child
 // pushes rather than a button they aim at), so a box-containment rule would

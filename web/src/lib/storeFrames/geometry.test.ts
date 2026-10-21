@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TABLET_MIN_SIDE_PX } from '../../../../lib/breakpoints.ts';
+import { TABLET_MIN_SIDE_PX } from '../breakpoints.ts';
 import { frameGeometry } from './geometry.ts';
 import { STORE_TARGETS, storeTarget } from './targets.ts';
 

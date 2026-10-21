@@ -1,10 +1,14 @@
 <script lang="ts">
   import wandSvg from '$lib/icons/wand-stars.svg?raw';
   import { paletteHex } from '$lib/palette';
-  import type { StoreTarget } from './targets.ts';
-  import { L_BASE_H, P_BASE_W, type FrameGeometry } from './geometry.ts';
-  import { MARKS } from './marks.ts';
-  import { P_SHOWCASE_DESIGN_H, SHOWCASE_CARD_SPEC, SHOWCASE_SPEC } from './showcase.ts';
+  import type { StoreTarget } from '$lib/storeFrames/targets';
+  import { L_BASE_H, P_BASE_W, type FrameGeometry } from '$lib/storeFrames/geometry';
+  import { MARKS } from '$lib/storeFrames/marks';
+  import {
+    P_SHOWCASE_DESIGN_H,
+    SHOWCASE_CARD_SPEC,
+    SHOWCASE_SPEC,
+  } from '$lib/storeFrames/showcase';
   import { AI_AFTER_ASSET_FILE, AI_BEFORE_ASSET_FILE, assetUrl } from './paths.ts';
 
   interface Props {

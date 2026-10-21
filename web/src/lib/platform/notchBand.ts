@@ -17,7 +17,7 @@
 // All of the platform-independent decisions live here as pure functions so the
 // four deployment targets and the color math are unit-testable without a DOM.
 
-import { isLightColor } from '../colorRing';
+import { isLightColor } from '../colorRing.ts';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
 import type { Orientation } from '../breakpoints';

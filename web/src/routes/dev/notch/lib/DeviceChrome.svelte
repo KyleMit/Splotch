@@ -1,7 +1,11 @@
 <script lang="ts">
   import type { SafeAreaInsets } from '$lib/platform/safeArea';
-  import type { DeviceProfile } from './deviceProfile';
-  import { ORIENTATION_ANGLES, isLandscape, type Orientation } from './orientations';
+  import type { DeviceProfile } from '$lib/safeAreaMatrix/deviceProfile';
+  import {
+    ORIENTATION_ANGLES,
+    isLandscape,
+    type Orientation,
+  } from '$lib/safeAreaMatrix/orientations';
 
   // The hardware layer drawn over a preview tile: the screen's rounded corners,
   // the physical cutout, the system glyphs that sit in the top inset, and the

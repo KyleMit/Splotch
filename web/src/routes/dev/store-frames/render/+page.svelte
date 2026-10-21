@@ -4,8 +4,8 @@
   import { QUICKSAND_FONT_FAMILY } from '$lib/fonts';
   import StoreFrame from '../lib/StoreFrame.svelte';
   import FeatureGraphic from '../lib/FeatureGraphic.svelte';
-  import { STORE_TARGETS } from '../lib/targets.ts';
-  import { STORE_PAGES } from '../lib/pages.ts';
+  import { STORE_TARGETS } from '$lib/storeFrames/targets';
+  import { STORE_PAGES } from '$lib/storeFrames/pages';
   import {
     FEATURE_GRAPHIC_PAGE_PARAM,
     RENDER_PAGE_PARAM,

@@ -1,7 +1,8 @@
-// The store device slots every screenshot set is produced for, shared by the
-// /dev/store-frames harness and tools/marketing-assets/gen-store-assets.mjs.
-// The generator imports this under `node --experimental-strip-types`, so this
-// module (and everything it imports) uses relative paths only — no $lib alias.
+// The store device slots every screenshot set is produced for, read by
+// tools/marketing-assets/gen-store-assets.mjs and the frame documents it
+// renders. The generator imports this under `node --experimental-strip-types`,
+// so this module (and everything it imports) uses relative paths only — no
+// $lib alias.
 
 export type StoreOrientation = 'landscape' | 'portrait';
 
@@ -47,6 +48,6 @@ export function storeTarget(name: StoreTargetName): StoreTarget {
   return target;
 }
 
-// Google Play feature graphic — its own fixed slot, rendered by the same
-// harness route (`?page=feature-graphic`) without a device target.
+// Google Play feature graphic — its own fixed slot, rendered without a device
+// target.
 export const FEATURE_GRAPHIC = { width: 1024, height: 500 } as const;
