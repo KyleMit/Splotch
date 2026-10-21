@@ -30,8 +30,9 @@ node .claude/skills/reconcile-with-main/survey.mjs
 
 It fetches `origin/main`, then prints a **relation** verdict with its reasons, the incoming commits,
 the upstream renames and deletions, the files **both** sides changed, and the files only upstream
-changed. `--json` gives machine-readable output; `--no-fetch` skips the network on a re-run. The
-base is fixed at `origin/main` (see Notes).
+changed. `--json` gives machine-readable output; `--no-fetch` skips the network on a re-run.
+`--base=<branch>` surveys against `origin/<branch>` instead, for a branch whose PR targets a
+long-running integration branch rather than `main` (see Notes).
 
 The relation decides how much of this skill the merge needs:
 
@@ -62,8 +63,12 @@ reconcile; say so and stop.
 ## Step 2 — Merge, and resolve the textual conflicts
 
 ```
-git merge origin/main
+git merge <sha>
 ```
+
+`<sha>` is the first incoming commit the survey listed (`incoming[0].sha` under `--json`), the tip
+it surveyed. Never `git merge origin/main`: worktrees share that ref, so another session's fetch
+between the survey and the merge brings in commits nobody surveyed.
 
 Resolve each conflict by keeping **both** intents rather than picking a side — a conflict means two
 changes were made for two reasons, and choosing one silently drops the other. When you genuinely
@@ -162,11 +167,11 @@ sampled — a partial pass reported as a full one is worse than not running the 
 
 ## Notes
 
-* **The base is `origin/main` everywhere, deliberately.** Step 2 merges it, Step 4 reads its ADR
-  log, and the report describes it, so a survey-only base flag would analyze one incoming range and
-  then merge and review a different one — a report that reads as authoritative and describes the
-  wrong branch. Reconciling against some other base is a different job than this skill; do it by
-  hand rather than by pointing this one somewhere new.
+* **One base through every step.** The base is `origin/main` unless the survey ran with
+  `--base=<branch>`. With it, read `origin/main` in every later step as `origin/<branch>`: Step 2
+  merges the commit that survey covered, Step 4's ADR-log check reads `<merge-base>..<sha>`, and the
+  report names the base. Surveying one base and merging or reviewing another produces a report that
+  reads as authoritative and describes the wrong branch.
 * **Merge, don't rebase**, unless the user asks. A long-running branch is usually pushed and
   possibly reviewed; rebasing rewrites the history a reviewer has already read and forces every
   other checkout of it to recover. The merge commit is also what makes the incoming set legible

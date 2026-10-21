@@ -7,7 +7,7 @@
 // this side of the merge.
 //
 // Usage:
-//   node .claude/skills/reconcile-with-main/survey.mjs [--no-fetch] [--json]
+//   node .claude/skills/reconcile-with-main/survey.mjs [--base=<branch>] [--no-fetch] [--json]
 //
 // Prints the relation verdict (unrelated / adjacent / coupled, with reasons),
 // then four sections: the incoming commits; the upstream renames and
@@ -16,16 +16,17 @@
 // the upstream-only files. It never merges, never writes, and never moves a
 // ref — the agent does that afterwards.
 //
-// The base is fixed at origin/main, matching the skill that runs it: every
-// other step names main too, so a per-invocation base would survey one range
-// and merge another.
+// The base is origin/main unless --base names the long-running branch a
+// campaign's PRs target. The result names the base it surveyed, and the skill
+// merges the exact commit the survey covered, so the range surveyed and the
+// range merged stay one range.
 
 import { execFileSync } from 'node:child_process';
 import { posix } from 'node:path';
-import { isMain } from '../../../tools/lib/proc.mjs';
+import { isMain, readSwitch, readValueFlag } from '../../../tools/lib/proc.mjs';
 
 const FILE_LIST_LIMIT = 40;
-const BASE_REF = 'origin/main';
+const DEFAULT_BASE_BRANCH = 'main';
 
 // R (rename) and C (copy) are the two statuses git reports with a second path
 // column; every other status describes a single path.
@@ -358,10 +359,11 @@ function readAtHead(path) {
   }
 }
 
-function survey({ doFetch }) {
+function survey({ baseBranch, doFetch }) {
+  const BASE_REF = `origin/${baseBranch}`;
   if (doFetch) {
     process.stderr.write(`Fetching ${BASE_REF}…\n`);
-    git('fetch', 'origin', 'main');
+    git('fetch', 'origin', baseBranch);
   }
 
   const branch = git('rev-parse', '--abbrev-ref', 'HEAD');
@@ -472,19 +474,32 @@ function report(result) {
   printEntries(result.upstreamOnly);
 }
 
-const KNOWN_FLAGS = new Set(['--no-fetch', '--json']);
+const USAGE = 'Usage: survey.mjs [--base=<branch>] [--no-fetch] [--json]';
+const KNOWN_SWITCHES = new Set(['--no-fetch', '--json']);
+
+// Anything unrecognised is rejected rather than ignored, so a misspelt,
+// space-separated or repeated base fails instead of quietly surveying another
+// base and being believed as a survey of the one that was asked for.
+export function parseSurveyArgs(argv) {
+  if (argv.filter((arg) => arg.startsWith('--base=')).length > 1) {
+    throw new Error('--base is given more than once: name one base');
+  }
+  const baseBranch = readValueFlag(argv, 'base') ?? DEFAULT_BASE_BRANCH;
+  const unknown = argv.filter((arg) => !KNOWN_SWITCHES.has(arg) && !arg.startsWith('--base='));
+  if (unknown.length > 0) throw new Error(`Unknown option(s): ${unknown.join(' ')}`);
+  return { baseBranch, doFetch: !readSwitch(argv, 'no-fetch'), json: readSwitch(argv, 'json') };
+}
 
 if (isMain(import.meta.url)) {
-  const args = process.argv.slice(2);
-  // Rejected rather than ignored so an invocation carrying a base flag fails
-  // instead of quietly surveying main and reporting on it as if asked.
-  const unknown = args.filter((arg) => !KNOWN_FLAGS.has(arg));
-  if (unknown.length > 0) {
-    console.error(`Unknown option(s): ${unknown.join(' ')}`);
-    console.error('Usage: survey.mjs [--no-fetch] [--json]   (the base is always origin/main)');
+  let options;
+  try {
+    options = parseSurveyArgs(process.argv.slice(2));
+  } catch (err) {
+    console.error(err.message);
+    console.error(USAGE);
     process.exit(2);
   }
-  const result = survey({ doFetch: !args.includes('--no-fetch') });
-  if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
+  const result = survey(options);
+  if (options.json) console.log(JSON.stringify(result, null, 2));
   else report(result);
 }
