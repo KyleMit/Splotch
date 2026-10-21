@@ -77,8 +77,8 @@ the picker.
 | iPadOS 26                 | windowed apps ignore in-app locks (Apple TN3192)                   |
 | Android 16, target SDK 36 | `setRequestedOrientation()` ignored at smallest width ≥ 600dp      |
 
-Splotch targets SDK 36 (`android/variables.gradle`), so the last row applies today on tablets and
-unfolded foldables.
+Splotch targets SDK 36 (`experiments/native-architecture/android/gradle.properties`), so the last
+row applies today on tablets and unfolded foldables.
 
 ## Detection
 

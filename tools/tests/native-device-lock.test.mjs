@@ -19,8 +19,6 @@ const SOURCES = {
   project: read(`${APP}ios/Splotch.xcodeproj/project.pbxproj`),
   kotlin: read(`${APP}android/app/src/main/java/art/splotch/app/SplotchDeviceLock.kt`),
   application: read(`${APP}android/app/src/main/java/art/splotch/app/MainApplication.kt`),
-  shippingSwift: read('ios/App/App/DeviceLockPlugin.swift'),
-  shippingJava: read('android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java'),
 };
 
 describe('the native device lock module', () => {
@@ -34,12 +32,9 @@ describe('the native device lock module', () => {
     expect(SOURCES.application).toContain('add(SplotchDeviceLockPackage())');
   });
 
-  it('reads the lock the shipping DeviceLock plugin reads on each platform', () => {
-    expect(SOURCES.shippingSwift).toContain('UIAccessibility.isGuidedAccessEnabled');
+  it('reads Guided Access on iOS and the lock-task mode on Android', () => {
     expect(SOURCES.swift).toContain('UIAccessibility.isGuidedAccessEnabled');
-    expect(SOURCES.shippingSwift).toContain('DispatchQueue.main.async');
     expect(SOURCES.swift).toContain('DispatchQueue.main.async');
-    expect(SOURCES.shippingJava).toContain('!= ActivityManager.LOCK_TASK_MODE_NONE');
     expect(SOURCES.kotlin).toContain('!= ActivityManager.LOCK_TASK_MODE_NONE');
   });
 });

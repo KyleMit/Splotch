@@ -22,8 +22,7 @@ a fresh local build.
 ID that installs over the store copy. Every other build of the app, Release included, is
 `art.splotch.app.dev`. A store artifact reaches a device only through the stores: installed by hand,
 it collides with the store-installed copy and puts the drawings that copy holds at risk. For a
-Release build to install, use `npm run native:android:apk` or a plain `xcodebuild`, which stay
-`.dev`.
+Release build to install, use `npm run android:apk` or a plain `xcodebuild`, which stay `.dev`.
 
 **Each script deletes its previous artifact before building**, so a file at the artifact path after
 a failed build is not this build's. Still confirm the version per the verify steps below rather than
@@ -48,7 +47,7 @@ and skip iOS with a note if it doesn't).
    `keystore.properties.example` beside it, with `storeFile` naming the shipping upload keystore
    (`../../../android/upload-keystore.jks`) — Play accepts the update only under that key.
 
-3. **Build the signed bundle.** Run `npm run native:android:bundle`. It runs
+3. **Build the signed bundle.** Run `npm run android:bundle`. It runs
    `gradlew -Psplotch.store=true :app:bundleRelease` in the React Native Android project, then
    checks the signature with `jarsigner` (`tools/mobile/android/verify-release-bundle.mjs`, which
    prints just `jar verified.` on success). It is slow (minutes) — let it finish. If Gradle or the
@@ -83,7 +82,7 @@ and skip iOS with a note if it doesn't).
    create it; never write a team into `project.pbxproj`. A different team cannot update the store
    app (see the `mobile` skill's `ios.md`).
 
-3. **Build the `.ipa`.** Run `npm run native:ios:ipa`. It runs `pod install`, archives Release with
+3. **Build the `.ipa`.** Run `npm run ios:ipa`. It runs `pod install`, archives Release with
    `-xcconfig Store.xcconfig` (the opt-in that clears the `.dev` suffix) and
    `-allowProvisioningUpdates`, then exports per
    `experiments/native-architecture/ios/ExportOptions.plist`. Slow (minutes) — let it finish. If

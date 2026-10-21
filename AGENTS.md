@@ -16,14 +16,13 @@
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
 * **Web** (`splotch.art`, Netlify): SSR + `/api/*` serverless functions + `/admin` console + PWA.
-* **Native** (Capacitor; Android + iOS): fully static export, no server routes — the apps call the
-  hosted API.
+* **Native** (Android + iOS): the React Native app in `experiments/native-architecture`, with no
+  server routes — the apps call the hosted API.
 
 The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, build output); the
-Capacitor native trees (`android/`, `ios/`), `capacitor.config.json`, the shipping root
-`package.json`/`node_modules`, and `tools/` stay at the repo root. This keeps netlify-cli's file
-watcher (run via `netlify dev --cwd web`) off the large native trees — see ADR-0024. The web
-toolchain runs with `cwd = web/` through `tools/run-web-tool.mjs`.
+shipping root `package.json`/`node_modules` and `tools/` stay at the repo root. This keeps
+netlify-cli's file watcher (run via `netlify dev --cwd web`) off the large native trees — see
+ADR-0024. The web toolchain runs with `cwd = web/` through `tools/run-web-tool.mjs`.
 
 The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
 (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be
@@ -118,7 +117,7 @@ which would file design history inside the very skill it is kept out of. See
 | `npm run show:epic-children -- <n>` | Read every nested GitHub sub-issue with reconciled parent counts                      |
 | `npm run show:free-port`            | Find an unused local TCP port without stopping another session's listener             |
 | `npm run test:browserless`          | Mirror CI's Browserless tests job (Vitest tiers + API smoke, no Playwright)           |
-| `npm run build` / `build:cap`       | Web build / native static build                                                       |
+| `npm run build`                     | Web build                                                                             |
 
 Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:variant` names
 (`dev:*`, `test:e2e:*`, `gen:*`, `android:*`, …), and every new or renamed script gets a matching
@@ -251,11 +250,11 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   active Node's `bin/`.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
   Netlify web build needs (runtime imports such as `sharp` and `openai` + vite/SvelteKit/adapter);
-  `devDependencies` = local/CI-only tooling (Playwright, dprint, the Capacitor CLIs, …). Netlify
-  installs with `--prod`, so a build-needed package filed under `devDependencies` breaks the deploy.
-  CI installs everything, so only `npm run lint:deps:prod` (knip over `knip.production.json`)
-  catches it; a new `tools/` script the build runs needs an entry there. When adding a dependency,
-  ask "does the Netlify web build import or execute this?"
+  `devDependencies` = local/CI-only tooling (Playwright, dprint, …). Netlify installs with `--prod`,
+  so a build-needed package filed under `devDependencies` breaks the deploy. CI installs everything,
+  so only `npm run lint:deps:prod` (knip over `knip.production.json`) catches it; a new `tools/`
+  script the build runs needs an entry there. When adding a dependency, ask "does the Netlify web
+  build import or execute this?"
 * **Formatting is split: Prettier owns code, dprint owns Markdown** (`*.md` is in `.prettierignore`;
   ADR-0057). The `format-edited-file.sh` PostToolUse hook auto-formats each file you edit through
   the right one, but if you write Markdown any other way (or aren't sure), run

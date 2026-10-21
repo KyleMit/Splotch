@@ -96,7 +96,8 @@ Generated per release — `fastlane/metadata/en-US/release_notes.txt` (written b
 
 ## App Privacy (nutrition label)
 
-Declare exactly this — it must match `ios/App/App/PrivacyInfo.xcprivacy`, Play Data safety, and the
+Declare exactly this — it must match
+`experiments/native-architecture/ios/Splotch/PrivacyInfo.xcprivacy`, Play Data safety, and the
 privacy policy:
 
 * **User Content → Other User Content**: collected, used for **App Functionality**, **not linked to
@@ -161,7 +162,7 @@ browsing, chat, public sharing, or user-to-user distribution.
 
 Regenerate with `npm run gen:store-assets`. The App Store icon is **not** uploaded separately — App
 Store Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
-(`ios/App/App/Assets.xcassets`).
+(`experiments/native-architecture/ios/Splotch/Images.xcassets`).
 
 ## Kids Category notes (review will check these)
 

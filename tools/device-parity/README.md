@@ -137,7 +137,7 @@ still hold (issue 3083). The base is the `art.splotch.app.dev` app: a plain Rele
 that ID and installs beside the store copy.
 
 ```sh
-# Android: the base APK from `npm run native:android:apk`, which signs with the local debug key;
+# Android: the base APK from `npm run android:apk`, which signs with the local debug key;
 # signing again with that key lets `adb install -r` keep the app's data
 node tools/device-parity/swap-js-bundle.mjs --platform=android --base=<app-release.apk> \
   --bundle=art.splotch.app.dev --keystore=$HOME/.android/debug.keystore \

@@ -12,14 +12,17 @@ import {
 describe('/beta Android facts', () => {
   it('states the Android floor Google Play actually enforces', () => {
     const gradle = readFileSync(
-      new URL('../../../../../android/variables.gradle', import.meta.url),
+      new URL(
+        '../../../../../experiments/native-architecture/android/gradle.properties',
+        import.meta.url
+      ),
       'utf8'
     );
-    const minSdkVersion = Number(gradle.match(/minSdkVersion\s*=\s*(\d+)/)?.[1]);
+    const minSdkVersion = Number(gradle.match(/^android\.minSdkVersion=(\d+)$/m)?.[1]);
 
     expect(
       minSdkVersion,
-      'MIN_ANDROID_API_LEVEL must track android/variables.gradle — and when it moves, ' +
+      "MIN_ANDROID_API_LEVEL must track the React Native Android project's android.minSdkVersion — and when it moves, " +
         'MIN_ANDROID_RELEASE (the platform release name shown to testers) moves with it'
     ).toBe(MIN_ANDROID_API_LEVEL);
   });

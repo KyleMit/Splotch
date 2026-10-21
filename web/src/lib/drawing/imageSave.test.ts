@@ -193,16 +193,12 @@ function sourceFile(path: string): string {
 }
 
 describe('the native access-denied rejection code', () => {
-  it('matches the code both native save paths reject with', async () => {
+  it('matches the code the iOS save path rejects with', async () => {
     const { ACCESS_DENIED_ERROR_CODE } = await import('./imageSave');
-    const android = sourceFile(
-      '../../../../android/app/src/main/java/art/splotch/app/PhotoLibraryPlugin.java'
-    );
     const ios = sourceFile(
       '../../../../node_modules/@capacitor-community/media/ios/Sources/MediaPlugin/MediaPlugin.swift'
     );
 
-    expect(android).toContain(`ERROR_ACCESS_DENIED = "${ACCESS_DENIED_ERROR_CODE}";`);
     expect(ios).toContain(`EC_ACCESS_DENIED = "${ACCESS_DENIED_ERROR_CODE}"`);
     expect(ios).toMatch(
       /func savePhoto[\s\S]*?checkAuthorization\(permission: \.addOnly[\s\S]*?call\.reject\([^)]*EC_ACCESS_DENIED\)/

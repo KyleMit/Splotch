@@ -64,12 +64,6 @@ export const STORE_PAGES: readonly StorePage[] = [
   },
 ];
 
-export function storePage(id: StorePageId): StorePage {
-  const page = STORE_PAGES.find((entry) => entry.id === id);
-  if (!page) throw new Error(`Unknown store page: ${id}`);
-  return page;
-}
-
 // Every page except the composed AI showcase places a live app capture in its
 // frame — the generator captures one, and the frame document loads it from
 // store-assets/captures/.

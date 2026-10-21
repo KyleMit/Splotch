@@ -6,32 +6,19 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 ## Entry points
 
-| Entry point                     | Public command(s)                                                                        |
-| ------------------------------- | ---------------------------------------------------------------------------------------- |
-| `gen-monochrome-icon.mjs`       | `npm run gen:android:assets` — restores monochrome art after Capacitor generation        |
-| `setup-emulator.mjs`            | `npm run android:setup`                                                                  |
-| `run-emulator.mjs`              | `android:boot`, `android:emulator`, `android:live`                                       |
-| `run-gradle.mjs`                | `android:apk`, `android:apk:release`, `android:run`, `android:bundle`, `android:clean`   |
-| `run-on-device.mjs`             | `npm run android:run:device` — installs on the sole attached physical phone (issue 1645) |
-| `run-smoke-test.mjs`            | `npm run test:android`                                                                   |
-| `print-emulator-api-levels.mjs` | Android deploy workflow matrix                                                           |
-| `verify-release-bundle.mjs`     | `npm run android:verify`                                                                 |
-| `open-release-bundle.mjs`       | `npm run android:open`                                                                   |
+| Entry point                     | Public command(s)                                             |
+| ------------------------------- | ------------------------------------------------------------- |
+| `setup-emulator.mjs`            | `npm run android:setup`                                       |
+| `run-emulator.mjs`              | `npm run android:boot`                                        |
+| `run-smoke-test.mjs`            | `npm run test:android`                                        |
+| `print-emulator-api-levels.mjs` | Android deploy workflow matrix                                |
+| `verify-release-bundle.mjs`     | `npm run android:verify`; `android:bundle` runs it on its AAB |
+| `build-accessibility-probe.mjs` | `npm run android:accessibility:build`                         |
 
-`run-emulator.mjs` retains its `boot`, `emulator`, and `live` modes. `run-gradle.mjs` forwards the
-requested tasks to the committed wrapper from the `android/` project directory.
-`android:apk:release` writes `android/app/build/outputs/apk/release/` — `app-release.apk` when
-`keystore.properties` supplies a signing key, otherwise `app-release-unsigned.apk`; the tagged CI
-gate test-signs and boots the signed filename. Bundle release commands write and inspect
-`android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals that containing
-directory without changing it.
-
-`gen-monochrome-icon.mjs` copies the authored VectorDrawable from `assets/icon-monochrome.xml` into
-Android resources and restores both adaptive references. The public command runs Capacitor's asset
-generator first, so regenerate through that command rather than invoking the vendor generator alone.
-Missing source/adaptive files or unexpected XML fail before any resource is written. The monochrome
-restoration requires Node only; full asset generation also needs installed Capacitor assets and
-artwork under `assets/`.
+The release builds (`android:apk`, `android:apk:store`, `android:bundle`) are
+`tools/release/build-native-release.mjs`, which runs the React Native project's Gradle wrapper
+directly. They write under `experiments/native-architecture/android/app/build/outputs/`, and
+`verify-release-bundle.mjs` checks the AAB there by default.
 
 The toolchain requires Node 22+, a full JDK 21, and an Android SDK. Emulator setup additionally
 requires `sdkmanager`, `avdmanager`, `emulator`, and `adb`; the smoke test requires Maestro. Release
@@ -39,16 +26,15 @@ bundle creation requires the ignored signing configuration documented in the mob
 tools, an unavailable emulator, Gradle failures, or an invalid bundle exit nonzero and retain the
 underlying diagnostic output.
 
-Set `ANDROID_HOME` (or the older `ANDROID_SDK_ROOT`) to override the default SDK location,
-`JAVA_HOME` to a full JDK 21 so `verify-release-bundle.mjs` can locate `jarsigner`, and
-`ANDROID_SERIAL` to pick a device when an emulator is also connected.
+Set `ANDROID_HOME` (or the older `ANDROID_SDK_ROOT`) to override the default SDK location, and
+`JAVA_HOME` to a full JDK 21 so `verify-release-bundle.mjs` can locate `jarsigner`.
 
-`lib/android-toolchain.mjs` owns SDK discovery, the current development API level and AVD name,
-Gradle paths, and release artifact paths. `print-emulator-api-levels.mjs` adds the declared Android
-floor from `/beta` to the deploy workflow's matrix without creating a second floor literal. Update
-the current API-level constant together with CI and documentation; the nested config test enforces
-that agreement. Keep Android-only lifecycle code here and cross-platform Maestro or static-export
-behavior at the mobile capability root.
+`lib/android-toolchain.mjs` owns SDK discovery and the current development API level and AVD name.
+`print-emulator-api-levels.mjs` adds the declared Android floor from `/beta` to the deploy
+workflow's matrix without creating a second floor literal. Update the current API-level constant
+together with CI and documentation; the nested config test enforces that agreement. Keep
+Android-only lifecycle code here and cross-platform Maestro or static-export behavior at the mobile
+capability root.
 
 Run focused verification with:
 

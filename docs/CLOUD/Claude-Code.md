@@ -242,10 +242,8 @@ assuming a local pass covers Safari.
 **There is no iOS Simulator in a cloud session, and no way to get one.** CoreSimulator is a macOS
 framework, and running macOS in a VM is closed here: measured on 2026-08-24, the container has no
 `/dev/kvm`, no `vmx`/`svm` CPU flags (it is itself a Firecracker guest, so hardware virtualization
-is not passed through), and no loadable kernel modules, which also rules out Darling. What still
-works: `npm run cap:sync` runs fully on Linux, so a web-layer change can be synced into
-`ios/App/App/public` and inspected as the native tree will receive it. When you need the simulator
-itself (does the Xcode project compile, do the native plugins behave), dispatch
+is not passed through), and no loadable kernel modules, which also rules out Darling. When you need
+the simulator itself (does the Xcode project compile, do the native modules behave), dispatch
 [`ios-deploy.yml`](../../.github/workflows/ios-deploy.yml): it has `workflow_dispatch`, builds and
 boots an iPhone simulator on `macos-latest`, and runs the Maestro smoke, at roughly 13 minutes of
 runner time. A Linux WebKit, if one is ever installed here, is the right engine on the wrong

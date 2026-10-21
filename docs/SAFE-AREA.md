@@ -51,10 +51,11 @@ On Android native, Capacitor SystemBars injects `--safe-area-inset-*`. Those val
 including explicit zero: WebViews before version 140 (or a viewport without `cover`) are padded
 natively and receive zero CSS insets. With WebView 140+ and `viewport-fit=cover`, Capacitor leaves
 system/cutout space to CSS and injects density-independent pixels. The keyboard is padded natively;
-Capacitor injects zero bottom safe area while it is visible. Keep `insetsHandling: "css"` and
-`initialViewportFitValueHint: "cover"` in `capacitor.config.json`; do not add another native inset
-listener or combine the injected and `env()` values. See the installed Capacitor SystemBars source
-and [its configuration reference](https://capacitorjs.com/docs/apis/system-bars).
+Capacitor injects zero bottom safe area while it is visible. The Capacitor config (removed with the
+Capacitor shell) set `insetsHandling: "css"` and `initialViewportFitValueHint: "cover"`; do not add
+another native inset listener or combine the injected and `env()` values. See the installed
+Capacitor SystemBars source and
+[its configuration reference](https://capacitorjs.com/docs/apis/system-bars).
 
 Three tests hold the seam together:
 

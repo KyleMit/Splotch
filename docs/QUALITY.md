@@ -125,12 +125,11 @@ No accounts, no analytics SDKs, no advertising identifiers, no child name, email
 Everything that leaves the device is disclosed in `/privacy` in parent-readable terms, with
 retention stated on both sides - what we keep, and what the provider keeps.
 
-**Backed by.** `requiredNativePageProblems` and `requiredNativePageLinkProblems` in
-`tools/mobile/check-static-bundle.mjs` fail `build:cap` if the privacy page is missing from the
-static export or if nothing in the bundle links to it (ADR-0120). Retention windows are imported
-into the page as constants rather than restated in prose, so the disclosure cannot drift from the
-cleanup that enforces it. ADR-0105 records the app-purpose pseudonym; ADR-0114 records provider
-retention.
+**Backed by.** The Capacitor build's bundle guard (removed with the Capacitor shell) failed the
+build if the privacy page was missing from the static export or if nothing in the bundle linked to
+it (ADR-0120). Retention windows are imported into the page as constants rather than restated in
+prose, so the disclosure cannot drift from the cleanup that enforces it. ADR-0105 records the
+app-purpose pseudonym; ADR-0114 records provider retention.
 
 ## Content Safety
 
@@ -160,8 +159,8 @@ the quality gate, and the `security-review` skill reviews a branch before it shi
 Every store guideline and children's-privacy obligation that shaped this codebase is quoted
 verbatim, answered with the decision that satisfies it, and traceable to the commit where it landed.
 
-**Backed by.** [`MOBILE/compliance.md`](MOBILE/compliance.md) holds the ledger.
-`check-static-bundle.mjs` enforces the privacy-page assertions at build time. The manifest ships no
+**Backed by.** [`MOBILE/compliance.md`](MOBILE/compliance.md) holds the ledger. The Capacitor
+build's bundle guard enforced the privacy-page assertions at build time. The manifest ships no
 identifier from the Play Families prohibited list, requests no location permission, and sets
 `android:allowBackup="false"`. The `mobile` skill carries the kids-compliance checklists.
 
@@ -213,10 +212,9 @@ The native apps behave the same as the web app on every shipped surface, and eve
 version named in [`COMPATIBILITY.md`](COMPATIBILITY.md) runs the current build.
 
 **Backed by.** `browserFloor.test.ts` guards the floor against drift, and `COMPATIBILITY.md` carries
-the per-API risk register. `nativeExcludedRoutes.ts` and `check-static-bundle.mjs` keep server
-routes and native code out of the static export; `android-config.test.mjs` guards native config;
-Maestro smoke runs on both platforms. The `mobile` skill covers the Capacitor build and on-device
-testing.
+the per-API risk register. `nativeExcludedRoutes.ts` keeps server routes and native code out of the
+static export; `android-config.test.mjs` guards native config; Maestro smoke runs on both platforms.
+The `mobile` skill covers the Capacitor build and on-device testing.
 
 ## Documentation
 

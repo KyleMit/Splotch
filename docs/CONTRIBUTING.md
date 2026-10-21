@@ -47,7 +47,7 @@ pnpm install
 npm run dev       # http://localhost:5173
 ```
 
-Two generators run automatically before every build (the `prebuild`/`prebuild:cap` hooks):
+Two generators run automatically before every build (the `prebuild` hook):
 
 * `gen:icon-names` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in
   `web/src/lib/icons/`
@@ -148,23 +148,22 @@ app URL as the `ai_access_token` query param (`AI_ACCESS_TOKEN_PARAM` in
 
 Splotch ships as two distinct build targets from the same source:
 
-| Target             | Command             | Adapter           | Server routes               |
-| ------------------ | ------------------- | ----------------- | --------------------------- |
-| Web (Netlify)      | `npm run build`     | `adapter-netlify` | `/api/*`, `/admin` included |
-| Native (Capacitor) | `npm run build:cap` | `adapter-static`  | excluded (`strict: false`)  |
+| Target                | Command                                        | Adapter           | Server routes                |
+| --------------------- | ---------------------------------------------- | ----------------- | ---------------------------- |
+| Web (Netlify)         | `npm run build`                                | `adapter-netlify` | `/api/*`, `/admin` included  |
+| Native (React Native) | `npm run android:apk`, `npm run ios:simulator` | none (Expo build) | none (the apps call the API) |
 
-The switch is the `CAPACITOR` env var, read by both `web/svelte.config.js` (adapter selection) and
-`web/vite.config.ts` (PWA plugin, `__NATIVE_API_BASE__`).
+The native apps are the React Native app in `experiments/native-architecture`; the mobile guide
+(MOBILE/native.md) covers their toolchain.
 
 ### Repository layout (ADR-0024)
 
 The SvelteKit app lives in **`web/`** (`web/src/`, the Vite/SvelteKit/test configs,
-`web/netlify.toml`, and the `web/build/` output). The Capacitor native projects (`android/`,
-`ios/`), `capacitor.config.json` (`webDir: "web/build"`), the single root
-`package.json`/`node_modules`, and `tools/` stay at the repo root. `npm run dev:netlify` runs
-`netlify dev --cwd web` so netlify-cli's file watcher is scoped to `web/` and never traverses the
-large native trees (the cause of the `EMFILE` crash this layout fixes). All the npm scripts still
-run from the repo root; the web toolchain is dispatched into `web/` by `tools/run-web-tool.mjs`.
+`web/netlify.toml`, and the `web/build/` output). The single root `package.json`/`node_modules` and
+`tools/` stay at the repo root. `npm run dev:netlify` runs `netlify dev --cwd web` so netlify-cli's
+file watcher is scoped to `web/` and never traverses the large native trees (the cause of the
+`EMFILE` crash this layout fixes). All the npm scripts still run from the repo root; the web
+toolchain is dispatched into `web/` by `tools/run-web-tool.mjs`.
 
 > **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the lockfile
 > live). The root `netlify.toml` build command runs `npm run build:site`, which exports the React
@@ -175,12 +174,12 @@ run from the repo root; the web toolchain is dispatched into `web/` by `tools/ru
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
 
-To get the static build into the native projects (full toolchain setup, on-device testing, and the
-store release flow live in the [mobile guide](MOBILE/native.md)):
+To build the native apps (full toolchain setup, on-device testing, and the store release flow live
+in the [mobile guide](MOBILE/native.md)):
 
 ```bash
-npm run cap:sync       # static build + copy into the native projects
-npm run cap:android    # also open the Android project in Android Studio
+npm run android:apk    # React Native .dev Release APK
+npm run ios:simulator  # unsigned Release simulator app (macOS-only)
 ```
 
 ### Deployment

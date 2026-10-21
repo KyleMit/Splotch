@@ -1,12 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   MIN_ANDROID_API_LEVEL,
   MIN_ANDROID_RELEASE,
 } from '../../../../web/src/lib/components/beta/androidBeta.ts';
-import { themes } from '../../../../web/src/lib/design/tokens.ts';
 import { jobBlock, runScriptIn, stepBlock } from '../../../ci-mirror/tests/workflow-job-steps.mjs';
+import { ANDROID_PROJECT_DIR } from '../../../release/lib/native-app.mjs';
 import { CURRENT_ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
 import {
   androidEmulatorApiLevels,
@@ -175,7 +176,7 @@ describe('Android emulator API levels', () => {
 });
 
 const GRADLE_MIN_SDK = Number(
-  read('android/variables.gradle').match(/^\s*minSdkVersion = (\d+)$/m)[1]
+  read(join(ANDROID_PROJECT_DIR, 'gradle.properties')).match(/^android\.minSdkVersion=(\d+)$/m)[1]
 );
 
 // The human release name each installable floor shipped as. Extend when
@@ -212,7 +213,7 @@ const SUPPORT_FLOOR_CLAIMS = [
   [
     'enforcement table value',
     'docs/COMPATIBILITY.md',
-    /\|\s+Native Android min SDK\s+\|\s+`android\/variables\.gradle` → `minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
+    /\|\s+Native Android min SDK\s+\|\s+`experiments\/native-architecture\/android\/gradle\.properties` → `android\.minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
   ],
   [
     'floor-validation CI claim',
@@ -255,9 +256,11 @@ describe('Android support floor single source', () => {
 });
 
 describe('Android manifest kids-compliance', () => {
+  const manifest = read(join(ANDROID_PROJECT_DIR, 'app', 'src', 'main', 'AndroidManifest.xml'));
+
   it('matches the reviewed permission inventory', () => {
-    const manifest = read('android/app/src/main/AndroidManifest.xml');
     const permissions = [...manifest.matchAll(/<uses-permission\b([^>]*?)\/?>/g)]
+      .filter(([, attributes]) => !/tools:node="remove"/.test(attributes))
       .map(([, attributes]) => ({
         name: attributes.match(/android:name="([^"]+)"/)?.[1],
         maxSdkVersion: Number(attributes.match(/android:maxSdkVersion="(\d+)"/)?.[1]) || null,
@@ -271,58 +274,8 @@ describe('Android manifest kids-compliance', () => {
   });
 
   it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
-    const manifest = read('android/app/src/main/AndroidManifest.xml');
     expect(manifest).toContain('android:allowBackup="false"');
     expect(manifest).not.toContain('android:dataExtractionRules');
     expect(manifest).not.toContain('android:fullBackupContent');
-  });
-});
-
-describe('Android native theme backgrounds', () => {
-  const colorValue = (path) => {
-    const match = read(path).match(/<color name="app_background">(#[0-9a-f]+)<\/color>/i);
-    expect(match).not.toBeNull();
-    return match[1].toLowerCase();
-  };
-
-  it('sets the AppCompat background used before the web view paints', () => {
-    const styles = read('android/app/src/main/res/values/styles.xml');
-    expect(styles).toMatch(
-      /<style name="AppTheme\.Base" parent="Theme\.AppCompat\.DayNight\.NoActionBar">[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<\/style>/
-    );
-  });
-
-  it('keeps Capacitor BridgeActivity on the DayNight app theme', () => {
-    const styles = read('android/app/src/main/res/values/styles.xml');
-    expect(styles).toMatch(/<style name="AppTheme\.NoActionBar" parent="AppTheme"\s*\/>/);
-  });
-
-  it('keeps API 24–28 on the base theme without the API 29 framework attribute', () => {
-    const styles = read('android/app/src/main/res/values/styles.xml');
-    expect(styles).toMatch(/<style name="AppTheme" parent="AppTheme\.Base"\s*\/>/);
-    expect(styles).not.toContain('android:isLightTheme');
-  });
-
-  it('varies API 29+ WebView theme detection through one day/night boolean resource', () => {
-    const styles = read('android/app/src/main/res/values-v29/styles.xml');
-    expect(styles).toMatch(
-      /<style name="AppTheme" parent="AppTheme\.Base">[\s\S]*?<item name="android:isLightTheme">@bool\/app_theme_is_light<\/item>[\s\S]*?<\/style>/
-    );
-    expect(styles).not.toMatch(/tools:(?:targetApi|ignore)/);
-    expect(read('android/app/src/main/res/values/bools.xml')).toContain(
-      '<bool name="app_theme_is_light">true</bool>'
-    );
-    expect(read('android/app/src/main/res/values-night/bools.xml')).toContain(
-      '<bool name="app_theme_is_light">false</bool>'
-    );
-  });
-
-  it('matches the web app background in both themes', () => {
-    expect(colorValue('android/app/src/main/res/values/colors.xml')).toBe(
-      themes.light.appBg.toLowerCase()
-    );
-    expect(colorValue('android/app/src/main/res/values-night/colors.xml')).toBe(
-      themes.dark.appBg.toLowerCase()
-    );
   });
 });

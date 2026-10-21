@@ -405,7 +405,7 @@ production.
 handlers; PRs #2387, #2406). The job-id format, owned by `isJobId` (PR #2393). Privacy-policy claims
 against the purge functions' schedules (`IMAGE_REPORT_REVIEW_HOURS`;
 `tools/mobile/tests/privacy-consistency.test.mjs`; PR #2411). Native plugin names and registrations
-(`web/src/lib/plugins/registration.test.ts`, PR #2402), and since PR #2436 the fields each native
+(PR #2402, a guard removed with the Capacitor shell), and since PR #2436 the fields each native
 method resolves. The verify-key and verify-access-code request bodies (`VerifyKeyRequestBody`,
 `VerifyAccessCodeRequestBody` in `web/src/lib/ai/keyFormat.ts`, sent through both real handlers by
 `web/src/lib/ai/verifyCredential.wire.test.ts`; PR #2432). The privacy policy's "Last updated" date
@@ -509,10 +509,9 @@ to `web/src/lib/installationId.ts` and pinned the count. A native-only import be
 `__IS_CAPACITOR__` can do the same to the native build while the web count holds; a reviewer found
 one on PR #2406, and PR #2418 pinned the native count too.
 
-**Enforcement.** `STARTUP_MODULEPRELOAD_COUNT` and `NATIVE_STARTUP_MODULEPRELOAD_COUNT` in
-`tools/check-bundle-budgets.mjs` are exact, two-sided pins enforced by `npm run build` and
-`npm run build:cap` on the release build; a change in either direction fails and asks for the
-constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes, and
+**Enforcement.** `STARTUP_MODULEPRELOAD_COUNT` in `tools/check-bundle-budgets.mjs` is an exact,
+two-sided pin enforced by `npm run build` on the release build; a change in either direction fails
+and asks for the constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes, and
 `web/tests/startup-bundle.spec.ts` pins which modules load at startup, including
 `STARTUP_REQUIRED_MARKERS` for a module that must stay eager (the install prompt's listener, PR
 #2428). ADR-0032's 2026-09 amendments record the reasoning.

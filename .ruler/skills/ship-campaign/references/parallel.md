@@ -130,9 +130,9 @@ gate them itself instead of resuming each worker:
    join the trial; admission already keeps their file sets and contracts disjoint from each other.
 2. In a scratch worktree at that `origin/main`, merge the joining heads, then run `npm run check`,
    `npm run lint`, and `npm run test:browserless` once, plus what each PR's own gate needs beyond
-   that tier: its targeted tests (Playwright specs included), and `npm run build` and
-   `npm run build:cap` when it touched a startup module. A PR whose coverage the trial can't give is
-   left out and resumes its worker instead.
+   that tier: its targeted tests (Playwright specs included), and `npm run build` when it touched a
+   startup module. A PR whose coverage the trial can't give is left out and resumes its worker
+   instead.
 
    Reuse a trial worktree only after `git merge --abort` (when a merge is in progress) and
    `git reset --hard`. Before the gate, check that the trial's changed files

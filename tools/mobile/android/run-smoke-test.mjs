@@ -7,7 +7,7 @@
 // adb gets `-s` and Maestro gets `--device`. An emulator that is already open,
 // or a phone that is plugged in, is never driven, installed to, or shut down.
 //
-// The APK is the .dev Release build (`native:android:apk`), signed with the
+// The APK is the .dev Release build (`android:apk`), signed with the
 // local debug key. The deploy workflow smokes the store identity instead, which
 // signs with whatever key keystore.properties names: on its runner a throwaway
 // key, but on a developer's machine either the real upload key or nothing, and

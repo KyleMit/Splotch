@@ -7,16 +7,21 @@ works, what runs offline vs. online, storage, the privacy/data posture stores as
 store-listing assets, and cross-platform follow-ups. For platform-specific build/test/release steps
 see **[android.md](android.md)** and **[ios.md](ios.md)**.
 
-> Both platforms are active: the `android/` and `ios/` projects live in the repo. Android
-> development works on macOS or Linux; iOS builds require macOS + Xcode.
+> Both platforms are active: the React Native `android/` and `ios/` projects live in
+> `experiments/native-architecture`. Android development works on macOS or Linux; iOS builds require
+> macOS + Xcode.
 
 The store release builds the React Native app in `experiments/native-architecture`, under the
-shipping identity `art.splotch.app` (the `native:*` release scripts in
+shipping identity `art.splotch.app` (the `android:*` and `ios:*` release scripts in
 [android.md](android.md#react-native-store-build) and [ios.md](ios.md#react-native-store-build)).
 Every other build of it is `art.splotch.app.dev`. Its `DEVELOPMENT.md` covers development builds and
 how to check a JS-only change on a device without a native rebuild.
 
 ## 1. How the native build works
+
+> The Capacitor shell this section describes (static export, `cap sync`, app-local plugins) was
+> removed with the Capacitor projects (ADR-0182); the React Native app replaces it. The section
+> stays until the guide is rewritten.
 
 Splotch is a SvelteKit app. For the web it builds with `adapter-netlify` (SSR + the
 `/api/generate-image` serverless function + the `/admin` console). The native apps can't run a
@@ -33,10 +38,8 @@ server, so they build a **fully static** export instead:
   token-minting console is exactly the shape Play's Deceptive Behavior policy and App Review 2.3.1
   are written against, and worse in an app declared for a children's audience.
 * Routes that must not reach the bundle at all are listed in `web/nativeExcludedRoutes.ts`, whose
-  Vite plugin blanks their module source at build time; `tools/mobile/check-static-bundle.mjs` scans
-  the built output and fails `build:cap` if a forbidden host or web-only boot-service marker
-  survives. A route's `prerender` flag alone drops only its HTML — the JS chunk, and every string in
-  it, still ships.
+  Vite plugin blanks their module source at build time. A route's `prerender` flag alone drops only
+  its HTML — the JS chunk, and every string in it, still ships.
 
 ### Offline vs. online
 
@@ -127,7 +130,7 @@ itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-o
     required).
   * `MainViewController.swift` — subclass `CAPBridgeViewController` and override
     `capacitorDidLoad()` to call `bridge?.registerPluginInstance(DeviceLockPlugin())`. Then point
-    the root VC at it in `ios/App/App/Base.lproj/Main.storyboard`
+    the root VC at it in the App target's main storyboard
     (`customClass="MainViewController" customModule="App" customModuleProvider="target"`).
     `capacitorDidLoad()` runs right after the bridge is created, before the web view loads.
   * Do **not** use the legacy Obj-C `CAP_PLUGIN` macro `.m` for an app-local plugin — its
@@ -144,14 +147,10 @@ itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-o
   only behind `__IS_CAPACITOR__` (`lazyPluginModule()` or a gated inline `import()`). It needs no
   `web` fallback: Capacitor uses one only on the `web` platform, and the shipped app calls a local
   plugin only inside the native shells. The caller's own `catch` handles a native call that fails.
-* Guard — add the plugin to the table in `web/src/lib/plugins/registration.test.ts`. It fails until
-  the JS name, each platform's registration, the iOS Compile Sources entry, the native method names,
-  and the field names each method resolves with agree with the facade; without it, a mismatch
-  surfaces only on a device, as `"<name>" plugin is not implemented` or a result field that reads as
-  `undefined`. It reads a Java payload by following each `resolve(…)` through the class's own
-  methods to the `put` calls on the resolved variable (a helper it follows needs exactly one
-  `return`), and a Swift payload as the dictionary literal inside a `resolve(…)` in the method's own
-  body.
+* Guard — none remains: the table test that compared each facade with the native sources was removed
+  with the Capacitor shell, so a mismatch in the JS name, a platform's registration, the iOS Compile
+  Sources entry, the native method names, or the field names a method resolves with surfaces only on
+  a device, as `"<name>" plugin is not implemented` or a result field that reads as `undefined`.
 
 A second local plugin, **`PencilEraser`** (ADR-0028, iOS-only), shows the **event-emitting** variant
 and how to **attach a UIKit interaction to the web view**: the Apple Pencil double-tap
@@ -169,8 +168,8 @@ Eraser (`actionControlShown('eraserEnabled')`, which also honours the Tool Drawe
 shows that toggle only once `applePencilSeen` is set, so it appears solely on pencil-capable
 devices.
 
-Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`); `cap:sync`
-alone won't compile/register the new Swift/Java classes.
+Adding native plugin code needs a **fresh native build**; syncing the web assets alone won't
+compile/register the new Swift/Java classes.
 
 ### Screen orientation
 
@@ -189,8 +188,8 @@ beat the OS toggle; it maps `unlock()` to `SCREEN_ORIENTATION_USER` and `lock('a
 `FULL_USER`, and only those two defer to it. So on the web it is Auto alone that no-ops with
 Auto-Rotate off, which is why every non-Android target captions the Settings picker to say Auto
 follows the device setting (`autoOrientationOverridesSystemLock`). The branch is keyed on
-`isNative()` (ADR-0013). Adding/removing this plugin requires a fresh native build — `cap:sync`
-alone won't register it.
+`isNative()` (ADR-0013). Adding/removing this plugin requires a fresh native build — syncing the web
+assets alone won't register it.
 
 ### Data & privacy posture (important for store forms)
 
@@ -222,37 +221,13 @@ the platform checklists.
   `Pictures/Splotch` folder on Android that belongs to the photo library, so saved drawings survive
   uninstalling the app.
 
-## 2. Shared web-asset / sync commands
+## 2. Native projects
 
-These produce the static web bundle and copy it into both native projects; the platform-specific
-Gradle/Xcode commands build on top of them (see the platform files).
-
-```bash
-npm run build:cap     # static build into build/ (CAPACITOR=true)
-npm run cap:sync      # build:cap + copy web assets & plugins into native projects
-npm run cap:android   # cap:sync + open the Android project in Android Studio
-npm run cap:ios       # cap:sync + open the iOS project in Xcode (macOS-only)
-```
-
-Regenerate launcher icons / splash after changing artwork in `assets/`:
-
-```bash
-npm run gen:android:assets
-npx @capacitor/assets generate --ios
-```
-
-The Android command restores the monochrome layer after Capacitor regenerates the ordinary color
-icons and splash. Edit `assets/icon-monochrome.xml` for the themed launcher artwork: it is a 108dp
-VectorDrawable traced from the smiling S in `assets/icon.png`, with transparent eyes and smile. Its
-centered 48 × 65.5dp silhouette fits within the 66dp circular safe area. The generator copies that
-source to `android/app/src/main/res/drawable/ic_launcher_monochrome.xml` and references it from both
-adaptive icon definitions. Android 13+ themed icons depend on the user's setting and launcher
-support; ordinary color and pre-adaptive launcher icons use their existing artwork.
-
-The React Native app in `experiments/native-architecture` ships byte-for-byte copies of these
-launcher, splash, and launch-screen files. After regenerating, run
-`node tools/migration/gen-native-branding.mjs` to refresh them;
-`tools/tests/native-branding.test.mjs` fails until the copies match.
+The Capacitor sync pipeline (`build:cap`, `cap:sync`) is gone with the Capacitor projects; the React
+Native app in `experiments/native-architecture` builds its own native projects (see
+[android.md](android.md) and [ios.md](ios.md)). Its launcher, splash, and launch-screen files are
+committed under its `android/` and `ios/` projects, and the themed Android launcher artwork is the
+108dp VectorDrawable `assets/icon-monochrome.xml` traced from the smiling S in `assets/icon.png`.
 
 ## 3. Store listing assets & copywriting (both stores)
 
@@ -304,14 +279,15 @@ The shared baseline both depend on:
       feedback, and the confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
-      `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` and guarded by the
-      privacy-permission inventory; the Android runtime prompt is system-worded.
+      `NSPhotoLibraryAddUsageDescription` is set in
+      `experiments/native-architecture/ios/Splotch/Info.plist` and guarded by the privacy-permission
+      inventory; the Android runtime prompt is system-worded.
 
 ## 5. Known follow-ups / nice-to-haves (cross-platform)
 
 * [ ] **Final hi-res app icon** (placeholder is upscaled from 512px) — produce a crisp **1024×1024**
-      source at `assets/icon.png` (and tune `assets/splash.png`), then rerun
-      `npm run gen:android:assets` and `npx @capacitor/assets generate --ios`.
+      source at `assets/icon.png` (and tune `assets/splash.png`), then replace the launcher icons
+      and splash in both native projects.
 * [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
       **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
       link opens the app and applies the token automatically.
@@ -352,11 +328,9 @@ canonical ledger for what each row proves and what it leaves uncovered.
 > getting it to the store is a hands-on step today.
 
 * **Android** — `npm run android:bundle` → `app-release.aab`, then upload it in the **Play Console
-  web UI** (drag the `.aab` into a release on a track). `npm run android:open` reveals the output
-  folder.
-* **iOS** — `npm run ios:ipa` → `App.ipa`, then drag it into the **Transporter** app (free, Mac App
-  Store) and hit Deliver. `npm run ios:open` reveals the output folder. (Xcode → Organizer →
-  Distribute App is the GUI alternative.)
+  web UI** (drag the `.aab` into a release on a track).
+* **iOS** — `npm run ios:ipa` → `Splotch.ipa`, then drag it into the **Transporter** app (free, Mac
+  App Store) and hit Deliver. (Xcode → Organizer → Distribute App is the GUI alternative.)
 
 For a solo project shipping infrequently this is fine — you're already in both consoles doing the
 listing/compliance work, and the GUIs give the clearest validation feedback. Automate only when the
@@ -381,8 +355,8 @@ When release cadence justifies automating, set it up roughly as:
      push `App.ipa` **plus** `fastlane/metadata/en-US/`.
    * **Android** — build via `npm run android:bundle`, then `upload_to_play_store` (supply) to push
      `app-release.aab` **plus** `fastlane/metadata/android/en-US/`.
-4. **Credentials** (gitignored, same posture as `ios/local.xcconfig` and
-   `android/keystore.properties`):
+4. **Credentials** (gitignored, same posture as `experiments/native-architecture/ios/local.xcconfig`
+   and `experiments/native-architecture/android/keystore.properties`):
    * iOS — an **App Store Connect API key** (`.p8` + Key ID + Issuer ID), App Manager role.
    * Android — a **Google Cloud service-account JSON**, granted release permission in Play Console →
      Users & permissions.

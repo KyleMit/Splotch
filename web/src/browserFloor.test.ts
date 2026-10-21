@@ -11,7 +11,10 @@ import { BROWSER_TARGETS } from '../browserTargets';
 // the floor must stay <= the deployment target (docs/COMPATIBILITY.md).
 
 const pbxproj = readFileSync(
-  new URL('../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url),
+  new URL(
+    '../../experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj',
+    import.meta.url
+  ),
   'utf8'
 );
 const deploymentTargets = [
