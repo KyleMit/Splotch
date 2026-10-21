@@ -13,4 +13,6 @@ export const FEEDBACK_PAGE_COPY = {
     "A real person reads every one of these. There's no account attached to it, so we can't write back directly, but every report is reviewed.",
   sentStatus: 'Your report was sent.',
   sendAnother: 'Send another',
+  needsScript:
+    'Sending feedback needs JavaScript. Turn it on in your browser, then reload this page to send a report.',
 } as const;

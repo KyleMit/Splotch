@@ -393,4 +393,9 @@ it('keeps the standalone Feedback hero and next steps from the shipping route', 
   expect(read('web/src/routes/feedback/+page.svelte')).toContain(
     `feature: '${REPORT_FORM_COPY.sendIdea}'`
   );
+  expect(source).toContain(REPORT_FORM_COPY.emailFallbackLead.trim());
+  expect(source).toContain(REPORT_FORM_COPY.emailFallbackTail.trim());
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(
+    `encodeURIComponent('${REPORT_FORM_COPY.emailSubject}')`
+  );
 });

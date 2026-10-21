@@ -12,6 +12,17 @@ it('names the text every page document must read without JavaScript', () => {
   expect(privacy.heading).toBe('Privacy policy');
   expect(privacy.text.length).toBeGreaterThan(1);
   expect(privacy.outsideLinks.length).toBeGreaterThan(0);
+  const feedback = PAGE_TEXT_WITHOUT_JS.feedback();
+  expect(feedback.heading).toBe('Send us feedback');
+  expect(feedback.text).toContain(
+    'Sending feedback needs JavaScript. Turn it on in your browser, then reload this page to send a report.'
+  );
+  expect(feedback.hiddenText).toEqual([
+    "Something's broken",
+    'I have an idea',
+    "Your report goes to our private support tracker. Please don't include personal details like names or email addresses.",
+    'Send report',
+  ]);
 });
 
 describe('without JavaScript', () => {
@@ -47,6 +58,19 @@ describe('without JavaScript', () => {
     expect(problems({ text: 'Splotch is a drawing app' })[0]).toContain(
       'does not name the address of'
     );
+  });
+
+  it('rejects a control shown that cannot work without JavaScript', () => {
+    const form = { ...expected, outsideLinks: [], hiddenText: ['Send report'] };
+    expect(pageWithoutJsProblems('feedback.html', 'phone-light', form, read)).toEqual([]);
+    expect(
+      pageWithoutJsProblems('feedback.html', 'phone-light', form, {
+        ...read,
+        text: `${read.text} Send report`,
+      })
+    ).toEqual([
+      'feedback.html (phone-light, JavaScript off) shows what cannot work without JavaScript: Send report',
+    ]);
   });
 });
 
