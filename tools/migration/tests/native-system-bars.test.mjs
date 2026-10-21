@@ -3,10 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
 
-const shipping = {
-  activity: read('android/app/src/main/java/art/splotch/app/MainActivity.java'),
-  manifest: read('android/app/src/main/AndroidManifest.xml'),
-};
 const candidate = {
   activity: read(
     'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainActivity.kt'
@@ -29,17 +25,12 @@ function backInvokedOptIn(manifest) {
 }
 
 describe('the Android system bars', () => {
-  it('lays the window out edge to edge, as shipping enables AndroidX edge-to-edge', () => {
-    expect(shipping.activity).toContain('WindowCompat.enableEdgeToEdge(getWindow());');
+  it('lays the window out edge to edge', () => {
     expect(candidate.gradle).toMatch(/^edgeToEdgeEnabled=true$/m);
   });
 
   it('hides the navigation bar at start and again whenever the window regains focus', () => {
-    expect(method(shipping.activity, 'public void onCreate(')).toContain('hideNavigationBar();');
     expect(method(candidate.activity, 'override fun onCreate(')).toContain('hideNavigationBar()');
-    expect(method(shipping.activity, 'public void onWindowFocusChanged(')).toMatch(
-      /if \(hasFocus\)\s*\{\s*hideNavigationBar\(\);/
-    );
     expect(method(candidate.activity, 'override fun onWindowFocusChanged(')).toMatch(
       /if \(hasFocus\) hideNavigationBar\(\)/
     );
@@ -49,18 +40,15 @@ describe('the Android system bars', () => {
   // back gesture while the bar is hidden under this behaviour, so the Clear bin overhanging the
   // right edge starts a clear instead of asking to leave.
   it('hides only the navigation bar, revealed for a moment by a swipe', () => {
-    const shippingHide = method(shipping.activity, 'private void hideNavigationBar(');
-    const candidateHide = method(candidate.activity, 'private fun hideNavigationBar(');
-    for (const hide of [shippingHide, candidateHide]) {
-      expect(hide).toContain('hide(WindowInsetsCompat.Type.navigationBars())');
-      expect(hide).toContain('WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE');
-      expect(hide).not.toContain('systemBars()');
-    }
+    const hide = method(candidate.activity, 'private fun hideNavigationBar(');
+    expect(hide).toContain('hide(WindowInsetsCompat.Type.navigationBars())');
+    expect(hide).toContain('WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE');
+    expect(hide).not.toContain('systemBars()');
   });
 
   // ADR-0165: the AndroidX dispatcher runs the same Back callback with or without the manifest
-  // opt-in, so shipping leaves it out and logs the platform's not-enabled warning.
-  it("keeps shipping's predictive-back manifest setting", () => {
-    expect(backInvokedOptIn(candidate.manifest)).toBe(backInvokedOptIn(shipping.manifest));
+  // opt-in, so the manifest leaves it out and the platform logs its not-enabled warning.
+  it('leaves the predictive-back manifest opt-in out', () => {
+    expect(backInvokedOptIn(candidate.manifest)).toBeNull();
   });
 });

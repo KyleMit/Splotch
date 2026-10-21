@@ -1,26 +1,23 @@
 # iOS tooling
 
-This sub-capability owns the repository wrappers that run the iOS simulator smoke and reveal built
-App Store artifacts. The remaining Xcode Debug/Release simulator builds, run, archive, export,
-live-reload, and clean commands stay inline in `package.json`, as documented in
-[`docs/MOBILE/ios.md`](../../../docs/MOBILE/ios.md).
+This sub-capability owns the repository wrapper that runs the iOS simulator smoke. The release
+builds (`ios:simulator`, `ios:archive`, `ios:ipa`) are `tools/release/build-native-release.mjs`, as
+documented in [`docs/MOBILE/ios.md`](../../../docs/MOBILE/ios.md).
 
 ## Entry points
 
-| Entry point                    | Public command                       | Purpose                                         |
-| ------------------------------ | ------------------------------------ | ----------------------------------------------- |
-| `run-simulator-smoke-test.mjs` | `npm run test:ios [-- --skip-build]` | Build, install, and smoke an iOS simulator      |
-| `open-release-artifacts.mjs`   | `npm run ios:open`                   | Reveal `ios/App/build/ipa/` in the file manager |
-| `run-on-device.mjs`            | `npm run ios:run:device`             | `cap run ios` on the sole attached device       |
+| Entry point                    | Public command                       | Purpose                                    |
+| ------------------------------ | ------------------------------------ | ------------------------------------------ |
+| `run-simulator-smoke-test.mjs` | `npm run test:ios [-- --skip-build]` | Build, install, and smoke an iOS simulator |
 
 The smoke runner requires macOS, full Xcode with an available iPhone simulator, installed project
 dependencies, CocoaPods, and Maestro. It builds the React Native app's store-identity Release
-simulator app (`npm run native:ios:simulator`), then boots a shut-down iPhone on the newest runtime,
+simulator app (`npm run ios:simulator`), then boots a shut-down iPhone on the newest runtime,
 installs that app, runs the shared smoke flow, and shuts that simulator down. A simulator someone
 else booted is never reused, installed to, or shut down: with every iPhone booted, the runner fails
 instead. Toolchain, build, install, Maestro, and simulator errors exit nonzero after cleanup. Pass
-`--skip-build` only when an immediately preceding `native:ios:simulator` built the app; the tagged
-deploy workflow uses it so its build step and its smoke install the same app.
+`--skip-build` only when an immediately preceding `ios:simulator` built the app; the tagged deploy
+workflow uses it so its build step and its smoke install the same app.
 
 On a Maestro failure, the runner relaunches the same installed app briefly with its console
 attached, writing `~/.maestro/tests/ios-app-relaunch.log` before simulator teardown. This is

@@ -40,7 +40,7 @@ readability or maintainability — for humans, and especially for agents.** In p
 * **Performance veto.** Nothing adds work to the startup path or the per-pointer drawing hot path.
   The release builds pin the startup modulepreload count exactly, for web and native, so an
   accidental new startup chunk fails the build. A unit that touches a startup module runs
-  `npm run build` and `npm run build:cap` and reports both counts and the byte deltas.
+  `npm run build` and reports the count and the byte delta.
 * **Verify first.** An audit finding is a claim. The implementer re-checks it against current code,
   checks `docs/audit-deferred/decisions/`, and ships nothing if it is wrong or already fixed.
 * **Anything a parent or child sees is the user's call.** Copy, visible behaviour, and legal or

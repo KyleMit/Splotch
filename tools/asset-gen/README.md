@@ -212,9 +212,9 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 * **Committed outputs:** canonical page SVG line art, `*.light.webp` / `*.night.webp` fills, cover
   `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails, canonical cover SVG masters used only by the
   pipeline, and `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
-  `web/static/coloring/max-{edge}px/`; `build:cap` strips those directories so native keeps one
-  canonical runtime width. Page or cover regeneration stages uncommitted `.source.webp` inputs under
-  `vectorized/coloring-{,dark-}overlays/` for the paid vector workflow.
+  `web/static/coloring/max-{edge}px/`; the Capacitor build stripped those directories so native kept
+  one canonical runtime width. Page or cover regeneration stages uncommitted `.source.webp` inputs
+  under `vectorized/coloring-{,dark-}overlays/` for the paid vector workflow.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/asset-paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`.
   (The gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the

@@ -28,7 +28,7 @@ function permissions(source) {
 }
 
 describe('Android manifest permissions', () => {
-  it('requests network access and shipping legacy writes while removing media read grants', () => {
+  it('requests network access and legacy writes while removing media read grants', () => {
     expect(manifest).toContain('xmlns:tools="http://schemas.android.com/tools"');
     expect(permissions(manifest)).toEqual([
       { name: 'android.permission.INTERNET', removed: false, limited: false },
@@ -39,7 +39,7 @@ describe('Android manifest permissions', () => {
     ]);
   });
 
-  it('limits the legacy write grant to shipping API28 and removes every other media permission', () => {
+  it('limits the legacy write grant to API 28 and removes every other media permission', () => {
     const declared = permissions(mediaLibraryManifest).map(({ name }) => name);
     expect(declared).toContain('android.permission.READ_EXTERNAL_STORAGE');
     const removed = permissions(manifest)
@@ -54,12 +54,7 @@ describe('Android manifest permissions', () => {
       source.match(
         /<uses-permission\b[^>]*android:name="android.permission.WRITE_EXTERNAL_STORAGE"[^>]*android:maxSdkVersion="(\d+)"[^>]*\/>/
       )?.[1];
-    const shipping = readFileSync(
-      new URL('../../../android/app/src/main/AndroidManifest.xml', import.meta.url),
-      'utf8'
-    );
-    expect(writeVersion(shipping)).toBe('28');
-    expect(writeVersion(manifest)).toBe(writeVersion(shipping));
+    expect(writeVersion(manifest)).toBe('28');
   });
 
   it('allows no cleartext traffic or package visibility queries', () => {

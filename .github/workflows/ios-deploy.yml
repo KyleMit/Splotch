@@ -53,7 +53,7 @@ jobs:
           key: cocoapods-${{ runner.os }}-${{ hashFiles('experiments/native-architecture/ios/Podfile.lock') }}
 
       - name: Build iOS Release simulator app
-        run: npm run native:ios:simulator
+        run: npm run ios:simulator
 
       - uses: ./.github/actions/install-maestro
 

@@ -22,8 +22,8 @@ that touches a native input, in a path-filtered workflow nothing waits on.
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL       |
 | Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (RN web export)            |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (RN web export)            |
-| Build (Android)       | Gradle Release APK  | `npm run native:android:apk`           | PRs touching the RN app (path-filtered)    |
-| Build (iOS)           | xcodebuild          | `npm run native:ios:simulator`         | PRs touching the RN app (macOS runner)     |
+| Build (Android)       | Gradle Release APK  | `npm run android:apk`                  | PRs touching the RN app (path-filtered)    |
+| Build (iOS)           | xcodebuild          | `npm run ios:simulator`                | PRs touching the RN app (macOS runner)     |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`                 | **tagged releases only** (API 33 + API 24) |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                     | **tagged releases only** (macOS runner)    |
 
@@ -845,11 +845,11 @@ npm run test:android:device   # run against the store-identity app on an emulato
 npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
-| Script                | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: builds the `.dev` Release APK (`native:android:apk`), boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`) on a console port no other emulator holds, installs the APK with `adb -s`, runs Maestro against `art.splotch.app.dev`, and **always** kills that emulator afterward — even on failure. It smokes `.dev` because a store-identity APK signs with whatever key `keystore.properties` names, which locally is the upload key or nothing; the flow runs from a copy whose only change is its `appId`. |
-| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected, for the store-identity app (`art.splotch.app`). Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                                                                                                                                                                                                                                           |
-| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: builds the store-identity Release simulator app (`native:ios:simulator`), boots a shut-down iPhone simulator on the newest runtime — never one someone else booted — installs via `simctl`, runs the same Maestro flow, and shuts that simulator down. `--skip-build` installs the app an earlier `native:ios:simulator` built. No signing required.                                                                                                                                                                  |
+| Script                | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: builds the `.dev` Release APK (`android:apk`), boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`) on a console port no other emulator holds, installs the APK with `adb -s`, runs Maestro against `art.splotch.app.dev`, and **always** kills that emulator afterward — even on failure. It smokes `.dev` because a store-identity APK signs with whatever key `keystore.properties` names, which locally is the upload key or nothing; the flow runs from a copy whose only change is its `appId`. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected, for the store-identity app (`art.splotch.app`). Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                                                                                                                                                                                                                                    |
+| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: builds the store-identity Release simulator app (`ios:simulator`), boots a shut-down iPhone simulator on the newest runtime — never one someone else booted — installs via `simctl`, runs the same Maestro flow, and shuts that simulator down. `--skip-build` installs the app an earlier `ios:simulator` built. No signing required.                                                                                                                                                                         |
 
 > The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
@@ -902,7 +902,7 @@ npm run test:android
 
 # Fast iteration — boot once, install the store-identity APK, run many times:
 npm run android:boot            # boot the AVD
-npm run native:android:apk:store  # needs experiments/native-architecture/android/keystore.properties
+npm run android:apk:store  # needs experiments/native-architecture/android/keystore.properties
 adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 npm run test:android:device     # re-run as often as you like
 ```
@@ -968,12 +968,12 @@ the app imports from outside its own tree, falls outside it. The shared `web/src
 `web/static` trees the bundle imports from are left out on purpose: the Quality job type-checks the
 app against them on every PR, and including them would spend macOS minutes on most web-tree PRs. A
 match costs runner minutes, not merge wall clock. Both jobs are Release builds, so each also bundles
-the JavaScript as the store build embeds it. Android builds the `.dev` Release APK
-(`native:android:apk`) for one ABI, set through `ORG_GRADLE_PROJECT_reactNativeArchitectures`; the
-tagged smoke builds all four. iOS builds `native:ios:simulator` — `pod install`, then the unsigned
-store-identity Release build for the simulator, for the runner's architecture only — the same app
-the iOS deploy smoke installs. Neither job is required by a branch rule. ADR-0008's 2026-09-28
-amendment records the Capacitor-era jobs' measured wall time against the slowest `test.yml` job.
+the JavaScript as the store build embeds it. Android builds the `.dev` Release APK (`android:apk`)
+for one ABI, set through `ORG_GRADLE_PROJECT_reactNativeArchitectures`; the tagged smoke builds all
+four. iOS builds `ios:simulator` — `pod install`, then the unsigned store-identity Release build for
+the simulator, for the runner's architecture only — the same app the iOS deploy smoke installs.
+Neither job is required by a branch rule. ADR-0008's 2026-09-28 amendment records the Capacitor-era
+jobs' measured wall time against the slowest `test.yml` job.
 
 A timing failure is not product evidence until it is causal. Compare the failing head and its exact
 base with the same command and runner class; for noisy gates, use repeated or interleaved runs. If
@@ -985,15 +985,15 @@ The native smoke workflows are deliberately tag-only — an emulator/simulator j
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
 The Android workflow runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
 runners hit an HVF init failure). Its build job generates a disposable test key, builds the React
-Native app's **Release** APK once under the store identity (`native:android:apk:store`), with R8 and
+Native app's **Release** APK once under the store identity (`android:apk:store`), with R8 and
 resource shrinking, and uploads that shared artifact. Both matrix legs download and boot the same
 APK on the current API 33 emulator and the declared API 24 floor. The matrix reads those levels from
 their source modules rather than carrying a second floor literal in YAML. Each leg runs
 `npm run test:android:device` through `reactivecircus/android-emulator-runner`; the Play upload key
 never enters CI. The iOS job builds the store-identity Release simulator app without signing
-(`native:ios:simulator`, `CODE_SIGNING_ALLOWED=NO`), then runs `npm run test:ios -- --skip-build`,
-which boots a simulator, installs that same app, and runs the same Maestro flow. Each Maestro leg
-uploads its own report artifact.
+(`ios:simulator`, `CODE_SIGNING_ALLOWED=NO`), then runs `npm run test:ios -- --skip-build`, which
+boots a simulator, installs that same app, and runs the same Maestro flow. Each Maestro leg uploads
+its own report artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
 > provides a booted emulator — the one-shot would try to boot a second one.

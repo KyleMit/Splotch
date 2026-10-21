@@ -12,7 +12,7 @@
 | `npm run show:epic-children -- <n>` | Read every nested GitHub sub-issue with reconciled parent counts                      |
 | `npm run show:free-port`            | Find an unused local TCP port without stopping another session's listener             |
 | `npm run test:browserless`          | Mirror CI's Browserless tests job (Vitest tiers + API smoke, no Playwright)           |
-| `npm run build` / `build:cap`       | Web build / native static build                                                       |
+| `npm run build`                     | Web build                                                                             |
 
 Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:variant` names
 (`dev:*`, `test:e2e:*`, `gen:*`, `android:*`, …), and every new or renamed script gets a matching

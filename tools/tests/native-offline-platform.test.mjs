@@ -369,7 +369,7 @@ describe('native bridge registration and private storage contract', () => {
   });
 });
 
-it('preserves shipping native network and background transfer policy', async () => {
+it('keeps the native network and background transfer policy', async () => {
   const android = await readFile(
     new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryDownloads.kt', candidate),
     'utf8'
@@ -383,14 +383,8 @@ it('preserves shipping native network and background transfer policy', async () 
     'utf8'
   );
   const delegate = await readFile(new URL('ios/Splotch/AppDelegate.swift', candidate), 'utf8');
-  const shippingAndroid = await readFile(
-    new URL('../../android/app/build.gradle', import.meta.url),
-    'utf8'
-  );
   const nativeAndroid = await readFile(new URL('android/app/build.gradle', candidate), 'utf8');
-  expect(nativeAndroid.match(/androidx.work:work-runtime:([\d.]+)/)[1]).toBe(
-    shippingAndroid.match(/androidx.work:work-runtime:([\d.]+)/)[1]
-  );
+  expect(nativeAndroid).toMatch(/androidx.work:work-runtime:[\d.]+/);
   expect(android).toContain('if (allowMetered) NetworkType.CONNECTED else NetworkType.UNMETERED');
   expect(android).toContain('getWorkInfosForUniqueWork(WORK_TAG)');
   expect(android).toContain('enqueueUniqueWork(WORK_TAG, ExistingWorkPolicy.REPLACE, work)');
@@ -449,14 +443,6 @@ it('ignores an existing Android backoff while observing failure of a joined runn
     new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryDownloads.kt', candidate),
     'utf8'
   );
-  const shipping = await readFile(
-    new URL(
-      '../../android/app/src/main/java/art/splotch/app/ColoringPacksPlugin.java',
-      import.meta.url
-    ),
-    'utf8'
-  );
-  expect(shipping).toContain('ExistingWorkPolicy.REPLACE');
   expect(source).toContain(
     'val joinedAttemptCount = if (joins && existing?.state == WorkInfo.State.ENQUEUED) requireNotNull(existing).runAttemptCount else 0'
   );
@@ -475,11 +461,6 @@ it('prunes only superseded same-book iOS transfer stages and retains published U
     new URL('ios/Splotch/SplotchLibraryDownloads.swift', candidate),
     'utf8'
   );
-  const shipping = await readFile(
-    new URL('../../ios/App/App/ColoringPacksPlugin.swift', import.meta.url),
-    'utf8'
-  );
-  expect(shipping).toContain('try Self.removeUnlistedFiles(in: directory, book: book)');
   expect(source).toContain('let staging = try stage(pack)');
   expect(source).toContain('let transfers = staging.deletingLastPathComponent()');
   expect(source).toContain('contentsOfDirectory(at: transfers, includingPropertiesForKeys: nil)');

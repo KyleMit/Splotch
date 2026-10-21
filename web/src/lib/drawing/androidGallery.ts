@@ -1,6 +1,6 @@
 import { extensionForImageType, timestamp } from '$lib/savedFile';
 
-export const ANDROID_GALLERY_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+const ANDROID_GALLERY_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 export type AndroidGalleryImageType = (typeof ANDROID_GALLERY_IMAGE_TYPES)[number];
 
 // WebView hands every bridge message to Capacitor on the Android UI thread, the thread that also

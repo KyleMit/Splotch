@@ -31,7 +31,17 @@
       {
         "category": "NSPrivacyAccessedAPICategoryUserDefaults",
         "reasons": ["CA92.1"],
-        "purpose": "Capacitor Preferences stores app settings through UserDefaults."
+        "purpose": "Apple reason CA92.1: read and write information only the app itself can access."
+      },
+      {
+        "category": "NSPrivacyAccessedAPICategoryFileTimestamp",
+        "reasons": ["C617.1"],
+        "purpose": "Apple reason C617.1: read the timestamps, size, or other metadata of files inside the app container."
+      },
+      {
+        "category": "NSPrivacyAccessedAPICategorySystemBootTime",
+        "reasons": ["35F9.1"],
+        "purpose": "Apple reason 35F9.1: read the system boot time to measure time elapsed between events within the app."
       }
     ]
   },

@@ -711,18 +711,14 @@ Non-`keep` rows first.
 ### sharp
 
 * **Version:** `^0.35.4` declared · 0.35.4 locked · prod
-* **Used for:** Sticker chroma-key processing in the hosted AI endpoints and asset-gen pipeline, and
-  the override target that pins `@capacitor/assets`' transitive sharp (proxy-blocked libvips
-  download in cloud sessions).
+* **Used for:** Sticker chroma-key processing in the hosted AI endpoints and asset-gen pipeline.
 * **Source:** npm · [github.com/lovell/sharp](https://github.com/lovell/sharp) · published by Lovell
   Fuller (lovell)
 * **License:** Apache-2.0
 * **Health** (checked 2026-07-17): [32.5k stars](https://github.com/lovell/sharp) · latest 0.35.3 on
   2026-07-01 · last push 2026-07-16 · 110 open issues
 * **Maintenance:** active — long-standing, well-funded, frequent releases
-* **Concerns:** **entangled** — the `overrides` pin (above) means bumping sharp also moves
-  `@capacitor/assets`' copy; `tools/tests/pnpm-overrides.test.mjs` fails if the two ranges diverge.
-  Has an install script (prebuilt libvips binary).
+* **Concerns:** has an install script (prebuilt libvips binary).
 * **Alternatives:** none needed
 * **Verdict:** keep — core image processing and the override anchor; healthy
 
@@ -952,13 +948,6 @@ Supply-chain-relevant subset from the lockfile: `@google/genai` (direct dev), `d
 `@google/genai`), `fsevents` (macOS-only, under `vite`), and `yarn` (transitive tooling copy). All
 are well-known, org- or foundation-backed packages; none are anomalous.
 
-### Repo-entangled transitives
-
-* **`sharp`** — pinned via `pnpm-workspace.yaml` `overrides` (`@capacitor/assets>sharp`) to the root
-  direct `sharp` range, because `@capacitor/assets`' own sharp tries a proxy-blocked libvips
-  download in cloud sessions. Covered in the `sharp` and `@capacitor/assets` entries;
-  `tools/tests/pnpm-overrides.test.mjs` keeps the two coherent on any bump.
-
 ## Development lifecycle dependencies (outside `package.json`)
 
 Not every dependency the project relies on is an npm package. CI workflows pull in **GitHub
@@ -1002,16 +991,16 @@ verifies (and `-- --check-latest` compares against upstream).
 
 ### System toolchains (native builds & tests — no npm range)
 
-| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                                       | Verdict                                                                                                                                                                                                                              |
-| ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Node.js                      | dependency-backed CI jobs, all local dev           | `pnpm/setup@v2` pins **runtime: node@22** in the shared CI composite                                                                                                     | keep — pinned to the `engines.node` floor major and drift-guarded                                                                                                                                                                    |
-| Python                       | `tools/centerline-tracing/` only                   | **3.11** pinned by the capability's `.python-version`, `pyproject.toml`, and dedicated workflow; uv may download it lazily for local use                                 | keep — the first Python toolchain remains isolated from the app and default npm lifecycle                                                                                                                                            |
-| uv                           | centerline-tracing commands and dedicated CI       | local system CLI; CI uses SHA-pinned `astral-sh/setup-uv@v10.0.1` to install **uv 0.12.5**; `uv.lock` fixes the complete Python graph                                    | keep — fast locked environments without a root requirements file or always-on virtualenv                                                                                                                                             |
-| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                                  | keep — Android build requirement, pinned                                                                                                                                                                                             |
-| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `tools/mobile/android/run-gradle.mjs` (ADR-0017); patched into `@capacitor/cli` for Windows (ADR-0011) | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
-| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**current API 33 + declared API 24 floor, google_apis, x86_64**) in CI; local Android Studio SDK otherwise                  | keep — current and minimum-supported Android runtimes pinned in release CI                                                                                                                                                           |
-| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                                    | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                      |
-| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed by `.github/actions/install-maestro` via `curl -fsSL https://get.maestro.mobile.dev \| bash`, pinned to `MAESTRO_VERSION=2.4.0`                                | keep — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream; CI uses the installer’s documented `MAESTRO_VERSION` interface for reproducible native smoke runs. See the `testing` skill. |
+| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                      | Verdict                                                                                                                                                                                                                              |
+| ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Node.js                      | dependency-backed CI jobs, all local dev           | `pnpm/setup@v2` pins **runtime: node@22** in the shared CI composite                                                                                    | keep — pinned to the `engines.node` floor major and drift-guarded                                                                                                                                                                    |
+| Python                       | `tools/centerline-tracing/` only                   | **3.11** pinned by the capability's `.python-version`, `pyproject.toml`, and dedicated workflow; uv may download it lazily for local use                | keep — the first Python toolchain remains isolated from the app and default npm lifecycle                                                                                                                                            |
+| uv                           | centerline-tracing commands and dedicated CI       | local system CLI; CI uses SHA-pinned `astral-sh/setup-uv@v10.0.1` to install **uv 0.12.5**; `uv.lock` fixes the complete Python graph                   | keep — fast locked environments without a root requirements file or always-on virtualenv                                                                                                                                             |
+| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                 | keep — Android build requirement, pinned                                                                                                                                                                                             |
+| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`experiments/native-architecture/android/gradlew`), invoked by `tools/release/build-native-release.mjs`               | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
+| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**current API 33 + declared API 24 floor, google_apis, x86_64**) in CI; local Android Studio SDK otherwise | keep — current and minimum-supported Android runtimes pinned in release CI                                                                                                                                                           |
+| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                   | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                      |
+| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed by `.github/actions/install-maestro` via `curl -fsSL https://get.maestro.mobile.dev \| bash`, pinned to `MAESTRO_VERSION=2.4.0`               | keep — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream; CI uses the installer’s documented `MAESTRO_VERSION` interface for reproducible native smoke runs. See the `testing` skill. |
 
 **Method note:** these live outside the lockfile, so refresh them by re-reading
 `.github/workflows/`, the `package.json` scripts, and `tools/*.mjs` — not `npm view`. Version facts

@@ -141,10 +141,7 @@ describe('native photo library save', () => {
 });
 
 describe('shipping parity', () => {
-  it('names the album the shipping Android PhotoLibraryPlugin saves into', () => {
-    const plugin = read('android/app/src/main/java/art/splotch/app/PhotoLibraryPlugin.java');
-    expect(plugin).toContain('Environment.DIRECTORY_PICTURES + File.separator + ALBUM_NAME');
-    expect(plugin.match(/String ALBUM_NAME = "([^"]+)";/)?.[1]).toBe(ANDROID_ALBUM_NAME);
+  it('names the album the Android gallery writer saves into', () => {
     const native = read(
       'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchPhotoLibrary.kt'
     );
@@ -159,7 +156,6 @@ describe('shipping parity', () => {
     expect(native).toContain('MediaStore.MediaColumns.IS_PENDING, 0');
     expect(native).toContain('resolver.delete(item, null, null)');
     expect(native).toContain('context.externalMediaDirs.firstOrNull()');
-    expect(plugin).toContain('getContext().getExternalMediaDirs()');
   });
 
   // Every outcome shipping words, for no held picture, one, several and the held limit, on each
@@ -186,12 +182,11 @@ describe('shipping parity', () => {
     );
   });
 
-  it('asks iOS for add-only access with the shipping purpose string and never for read access', () => {
+  it('asks iOS for add-only access and never for read access', () => {
     const usage = (plist) =>
       plist.match(/<key>NSPhotoLibraryAddUsageDescription<\/key>\s*<string>([^<]*)<\/string>/)?.[1];
     const candidate = read('experiments/native-architecture/ios/Splotch/Info.plist');
     expect(usage(candidate)).toBeDefined();
-    expect(usage(candidate)).toBe(usage(read('ios/App/App/Info.plist')));
     expect(candidate).not.toContain('NSPhotoLibraryUsageDescription');
   });
 });

@@ -46,8 +46,8 @@ which is the one `cut-release` last bumped to.
      `build` for this version. Never delete the stale file and upload the other one silently, and
      never pass a flag to skip the check.
    * **A `.dev` app ID** — the artifact is a local build, not the store build. The fix is the
-     `build` skill's store scripts (`npm run native:android:bundle`, `npm run native:ios:ipa`),
-     which are the only builds that opt into `art.splotch.app`.
+     `build` skill's store scripts (`npm run android:bundle`, `npm run ios:ipa`), which are the only
+     builds that opt into `art.splotch.app`.
    * **Nothing built** — no artifacts on disk at all. Point at `build`.
    * **Only one platform built** — normal (iOS needs macOS + Xcode). Use `--only=android` /
      `--only=ios` to publish just the one that is ready, and say which platform is still missing so
