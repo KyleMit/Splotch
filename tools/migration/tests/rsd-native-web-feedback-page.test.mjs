@@ -6,7 +6,10 @@ import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { RsdFeedbackPageContent } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFeedbackPageContent.tsx';
 import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
-import { REPORT_FORM_COPY } from '../../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
+import {
+  MESSAGE_PROMPT_BY_KIND,
+  REPORT_FORM_COPY,
+} from '../../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
 import { createNativeFeedback } from '../../../experiments/native-architecture/src/feedback/feedback.ts';
 import { supportEmail } from '../../../web/src/lib/supportEmail.ts';
 
@@ -21,6 +24,7 @@ afterEach(() => {
 
 const sendButton = () =>
   [...host.querySelectorAll('button')].find((node) => node.textContent === REPORT_FORM_COPY.send);
+const messageField = () => host.querySelector(`[aria-label="${MESSAGE_PROMPT_BY_KIND.bug.label}"]`);
 
 it('says the form needs JavaScript in place of the form a page read without it hides', async () => {
   records.os = 'web';
@@ -73,6 +77,43 @@ it('answers a refused report above Send with the support address as a way out', 
     await act(async () => owner.setMessage(''));
     await act(async () => sendButton().click());
     expect(alert().textContent).toBe('Please type a short description.');
+  } finally {
+    owner.dispose();
+  }
+});
+
+it('replaces the delivered page form with its success status and send-another link', async () => {
+  const owner = await pageWithReply(200, { ok: true });
+  try {
+    await act(async () => owner.setMessage('A local fixture report'));
+    await act(async () => sendButton().click());
+    await expect
+      .poll(() => host.querySelector('[role="status"]')?.textContent)
+      .toBe(FEEDBACK_PAGE_COPY.sentStatus);
+    expect(sendButton()).toBeUndefined();
+    expect(messageField()).toBeNull();
+    expect(host.querySelector('[role="link"]').textContent).toBe(FEEDBACK_PAGE_COPY.sendAnother);
+    expect(host.textContent).toContain(FEEDBACK_PAGE_COPY.next);
+  } finally {
+    owner.dispose();
+  }
+});
+
+it('starts a clean page draft when the send-another link is clicked', async () => {
+  const owner = await pageWithReply(200, { ok: true });
+  try {
+    await act(async () => owner.setMessage('The delivered draft'));
+    await act(async () => sendButton().click());
+    await expect
+      .poll(() => host.querySelector('[role="status"]')?.textContent)
+      .toBe(FEEDBACK_PAGE_COPY.sentStatus);
+    const another = host.querySelector('[role="link"]');
+    await act(async () => another.click());
+    expect(messageField()).not.toBeNull();
+    expect(messageField().value).toBe('');
+    expect(owner.getState().draft).toEqual({ kind: 'bug', message: '', includeDevice: false });
+    expect(host.querySelector('[role="status"]')).toBeNull();
+    expect(sendButton().disabled).toBe(false);
   } finally {
     owner.dispose();
   }
