@@ -48,15 +48,15 @@ CASE night-off
 Night mode: no
 {"label": "night-off-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     before=snapshot(label+'-before');assert any(n.get('content-desc')=='Drawing paper' for n in before['controls']), 'Missing drawing baseline';assert any(n.get('content-desc')=='Undo' and n.get('enabled')=='true' for n in before['controls']), 'Undo baseline unavailable';print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                                                                                                                                                                                                                                                                    ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
                          ~~~~~~~~^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 36, in snapshot
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 36, in snapshot
     xml=tree(); LAST_XML=xml; p.with_suffix('.xml').write_text(xml)
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 19, in tree
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 19, in tree
     assert 'dumped to:' in result, result
            ^^^^^^^^^^^^^^^^^^^^^^
 AssertionError

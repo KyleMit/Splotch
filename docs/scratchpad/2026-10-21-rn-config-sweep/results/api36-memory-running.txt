@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 5, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 5, in <module>
     uid=re.search(r'\buserId=(\d+)',sh('dumpsys package '+PKG)).group(1)
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: 'NoneType' object has no attribute 'group'

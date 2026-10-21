@@ -59,13 +59,13 @@ CASE navigation-gestural
 {"label": "hardware-keyboard-direct-detached-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 {"label": "trim-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/remaining.py", line 29, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/remaining.py", line 29, in <module>
     print(sh('am send-trim-memory '+PKG+' COMPLETE'),flush=True)
           ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
     def sh(cmd): return adb('shell',cmd)
                         ~~~^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
     if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 RuntimeError: 

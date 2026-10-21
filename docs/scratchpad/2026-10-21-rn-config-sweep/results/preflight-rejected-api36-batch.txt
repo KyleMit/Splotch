@@ -3,16 +3,16 @@ CASE font-largest
 
 {"label": "font-largest-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -23,16 +23,16 @@ CASE font-smallest
 
 {"label": "font-smallest-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -43,16 +43,16 @@ CASE density-larger
 
 {"label": "density-larger-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -63,16 +63,16 @@ CASE density-smaller
 
 {"label": "density-smaller-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -83,16 +83,16 @@ CASE night-on
 Night mode: yes
 {"label": "night-on-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -104,16 +104,16 @@ CASE night-off
 Night mode: no
 {"label": "night-off-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -125,16 +125,16 @@ CASE contrast-on
 
 {"label": "contrast-on-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -146,16 +146,16 @@ CASE bold-on
 
 {"label": "bold-on-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     snapshot(label+'-before');print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ~~~~^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -167,16 +167,16 @@ CASE app-locale-fr
 
 {"label": "app-locale-fr-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     before=snapshot(label+'-before');assert any(n.get('content-desc')=='Drawing paper' for n in before['controls']), 'Missing drawing baseline';assert any(n.get('content-desc')=='Undo' and n.get('enabled')=='true' for n in before['controls']), 'Undo baseline unavailable';print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                                                                                  ^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
     tap('Undo',LAST_XML);snapshot(label+'-undo')
     ~~~^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 23, in tap
     foreground()
     ~~~~~~~~~~^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
     assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Wrong foreground
@@ -185,7 +185,7 @@ BLOCKED app-locale-fr
 CASE app-locale-ar
 {"label": "app-locale-ar-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
     before=snapshot(label+'-before');assert any(n.get('content-desc')=='Drawing paper' for n in before['controls']), 'Missing drawing baseline';assert any(n.get('content-desc')=='Undo' and n.get('enabled')=='true' for n in before['controls']), 'Undo baseline unavailable';print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
                                             ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Missing drawing baseline

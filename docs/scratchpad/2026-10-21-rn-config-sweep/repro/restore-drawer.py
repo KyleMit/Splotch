@@ -1,6 +1,7 @@
 import pathlib,subprocess,re,json,sys,shlex,time
 serial=sys.argv[1];assert serial in ['emulator-5688','emulator-5690','emulator-5686']
 root=pathlib.Path(__file__).resolve().parents[1];repo=root.parents[2];pkg='art.splotch.migration.probe';out=root/'evidence'/serial
+out.mkdir(parents=True,exist_ok=True)
 key=re.search(r"drawerOpen:\s*'([^']+)'",(repo/'web/src/lib/storageKeys.ts').read_text()).group(1);assert re.fullmatch('[a-z0-9-]+',key)
 def shell(command):return subprocess.check_output(['adb','-s',serial,'shell',command],text=True,timeout=35).strip()
 def rooted(command):return shell('su 0 sh -c '+shlex.quote(command))

@@ -1,12 +1,12 @@
 {"label": "trim-running-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 17, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 17, in <module>
     print(sh('am send-trim-memory '+PKG+' COMPLETE'),flush=True)
           ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
     def sh(cmd): return adb('shell',cmd)
                         ~~~^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
     if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 RuntimeError: 
@@ -29,13 +29,13 @@ java.lang.IllegalArgumentException: Unable to set a higher trim level than curre
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 21, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 21, in <module>
     print(sh('am send-trim-memory '+PKG+' RUNNING_CRITICAL'),flush=True)
           ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
     def sh(cmd): return adb('shell',cmd)
                         ~~~^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
     if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 RuntimeError: 

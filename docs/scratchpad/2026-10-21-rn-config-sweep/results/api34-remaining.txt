@@ -64,13 +64,13 @@ CASE navigation-gestural
 {"label": "kill-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
 
 Traceback (most recent call last):
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/remaining.py", line 32, in <module>
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/remaining.py", line 32, in <module>
     (OUT/'kill-background-pid.txt').write_text(sh('pidof '+PKG));launch();snapshot('kill-return')
                                                ~~^^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
     def sh(cmd): return adb('shell',cmd)
                         ~~~^^^^^^^^^^^^^
-  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
     if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 RuntimeError

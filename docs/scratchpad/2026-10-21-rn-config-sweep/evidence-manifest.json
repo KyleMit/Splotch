@@ -5,7 +5,7 @@
   "apkSha256": "61a951a9dc2b8278e0c91975623a1dfcd4594924f1c71d0299a2a69944573539",
   "artifactSourceBinding": "Supplied APK tested directly; exact APK-to-checkout source identity unproved.",
   "fileCount": 1644,
-  "totalBytes": 416692183,
+  "totalBytes": 416686573,
   "selfExcluded": true,
   "files": [
     {
@@ -7910,8 +7910,8 @@
     },
     {
       "path": "repro/os-ui.py",
-      "bytes": 1701,
-      "sha256": "ddc968c68568a02b4da34c40d8d4e0ac6ecefaebed8e5ab9c030e1a0d4f36201"
+      "bytes": 1739,
+      "sha256": "8a7e1a1c8ada8d03144d1baced07a62f8538126f702e96c4d7e819ac3a5e49cd"
     },
     {
       "path": "repro/remaining.py",
@@ -7925,8 +7925,8 @@
     },
     {
       "path": "repro/restore-drawer.py",
-      "bytes": 2013,
-      "sha256": "ea374fba611161bb1cd08b40ca5b56cc4ac0fbe1d00fbfd25c586ccc4a676562"
+      "bytes": 2051,
+      "sha256": "e74340936d26d1a7b97e95727451a5121f15b38a1f5de272d1b7de7bbb344d11"
     },
     {
       "path": "repro/rotation-recheck.py",
@@ -7985,8 +7985,8 @@
     },
     {
       "path": "results/api28-batch.txt",
-      "bytes": 5544,
-      "sha256": "6c0386d0193054cc5d643c23fc4382a4ccd179e97eea530dc1603629e000f8c5"
+      "bytes": 5304,
+      "sha256": "dbc9b1703c57c08550af8d11922098f3f443f65c07c8544c165444fd4d7e4dd6"
     },
     {
       "path": "results/api28-drawer-restoration.txt",
@@ -8000,8 +8000,8 @@
     },
     {
       "path": "results/api28-remaining.txt",
-      "bytes": 5035,
-      "sha256": "e2eb1915c8831b2566444b23c624eaf38c7f76a4176b91a2431c610f4d423303"
+      "bytes": 4855,
+      "sha256": "1719ead7d32c0e2be195b1d0ca193b8cc0e6a70a227c8d0299b88716aeed45ec"
     },
     {
       "path": "results/api28-save-completed.txt",
@@ -8010,8 +8010,8 @@
     },
     {
       "path": "results/api28-save.txt",
-      "bytes": 812,
-      "sha256": "fca0163cae6cf2ef6bece773614356e35ddb14e9722434c6a84aa224e18341e0"
+      "bytes": 692,
+      "sha256": "577c9f2e9d803bf123888c9274b862a95c250c5aa64cff5f01fb4b1d93c98031"
     },
     {
       "path": "results/api28-signoff.txt",
@@ -8050,8 +8050,8 @@
     },
     {
       "path": "results/api34-remaining.txt",
-      "bytes": 5803,
-      "sha256": "a86847c01660cfb0444475f9c71d5a991b4da748553468146da6e89dbc91e5ea"
+      "bytes": 5623,
+      "sha256": "0448d00dbe052d8d44a0187205d84df930b5fe0872db3858b063f65ab75c86f9"
     },
     {
       "path": "results/api34-signoff.txt",
@@ -8095,23 +8095,23 @@
     },
     {
       "path": "results/api36-memory-final.txt",
-      "bytes": 4147,
-      "sha256": "b80466b0fb12c78ae314792076bc9dc5bf7947433bbe109383db1f640ed9bb76"
+      "bytes": 3787,
+      "sha256": "3511dd74b2a3bdaa05dd5cd04bfa2f2abec4c1ecdbfbcc7fb358c33e0a26c1e2"
     },
     {
       "path": "results/api36-memory-qualified.txt",
-      "bytes": 2087,
-      "sha256": "cfbce2ca3f1153d75595a7ba607e2ebf16567bbf402055b30ecfe2deab090f8a"
+      "bytes": 1907,
+      "sha256": "c45edf425ce9c5073b2367534c6c82812d00d7dfb8fce9cc7799e6dd6e56b040"
     },
     {
       "path": "results/api36-memory-running.txt",
-      "bytes": 386,
-      "sha256": "058f479dce8159e1478c59499a5bbba45dc0fafc4f5a5f2a2a3707fd4c093b58"
+      "bytes": 326,
+      "sha256": "d145a39706c194b457fd5036588ea0357dc947394056c73c1d9195b900ca8895"
     },
     {
       "path": "results/api36-remaining.txt",
-      "bytes": 6559,
-      "sha256": "bcc26065689b7d506612379c763683ed762d2eda9bd83dfb4945caf3ee7d9c71"
+      "bytes": 6379,
+      "sha256": "9ec005b3bb83c7234ded2c6147e9698463f8e5a132a8b4a91d9fb9da20898ad3"
     },
     {
       "path": "results/api36-rotation-recheck.txt",
@@ -8140,8 +8140,8 @@
     },
     {
       "path": "results/emulator-5686-runner.txt",
-      "bytes": 5380,
-      "sha256": "54f32f0e0b6e5d1adfabc8cf71356848e93b2f6a40d673e67144288a813c2348"
+      "bytes": 5140,
+      "sha256": "65dd815b8f9abab7a3a34c273272785e3cafbe0c6ed9eb767b8f3b484c132d92"
     },
     {
       "path": "results/emulator-5686.jsonl",
@@ -8200,13 +8200,13 @@
     },
     {
       "path": "results/preflight-rejected-api36-batch.txt",
-      "bytes": 14729,
-      "sha256": "fb9a6dd39e5578062a8d01415d246c2f76fc000f69cbcadebe38fb7c0cdcd127"
+      "bytes": 12509,
+      "sha256": "6581e908e06555fb2819a3d45099ca13cc71f28ac09242c1d79265149330cc98"
     },
     {
       "path": "results/preflight-rejected-emulator-5690-runner.txt",
-      "bytes": 14279,
-      "sha256": "c2489383fce8739ae2a6eb5678f03784db57eff19a6e7706388f24204cccb071"
+      "bytes": 12059,
+      "sha256": "f6e00f6d299a51777ef50a630c5710ac4afd58d08d0d801dd02122dabf400d77"
     },
     {
       "path": "results/preflight-rejected-emulator-5690.jsonl",
@@ -8225,8 +8225,8 @@
     },
     {
       "path": "summary.md",
-      "bytes": 6337,
-      "sha256": "586814529d6df28dd5ba90e89942b8e95c7eb8b87597e0f29e23e520460064ab"
+      "bytes": 6831,
+      "sha256": "51679a3fbdcca7622ec92361cc46588002ffaef463f1cc71640c139e1631c59d"
     }
   ]
 }

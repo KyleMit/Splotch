@@ -2,6 +2,7 @@ import pathlib,sys,xml.etree.ElementTree as ET,re,subprocess,time
 serial,cmd=sys.argv[1:3]
 assert serial in ['emulator-5686','emulator-5688','emulator-5690']
 root=pathlib.Path(__file__).resolve().parents[1];out=root/'evidence'/serial
+out.mkdir(parents=True,exist_ok=True)
 adb=lambda *args:subprocess.check_output(['adb','-s',serial,*args],timeout=35).decode(errors='replace')
 def dump():
  adb('shell','rm -f /sdcard/config-sweep-os.xml');reply=adb('shell','uiautomator dump /sdcard/config-sweep-os.xml');assert 'dumped to:' in reply,reply
