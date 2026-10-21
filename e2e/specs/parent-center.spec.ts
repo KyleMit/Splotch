@@ -276,15 +276,18 @@ test.describe('Parent Center layout', () => {
 
       const dialog = await boxOf(settings);
       const lefts = new Set<number>();
+      const widths = new Set<number>();
       await expect
         .poll(async () => {
           lefts.clear();
+          widths.clear();
           for (const feature of PROTECTED_FEATURES) {
             const box = await boxOf(gatePolicy(settings, feature));
             lefts.add(Math.round(box.x));
+            widths.add(Math.round(box.width));
             if (box.x + box.width > dialog.x + dialog.width) return -1;
           }
-          return lefts.size;
+          return lefts.size * widths.size;
         })
         .toBe(1);
       expect(await worstOverrunAroundPolicies(settings)).toBeLessThanOrEqual(SUBPIXEL_OVERRUN_PX);
