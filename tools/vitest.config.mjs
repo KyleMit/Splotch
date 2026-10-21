@@ -72,7 +72,7 @@ export default defineConfig({
                 )
               ),
             },
-            // The native line art reads its shipped SVG through expo-asset and expo-file-system,
+            // The native line art reads its shipped SVG through expo-file-system and React Native,
             // which Node cannot load; native-bundled-text.test.mjs imports the real module by path.
             {
               find: /^\.\.\/platform\/bundledText\.native$/,
