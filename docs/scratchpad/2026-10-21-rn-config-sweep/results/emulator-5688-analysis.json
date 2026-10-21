@@ -3,19 +3,12 @@
     "label": "baseline",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=0}"
     ],
     "inkPixels": 28546,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "93457a1264c23f2a715d6d0fed4b01121ff59c984bff6bf32d0156054149c54c",
     "undo": {
       "content-desc": "Undo",
@@ -23,28 +16,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-largest-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=0}"
     ],
     "inkPixels": 28546,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "93457a1264c23f2a715d6d0fed4b01121ff59c984bff6bf32d0156054149c54c",
     "undo": {
       "content-desc": "Undo",
@@ -52,28 +35,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-largest-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{2.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.5 fontWeightAdjustment=0}"
     ],
     "inkPixels": 28546,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "93457a1264c23f2a715d6d0fed4b01121ff59c984bff6bf32d0156054149c54c",
     "undo": {
       "content-desc": "Undo",
@@ -81,28 +54,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-largest-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{2.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.5 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -110,29 +73,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3287
   },
   {
     "label": "font-largest-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.8 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29308,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "5bd9e8116f6fe72740965fbf5c3be465ff3aa6133eca9cb28ef2c4f1302c27b3",
     "undo": {
       "content-desc": "Undo",
@@ -140,28 +93,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-largest-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.8 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -169,29 +112,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4049
   },
   {
     "label": "font-smallest-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.8 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29345,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "4db96d546ab4e3ac50232ade3a0dc783a0f97d9863930f15555687f3abbd3fed",
     "undo": {
       "content-desc": "Undo",
@@ -199,28 +132,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-smallest-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{0.85 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.11 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29345,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "4db96d546ab4e3ac50232ade3a0dc783a0f97d9863930f15555687f3abbd3fed",
     "undo": {
       "content-desc": "Undo",
@@ -228,28 +151,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-smallest-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{0.85 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.11 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -257,29 +170,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4086
   },
   {
     "label": "font-smallest-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.14 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29224,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "093ace332c07da7ce8fbaa17563cbc0a107b5b4a1d7689b02b2ac34e7f7e01ab",
     "undo": {
       "content-desc": "Undo",
@@ -287,28 +190,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "font-smallest-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.14 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -316,29 +209,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3965
   },
   {
     "label": "density-larger-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.14 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29255,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "4336c310c77c187d14388dd6877547d4cdff9b5d34964536effa4d8d7c09703c",
     "undo": {
       "content-desc": "Undo",
@@ -346,28 +229,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "density-larger-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw329dp w329dp h666dp 525dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2321) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.17 fontWeightAdjustment=0}"
     ],
     "inkPixels": 30712,
-    "inkBounds": [
-      259,
-      922,
-      712,
-      1706
-    ],
+    "inkBounds": [259, 922, 712, 1706],
     "inkHash": "82dfd254b022394ff6824905b9ec0bac29825ff6432be2683960130484fcf2de",
     "undo": {
       "content-desc": "Undo",
@@ -375,28 +248,18 @@
       "enabled": "true",
       "bounds": "[26,1396][190,1560]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "density-larger-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw329dp w329dp h666dp 525dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2321) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.17 fontWeightAdjustment=0}"
     ],
     "inkPixels": 26659,
-    "inkBounds": [
-      259,
-      922,
-      712,
-      1706
-    ],
+    "inkBounds": [259, 922, 712, 1706],
     "inkHash": "f578c2e9c61c3241de06246592d0f3da74b5ddbb9a7c80676a8a9ae42509809f",
     "undo": {
       "content-desc": "Undo",
@@ -404,29 +267,19 @@
       "enabled": "true",
       "bounds": "[26,1396][190,1560]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4053
   },
   {
     "label": "density-larger-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.20 fontWeightAdjustment=0}"
     ],
     "inkPixels": 28301,
-    "inkBounds": [
-      259,
-      733,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 733, 712, 1624],
     "inkHash": "9f0ae83c918944d2e26c7d51a699ef843af9c5347c18d5776003ebad4702471e",
     "undo": {
       "content-desc": "Undo",
@@ -434,28 +287,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "density-larger-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.20 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -463,29 +306,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3042
   },
   {
     "label": "density-smaller-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.20 fontWeightAdjustment=0}"
     ],
     "inkPixels": 28886,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "6fd59bc896fd81c2d556428b65b5bb70bb0804eecf4ec17049c07f1fc0f076c3",
     "undo": {
       "content-desc": "Undo",
@@ -493,28 +326,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "density-smaller-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw514dp w514dp h1054dp 336dpi lrg long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2350) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.23 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29317,
-    "inkBounds": [
-      259,
-      773,
-      711,
-      1558
-    ],
+    "inkBounds": [259, 773, 711, 1558],
     "inkHash": "c0a668ea240fb85eb43c1fbf58e4e4cee52be6aadd46ae2391b001e982702e37",
     "undo": {
       "content-desc": "Undo",
@@ -522,28 +345,18 @@
       "enabled": "true",
       "bounds": "[17,1758][122,1863]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "density-smaller-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw514dp w514dp h1054dp 336dpi lrg long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2350) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.23 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25580,
-    "inkBounds": [
-      259,
-      773,
-      711,
-      1558
-    ],
+    "inkBounds": [259, 773, 711, 1558],
     "inkHash": "faa91250441fe525bbfd2663aad4044053b5d69e0e61bc317d9304a94166fdbd",
     "undo": {
       "content-desc": "Undo",
@@ -551,29 +364,19 @@
       "enabled": "true",
       "bounds": "[17,1758][122,1863]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3737
   },
   {
     "label": "density-smaller-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.26 fontWeightAdjustment=0}"
     ],
     "inkPixels": 30586,
-    "inkBounds": [
-      259,
-      839,
-      806,
-      1624
-    ],
+    "inkBounds": [259, 839, 806, 1624],
     "inkHash": "1bb8596fd5bfb1ea175b107d6798baad82277eb9c48a1817d596784e1a4c8dd8",
     "undo": {
       "content-desc": "Undo",
@@ -581,28 +384,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "density-smaller-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.26 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -610,29 +403,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 5327
   },
   {
     "label": "night-on-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.26 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29341,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "248524e6ca779a038ae35c0594c4acc43b0a8a5d10f411ee0ebf4c90a0b610ab",
     "undo": {
       "content-desc": "Undo",
@@ -640,28 +423,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "night-on-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.29 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29326,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "62d8052162c3ab60dcefd7f9c00ca8511b2ab651ac469ee8080017762ec7d0ca",
     "undo": {
       "content-desc": "Undo",
@@ -669,28 +442,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "night-on-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.29 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25248,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "58bd1995e9dd5ccc9585ba715886bf5e0073e0644a97bdc9683281b0e56d44ca",
     "undo": {
       "content-desc": "Undo",
@@ -698,29 +461,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4078
   },
   {
     "label": "night-on-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29032,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "cfe9c364fa267d50bebd03134f8399e62b17bb0a5420422052485c92b0a1ff08",
     "undo": {
       "content-desc": "Undo",
@@ -728,28 +481,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "night-on-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -757,29 +500,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3773
   },
   {
     "label": "night-off-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29307,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "dde90a2ffa2a314c25d2d0813dbaa78c5fcff786645e963ec5232bd9e43a31aa",
     "undo": {
       "content-desc": "Undo",
@@ -787,28 +520,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "night-off-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29307,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "dde90a2ffa2a314c25d2d0813dbaa78c5fcff786645e963ec5232bd9e43a31aa",
     "undo": {
       "content-desc": "Undo",
@@ -816,28 +539,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "night-off-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -845,29 +558,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4048
   },
   {
     "label": "night-off-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29291,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "484646a57d6c72a3285f23759a23d4dff28231d810179c991dcff72f02caa718",
     "undo": {
       "content-desc": "Undo",
@@ -875,28 +578,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "night-off-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -904,29 +597,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4032
   },
   {
     "label": "contrast-on-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29280,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "bbabc92e4810a534eb655c3b1991cf515f8f658409337325c4a73129dc41b620",
     "undo": {
       "content-desc": "Undo",
@@ -934,28 +617,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-on-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 0,
-    "inkBounds": [
-      1080,
-      2400,
-      0,
-      0
-    ],
+    "inkBounds": [1080, 2400, 0, 0],
     "inkHash": "7d4faf620ef422365dac16502f07f38302ab016189601422dfd2b1a4ffc7d085",
     "undo": {
       "content-desc": "Undo",
@@ -963,28 +636,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-on-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -992,29 +655,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": -25259
   },
   {
     "label": "contrast-on-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29395,
-    "inkBounds": [
-      259,
-      837,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 837, 712, 1624],
     "inkHash": "390f89b258cf202395cf4c54995132d5e9c0b56c4ba4b3ee131ae08116202d21",
     "undo": {
       "content-desc": "Undo",
@@ -1022,28 +675,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-on-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -1051,29 +694,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4136
   },
   {
     "label": "bold-on-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.32 fontWeightAdjustment=0}"
     ],
     "inkPixels": 29196,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "6521c8462fc960edf35937b79fe47ad981191741dfb3fa8d9823b8d554463757",
     "undo": {
       "content-desc": "Undo",
@@ -1081,28 +714,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-on-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.33 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29196,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "6521c8462fc960edf35937b79fe47ad981191741dfb3fa8d9823b8d554463757",
     "undo": {
       "content-desc": "Undo",
@@ -1110,28 +733,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-on-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.33 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29196,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "6521c8462fc960edf35937b79fe47ad981191741dfb3fa8d9823b8d554463757",
     "undo": {
       "content-desc": "Undo",
@@ -1139,29 +752,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 0
   },
   {
     "label": "bold-on-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.33 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29344,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "823e5334d9b2172098fc3b93373cba658872ceb82d9d2829957b72b0b1a7ce97",
     "undo": {
       "content-desc": "Undo",
@@ -1169,28 +772,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-on-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.33 fontWeightAdjustment=300}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -1198,29 +791,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4085
   },
   {
     "label": "app-locale-fr-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.33 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29365,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "7ec3cb86acd8779259f3ea6343e13fa432ecde1894028250be8f2a04cd51c984",
     "undo": {
       "content-desc": "Undo",
@@ -1228,28 +811,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "app-locale-fr-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [fr_FR,en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.34 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29365,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "7ec3cb86acd8779259f3ea6343e13fa432ecde1894028250be8f2a04cd51c984",
     "undo": {
       "content-desc": "Undo",
@@ -1257,28 +830,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "app-locale-fr-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [fr_FR,en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.34 fontWeightAdjustment=300}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -1286,29 +849,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4106
   },
   {
     "label": "app-locale-fr-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.35 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29310,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "8a6f65b231718fb500445ee7b9e0db76ef053d7d281bac76584fd4ac0802326a",
     "undo": {
       "content-desc": "Undo",
@@ -1316,28 +869,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "app-locale-fr-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.35 fontWeightAdjustment=300}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -1345,29 +888,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4051
   },
   {
     "label": "app-locale-ar-before",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.35 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29294,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "a39a7db303ffb482bdead4c81032e17cce7137248481e5e261a5a2e286854a95",
     "undo": {
       "content-desc": "Undo",
@@ -1375,28 +908,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "app-locale-ar-applied",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [ar,en_US] ldrtl sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.36 fontWeightAdjustment=300}"
     ],
     "inkPixels": 31436,
-    "inkBounds": [
-      259,
-      839,
-      1029,
-      2172
-    ],
+    "inkBounds": [259, 839, 1029, 2172],
     "inkHash": "0851d6fcfb11a6ec8aef56321a33f64b5fa3294b60041911b16a4aea8751e5a8",
     "undo": {
       "content-desc": "Undo",
@@ -1404,28 +927,18 @@
       "enabled": "true",
       "bounds": "[928,1597][1059,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "app-locale-ar-applied-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [ar,en_US] ldrtl sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.36 fontWeightAdjustment=300}"
     ],
     "inkPixels": 27224,
-    "inkBounds": [
-      259,
-      839,
-      1029,
-      2172
-    ],
+    "inkBounds": [259, 839, 1029, 2172],
     "inkHash": "aaa1d2f1f5bf96ac1cd9936b3354876201651bbda978ab44ecf97884bdae299d",
     "undo": {
       "content-desc": "Undo",
@@ -1433,29 +946,19 @@
       "enabled": "true",
       "bounds": "[928,1597][1059,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4212
   },
   {
     "label": "app-locale-ar-restored",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.37 fontWeightAdjustment=300}"
     ],
     "inkPixels": 29152,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "da766d0aa2fd689b6b627993a37567a75c126bf2d4bc94636a46f240edb5c922",
     "undo": {
       "content-desc": "Undo",
@@ -1463,28 +966,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "app-locale-ar-restored-undo",
     "pid": "4195",
     "creates": 1,
-    "activity": [
-      "5727c1b"
-    ],
+    "activity": ["5727c1b"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.37 fontWeightAdjustment=300}"
     ],
     "inkPixels": 25259,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "48a830cbe52fa8076744a13b0bda9917e9aeb3aecdb9c84a35de2036064a89da",
     "undo": {
       "content-desc": "Undo",
@@ -1492,29 +985,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3893
   },
   {
     "label": "contrast-fresh-1-before",
     "pid": "11910",
     "creates": 2,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 36324,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "e5246838909f472f33aae109f9705d85d05c7cceb566180f988e98b6b1ec7621",
     "undo": {
       "content-desc": "Undo",
@@ -1522,28 +1005,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-1-applied",
     "pid": "11910",
     "creates": 2,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 0,
-    "inkBounds": [
-      1080,
-      2400,
-      0,
-      0
-    ],
+    "inkBounds": [1080, 2400, 0, 0],
     "inkHash": "7d4faf620ef422365dac16502f07f38302ab016189601422dfd2b1a4ffc7d085",
     "undo": {
       "content-desc": "Undo",
@@ -1551,28 +1024,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-1-waited",
     "pid": "11910",
     "creates": 2,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 0,
-    "inkBounds": [
-      1080,
-      2400,
-      0,
-      0
-    ],
+    "inkBounds": [1080, 2400, 0, 0],
     "inkHash": "7d4faf620ef422365dac16502f07f38302ab016189601422dfd2b1a4ffc7d085",
     "undo": {
       "content-desc": "Undo",
@@ -1580,28 +1043,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-1-applied-undo",
     "pid": "11910",
     "creates": 2,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 32628,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "cd767df59193aa252818456b983144cf0278e13d5c97efa91fa9c128f0086b6d",
     "undo": {
       "content-desc": "Undo",
@@ -1609,29 +1062,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": -32628
   },
   {
     "label": "contrast-fresh-1-restored",
     "pid": "11910",
     "creates": 2,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 36289,
-    "inkBounds": [
-      259,
-      839,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 839, 712, 1624],
     "inkHash": "6e3b8b5eb85a6aa19dabcb57df51e5cefbfdc03a0d928699b51d27e087cda3dd",
     "undo": {
       "content-desc": "Undo",
@@ -1639,28 +1082,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-2-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38288,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "1f9dc0e0ab1a4de867cbba1c2398b8f5648984caa1bbce21ee2d6a5d7219274a",
     "undo": {
       "content-desc": "Undo",
@@ -1668,28 +1101,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-2-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 0,
-    "inkBounds": [
-      1080,
-      2400,
-      0,
-      0
-    ],
+    "inkBounds": [1080, 2400, 0, 0],
     "inkHash": "7d4faf620ef422365dac16502f07f38302ab016189601422dfd2b1a4ffc7d085",
     "undo": {
       "content-desc": "Undo",
@@ -1697,28 +1120,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-2-waited",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 0,
-    "inkBounds": [
-      1080,
-      2400,
-      0,
-      0
-    ],
+    "inkBounds": [1080, 2400, 0, 0],
     "inkHash": "7d4faf620ef422365dac16502f07f38302ab016189601422dfd2b1a4ffc7d085",
     "undo": {
       "content-desc": "Undo",
@@ -1726,28 +1139,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "contrast-fresh-2-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -1755,29 +1158,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": -34811
   },
   {
     "label": "contrast-fresh-2-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38652,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "4ef7d134e68f0c50afa0ea775b2e794d645f27b6b9d9557ec971580bb8ec48c3",
     "undo": {
       "content-desc": "Undo",
@@ -1785,28 +1178,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-fr-FR-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.2 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38652,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "4ef7d134e68f0c50afa0ea775b2e794d645f27b6b9d9557ec971580bb8ec48c3",
     "undo": {
       "content-desc": "Undo",
@@ -1814,28 +1197,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-fr-FR-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [fr_FR] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.3 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38652,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "4ef7d134e68f0c50afa0ea775b2e794d645f27b6b9d9557ec971580bb8ec48c3",
     "undo": {
       "content-desc": "Undo",
@@ -1843,28 +1216,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-fr-FR-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [fr_FR] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.3 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -1872,29 +1235,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3841
   },
   {
     "label": "system-locale-fr-FR-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.5 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38836,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "79c8d9491e3f82d828378da12e111bd23a910d2a987ab600addfd8a368f16e4b",
     "undo": {
       "content-desc": "Undo",
@@ -1902,28 +1255,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-fr-FR-restored-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.5 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -1931,29 +1274,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4025
   },
   {
     "label": "system-locale-ar-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.5 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38829,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "aa8e5914007b6b8a3aaee848517ea6018a9f51541e5ba2f107cf930a0daf64a0",
     "undo": {
       "content-desc": "Undo",
@@ -1961,28 +1294,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-ar-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [ar] ldrtl sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.7 fontWeightAdjustment=300}"
     ],
     "inkPixels": 41252,
-    "inkBounds": [
-      259,
-      838,
-      1029,
-      2172
-    ],
+    "inkBounds": [259, 838, 1029, 2172],
     "inkHash": "a706eaaa2b9a85d85a7ca7909c05071c0cbe587cdfab212760eeddd6ceb7dbf8",
     "undo": {
       "content-desc": "Undo",
@@ -1990,28 +1313,18 @@
       "enabled": "true",
       "bounds": "[928,1597][1059,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-ar-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [ar] ldrtl sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.7 fontWeightAdjustment=300}"
     ],
     "inkPixels": 37072,
-    "inkBounds": [
-      259,
-      838,
-      1029,
-      2172
-    ],
+    "inkBounds": [259, 838, 1029, 2172],
     "inkHash": "7b322f213fffb8f16ee960c7a5f0d67cc2ca580ede47f6cf62455aff16a9e39f",
     "undo": {
       "content-desc": "Undo",
@@ -2019,29 +1332,19 @@
       "enabled": "true",
       "bounds": "[928,1597][1059,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4180
   },
   {
     "label": "system-locale-ar-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 39044,
-    "inkBounds": [
-      259,
-      835,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 835, 712, 1624],
     "inkHash": "8a65dc355dd89473b007861842e8124ceecde3a4afd9755470df1d775251aeb7",
     "undo": {
       "content-desc": "Undo",
@@ -2049,28 +1352,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "system-locale-ar-restored-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2078,29 +1371,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4233
   },
   {
     "label": "rotation-landscape-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38882,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "6f4019e9137199fd1012ef0e11c5ee9541daac6df06e1129ec06212d18520a48",
     "undo": {
       "content-desc": "Undo",
@@ -2108,28 +1391,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "rotation-landscape-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38882,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "6f4019e9137199fd1012ef0e11c5ee9541daac6df06e1129ec06212d18520a48",
     "undo": {
       "content-desc": "Undo",
@@ -2137,28 +1410,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "rotation-landscape-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2166,29 +1429,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4071
   },
   {
     "label": "rotation-landscape-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38898,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "bea88c4c9e7187b1ed49c96d07a4620bc1a11c1a9fe32f658be362c880306851",
     "undo": {
       "content-desc": "Undo",
@@ -2196,28 +1449,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "rotation-landscape-restored-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2225,29 +1468,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4087
   },
   {
     "label": "rotation-portrait-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38934,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "c402da28f418151bc9e59b1ed74add2e4e229d94b622976e106ef678a0a8720a",
     "undo": {
       "content-desc": "Undo",
@@ -2255,28 +1488,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "rotation-portrait-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38934,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "c402da28f418151bc9e59b1ed74add2e4e229d94b622976e106ef678a0a8720a",
     "undo": {
       "content-desc": "Undo",
@@ -2284,28 +1507,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "rotation-portrait-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2313,29 +1526,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4123
   },
   {
     "label": "rotation-portrait-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38859,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "759d6c729b87134feaf302498040cecdc5dd04942404ed06ab817b88af309515",
     "undo": {
       "content-desc": "Undo",
@@ -2343,28 +1546,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "rotation-portrait-restored-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2372,29 +1565,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4048
   },
   {
     "label": "navigation-threebutton-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38877,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "e7105c0d0a63153751774442c4f97b09b4e0ca27c47a56a1ce1c54881d96b032",
     "undo": {
       "content-desc": "Undo",
@@ -2402,28 +1585,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "navigation-threebutton-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h814dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2274) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.13 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38877,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "e7105c0d0a63153751774442c4f97b09b4e0ca27c47a56a1ce1c54881d96b032",
     "undo": {
       "content-desc": "Undo",
@@ -2431,28 +1604,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "navigation-threebutton-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h814dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2274) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.13 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2460,29 +1623,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4066
   },
   {
     "label": "navigation-threebutton-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 39069,
-    "inkBounds": [
-      259,
-      834,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 834, 712, 1624],
     "inkHash": "5e89dc115d849328a3f029bd66c0c2ddd4b8cb9b8e05cd555a0c5674801d27e3",
     "undo": {
       "content-desc": "Undo",
@@ -2490,28 +1643,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "navigation-threebutton-restored-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2519,29 +1662,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4258
   },
   {
     "label": "navigation-gestural-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38928,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "45eae3aae6f8e65f98f85e2b55429e9bb96f69e9fbbecece33123ff4bb17c9a9",
     "undo": {
       "content-desc": "Undo",
@@ -2549,28 +1682,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "navigation-gestural-applied",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38928,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "45eae3aae6f8e65f98f85e2b55429e9bb96f69e9fbbecece33123ff4bb17c9a9",
     "undo": {
       "content-desc": "Undo",
@@ -2578,28 +1701,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "navigation-gestural-applied-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2607,29 +1720,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4117
   },
   {
     "label": "navigation-gestural-restored",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38887,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "a51254273b50a55803f9f8945255740815334ffd109557407b0e024f9e74a5aa",
     "undo": {
       "content-desc": "Undo",
@@ -2637,28 +1740,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "navigation-gestural-restored-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2666,29 +1759,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4076
   },
   {
     "label": "hardware-keyboard-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 39067,
-    "inkBounds": [
-      259,
-      834,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 834, 712, 1624],
     "inkHash": "ab3e147be127f46cd35b444b80b14133ea2e770a5c0d6fe27f99a6f92e9bd44b",
     "undo": {
       "content-desc": "Undo",
@@ -2696,28 +1779,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-attached",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 39067,
-    "inkBounds": [
-      259,
-      834,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 834, 712, 1624],
     "inkHash": "ab3e147be127f46cd35b444b80b14133ea2e770a5c0d6fe27f99a6f92e9bd44b",
     "undo": {
       "content-desc": "Undo",
@@ -2725,28 +1798,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-attached-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2754,29 +1817,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4256
   },
   {
     "label": "hardware-keyboard-detached",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 39049,
-    "inkBounds": [
-      259,
-      836,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 836, 712, 1624],
     "inkHash": "a87b2e20976c8080caff71746494016909c1fd4adea3320b4ffe37042abec7c8",
     "undo": {
       "content-desc": "Undo",
@@ -2784,28 +1837,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-detached-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2813,29 +1856,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4238
   },
   {
     "label": "trim-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38936,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "a5d5c56b01fc944906a0bff3b864b5b6bd37e5f6ece75cc1f45eafc190fd31a8",
     "undo": {
       "content-desc": "Undo",
@@ -2843,28 +1876,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "trim-return",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38936,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "a5d5c56b01fc944906a0bff3b864b5b6bd37e5f6ece75cc1f45eafc190fd31a8",
     "undo": {
       "content-desc": "Undo",
@@ -2872,28 +1895,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "trim-return-undo",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 34811,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "d5b55ad0c5b228848ee6b33191cb2a8adacc09e3bb40b2477b89ef14eeff5279",
     "undo": {
       "content-desc": "Undo",
@@ -2901,29 +1914,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4125
   },
   {
     "label": "kill-before",
     "pid": "12582",
     "creates": 3,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 38924,
-    "inkBounds": [
-      259,
-      838,
-      712,
-      1624
-    ],
+    "inkBounds": [259, 838, 712, 1624],
     "inkHash": "f7950a062e368b9997a020b8e068ebcb6f831dc95a90f3d463f181be32755b53",
     "undo": {
       "content-desc": "Undo",
@@ -2931,28 +1934,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "kill-return",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.16 fontWeightAdjustment=300}"
     ],
     "inkPixels": 0,
-    "inkBounds": [
-      1080,
-      2400,
-      0,
-      0
-    ],
+    "inkBounds": [1080, 2400, 0, 0],
     "inkHash": "7d4faf620ef422365dac16502f07f38302ab016189601422dfd2b1a4ffc7d085",
     "undo": {
       "content-desc": "Undo",
@@ -2960,28 +1953,18 @@
       "enabled": "false",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "multi-baseline",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.17 fontWeightAdjustment=0}"
     ],
     "inkPixels": 63148,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "dbb926583a3de0febeed2c3522fcb73845f487a6c0bbb713173c3c4a7c23ef37",
     "undo": {
       "content-desc": "Undo",
@@ -2989,28 +1972,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-direct-before",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.17 fontWeightAdjustment=0}"
     ],
     "inkPixels": 63148,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "dbb926583a3de0febeed2c3522fcb73845f487a6c0bbb713173c3c4a7c23ef37",
     "undo": {
       "content-desc": "Undo",
@@ -3018,28 +1991,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-direct-attached",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.18 fontWeightAdjustment=0}"
     ],
     "inkPixels": 63148,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "dbb926583a3de0febeed2c3522fcb73845f487a6c0bbb713173c3c4a7c23ef37",
     "undo": {
       "content-desc": "Undo",
@@ -3047,28 +2010,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-direct-attached-undo",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.18 fontWeightAdjustment=0}"
     ],
     "inkPixels": 59020,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "b8496e0a62c69a73e628269d079cfefc33c42273c2958b9602491aa8f9b0df1b",
     "undo": {
       "content-desc": "Undo",
@@ -3076,29 +2029,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4128
   },
   {
     "label": "hardware-keyboard-direct-detached",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.19 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62445,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "9ab2a233e5d561faf0ba92344326509016ece665b542019db33d9a72850966c3",
     "undo": {
       "content-desc": "Undo",
@@ -3106,28 +2049,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "hardware-keyboard-direct-detached-undo",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.19 fontWeightAdjustment=0}"
     ],
     "inkPixels": 59020,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "b8496e0a62c69a73e628269d079cfefc33c42273c2958b9602491aa8f9b0df1b",
     "undo": {
       "content-desc": "Undo",
@@ -3135,29 +2068,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3425
   },
   {
     "label": "split-before",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.19 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62571,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "5c18083164e9aacea5f49f72397e82b18f5a9426d9a3e3297f75f63535492cb9",
     "undo": {
       "content-desc": "Undo",
@@ -3165,28 +2088,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-request",
     "pid": "19913",
     "creates": 4,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.19 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62571,
-    "inkBounds": [
-      259,
-      692,
-      714,
-      1527
-    ],
+    "inkBounds": [259, 692, 714, 1527],
     "inkHash": "5c18083164e9aacea5f49f72397e82b18f5a9426d9a3e3297f75f63535492cb9",
     "undo": {
       "content-desc": "Undo",
@@ -3194,28 +2107,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-real-baseline",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.2 fontWeightAdjustment=0}"
     ],
     "inkPixels": 63666,
-    "inkBounds": [
-      259,
-      691,
-      713,
-      1527
-    ],
+    "inkBounds": [259, 691, 713, 1527],
     "inkHash": "eede5fc9af0188c66a63680e4487ab6aa158ecc523ecf0e8620c181a959cfc16",
     "undo": {
       "content-desc": "Undo",
@@ -3223,51 +2126,31 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-entered",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw400dp w405dp h400dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(9, 0 - 1071, 1187) mAppBounds=Rect(9, 136 - 1071, 1187) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.3 fontWeightAdjustment=0}"
     ],
     "inkPixels": 10264,
-    "inkBounds": [
-      424,
-      510,
-      611,
-      826
-    ],
+    "inkBounds": [424, 510, 611, 826],
     "inkHash": "de82c7a5475878100668d6530f6a22e4e6dbca8867725a999241c38b50dbbcd7",
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-focused",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw400dp w405dp h400dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(9, 0 - 1071, 1187) mAppBounds=Rect(9, 136 - 1071, 1187) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.3 fontWeightAdjustment=0}"
     ],
     "inkPixels": 11029,
-    "inkBounds": [
-      424,
-      481,
-      611,
-      826
-    ],
+    "inkBounds": [424, 481, 611, 826],
     "inkHash": "afcefde0f391c5236bb20f2ed711f201a408fe3b093e292195b15c65fb46087e",
     "undo": {
       "content-desc": "Undo",
@@ -3275,28 +2158,18 @@
       "enabled": "true",
       "bounds": "[39,501][147,609]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-focused-undo",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw400dp w405dp h400dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(9, 0 - 1071, 1187) mAppBounds=Rect(9, 136 - 1071, 1187) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.3 fontWeightAdjustment=0}"
     ],
     "inkPixels": 10318,
-    "inkBounds": [
-      424,
-      481,
-      611,
-      826
-    ],
+    "inkBounds": [424, 481, 611, 826],
     "inkHash": "be99368f4822509117aa0916a92a41fb320cdd07a6ba946de7ab032b5757ef9d",
     "undo": {
       "content-desc": "Undo",
@@ -3304,29 +2177,19 @@
       "enabled": "true",
       "bounds": "[39,501][147,609]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 711
   },
   {
     "label": "split-large",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h570dp 420dpi nrml port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1631) mAppBounds=Rect(0, 136 - 1080, 1631) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 51821,
-    "inkBounds": [
-      259,
-      691,
-      713,
-      1480
-    ],
+    "inkBounds": [259, 691, 713, 1480],
     "inkHash": "b2069bc9766e48115e91145cea045b1e3bb98b7d41482667de70d2f072fad722",
     "undo": {
       "content-desc": "Undo",
@@ -3334,28 +2197,18 @@
       "enabled": "true",
       "bounds": "[21,828][152,959]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-large-undo",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h570dp 420dpi nrml port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1631) mAppBounds=Rect(0, 136 - 1080, 1631) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 48351,
-    "inkBounds": [
-      259,
-      691,
-      713,
-      1480
-    ],
+    "inkBounds": [259, 691, 713, 1480],
     "inkHash": "3f6ad7fb684122f2056a034d952125cd0e5b2c8c8e1f53b36af5da93f4d9b954",
     "undo": {
       "content-desc": "Undo",
@@ -3363,29 +2216,19 @@
       "enabled": "true",
       "bounds": "[21,828][152,959]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3470
   },
   {
     "label": "split-small",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h570dp 420dpi nrml port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1631) mAppBounds=Rect(0, 136 - 1080, 1631) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 51185,
-    "inkBounds": [
-      259,
-      645,
-      713,
-      1480
-    ],
+    "inkBounds": [259, 645, 713, 1480],
     "inkHash": "5d82c1bc507a51bc4f94f249b57600e598257763447b78e000b123e29e44832f",
     "undo": {
       "content-desc": "Undo",
@@ -3393,28 +2236,18 @@
       "enabled": "true",
       "bounds": "[21,828][152,959]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-small-undo",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h570dp 420dpi nrml port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1631) mAppBounds=Rect(0, 136 - 1080, 1631) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 48351,
-    "inkBounds": [
-      259,
-      691,
-      713,
-      1480
-    ],
+    "inkBounds": [259, 691, 713, 1480],
     "inkHash": "3f6ad7fb684122f2056a034d952125cd0e5b2c8c8e1f53b36af5da93f4d9b954",
     "undo": {
       "content-desc": "Undo",
@@ -3422,29 +2255,19 @@
       "enabled": "true",
       "bounds": "[21,828][152,959]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 2834
   },
   {
     "label": "split-exited",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h570dp 420dpi nrml port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1631) mAppBounds=Rect(0, 136 - 1080, 1631) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 61050,
-    "inkBounds": [
-      259,
-      645,
-      713,
-      1480
-    ],
+    "inkBounds": [259, 645, 713, 1480],
     "inkHash": "d8589f0f5607047e97c968be41eb4e695c50ce5d92d0b9b1baa52730c956597f",
     "undo": {
       "content-desc": "Undo",
@@ -3452,28 +2275,18 @@
       "enabled": "true",
       "bounds": "[21,828][152,959]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-exited-undo",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h570dp 420dpi nrml port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 1631) mAppBounds=Rect(0, 136 - 1080, 1631) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 51180,
-    "inkBounds": [
-      259,
-      645,
-      713,
-      1480
-    ],
+    "inkBounds": [259, 645, 713, 1480],
     "inkHash": "fd7ca5fb98b8be96cf85cbf03f8ac11c08c266f81db1e549ca4f04892966d9d2",
     "undo": {
       "content-desc": "Undo",
@@ -3481,29 +2294,19 @@
       "enabled": "true",
       "bounds": "[21,828][152,959]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 9870
   },
   {
     "label": "split-small-corrected",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw231dp w234dp h231dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(234, 0 - 847, 743) mAppBounds=Rect(234, 136 - 847, 743) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.5 fontWeightAdjustment=0}"
     ],
     "inkPixels": 2591,
-    "inkBounds": [
-      452,
-      432,
-      595,
-      592
-    ],
+    "inkBounds": [452, 432, 595, 592],
     "inkHash": "0248712e6a85c7cf9946d2eea596cf333759a1739a0fec28f45a181ef71174f6",
     "undo": {
       "content-desc": "Undo",
@@ -3511,28 +2314,18 @@
       "enabled": "true",
       "bounds": "[309,466][363,520]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-small-corrected-undo",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw231dp w234dp h231dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(234, 0 - 847, 743) mAppBounds=Rect(234, 136 - 847, 743) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.5 fontWeightAdjustment=0}"
     ],
     "inkPixels": 2591,
-    "inkBounds": [
-      452,
-      432,
-      595,
-      592
-    ],
+    "inkBounds": [452, 432, 595, 592],
     "inkHash": "0248712e6a85c7cf9946d2eea596cf333759a1739a0fec28f45a181ef71174f6",
     "undo": {
       "content-desc": "Undo",
@@ -3540,29 +2333,19 @@
       "enabled": "true",
       "bounds": "[309,466][363,520]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 0
   },
   {
     "label": "split-exited-corrected",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.7 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62487,
-    "inkBounds": [
-      259,
-      643,
-      713,
-      1527
-    ],
+    "inkBounds": [259, 643, 713, 1527],
     "inkHash": "27789e945a06e2f342ab4f106e69f3a88728bae3e3057f533db21aa925b8f6ab",
     "undo": {
       "content-desc": "Undo",
@@ -3570,28 +2353,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-exited-corrected-undo",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.7 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62434,
-    "inkBounds": [
-      259,
-      645,
-      713,
-      1527
-    ],
+    "inkBounds": [259, 645, 713, 1527],
     "inkHash": "7bd8ec4bd2b4610a22119682a3bb437b507738f1fbf9c94b15490cddb26da8b1",
     "undo": {
       "content-desc": "Undo",
@@ -3599,29 +2372,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 53
   },
   {
     "label": "freeform-request",
     "pid": "21316",
     "creates": 5,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.7 fontWeightAdjustment=0}"
     ],
     "inkPixels": 65967,
-    "inkBounds": [
-      259,
-      645,
-      713,
-      1527
-    ],
+    "inkBounds": [259, 645, 713, 1527],
     "inkHash": "2c10010dccb01952396c0355e50efaf97686d0063d2d6932f8cac76e63c2faa5",
     "undo": {
       "content-desc": "Undo",
@@ -3629,28 +2392,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-fresh-2-before",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.2 fontWeightAdjustment=0}"
     ],
     "inkPixels": 63649,
-    "inkBounds": [
-      259,
-      692,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 692, 717, 1527],
     "inkHash": "0917acf8f1afd53f92f3155f3269cc94753bcf8122ac83576d0edd58ee668d7b",
     "undo": {
       "content-desc": "Undo",
@@ -3658,28 +2411,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-fresh-2-half",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw400dp w405dp h400dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(9, 0 - 1071, 1187) mAppBounds=Rect(9, 136 - 1071, 1187) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.3 fontWeightAdjustment=0}"
     ],
     "inkPixels": 11043,
-    "inkBounds": [
-      424,
-      481,
-      612,
-      826
-    ],
+    "inkBounds": [424, 481, 612, 826],
     "inkHash": "a8dfd9f7299f9e4d1fb0e142539b292ad3a8c2aa8883a03ac8cb617530f8ae93",
     "undo": {
       "content-desc": "Undo",
@@ -3687,28 +2430,18 @@
       "enabled": "true",
       "bounds": "[39,501][147,609]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-fresh-2-small",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw231dp w234dp h231dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(234, 0 - 847, 743) mAppBounds=Rect(234, 136 - 847, 743) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 2684,
-    "inkBounds": [
-      485,
-      404,
-      575,
-      569
-    ],
+    "inkBounds": [485, 404, 575, 569],
     "inkHash": "ddb6bb995057ab6a6e5b09246ca8123ccac60e37a57f4044d601fa7d9491e06a",
     "undo": {
       "content-desc": "Undo",
@@ -3716,28 +2449,18 @@
       "enabled": "true",
       "bounds": "[309,466][363,520]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-fresh-2-small-undo",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw231dp w234dp h231dp 420dpi smll land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(234, 0 - 847, 743) mAppBounds=Rect(234, 136 - 847, 743) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=multi-window mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.4 fontWeightAdjustment=0}"
     ],
     "inkPixels": 2502,
-    "inkBounds": [
-      485,
-      404,
-      575,
-      569
-    ],
+    "inkBounds": [485, 404, 575, 569],
     "inkHash": "013a11be46eae4b31578324a785067471a82e4249b7f718fff94021c6f01cb9c",
     "undo": {
       "content-desc": "Undo",
@@ -3745,29 +2468,19 @@
       "enabled": "true",
       "bounds": "[309,466][363,520]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 182
   },
   {
     "label": "split-fresh-2-restored",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.6 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62976,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "c945ba2f3aa52bd7091c6e7d6fd952a3c17564fe502183f17380f44a43dcc58e",
     "undo": {
       "content-desc": "Undo",
@@ -3775,28 +2488,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "split-fresh-2-restored-undo",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.6 fontWeightAdjustment=0}"
     ],
     "inkPixels": 59460,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "bf85772a57805d8ca952a5bcc7a7d8af95c0e4ab1a178dfae63590da7cf186f8",
     "undo": {
       "content-desc": "Undo",
@@ -3804,29 +2507,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3516
   },
   {
     "label": "freeform-background-request",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.6 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62840,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "26cc00511bc4f015d52f16d75a379f9e2c561538d8c5a6066ae0a028e284f095",
     "undo": {
       "content-desc": "Undo",
@@ -3834,28 +2527,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-recheck-before",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.6 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62840,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "26cc00511bc4f015d52f16d75a379f9e2c561538d8c5a6066ae0a028e284f095",
     "undo": {
       "content-desc": "Undo",
@@ -3863,28 +2546,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-recheck-applied",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.7 fontWeightAdjustment=300}"
     ],
     "inkPixels": 62840,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "26cc00511bc4f015d52f16d75a379f9e2c561538d8c5a6066ae0a028e284f095",
     "undo": {
       "content-desc": "Undo",
@@ -3892,28 +2565,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-recheck-applied-undo",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.7 fontWeightAdjustment=300}"
     ],
     "inkPixels": 59460,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "bf85772a57805d8ca952a5bcc7a7d8af95c0e4ab1a178dfae63590da7cf186f8",
     "undo": {
       "content-desc": "Undo",
@@ -3921,29 +2584,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 3380
   },
   {
     "label": "bold-recheck-restored",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.8 fontWeightAdjustment=0}"
     ],
     "inkPixels": 64017,
-    "inkBounds": [
-      259,
-      689,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 689, 717, 1527],
     "inkHash": "69d6c7effeccf39d9c4f8d2db661cc54ea02554eff5ba71f63955d11367c6750",
     "undo": {
       "content-desc": "Undo",
@@ -3951,28 +2604,18 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   },
   {
     "label": "bold-recheck-restored-undo",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.8 fontWeightAdjustment=0}"
     ],
     "inkPixels": 59460,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "bf85772a57805d8ca952a5bcc7a7d8af95c0e4ab1a178dfae63590da7cf186f8",
     "undo": {
       "content-desc": "Undo",
@@ -3980,29 +2623,19 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ],
+    "size": [1080, 2400],
     "undoRemovedPixels": 4557
   },
   {
     "label": "final-restored",
     "pid": "23237",
     "creates": 6,
-    "activity": [
-      "eb832ce"
-    ],
+    "activity": ["eb832ce"],
     "config": [
       "{1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h838dp 420dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 136 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.5 s.8 fontWeightAdjustment=0}"
     ],
     "inkPixels": 62985,
-    "inkBounds": [
-      259,
-      694,
-      717,
-      1527
-    ],
+    "inkBounds": [259, 694, 717, 1527],
     "inkHash": "36bf91ccf3734dc51d8eebac983a21e82057cab069bff2c2daeeb20d48004f16",
     "undo": {
       "content-desc": "Undo",
@@ -4010,9 +2643,6 @@
       "enabled": "true",
       "bounds": "[21,1597][152,1728]"
     },
-    "size": [
-      1080,
-      2400
-    ]
+    "size": [1080, 2400]
   }
 ]

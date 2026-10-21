@@ -5,7 +5,7 @@
   "apkSha256": "61a951a9dc2b8278e0c91975623a1dfcd4594924f1c71d0299a2a69944573539",
   "artifactSourceBinding": "Supplied APK tested directly; exact APK-to-checkout source identity unproved.",
   "fileCount": 1644,
-  "totalBytes": 416686573,
+  "totalBytes": 416666233,
   "selfExcluded": true,
   "files": [
     {
@@ -8135,8 +8135,8 @@
     },
     {
       "path": "results/emulator-5686-analysis.json",
-      "bytes": 60218,
-      "sha256": "012a7828e8a3a67d740891e7d5dc111ce1d90b9297b0d30e76ec98f778b62e1a"
+      "bytes": 55418,
+      "sha256": "b6945d1c0f9f0f755e2d9ff66f0d1abe73d1622203bf585cd86bc01949389c51"
     },
     {
       "path": "results/emulator-5686-runner.txt",
@@ -8150,8 +8150,8 @@
     },
     {
       "path": "results/emulator-5688-analysis.json",
-      "bytes": 126817,
-      "sha256": "70d46fecd0bbbbe19229c2134a111a81f10021f34f80e4c124936d283395f8d9"
+      "bytes": 118597,
+      "sha256": "8ef55acd8cd793f2df465c255654cf0ba18e2a4f73bcdf3c7342225e4d52f868"
     },
     {
       "path": "results/emulator-5688-runner.txt",
@@ -8165,8 +8165,8 @@
     },
     {
       "path": "results/emulator-5690-analysis.json",
-      "bytes": 107646,
-      "sha256": "c295b8ce7fcf5f46451c83af922edfc3b5919b84a94f65e139a8cf7a2ae7a2ec"
+      "bytes": 100326,
+      "sha256": "1868d51e0850d3f3490024f136d98a09153c4519028729224bb3254d2ef6a31c"
     },
     {
       "path": "results/emulator-5690-runner.txt",
