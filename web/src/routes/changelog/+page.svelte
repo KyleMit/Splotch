@@ -7,6 +7,7 @@
   import { createReleaseNavigation } from '$lib/releaseNavigation';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
+  import { PAGE_CARDS } from '$lib/components/page/socialCard';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReleaseHistory from '$lib/components/page/ReleaseHistory.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
@@ -14,7 +15,7 @@
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import releases from '$lib/releases.json';
 
-  const DESCRIPTION = 'The complete Splotch changelog, with notes for every public release.';
+  const DESCRIPTION = PAGE_CARDS['/changelog'].description;
 
   const contents: SidebarTocItem[] = releases.map((release) => ({
     id: release.id,
@@ -107,7 +108,7 @@
   <meta name="description" content={DESCRIPTION} />
 </svelte:head>
 
-<SocialCard path="/changelog" title="Splotch Changelog" description={DESCRIPTION} />
+<SocialCard {...PAGE_CARDS['/changelog']} />
 
 <div
   class="changelog"

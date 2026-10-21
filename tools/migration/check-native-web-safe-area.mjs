@@ -261,6 +261,9 @@ async function openScenario(browser, origin, scenario) {
     viewport: { width, height },
     deviceScaleFactor: 1,
     serviceWorkers: 'block',
+    // The picker's card flies in from its opener under a transform the card's box includes, and a
+    // slow runner can hold a mid-flight frame across two reads; reduced motion opens it in place.
+    reducedMotion: 'reduce',
     ...(scenario.fullscreenToggle ? { userAgent: ANDROID_BROWSER_UA } : {}),
   });
   await context.route('**/*', (route) =>

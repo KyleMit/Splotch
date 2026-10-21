@@ -78,10 +78,9 @@ list with its invite URLs, a report token) or one installation's state (its rema
 allowance), and none benefits from a cache, so the rule is a default a new route inherits rather
 than a header each route has to remember. The `OPTIONS` preflight returns before the hook and is
 cached through `Access-Control-Max-Age` instead. Every `/api/*` endpoint is served by that function,
-whose wrapper applies it; Netlify's `netlify.toml` header rules reach only static files. The deploy
-staging (`tools/stage-netlify-functions.mjs`) adds every `/api` path to the SvelteKit catch-all
-function's `excludedPath`, because Netlify's documentation orders neither of two functions that
-match one path ahead of the other.
+whose wrapper applies it; Netlify's `netlify.toml` header rules reach only static files. No other
+function claims an `/api` path, so nothing depends on Netlify's undocumented ordering between two
+functions that match one path; an `/api` path no function claims gets the site's static `404.html`.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`

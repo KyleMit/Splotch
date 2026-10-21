@@ -4,7 +4,7 @@
 // whose first precache entry is this build's own document, and whose every entry is
 // pinned to the bytes this build wrote.
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateSW } from 'workbox-build';
 import {
@@ -17,7 +17,12 @@ import {
   SERVICE_WORKER_PATH,
 } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
-import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
+import {
+  HOME_CARD,
+  PAGE_CARDS,
+  shareImageFor,
+} from '../../web/src/lib/components/page/socialCard.ts';
+import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
 import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
 import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
@@ -35,6 +40,7 @@ import {
   NOT_FOUND_FILE,
   pageOnlyChunks,
   prerenderNativeWebPages,
+  writtenPageDocuments,
 } from './prerender-native-web-pages.mjs';
 import { prerenderNativeWebAdmin } from './prerender-native-web-admin.mjs';
 import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
@@ -44,7 +50,7 @@ export const NATIVE_WEB_EXPORT_DIR = join(NATIVE_APP_DIR, 'dist/web');
 export const NATIVE_WEB_SERVICE_WORKER = SERVICE_WORKER_PATH.slice(1);
 const WEB_STATIC_DIR = join(ROOT, 'web/static');
 const SHIPPING_APP_HTML = join(ROOT, 'web/src/app.html');
-const SHIPPING_MANIFEST = 'site.webmanifest';
+export const WEB_MANIFEST_FILE = 'site.webmanifest';
 const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 // Expo's build-identity file is read by its own tooling, never by the app.
 const EXPORT_METADATA_FILE = 'metadata.json';
@@ -55,6 +61,29 @@ export const APP_SHELL_FILE = 'index.html';
 // offline, the worker answers with the app shell, which shows the same page off the drawing route
 // (src/platform/appPath.web.ts).
 export { NOT_FOUND_FILE };
+
+// What the host serves beside the app's own files, straight from web/static: the coloring books the
+// web app downloads from its own origin (OFFLINE-LIBRARY.md), the page netlify.toml's probe rules
+// answer with, the crawler files, and the link-preview images that pages shared before the React
+// Native web app still name. None is a page asset: they are copied after the worker is generated,
+// so its precache never holds them.
+export const HOSTED_STATIC_ENTRIES = [
+  'coloring',
+  'deny.html',
+  'robots.txt',
+  'sitemap.xml',
+  'share',
+  'large-image.png',
+];
+
+export function isHostedStaticFile(file) {
+  return HOSTED_STATIC_ENTRIES.some((entry) => file === entry || file.startsWith(`${entry}/`));
+}
+
+function copyHostedStatic(outputDir) {
+  for (const entry of HOSTED_STATIC_ENTRIES)
+    cpSync(join(WEB_STATIC_DIR, entry), join(outputDir, entry), { recursive: true });
+}
 
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish (the shipping value).
@@ -180,6 +209,60 @@ export function withShippingTitle(indexHtml) {
   return indexHtml.replace(title, `<title>${HOME_CARD.title}</title>`);
 }
 
+const escapeAttribute = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+
+// What a search snippet and a pasted link show for a page: its meta description and shipping's
+// link-preview card (SocialCard.svelte), on the canonical origin with the page's share image.
+export function socialCardHeadTags({ path, title, description }) {
+  const url = `${SITE_ORIGIN}${path}`;
+  const image = shareImageFor(path);
+  const meta = (key, name, content) =>
+    `<meta ${key}="${name}" content="${escapeAttribute(content)}">`;
+  return [
+    meta('name', 'description', description),
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:url', url),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('property', 'og:image', image.url),
+    meta('property', 'og:image:width', image.width),
+    meta('property', 'og:image:height', image.height),
+    meta('property', 'og:image:alt', image.alt),
+    meta('property', 'og:site_name', 'Splotch'),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:url', url),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+    meta('name', 'twitter:image', image.url),
+    meta('name', 'twitter:image:alt', image.alt),
+  ];
+}
+
+// The card each document carries, by the file the build writes for its path: the drawing screen's
+// and every page with a card. The not-found page and the unlinked console carry none.
+export function documentCards(documents = writtenPageDocuments()) {
+  const files = new Map(documents.map(({ path, file }) => [path, file]));
+  return [
+    { file: APP_SHELL_FILE, card: HOME_CARD },
+    ...Object.values(PAGE_CARDS).map((card) => {
+      const file = files.get(card.path);
+      if (!file) throw new Error(`No document is written for ${card.path}'s card.`);
+      return { file, card };
+    }),
+  ];
+}
+
+export function withSocialCard(html, card) {
+  if (html.includes('property="og:title"'))
+    throw new Error(`The document for ${card.path} already carries a card.`);
+  return withInstallHeadTags(html, socialCardHeadTags(card));
+}
+
 export function webVersionHeadTag(appVersion) {
   return `<meta name=${JSON.stringify(WEB_VERSION_META_NAME)} content=${JSON.stringify(appVersion)}>`;
 }
@@ -187,11 +270,11 @@ export function webVersionHeadTag(appVersion) {
 function copyShippingInstallAssets(outputDir, appVersion) {
   const appHtml = readFileSync(SHIPPING_APP_HTML, 'utf8');
   const tags = shippingInstallHeadTags(appHtml);
-  const manifest = JSON.parse(readFileSync(join(WEB_STATIC_DIR, SHIPPING_MANIFEST), 'utf8'));
+  const manifest = JSON.parse(readFileSync(join(WEB_STATIC_DIR, WEB_MANIFEST_FILE), 'utf8'));
   const assets = new Set([
     ...installHeadTagAssets(tags),
     ...manifestIconAssets(manifest),
-    SHIPPING_MANIFEST,
+    WEB_MANIFEST_FILE,
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
   writeFileSync(join(outputDir, VERSION_JSON_FILENAME), JSON.stringify({ version: appVersion }));
@@ -328,6 +411,10 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
     ...(await prerenderNativeWebPages(outputDir, template)),
     await prerenderNativeWebAdmin(outputDir, template),
   ];
+  for (const { file, card } of documentCards()) {
+    const path = join(outputDir, file);
+    writeFileSync(path, withSocialCard(readFileSync(path, 'utf8'), card));
+  }
   // Each document's policy hashes its own inline scripts, so it is written after their last edit.
   for (const file of new Set([
     APP_SHELL_FILE,
@@ -344,6 +431,7 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
     })
   );
   if (warnings.length) throw new Error(warnings.join('\n'));
+  copyHostedStatic(outputDir);
   console.log(`[native-web] ${outputDir}: ${count} precached files / ${size} bytes`);
 }
 

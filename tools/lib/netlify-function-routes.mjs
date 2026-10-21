@@ -1,9 +1,8 @@
 // The paths the custom Netlify Functions claim through `config.path`, read from
 // their source. Netlify itself reads `config` by static analysis, so it is always
 // a literal; reading it the same way serves the places that cannot import the
-// TypeScript modules: the production function staging
-// (tools/stage-netlify-functions.mjs) and the local function host Vite loads
-// (web/netlifyFunctionsHost.ts). tools/api-smoke/tests/wire-diff.test.mjs checks
+// TypeScript modules: the local function hosts (web/netlifyFunctionsHost.ts and
+// tools/migration/check-native-web-admin.mjs). tools/api-smoke/tests/wire-diff.test.mjs checks
 // this reading against the module's real `config` export.
 
 import { readdirSync, readFileSync } from 'node:fs';

@@ -167,10 +167,10 @@ large native trees (the cause of the `EMFILE` crash this layout fixes). All the 
 run from the repo root; the web toolchain is dispatched into `web/` by `tools/run-web-tool.mjs`.
 
 > **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the lockfile
-> live). The root `netlify.toml` build command runs `npm run build` (which builds the app in `web/`)
-> then `node tools/stage-netlify-functions.mjs`, which copies `web/.netlify → .netlify` so Netlify
-> sees the SSR function in `.netlify/functions-internal`; static assets publish directly from
-> `web/build`. Local `netlify dev` uses `web/netlify.toml` instead.
+> live). The root `netlify.toml` build command runs `npm run build:site`, which exports the React
+> Native web app into `experiments/native-architecture/dist/web` with the files the host serves
+> beside it, and publishes that directory; `netlify/functions/api.ts` serves every `/api` path.
+> Local `netlify dev` uses `web/netlify.toml` instead.
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.

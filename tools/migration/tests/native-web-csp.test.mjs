@@ -37,19 +37,22 @@ describe('withContentSecurityPolicy', () => {
     ]);
   });
 
-  it("keeps shipping's other directives and leaves out the ones a meta policy cannot carry", () => {
+  it("keeps the site's other directives and leaves out the ones a meta policy cannot carry", () => {
     const policy = policyOf(withContentSecurityPolicy(SHELL));
     expect(directive(policy, 'default-src')).toEqual(["'self'"]);
     expect(directive(policy, 'object-src')).toEqual(["'none'"]);
-    expect(directive(policy, 'connect-src')).toEqual(["'self'", 'blob:', 'https://splotch.art']);
-    for (const name of ['frame-ancestors', 'report-uri', 'report-to', 'sandbox'])
+    expect(directive(policy, 'report-to')).toEqual(['csp']);
+    for (const name of ['frame-ancestors', 'report-uri', 'sandbox'])
       expect(directive(policy, name)).toBeUndefined();
   });
 
-  it('lets an export served from another origin reach every hosted service it calls', () => {
+  // The web transports call the page's own origin, whose host serves the /api function, so a
+  // branch preview never reaches production's (issue 3027's L0160).
+  it('connects only to its own origin, never the hosted API the native apps call', () => {
     const connect = directive(policyOf(withContentSecurityPolicy(SHELL)), 'connect-src');
+    expect(connect).toEqual(["'self'", 'blob:']);
     for (const url of [AI_ORIGIN, FEEDBACK_URL, PACK_ORIGIN])
-      expect(connect).toContain(new URL(url).origin);
+      expect(connect).not.toContain(new URL(url).origin);
   });
 
   it('refuses a document that already has a policy or no head', () => {

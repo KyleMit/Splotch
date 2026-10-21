@@ -11,6 +11,39 @@ export const HOME_CARD = {
   description: 'A simple drawing app for toddlers',
 } as const;
 
+// Each page's tab-independent card: its link-preview title and its meta description. The Svelte
+// routes and the React Native web documents (tools/migration/build-native-web.mjs) both read these.
+export const PAGE_CARDS = {
+  '/privacy': {
+    path: '/privacy',
+    title: 'Splotch Privacy Policy',
+    description: "Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics.",
+  },
+  '/changelog': {
+    path: '/changelog',
+    title: 'Splotch Changelog',
+    description: 'The complete Splotch changelog, with notes for every public release.',
+  },
+  '/feedback': {
+    path: '/feedback',
+    title: 'Send Feedback to Splotch',
+    description:
+      'Report a bug or suggest an idea for Splotch, the drawing app for toddlers. No account needed.',
+  },
+  '/beta': {
+    path: '/beta',
+    title: 'Join the Splotch Beta',
+    description:
+      "How to become a Splotch beta tester on Android via Google Play, or on iPhone and iPad via Apple's TestFlight.",
+  },
+  '/design': {
+    path: '/design',
+    title: 'Splotch Design System',
+    description:
+      "The Splotch visual language — tokens, components, and voice — rendered live from the app's own sources.",
+  },
+} as const;
+
 export const SHARE_IMAGE_URL = `${SITE_ORIGIN}/large-image.png`;
 // The size gen-promotional-image.mjs emits; tests/page.spec.ts reads the PNG
 // header and fails when these drift from it.

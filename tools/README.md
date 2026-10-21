@@ -55,7 +55,6 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `optimize-svg-assets.mjs`          | `optimize:svg-assets`, `check:svg-assets` | Optimize shipped SVGs or detect optimization drift            |
 | `print-playwright-version.mjs`     | GitHub setup actions                      | Emit the installed Playwright version for cache keys          |
 | `run-web-tool.mjs`                 | web build, check, and test commands       | Run root-installed web tools with `web/` as their working dir |
-| `stage-netlify-functions.mjs`      | Netlify production build                  | Copy the adapter's SSR function tree to the repository root   |
 | `start-cloud-tunnel.mjs`           | `dev:tunnel`                              | Start the cloud preview server and authenticated tunnel       |
 | `stop-dev-servers.mjs`             | `dev:stop`                                | Stop this checkout's dev servers; refuse any other listener   |
 

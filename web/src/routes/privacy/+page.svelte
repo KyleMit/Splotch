@@ -17,6 +17,7 @@
   import ExternalMark from '$lib/components/design/ExternalMark.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
+  import { PAGE_CARDS } from '$lib/components/page/socialCard';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
@@ -39,8 +40,7 @@
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(LAST_UPDATED));
-  const DESCRIPTION =
-    "Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics.";
+  const DESCRIPTION = PAGE_CARDS['/privacy'].description;
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
 
   const tocItems: SidebarTocItem<SectionId>[] = SECTIONS.map(({ id, label }) => ({
@@ -78,7 +78,7 @@
   <meta name="description" content={DESCRIPTION} />
 </svelte:head>
 
-<SocialCard path="/privacy" title="Splotch Privacy Policy" description={DESCRIPTION} />
+<SocialCard {...PAGE_CARDS['/privacy']} />
 
 {#snippet feedbackLink(label: string)}
   {#if __IS_CAPACITOR__}
