@@ -24,18 +24,39 @@ type AppPageDocument = Readonly<{
   document: 'drawing' | 'page';
 }>;
 
+// Pages only their own document shows. /beta explains how to install the native apps, so it is
+// web-only: its store links and TestFlight invitation stay out of the native app (an App Review
+// 2.3.10 rejection inside an iOS binary) and out of the drawing screen's bundle, which never reads
+// this column and so answers these paths as not found.
+export const DOCUMENT_ONLY_PAGE_PATHS = { beta: '/beta' } as const;
+export type DocumentOnlyPage = keyof typeof DOCUMENT_ONLY_PAGE_PATHS;
+
 export const APP_PAGE_DOCUMENTS = {
   drawing: { render: 'ssg', document: 'drawing' },
   privacy: { render: 'ssg', document: 'page' },
-  changelog: { render: 'client', document: 'drawing' },
+  changelog: { render: 'ssg', document: 'page' },
   feedback: { render: 'ssg', document: 'page' },
-} as const satisfies Record<AppPage, AppPageDocument>;
+  beta: { render: 'ssg', document: 'page' },
+} as const satisfies Record<AppPage, AppPageDocument> &
+  Record<DocumentOnlyPage, { render: 'ssg'; document: 'page' }>;
+type DocumentedPage = keyof typeof APP_PAGE_DOCUMENTS;
 export type DocumentPage = {
-  [Page in AppPage]: (typeof APP_PAGE_DOCUMENTS)[Page]['document'] extends 'page' ? Page : never;
-}[AppPage];
+  [Page in DocumentedPage]: (typeof APP_PAGE_DOCUMENTS)[Page]['document'] extends 'page'
+    ? Page
+    : never;
+}[DocumentedPage];
 
 export function isAppPage(value: string): value is AppPage {
   return Object.hasOwn(APP_PAGE_PATHS, value);
+}
+
+export function isDocumentOnlyPage(value: string): value is DocumentOnlyPage {
+  return Object.hasOwn(DOCUMENT_ONLY_PAGE_PATHS, value);
+}
+
+// Where a page document's own page lives, by route-table page.
+export function documentPagePath(page: DocumentPage) {
+  return isDocumentOnlyPage(page) ? DOCUMENT_ONLY_PAGE_PATHS[page] : APP_PAGE_PATHS[page];
 }
 
 // The table's pages in lookup order: a page the table gains fails to compile until it is listed.

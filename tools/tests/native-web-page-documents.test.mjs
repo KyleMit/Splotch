@@ -9,6 +9,7 @@ const FIRST_PAINT_FALLBACK_MS = 2000;
 import {
   APP_PAGE_DOCUMENTS,
   APP_PAGE_PATHS,
+  DOCUMENT_ONLY_PAGE_PATHS,
   appPageAt,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
 import { crossDocumentNavigation } from '../../experiments/native-architecture/src/pageDocument/appDocument.ts';
@@ -17,6 +18,8 @@ import { FIRST_FRAME_VIEWPORT_ATTRIBUTE } from '../../experiments/native-archite
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
 import {
+  NOT_FOUND_FILE,
+  NOT_FOUND_PROBE_PATH,
   DESIGN_DOCUMENT_DIR,
   DOCUMENT_ENTRIES,
   FLUID_LAYOUTS,
@@ -140,13 +143,21 @@ describe('the route table', () => {
   it('writes a document for each page whose document is its own, and routes every page', () => {
     expect(documentPages()).toEqual([
       { page: 'privacy', path: '/privacy', file: 'privacy.html' },
+      { page: 'changelog', path: '/changelog', file: 'changelog.html' },
       { page: 'feedback', path: '/feedback', file: 'feedback.html' },
+      { page: 'beta', path: '/beta', file: 'beta.html' },
       { page: 'design', path: '/design', file: 'design.html' },
+      { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
     ]);
     for (const [page, path] of Object.entries(APP_PAGE_PATHS)) expect(appPageAt(path)).toBe(page);
-    expect(Object.keys(APP_PAGE_DOCUMENTS)).toEqual(Object.keys(APP_PAGE_PATHS));
-    for (const { page } of documentPages(APP_PAGE_DOCUMENTS, {}))
-      expect(APP_PAGE_DOCUMENTS[page].render).toBe('ssg');
+    expect(Object.keys(APP_PAGE_DOCUMENTS)).toEqual([
+      ...Object.keys(APP_PAGE_PATHS),
+      ...Object.keys(DOCUMENT_ONLY_PAGE_PATHS),
+    ]);
+    const routed = documentPages(APP_PAGE_DOCUMENTS, {}).filter(({ page }) => page !== 'notFound');
+    expect(routed.map(({ page }) => APP_PAGE_DOCUMENTS[page].render)).toEqual(
+      routed.map(() => 'ssg')
+    );
   });
 
   it("answers every route table page from the worker's app navigation", () => {
@@ -166,12 +177,16 @@ describe('the route table', () => {
         },
         {}
       )
-    ).toEqual([{ page: 'changelog', path: '/changelog', file: 'changelog.html' }]);
+    ).toEqual([
+      { page: 'changelog', path: '/changelog', file: 'changelog.html' },
+      { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
+    ]);
   });
 
   it('writes each web-only document after the route table pages, and routes none in the app', () => {
     expect(documentPages({}, { design: '/design' })).toEqual([
       { page: 'design', path: '/design', file: 'design.html' },
+      { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
     ]);
     expect(appPageAt('/design')).toBe('notFound');
     expect(NATIVE_APP_DOCUMENT_PATHS).not.toContain('/design');

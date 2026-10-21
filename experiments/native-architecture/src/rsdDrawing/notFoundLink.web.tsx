@@ -1,19 +1,18 @@
 import type { MouseEvent } from 'react';
 import { css } from 'react-strict-dom';
 import { APP_PAGE_PATHS } from '../information/appPages';
-import { openAppPage } from '../platform/appPath';
 import { buttonSkin } from './RsdButton';
 import { isPlainActivation } from './RsdPageAnchor';
 import type { NotFoundLinkProps } from './notFoundLink';
 import { PAGE_LINE_HEIGHT } from './pageTypography.web';
 
-export function RsdNotFoundLink({ page, variant, children }: NotFoundLinkProps) {
+export function RsdNotFoundLink({ page, variant, onOpen, children }: NotFoundLinkProps) {
   const styles = buttonSkin();
   const chrome = css.props(styles.button, styles.lg, styles[variant]);
   const open = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!isPlainActivation(event)) return;
     event.preventDefault();
-    openAppPage(page);
+    onOpen(page);
   };
   return (
     <a

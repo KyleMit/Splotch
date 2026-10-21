@@ -19,12 +19,16 @@ import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/brea
 import {
   APP_PAGE_DOCUMENTS,
   APP_PAGE_PATHS,
+  documentPagePath,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
 import {
   UNLINKED_DOCUMENT_PATHS,
   WEB_DOCUMENT_PATHS,
 } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
-import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
+import {
+  APP_DOCUMENT_ATTRIBUTE,
+  NOT_FOUND_DOCUMENT,
+} from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import {
   FIRST_FRAME_VIEWPORT_ATTRIBUTE,
@@ -64,18 +68,25 @@ export const DESIGN_DOCUMENT_DIR = `${PAGE_DOCUMENT_DIR}/design`;
 const PAGE_DOCUMENT_RESOLUTION = { [PAGE_DOCUMENT_RESOLVER_OPTION]: true };
 export const PAGE_VARIANT_ATTRIBUTE = 'data-page-variant';
 const EMPTY_ROOT = '<div id="root"></div>';
-const EXPO_NOSCRIPT = /\s*<!--[^>]*-->\s*<noscript>[^<]*<\/noscript>/;
+export const EXPO_NOSCRIPT = /\s*<!--[^>]*-->\s*<noscript>[^<]*<\/noscript>/;
 const HTML_ELEMENT = /<html(\s[^>]*)?>/;
 const TITLE = /<title>[^<]*<\/title>/;
 
-// Every page the route table gives a document of its own, then every web-only document, and the
-// file the build writes each to.
+// The host's answer for a path no file serves, which the build writes as the not-found page's own
+// document; build-native-web.mjs re-exports it.
+export const NOT_FOUND_FILE = '404.html';
+// A path no file serves, which a static host answers with NOT_FOUND_FILE: where a check loads it.
+export const NOT_FOUND_PROBE_PATH = '/this-page-wandered-off';
+
+// Every page the route table gives a document of its own, then every web-only document, then the
+// not-found document, and the file the build writes each to.
 export function documentPages(documents = APP_PAGE_DOCUMENTS, webDocuments = WEB_DOCUMENT_PATHS) {
   return [
     ...Object.entries(documents)
       .filter(([, { document }]) => document === 'page')
-      .map(([page]) => ({ page, path: APP_PAGE_PATHS[page], file: `${page}.html` })),
+      .map(([page]) => ({ page, path: documentPagePath(page), file: `${page}.html` })),
     ...Object.entries(webDocuments).map(([page, path]) => ({ page, path, file: `${page}.html` })),
+    { page: NOT_FOUND_DOCUMENT, path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
   ];
 }
 
@@ -258,6 +269,7 @@ export function pageDocumentHtml(
   {
     page,
     title,
+    head = '',
     fontFaceRules,
     variants,
     sheet,
@@ -292,7 +304,7 @@ export function pageDocumentHtml(
       EXPO_STYLESHEET,
       (_, href) => `<style>${readExportFile(href).toString('utf8')}</style>`
     )
-    .replace('</head>', `${style}\n${pageStyle}\n</head>`)
+    .replace('</head>', `${head}${style}\n${pageStyle}\n</head>`)
     .replace(EXPO_SCRIPT, '')
     .replace(EXPO_NOSCRIPT, '')
     .replace(
