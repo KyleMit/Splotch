@@ -34,6 +34,15 @@ export type DocumentPage = {
   [Page in AppPage]: (typeof APP_PAGE_DOCUMENTS)[Page]['document'] extends 'page' ? Page : never;
 }[AppPage];
 
+// Web-only documents outside the app's own navigation: no screen links to one, so neither the
+// native app nor the drawing screen's document has a route to it (the drawing screen's document
+// treats its path as unknown). The web build writes each its own prerendered document from its own
+// entry (tools/migration/prerender-native-web-pages.mjs), as it does a route table page.
+export const WEB_DOCUMENT_PATHS = {
+  design: '/design',
+} as const;
+export type WebDocument = keyof typeof WEB_DOCUMENT_PATHS;
+
 export function isAppPage(value: string): value is AppPage {
   return Object.hasOwn(APP_PAGE_PATHS, value);
 }

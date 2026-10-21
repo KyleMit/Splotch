@@ -52,7 +52,7 @@ export const MAX_NATIVE_WEB_CORE_CONTROLS_BYTES = 827_535;
 // the 1,649-byte boot script that holds the bundle, so undoing one fails here. A document that
 // loads the bundle itself again fails by the whole bundle.
 export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
-// Each page document's budgets, by route-table page (prerender-native-web-pages.mjs). Its first
+// Each page document's budgets, by page (documentPages in prerender-native-web-pages.mjs). Its first
 // paint is its executable inline scripts and inline CSS, since it names no file before it paints;
 // its page entry is the bundle its boot script loads after that paint. The owner set each from
 // the page's first measured build plus 10%, rounded up (issue 3007, 2026-10-20); ratcheting
@@ -60,8 +60,11 @@ export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 // * privacy: first paint 33,026 measured (1,295 boot JS; 31,731 CSS, 26,866 of it strict.css);
 //   page entry 754,181 measured (Expo's runtime and the entry chunk). A document that names its
 //   page bundle again fails by the whole bundle.
+// * design: first paint 42,708 measured (1,663 boot JS; 41,045 CSS, strict.css plus the
+//   styleguide's own sheet); page entry 867,757 measured, its own entry with every specimen.
 export const MAX_NATIVE_WEB_PAGE_BYTES = {
   privacy: { firstPaint: 36_329, pageEntry: 829_600 },
+  design: { firstPaint: 46_979, pageEntry: 954_533 },
 };
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;

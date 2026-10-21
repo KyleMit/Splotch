@@ -56,7 +56,9 @@
       "entry": [
         "src/prerenderFirstFrame.tsx",
         "src/pageDocument/pageApp.ts",
-        "src/pageDocument/prerender.tsx"
+        "src/pageDocument/prerender.tsx",
+        "src/pageDocument/design/designApp.ts",
+        "src/pageDocument/design/prerender.tsx"
       ],
       "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"],
       "ignore": ["src/feedback/report.ts", "src/feedback/deviceReport.ts"]

@@ -12,10 +12,17 @@ import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { NATIVE_WEB_EXPORT_DIR, NOT_FOUND_FILE } from './build-native-web.mjs';
 import { FIRST_FRAME_THEMES } from './prerender-native-web.mjs';
 import {
+  DOCUMENT_ENTRIES,
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
+  documentEntry,
   documentPages,
 } from './prerender-native-web-pages.mjs';
+import {
+  DESIGN_COPY,
+  DESIGN_PARTS,
+  DESIGN_SECTIONS,
+} from '../../experiments/native-architecture/src/pageDocument/design/designSections.ts';
 
 const PRIVACY_POLICY = join(
   ROOT,
@@ -36,6 +43,18 @@ export const PAGE_TEXT_WITHOUT_JS = {
       heading: title,
       text: [lede, ...sections.map((section) => section.title)],
       outsideLinks: [...new Set(hrefs.filter((href) => OUTSIDE_LINK.test(href)))],
+      followsSectionLinks: true,
+    };
+  },
+  design() {
+    return {
+      heading: DESIGN_COPY.title,
+      text: [
+        DESIGN_COPY.lede,
+        ...Object.values(DESIGN_PARTS).map(({ label }) => label),
+        ...DESIGN_SECTIONS.map(({ label }) => label),
+      ],
+      outsideLinks: [],
       followsSectionLinks: true,
     };
   },
@@ -156,17 +175,18 @@ export async function checkPageDocumentsWithoutJavaScript({
   try {
     for (const { page, path, file } of pages) {
       const expected = PAGE_TEXT_WITHOUT_JS[page]();
-      for (const [layout, { width, height }] of Object.entries(PAGE_VARIANT_VIEWPORTS))
+      const { layouts } = DOCUMENT_ENTRIES[documentEntry(page)];
+      for (const viewport of Object.values(PAGE_VARIANT_VIEWPORTS))
         for (const colorScheme of FIRST_FRAME_THEMES) {
           const context = await browser.newContext({
             javaScriptEnabled: false,
-            viewport: { width, height },
+            viewport: { width: viewport.width, height: viewport.height },
             colorScheme,
           });
           const tab = await context.newPage();
           await tab.goto(`${origin}${path}`);
           await tab.evaluate(() => document.fonts.ready);
-          const key = `${layout}-${colorScheme}`;
+          const key = `${layouts.classOf(viewport)}-${colorScheme}`;
           problems.push(
             ...pageWithoutJsProblems(
               file,

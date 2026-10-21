@@ -4,6 +4,11 @@ const { resolve } = require('node:path');
 // (tools/migration/prerender-native-web-pages.mjs). The drawing screen's export never sets it.
 const PAGE_DOCUMENT_RESOLVER_OPTION = 'pageDocument';
 
+// The styleguide's sources, whose React Strict DOM styles only its own document carries: strict.css,
+// which every document inlines, leaves them out (postcss.config.mjs), and the build compiles them for
+// design.html alone (tools/migration/prerender-native-web-pages.mjs).
+const DESIGN_DOCUMENT_STYLE_SOURCES = 'src/pageDocument/design/**/*.{ts,tsx}';
+
 // The drawing screen loads these modules after it paints, through a facade that renders nothing
 // until the module arrives. A page document renders its whole page at build time and hydrates
 // that markup, so its bundles resolve each facade to the module it wraps.
@@ -25,6 +30,7 @@ function withPageDocumentResolution(context, moduleName, platform) {
 }
 
 module.exports = {
+  DESIGN_DOCUMENT_STYLE_SOURCES,
   PAGE_DOCUMENT_RESOLVER_OPTION,
   PAGE_DOCUMENT_EAGER_MODULES,
   withPageDocumentResolution,

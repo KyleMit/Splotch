@@ -34,6 +34,7 @@ The earlier direction still holds:
 3. [Page-load budget per page](#3-page-load-budget-per-page), with measured figures.
 4. [The pre-cutover plan](#4-pre-cutover-plan), in PR-sized steps.
 5. [Decisions only the owner can make](#5-owner-decisions).
+6. [`/design` on RN web, and the `/dev/*` triage](#6-design-on-rn-web-and-the-dev-triage) (step 6).
 
 ## Measured baseline
 
@@ -126,9 +127,9 @@ export const APP_PAGES = {
 * Every page is SSG. None needs per-request data: `/feedback` posts to a function, `/admin` reads
   its data through the bearer API after load, and `/beta`'s `?os=` tab is read on the client.
   `render: 'ssr'` stays in the type only once a page needs it, with its reason recorded beside it.
-* `/design` is rebuilt against the RN tokens or retired (owner decision). `/dev/*` harnesses retire
-  with the Svelte engine; the notch harness, store frames and share cards come back only if still
-  used.
+* `/design` is rebuilt on RN web from the shared tokens, web only (owner, 2026-10-21; section 6).
+  `/dev/*` harnesses retire with the Svelte engine; section 6's triage names the ones still used,
+  which step 7 ports instead.
 
 ### Documents, entries and the bundle boundary
 
@@ -304,7 +305,7 @@ a function, before the last step can remove it. Steps 1 and 2 are independent an
 | 3    | next        | `/changelog`, `/beta` (with its `?os=` tabs; the 308s stay in `netlify.toml`), the not-found document, and the drawing document's `<noscript>`.                                                                                                                                                                                                                                     | pages, route table, prerender tool                                                                    |
 | 4    |             | `/feedback` as a page posting to `/api/report`, with its no-JS note.                                                                                                                                                                                                                                                                                                                | feedback page                                                                                         |
 | 5    |             | `/admin` as an unlinked RN page on the bearer API.                                                                                                                                                                                                                                                                                                                                  | new admin page                                                                                        |
-| 6    |             | `/design` rebuilt or retired; `/dev/*` retired.                                                                                                                                                                                                                                                                                                                                     | routes, the `design` skill's references                                                               |
+| 6    | in review   | `/design` rebuilt on RN web as its own document and entry; `/dev/*` triaged (section 6).                                                                                                                                                                                                                                                                                            | routes, the `design` skill's references                                                               |
 | 7    |             | Remove SvelteKit and its toolchain, the drawing route's post-build checks and the function staging. `netlify.toml` publishes the RN export with functions for `/api/*`, with the `ignore`, `dependencies` and cache-rule changes above. The web build's API origin goes relative. Write the ADR. Check shell integrity, the API smoke and a Capacitor generation on a deploy of it. | `web/`, `netlify.toml`, `package.json`, lockfile, `src/ai`, `src/feedback`, `src/offlineLibrary`, ADR |
 
 Step 7 leaves the site cutover-ready: RN serves every page and functions serve `/api/*`. Switching
@@ -327,10 +328,12 @@ Answered by the 2026-10-20 direction:
 
 Still open, each with a recommendation:
 
-1. **`/design`: rebuild against the RN tokens, or retire.** Recommend retiring it in step 6. It is a
-   reference for whoever styles the app, not a page users visit. Rebuilding it costs a page entry
-   and its budget, and the RN token projection (`check:migration:rsd-drawing-tokens`) already pins
-   the vocabulary. Rebuild later only if a concrete use appears.
+1. **`/design`: rebuild against the RN tokens, or retire.** Answered 2026-10-21: rebuild ("yeah, i
+   open it all the time - A is a must"); section 6 has the result. The recommendation was retiring
+   it in step 6. It is a reference for whoever styles the app, not a page users visit. Rebuilding it
+   costs a page entry and its budget, and the RN token projection
+   (`check:migration:rsd-drawing-tokens`) already pins the vocabulary. Rebuild later only if a
+   concrete use appears.
 2. **`/admin` session storage, and the cookie login.** Recommend keeping the bearer session in
    memory, so a reload asks for the secret again. `sessionStorage` would survive a reload, but
    memory leaves nothing for an injected script to read after the tab reloads, and the page is
@@ -341,6 +344,43 @@ Still open, each with a recommendation:
    81,816 for `/privacy`, `/changelog` and `/beta`) as a ceiling no cap may exceed. A text page
    built like `/` should land well under them, and a cap at shipping's figure would leave that slack
    to absorb regressions.
+
+## 6. `/design` on RN web, and the `/dev/*` triage
+
+### `/design`
+
+The styleguide is a web-only document, `design.html`, outside the app's navigation: its path is in
+`WEB_DOCUMENT_PATHS` beside the route table, not in `APP_PAGE_PATHS`, so `AppPage` never names it,
+the native app has no route to it, and the drawing screen's document treats `/design` as unknown. It
+renders the RN app's own tokens (`rsdDrawing/tokens.css.ts`) and components, with each token's value
+and usage rule read from the source the RN projection is generated from
+(`web/src/lib/design/tokens.ts`, `tokenUsage.ts`).
+
+* **Its own entry**, `src/pageDocument/design/designApp.ts`, rendered in Node from
+  `design/prerender.tsx`. The information pages share one page entry; adding the specimens to it
+  would have made every information page load them. The drawing-entry drift guard covers it, since
+  it sits under `src/pageDocument/`.
+* **Its own styles.** `strict.css` holds every React Strict DOM style in `src/`, and every document
+  inlines it whole, `/` included. The styleguide's sources are excluded from it
+  (`postcss.config.mjs`, `DESIGN_DOCUMENT_STYLE_SOURCES`) and compiled for `design.html` alone, so
+  `/`'s first paint and `strict.css`'s hash are unchanged.
+* **One layout.** It lays itself out with media queries instead of the window, so it carries one
+  variant per theme (`FLUID_LAYOUTS`) where an information page carries eight.
+* **Budgets:** DESIGN_BUDGET_LINE
+
+### `/dev/*` triage (report only; step 7 removes)
+
+Found by `rg` over `tools/`, `web/tests/`, `web/src/` (outside the routes), `.ruler/`, `docs/` and
+`package.json`, excluding committed evidence logs and the asset-gen idea archive.
+
+| Harness                                              | Still used by                                                                                                                                                                                                                                                                                              | Proposal for step 7                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/dev` (index, `dev-harnesses.ts`)                   | `docs/CONTRIBUTING.md`'s route table                                                                                                                                                                                                                                                                       | Retire with the harnesses it lists.                                                                                                                                                                                                                                           |
+| `/dev/crash`                                         | `web/tests/error-screen.spec.ts` (shipping's root error boundary)                                                                                                                                                                                                                                          | Retire. The RN boundary (`RsdScreenBoundary`, `RsdErrorScreen`) has its own mount tests.                                                                                                                                                                                      |
+| `/dev/engine`                                        | `web/tests/engine-harness.ts` and the Playwright specs on it; the perf harness (`tools/perf/**`, `serve-profile-build.mjs`, the probes); the `run-splotch` skill and its driver; `capture-performance-matrix`'s platform reference; `docs/PROFILING*.md`, `TESTING.md`; `tools/asset-gen/crayon-reference` | Retire with the Svelte engine. Step 7 repoints those docs and skills at the RN app's own probes; no RN counterpart of the bare-canvas harness is needed.                                                                                                                      |
+| `/dev/notch`, `/dev/notch/frame`                     | `web/tests/safe-area-matrix.spec.ts` (CI); `docs/SAFE-AREA.md` and the knowledge map; `securityHeaders.ts`'s `FRAMEABLE_ROUTE`; `lint-token-styles.mjs`'s allowlist                                                                                                                                        | Port. It is the only check of the safe-area matrix, by eye and in CI. Keep the framework-free dataset (`lib/devices.ts`, `orientations.ts`, `deviceProfile.ts`) and render the RN drawing screen under each profile's insets on rn-web-chromium; retire the Svelte frames.    |
+| `/dev/share-cards`                                   | `npm run gen:share-cards` (`tools/marketing-assets/gen-share-cards.mjs`, `share-card-inputs.mjs`); `web/tests/share-cards.spec.ts`                                                                                                                                                                         | Port. The committed link-preview PNGs keep serving after step 7, but regenerating them needs a renderer. Render `ShareCard` as an RN page document (or a static template) for `gen:share-cards`.                                                                              |
+| `/dev/store-frames` (`render`, `identity`, `assets`) | `npm run gen:store-assets` and `:frames`; `gen:readme-hero` (`STORE_FRAME_IDENTITY_PATH`); `tools/mobile/check-static-bundle.mjs` (`storePage` copy); `committed-captures.test.mjs`; ADR-0122; `lint-token-styles.mjs`'s allowlist                                                                         | Port. Store screenshots and the README hero must show the RN app once it ships. The frame data (`lib/geometry.ts`, `pages.ts`, `targets.ts`, `paths.ts`, `marks.ts`) is framework-free and stays; the Svelte frame components and the capture flow move to the RN web export. |
 
 ## Files
 
