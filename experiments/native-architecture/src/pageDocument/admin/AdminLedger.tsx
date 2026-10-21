@@ -1,11 +1,17 @@
 import { css, html } from 'react-strict-dom';
+import { timeAgo } from '../../../../../web/src/lib/adminFormat';
 import { colors, dimensions, fonts, motion } from '../../rsdDrawing/tokens.css';
-import type { Invite } from './adminApi';
+import type { CodeUsage, Invite } from './adminApi';
 
-// The console's "Access codes" table, the shipping InviteLedger without its usage columns, which
-// the bearer API does not carry. Explicit ARIA table roles keep the header-to-cell association
-// whatever the flex layout does. On a phone each row's actions take a second line of their own,
-// so every action stays one tap away instead of behind a disclosure.
+// The console's "Access codes" table, the shipping InviteLedger. Explicit ARIA table roles keep the
+// header-to-cell association whatever the flex layout does. Wide, each code's generation count and
+// last use take columns of their own; narrower, they read as one line under the code. On a phone
+// each row's actions take a second line of their own, so every action stays one tap away instead
+// of behind a disclosure.
+
+// Each listed code's tally, absent for a code added since it was read; null when the tallies are
+// unavailable, which hides the usage columns rather than calling every code never used.
+export type LedgerUsage = ReadonlyMap<string, CodeUsage | null> | null;
 
 type CopyTarget = 'code' | 'url';
 
@@ -14,6 +20,13 @@ function copyKey(token: string, target: CopyTarget) {
 }
 
 const COMPACT = '@media (max-width: 560px)';
+// Where four columns would squeeze the code, its usage moves under it (shipping's breakpoint).
+const STACKED = '@media (max-width: 800px)';
+const STACKED_ONLY = '@media (min-width: 561px) and (max-width: 800px)';
+const GENERATIONS_COLUMN_PX = 100;
+const LAST_USED_COLUMN_PX = 120;
+const ACTIONS_COLUMN_PX = 272;
+const USAGE_SEPARATOR_INSET_PX = 4;
 const ROW_INSET_PX = 20;
 const HEAD_PADDING_BLOCK_PX = 10;
 const HEAD_TRACKING = '0.06em';
@@ -32,9 +45,8 @@ const styles = css.create({
     overflow: 'hidden',
   },
   headRow: {
-    display: { default: 'flex', [COMPACT]: 'none' },
+    display: { default: 'flex', [STACKED]: 'none' },
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: dimensions.space2,
     paddingBlock: HEAD_PADDING_BLOCK_PX,
     paddingLeft: ROW_INSET_PX,
@@ -66,22 +78,75 @@ const styles = css.create({
     borderBottomColor: colors.border,
   },
   lastRow: { borderBottomWidth: 0 },
-  token: {
+  codeHeader: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
+  generationsColumn: { flexShrink: 0, width: GENERATIONS_COLUMN_PX },
+  lastUsedColumn: { flexShrink: 0, width: LAST_USED_COLUMN_PX },
+  actionsColumn: { flexShrink: 0, width: ACTIONS_COLUMN_PX },
+  info: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: { default: 0, [COMPACT]: '100%' },
     minWidth: 0,
+  },
+  token: {
     color: colors.textStrong,
     fontFamily: MONO_FAMILY,
     fontSize: dimensions.fontSizeSm,
     fontWeight: fonts.boldWeight,
     overflowWrap: 'anywhere',
   },
+  usageLine: {
+    display: { default: 'none', [STACKED]: 'block' },
+    color: colors.textSoft,
+    fontSize: dimensions.fontSizeXs,
+    fontFamily: fonts.mediumFamily,
+    fontWeight: fonts.mediumWeight,
+  },
+  usageCount: {
+    color: colors.brandText,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
+  },
+  usageSeparator: { marginInline: USAGE_SEPARATOR_INSET_PX, color: colors.border },
+  never: { fontStyle: 'italic' },
+  generations: {
+    display: { default: 'block', [STACKED]: 'none' },
+    flexShrink: 0,
+    width: GENERATIONS_COLUMN_PX,
+    color: colors.textStrong,
+    fontSize: dimensions.fontSizeMd,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
+  },
+  lastUsed: {
+    display: { default: 'block', [STACKED]: 'none' },
+    flexShrink: 0,
+    width: LAST_USED_COLUMN_PX,
+    color: colors.textSoft,
+    fontSize: dimensions.fontSizeXs,
+    fontFamily: fonts.mediumFamily,
+    fontWeight: fonts.mediumWeight,
+  },
+  noTally: {
+    color: colors.textSoft,
+    fontFamily: fonts.mediumFamily,
+    fontWeight: fonts.mediumWeight,
+    fontStyle: 'italic',
+  },
+  noGenerations: { fontSize: dimensions.fontSizeSm },
   actions: {
     display: 'flex',
     flexDirection: 'row',
     gap: dimensions.space2,
+    flexShrink: 0,
     flexBasis: { default: 'auto', [COMPACT]: '100%' },
+  },
+  // The wide layout's fourth column, so its buttons line up under the Actions header.
+  actionsBesideUsage: {
+    width: { default: ACTIONS_COLUMN_PX, [STACKED_ONLY]: 'auto', [COMPACT]: '100%' },
   },
   action: {
     boxSizing: 'border-box',
@@ -137,12 +202,14 @@ const styles = css.create({
 
 export function AdminLedger({
   invites,
+  usage,
   busy,
   copied,
   onCopy,
   onRemove,
 }: {
   invites: readonly Invite[];
+  usage: LedgerUsage;
   busy: boolean;
   // The copyKey of the action showing "Copied!", or ''.
   copied: string;
@@ -161,10 +228,20 @@ export function AdminLedger({
     <html.div role="table" aria-label="Access codes" style={styles.ledger}>
       <html.div role="rowgroup">
         <html.div role="row" style={styles.headRow}>
-          <html.span role="columnheader" style={styles.header}>
+          <html.span role="columnheader" style={[styles.header, styles.codeHeader]}>
             Code
           </html.span>
-          <html.span role="columnheader" style={styles.header}>
+          {usage ? (
+            <>
+              <html.span role="columnheader" style={[styles.header, styles.generationsColumn]}>
+                Generations
+              </html.span>
+              <html.span role="columnheader" style={[styles.header, styles.lastUsedColumn]}>
+                Last used
+              </html.span>
+            </>
+          ) : null}
+          <html.span role="columnheader" style={[styles.header, usage && styles.actionsColumn]}>
             Actions
           </html.span>
         </html.div>
@@ -174,6 +251,7 @@ export function AdminLedger({
           <InviteRow
             key={invite.token}
             invite={invite}
+            usage={usage === null ? undefined : (usage.get(invite.token) ?? null)}
             last={index === invites.length - 1}
             busy={busy}
             copied={copied}
@@ -186,8 +264,48 @@ export function AdminLedger({
   );
 }
 
+function UsageCells({ usage }: { usage: CodeUsage | null }) {
+  if (usage === null)
+    return (
+      <>
+        <html.span role="cell" style={[styles.generations, styles.noTally, styles.noGenerations]}>
+          —
+        </html.span>
+        <html.span role="cell" style={[styles.lastUsed, styles.noTally]}>
+          Never used
+        </html.span>
+      </>
+    );
+  return (
+    <>
+      <html.span role="cell" style={styles.generations}>
+        {usage.count}
+      </html.span>
+      <html.span role="cell" style={styles.lastUsed}>
+        {timeAgo(usage.lastUsed)}
+      </html.span>
+    </>
+  );
+}
+
+function UsageLine({ usage }: { usage: CodeUsage | null }) {
+  if (usage === null)
+    return <html.span style={[styles.usageLine, styles.never]}>Never used</html.span>;
+  return (
+    <html.span style={styles.usageLine}>
+      <html.strong style={styles.usageCount}>{usage.count}</html.strong>{' '}
+      {usage.count === 1 ? 'generation' : 'generations'}
+      <html.span aria-hidden style={styles.usageSeparator}>
+        ·
+      </html.span>
+      {timeAgo(usage.lastUsed)}
+    </html.span>
+  );
+}
+
 function InviteRow({
   invite,
+  usage,
   last,
   busy,
   copied,
@@ -195,6 +313,8 @@ function InviteRow({
   onRemove,
 }: {
   invite: Invite;
+  // undefined: the tallies are unavailable, so the row shows none.
+  usage: CodeUsage | null | undefined;
   last: boolean;
   busy: boolean;
   copied: string;
@@ -205,10 +325,15 @@ function InviteRow({
   const linkCopied = copied === copyKey(invite.token, 'url');
   return (
     <html.div role="row" style={[styles.row, last && styles.lastRow]}>
-      <html.span role="cell" style={styles.token}>
-        {invite.token}
-      </html.span>
-      <html.div role="cell" style={styles.actions}>
+      <html.div role="cell" style={styles.info}>
+        <html.span style={styles.token}>{invite.token}</html.span>
+        {usage === undefined ? null : <UsageLine usage={usage} />}
+      </html.div>
+      {usage === undefined ? null : <UsageCells usage={usage} />}
+      <html.div
+        role="cell"
+        style={[styles.actions, usage !== undefined && styles.actionsBesideUsage]}
+      >
         <html.button
           type="button"
           aria-label={`${codeCopied ? 'Copied' : 'Copy'} ${invite.token}`}

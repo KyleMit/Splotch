@@ -1,4 +1,5 @@
 import * as adminLogin from '../../web/src/lib/server/api/adminLogin';
+import * as adminStats from '../../web/src/lib/server/api/adminStats';
 import * as adminTokens from '../../web/src/lib/server/api/adminTokens';
 import { apiFunction } from '../../web/src/lib/server/api/apiFunction';
 import * as cspReport from '../../web/src/lib/server/api/cspReport';
@@ -17,6 +18,7 @@ import * as verifyKey from '../../web/src/lib/server/api/verifyKey';
 // fails if they and this table's keys disagree.
 export default apiFunction({
   '/api/admin/login': adminLogin,
+  '/api/admin/stats': adminStats,
   '/api/admin/tokens': adminTokens,
   '/api/csp-report': cspReport,
   '/api/free-generation-grant': freeGenerationGrant,
@@ -32,6 +34,7 @@ export default apiFunction({
 export const config = {
   path: [
     '/api/admin/login',
+    '/api/admin/stats',
     '/api/admin/tokens',
     '/api/csp-report',
     '/api/free-generation-grant',

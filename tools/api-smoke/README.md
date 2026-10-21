@@ -48,7 +48,11 @@ cross-site form posts SvelteKit's CSRF guard refuses — driven in process throu
 Blobs store. `record-wire-baseline.mjs <sveltekit-render.mjs>` drove it through the last
 adapter-netlify build that still served `/api` and wrote `fixtures/wire-baseline.json`;
 `tests/wire-diff.test.mjs` (in `npm run test:tools`) holds the function in `netlify/functions` to
-those answers, status, headers and body, and checks each `/api` path is claimed exactly once.
+those answers, status, headers and body, and checks each `/api` path is claimed exactly once. A path
+added since (`ADDED_API_PATHS` in `lib/wire-cases.mjs`) has no SvelteKit answer: the same test
+records the function's own answers to `addedWireCases()` in `fixtures/wire-additions.json` the first
+time and holds every later run to them. Rewrite that file with `vitest -u` only when an added
+endpoint's wire is meant to change, and never edit `wire-baseline.json` to admit a new path.
 
 ## Hosted deploy inputs and outputs
 
