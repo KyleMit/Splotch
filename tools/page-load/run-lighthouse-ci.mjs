@@ -28,7 +28,6 @@ import {
   rejectUnknownFlags,
   runMain,
 } from '../lib/proc.mjs';
-import { MEASURED_SURFACE, SPEC_FILE } from '../perf/check-matrix-staleness.mjs';
 import { buildAndPreview } from '../perf/lib/profile-preview.mjs';
 
 export const PROFILE_VERSION = 1;
@@ -46,6 +45,22 @@ const DEFAULT_PORT = 4197;
 const DEFAULT_SAMPLES = 3;
 export const LIGHTHOUSE_TIMEOUT_MS = 120_000;
 const LIGHTHOUSE_CLI = fileURLToPath(import.meta.resolve('lighthouse/cli/index.js'));
+
+// The product surface a capture measures, so a baseline names the sources it was taken from. An
+// enumerated directory scope misses by the margin an enumeration always does: `web/src` alone
+// missed a commit that changed only sound assets. So the surface spans source, the static assets
+// served with it, and the build inputs that decide what the bundle contains. `web/tests` is
+// excluded because a spec cannot affect the product, and `package.json` in favour of
+// `pnpm-lock.yaml`, which moves when dependencies do rather than for every script added.
+const MEASURED_SURFACE = [
+  'web/src',
+  'web/static',
+  'web/svelte.config.js',
+  'web/vite.config.ts',
+  'pnpm-lock.yaml',
+];
+// Unit tests are colocated beside their source, so spec-only drift is filtered out by name.
+const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
 
 // A name alone proves nothing about who wrote a file, so the runner leaves this in every folder
 // it makes and replaces no folder without it.

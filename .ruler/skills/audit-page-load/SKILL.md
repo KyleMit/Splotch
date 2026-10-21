@@ -59,12 +59,12 @@ which on this app is whichever tiny chunk happens to run first (a 670-byte safe-
 whole 206 ms boot task). The trace's `RunTask` children tell the truth: `v8.evaluateModule` is
 module evaluation (the engine boot), `RunMicrotasks` under
 `BlinkScheduler_PerformMicrotaskCheckpoint` is SvelteKit hydration, and Lighthouse's trace carries
-no CPU samples. For function-level attribution run `npm run perf:web:mount` (its trace has the V8
-sampler) on a build made with `node tools/run-web-tool.mjs vite build --minify false` (then
-`--no-build`), and for the caller of a forced style recalc trace with
-`disabled-by-default-devtools.timeline.stack` so `UpdateLayoutTree` events carry a stack; the
-sampler's clock trails the trace clock by up to ~20 ms, which is enough to blame the wrong native
-call.
+no CPU samples. For function-level attribution record the load in Chrome DevTools' Performance panel
+(its trace has the V8 sampler) on a build made with
+`node tools/run-web-tool.mjs vite build --minify false`, and for the caller of a forced style recalc
+trace with `disabled-by-default-devtools.timeline.stack` so `UpdateLayoutTree` events carry a stack;
+the sampler's clock trails the trace clock by up to ~20 ms, which is enough to blame the wrong
+native call.
 
 **What's fixed** (the "slow device + slow internet" definition): Lighthouse's default mobile
 emulation — **simulated Slow 4G + 4× CPU throttle** — for every run. Form factors: **phone
@@ -94,8 +94,9 @@ better-suited tool:
 
 * **Which JS/CSS is unused, and where in source** → audit the **preview build with source maps**
   (real bytes + readable attribution).
-* **Why is the main thread busy / drawing jank** → the `profiling` skill (`npm run perf:web`), which
-  profiles the production bundle with named marks.
+* **Why is the main thread busy / drawing jank** → the `profiling` skill, whose probe replays
+  measure the native app's drawing; for the web export, record the interaction in Chrome DevTools'
+  Performance panel.
 
 ## Running from a Claude-Code-on-web sandbox (the proxy/TLS workaround)
 
@@ -134,7 +135,8 @@ you pull `dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakd
 `bootup-time` `details.items` without opening the 464 KB HTML. Always inspect `long-tasks` too. If
 every item is attributed to `_lighthouse-eval.js`, the reported TBT and derived performance score
 include Lighthouse's own injected work; the driver marks those TBT values with `*`. Do not turn that
-value into an app finding — use `npm run perf:web:mount` for an independent startup trace first.
+value into an app finding — record an independent startup trace in Chrome DevTools' Performance
+panel first.
 
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
@@ -174,8 +176,8 @@ audit and how to read the numbers*; the findings live in `docs/AUDIT.md` (then t
 can be scaled and counted in TBT even though Lighthouse excludes the same URL from `bootup-time`.
 This reproduced in both Lighthouse 12.8.2 and 13.4.0. When every `long-tasks` item has that URL,
 treat TBT and the derived Perf score as contaminated, inspect the observed `main-thread-tasks`, and
-confirm any startup concern with `npm run perf:web:mount` before filing it. If an app URL also
-appears, investigate that app-attributed work normally.
+confirm any startup concern with an independent DevTools startup trace before filing it. If an app
+URL also appears, investigate that app-attributed work normally.
 
 **False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit currently
 flags *"`fetchpriority=high` should be applied: false"*. The LCP is `.paper-sheet`, whose tiny CSS

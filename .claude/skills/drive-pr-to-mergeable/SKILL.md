@@ -1,6 +1,6 @@
 ---
 name: drive-pr-to-mergeable
-description: Take one open pull request from opened to mergeable — build the reviewer prompt, get an independent rival-agent review, address every thread, repeat that round at most once more, drive CI to green, reconcile conflicts, and return a shippable-or-leftovers verdict. Never merges. Use whenever an open PR needs the repo's standard independent-review and CI loop, standalone or as the current tip of a stack; the skills that open PRs (ship-issue, fix-audits, create-stacked-prs, improve-performance-matrix) delegate here rather than restating the loop.
+description: Take one open pull request from opened to mergeable — build the reviewer prompt, get an independent rival-agent review, address every thread, repeat that round at most once more, drive CI to green, reconcile conflicts, and return a shippable-or-leftovers verdict. Never merges. Use whenever an open PR needs the repo's standard independent-review and CI loop, standalone or as the current tip of a stack; the skills that open PRs (ship-issue, fix-audits, create-stacked-prs) delegate here rather than restating the loop.
 ---
 
 # Drive a PR to mergeable
@@ -121,10 +121,8 @@ Steps 2 and 3 run **twice at most**, and often once:
   three; they become action items in step 6.
 
 The bound is a budget, not a quality target: a loop with no bound optimizes toward a zero-findings
-state a non-trivial PR never reaches. A caller may widen it, and says so when it invokes this skill
-— `improve-performance-matrix` runs round two unconditionally and allows one verification round
-after a material fix, inside the rival's own three-round budget. The default above holds everywhere
-else.
+state a non-trivial PR never reaches. A caller may widen it, and says so when it invokes this skill;
+the default above holds everywhere else.
 
 ## 5. Drive it to mergeable
 

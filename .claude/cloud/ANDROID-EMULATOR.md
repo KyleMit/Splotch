@@ -209,7 +209,7 @@ The constraint is the missing accelerator, and nothing inside the container can 
 that actually solve it are all outside:
 
 * **A physical device** — the only target that can be profiled at all
-  ([`docs/PROFILING-ANDROID.md`](../../docs/PROFILING-ANDROID.md)).
+  ([`docs/PROFILING.md`](../../docs/PROFILING.md)).
 * **A cloud device farm** (Firebase Test Lab, or a hosted device cloud) driven from the session over
   the network — real hardware, no local virtualization, and the natural home for
   [Maestro](../../docs/TESTING.md) smoke runs.

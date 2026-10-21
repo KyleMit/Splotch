@@ -1,50 +1,34 @@
 ---
 name: profiling
-description: Capture and read an automated performance profile of the drawing app (web, Android, iOS). Use when measuring drawing/canvas performance, investigating jank or a slow interaction, verifying a perf change, or checking for regressions over time. Covers the `npm run perf:*` harness, how to read report.md/summary.json, and the bottleneck decision guide.
+description: Measure the React Native app's drawing performance with replayable evidence — the in-app perf probe, committed replay traces, and Android's platform instruments. Use when measuring drawing performance, investigating jank or a slow interaction, verifying a perf change, or checking for regressions.
 ---
 
 # Splotch — Performance Profiling
 
-The harness (`tools/perf/`, ADR-0032) drives a deterministic "toddler session" through the app while
-recording a profile, then writes a machine-readable report. One command per platform; the analyzer
-is pure and re-runnable on any saved trace.
+The React Native app's performance evidence is programmatic and replayable: a probe Release build
+writes one JSON line per contact cohort to the device log, and the same build replays a committed
+touch trace with no finger on the screen. The same trace on the same device before and after a
+change is the A/B.
 
 **[`docs/PROFILING.md`](../../../docs/PROFILING.md)** is the reference:
 
-| Section                                 | Answers                                                                                                          |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Commands**                            | Which `perf:*` command profiles what, under which throttle, and what it captures                                 |
-| **Which undo run to reach for**         | `perf:web:undo` vs `perf:web:undo:webkit` — they answer different questions; run both on commit/snapshot changes |
-| **How capture works**                   | Why the numbers mean what they mean, and the measurement caveats                                                 |
-| **Reading report.md**                   | Turning a report into a named bottleneck                                                                         |
-| **Known findings & deferred tradeoffs** | Whether what you found is already understood and deliberately accepted                                           |
-| **Native specifics**                    | Android/iOS capture differences                                                                                  |
+| Section                           | Answers                                                                                |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| **Which evidence answers what**   | Which instrument to reach for: the probe, a replay, `gfxinfo`, Perfetto, or Lighthouse |
+| **Running an experiment**         | The A/B procedure, and which replays to discard                                        |
+| **Android platform instruments**  | The `gfxinfo framestats` and Perfetto commands, and what each can and cannot see       |
+| **Device traps that still apply** | Guided Access, overnight updates, sleep, host load, a full disk, device identifiers    |
 
-**[`docs/PROFILING-IPAD.md`](../../../docs/PROFILING-IPAD.md)** is the separate runbook for a
-**physical iPad** — the highest-fidelity target, and the only one that exercises the real
-WebKit/JavaScriptCore engine, Apple GPU, and 120 Hz ProMotion display together. Read it before any
-real-device profiling; start at its "Which approach to use" table.
-
-**[`docs/PROFILING-ANDROID.md`](../../../docs/PROFILING-ANDROID.md)** is the equivalent for a
-**physical Android device**, where the platform gives up far more than Apple's does: per-frame stage
-timings from `dumpsys gfxinfo … framestats`, whole-device Perfetto traces (including `sched`, which
-answers "was the app slow or was it descheduled?"), and CDP `Tracing` inside the WebView — the one
-instrument with no iPad counterpart. Start at its "Which instrument answers which question" table.
-
-**[`docs/PROFILING-MECHANICS.md`](../../../docs/PROFILING-MECHANICS.md)** answers what the harness
-is *made of* rather than what a command measures: the layer model, which transport drives which
-deployment target, what each transport actually is, every driver that was tried and ruled out with
-the evidence against it, and a glossary of the toolchain's vocabulary. Read it when choosing a
-transport, when a capture path fails and the question is whether the tool or the device is at fault,
-or when a term in an artifact is unfamiliar.
+The probe's build commands, its log fields and the replay launch commands live in
+[`experiments/native-architecture/DEVELOPMENT.md`](../../../experiments/native-architecture/DEVELOPMENT.md)
+("Performance probe" and "Replay"). Read them before building a probe Release.
 
 Two things to check before drawing a conclusion:
 
-* **Pick the command that brackets the window you care about.** Every web command except
-  `perf:web:mount` starts tracing *after* load, so startup questions need `perf:web:mount`.
-* **Undo memory does not show up on the JS heap.** History rasters live in canvas backing stores, so
-  `performance.memory` stays flat while real memory grows; `perf:web:undo` reports the true cost
-  analytically.
+* **Name the number first.** Say which cohort field of which trace would change the decision before
+  building anything, and give each hypothesis at most two attempts.
+* **A replay that ran late measures the hold, not the change.** Discard any replay whose
+  `emissionLateness` exceeds a frame, and on iOS collect the log after the run rather than streaming
+  it.
 
-For page-load / Core Web Vitals work on a throttled device, use `audit-page-load` instead. For the
-cross-platform snapshot, `capture-performance-matrix`.
+For page-load / Core Web Vitals work on the web export, use `audit-page-load` instead.

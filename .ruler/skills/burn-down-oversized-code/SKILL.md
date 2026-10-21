@@ -120,8 +120,9 @@ All of these, judged by exit code:
   the native bundle, which no web-side gate sees.
 * `files` mode with E2E splits: the Playwright test count (`npm run test:e2e -- --list`) is equal at
   the base and the tip.
-* A split on a drawing or gesture hot path: name the `npm run perf:*` capture that would confirm it,
-  and run it only if the machine is free (see "Concurrent worktrees" in CLAUDE.md).
+* A split on a drawing or gesture hot path: name the probe replay that would confirm it (the
+  `profiling` skill), and run it only if the machine is free (see "Concurrent worktrees" in
+  CLAUDE.md).
 
 ## 7. PR and review
 
