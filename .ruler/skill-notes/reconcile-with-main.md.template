@@ -60,8 +60,9 @@ through a live repo.
   already answered elsewhere: `ship-campaign`'s parallel gate merges the exact commit the survey
   covered (`incoming[0].sha`), never the moving ref. So `--base=<branch>` came back with that rule
   moved into Step 2 for every caller, and the Notes thread the one base through Steps 2 and 4 and
-  the report. The space form `--base <branch>` and an empty value exit 2, as an unknown option
-  does, so a malformed base never surveys `main` and is believed.
+  the report. The space form `--base <branch>`, an empty value and a repeated `--base` exit 2, as
+  an unknown option does, so a malformed base never surveys some other base and is believed. The
+  repeat was the rival review's catch: the shared `readValueFlag` reads only the first occurrence.
 * **Rebase instead of merge.** A long-running branch is the case this skill targets, and by
   definition it is pushed and often reviewed. Rebasing rewrites history a reviewer has read. It also
   destroys the legibility the skill depends on — after a rebase there is no incoming set to report

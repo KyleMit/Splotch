@@ -38,6 +38,8 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
     [['--bogus'], 'Unknown option(s): --bogus'],
     [['--base', 'release'], '--base takes a value: write --base=<value>'],
     [['--base='], '--base= is empty'],
+    [['--base=main', '--base=codex/native-migration'], '--base is given more than once'],
+    [['--base=main', '--base='], '--base is given more than once'],
   ])('exits 2 on %j instead of surveying main anyway', (argv, message) => {
     const run = spawnSync(process.execPath, [join(repoRoot, path), ...argv], { encoding: 'utf8' });
 

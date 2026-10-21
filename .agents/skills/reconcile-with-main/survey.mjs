@@ -477,10 +477,13 @@ function report(result) {
 const USAGE = 'Usage: survey.mjs [--base=<branch>] [--no-fetch] [--json]';
 const KNOWN_SWITCHES = new Set(['--no-fetch', '--json']);
 
-// Anything unrecognised is rejected rather than ignored, so a misspelt or
-// space-separated base fails instead of quietly surveying main and being
-// believed as a survey of the base that was asked for.
+// Anything unrecognised is rejected rather than ignored, so a misspelt,
+// space-separated or repeated base fails instead of quietly surveying another
+// base and being believed as a survey of the one that was asked for.
 export function parseSurveyArgs(argv) {
+  if (argv.filter((arg) => arg.startsWith('--base=')).length > 1) {
+    throw new Error('--base is given more than once: name one base');
+  }
   const baseBranch = readValueFlag(argv, 'base') ?? DEFAULT_BASE_BRANCH;
   const unknown = argv.filter((arg) => !KNOWN_SWITCHES.has(arg) && !arg.startsWith('--base='));
   if (unknown.length > 0) throw new Error(`Unknown option(s): ${unknown.join(' ')}`);
