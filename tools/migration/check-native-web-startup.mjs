@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import { APP_SHELL_FILE, NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
 import { startupScriptList } from './prerender-native-web.mjs';
-import { documentPages } from './prerender-native-web-pages.mjs';
+import { writtenPageDocuments } from './prerender-native-web-pages.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 // An empty app (registerRootComponent of one View) exported by this Expo and React Native Web
@@ -60,8 +60,12 @@ export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 // * privacy: first paint 33,026 measured (1,295 boot JS; 31,731 CSS, 26,866 of it strict.css);
 //   page entry 754,181 measured (Expo's runtime and the entry chunk). A document that names its
 //   page bundle again fails by the whole bundle.
+// * admin: first paint 17,072 measured (1,280 boot JS; 15,792 CSS: its own compiled rules, the
+//   tokens and the Quicksand faces, never strict.css); page entry 262,531 measured, one chunk of
+//   React DOM and the console without React Native Web (prerender-native-web-admin.mjs).
 export const MAX_NATIVE_WEB_PAGE_BYTES = {
   privacy: { firstPaint: 36_329, pageEntry: 829_600 },
+  admin: { firstPaint: 18_780, pageEntry: 288_785 },
 };
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
@@ -268,11 +272,11 @@ export function nativeWebPageDocumentProblems({ file, measurement, budget }) {
   return problems;
 }
 
-// Holds every page document the route table names to its own budgets, and the table to exactly
-// those pages.
+// Holds every page document the build writes to its own budgets, and the table to exactly those
+// pages.
 export function checkNativeWebPageDocuments({
   exportDir = NATIVE_WEB_EXPORT_DIR,
-  pages = documentPages(),
+  pages = writtenPageDocuments(),
   budgets = MAX_NATIVE_WEB_PAGE_BYTES,
   log = console.log,
 } = {}) {
@@ -304,4 +308,6 @@ if (isMain(import.meta.url))
     const { checkPageDocumentsWithoutJavaScript } =
       await import('./check-native-web-pages-without-js.mjs');
     await checkPageDocumentsWithoutJavaScript();
+    const { checkNativeWebAdmin } = await import('./check-native-web-admin.mjs');
+    await checkNativeWebAdmin();
   });

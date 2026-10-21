@@ -66,6 +66,10 @@ const ASSETS = {
   'privacy.html': withContentSecurityPolicy(
     '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
   ),
+  // The unlinked admin document (prerender-native-web-admin.mjs), which only the network answers.
+  'admin.html': withContentSecurityPolicy(
+    '<!doctype html><html><head></head><body><script>var admin=1;</script></body></html>'
+  ),
   [ENTRY]: 'var app={};',
   [CAT]: `var d="${OUTLINES[0].sample}";`,
   [COW]: `var d="${OUTLINES[1].sample}";`,
