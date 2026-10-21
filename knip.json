@@ -57,6 +57,8 @@
         "src/prerenderFirstFrame.tsx",
         "src/pageDocument/pageApp.ts",
         "src/pageDocument/prerender.tsx",
+        "src/pageDocument/design/designApp.ts",
+        "src/pageDocument/design/prerender.tsx",
         "src/pageDocument/admin/adminApp.tsx",
         "src/pageDocument/admin/prerender.tsx"
       ],

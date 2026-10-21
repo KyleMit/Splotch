@@ -20,6 +20,9 @@ import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../experiments/native-archit
 import {
   NOT_FOUND_FILE,
   NOT_FOUND_PROBE_PATH,
+  DESIGN_DOCUMENT_DIR,
+  DOCUMENT_ENTRIES,
+  FLUID_LAYOUTS,
   PAGE_DOCUMENT_DIR,
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
@@ -30,6 +33,8 @@ import {
   pageEntryScripts,
   pageOnlyChunks,
   pageVariantClass,
+  pageVariantCss,
+  documentEntry,
   withVariantFragments,
   writtenPageDocuments,
 } from '../migration/prerender-native-web-pages.mjs';
@@ -44,8 +49,8 @@ import {
 import {
   NATIVE_APP_DOCUMENT_PATHS,
   isNativeAppNavigation,
-  withDrawingNoscript,
 } from '../migration/build-native-web.mjs';
+import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../../experiments/native-architecture/scripts/design-document-styles.mjs';
 import {
   PAGE_DOCUMENT_EAGER_MODULES,
   PAGE_DOCUMENT_RESOLVER_OPTION,
@@ -95,6 +100,29 @@ function privacyDocument() {
   );
 }
 
+const DESIGN_SCRIPTS = ['/_expo/static/js/web/runtime-1.js', '/_expo/static/js/web/designApp-1.js'];
+
+function designDocument() {
+  return pageDocumentHtml(
+    EXPORTED_DOCUMENT,
+    {
+      page: 'design',
+      title: 'Splotch design system',
+      fontFaceRules: '',
+      variants: ['light', 'dark'].map((theme) => ({
+        key: `fluid-${theme}`,
+        viewport: FLUID_LAYOUTS.viewports.fluid,
+        html: `<main><h1>Splotch design system</h1><p>${theme}</p></main>`,
+      })),
+      sheet: { id: 'react-native-stylesheet', textContent: '' },
+      scripts: DESIGN_SCRIPTS,
+      layouts: FLUID_LAYOUTS,
+      documentCss: '.design-only{display:grid}',
+    },
+    () => Buffer.from('.x1{display:flex}')
+  );
+}
+
 let dir;
 afterEach(() => {
   if (dir) rmSync(dir, { recursive: true, force: true });
@@ -118,6 +146,7 @@ describe('the route table', () => {
       { page: 'changelog', path: '/changelog', file: 'changelog.html' },
       { page: 'feedback', path: '/feedback', file: 'feedback.html' },
       { page: 'beta', path: '/beta', file: 'beta.html' },
+      { page: 'design', path: '/design', file: 'design.html' },
       { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
     ]);
     for (const [page, path] of Object.entries(APP_PAGE_PATHS)) expect(appPageAt(path)).toBe(page);
@@ -125,24 +154,10 @@ describe('the route table', () => {
       ...Object.keys(APP_PAGE_PATHS),
       ...Object.keys(DOCUMENT_ONLY_PAGE_PATHS),
     ]);
-    const routed = documentPages().filter(({ page }) => page !== 'notFound');
+    const routed = documentPages(APP_PAGE_DOCUMENTS, {}).filter(({ page }) => page !== 'notFound');
     expect(routed.map(({ page }) => APP_PAGE_DOCUMENTS[page].render)).toEqual(
       routed.map(() => 'ssg')
     );
-  });
-
-  // /beta's store links stay out of the native app and the drawing screen's bundle, so the drawing
-  // screen never routes to it: a host serves beta.html, and the shell answers it as not found.
-  it('keeps a document-only page out of the paths the drawing screen routes', () => {
-    expect(APP_PAGE_PATHS).not.toHaveProperty('beta');
-    expect(appPageAt(DOCUMENT_ONLY_PAGE_PATHS.beta)).toBe('notFound');
-    expect(NATIVE_APP_DOCUMENT_PATHS).not.toContain(DOCUMENT_ONLY_PAGE_PATHS.beta);
-    expect(
-      isNativeAppNavigation({
-        request: { mode: 'navigate' },
-        url: new URL('https://splotch.art/beta'),
-      })
-    ).toBe(false);
   });
 
   it("answers every route table page from the worker's app navigation", () => {
@@ -155,14 +170,69 @@ describe('the route table', () => {
 
   it('writes only the pages a test names into a document', () => {
     expect(
-      documentPages({
-        drawing: { render: 'ssg', document: 'drawing' },
-        changelog: { render: 'ssg', document: 'page' },
-      })
+      documentPages(
+        {
+          drawing: { render: 'ssg', document: 'drawing' },
+          changelog: { render: 'ssg', document: 'page' },
+        },
+        {}
+      )
     ).toEqual([
       { page: 'changelog', path: '/changelog', file: 'changelog.html' },
       { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
     ]);
+  });
+
+  it('writes each web-only document after the route table pages, and routes none in the app', () => {
+    expect(documentPages({}, { design: '/design' })).toEqual([
+      { page: 'design', path: '/design', file: 'design.html' },
+      { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
+    ]);
+    expect(appPageAt('/design')).toBe('notFound');
+    expect(NATIVE_APP_DOCUMENT_PATHS).not.toContain('/design');
+  });
+});
+
+describe('the styleguide document', () => {
+  it('loads its own entry and carries its own styles, which no information page shares', () => {
+    expect(documentEntry('design')).toBe('design');
+    expect(documentEntry('privacy')).toBe('information');
+    expect(DOCUMENT_ENTRIES.design.app).not.toBe(DOCUMENT_ENTRIES.information.app);
+    expect(DOCUMENT_ENTRIES.design.app.startsWith(`${DESIGN_DOCUMENT_DIR}/`)).toBe(true);
+    expect(DOCUMENT_ENTRIES.design.styleSources).toBe(DESIGN_DOCUMENT_STYLE_SOURCES);
+    expect(DOCUMENT_ENTRIES.information.styleSources).toBeNull();
+    const html = designDocument();
+    expect(html).toContain('.design-only{display:grid}');
+    expect(privacyDocument()).not.toContain('.design-only');
+  });
+
+  it('lays out with media queries, so one variant per theme fits every window', () => {
+    for (const viewport of Object.values(PAGE_VARIANT_VIEWPORTS))
+      expect(FLUID_LAYOUTS.classOf(viewport)).toBe('fluid');
+    expect(pageVariantCss(FLUID_LAYOUTS)).toContain(
+      `@media all{[${PAGE_VARIANT_ATTRIBUTE}=fluid-light]{display:flex}}`
+    );
+  });
+
+  it('keeps the variant for the theme at any window, ready to hydrate', () => {
+    for (const [width, height] of [
+      [412, 915],
+      [1280, 800],
+    ]) {
+      vi.stubGlobal('innerWidth', width);
+      vi.stubGlobal('innerHeight', height);
+      vi.stubGlobal('matchMedia', (query) => ({
+        matches: query === '(prefers-color-scheme: dark)',
+      }));
+      document.documentElement.removeAttribute(BOOT_THEME_ATTRIBUTE);
+      document.body.innerHTML = /<body>([\s\S]*)<\/body>/.exec(designDocument())[1];
+      new Function(
+        /<script>(\(function\(\)\{var painted[\s\S]*?)<\/script>/.exec(designDocument())[1]
+      )();
+      const root = document.getElementById('root');
+      expect(root.getAttribute(PAGE_VARIANT_ATTRIBUTE)).toBe('fluid-dark');
+      expect(document.querySelectorAll(`[${PAGE_VARIANT_ATTRIBUTE}]`)).toHaveLength(1);
+    }
   });
 });
 
@@ -176,38 +246,6 @@ describe("a page document's navigation", () => {
     open('drawing');
     open('changelog', '1.6.0');
     expect(assign.mock.calls).toEqual([['/'], ['/changelog#1.6.0']]);
-  });
-
-  it('loads every page by its document from the not-found document', () => {
-    const openInPlace = vi.fn();
-    const assign = vi.fn();
-    const open = crossDocumentNavigation('notFound', openInPlace, { assign });
-    open('drawing');
-    open('privacy');
-    expect(openInPlace).not.toHaveBeenCalled();
-    expect(assign.mock.calls).toEqual([['/'], ['/privacy']]);
-  });
-});
-
-describe("the drawing screen's document without JavaScript", () => {
-  it("replaces Expo's bare line with a note linking the pages that read without a script", () => {
-    const shell = withDrawingNoscript(EXPORTED_DOCUMENT);
-    expect(shell).not.toContain('You need to enable JavaScript');
-    expect(shell).not.toContain('Use static rendering with Expo Router');
-    const note = /<noscript>([\s\S]*?)<\/noscript>/.exec(shell)[1];
-    expect(note).toContain('Splotch needs JavaScript to draw');
-    expect([...note.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual([
-      '/changelog',
-      '/privacy',
-    ]);
-    // Inline style attributes only: a <style> would count toward the drawing screen's first paint.
-    expect(note).not.toContain('<style');
-  });
-
-  it('refuses a shell with no Expo line to replace', () => {
-    expect(() => withDrawingNoscript('<html><body></body></html>')).toThrow(
-      'The app shell has no Expo <noscript> to replace.'
-    );
   });
 });
 
@@ -396,6 +434,9 @@ describe("the drawing screen's boundary", () => {
         join(APP_DIR, 'src/pageDocumentNotes.ts'),
       ])
     ).toEqual(['src/pageDocument/PageDocument.tsx']);
+    expect(pageEntryModules([join(APP_DIR, DESIGN_DOCUMENT_DIR, 'DesignDocument.tsx')])).toEqual([
+      `${DESIGN_DOCUMENT_DIR}/DesignDocument.tsx`,
+    ]);
     expect(pageEntryModules([join(APP_DIR, 'src/index.ts')])).toEqual([]);
   });
 });

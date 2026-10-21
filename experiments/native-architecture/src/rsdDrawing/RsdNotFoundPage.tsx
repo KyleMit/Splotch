@@ -211,7 +211,7 @@ function withForcedBorder(xml: string, size: number) {
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
-function BackLink({
+export function RsdBackLink({
   label,
   short,
   onDrawingReturn,
@@ -266,16 +266,21 @@ function blobShadow(hex: string) {
 }
 
 // PageShell.svelte's masthead mark is a second anchor home on the web; native shows the mark alone.
-function BrandMark({
+export function RsdBrandMark({
   phone,
+  narrow: pinnedNarrow,
   suffix,
   onDrawingReturn,
 }: {
   phone: boolean;
+  // The styleguide's specimen pins it; the page sheet follows the window.
+  narrow?: boolean;
   suffix?: string;
   onDrawingReturn: () => void;
 }) {
-  const narrow = useWindowDimensions().width <= NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX;
+  const narrowWindow =
+    useWindowDimensions().width <= NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX;
+  const narrow = pinnedNarrow ?? narrowWindow;
   const crayon = CRAYON[phone ? 'phone' : 'wide'];
   const tracking = WORDMARK_TRACKING_EM[phone ? 'phone' : 'wide'];
   const mark = (
@@ -407,8 +412,12 @@ export function RsdPageSheet({
             ]}
           >
             <html.div style={[styles.topbar, short && styles.shortTopbar]}>
-              <BackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
-              <BrandMark phone={phone} suffix={wordmarkSuffix} onDrawingReturn={onDrawingReturn} />
+              <RsdBackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
+              <RsdBrandMark
+                phone={phone}
+                suffix={wordmarkSuffix}
+                onDrawingReturn={onDrawingReturn}
+              />
             </html.div>
             {/* RN Web does not report position-only layout changes on the body. */}
             <View

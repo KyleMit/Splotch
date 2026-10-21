@@ -21,7 +21,10 @@ import {
   APP_PAGE_PATHS,
   documentPagePath,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
+import {
+  UNLINKED_DOCUMENT_PATHS,
+  WEB_DOCUMENT_PATHS,
+} from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import {
   APP_DOCUMENT_ATTRIBUTE,
   NOT_FOUND_DOCUMENT,
@@ -37,6 +40,7 @@ import {
   SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
 } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
 import { PAGE_DOCUMENT_RESOLVER_OPTION } from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
+import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../../experiments/native-architecture/scripts/design-document-styles.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
   EXPO_SCRIPT,
@@ -60,6 +64,7 @@ export const PAGE_DOCUMENT_DIR = 'src/pageDocument';
 const DRAWING_ENTRY = 'src/index.ts';
 export const PAGE_ENTRY = `${PAGE_DOCUMENT_DIR}/pageApp.ts`;
 export const PAGE_RENDER_ENTRY = `${PAGE_DOCUMENT_DIR}/prerender.tsx`;
+export const DESIGN_DOCUMENT_DIR = `${PAGE_DOCUMENT_DIR}/design`;
 const PAGE_DOCUMENT_RESOLUTION = { [PAGE_DOCUMENT_RESOLVER_OPTION]: true };
 export const PAGE_VARIANT_ATTRIBUTE = 'data-page-variant';
 const EMPTY_ROOT = '<div id="root"></div>';
@@ -73,13 +78,14 @@ export const NOT_FOUND_FILE = '404.html';
 // A path no file serves, which a static host answers with NOT_FOUND_FILE: where a check loads it.
 export const NOT_FOUND_PROBE_PATH = '/this-page-wandered-off';
 
-// Every page the route table gives a document of its own, and the file the build writes it to,
-// then the not-found document.
-export function documentPages(documents = APP_PAGE_DOCUMENTS) {
+// Every page the route table gives a document of its own, then every web-only document, then the
+// not-found document, and the file the build writes each to.
+export function documentPages(documents = APP_PAGE_DOCUMENTS, webDocuments = WEB_DOCUMENT_PATHS) {
   return [
     ...Object.entries(documents)
       .filter(([, { document }]) => document === 'page')
       .map(([page]) => ({ page, path: documentPagePath(page), file: `${page}.html` })),
+    ...Object.entries(webDocuments).map(([page, path]) => ({ page, path, file: `${page}.html` })),
     { page: NOT_FOUND_DOCUMENT, path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
   ];
 }
@@ -120,14 +126,55 @@ const PAGE_VARIANT_MEDIA = {
   desktop: `(width>${PAGE_FRAMED_MAX_WIDTH_PX}px) and (height>${SHORT_PAGE_HEIGHT_PX}px)`,
 };
 
+// The layouts a page document carries a variant for, how a media query and the boot script each
+// pick one, and the window the build renders each at. An information page lays out from the window
+// in JavaScript; the styleguide lays itself out with media queries, so one layout fits every
+// window and it carries a variant per theme only.
+export const INFORMATION_LAYOUTS = {
+  viewports: PAGE_VARIANT_VIEWPORTS,
+  media: PAGE_VARIANT_MEDIA,
+  classOf: pageVariantClass,
+  classScript: `w<=${PHONE_MAX_WIDTH_PX}?'phone':h<=${SHORT_PAGE_HEIGHT_PX}?'short':w<=${PAGE_FRAMED_MAX_WIDTH_PX}?'framed':'desktop'`,
+};
+export const FLUID_LAYOUTS = {
+  viewports: { fluid: PAGE_VARIANT_VIEWPORTS.desktop },
+  media: { fluid: 'all' },
+  classOf: () => 'fluid',
+  classScript: "'fluid'",
+};
+
+// The entry each page document loads, the module the build renders its markup from (both
+// export prerenderPage, pageDocumentHead and pageIconsSettled), and its layouts. The information
+// pages share one entry; the styleguide has its own, so no information page loads its specimens.
+// Its styles stay out of strict.css, which every document inlines (postcss.config.mjs), and only
+// its own document carries them.
+export const DOCUMENT_ENTRIES = {
+  information: {
+    app: PAGE_ENTRY,
+    render: PAGE_RENDER_ENTRY,
+    layouts: INFORMATION_LAYOUTS,
+    styleSources: null,
+  },
+  design: {
+    app: `${DESIGN_DOCUMENT_DIR}/designApp.ts`,
+    render: `${DESIGN_DOCUMENT_DIR}/prerender.tsx`,
+    layouts: FLUID_LAYOUTS,
+    styleSources: DESIGN_DOCUMENT_STYLE_SOURCES,
+  },
+};
+
+export function documentEntry(page) {
+  return Object.hasOwn(WEB_DOCUMENT_PATHS, page) ? page : 'information';
+}
+
 const variantSelector = (key) => `[${PAGE_VARIANT_ATTRIBUTE}=${key}]`;
 
 // Without JavaScript the media queries show the variant that fits: the light one, or the dark one
 // for a dark system. Each variant lays out as Expo's #root does; the kept one becomes #root.
-export function pageVariantCss() {
+export function pageVariantCss(layouts = INFORMATION_LAYOUTS) {
   return [
     `[${PAGE_VARIANT_ATTRIBUTE}]{display:none;height:100%;flex:1}`,
-    ...Object.entries(PAGE_VARIANT_MEDIA).flatMap(([layout, media]) => [
+    ...Object.entries(layouts.media).flatMap(([layout, media]) => [
       `@media ${media}{${variantSelector(`${layout}-light`)}{display:flex}}`,
       `@media ${media} and (prefers-color-scheme:dark){${variantSelector(`${layout}-light`)}{display:none}${variantSelector(`${layout}-dark`)}{display:flex}}`,
     ]),
@@ -142,8 +189,8 @@ export const VARIANT_FRAGMENT_SEPARATOR = '~';
 
 // A section URL copied without JavaScript carries its variant's key; a visit with JavaScript reads
 // the page's own fragment instead.
-function variantFragmentPattern() {
-  const layouts = Object.keys(PAGE_VARIANT_VIEWPORTS).join('|');
+function variantFragmentPattern(viewports) {
+  const layouts = Object.keys(viewports).join('|');
   return `/${VARIANT_FRAGMENT_SEPARATOR}(?:${layouts})-(?:${FIRST_FRAME_THEMES.join('|')})$/`;
 }
 
@@ -172,13 +219,13 @@ export function withoutScriptCss() {
 // Runs as the parser passes the variants: keeps the one for this window and theme as the root,
 // removes the rest, and flags Expo's launcher to hydrate. Then it loads the page entry once the
 // page has painted, as the drawing screen's boot script does.
-export function pageBootScript() {
+export function pageBootScript(layouts = INFORMATION_LAYOUTS) {
   return [
     '(function(){var painted=false;try{',
-    `var k=location.hash.match(${variantFragmentPattern()});`,
+    `var k=location.hash.match(${variantFragmentPattern(layouts.viewports)});`,
     "if(k)history.replaceState(history.state,'',location.pathname+location.search+location.hash.slice(0,-k[0].length));",
     'var w=innerWidth,h=innerHeight;',
-    `var c=w<=${PHONE_MAX_WIDTH_PX}?'phone':h<=${SHORT_PAGE_HEIGHT_PX}?'short':w<=${PAGE_FRAMED_MAX_WIDTH_PX}?'framed':'desktop';`,
+    `var c=${layouts.classScript};`,
     `var t=document.documentElement.getAttribute(${JSON.stringify(BOOT_THEME_ATTRIBUTE)});`,
     "if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';",
     `var v=document.querySelectorAll('[${PAGE_VARIANT_ATTRIBUTE}]'),f=null,i;`,
@@ -198,8 +245,8 @@ export function pageBootScript() {
   ].join('');
 }
 
-export function renderPageVariants(prerenderPage, page) {
-  const variants = Object.entries(PAGE_VARIANT_VIEWPORTS).flatMap(([layout, viewport]) =>
+export function renderPageVariants(prerenderPage, page, layouts = INFORMATION_LAYOUTS) {
+  const variants = Object.entries(layouts.viewports).flatMap(([layout, viewport]) =>
     FIRST_FRAME_THEMES.map((appearance) => ({
       key: `${layout}-${appearance}`,
       viewport,
@@ -208,7 +255,7 @@ export function renderPageVariants(prerenderPage, page) {
   );
   const { sheet } = prerenderPage({
     page,
-    viewport: PAGE_VARIANT_VIEWPORTS.phone,
+    viewport: Object.values(layouts.viewports)[0],
     appearance: 'light',
   });
   return { variants, sheet };
@@ -219,7 +266,17 @@ export function renderPageVariants(prerenderPage, page) {
 // held in the list the boot script loads instead of the drawing screen's.
 export function pageDocumentHtml(
   template,
-  { page, title, head = '', fontFaceRules, variants, sheet, scripts },
+  {
+    page,
+    title,
+    head = '',
+    fontFaceRules,
+    variants,
+    sheet,
+    scripts,
+    layouts = INFORMATION_LAYOUTS,
+    documentCss = '',
+  },
   readExportFile
 ) {
   for (const [pattern, part] of [
@@ -233,7 +290,7 @@ export function pageDocumentHtml(
     throw new Error("The export's document links no style sheet to inline.");
   const markup = variants.map(({ html }) => html).join('');
   const style = `<style id="${sheet.id}">${criticalSheetText(sheet.textContent, markup)}</style>`;
-  const pageStyle = `<style>${fontFaceRules}${pageVariantCss()}</style>\n<noscript><style>${withoutScriptCss()}</style></noscript>`;
+  const pageStyle = `<style>${fontFaceRules}${pageVariantCss(layouts)}${documentCss}</style>\n<noscript><style>${withoutScriptCss()}</style></noscript>`;
   const body = variants.map(
     ({ key, viewport, html }) =>
       `<div ${PAGE_VARIANT_ATTRIBUTE}="${key}" ${FIRST_FRAME_VIEWPORT_ATTRIBUTE}="${formatFirstFrameViewport(viewport)}">${withVariantFragments(html, key)}</div>`
@@ -255,7 +312,7 @@ export function pageDocumentHtml(
       [
         ...body,
         `<script type="application/json" id="${STARTUP_SCRIPTS_ELEMENT_ID}">${JSON.stringify(scripts)}</script>`,
-        `<script>${pageBootScript()}</script>`,
+        `<script>${pageBootScript(layouts)}</script>`,
       ].join('\n')
     );
 }
@@ -433,16 +490,36 @@ export async function checkDrawingEntryBoundary() {
     );
 }
 
-export async function prerenderNativeWebPages(exportDir, template) {
-  const pages = documentPages();
-  if (pages.length === 0) return [];
-  await checkDrawingEntryBoundary();
-  await lendXmlParser();
-  const render = evaluateRenderer(await bundleForNode(PAGE_RENDER_ENTRY, PAGE_DOCUMENT_RESOLUTION));
+// The CSS React Strict DOM compiles from an entry's own style sources, which strict.css leaves out.
+// Its PostCSS plugin reads the app's Babel config from the working directory, as `expo export`
+// runs it.
+// The plugin package exports one process-wide builder, which keeps every file's rules it has
+// compiled and drops a file it no longer includes by the wrong key, so a second compile in this
+// process (the admin console's) would carry these rules too. This compile takes a builder of its
+// own from the package's plugin factory.
+export async function documentStyleSheet(styleSources) {
+  if (styleSources === null) return '';
+  const { default: postcss } = await import('postcss');
+  const reactStrictPlugin = require('postcss-react-strict-dom/src/plugin.js')();
+  const cwd = process.cwd();
+  process.chdir(NATIVE_APP_DIR);
+  try {
+    const { css } = await postcss([
+      reactStrictPlugin({ cwd: NATIVE_APP_DIR, include: [styleSources] }),
+    ]).process('@react-strict-dom;', { from: undefined });
+    return css;
+  } finally {
+    process.chdir(cwd);
+  }
+}
+
+async function prerenderEntryPages(exportDir, template, entry, pages) {
+  const render = evaluateRenderer(await bundleForNode(entry.render, PAGE_DOCUMENT_RESOLUTION));
   await render.pageIconsSettled();
-  const chunks = await bundlePageEntry();
+  const chunks = await bundlePageEntry(entry.app);
   writeChunks(exportDir, chunks);
   const scripts = pageEntryScripts(chunks);
+  const documentCss = await documentStyleSheet(entry.styleSources);
   const readExportFile = (href) => readFileSync(join(exportDir, href));
   return pages.map(({ page, file }) => {
     const html = pageDocumentHtml(
@@ -450,8 +527,10 @@ export async function prerenderNativeWebPages(exportDir, template) {
       {
         page,
         ...render.pageDocumentHead(page),
-        ...renderPageVariants(render.prerenderPage, page),
+        ...renderPageVariants(render.prerenderPage, page, entry.layouts),
         scripts,
+        layouts: entry.layouts,
+        documentCss,
       },
       readExportFile
     );
@@ -461,4 +540,18 @@ export async function prerenderNativeWebPages(exportDir, template) {
     writeFileSync(join(exportDir, file), html);
     return { page, file, scripts };
   });
+}
+
+export async function prerenderNativeWebPages(exportDir, template) {
+  const pages = documentPages();
+  if (pages.length === 0) return [];
+  await checkDrawingEntryBoundary();
+  await lendXmlParser();
+  const written = [];
+  for (const [name, entry] of Object.entries(DOCUMENT_ENTRIES)) {
+    const entryPages = pages.filter(({ page }) => documentEntry(page) === name);
+    if (entryPages.length)
+      written.push(...(await prerenderEntryPages(exportDir, template, entry, entryPages)));
+  }
+  return written;
 }

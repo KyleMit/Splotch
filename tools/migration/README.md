@@ -114,6 +114,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     reaches anything under `src/pageDocument/`. Chunks only a page document loads stay out of the
     precache: the worker answers a page document's path from the network, and offline from the app
     shell, which shows the same page over the paper.
+  * The styleguide, `/design`, is a web-only document beside the route table (`WEB_DOCUMENT_PATHS`
+    in `src/information/unlinkedDocuments.ts`). It loads its own entry and renders from its own
+    module under `src/pageDocument/design/` (`DOCUMENT_ENTRIES`), carries one variant per theme
+    because it lays out with media queries (`FLUID_LAYOUTS`), and inlines its own React Strict DOM
+    styles, which `strict.css` leaves out (`postcss.config.mjs`) so no other document carries them.
   * `check-native-web-startup.mjs` holds each page document to its own first-paint and page-entry
     budgets (`MAX_NATIVE_WEB_PAGE_BYTES`, each page's first measured build plus 10%), then
     `check-native-web-pages-without-js.mjs` loads it in Chromium with JavaScript off in every layout
