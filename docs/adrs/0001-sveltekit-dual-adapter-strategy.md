@@ -1,7 +1,12 @@
 # ADR-0001: SvelteKit Dual-Adapter Strategy (Web + Native)
 
-**Status:** Active\
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)\
 **Date:** 2024 (initial), revised 2026-06
+
+> **Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md) (2026-10).** Splotch becomes
+> one Expo / React Native / React Strict DOM app that ships Android, iOS and a static web export.
+> SvelteKit, both adapters and the `CAPACITOR=true` build signal retire; the React Native app splits
+> platforms by file extension ([ADR-0179](0179-rn-web-startup-path-splits-by-platform.md)).
 
 ## Context
 
