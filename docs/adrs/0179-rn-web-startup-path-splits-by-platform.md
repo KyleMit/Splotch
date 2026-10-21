@@ -7,6 +7,10 @@
 > has painted. The paper texture is the one image this ADR's startup check now lets the shell
 > inline. The check holds the first paint and the core controls to separate caps instead of one.
 
+> **Amended by [ADR-0181](0181-rn-native-farm-book-ships-as-asset-files.md).** The native apps no
+> longer inline the Farm book: its images and line art ship as asset files, and native reads a
+> page's line art on first use, as the web export does.
+
 ## Context
 
 The React Native app in `experiments/native-architecture` (epic 2690) ships one codebase to Android,

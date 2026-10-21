@@ -11,3 +11,9 @@ declare module '*.woff2' {
   const source: number | string | { uri: string; width: number; height: number };
   export { source as default };
 }
+
+// The native apps read the Farm book's line art from the shipped SVG files (bundledOutlines.ts).
+declare module '*.svg' {
+  const source: number | string;
+  export { source as default };
+}

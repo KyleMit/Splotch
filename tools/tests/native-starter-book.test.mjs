@@ -1,15 +1,7 @@
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { relative } from 'node:path';
-import {
-  BUNDLED_FARM_DIR,
-  WEB_IMAGES_FILE,
-  WEB_PICKER_IMAGES_FILE,
-  bundledFarmImageFiles,
-  generateBundledFarm,
-  imageFilePaths,
-} from '../migration/gen-bundled-farm.mjs';
+import { bundledPageOutlines, generateBundledFarm } from '../migration/gen-bundled-farm.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BUNDLED_BOOKS,
@@ -39,7 +31,16 @@ import {
   BUNDLED_FARM_COVERS,
   BUNDLED_FARM_SELECTORS,
 } from '../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
-import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
+
+// The native images modules resolve each import through React Native's Image, which Node cannot
+// load; Vite hands them file paths, which nativeAssetUri returns without asking Image.
+vi.mock('react-native', () => ({ Image: {} }));
+
+// Both targets parse the shipped overlays with one parser (overlayOutline.ts): the generator for
+// the web export's page modules, the native apps at runtime (native-web-lazy-modules.test.mjs).
+const BUNDLED_BOOK_OUTLINES = Object.fromEntries(
+  FARM_PAGE_IDS.map((pageId) => [pageId, bundledPageOutlines(pageId.split('/')[1])])
+);
 
 function paintedPage(pageId) {
   const selected = changePage(createHistory(emptyDrawing(3)), pageId);
@@ -401,9 +402,18 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+// Vite, which runs these tests, imports a bundled file as its "/@fs"-prefixed absolute path; the
+// native apps resolve the same import to the file they ship (nativeAssetUri).
+const VITE_FILE_PREFIX = '/@fs';
+
+function shippedPath(uri) {
+  expect(uri.startsWith(`${VITE_FILE_PREFIX}/`)).toBe(true);
+  return uri.slice(VITE_FILE_PREFIX.length);
+}
+
 function webpBytes(uri) {
-  expect(uri).toMatch(/^data:image\/webp;base64,[A-Za-z0-9+/]+=*$/);
-  return Buffer.from(uri.slice('data:image/webp;base64,'.length), 'base64');
+  expect(uri).toMatch(/\.webp$/);
+  return readFileSync(shippedPath(uri));
 }
 
 const ART_VARIANTS = FARM_PAGE_IDS.flatMap((pageId) =>
@@ -432,34 +442,8 @@ describe('bundled art preserves shipped Farm provenance', () => {
   it('pins the committed modules to the current shipping overlays, fills and selectors', async () => {
     expect(await generateBundledFarm(['--check'])).toEqual({
       pages: FARM_PAGE_IDS.length,
-      modules: FARM_PAGE_IDS.length + 4,
+      modules: FARM_PAGE_IDS.length + 5,
     });
-  });
-
-  it('serves the web export the same shipped files the native apps carry as data URIs', () => {
-    const read = (file) => readFileSync(`${BUNDLED_FARM_DIR}${file}`, 'utf8');
-    const web = read(WEB_IMAGES_FILE);
-    const picker = read(WEB_PICKER_IMAGES_FILE);
-    for (const source of [web, picker]) expect(source).not.toContain('data:image/');
-    const { pages, selectors, covers } = bundledFarmImageFiles();
-    const oriented = (files, images) =>
-      ART_VARIANTS.map(({ pageId, orientation, theme }) => [
-        files[pageId][orientation][theme],
-        images[pageId][orientation][theme],
-      ]);
-    const slots = [
-      ...oriented(pages, BUNDLED_FARM_IMAGES).map((slot) => [web, ...slot]),
-      ...oriented(selectors, BUNDLED_FARM_SELECTORS).map((slot) => [picker, ...slot]),
-      ...['light', 'dark'].map((theme) => [picker, covers[theme], BUNDLED_FARM_COVERS[theme]]),
-    ];
-    expect(slots).toHaveLength(FARM_PAGE_IDS.length * 8 + 2);
-    for (const [module, path, native] of slots) {
-      expect(module).toContain(` from '${relative(BUNDLED_FARM_DIR, path)}';`);
-      expect(webpBytes(native).equals(readFileSync(path))).toBe(true);
-    }
-    // The paper's fills module, on the startup path, carries none of the picker's images.
-    for (const path of [...Object.values(covers), ...imageFilePaths(selectors)])
-      expect(web).not.toContain(relative(BUNDLED_FARM_DIR, path));
   });
 
   it.each(SHIPPED_ART_EXPECTATIONS)(

@@ -86,3 +86,4 @@ timestamp	device	outcome	detail
 2026-09-29T17:30:30.148Z	device-8e0689ff6880	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-29T18:54:34.018Z	device-8e0689ff6880	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-30T00:59:09.403Z	device-8e0689ff6880	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-10-21T14:07:14.002Z	device-003f826c172a	blocked	the iOS device is asking to enable UI automation. Look at the device for an XCTest passcode / Enable UI Automation prompt. Enter the passcode there, then re-run. No host-side change will clear this.
