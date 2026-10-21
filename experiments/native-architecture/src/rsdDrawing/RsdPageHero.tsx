@@ -8,6 +8,7 @@ import { RsdPressable } from './RsdPressable';
 import { usePageTypography } from './pageTypography';
 import { styles as controlStyles } from './controls';
 import { displayFontSize } from './displayType';
+import { SHOWN_WITHOUT_SCRIPT_ATTRIBUTE } from './pageFrame';
 import { colors, dimensions, fonts, motion } from './tokens.css';
 
 const H1_LINE_HEIGHT = 1.08;
@@ -175,6 +176,7 @@ export function RsdPageHero({
         <html.p
           ref={ledeRef}
           id={ledeId}
+          {...{ [SHOWN_WITHOUT_SCRIPT_ATTRIBUTE]: true }}
           style={[
             styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide']),
             short && styles.shortLede,

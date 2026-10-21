@@ -108,15 +108,24 @@ export function RsdGatedAnchor({
       }
     : { href, target: '_blank', rel: 'noopener noreferrer' };
   return (
-    <a
-      {...css.props(styles.anchor, style)}
-      {...address}
-      onClick={open}
-      onAuxClick={(event) => {
-        if (event.button === MIDDLE_BUTTON) open(event);
-      }}
-    >
-      {children}
-    </a>
+    <>
+      <a
+        {...css.props(styles.anchor, style)}
+        {...address}
+        onClick={open}
+        onAuxClick={(event) => {
+          if (event.button === MIDDLE_BUTTON) open(event);
+        }}
+      >
+        {children}
+      </a>
+      <noscript>{` (${plainAddress(href)})`}</noscript>
+    </>
   );
+}
+
+// Without JavaScript nothing can hold a link to the grown-up check, so a prerendered page document
+// leaves the link without its address and names the address beside it as plain text.
+export function plainAddress(href: string) {
+  return href.replace(/^[a-z]+:(\/\/)?(www\.)?/i, '').replace(/\/$/, '');
 }

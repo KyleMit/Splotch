@@ -5,7 +5,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { paletteHex } from '../drawing/palette';
 import { FEEDBACK_URL } from '../../../../web/src/lib/siteUrl';
 import { APP_PAGE_PATHS, type AppPage } from '../information/appPages';
-import { openAppPage } from '../platform/appPath';
+import { openAppPage as openInDocument } from '../platform/appPath';
 import { Svg, Path } from '../platform/svg';
 import { blobPath } from './blob';
 import { RsdLatestReleaseLabel } from './RsdReleaseHistory';
@@ -94,10 +94,14 @@ export function RsdInformationFooter({
   page,
   onExternal,
   onDrawingReturn,
+  openAppPage = openInDocument,
 }: {
   page: Exclude<AppPage, 'drawing'> | null;
   onExternal: (href: string) => void;
   onDrawingReturn?: () => void;
+  // The information page's own navigation (usePageNavigation); the not-found footer opens pages in
+  // its document.
+  openAppPage?: (page: AppPage, fragment?: string) => void;
 }) {
   const theme = useDrawingTheme();
   const window = useWindowDimensions();
