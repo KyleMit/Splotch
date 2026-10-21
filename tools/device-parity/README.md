@@ -95,6 +95,21 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
 * The parity drivers run on an iOS simulator or Android emulator: they install builds and screenshot
   through `simctl` and `adb`.
 
+### Emulators on a shared host
+
+Booting emulators is outside this tooling, but each of these cost a 2026-10-21 campaign a run:
+
+* **Create AVDs under `~/.android/avd`, never under `/private/tmp`.** `avdmanager create avd --path`
+  writes the AVD's `.ini` to `~/.android/avd` pointing at the given directory. macOS clears
+  `/private/tmp`, and `emulator -list-avds` keeps listing the AVD after its directory is gone.
+* **One AVD runs once unless both instances are read-only.** A second emulator on a running AVD
+  needs both started with `-read-only`, which also stops either from saving a snapshot. Otherwise,
+  clone the AVD under its own name.
+* **Stop an emulator by the PID recorded at launch.** `adb -s emulator-<port> emu kill` talks to the
+  emulator console and hangs when the device is `offline`.
+* **Count emulators against host memory.** Five emulators on a 32 GB host, beside native builds,
+  left one `offline` and unresponsive.
+
 ## Failure behavior
 
 * An unknown flag, a missing required flag, or an out-of-vocabulary value exits 1 before any device

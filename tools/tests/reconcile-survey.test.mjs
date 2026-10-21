@@ -31,16 +31,34 @@ const modules = await Promise.all(
 );
 
 describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) => {
-  // The base is origin/main in the survey, in the merge, and in the ADR-log
-  // check, so there is no coherent alternate-base mode to select. An invocation
-  // that asks for one has to fail rather than survey main and be believed.
-  it('rejects an unknown option instead of surveying main anyway', () => {
-    const run = spawnSync(process.execPath, [join(repoRoot, path), '--base', 'release'], {
-      encoding: 'utf8',
-    });
+  // A base option the survey misreads would survey main and be believed as a
+  // survey of the base that was asked for, so every malformed form fails
+  // before git runs.
+  it.each([
+    [['--bogus'], 'Unknown option(s): --bogus'],
+    [['--base', 'release'], '--base takes a value: write --base=<value>'],
+    [['--base='], '--base= is empty'],
+  ])('exits 2 on %j instead of surveying main anyway', (argv, message) => {
+    const run = spawnSync(process.execPath, [join(repoRoot, path), ...argv], { encoding: 'utf8' });
 
     expect(run.status).toBe(2);
-    expect(run.stderr).toContain('Unknown option(s): --base release');
+    expect(run.stderr).toContain(message);
+  });
+
+  describe('parseSurveyArgs', () => {
+    it('surveys main, fetching, as text by default', () => {
+      expect(module.parseSurveyArgs([])).toEqual({
+        baseBranch: 'main',
+        doFetch: true,
+        json: false,
+      });
+    });
+
+    it('surveys the named base with the switches it was given', () => {
+      expect(
+        module.parseSurveyArgs(['--base=codex/native-migration', '--no-fetch', '--json'])
+      ).toEqual({ baseBranch: 'codex/native-migration', doFetch: false, json: true });
+    });
   });
 
   const { classifyChanges, parseNameStatus, changedPaths } = module;
