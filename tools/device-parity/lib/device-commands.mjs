@@ -33,6 +33,17 @@ export function readAdb(serial, ...args) {
   return readCommand(ADB, ['-s', serial, ...args]);
 }
 
+// For a read whose empty answer would pass for evidence: a non-zero exit throws, carrying what the
+// device printed to stderr.
+export function readAdbOrThrow(serial, ...args) {
+  try {
+    return runCommand(ADB, ['-s', serial, ...args], { stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    const stderr = error.stderr?.toString?.().trim();
+    throw new Error(`adb ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`, { cause: error });
+  }
+}
+
 export function simctl(...args) {
   return runCommand('xcrun', ['simctl', ...args]);
 }
