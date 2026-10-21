@@ -15,7 +15,8 @@ import {
   AdminStatusMessage,
 } from './adminChrome';
 import { AdminLedger } from './AdminLedger';
-import { useAdminConsole, type Flash } from './useAdminConsole';
+import { FreeGrants } from './FreeGrants';
+import { useAdminConsole, type Figures, type Flash } from './useAdminConsole';
 
 const COMPACT = '@media (max-width: 560px)';
 const FIELD_PADDING = { block: '13px', inline: '16px' } as const;
@@ -119,6 +120,7 @@ export function AdminConsole({
       {view.mode === 'signedIn' ? (
         <AccessCodes
           snapshot={view.snapshot}
+          figures={view.figures}
           flash={admin.flash}
           busy={admin.busy}
           draft={admin.draft}
@@ -198,6 +200,7 @@ function SignIn({
 
 function AccessCodes({
   snapshot,
+  figures,
   flash,
   busy,
   draft,
@@ -209,6 +212,7 @@ function AccessCodes({
   onCopy,
 }: {
   snapshot: TokenSnapshot;
+  figures: Figures;
   flash: Flash | null;
   busy: boolean;
   draft: string;
@@ -223,6 +227,11 @@ function AccessCodes({
   const add = () => {
     if (!busy && draft.trim()) onAdd();
   };
+  const stats = figures.kind === 'read' ? figures.stats : null;
+  const usage = stats?.usage ?? null;
+  const freeGrantStats = stats?.freeGrantStats ?? null;
+  const talliesUnavailable =
+    figures.kind === 'unavailable' || (figures.kind === 'read' && usage === null);
   return (
     <html.div style={styles.sections}>
       <AdminSection>
@@ -236,6 +245,13 @@ function AccessCodes({
             on the next restart.
           </AdminStatusMessage>
         )}
+        {talliesUnavailable ? (
+          <AdminStatusMessage status="warning">
+            <html.strong>Generation tallies are unavailable.</html.strong> The Generations and Last
+            used columns are hidden until the usage store is reachable again. The codes themselves
+            are unaffected.
+          </AdminStatusMessage>
+        ) : null}
         {flash ? <AdminStatusMessage status={flash.kind}>{flash.text}</AdminStatusMessage> : null}
         <html.div style={styles.form}>
           <AdminHiddenLabel field={fieldId}>New access code</AdminHiddenLabel>
@@ -258,6 +274,7 @@ function AccessCodes({
         </html.div>
         <AdminLedger
           invites={snapshot.invites}
+          usage={usage}
           busy={busy}
           copied={copied}
           onCopy={onCopy}
@@ -265,6 +282,7 @@ function AccessCodes({
         />
         <AdminAnnouncement>{announcement}</AdminAnnouncement>
       </AdminSection>
+      {freeGrantStats ? <FreeGrants stats={freeGrantStats} /> : null}
     </html.div>
   );
 }

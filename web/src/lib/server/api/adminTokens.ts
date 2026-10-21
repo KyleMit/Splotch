@@ -41,7 +41,7 @@ type MutationSuccess = Extract<MutationResult, { ok: true }>;
  * constant time; failures get a uniform 401 so the response can't be used as
  * an oracle for anything beyond "not a valid session".
  */
-function requireSession(request: Request) {
+export function requireSession(request: Request) {
   if (!verifySessionToken(bearerToken(request))) {
     throw error(401, 'Unauthorized');
   }
