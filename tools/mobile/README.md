@@ -78,7 +78,6 @@ handling.
 
 ## Shared support
 
-`lib/static-export.mjs` owns the web-only static-file catalog and matching head-tag rewrite.
 `lib/maestro.mjs` resolves the Maestro executable, while `lib/mobile-smoke-test.mjs` runs the shared
 `.maestro/smoke.yaml` flow after a platform runner builds and installs the app. These modules are
 support code, not standalone commands.

@@ -33,8 +33,7 @@ Set `ANDROID_HOME` (or the older `ANDROID_SDK_ROOT`) to override the default SDK
 `print-emulator-api-levels.mjs` adds the declared Android floor from `/beta` to the deploy
 workflow's matrix without creating a second floor literal. Update the current API-level constant
 together with CI and documentation; the nested config test enforces that agreement. Keep
-Android-only lifecycle code here and cross-platform Maestro or static-export behavior at the mobile
-capability root.
+Android-only lifecycle code here and cross-platform Maestro behavior at the mobile capability root.
 
 Run focused verification with:
 
