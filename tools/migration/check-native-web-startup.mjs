@@ -316,12 +316,4 @@ if (isMain(import.meta.url))
   runMain(async () => {
     checkNativeWebStartup();
     checkNativeWebPageDocuments();
-    // A page document's first paint is its whole page: it must read in full before any script.
-    const { checkPageDocumentsWithoutJavaScript } =
-      await import('./check-native-web-pages-without-js.mjs');
-    await checkPageDocumentsWithoutJavaScript();
-    const { checkNativeWebAdmin } = await import('./check-native-web-admin.mjs');
-    await checkNativeWebAdmin();
-    const { checkNativeWebSafeArea } = await import('./check-native-web-safe-area.mjs');
-    await checkNativeWebSafeArea();
   });

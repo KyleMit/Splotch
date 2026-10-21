@@ -4,7 +4,7 @@
 // whose first precache entry is this build's own document, and whose every entry is
 // pinned to the bytes this build wrote.
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateSW } from 'workbox-build';
 import {
@@ -44,7 +44,7 @@ export const NATIVE_WEB_EXPORT_DIR = join(NATIVE_APP_DIR, 'dist/web');
 export const NATIVE_WEB_SERVICE_WORKER = SERVICE_WORKER_PATH.slice(1);
 const WEB_STATIC_DIR = join(ROOT, 'web/static');
 const SHIPPING_APP_HTML = join(ROOT, 'web/src/app.html');
-const SHIPPING_MANIFEST = 'site.webmanifest';
+export const WEB_MANIFEST_FILE = 'site.webmanifest';
 const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 // Expo's build-identity file is read by its own tooling, never by the app.
 const EXPORT_METADATA_FILE = 'metadata.json';
@@ -55,6 +55,29 @@ export const APP_SHELL_FILE = 'index.html';
 // offline, the worker answers with the app shell, which shows the same page off the drawing route
 // (src/platform/appPath.web.ts).
 export { NOT_FOUND_FILE };
+
+// What the host serves beside the app's own files, straight from web/static: the coloring books the
+// web app downloads from its own origin (OFFLINE-LIBRARY.md), the page netlify.toml's probe rules
+// answer with, the crawler files, and the link-preview images that pages shared before the React
+// Native web app still name. None is a page asset: they are copied after the worker is generated,
+// so its precache never holds them.
+export const HOSTED_STATIC_ENTRIES = [
+  'coloring',
+  'deny.html',
+  'robots.txt',
+  'sitemap.xml',
+  'share',
+  'large-image.png',
+];
+
+export function isHostedStaticFile(file) {
+  return HOSTED_STATIC_ENTRIES.some((entry) => file === entry || file.startsWith(`${entry}/`));
+}
+
+function copyHostedStatic(outputDir) {
+  for (const entry of HOSTED_STATIC_ENTRIES)
+    cpSync(join(WEB_STATIC_DIR, entry), join(outputDir, entry), { recursive: true });
+}
 
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish (the shipping value).
@@ -187,11 +210,11 @@ export function webVersionHeadTag(appVersion) {
 function copyShippingInstallAssets(outputDir, appVersion) {
   const appHtml = readFileSync(SHIPPING_APP_HTML, 'utf8');
   const tags = shippingInstallHeadTags(appHtml);
-  const manifest = JSON.parse(readFileSync(join(WEB_STATIC_DIR, SHIPPING_MANIFEST), 'utf8'));
+  const manifest = JSON.parse(readFileSync(join(WEB_STATIC_DIR, WEB_MANIFEST_FILE), 'utf8'));
   const assets = new Set([
     ...installHeadTagAssets(tags),
     ...manifestIconAssets(manifest),
-    SHIPPING_MANIFEST,
+    WEB_MANIFEST_FILE,
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
   writeFileSync(join(outputDir, VERSION_JSON_FILENAME), JSON.stringify({ version: appVersion }));
@@ -344,6 +367,7 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
     })
   );
   if (warnings.length) throw new Error(warnings.join('\n'));
+  copyHostedStatic(outputDir);
   console.log(`[native-web] ${outputDir}: ${count} precached files / ${size} bytes`);
 }
 

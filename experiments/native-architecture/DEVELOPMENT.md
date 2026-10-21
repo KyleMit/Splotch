@@ -261,7 +261,11 @@ answers with the app shell, which shows the same page off the drawing route
 (`src/platform/appPath.web.ts`, the paths the worker's app-shell route answers). Its head carries
 shipping's `viewport-fit=cover` viewport, so safe-area insets reach the app, and a boot style and
 script that paint the paper in the saved or system theme before the bundle runs. The entry registers
-`/sw.js` only in the web build (`src/platform/serviceWorker.web.ts`).
+`/sw.js` only in the web build (`src/platform/serviceWorker.web.ts`). After the worker is generated
+the build copies the files the host serves beside the app from `web/static` (the coloring books,
+`robots.txt`, `sitemap.xml`, the deny page and the link-preview images), so `dist/web` is the whole
+site Netlify publishes (`netlify.toml`, `npm run build:site`). The web build calls the `/api`
+function on its own origin; the native apps call `https://splotch.art`.
 
 A new worker waits until every window of the old one closes, so an update never interrupts a
 drawing. The Install Banner and the Settings install guide (`src/install/`) follow the shipping

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
@@ -12,6 +12,7 @@ import {
   shellAssetReferences,
   starterBookImages,
   starterOutlineSamples,
+  unhashedImmutableFiles,
 } from '../migration/check-native-web-precache.mjs';
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
 import { writtenPageDocuments } from '../migration/prerender-native-web-pages.mjs';
@@ -21,6 +22,7 @@ import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
 import {
+  HOSTED_STATIC_ENTRIES,
   contentAddressedShell,
   subresourceIntegrity,
   webVersionHeadTag,
@@ -46,12 +48,14 @@ const IMAGES = Object.entries(IMAGE_BYTES).map(([pageId, bytes]) => ({
   pageId,
   sha256: sha256(bytes),
 }));
-const ENTRY = '_expo/static/js/web/index-1.js';
-const CAT = '_expo/static/js/web/cat-1.js';
-const COW = '_expo/static/js/web/cow-1.js';
-const CAT_IMAGE = 'assets/__web/static/coloring/farm/cat-wide.selector.1.webp';
-const COW_IMAGE = 'assets/__web/static/coloring/farm/cow-wide.selector.1.webp';
-const CSS = '_expo/static/css/strict-1.css';
+const ENTRY = '_expo/static/js/web/index-0123456789abcdef0123456789abcdef.js';
+const CAT = '_expo/static/js/web/cat-0123456789abcdef0123456789abcdef.js';
+const COW = '_expo/static/js/web/cow-0123456789abcdef0123456789abcdef.js';
+const CAT_IMAGE =
+  'assets/__web/static/coloring/farm/cat-wide.selector.0123456789abcdef0123456789abcdef.webp';
+const COW_IMAGE =
+  'assets/__web/static/coloring/farm/cow-wide.selector.0123456789abcdef0123456789abcdef.webp';
+const CSS = '_expo/static/css/strict-0123456789abcdef0123456789abcdef.css';
 const BUILT_VERSION = '1.6.1234';
 const BOOT_SCRIPT = '<script>document.documentElement.dataset.boot="1"</script>';
 const INDEX = withContentSecurityPolicy(
@@ -182,7 +186,7 @@ it.each([
     'a chunk is pinned to other bytes',
     COMPLETE,
     { integrity: { [ENTRY]: subresourceIntegrity('another build') } },
-    /not pinned to this export's bytes: _expo\/static\/js\/web\/index-1\.js/,
+    /not pinned to this export's bytes: _expo\/static\/js\/web\/index-[0-9a-f]{32}\.js/,
   ],
   [
     'the fallback looks up another URL',
@@ -200,7 +204,7 @@ it.each([
     'an exported chunk is not precached',
     COMPLETE.filter((url) => url !== CSS),
     {},
-    /strict-1\.css/,
+    /strict-[0-9a-f]{32}\.css/,
   ],
   [
     'a precached file is not exported',
@@ -274,7 +278,7 @@ it('rejects a precache above its budget', () => {
 
 it('keeps lazily loaded icons out of the scripts the app shell loads', () => {
   const [sample] = lazyIconSamples();
-  const LAZY = '_expo/static/js/web/icons.deferred-1.js';
+  const LAZY = '_expo/static/js/web/icons.deferred-0123456789abcdef0123456789abcdef.js';
   const lazy = { ...ASSETS, [LAZY]: `var d="${sample}";` };
   expect(() => check(exportFixture({ urls: [...COMPLETE, LAZY], assets: lazy }))).not.toThrow();
   const eager = { ...ASSETS, [ENTRY]: `${ASSETS[ENTRY]}var d="${sample}";` };
@@ -324,12 +328,22 @@ it('hashes every starter page image and both covers from the shipped files', () 
   expect(new Set(images.map((image) => image.sha256)).size).toBe(images.length);
 });
 
-it('runs after the native web export with type stripping', () => {
+it('runs after the native web export with type stripping, the Chromium checks last', () => {
   const { scripts } = JSON.parse(
     readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
   );
   expect(scripts['postnative:web:build']).toMatch(
-    /^node --experimental-strip-types .*tools\/migration\/check-native-web-precache\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-startup\.mjs$/
+    /^node --experimental-strip-types .*tools\/migration\/check-native-web-precache\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-startup\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-pages-without-js\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-admin\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-safe-area\.mjs$/
+  );
+});
+
+// Netlify's --prod install has no Playwright, so the deploy build runs every check but those.
+it('builds the deployed site with the browserless checks', () => {
+  const { scripts } = JSON.parse(
+    readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
+  );
+  expect(scripts['build:site']).toMatch(
+    /^node --experimental-strip-types .*tools\/migration\/build-native-web\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-precache\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-startup\.mjs$/
   );
 });
 
@@ -356,7 +370,10 @@ it('neither requires nor allows a page-only chunk in the precache', () => {
       expectedShellUrl: '',
       integrityOnDisk: new Map(precached.map((url) => [url, 'x'])),
       shellReferences: [],
-      exportedFiles: ['index.html', '_expo/static/js/web/pageApp-1.js'],
+      exportedFiles: [
+        'index.html',
+        '_expo/static/js/web/pageApp-0123456789abcdef0123456789abcdef.js',
+      ],
       precachedScripts: [],
       precachedHashes: new Set(),
       shellScripts: [],
@@ -364,10 +381,56 @@ it('neither requires nor allows a page-only chunk in the precache', () => {
       starterImages: [],
       lazySamples: [],
       precacheBytes: 0,
-      pageOnlyFiles: ['_expo/static/js/web/pageApp-1.js'],
+      pageOnlyFiles: ['_expo/static/js/web/pageApp-0123456789abcdef0123456789abcdef.js'],
     });
   expect(problems([]).filter((problem) => problem.includes('pageApp'))).toEqual([]);
-  expect(problems(['_expo/static/js/web/pageApp-1.js'])).toContain(
-    'Chunks only a page document loads are precached: _expo/static/js/web/pageApp-1.js'
+  expect(problems(['_expo/static/js/web/pageApp-0123456789abcdef0123456789abcdef.js'])).toContain(
+    'Chunks only a page document loads are precached: _expo/static/js/web/pageApp-0123456789abcdef0123456789abcdef.js'
   );
+});
+
+// What the host serves beside the app (build-native-web.mjs's HOSTED_STATIC_ENTRIES).
+it('neither requires nor allows a hosted static file in the precache', () => {
+  const hosted = ['coloring/farm/cat.svg', 'robots.txt'];
+  const problems = (precached) =>
+    nativeWebPrecacheProblems({
+      precacheEntries: precached.map((url) => ({ url, revision: null, integrity: 'x' })),
+      appShellFallbackLookups: [],
+      expectedShellUrl: '',
+      integrityOnDisk: new Map(precached.map((url) => [url, 'x'])),
+      shellReferences: [],
+      exportedFiles: ['index.html', ...hosted],
+      precachedScripts: [],
+      precachedHashes: new Set(),
+      shellScripts: [],
+      starterOutlines: [],
+      starterImages: [],
+      lazySamples: [],
+      precacheBytes: 0,
+    });
+  expect(problems([]).filter((problem) => hosted.some((file) => problem.includes(file)))).toEqual(
+    []
+  );
+  expect(problems(['coloring/farm/cat.svg'])).toContain(
+    'Files the host serves beside the app are precached: coloring/farm/cat.svg'
+  );
+});
+
+it('copies every hosted static entry from the files shipping served', () => {
+  for (const entry of HOSTED_STATIC_ENTRIES)
+    expect(existsSync(new URL(`../../web/static/${entry}`, import.meta.url)), entry).toBe(true);
+});
+
+// netlify.toml caches both directories immutable, which only a content-hashed name may be.
+it('names every file under an immutable directory by its content hash', () => {
+  const hashed = [
+    '_expo/static/js/web/index-0123456789abcdef0123456789abcdef.js',
+    '_expo/static/css/strict-0123456789abcdef0123456789abcdef.css',
+    'assets/assets/paper/handmade-paper.0123456789abcdef0123456789abcdef.webp',
+  ];
+  expect(unhashedImmutableFiles([...hashed, 'index.html', 'coloring/farm/cat.svg'])).toEqual([]);
+  expect(unhashedImmutableFiles(['_expo/static/js/web/entry.js', 'assets/logo.png'])).toEqual([
+    '_expo/static/js/web/entry.js',
+    'assets/logo.png',
+  ]);
 });

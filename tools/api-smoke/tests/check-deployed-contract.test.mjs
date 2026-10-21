@@ -54,17 +54,11 @@ const prerenderedCsp = serializeCspDirectives({
       ([directive]) => !SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive)
     )
   ),
-  'script-src': [...WEB_CSP_DIRECTIVES['script-src'], inlineBootHash],
-});
-const ssrCsp = serializeCspDirectives({
-  ...WEB_CSP_DIRECTIVES,
-  'script-src': [...WEB_CSP_DIRECTIVES['script-src'], 'nonce-dGVzdC1ub25jZQ=='],
+  'script-src': ['self', inlineBootHash],
 });
 
-function prerenderedHtml(asset = '', omitMeta = false, dataBlocks = '') {
-  const meta = omitMeta
-    ? ''
-    : `<meta http-equiv="content-security-policy" content="${prerenderedCsp}">`;
+function prerenderedHtml(asset = '', omitMeta = false, dataBlocks = '', csp = prerenderedCsp) {
+  const meta = omitMeta ? '' : `<meta http-equiv="content-security-policy" content="${csp}">`;
   return `<html><head>${meta}</head><body>${asset}<script>${inlineBootScript}</script>${dataBlocks}</body></html>`;
 }
 
@@ -87,7 +81,7 @@ function sendJson(response, status, body, headers = {}) {
 }
 
 async function startDeploy({
-  adminCsp = ssrCsp,
+  adminCsp = prerenderedCsp,
   cacheableApiPath,
   failPath,
   functionSecurityHeader,
@@ -122,7 +116,7 @@ async function startDeploy({
     if (url.pathname === '/' || url.pathname === '/privacy') {
       const asset =
         url.pathname === '/' && !omitHomeAsset
-          ? '<script src="/_app/immutable/start-abc.js"></script>'
+          ? '<script type="application/json" id="startup-scripts">["/_expo/static/js/web/index-abc.js"]</script>'
           : '';
       send(response, 200, prerenderedHtml(asset, omitPrerenderedMeta, prerenderedDataBlocks), {
         'Content-Type': 'text/html',
@@ -131,17 +125,14 @@ async function startDeploy({
       return;
     }
     if (url.pathname === '/admin') {
-      send(response, 200, '<html><body>Admin</body></html>', {
+      send(response, 200, prerenderedHtml('', false, '', adminCsp), {
         'Content-Type': 'text/html',
         ...routeSecurityHeaders,
         ...(omitAdminCacheControl ? {} : { 'Cache-Control': 'no-store' }),
-        ...(omitSecurityHeader === 'Content-Security-Policy'
-          ? {}
-          : { 'Content-Security-Policy': adminCsp }),
       });
       return;
     }
-    if (url.pathname === '/_app/immutable/start-abc.js') {
+    if (url.pathname === '/_expo/static/js/web/index-abc.js') {
       send(response, 200, 'export {};', {
         'Content-Type': 'text/javascript',
         'Cache-Control': 'public, max-age=31536000, immutable',
@@ -427,7 +418,7 @@ describe('hosted deploy contract smoke', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain(
-      `searched ${prerenderedHtml().length} response bytes for /_app/immutable/*.{css,js,woff2}`
+      `searched ${prerenderedHtml().length} response bytes for /_expo/static/*.{css,js}`
     );
   });
 
@@ -447,14 +438,14 @@ describe('hosted deploy contract smoke', () => {
     expect(result.code, result.stderr).toBe(0);
   });
 
-  it('rejects an SSR script policy that falls back to unsafe-inline', async () => {
+  it("rejects a document policy that falls back to unsafe-inline or misses a script's hash", async () => {
     const result = await runSmoke(
       await startDeploy({ adminCsp: "script-src 'self' 'unsafe-inline'" })
     );
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('script-src contains unsafe-inline');
-    expect(result.stderr).toContain('script-src missing an SSR nonce');
+    expect(result.stderr).toContain(`script-src missing inline ${inlineBootHash}`);
   });
 
   it('continues through the admin persistence round-trip after a transport failure', async () => {

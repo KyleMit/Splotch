@@ -96,12 +96,17 @@ export type AiReply =
       detail?: string;
     }
   | { kind: 'unknown'; cause: 'timeout' | 'network'; message: string };
-export function aiUrl(request: AiRequest) {
+// The web export calls this path on its own origin, whose host serves the /api function beside the
+// page documents; the native apps call it on AI_ORIGIN through aiUrl.
+export function aiPath(request: AiRequest) {
   if (request.path === RECOVERY_PATH)
     throw new Error(
       'Recovery activation requires qualified native storage, secure references, privacy and service contract.'
     );
-  return `${AI_ORIGIN}${request.path}${request.query ? `?${request.query}` : ''}`;
+  return `${request.path}${request.query ? `?${request.query}` : ''}`;
+}
+export function aiUrl(request: AiRequest) {
+  return `${AI_ORIGIN}${aiPath(request)}`;
 }
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);

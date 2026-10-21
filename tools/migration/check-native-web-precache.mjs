@@ -26,6 +26,7 @@ import {
   NOT_FOUND_FILE,
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
+  isHostedStaticFile,
   subresourceIntegrity,
   webVersionHeadTag,
 } from './build-native-web.mjs';
@@ -112,6 +113,19 @@ export function lazyModuleSamples() {
 }
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+// The directories netlify.toml caches immutable for a year, which only a name that changes with its
+// bytes may be (ADR-0042). Expo names every file under them with the MD5 of its content.
+export const IMMUTABLE_EXPORT_DIRECTORIES = ['_expo/static/', 'assets/'];
+const CONTENT_HASHED_NAME = /[-.][0-9a-f]{32}\.[a-z0-9]+$/;
+
+export function unhashedImmutableFiles(exportedFiles) {
+  return exportedFiles.filter(
+    (file) =>
+      IMMUTABLE_EXPORT_DIRECTORIES.some((directory) => file.startsWith(directory)) &&
+      !CONTENT_HASHED_NAME.test(file)
+  );
+}
 
 // Every image the bundled starter book shows, by the hash of the shipping file the web export
 // serves as a hashed asset.
@@ -203,9 +217,20 @@ export function nativeWebPrecacheProblems({
   if (missingOnDisk.length)
     problems.push(`Precached files missing from the export: ${missingOnDisk.join(', ')}`);
   const pageOnly = new Set(pageOnlyFiles);
+  const unhashed = unhashedImmutableFiles(exportedFiles);
+  if (unhashed.length)
+    problems.push(
+      `Files the host caches immutable carry no content hash in their name: ${unhashed.join(', ')}`
+    );
+  const hostedPrecached = precacheUrls.filter(isHostedStaticFile);
+  if (hostedPrecached.length)
+    problems.push(
+      `Files the host serves beside the app are precached: ${hostedPrecached.join(', ')}`
+    );
   const notPrecached = exportedFiles.filter(
     (file) =>
       !UNFETCHED_EXPORT_FILES.has(file) &&
+      !isHostedStaticFile(file) &&
       !pageOnly.has(file) &&
       file !== APP_SHELL_FILE &&
       !precached.has(file)
