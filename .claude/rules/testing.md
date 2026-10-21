@@ -1,6 +1,7 @@
 ---
 paths:
   - "web/tests/**"
+  - "e2e/**"
   - "web/src/**/*.test.ts"
   - "web/*.test.ts"
   - "web/playwright.config.ts"

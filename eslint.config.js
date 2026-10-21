@@ -609,6 +609,7 @@ export default tseslint.config(
     files: [
       'web/src/**',
       'web/tests/**',
+      'e2e/**',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
@@ -848,7 +849,7 @@ export default tseslint.config(
   {
     // Playwright specs. Same vacuous-test guard as the Vitest block above, spelled in this
     // plugin's rule names; the two vocabularies never mix, so the globs stay disjoint.
-    files: ['web/tests/**/*.spec.ts'],
+    files: ['web/tests/**/*.spec.ts', 'e2e/specs/**/*.spec.ts'],
     plugins: { playwright },
     rules: {
       ...VACUOUS_TEST_RULES.playwright,
@@ -872,8 +873,8 @@ export default tseslint.config(
     // The shared E2E helpers hold the retrying opens every spec leans on, so a dropped await
     // inside one goes vacuous in every caller. expect-expect and no-conditional-expect judge a
     // test, and a helper is not one.
-    files: ['web/tests/**/*.ts'],
-    ignores: ['web/tests/**/*.spec.ts'],
+    files: ['web/tests/**/*.ts', 'e2e/**/*.ts'],
+    ignores: ['web/tests/**/*.spec.ts', 'e2e/specs/**/*.spec.ts'],
     plugins: { playwright },
     rules: PLAYWRIGHT_ASSERTION_SHAPE_RULES,
   },
