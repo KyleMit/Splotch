@@ -1,6 +1,7 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NATIVE_APP_DIR } from '../release/lib/native-app.mjs';
 
 // The native smoke flow selects elements by accessibility label, in YAML, with
 // nothing linking those strings to the components that carry them. Both
@@ -41,6 +42,15 @@ const STRUCTURAL_KEYS = new Set([
   'takeScreenshot',
   'timeout',
 ]);
+
+// The React Native component, under the app's src/, that declares each label
+// the flow selects. Another component that happens to use the same words (the
+// Settings dialog's own title, say) does not count: the guard follows the
+// control the flow means. A selector with no entry here fails, so adding one
+// names its owner.
+const SELECTOR_OWNERS = {
+  Settings: 'rsdDrawing/RsdEdgeControls.tsx',
+};
 
 const KEY_LINE = /^\s*(?:- )?([A-Za-z][A-Za-z0-9_]*):(.*)$/;
 
@@ -87,21 +97,15 @@ export function readFlowSelectors(body) {
   return { labels, problems };
 }
 
-function svelteSources(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return svelteSources(path);
-    return entry.name.endsWith('.svelte') ? [readFileSync(path, 'utf8')] : [];
-  });
+/** Whether `source` hands `label`, exactly, to a label prop as a string literal. */
+export function declaresLabel(source, label) {
+  return [
+    ...source.matchAll(/\b(?:aria-label|accessibilityLabel|label)=(?:"([^"{}]*)"|'([^'{}]*)')/g),
+  ].some(([, doubleQuoted, singleQuoted]) => (doubleQuoted ?? singleQuoted) === label);
 }
 
-const ariaLabels = new Set(
-  svelteSources(join(repoRoot, 'web', 'src')).flatMap((source) =>
-    [...source.matchAll(/aria-label=(?:"([^"{}]*)"|'([^'{}]*)')/g)].map(
-      ([, doubleQuoted, singleQuoted]) => doubleQuoted ?? singleQuoted
-    )
-  )
-);
+const ownerSource = (label) =>
+  readFileSync(join(repoRoot, NATIVE_APP_DIR, 'src', SELECTOR_OWNERS[label]), 'utf8');
 
 const { labels, problems } = readFlowSelectors(flowBody);
 
@@ -135,19 +139,44 @@ describe('flow reader', () => {
   });
 });
 
+describe('label reader', () => {
+  it.each([
+    { form: 'a label prop', source: '<RsdIconButton label="Settings" />', declares: true },
+    {
+      form: 'a single-quoted aria-label',
+      source: "<html.div aria-label='Settings' />",
+      declares: true,
+    },
+    {
+      form: 'an accessibilityLabel',
+      source: '<View accessibilityLabel="Settings" />',
+      declares: true,
+    },
+    { form: 'a longer label', source: '<RsdIconButton label="Settings page" />', declares: false },
+    { form: 'another prop', source: '<RsdDialogTitle title="Settings" />', declares: false },
+    { form: 'a computed label', source: "label={open ? 'Settings' : 'Close'}", declares: false },
+  ])('reads $form', ({ source, declares }) => {
+    expect(declaresLabel(source, 'Settings')).toBe(declares);
+  });
+});
+
 describe('native smoke flow', () => {
   it('is written entirely in forms the guard understands', () => {
     expect(problems).toEqual([]);
     expect(labels.length).toBeGreaterThan(0);
   });
 
-  it('selects only labels the app still renders', () => {
+  it('selects only labels their owning component still declares', () => {
     expect(labels.length).toBeGreaterThan(0);
     for (const label of labels) {
       expect(
-        [...ariaLabels],
-        `.maestro/smoke.yaml selects "${label}", which no literal aria-label in web/src declares`
+        Object.keys(SELECTOR_OWNERS),
+        `.maestro/smoke.yaml selects "${label}"; name the component that declares it in SELECTOR_OWNERS`
       ).toContain(label);
+      expect(
+        declaresLabel(ownerSource(label), label),
+        `${SELECTOR_OWNERS[label]} no longer declares the label "${label}" that .maestro/smoke.yaml selects`
+      ).toBe(true);
     }
   });
 

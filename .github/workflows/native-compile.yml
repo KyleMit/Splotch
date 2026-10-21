@@ -1,45 +1,52 @@
-# Compiles the native shells on the pull requests that can break them, so a
-# Java or Swift compile error fails its own PR instead of the next release tag.
-# The deploy smokes (android-deploy.yml, ios-deploy.yml) stay tag-only because
-# booting an emulator or simulator is what costs; compiling does not
+# Builds the React Native app's native projects on the pull requests that can
+# break them, so a Kotlin, Swift, C++, Gradle, CocoaPods or JavaScript bundling
+# error fails its own PR instead of the next release tag. Both are Release
+# builds, so each also bundles the JavaScript the way the store build embeds
+# it. The deploy smokes (android-deploy.yml, ios-deploy.yml) stay tag-only
+# because booting an emulator or simulator is what costs; building does not
 # (ADR-0008's 2026-09-28 amendment).
 #
 # A separate path-filtered workflow rather than a job in test.yml: nothing
 # waits on it, so it adds no wall clock to a merge, and it never starts on a PR
-# that touches no compile input. No branch rule requires it, so a PR it skips is
-# not left waiting on a check that will never report.
+# that touches no build input. No branch rule requires it, so a PR it skips is
+# not left waiting on a check that will never report. macOS minutes are the
+# scarce ones, so the filter leaves out the app's Markdown, and the shared
+# web/src and web/static modules the bundle imports: the Quality job
+# type-checks the app against them on every pull request.
 name: Native compile
 
 on:
   workflow_dispatch:
   # Both path lists are pinned by
   # tools/mobile/tests/native-release-configurations.test.mjs against the
-  # inputs the compile commands read.
+  # inputs the build commands read.
   pull_request:
     paths:
-      - 'android/**'
-      - 'ios/**'
-      - 'capacitor.config.json'
+      - 'experiments/native-architecture/**'
+      - '!experiments/native-architecture/**/*.md'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'patches/**'
       - 'tools/lib/proc.mjs'
-      - 'tools/mobile/android/**'
+      - 'tools/release/build-native-release.mjs'
+      - 'tools/release/lib/native-app.mjs'
       - '.github/actions/setup-pnpm/**'
       - '.github/workflows/native-compile.yml'
-  # Main runs keep the Gradle cache that pull requests restore from: a cache
-  # saved on a pull request is visible only to that pull request.
+  # Main runs keep the Gradle and CocoaPods caches that pull requests restore
+  # from: a cache saved on a pull request is visible only to that pull request.
   push:
     branches: [main]
     paths:
-      - 'android/**'
-      - 'ios/**'
-      - 'capacitor.config.json'
+      - 'experiments/native-architecture/**'
+      - '!experiments/native-architecture/**/*.md'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'patches/**'
       - 'tools/lib/proc.mjs'
-      - 'tools/mobile/android/**'
+      - 'tools/release/build-native-release.mjs'
+      - 'tools/release/lib/native-app.mjs'
       - '.github/actions/setup-pnpm/**'
       - '.github/workflows/native-compile.yml'
 
@@ -56,9 +63,9 @@ concurrency:
 
 jobs:
   android:
-    name: Android release Java compile
+    name: Android Release APK build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -71,25 +78,41 @@ jobs:
           java-version: 21
           cache: gradle
           cache-dependency-path: |
-            android/**/*.gradle*
-            android/gradle/wrapper/gradle-wrapper.properties
+            experiments/native-architecture/android/**/*.gradle*
+            experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.properties
 
       - uses: ./.github/actions/setup-pnpm
 
-      - name: Compile Android release Java
-        run: npm run android:compile
+      # The .dev Release APK: the store build's R8, resource shrinking and
+      # embedded bundle, signed with the runner's debug key. One ABI, because
+      # the four the store ships compile the same C++ four times; the tagged
+      # deploy smoke builds all four.
+      - name: Build Android Release APK
+        env:
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
+        run: npm run native:android:apk
 
   ios:
-    name: iOS release simulator compile
+    name: iOS Release simulator build
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
+    env:
+      # CocoaPods refuses to run under a non-UTF-8 locale.
+      LANG: en_US.UTF-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-pnpm
 
-      # The same command the iOS tag gate compiles with. Xcode copies the
-      # generated public/ and capacitor.config.json as bundle resources, so this
-      # one needs the real cap sync rather than Android's empty stand-in.
-      - name: Compile iOS Release app without store signing
-        run: npm run ios:build:release
+      # pod install downloads React Native's and Expo's prebuilt frameworks;
+      # Podfile.lock pins every one of them.
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('experiments/native-architecture/ios/Podfile.lock') }}
+
+      # The same store-identity, unsigned simulator build the iOS deploy smoke
+      # installs, so a compile failure here is the one that smoke would hit.
+      - name: Build iOS Release simulator app
+        run: npm run native:ios:simulator
