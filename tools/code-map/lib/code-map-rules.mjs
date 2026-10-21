@@ -318,7 +318,7 @@ export const WEB_SRC_DOMAIN_RULES = [
   ],
   [
     D.ai,
-    /^routes\/api\/(generate-image|generation-result|report-image|free-generation-grant|verify-key)\//,
+    /^lib\/server\/api\/(generateImage|generationResult|settlement|reportImage|freeGenerationGrant|verifyKey)$/,
   ],
   [D.ai, /^lib\/components\/(Ai\w+|aiDialGeometry|aiPreview)$/],
   [
@@ -328,7 +328,8 @@ export const WEB_SRC_DOMAIN_RULES = [
   [D.ai, /^lib\/(freeGenerations|imageReport|usageRecord)$/],
 
   [D.admin, /^lib\/components\/admin\//],
-  [D.admin, /^routes\/(api\/)?admin\//],
+  [D.admin, /^routes\/admin\//],
+  [D.admin, /^lib\/server\/api\/admin\w*$/],
   [D.admin, /^lib\/server\/(admin|tokens)$/],
   [D.admin, /^lib\/(adminFormat|inviteLink)$/],
   [D.admin, /^lib\/pwa\/adminRoute$/],
@@ -385,7 +386,6 @@ export const WEB_SRC_DOMAIN_RULES = [
   [D.state, /^lib\/state\//],
 
   [D.server, /^lib\/server\//],
-  [D.server, /^routes\/api\//],
 
   [
     D.controls,
@@ -429,7 +429,7 @@ const DRAWING_SUBDOMAIN_RULES = [
 ];
 
 const AI_SUBDOMAIN_RULES = [
-  ['Server authorization, jobs, storage & endpoints', /^(lib\/server\/|routes\/api\/)/],
+  ['Server authorization, jobs, storage & endpoints', /^lib\/server\//],
   ['Generation, result & reporting UI', /^lib\/components\//],
   ['Client pipeline, state & shared contracts', /./],
 ];

@@ -89,10 +89,11 @@ write persistence cannot be validated without a write and read-back.
 
 ## Maintenance
 
-The API contract is documented in `docs/API.md` and implemented under `web/src/routes/api/`. When an
-endpoint or response shape changes, update the reference, extend the local smoke assertions, and
-keep the owned admin client request-only. Changes to deployed persistence semantics must update the
-hosted deploy workflow and ADR-0025 expectations together.
+The API contract is documented in `docs/API.md` and implemented in `web/src/lib/server/api/` (one
+endpoint module each, served by `netlify/functions/api-*.ts`). When an endpoint or response shape
+changes, update the reference, extend the local smoke assertions, and keep the owned admin client
+request-only. Changes to deployed persistence semantics must update the hosted deploy workflow and
+ADR-0025 expectations together.
 
 The [Hosted Deploy Smoke workflow](../../.github/workflows/hosted-deploy-smoke.yml) runs
 `check-deployed-contract.mjs` with `install: 'false'`. That entry point and everything it loads —

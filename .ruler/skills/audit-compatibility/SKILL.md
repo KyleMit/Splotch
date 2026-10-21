@@ -26,9 +26,9 @@ The report (`tools/report-browser-floor.mjs`, read-only) prints:
   a raise is plausible and don't invent a proxy. Note the caniuse-lite version in the header. If it
   is months old, say so in the log entry; don't bump it in this run.
 * **Runtime feature probes.** Every `typeof X`, `'x' in navigator`, platform optional chain, and
-  optional call to a known platform method in shipped `web/src` (tests, `lib/server`, `routes/api`
-  and `routes/dev` excluded), with whether the register cites the file. Guards that name only
-  SSR/test globals are counted, not listed.
+  optional call to a known platform method in shipped `web/src` (tests, `lib/server` and
+  `routes/dev` excluded), with whether the register cites the file. Guards that name only SSR/test
+  globals are counted, not listed.
 
 Look up any feature's Baseline status against the floor with
 `npm run report:browser-floor -- --feature <id>` (repeatable). Ids are web-features slugs, not

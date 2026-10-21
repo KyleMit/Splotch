@@ -6,11 +6,12 @@ import { nativeCspDirectives, WEB_CSP_DIRECTIVES } from './securityPolicy.ts';
 import { standalonePageEntries } from './standalonePageEntries.ts';
 import { CSRF_TRUSTED_ORIGINS } from './src/lib/server/csrf.ts';
 
-// The web app ships to Netlify (SSR + the /api/generate-image function and the
-// /admin token console). The native apps bundle a fully static export instead,
-// so when CAPACITOR=true we swap in adapter-static. The server-only routes
-// (api, admin, dev) aren't reachable inside the bundle and are skipped by
-// `strict: false`; the native AI button talks to the hosted endpoint instead.
+// The web app ships to Netlify (SSR for the /admin token console and /feedback;
+// the /api/* endpoints are separate functions in netlify/functions). The native
+// apps bundle a fully static export instead, so when CAPACITOR=true we swap in
+// adapter-static. The server-only routes (admin, dev) aren't reachable inside the
+// bundle and are skipped by `strict: false`; the native AI button talks to the
+// hosted endpoint instead.
 const isCapacitor = process.env.CAPACITOR === 'true';
 const { appVersion } = buildMetadataOncePerProcess({ isCapacitor, env: process.env });
 
