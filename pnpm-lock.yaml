@@ -14,7 +14,6 @@ overrides:
   brace-expansion@1.1.18: ^1.1.20
   brace-expansion@2.1.4: ^2.1.6
   devalue@5.9.2: ^5.9.3
-  tar: ^7.5.19
 
 patchedDependencies:
   '@stylexjs/stylex@0.15.4': 000aa8c8bf452ecaef823bb367360a37de2f818fe86cd389a6c089ff2f60b2f4
