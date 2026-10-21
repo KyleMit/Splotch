@@ -5,7 +5,7 @@
 // This PNG is also the social/link-preview image: app.html points og:image and
 // twitter:image at /large-image.png. If you change the output dimensions here,
 // update og:image:width / og:image:height in web/src/app.html to match (an E2E
-// test in web/tests/page.spec.ts asserts the two agree), then re-scrape via the
+// test in e2e/specs/page.spec.ts asserts the two agree), then re-scrape via the
 // Facebook Sharing Debugger since scrapers cache the old card for weeks.
 //
 // The run always starts this checkout's own dev server, never reusing one: on 4173,
