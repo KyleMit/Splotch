@@ -120,7 +120,9 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     because it lays out with media queries (`FLUID_LAYOUTS`), and inlines its own React Strict DOM
     styles, which `strict.css` leaves out (`postcss.config.mjs`) so no other document carries them.
   * `check-native-web-startup.mjs` holds each page document to its own first-paint and page-entry
-    budgets (`MAX_NATIVE_WEB_PAGE_BYTES`, each page's first measured build plus 10%), then
+    budgets (`MAX_NATIVE_WEB_PAGE_BYTES`, each page's first measured build plus 10%). First paint
+    counts the document's inline scripts and CSS, never its prerendered markup, so `design.html`
+    weighs far more on disk than its first-paint figure. Then
     `check-native-web-pages-without-js.mjs` loads it in Chromium with JavaScript off in every layout
     and theme and fails unless it reads in full, links what it must, follows a section link into
     view, and names (instead of linking) each address the grown-up check would guard.

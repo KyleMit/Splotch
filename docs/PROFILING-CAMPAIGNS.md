@@ -226,7 +226,12 @@ unrecorded processes leaves it up.
 So record those `xcodebuild` PIDs while the server is still their parent
 (`pgrep -P <appium pid> -fl xcodebuild`), and stop them with the server. Seen 2026-10-20: two such
 builds outlived the crash-hunt rig release, each holding a simulator that had already been shut
-down.
+down. Seen again 2026-10-21.
+
+When the server is already gone, attribute an orphan before stopping it: its `-destination` names
+your simulator's UDID, and its start time (`ps -o lstart= -p <pid>`) falls inside your server's run.
+Don't reach for `npm run perf:release` while other sessions hold the rig. It stops every Appium any
+checkout of this repo owns, other lanes' included.
 
 **A borrowed long-running Appium can report the attached iPad as
 `Unknown device or simulator UDID`.** The message comes from XCUITest's device discovery, before any
@@ -1748,6 +1753,9 @@ its `pnpm install`. A full disk fails every session on the host, not only the on
 * Check `df -h` before each build.
 * Delete only your own obsolete build directories: `cd` into the campaign's directory and remove
   them by relative path. Never delete another session's.
+* Parallel lanes share their orchestrator's scratchpad, so their builds add up there: 41 GB on
+  2026-10-21. The orchestrator prunes each lane's rebuildable output once that lane's PR merges (the
+  `ship-campaign` skill's parallel reference).
 
 ## Metric traps
 
