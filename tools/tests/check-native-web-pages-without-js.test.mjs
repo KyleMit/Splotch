@@ -92,4 +92,10 @@ describe('a followed section link', () => {
     expect(sectionLinkProblems(at, { ...followed, top: 900 })[0]).toContain('a target at 900 px');
     expect(sectionLinkProblems(at, null)).toEqual([`${at} has no in-page section link to follow`]);
   });
+
+  it('rejects a target that holds the link, which stays in view without scrolling', () => {
+    expect(sectionLinkProblems(at, { ...followed, top: 0, holdsLink: true })).toEqual([
+      `${at} follows #reports to an element that holds the link, which no fragment scrolls`,
+    ]);
+  });
 });

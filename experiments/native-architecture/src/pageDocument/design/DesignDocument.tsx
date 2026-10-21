@@ -26,6 +26,7 @@ import { FoundationSections } from './FoundationSections';
 import { PrimitiveSections } from './PrimitiveSections';
 
 const WIDE = '@media (min-width: 980px)';
+const ROOMY_HEADER = '@media (min-width: 360px)';
 const SHELL_MAX_WIDTH_PX = 1200;
 const SIDEBAR_WIDTH_PX = 216;
 const CONTENT_MAX_WIDTH_PX = 820;
@@ -49,7 +50,6 @@ const styles = css.create({
     flexGrow: 1,
     height: '100%',
     overflowY: 'auto',
-    scrollBehavior: 'smooth',
     backgroundColor: colors.appBg,
     color: colors.textStrong,
     fontFamily: fonts.family,
@@ -76,6 +76,8 @@ const styles = css.create({
     paddingLeft: { default: dimensions.space4, [WIDE]: dimensions.space7 },
     paddingRight: { default: dimensions.space4, [WIDE]: dimensions.space7 },
   },
+  // The narrowest phones keep the theme picker and drop the mark, which the hero's link repeats.
+  headerMark: { display: { default: 'none', [ROOMY_HEADER]: 'flex' } },
   headerStart: {
     display: 'flex',
     flexDirection: 'row',
@@ -310,6 +312,8 @@ function useScrollspy(scroller: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const node = scroller.current;
     if (!node) return;
+    // Section links glide once hydrated; without a script they jump, as shipping's do.
+    node.style.scrollBehavior = 'smooth';
     let frame = 0;
     const spy = () => {
       frame = 0;
@@ -349,7 +353,9 @@ function Themed({ children }: { children: ReactNode }) {
   const scroller = useRef<HTMLDivElement | null>(null);
   const active = useScrollspy(scroller);
   return (
-    <html.div ref={scroller} id={TOP_ID} style={[styles.root, theme === 'dark' && darkTheme]}>
+    <html.div ref={scroller} style={[styles.root, theme === 'dark' && darkTheme]}>
+      {/* The scroller can't be its own fragment target: a link to it never scrolls its content. */}
+      <html.div id={TOP_ID} />
       {children}
       <html.div style={styles.shell}>
         <html.nav aria-label={DESIGN_COPY.contents} style={styles.sidebar}>
@@ -419,7 +425,9 @@ export function DesignDocument() {
                 <ThemePicker onSelect={setPreference} />
                 <html.span style={styles.headerTitle}>Design system</html.span>
               </html.div>
-              <RsdBrandMark phone={false} narrow={false} onDrawingReturn={goHome} />
+              <html.div style={styles.headerMark}>
+                <RsdBrandMark phone={false} narrow={false} onDrawingReturn={goHome} />
+              </html.div>
             </html.div>
           </html.header>
         </Themed>

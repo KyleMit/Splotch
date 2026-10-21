@@ -142,9 +142,13 @@ async function followSectionLink(tab, variantAttribute, key) {
   await link.click();
   return tab.evaluate((followed) => {
     const target = document.getElementById(location.hash.slice(1));
+    const anchor = [...document.querySelectorAll('a')].find(
+      (candidate) => candidate.getAttribute('href') === followed && candidate.checkVisibility()
+    );
     return {
       href: followed,
       found: target !== null,
+      holdsLink: Boolean(target && anchor && target.contains(anchor)),
       visible: target?.checkVisibility() ?? false,
       top: target?.getBoundingClientRect().top ?? null,
       viewportHeight: innerHeight,
@@ -154,7 +158,11 @@ async function followSectionLink(tab, variantAttribute, key) {
 
 export function sectionLinkProblems(at, followed) {
   if (!followed) return [`${at} has no in-page section link to follow`];
-  const { href, found, visible, top, viewportHeight } = followed;
+  const { href, found, visible, top, viewportHeight, holdsLink } = followed;
+  // A target that holds the link, such as the page's own scroller, sits in view wherever the page
+  // is scrolled, and following a link to it never scrolls its content.
+  if (holdsLink)
+    return [`${at} follows ${href} to an element that holds the link, which no fragment scrolls`];
   if (!found || !visible || top <= -SUBPIXEL_PX || top >= viewportHeight)
     return [
       `${at} follows ${href} to ${found ? (visible ? `a target at ${Math.round(top)} px` : 'a hidden target') : 'no target'}, not into view`,

@@ -82,7 +82,7 @@ const styles = css.create({
     borderRadius: dimensions.radiusLg,
     overflow: 'hidden',
   },
-  pickers: { alignItems: 'flex-start' },
+  pickers: { alignItems: 'flex-start', overflowX: 'auto' },
   cueLine: { margin: 0, color: colors.text, fontSize: dimensions.fontSizeSm },
   standalone: {
     display: 'flex',
