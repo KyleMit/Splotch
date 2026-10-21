@@ -62,6 +62,9 @@ export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 //   page bundle again fails by the whole bundle.
 // * feedback: first paint 33,538 measured (1,732 boot JS; 31,806 CSS); page entry 768,782
 //   measured, the shared page entry with the feedback form's owner.
+// * changelog, beta and notFound (the host's 404.html), first measured 2026-10-21: first paint
+//   33,574, 34,948 (its head's platform stamp and panel filter included) and 33,497; the page
+//   entry every page document shares, 781,172 by then.
 // * design: first paint 42,708 measured (1,663 boot JS; 41,045 CSS, strict.css plus the
 //   styleguide's own sheet); page entry 867,757 measured, its own entry with every specimen.
 // * admin: first paint 17,072 measured (1,280 boot JS; 15,792 CSS: its own compiled rules, the
@@ -69,8 +72,11 @@ export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 //   React DOM and the console without React Native Web (prerender-native-web-admin.mjs).
 export const MAX_NATIVE_WEB_PAGE_BYTES = {
   privacy: { firstPaint: 36_329, pageEntry: 829_600 },
+  changelog: { firstPaint: 36_932, pageEntry: 859_290 },
   feedback: { firstPaint: 36_892, pageEntry: 845_661 },
+  beta: { firstPaint: 38_443, pageEntry: 859_290 },
   design: { firstPaint: 46_979, pageEntry: 954_533 },
+  notFound: { firstPaint: 36_847, pageEntry: 859_290 },
   admin: { firstPaint: 18_780, pageEntry: 288_785 },
 };
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.

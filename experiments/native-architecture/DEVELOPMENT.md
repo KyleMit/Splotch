@@ -255,13 +255,13 @@ tag whose `script-src` lists the hash of each inline script they carry and never
 (`tools/migration/lib/native-web-csp.mjs`); the precache check fails a document whose policy misses
 one. Serve `dist/web` from any static server that returns the exported bytes unchanged: a host that
 rewrites HTML or assets (snippet injection, minification) makes every install fail its integrity
-check. The export also writes `404.html`, a copy of the app shell that a static host answers any
-other path with; off the drawing route (`src/platform/appPath.web.ts`, the paths the worker's
-app-shell route answers) the shell shows shipping's not-found page, and the worker leaves the file
-out of its precache. Its head carries shipping's `viewport-fit=cover` viewport, so safe-area insets
-reach the app, and a boot style and script that paint the paper in the saved or system theme before
-the bundle runs. The entry registers `/sw.js` only in the web build
-(`src/platform/serviceWorker.web.ts`).
+check. The export also writes `404.html`, the not-found page's own prerendered document, which a
+static host answers any other path with; the worker leaves it out of its precache, and offline
+answers with the app shell, which shows the same page off the drawing route
+(`src/platform/appPath.web.ts`, the paths the worker's app-shell route answers). Its head carries
+shipping's `viewport-fit=cover` viewport, so safe-area insets reach the app, and a boot style and
+script that paint the paper in the saved or system theme before the bundle runs. The entry registers
+`/sw.js` only in the web build (`src/platform/serviceWorker.web.ts`).
 
 A new worker waits until every window of the old one closes, so an update never interrupts a
 drawing. The Install Banner and the Settings install guide (`src/install/`) follow the shipping

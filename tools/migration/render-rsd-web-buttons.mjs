@@ -138,7 +138,7 @@ console.log(
     ].map(([x, y]) => renderToStaticMarkup(h(GateEquationCaller, { x, y }))),
     defaultLabelClasses: merge(defaultStyles.span).className,
     notFoundLinks: NOT_FOUND_ACTIONS.map(([page, variant, label]) =>
-      renderToStaticMarkup(h(RsdNotFoundLink, { page, variant }, label))
+      renderToStaticMarkup(h(RsdNotFoundLink, { page, variant, onOpen: noop }, label))
     ),
     notFoundButtons: NOT_FOUND_ACTIONS.map(([, variant, label]) =>
       renderToStaticMarkup(h(RsdButton, { variant, size: 'lg', onPress: noop }, label))

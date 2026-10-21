@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
-import { crossDocumentNavigation, documentPage } from './appDocument';
+import { crossDocumentNavigation, documentPage, type DocumentContent } from './appDocument';
 import { openAppPage } from '../platform/appPath';
 import { ShippingFontGate } from '../platform/shippingFont';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import { createDrawingProduct, type DrawingProductOwner } from '../product/createDrawingProduct';
 import { createNativeFeedback, type NativeFeedbackOwner } from '../feedback/feedback';
 import { feedbackDevice, feedbackPolicyStorage, feedbackTransport } from '../platform/feedback';
-import type { DocumentPage } from '../information/appPages';
 import { RsdInformationPage } from '../rsdDrawing/RsdInformationPage';
 import { RsdScreenBoundary } from '../rsdDrawing/RsdScreenBoundary';
-import { PageNavigation } from '../rsdDrawing/RsdNotFoundPage';
+import { RsdNotFoundPage } from '../rsdDrawing/RsdNotFoundPage';
+import { PageNavigation } from '../rsdDrawing/pageDocumentState';
+import { NOT_FOUND_DOCUMENT } from './appDocumentContract';
+import { BetaPage } from './BetaPage';
 import { deferredIconsSettled } from '../rsdDrawing/iconRegistry';
 
 // The saved settings and the grown-up check a page's links answer to, and on the feedback page
 // the form's owner. Both are created after hydration, as the drawing screen's are
 // (useDrawingProduct.ts), so the hydrating render equals the build's render, which has neither.
-function usePageProduct(page: DocumentPage | null) {
+function usePageProduct(page: DocumentContent | null) {
   const [owners, setOwners] = useState<{
     product: DrawingProductOwner;
     feedback: NativeFeedbackOwner | null;
@@ -74,13 +76,19 @@ export function PageDocument() {
     <ShippingFontGate>
       <RsdScreenBoundary>
         <PageNavigation.Provider value={navigation}>
-          <RsdInformationPage
-            page={page}
-            product={product}
-            drawingVisited={false}
-            standalone={false}
-            onDrawingReturn={ignoreDrawingReturn}
-          />
+          {page === NOT_FOUND_DOCUMENT ? (
+            <RsdNotFoundPage />
+          ) : page === 'beta' ? (
+            <BetaPage appearance={product.state?.settings?.appearance} />
+          ) : (
+            <RsdInformationPage
+              page={page}
+              product={product}
+              drawingVisited={false}
+              standalone={false}
+              onDrawingReturn={ignoreDrawingReturn}
+            />
+          )}
         </PageNavigation.Provider>
       </RsdScreenBoundary>
     </ShippingFontGate>
