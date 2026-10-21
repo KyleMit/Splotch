@@ -28,6 +28,7 @@ const HUE_SECTOR_MIN_PIXELS = 40;
 // overlap the paper's edges, so measuring inside the band keeps chrome out of an ink count.
 const CENTRAL_BAND = { left: 0.15, top: 0.1, right: 0.85, bottom: 0.75 } as const;
 const CLEAR_DRAG_STEPS = 12;
+const REACT_PROPS_KEY = '__reactProps$';
 
 /** Decides whether one pixel's red, green and blue channels read as the ink a spec looks for. */
 export type InkColor = (red: number, green: number, blue: number) => boolean;
@@ -129,6 +130,22 @@ export async function openDrawer(page: Page): Promise<void> {
 /** The Undo button, which lives in the drawer. */
 export function undoButton(page: Page): Locator {
   return page.getByRole('button', { name: 'Undo', exact: true });
+}
+
+/**
+ * Waits until React has taken over the element a locator names. A page document paints its
+ * prerendered markup first, where a press or a typed letter lands on nothing and is lost when the
+ * app mounts over it; React marks every element it manages with a props key once it has.
+ */
+export async function waitForHydration(target: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      target.evaluate(
+        (node, prefix) => Object.keys(node).some((key) => key.startsWith(prefix)),
+        REACT_PROPS_KEY
+      )
+    )
+    .toBe(true);
 }
 
 /** The Grown-Ups Only card. */
