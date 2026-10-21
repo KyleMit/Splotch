@@ -28,6 +28,7 @@ import {
   pageOnlyChunks,
   pageVariantClass,
   withVariantFragments,
+  writtenPageDocuments,
 } from '../migration/prerender-native-web-pages.mjs';
 import {
   STARTUP_SCRIPTS_ELEMENT_ID,
@@ -414,7 +415,9 @@ describe("each page document's budgets", () => {
   });
 
   it('budgets exactly the pages the route table writes', () => {
-    expect(Object.keys(MAX_NATIVE_WEB_PAGE_BYTES)).toEqual(documentPages().map(({ page }) => page));
+    expect(Object.keys(MAX_NATIVE_WEB_PAGE_BYTES)).toEqual(
+      writtenPageDocuments().map(({ page }) => page)
+    );
     expect(() =>
       checkNativeWebPageDocuments({ exportDir: fixture(''), pages, budgets: {}, log: () => {} })
     ).toThrow(
