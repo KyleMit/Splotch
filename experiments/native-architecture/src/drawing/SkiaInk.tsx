@@ -18,7 +18,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import {
+  AccessibilityInfo,
+  PixelRatio,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { Skia, SkiaPictureView, type SkImage } from '@shopify/react-native-skia';
 import { sameStrokes, type InkPlan } from './checkpoints';
 import { useInkAppearance } from './InkAppearance';
@@ -43,6 +49,7 @@ import { createInkLayer } from './skiaInkLayer';
 import { orderedOps } from './inkOps';
 import { showPicture } from './skiaViewPicture';
 import { createHandoffCadence } from './handoffCadence';
+import { createDeferredRedraw } from './deferredRedraw';
 
 type Size = Readonly<{ width: number; height: number }>;
 type GhostCue = { feedback: UndoGhost; size: Size | null; ink: PreviousInk | null };
@@ -191,25 +198,29 @@ function useSceneSync(
   }, [scene, live, strokes, size, context, key, feedback]);
 }
 
-function useLayoutRedraw(size: Size | null) {
+const FRAME_CLOCK = {
+  now: () => performance.now(),
+  requestFrame: (callback: () => void) => requestAnimationFrame(callback),
+  cancelFrame: (handle: number) => cancelAnimationFrame(handle),
+};
+
+// The view presents a picture only when it is handed a new one, so a drawable Android replaces
+// without new ink shows blank paper until the next stroke. A resize replaces it, and so does
+// turning high-contrast text on or off, which drops every texture layer in the window (issue
+// 3141); the view redraws the picture it holds onto each.
+function useSurfaceRedraw(size: Size | null) {
   const view = useRef<SkiaPictureView>(null);
+  const [redraw] = useState(() => createDeferredRedraw(FRAME_CLOCK, () => view.current?.redraw()));
   useEffect(() => {
-    if (!size) return;
-    let current = true;
-    let secondFrame: number | undefined;
-    // Native drawable resizing can coalesce with picture submission before the new size lands.
-    const firstFrame = requestAnimationFrame(() => {
-      if (!current) return;
-      secondFrame = requestAnimationFrame(() => {
-        if (current) view.current?.redraw();
-      });
-    });
+    if (size) redraw.request();
+  }, [size, redraw]);
+  useEffect(() => {
+    const contrast = AccessibilityInfo.addEventListener('highTextContrastChanged', redraw.request);
     return () => {
-      current = false;
-      cancelAnimationFrame(firstFrame);
-      if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
+      contrast.remove();
+      redraw.dispose();
     };
-  }, [size]);
+  }, [redraw]);
   return view;
 }
 
@@ -221,12 +232,6 @@ function present(scene: InkScene, view: SkiaPictureView | null): boolean {
   perfSubmitted();
   return true;
 }
-
-const FRAME_CLOCK = {
-  now: () => performance.now(),
-  requestFrame: (callback: () => void) => requestAnimationFrame(callback),
-  cancelFrame: (handle: number) => cancelAnimationFrame(handle),
-};
 
 // Live ink renders no React (ADR-0178). Each packet paints its samples and hands the view a new
 // picture as it arrives, unless it reached JavaScript too soon after the last hand-off to be
@@ -289,7 +294,7 @@ const SkiaInkLayer = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaInk
   const projection = useInkProjection();
   const { pageId, theme } = useInkAppearance();
   const [size, setSize] = useState<Size | null>(null);
-  const view = useLayoutRedraw(size);
+  const view = useSurfaceRedraw(size);
   const tiles = useCrayonTileResources(
     props.strokes,
     theme,

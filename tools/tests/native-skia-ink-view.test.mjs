@@ -39,13 +39,14 @@ const skia = vi.hoisted(() => ({
   imageLoads: 0,
   plane: { width: 400, height: 300 },
   redraws: [],
+  accessibility: new Map(),
   nextView: 1,
   now: 0,
 }));
 
 vi.mock('react-native', async () => {
   const { nativeInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
-  return nativeInkViewSdk(() => skia.plane, loadImage);
+  return nativeInkViewSdk(() => skia.plane, loadImage, skia.accessibility);
 });
 
 vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
@@ -186,6 +187,7 @@ beforeEach(() => {
   skia.imageLoads = 0;
   skia.plane = PLANE;
   skia.redraws.length = 0;
+  skia.accessibility.clear();
   skia.frames.clear();
   feed = createLiveInkFeed();
   cohort = createContactCohort();
@@ -348,6 +350,29 @@ it('redraws the current picture after layout and cancels superseded or unmounted
   expect(skia.frames.size).toBe(0);
   act(() => unmounted(0));
   expect(skia.redraws).toHaveLength(2);
+});
+
+// Android drops the window's texture layers when high-contrast text toggles, and the layer it
+// rebuilds stays blank until the view presents a frame again (issue 3141). Negative control: without
+// the highTextContrastChanged listener, the event finds no listener and no redraw follows.
+it('redraws the picture it holds when high-contrast text toggles, after the layer settles', () => {
+  render();
+  paintFrame();
+  paintFrame();
+  const shown = skia.shown.length;
+  const picture = skia.shown.at(-1)[1];
+  expect(skia.redraws).toEqual([picture]);
+  const toggled = skia.accessibility.get('highTextContrastChanged');
+  expect(toggled).toBeTypeOf('function');
+  act(() => toggled(true));
+  paintFrame();
+  expect(skia.redraws).toHaveLength(1);
+  paintFrame();
+  expect(skia.redraws).toEqual([picture, picture]);
+  expect(skia.shown).toHaveLength(shown);
+
+  act(() => root.unmount());
+  expect(skia.accessibility.has('highTextContrastChanged')).toBe(false);
 });
 
 it.each([false, true])(
