@@ -19,11 +19,14 @@ section (see the `create-adr` skill).
 
 ## Start here
 
-The decisions that shape everything else, in rough order of importance. All are Active.
+The decisions that shape everything else, in rough order of importance. All are Active or Accepted.
 
-* **[0001 — SvelteKit Dual-Adapter Strategy (Web + Native)](0001-sveltekit-dual-adapter-strategy.md)**
-  — one SvelteKit codebase ships both the Netlify web app (SSR + `/api/*`) and the fully static
-  Capacitor native apps; `CAPACITOR=true` at build time is the single web-vs-native signal.
+* **[0182 — Splotch Is One React Native App](0182-splotch-is-one-react-native-app.md)** — one Expo /
+  React Native / React Strict DOM app ships Android, iOS and a static prerendered web export;
+  Netlify serves the export and one function serves `/api`. Records each tool that stays and what
+  replaces each retired piece; supersedes [0001](0001-sveltekit-dual-adapter-strategy.md) and
+  [0024](0024-web-app-subdirectory-for-netlify-watcher.md), and the cutover sub-issues of epic #3148
+  implement it.
 * **[0004 — Imperative Canvas Engine with Callback Interface](0004-imperative-canvas-engine.md)** —
   drawing is driven by an imperative engine outside Svelte reactivity; components talk to it through
   callbacks (amended by [0066](0066-snapshot-undo-reinstated.md),
@@ -31,8 +34,6 @@ The decisions that shape everything else, in rough order of importance. All are 
   [0085](0085-tiled-live-canvas-for-ipad-webkit.md)).
 * **[0002 — Svelte 5 Runes Over Legacy Stores](0002-svelte-5-runes.md)** — runes everywhere; no
   `writable`/`readable`/`derived` from `svelte/store`.
-* **[0024 — Web App in web/ Subdirectory](0024-web-app-subdirectory-for-netlify-watcher.md)** — the
-  SvelteKit app lives in `web/` so netlify-cli's file watcher never crawls the large native trees.
 * **[0008 — Three-Tier Testing Strategy](0008-three-tier-testing-strategy.md)** — Vitest unit +
   Playwright E2E + Maestro native smoke; the first two are what `npm test` and CI run.
 * **[0070 — Netlify Build-Minute Reduction](0070-netlify-build-minute-reduction.md)** — the
@@ -107,7 +108,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [0012](0012-android-build-toolchain.md)                   | Android Build Toolchain Requirements (Node 22 + JDK 21 Temurin)                      | Active (amended by [0062](0062-drop-windows-dev-support.md))                                                                                                                                                                                                                                                         |
 | [0013](0013-platform-detection-without-capacitor-core.md) | Platform Detection Without Importing @capacitor/core                                 | Active                                                                                                                                                                                                                                                                                                               |
-| [0020](0020-ios-build-toolchain.md)                       | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)   | Active (amended by [0124](0124-exercise-native-release-configurations-in-tag-gates.md))                                                                                                                                                                                                                              |
+| [0020](0020-ios-build-toolchain.md)                       | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)   | Active (amended by [0124](0124-exercise-native-release-configurations-in-tag-gates.md), [0182](0182-splotch-is-one-react-native-app.md))                                                                                                                                                                             |
 | [0027](0027-device-lock-detection-plugin.md)              | A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning         | Active (amended in 2026-09: no web fallback; registration guard for every local plugin)                                                                                                                                                                                                                              |
 | [0028](0028-apple-pencil-eraser-plugin.md)                | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap             | Active                                                                                                                                                                                                                                                                                                               |
 | [0037](0037-photo-save-targets-per-platform.md)           | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active (amended by [0128](0128-persistent-storage-after-explicit-durable-actions.md))                                                                                                                                                                                                                                |
@@ -247,8 +248,10 @@ chains stay intact (e.g. the undo saga: 0033 → 0035/0036 →
 
 | #                                                        | Title                                                                                              | Status                                                                        |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [0001](0001-sveltekit-dual-adapter-strategy.md)          | SvelteKit Dual-Adapter Strategy (Web + Native)                                                     | Superseded by [0182](0182-splotch-is-one-react-native-app.md)                 |
 | [0011](0011-capacitor-cli-windows-patch.md)              | patch-package for Capacitor CLI Windows gradlew Bug                                                | Superseded by [0062](0062-drop-windows-dev-support.md)                        |
 | [0016](0016-admin-console-bearer-api-for-native.md)      | Admin Console via Shared Server Core + Bearer-Session API for Native                               | Superseded by [0101](0101-admin-console-is-web-only-and-unlinked.md)          |
+| [0024](0024-web-app-subdirectory-for-netlify-watcher.md) | Web App in `web/` Subdirectory to Scope the Netlify Dev Watcher                                    | Superseded by [0182](0182-splotch-is-one-react-native-app.md)                 |
 | [0029](0029-npm-as-package-manager.md)                   | npm as the Package Manager                                                                         | Superseded by [0119](0119-pnpm-as-package-manager.md)                         |
 | [0033](0033-command-replay-undo.md)                      | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack)                   | Superseded by [0066](0066-snapshot-undo-reinstated.md)                        |
 | [0035](0035-keyframe-long-commands.md)                   | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops                                     | Superseded by [0066](0066-snapshot-undo-reinstated.md)                        |
