@@ -23,10 +23,11 @@
   import into a startup-path module hands Rollup an edge that re-partitions chunks no matter how
   small the imported module, so there the duplication is deliberate and the sharing itself is the
   defect (`web/src/lib/state/saveFolder.svelte.ts` vs `folderSave.ts`, drift-guarded by
-  `saveFolder.svelte.test.ts` and pinned by `web/tests/startup-bundle.spec.ts`). Such a site keeps
-  its inline copy, adds the drift-guard test, and carries a comment stating the constraint and
-  naming the enforcing spec — that comment is load-bearing evidence of intent, not the "keep in
-  sync" defect above, and refactoring the duplication away past it breaks the boundary it protects.
+  `saveFolder.svelte.test.ts` and pinned by `tools/migration/check-native-web-startup.mjs`). Such a
+  site keeps its inline copy, adds the drift-guard test, and carries a comment stating the
+  constraint and naming the enforcing spec — that comment is load-bearing evidence of intent, not
+  the "keep in sync" defect above, and refactoring the duplication away past it breaks the boundary
+  it protects.
 * **TypeScript everywhere.** No plain `.js` source files in `src/`, and no `any`
   (`@typescript-eslint/no-explicit-any` enforces the zero count).
 * **Near-universal conventions are lint rules, not review vigilance** (ADR-0031, which also records

@@ -138,13 +138,13 @@ Orientation branches are covered at two layers, and the web gate cannot be reach
   depends on `"display": "fullscreen"` and nothing else ties those files together.
 * `web/src/lib/platform/orientation.test.ts` — what `applyDeviceOrientationPreference` calls per
   platform, choice, and fullscreen state, including the superseded-request ordering.
-* `web/tests/orientation-picker.spec.ts` — layout across phone widths, the absent case in a plain
-  tab, and the Auto caption.
-* `web/tests/settings-quick-toggles.spec.ts` — the landscape-phone quick-toggle grid: the compact
-  Orientation picker on a touch device in fullscreen, the About cell that fills its slot on a
-  desktop browser, and the mini About cell on a lock-incapable native tablet.
+* `e2e/specs/orientation-picker.spec.ts` — layout across phone widths, the absent case in a plain
+  tab, and the Auto caption, against the React Native web export.
+* `e2e/specs/settings-quick-toggles.spec.ts` — the landscape-phone quick-toggle grid: the compact
+  Orientation picker on a touch device in fullscreen, and the version that fills its slot on a
+  desktop browser. The mini About cell on a lock-incapable native tablet was a SvelteKit-only case.
 * Chromium exposes **no display-mode override**, so a spec cannot emulate the installed app. Use
-  `enterFullscreen` from `web/tests/helpers.ts`, which triggers real element fullscreen from a
+  `enterFullscreen` from `e2e/support/group-c.ts`, which triggers real element fullscreen from a
   keypress; pair it with `exitFullscreen` before any `setViewportSize`, because Chromium refuses to
   resize a fullscreen window.
 

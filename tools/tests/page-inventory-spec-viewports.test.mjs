@@ -13,12 +13,6 @@ import { PAGE_INVENTORY_VIEWPORTS } from '../page-inventory/lib/page-inventory-r
 // behind fails here instead of silently testing sizes nothing screenshots any
 // more.
 const SPECS = {
-  'scroll-cue.spec.ts': [
-    'ipad-mini-7',
-    'ipad-pro-13-m4',
-    'iphone-13-mini-landscape',
-    'iphone-16-pro-max-landscape',
-  ],
   'flows-parental-gate-lockout.spec.ts': [
     'iphone-13-mini-landscape',
     'iphone-16-pro-max-landscape',
