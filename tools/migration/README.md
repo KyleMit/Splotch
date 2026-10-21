@@ -125,7 +125,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     weighs far more on disk than its first-paint figure. Then
     `check-native-web-pages-without-js.mjs` loads it in Chromium with JavaScript off in every layout
     and theme and fails unless it reads in full, links what it must, follows a section link into
-    view, and names (instead of linking) each address the grown-up check would guard.
+    view, opens each canonical section address (a shared `/privacy#contact`, the footer's
+    `/changelog#release-…`) on its section, and names (instead of linking) each address the grown-up
+    check would guard. Each variant keys its section ids, so without a script the document carries
+    one canonical target per section in a `<noscript>`, set at the shown variant's section by CSS
+    anchor positioning (`page-fragments.mjs`).
 * `prerender-native-web-admin.mjs` then writes `admin.html`, the admin console at `/admin`
   (`UNLINKED_DOCUMENT_PATHS` in `src/information/unlinkedDocuments.ts`; ADR-0101: no page links to
   it):
