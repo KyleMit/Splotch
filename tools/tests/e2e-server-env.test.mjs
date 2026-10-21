@@ -2,11 +2,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { E2E_SERVER_ENV } from '../../e2e/server/serverEnv.ts';
 import { commonWebServer } from '../../web/playwright.shared.ts';
 
-// Both throwaway servers that boot this app — the Playwright web server and the
-// function host tools/api-smoke/run-local-contract.mjs starts — must declare every
-// private env var the app reads, never inherit it. Each server reads process.env,
+// Every throwaway server that boots this app — the SvelteKit Playwright web
+// server, the RN web E2E server (e2e/server/serve.ts) and the function host
+// tools/api-smoke/run-local-contract.mjs starts — must declare every private env
+// var the app reads, never inherit it. Each server reads process.env,
 // and the Playwright one fills its gaps from web/.env, so a name missing from
 // either object silently picks up whatever a developer exported or put in
 // their dotenv: that is how an ambient GITHUB_ISSUE_TOKEN turned the /feedback
@@ -89,6 +91,7 @@ function apiSmokeServerEnv() {
 const servers = [
   { name: 'the Playwright web server', env: commonWebServer.env },
   { name: 'the api-smoke server', env: apiSmokeServerEnv() },
+  { name: 'the RN web E2E server', env: E2E_SERVER_ENV },
 ];
 
 describe('throwaway server env', () => {
@@ -128,8 +131,9 @@ describe('throwaway server env', () => {
   }
 
   // One is TypeScript the other can't import, so the repo they each hard-code
-  // has to be checked against the other rather than shared.
-  it('points both feedback flows at the same nonexistent repo', () => {
-    expect(servers[1].env.GITHUB_ISSUE_REPO).toBe(servers[0].env.GITHUB_ISSUE_REPO);
+  // has to be checked against the others rather than shared.
+  it('points every feedback flow at the same nonexistent repo', () => {
+    for (const { env } of servers.slice(1))
+      expect(env.GITHUB_ISSUE_REPO).toBe(servers[0].env.GITHUB_ISSUE_REPO);
   });
 });

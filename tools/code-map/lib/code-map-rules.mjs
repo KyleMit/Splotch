@@ -171,6 +171,12 @@ export const AREAS = [
     bucket: subtreeBucket('web/tests/', { '(root)': '(root) E2E / integration' }),
   },
   {
+    label: '**e2e** — RN web export E2E',
+    key: 'e2e',
+    matches: (path) => path.startsWith('e2e/'),
+    bucket: subtreeBucket('e2e/', { '(root)': '(root) config / fixtures' }),
+  },
+  {
     label: '**.ruler** — agent-instruction sources',
     key: '.ruler',
     matches: (path) => path.startsWith('.ruler/'),
