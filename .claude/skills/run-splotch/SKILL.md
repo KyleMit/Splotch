@@ -139,8 +139,7 @@ await page.locator('#magicBrushButton').click();
 
 To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a book and a page,
 and wait for `#coloringOverlay` to be visible. A full worked example (all these steps) is the
-`applyFarmPage` helper in `web/tests/flows-harness.ts`, which the magic-brush E2E spec
-(`web/tests/flows-magic-brush.spec.ts`) drives.
+`applyFarmPage` helper in `web/tests/flows-harness.ts`, which the SvelteKit coloring specs drive.
 
 > **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite', 'dev', …])` +
 > `server.kill('SIGTERM')` does **not** work: `npx` exits but the real `vite` keeps running, and

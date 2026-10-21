@@ -150,3 +150,114 @@ test.describe('coloring books', () => {
     await expect(statusSaying(page, 'Cat ready.')).toBeHidden();
   });
 });
+
+// The fade that hints at more pages below the fold, and how far the wheel turns to reach the end.
+const SCROLL_CUE_TEST_ID = 'scroll-cue';
+const WHEEL_TRAVEL_PX = 3000;
+const PHONE_PORTRAIT = { width: 375, height: 812 };
+const ROOMY_PORTRAIT = { width: 900, height: 1600 };
+
+function scrollCueOpacity(page: Page) {
+  return page
+    .getByTestId(SCROLL_CUE_TEST_ID)
+    .evaluate((cue) => Number(getComputedStyle(cue).opacity));
+}
+
+async function wheelOverPicker(page: Page, deltaY: number) {
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('The window has no size');
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  await page.mouse.wheel(0, deltaY);
+}
+
+const SPLIT_SCREEN_HEIGHT_PX = 480;
+
+test.describe("the picker's scroll cue", () => {
+  test('the picker stays on screen when only the window height shrinks', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await page.setViewportSize(PHONE_PORTRAIT);
+    await openColoringBooks(page);
+    const farm = page.getByRole('dialog', { name: 'Farm' });
+    await expect(farm).toBeVisible();
+
+    await page.setViewportSize({ width: PHONE_PORTRAIT.width, height: SPLIT_SCREEN_HEIGHT_PX });
+
+    const close = farm.getByRole('button', { name: 'Close', exact: true });
+    await expect
+      .poll(async () => (await close.boundingBox())?.y ?? Number.NEGATIVE_INFINITY)
+      .toBeGreaterThanOrEqual(0);
+    await expect
+      .poll(async () => {
+        const box = await farm.boundingBox();
+        return (box?.y ?? 0) + (box?.height ?? Number.POSITIVE_INFINITY);
+      })
+      .toBeLessThanOrEqual(SPLIT_SCREEN_HEIGHT_PX);
+  });
+
+  test('on a phone it fades the cut row, and goes at the bottom and returns at the top', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await page.setViewportSize(PHONE_PORTRAIT);
+    await openColoringBooks(page);
+    await expect(page.getByRole('dialog', { name: 'Farm' })).toBeVisible();
+    await expect.poll(() => scrollCueOpacity(page)).toBe(1);
+
+    await wheelOverPicker(page, WHEEL_TRAVEL_PX);
+    await expect.poll(() => scrollCueOpacity(page)).toBe(0);
+
+    await wheelOverPicker(page, -WHEEL_TRAVEL_PX);
+    await expect.poll(() => scrollCueOpacity(page)).toBe(1);
+  });
+
+  test('a window with room for every page shows no cue', async ({ drawingScreen }) => {
+    const { page } = drawingScreen;
+    await page.setViewportSize(ROOMY_PORTRAIT);
+    await openColoringBooks(page);
+    await expect(page.getByRole('dialog', { name: 'Farm' })).toBeVisible();
+
+    await expect.poll(() => scrollCueOpacity(page)).toBe(0);
+  });
+});
+
+// The picker's thumbnails come in a light set and a dark one, drawn in chalk on the dark paper.
+const THEMED_ART = [
+  {
+    scheme: 'light',
+    page: /cat-wide\.selector\.[0-9a-f]+\.webp$/,
+    cover: /cover\.thumb\.[0-9a-f]+\.webp$/,
+  },
+  {
+    scheme: 'dark',
+    page: /cat-wide\.dark\.selector\.[0-9a-f]+\.webp$/,
+    cover: /cover\.chalk\.thumb\.[0-9a-f]+\.webp$/,
+  },
+] as const;
+
+for (const { scheme, page: pageArt, cover: coverArt } of THEMED_ART) {
+  test.describe(`the picker's art on a ${scheme} screen`, () => {
+    test.use({ colorScheme: scheme });
+
+    test('shows the thumbnails drawn for that theme', async ({ drawingScreen }) => {
+      const { page } = drawingScreen;
+      await openColoringBooks(page);
+      const farm = page.getByRole('dialog', { name: 'Farm' });
+      const catThumbnail = farm.getByRole('button', { name: 'Cat coloring page' }).locator('img');
+      await expect
+        .poll(() => catThumbnail.evaluate((image: HTMLImageElement) => image.currentSrc))
+        .toMatch(pageArt);
+      await closeDialog(farm);
+
+      await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
+      const farmCover = page
+        .getByRole('dialog', { name: 'Coloring Books' })
+        .getByRole('button', { name: 'Farm coloring book', exact: true })
+        .locator('img');
+      await expect
+        .poll(() => farmCover.evaluate((image: HTMLImageElement) => image.currentSrc))
+        .toMatch(coverArt);
+    });
+  });
+}

@@ -19,6 +19,8 @@ test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
 
 const INVITE_PATH = `/?ai_access_token=${MANAGED_ACCESS_CODE}`;
 const STYLE = 'Magical';
+const FREE_PICTURES_LEFT = 7;
+const FREE_PICTURES_LIMIT = 10;
 const PICTURE_SIDE_PX = 64;
 const PICTURE_BACKGROUND = '#ff9900';
 const PROVIDER_REFUSED = 422;
@@ -86,8 +88,31 @@ async function openWithAiOn(page: Page) {
   await closeDialog(settings);
 }
 
+// Answers the free allowance's status request, which the app makes once AI is on and nothing else
+// supplies a credential. `reply` sees how many requests there have been, counting this one.
+async function answerAllowance(
+  page: Page,
+  reply: (request: number) => { status: number; body: object }
+) {
+  const requests: Request[] = [];
+  await page.route('**/api/free-generation-grant', async (route) => {
+    requests.push(route.request());
+    const { status, body } = reply(requests.length);
+    await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  return requests;
+}
+
+async function turnOnAiWithNoCredential(page: Page) {
+  const settings = await openSettings(page);
+  await goToSettingsSection(settings, 'AI Art');
+  await settings.getByRole('switch', { name: 'Create AI Images' }).click();
+  await expect(settings.getByRole('switch', { name: 'Create AI Images' })).toBeChecked();
+  await closeDialog(settings);
+}
+
 function aiButton(page: Page) {
-  return page.getByRole('button', { name: 'Create AI image', exact: true });
+  return page.getByRole('button', { name: /^Create AI image/ });
 }
 
 async function chooseStyle(page: Page) {
@@ -215,6 +240,61 @@ test.describe('AI pictures', () => {
     await expect(
       page.getByRole('dialog', { name: 'AI Result' }).getByRole('img', { name: 'Your AI picture' })
     ).toBeVisible();
+  });
+});
+
+test.describe('the free allowance', () => {
+  test('names the pictures left, and sends the installation instead of a code', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    const allowance = await answerAllowance(page, () => ({
+      status: 200,
+      body: { ok: true, remaining: FREE_PICTURES_LEFT, limit: FREE_PICTURES_LIMIT },
+    }));
+    const generations = await holdGenerations(page);
+    await turnOnAiWithNoCredential(page);
+    await drawingScreen.drawStroke();
+    await openDrawer(page);
+    await expect(
+      page.getByRole('button', { name: `Create AI image, ${FREE_PICTURES_LEFT} free left` })
+    ).toBeVisible();
+    expect(allowance[0].headers()['x-installation-id']).toMatch(/^[0-9a-f]{64}$/);
+
+    await aiButton(page)
+      .or(page.getByRole('button', { name: /^Create AI image/ }))
+      .click();
+    await chooseStyle(page);
+    await expect.poll(() => generations.requests.length).toBe(1);
+
+    const [request] = generations.requests;
+    expect(request.headers()['x-installation-id']).toBe(
+      allowance[0].headers()['x-installation-id']
+    );
+    expect(request.headers()['x-access-token']).toBeUndefined();
+    await generations.succeed();
+    await expect(
+      page.getByRole('dialog', { name: 'AI Result' }).getByRole('img', { name: 'Your AI picture' })
+    ).toBeVisible();
+  });
+
+  test('an exhausted allowance keeps the button and points it at setting up a key', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await answerAllowance(page, () => ({
+      status: 200,
+      body: { ok: true, remaining: 0, limit: FREE_PICTURES_LIMIT },
+    }));
+    await turnOnAiWithNoCredential(page);
+    await drawingScreen.drawStroke();
+    await openDrawer(page);
+
+    await page.getByRole('button', { name: 'Set up AI image', exact: true }).click();
+
+    const settings = page.getByRole('dialog', { name: 'Settings' });
+    await expect(settings.getByText('Your 10 free AI creations are used up.')).toBeVisible();
+    await expect(settings.getByPlaceholder('Paste your OpenAI API key')).toBeVisible();
   });
 });
 
