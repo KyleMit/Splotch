@@ -272,15 +272,16 @@ but the list and the stale store-assets claim were removed (issue 851, "already 
 
 ### Privacy manifest (upload requirement, not a numbered guideline)
 
-Uploads without a `PrivacyInfo.xcprivacy` fail with **ITMS-91053** before review begins. The
-shipping Capacitor app's manifest (removed with the Capacitor shell) declared: no tracking, no
-tracking domains; the one required-reason API in the dependency tree
-(`NSPrivacyAccessedAPICategoryUserDefaults`, reason `CA92.1`, via `@capacitor/preferences`); and
-five collected data types — Other User Content, Customer Support, Other Diagnostic Data, Device ID,
-and Product Interaction. All five were not linked, not tracking, and used for App Functionality,
-matching the nutrition label, the Play Data safety form, and `/privacy`. The React Native store
-build ships `experiments/native-architecture/ios/Splotch/PrivacyInfo.xcprivacy`, which declares no
-tracking and three required-reason APIs but does not yet declare those collected data types.
+Uploads without a `PrivacyInfo.xcprivacy` fail with **ITMS-91053** before review begins.
+`ios/Splotch/PrivacyInfo.xcprivacy` in the React Native project declares: no tracking, no tracking
+domains; the three required-reason APIs in the dependency tree
+(`NSPrivacyAccessedAPICategoryUserDefaults` `CA92.1`, `NSPrivacyAccessedAPICategoryFileTimestamp`
+`C617.1`, `NSPrivacyAccessedAPICategorySystemBootTime` `35F9.1`); and five collected data types —
+Other User Content, Customer Support, Other Diagnostic Data, Device ID, and Product Interaction. All
+five are not linked, not tracking, and used for App Functionality, matching the nutrition label, the
+Play Data safety form, and `/privacy`. `tools/mobile/ios/tests/ios-privacy-manifest.test.mjs` holds
+the file to `tools/mobile/privacy-permission-inventory.json`. The shipping Capacitor app declared
+the same five types and only `CA92.1` (via `@capacitor/preferences`).
 
 ## Google Play — Developer Policy Center
 

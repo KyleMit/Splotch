@@ -19,6 +19,65 @@ describe('iOS privacy manifest', () => {
   const project = read(PROJECT_PATH);
   const info = read(INFO_PATH);
 
+  it('declares the app as non-tracking', () => {
+    expect(manifest).toMatch(
+      new RegExp(
+        `<key>NSPrivacyTracking</key>\\s*<${privacyInventory.iosPrivacyManifest.tracking}/>`
+      )
+    );
+    expect(privacyInventory.iosPrivacyManifest.trackingDomains).toEqual([]);
+    expect(manifest).toMatch(/<key>NSPrivacyTrackingDomains<\/key>\s*<array\/>/);
+  });
+
+  it('matches the reviewed required-reason API inventory', () => {
+    const declarations = [
+      ...manifest.matchAll(
+        /<dict>\s*<key>NSPrivacyAccessedAPIType<\/key>\s*<string>([^<]+)<\/string>([\s\S]*?)<\/dict>/g
+      ),
+    ]
+      .map(([, category, body]) => ({
+        category,
+        reasons: [...body.matchAll(/<string>([^<]+)<\/string>/g)].map((match) => match[1]).sort(),
+      }))
+      .sort((a, b) => a.category.localeCompare(b.category));
+    const expected = privacyInventory.iosPrivacyManifest.requiredReasonApis
+      .map(({ category, reasons }) => ({ category, reasons: [...reasons].sort() }))
+      .sort((a, b) => a.category.localeCompare(b.category));
+
+    expect(declarations).toEqual(expected);
+  });
+
+  it('declares the complete collected-data set as unlinked, non-tracking app functionality', () => {
+    const declaredDataTypes = [
+      ...manifest.matchAll(/<string>(NSPrivacyCollectedDataType(?!Purpose)[^<]+)<\/string>/g),
+    ]
+      .map((match) => match[1])
+      .sort();
+
+    const expectedDataTypes = privacyInventory.dataCategories.map(({ iosType }) => iosType).sort();
+    expect(declaredDataTypes).toEqual(expectedDataTypes);
+
+    for (const category of privacyInventory.dataCategories) {
+      const declaration = manifest.match(
+        new RegExp(
+          `<dict>\\s*<key>NSPrivacyCollectedDataType</key>\\s*<string>${category.iosType}</string>[\\s\\S]*?</dict>`
+        )
+      )?.[0];
+
+      expect(declaration, category.id).toBeDefined();
+      expect(declaration, category.id).toMatch(
+        new RegExp(`<key>NSPrivacyCollectedDataTypeLinked</key>\\s*<${category.linked}/>`)
+      );
+      expect(declaration, category.id).toMatch(
+        new RegExp(`<key>NSPrivacyCollectedDataTypeTracking</key>\\s*<${category.tracking}/>`)
+      );
+      const purposes = [
+        ...declaration.matchAll(/<string>(NSPrivacyCollectedDataTypePurpose[^<]+)<\/string>/g),
+      ].map((match) => match[1]);
+      expect(purposes, category.id).toEqual(category.iosPurposes);
+    }
+  });
+
   it('matches the reviewed iOS permission usage descriptions', () => {
     const descriptions = Object.fromEntries(
       [...info.matchAll(/<key>(NS[^<]+UsageDescription)<\/key>\s*<string>([^<]*)<\/string>/g)].map(
