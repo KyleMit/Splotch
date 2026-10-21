@@ -1,6 +1,11 @@
 # ADR-0024: Web App in `web/` Subdirectory to Scope the Netlify Dev Watcher
 
-**Status:** Active **Date:** 2026-06
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md) **Date:** 2026-06
+
+> **Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md) (2026-10).** `dev:netlify`
+> retires once local `/api` runs on a plain Node host, so netlify-cli's watcher no longer runs over
+> the native trees. The React Native app then moves to the repo root, beside its own `android/` and
+> `ios/`.
 
 ## Context
 
