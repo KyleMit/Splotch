@@ -213,8 +213,7 @@ async function openSettings(page) {
     'Settings'
   );
   // The wide shell fills its pane a section per frame, so a shot taken as the
-  // card lands catches a half-built page. tools/perf/tests/xcuitest-actions.test.mjs
-  // holds this token against the shell that sets it.
+  // card lands catches a half-built page.
   if (await modal.locator('.settings-pane').count()) {
     await modal.locator('.settings-pane[aria-busy="false"]').waitFor();
   }

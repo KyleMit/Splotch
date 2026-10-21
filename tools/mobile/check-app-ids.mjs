@@ -28,16 +28,10 @@ function xcodeBundleIdentifier(source, configuration) {
   }
 }
 
-// These five documents name the native app id or app name. Each is authored once
+// These documents name the native app id or app name. Each is authored once
 // under docs/ (ADR-0107); the list used to fan out over the three skill trees
 // back when the same prose was copied into each of them.
 const docChecks = [
-  {
-    path: 'docs/PROFILING.md',
-    values: [
-      ['documented Android launch target', /`am start -n ([A-Za-z0-9._-]+)\/\.MainActivity`/],
-    ],
-  },
   {
     path: 'docs/TESTING.md',
     values: [['documented Maestro appId', /^appId:\s*([^\s#]+)\s*$/m]],
@@ -97,10 +91,6 @@ const checks = [
       ['Debug PRODUCT_BUNDLE_IDENTIFIER', (source) => xcodeBundleIdentifier(source, 'Debug')],
       ['Release PRODUCT_BUNDLE_IDENTIFIER', (source) => xcodeBundleIdentifier(source, 'Release')],
     ],
-  },
-  {
-    path: 'tools/perf/android/capture-webview-session.mjs',
-    values: [['APP_ID', /^const APP_ID = ['"]([^'"]+)['"];\s*$/m]],
   },
   {
     // The /beta page builds both Play Store URLs from this — a stale id
