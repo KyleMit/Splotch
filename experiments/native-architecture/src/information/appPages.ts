@@ -35,7 +35,7 @@ export const APP_PAGE_DOCUMENTS = {
   drawing: { render: 'ssg', document: 'drawing' },
   privacy: { render: 'ssg', document: 'page' },
   changelog: { render: 'ssg', document: 'page' },
-  feedback: { render: 'client', document: 'drawing' },
+  feedback: { render: 'ssg', document: 'page' },
   beta: { render: 'ssg', document: 'page' },
 } as const satisfies Record<AppPage, AppPageDocument> &
   Record<DocumentOnlyPage, { render: 'ssg'; document: 'page' }>;

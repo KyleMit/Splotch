@@ -1,6 +1,6 @@
 import { osLabelFromUserAgent } from '../feedback/osLabel';
 import { APP_VERSION } from './appVersion';
-import { FEEDBACK_URL, type FeedbackTransport } from '../feedback/feedbackTransport';
+import { FEEDBACK_PATH, type FeedbackTransport } from '../feedback/feedbackTransport';
 import {
   FEEDBACK_POLICY_KEY,
   feedbackPolicySnapshot,
@@ -9,8 +9,10 @@ import {
 import type { FeedbackPolicyStorage } from '../feedback/feedback';
 import type { DeviceInfo } from '../feedback/deviceReport';
 
+// The web export posts to its own origin, whose host serves the report function beside the page
+// documents (docs/scratchpad/2026-10-20-rn-web-single-app/README.md, Hosting on Netlify).
 export const feedbackTransport: FeedbackTransport = (body, signal) =>
-  fetch(FEEDBACK_URL, {
+  fetch(FEEDBACK_PATH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

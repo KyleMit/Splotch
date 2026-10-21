@@ -33,11 +33,7 @@ import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { startupScriptList } from './prerender-native-web.mjs';
 import { documentPolicyProblems } from './lib/native-web-csp.mjs';
-import {
-  documentPages,
-  drawingDocumentPages,
-  pageOnlyChunks,
-} from './prerender-native-web-pages.mjs';
+import { documentPages, pageOnlyChunks } from './prerender-native-web-pages.mjs';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
@@ -52,8 +48,6 @@ const UNFETCHED_EXPORT_FILES = new Set([
   NOT_FOUND_FILE,
   VERSION_JSON_FILENAME,
   ...documentPages().map(({ file }) => file),
-  // The app shell again, at a path the drawing screen's document shows a page at.
-  ...drawingDocumentPages().map(({ file }) => file),
 ]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';

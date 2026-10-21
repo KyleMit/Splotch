@@ -83,15 +83,6 @@ export function documentPages(documents = APP_PAGE_DOCUMENTS) {
   ];
 }
 
-// Every route-table page the drawing screen's document shows over the paper at a path of its own
-// (/feedback until it has a document). The build writes that document again as `<page>.html`, so a
-// static host serves it there by pretty URL instead of answering with the not-found document.
-export function drawingDocumentPages(documents = APP_PAGE_DOCUMENTS) {
-  return Object.entries(documents)
-    .filter(([page, { document }]) => document === 'drawing' && APP_PAGE_PATHS[page] !== '/')
-    .map(([page]) => ({ page, path: APP_PAGE_PATHS[page], file: `${page}.html` }));
-}
-
 // The layouts an information page takes: RsdPageSheet's phone, framed and desktop frames, and its
 // short frame for a landscape phone. The two scripts below and their media queries read the same
 // thresholds.
@@ -158,10 +149,10 @@ export function withVariantFragments(html, key) {
 }
 
 // Without a script, what one would reveal shows, and the control that would reveal it hides, as
-// does a control marked as needing one.
+// does a control that needs a script to do anything.
 export function withoutScriptCss() {
   const shown = `[${SHOWN_WITHOUT_SCRIPT_ATTRIBUTE}]`;
-  return `html ${shown}{display:block}html button:has(+${shown}),html [${HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE}]{display:none}`;
+  return `html ${shown}{display:block}html button:has(+${shown}){display:none}html [${HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE}]{display:none}`;
 }
 
 // Runs as the parser passes the variants: keeps the one for this window and theme as the root,

@@ -14,6 +14,7 @@ import {
   starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
+import { documentPages } from '../migration/prerender-native-web-pages.mjs';
 import { withContentSecurityPolicy } from '../migration/lib/native-web-csp.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
@@ -64,12 +65,14 @@ const ASSETS = {
   '404.html': NOT_FOUND,
   // The route table's page documents (prerender-native-web-pages.mjs), which the network answers.
   ...Object.fromEntries(
-    ['privacy.html', 'changelog.html', 'beta.html'].map((file) => [
-      file,
-      withContentSecurityPolicy(
-        '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
-      ),
-    ])
+    documentPages()
+      .filter(({ file }) => file !== '404.html')
+      .map(({ file }) => [
+        file,
+        withContentSecurityPolicy(
+          '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
+        ),
+      ])
   ),
   [ENTRY]: 'var app={};',
   [CAT]: `var d="${OUTLINES[0].sample}";`,

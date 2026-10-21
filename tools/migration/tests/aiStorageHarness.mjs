@@ -32,8 +32,13 @@ vi.mock('../../../web/src/lib/idbDatabase.ts', () => ({
           clearTimeout(timer);
           timer = setTimeout(() => {
             if (mode === 'readwrite' && (disk.abort || staged?.revision === disk.failRevision)) {
+              // `abort` may hold the error the browser aborts with, such as a QuotaExceededError.
+              const reason =
+                disk.abort instanceof Error
+                  ? disk.abort
+                  : new Error('controlled transaction abort');
               disk.abort = false;
-              rejectDone(new Error('controlled transaction abort'));
+              rejectDone(reason);
             } else {
               if (staged !== undefined) disk.raw = structuredClone(staged);
               if (

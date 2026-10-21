@@ -16,6 +16,7 @@ import { crossDocumentNavigation } from '../../experiments/native-architecture/s
 import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
 import { FIRST_FRAME_VIEWPORT_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
 import {
   NOT_FOUND_FILE,
   NOT_FOUND_PROBE_PATH,
@@ -23,7 +24,6 @@ import {
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
   documentPages,
-  drawingDocumentPages,
   missingExportAssets,
   pageDocumentHtml,
   pageEntryModules,
@@ -115,6 +115,7 @@ describe('the route table', () => {
     expect(documentPages()).toEqual([
       { page: 'privacy', path: '/privacy', file: 'privacy.html' },
       { page: 'changelog', path: '/changelog', file: 'changelog.html' },
+      { page: 'feedback', path: '/feedback', file: 'feedback.html' },
       { page: 'beta', path: '/beta', file: 'beta.html' },
       { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
     ]);
@@ -127,21 +128,6 @@ describe('the route table', () => {
     expect(routed.map(({ page }) => APP_PAGE_DOCUMENTS[page].render)).toEqual(
       routed.map(() => 'ssg')
     );
-  });
-
-  // A static host answers a path with no file with the not-found document, so a page the drawing
-  // screen's document still shows over the paper gets that document at its own path.
-  it('serves the drawing document at each other path it shows a page at', () => {
-    expect(drawingDocumentPages()).toEqual([
-      { page: 'feedback', path: '/feedback', file: 'feedback.html' },
-    ]);
-    expect(
-      drawingDocumentPages({
-        drawing: { render: 'ssg', document: 'drawing' },
-        changelog: { render: 'client', document: 'drawing' },
-        privacy: { render: 'ssg', document: 'page' },
-      })
-    ).toEqual([{ page: 'changelog', path: '/changelog', file: 'changelog.html' }]);
   });
 
   // /beta's store links stay out of the native app and the drawing screen's bundle, so the drawing
@@ -252,6 +238,14 @@ describe('the page document', () => {
     expect(startupScriptList(html)).toEqual(PAGE_SCRIPTS);
     for (const { key } of variants()) expect(html).toContain(`${PAGE_VARIANT_ATTRIBUTE}="${key}"`);
     expect(html).toContain('<noscript><style>');
+  });
+
+  it('hides a control that needs a script only when no script runs', () => {
+    const html = privacyDocument();
+    const rule = `html [${HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE}]{display:none}`;
+    const noscript = html.match(/<noscript><style>([^<]*)<\/style><\/noscript>/);
+    expect(noscript?.[1]).toContain(rule);
+    expect(html.replace(noscript[0], '')).not.toContain(HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE);
   });
 
   it('refuses an exported document it cannot fill', () => {

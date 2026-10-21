@@ -116,13 +116,13 @@ describe('actual native and web feedback adapters', () => {
     expect(nativeResponse.bodyUsed).toBe(true);
     expect(globalSend).not.toHaveBeenCalled();
   });
-  it('uses the actual web adapter with the same bounded-reader response contract', async () => {
+  it('posts the actual web adapter to its own origin with the same bounded-reader response contract', async () => {
     const send = vi.fn().mockResolvedValue(new Response('{"ok":true}'));
     vi.stubGlobal('fetch', send);
     const signal = new AbortController().signal;
     const response = await webTransport(body, signal);
     expect(send).toHaveBeenCalledWith(
-      'https://splotch.art/api/report',
+      '/api/report',
       expect.objectContaining({
         body: JSON.stringify(body),
         signal,

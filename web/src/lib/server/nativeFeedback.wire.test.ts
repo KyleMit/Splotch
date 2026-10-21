@@ -10,7 +10,7 @@ vi.mock('$lib/server/github', async (original) => ({
 import { POST } from './api/report';
 import { createNativeFeedback } from '../../../../experiments/native-architecture/src/feedback/feedback';
 import { feedbackTransport } from '../../../../experiments/native-architecture/src/platform/feedback.web';
-import { FEEDBACK_URL } from '../../../../experiments/native-architecture/src/feedback/feedbackTransport';
+import { FEEDBACK_PATH } from '../../../../experiments/native-architecture/src/feedback/feedbackTransport';
 const FIXTURE_TIMEOUT_MS = 1000;
 const wire: { input: string; init: RequestInit }[] = [];
 function owner() {
@@ -43,9 +43,10 @@ beforeEach(() => {
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   createIssue.mockReset().mockResolvedValue(undefined);
   vi.stubGlobal('fetch', async (input: string, init: RequestInit) => {
-    if (input !== FEEDBACK_URL) throw new Error('Unexpected fixture destination');
+    if (input !== FEEDBACK_PATH) throw new Error('Unexpected fixture destination');
     wire.push({ input, init });
-    const request = new Request(input, init);
+    // The web transport posts to its page's own origin, as a browser resolves the path.
+    const request = new Request(new URL(input, 'https://splotch.art'), init);
     return POST({ request, getClientAddress: () => '203.0.113.10' } as unknown as Parameters<
       typeof POST
     >[0]);
@@ -56,7 +57,7 @@ describe('the native feedback caller through the real controlled report handler'
   it('sends the exact reviewed bug body without credentials or images and files sanitized private support content', async () => {
     const { feedback, snapshot } = await send('bug', true);
     expect(wire).toHaveLength(1);
-    expect(wire[0].input).toBe('https://splotch.art/api/report');
+    expect(wire[0].input).toBe('/api/report');
     expect(wire[0].init).toMatchObject({
       method: 'POST',
       credentials: 'omit',

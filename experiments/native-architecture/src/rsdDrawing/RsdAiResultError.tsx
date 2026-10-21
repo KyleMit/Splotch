@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
 import { AI_SAFETY_REFUSAL_MESSAGE } from '../../../../web/src/lib/ai/loadingCopy';
-import { AI_ERROR_CARD_COPY, AI_RESULT_COPY } from '../ai/aiResultCopy';
+import { AI_ERROR_CARD_COPY, AI_RESULT_COPY, AI_STORAGE_FULL_COPY } from '../ai/aiResultCopy';
 import type { NativeAiOwner, AiState } from '../ai/generation';
 import type { AiErrorReason } from '../ai/uiState';
 import { RsdAiReportStatus, aiReportSettled } from './RsdAiImageReport';
@@ -77,7 +77,7 @@ function SafetyRefusal({ owner, state }: { owner: NativeAiOwner; state: AiState 
 }
 
 // The shipping AiErrorCard: Dottie, what happened, and one big way on. A first failure offers
-// Try again; a repeated one sends the child back to drawing.
+// Try again; a repeated one sends the child back to drawing. A full device always offers Try again.
 function RsdAiErrorCard({
   reason,
   onTryAgain,
@@ -90,7 +90,7 @@ function RsdAiErrorCard({
   children?: ReactNode;
 }) {
   const rest = reason === 'rest';
-  const copy = AI_ERROR_CARD_COPY[reason];
+  const copy = reason === 'storage' ? AI_STORAGE_FULL_COPY : AI_ERROR_CARD_COPY[reason];
   return (
     <html.div style={styles.card}>
       <html.div aria-hidden style={styles.glyph(ERROR_GLYPH_PX)}>

@@ -28,6 +28,9 @@ import {
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/beta/iosBeta.ts';
 import { BETA_COPY } from '../../experiments/native-architecture/src/pageDocument/betaCopy.ts';
+import { FEEDBACK_PAGE_COPY } from '../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
+import { REPORT_FORM_COPY } from '../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
+import { REPORT_KINDS } from '../../experiments/native-architecture/src/feedback/report.ts';
 
 const PRIVACY_POLICY = join(
   ROOT,
@@ -63,6 +66,25 @@ export const PAGE_TEXT_WITHOUT_JS = {
       outsideLinks: [],
       linked: ['/', '/privacy'],
       followsSectionLinks: releases.at(-1).id,
+    };
+  },
+  // The form cannot send without a script, so the page says so in its place.
+  feedback() {
+    return {
+      heading: FEEDBACK_PAGE_COPY.title,
+      text: [
+        FEEDBACK_PAGE_COPY.lede,
+        FEEDBACK_PAGE_COPY.needsScript,
+        FEEDBACK_PAGE_COPY.next,
+        ...FEEDBACK_PAGE_COPY.steps,
+      ],
+      hiddenText: [
+        ...REPORT_KINDS.map(({ label }) => label),
+        REPORT_FORM_COPY.privacy,
+        REPORT_FORM_COPY.send,
+      ],
+      outsideLinks: [],
+      followsSectionLinks: false,
     };
   },
   // Both platforms' steps read, stacked, under links that jump to either one.
@@ -202,6 +224,9 @@ export function pageWithoutJsProblems(file, key, expected, read) {
     (text) => !reads.includes(text.replace(/\s+/g, ' ').toLowerCase())
   );
   if (missing.length) problems.push(`${at} does not read: ${missing.join(' | ')}`);
+  const shown = (expected.hiddenText ?? []).filter((text) => read.text.includes(text));
+  if (shown.length)
+    problems.push(`${at} shows what cannot work without JavaScript: ${shown.join(' | ')}`);
   const linked = expected.outsideLinks.filter((href) => read.links.includes(href));
   if (linked.length) problems.push(`${at} links outside the grown-up check: ${linked.join(', ')}`);
   const unnamed = expected.outsideLinks.filter(
@@ -267,7 +292,7 @@ export async function checkPageDocumentsWithoutJavaScript({
         }
       if (problems.length === 0)
         log(
-          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}`
+          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}${expected.hiddenText ? `, and ${expected.hiddenText.length} script-only texts hidden` : ''}`
         );
     }
   } finally {
