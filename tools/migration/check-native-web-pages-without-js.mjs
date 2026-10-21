@@ -124,6 +124,8 @@ export const PAGE_TEXT_WITHOUT_JS = {
       ],
       outsideLinks: [],
       followsSectionLinks: true,
+      // The sticky contents sidebar fits the window, its last label included, at the page's end.
+      fitsWindow: `nav[aria-label="${DESIGN_COPY.contents}"]`,
     };
   },
   // NOT_FOUND_COPY in RsdNotFoundPage.tsx, which a Node script cannot import.
@@ -285,6 +287,30 @@ export function canonicalAddressProblems(at, landed) {
   return problems;
 }
 
+// How far the shown sticky element reaches while it is stuck at its offset, or null where the
+// layout does not show it. Its own scroll, not the page's, then brings its last item into view.
+function stickyFit(tab, selector) {
+  return tab.evaluate((selector) => {
+    const sticky = [...document.querySelectorAll(selector)].find(
+      (element) => element.checkVisibility() && getComputedStyle(element).position === 'sticky'
+    );
+    if (!sticky) return null;
+    const stuckTop = Number.parseFloat(getComputedStyle(sticky).top);
+    return {
+      bottom: stuckTop + sticky.getBoundingClientRect().height,
+      viewportHeight: innerHeight,
+    };
+  }, selector);
+}
+
+export function stickyFitProblems(at, fit) {
+  if (!fit) return [];
+  const { bottom, viewportHeight } = fit;
+  return bottom > viewportHeight + SUBPIXEL_PX
+    ? [`${at} ends its sticky contents at ${Math.round(bottom)} px, below the window`]
+    : [];
+}
+
 // A visible link's resolved address against an expected one: absolute, or a path on the page's own
 // origin.
 function sameAddress(link, href) {
@@ -383,11 +409,13 @@ export async function checkPageDocumentsWithoutJavaScript({
               ...canonicalAddressProblems(at, await landCanonicalAddress(context, origin, address))
             );
           canonicalAddresses += addresses.length;
+          if (expected.fitsWindow)
+            problems.push(...stickyFitProblems(at, await stickyFit(tab, expected.fitsWindow)));
           await context.close();
         }
       if (problems.length === 0)
         log(
-          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}${canonicalAddresses ? `, with ${canonicalAddresses} canonical section addresses opened into view` : ''}${expected.hiddenText ? `, and ${expected.hiddenText.length} script-only texts hidden` : ''}`
+          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}${canonicalAddresses ? `, with ${canonicalAddresses} canonical section addresses opened into view` : ''}${expected.hiddenText ? `, and ${expected.hiddenText.length} script-only texts hidden` : ''}${expected.fitsWindow ? ', and its sticky contents fits the window' : ''}`
         );
     }
   } finally {

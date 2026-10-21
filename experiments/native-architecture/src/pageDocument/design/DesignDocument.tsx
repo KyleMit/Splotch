@@ -102,7 +102,9 @@ const styles = css.create({
     paddingRight: { default: dimensions.space4, [WIDE]: dimensions.space7 },
     paddingBottom: dimensions.space8,
   },
+  // Its padding sits inside the window's height, so the last contents label stays in view.
   sidebar: {
+    boxSizing: 'border-box',
     display: { default: 'none', [WIDE]: 'flex' },
     flexDirection: 'column',
     gap: dimensions.space5,
