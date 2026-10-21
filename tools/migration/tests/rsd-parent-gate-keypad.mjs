@@ -81,5 +81,5 @@ export function expectGateEquationGeometry() {
   expect(
     decorations.map((props) => [props.accessibilityElementsHidden, props.importantForAccessibility])
   ).toEqual(Array.from({ length: image.children.length }, () => [true, 'no-hide-descendants']));
-  expect(image.children).toHaveLength(4);
+  expect([...image.children].map((group) => group.textContent)).toEqual(['6×6', '=']);
 }
