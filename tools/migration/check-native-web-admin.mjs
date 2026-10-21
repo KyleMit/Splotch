@@ -178,6 +178,15 @@ async function addCode(tab, token) {
   await tab.getByRole('button', { name: 'Add code' }).click();
 }
 
+// A step the flow cannot go on without: a timeout names the step instead of the locator.
+async function reach(locator, step) {
+  try {
+    await locator.waitFor();
+  } catch {
+    throw new Error(`${ADMIN_PATH} never showed ${step}`);
+  }
+}
+
 function check(problems, ok, message) {
   if (!ok) problems.push(message);
 }
@@ -219,11 +228,14 @@ async function checkSessionAndCodes(browser, { origin, calls }, problems) {
   const { context, tab } = await openConsole(browser);
   await tab.goto(`${origin}${ADMIN_PATH}`);
   await signIn(tab, 'not-the-key');
-  await tab.getByRole('alert').filter({ hasText: 'Incorrect access key.' }).waitFor();
+  await reach(
+    tab.getByRole('alert').filter({ hasText: 'Incorrect access key.' }),
+    'the wrong key refused'
+  );
   check(problems, (await storedSession(tab)) === null, 'A refused sign-in stored a session');
 
   await signIn(tab, TEST_ADMIN_SECRET);
-  await consoleHeading(tab).waitFor();
+  await reach(consoleHeading(tab), 'the console after signing in');
   const session = await storedSession(tab);
   check(problems, Boolean(session), 'Signing in stored no session');
   for (const token of SEED_TOKENS)
@@ -235,7 +247,7 @@ async function checkSessionAndCodes(browser, { origin, calls }, problems) {
 
   calls.length = 0;
   await tab.reload();
-  await consoleHeading(tab).waitFor();
+  await reach(consoleHeading(tab), 'the console after a reload, without signing in again');
   check(
     problems,
     calls.every(({ path }) => path !== '/api/admin/login'),
@@ -251,10 +263,7 @@ async function checkSessionAndCodes(browser, { origin, calls }, problems) {
 
   const token = `rn-admin-${Date.now()}`;
   await addCode(tab, token);
-  await tab
-    .getByRole('status')
-    .filter({ hasText: `Added “${token}”` })
-    .waitFor();
+  await reach(tab.getByRole('status').filter({ hasText: `Added “${token}”` }), `${token} added`);
   const row = tab.getByRole('row').filter({ hasText: token });
   check(problems, await row.isVisible(), `The added code ${token} is not listed`);
   const listed = await fetch(`${origin}${TOKENS_PATH}`, {
@@ -262,11 +271,13 @@ async function checkSessionAndCodes(browser, { origin, calls }, problems) {
   }).then((answer) => answer.json());
   check(problems, listed.tokens?.includes(token), `The function's list lacks the added ${token}`);
 
-  await tab.getByRole('button', { name: `Remove ${token}`, exact: true }).click();
-  await tab
-    .getByRole('status')
-    .filter({ hasText: `Removed “${token}”` })
-    .waitFor();
+  const remove = tab.getByRole('button', { name: `Remove ${token}`, exact: true });
+  await reach(remove, `${token}'s Remove button`);
+  await remove.click();
+  await reach(
+    tab.getByRole('status').filter({ hasText: `Removed “${token}”` }),
+    `${token} removed`
+  );
   check(problems, (await row.count()) === 0, `The removed code ${token} is still listed`);
   const writes = writesOf(calls);
   check(
@@ -277,17 +288,17 @@ async function checkSessionAndCodes(browser, { origin, calls }, problems) {
 
   await tab.evaluate((key) => localStorage.setItem(key, 'not-a-session'), ADMIN_SESSION_KEY);
   await tab.reload();
-  await tab.getByRole('alert').filter({ hasText: SESSION_ENDED }).waitFor();
+  await reach(tab.getByRole('alert').filter({ hasText: SESSION_ENDED }), 'sign-in after a 401');
   check(problems, await signInHeading(tab).isVisible(), 'A 401 did not return to sign-in');
   check(problems, (await storedSession(tab)) === null, 'A 401 left its session stored');
 
   await signIn(tab, TEST_ADMIN_SECRET);
-  await consoleHeading(tab).waitFor();
+  await reach(consoleHeading(tab), 'the console after signing in again');
   await tab.getByRole('button', { name: 'Sign out' }).click();
-  await signInHeading(tab).waitFor();
+  await reach(signInHeading(tab), 'sign-in after signing out');
   check(problems, (await storedSession(tab)) === null, 'Signing out left its session stored');
   await tab.reload();
-  await signInHeading(tab).waitFor();
+  await reach(signInHeading(tab), 'sign-in after signing out and reloading');
   check(problems, !(await consoleHeading(tab).isVisible()), 'The console survived sign-out');
   await context.close();
 }
@@ -296,7 +307,7 @@ async function checkDeployedGuards(browser, { origin, calls }, problems) {
   const { context, tab } = await openConsole(browser);
   await tab.goto(`${origin}${ADMIN_PATH}`);
   await signIn(tab, TEST_ADMIN_SECRET);
-  await consoleHeading(tab).waitFor();
+  await reach(consoleHeading(tab), 'the deployed console after signing in');
   check(
     problems,
     await tab.getByRole('status').filter({ hasText: BLOBS_UNAVAILABLE }).isVisible(),
@@ -304,7 +315,10 @@ async function checkDeployedGuards(browser, { origin, calls }, problems) {
   );
   calls.length = 0;
   await addCode(tab, `rn-admin-deployed-${Date.now()}`);
-  await tab.getByRole('alert').filter({ hasText: STORAGE_UNAVAILABLE }).waitFor();
+  await reach(
+    tab.getByRole('alert').filter({ hasText: STORAGE_UNAVAILABLE }),
+    'the deployed write refused by storage'
+  );
   const [write] = writesOf(calls);
   check(
     problems,
