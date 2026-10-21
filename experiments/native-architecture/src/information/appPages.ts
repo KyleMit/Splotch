@@ -34,13 +34,6 @@ export type DocumentPage = {
   [Page in AppPage]: (typeof APP_PAGE_DOCUMENTS)[Page]['document'] extends 'page' ? Page : never;
 }[AppPage];
 
-// Documents the web build writes that no page links to and the app never shows: the admin console
-// (ADR-0101). Each is `<name>.html`, served by pretty URL, with its own entry under
-// src/pageDocument/; the worker leaves every path under it to the network.
-export const UNLINKED_DOCUMENT_PATHS = {
-  admin: '/admin',
-} as const;
-
 export function isAppPage(value: string): value is AppPage {
   return Object.hasOwn(APP_PAGE_PATHS, value);
 }

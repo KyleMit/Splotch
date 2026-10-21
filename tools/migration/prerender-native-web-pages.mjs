@@ -19,8 +19,8 @@ import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/brea
 import {
   APP_PAGE_DOCUMENTS,
   APP_PAGE_PATHS,
-  UNLINKED_DOCUMENT_PATHS,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import {

@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import {
   ADMIN_RESTORING_ATTRIBUTE,
   ADMIN_SESSION_ATTRIBUTE,

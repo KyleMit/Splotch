@@ -18,10 +18,8 @@ import {
 } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
 import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
-import {
-  APP_PAGE_PATHS,
-  UNLINKED_DOCUMENT_PATHS,
-} from '../../experiments/native-architecture/src/information/appPages.ts';
+import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';

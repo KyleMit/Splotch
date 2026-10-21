@@ -111,7 +111,8 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     and theme and fails unless it reads in full, with each link that would ask for the grown-up
     check naming its address instead of linking it.
 * `prerender-native-web-admin.mjs` then writes `admin.html`, the admin console at `/admin`
-  (`UNLINKED_DOCUMENT_PATHS` in `src/information/appPages.ts`; ADR-0101: no page links to it):
+  (`UNLINKED_DOCUMENT_PATHS` in `src/information/unlinkedDocuments.ts`; ADR-0101: no page links to
+  it):
   * Its own entry, `experiments/native-architecture/src/pageDocument/admin/adminApp.tsx`, hydrates
     with React DOM and React Strict DOM's `html.*` alone, so it loads no React Native Web. It signs
     in through `POST /api/admin/login` and keeps the bearer session in `localStorage` (issue 3007's

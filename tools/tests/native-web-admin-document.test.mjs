@@ -21,7 +21,7 @@ import {
   removalQuestion,
   useAdminConsole,
 } from '../../experiments/native-architecture/src/pageDocument/admin/useAdminConsole.ts';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import {
   ADMIN_DOCUMENT_FILE,

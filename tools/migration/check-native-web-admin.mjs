@@ -17,7 +17,7 @@ import { chromium } from '@playwright/test';
 import { createServer as createViteServer } from 'vite';
 import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
 import { SESSION_ENDED } from '../../experiments/native-architecture/src/pageDocument/admin/useAdminConsole.ts';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { netlifyFunctionRoutes } from '../lib/netlify-function-routes.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
