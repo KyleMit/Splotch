@@ -4,10 +4,18 @@ import { expect } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
 import {
   adminSignInForm,
+  aiImageButton,
+  enableAi,
   expectColorsSettled,
   expectSettled,
   expectWired,
+  openAiResult,
+  openDrawer,
   openSettings,
+  setGateFrequency,
+  solveParentalGate,
+  startAiGeneration,
+  stubAiEndpoint,
   test,
 } from '../support/group-a.ts';
 
@@ -131,6 +139,81 @@ test.describe('the Settings dialog', () => {
       const settings = await openSettings(drawingScreen.page);
       await expectSettled(settings);
       await expectNoSeriousViolations(drawingScreen.page, '[role="dialog"]');
+    });
+  }
+});
+
+function dialogNamed(name: string) {
+  return `[role="dialog"][aria-label="${name}"]`;
+}
+
+const SAFETY_REFUSAL_STATUS = 422;
+// A swatch the palette carries in both colour schemes (Black is White on the dark paper).
+const INK = 'Red';
+
+// The AI flow's dialogs are held to the same bar, light and dark: the picture-ready result with its
+// disclosure strip, the refusal and its report confirmation, the style prompt, and the grown-up
+// check in front of a report.
+test.describe('the AI dialogs have no serious accessibility violations', () => {
+  for (const colorScheme of SCHEMES) {
+    test.describe(`in ${colorScheme} mode`, () => {
+      test.beforeEach(async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
+      });
+
+      test('Pick a style', async ({ drawingScreen }) => {
+        const { page } = drawingScreen;
+        await stubAiEndpoint(page);
+        await enableAi(drawingScreen);
+        await drawingScreen.drawStroke();
+        await openDrawer(page);
+        await aiImageButton(page).click();
+        const style = page.getByRole('dialog', { name: 'Pick a style', exact: true });
+        await expect(style.getByRole('button', { name: 'Magical' })).toBeEnabled();
+        await expectSettled(style);
+
+        await expectNoSeriousViolations(page, dialogNamed('Pick a style'));
+      });
+
+      test('the picture-ready AI Result', async ({ drawingScreen }) => {
+        const { result, endpoint } = await openAiResult(drawingScreen, INK);
+        await endpoint.succeed();
+        await expect(result.getByRole('status')).toHaveText('Your picture is ready');
+        await expect(result.getByRole('img', { name: 'Your AI picture' })).toBeVisible();
+        await expectSettled(result);
+
+        await expectNoSeriousViolations(drawingScreen.page, dialogNamed('AI Result'));
+      });
+
+      test('the refusal’s report confirmation', async ({ drawingScreen }) => {
+        const { result, endpoint } = await openAiResult(drawingScreen, INK);
+        await endpoint.fail(SAFETY_REFUSAL_STATUS);
+        await result.getByRole('button', { name: 'Report this refusal' }).click();
+        const confirm = drawingScreen.page.getByRole('dialog', {
+          name: 'Report this refusal',
+          exact: true,
+        });
+        await expect(confirm).toBeVisible();
+        await expectSettled(confirm);
+
+        await expectNoSeriousViolations(drawingScreen.page, dialogNamed('Report this refusal'));
+      });
+
+      test('the grown-up check', async ({ drawingScreen }) => {
+        const { page } = drawingScreen;
+        const endpoint = await stubAiEndpoint(page);
+        await enableAi(drawingScreen);
+        await setGateFrequency(page, 'Reporting an AI result', 'Every time');
+        const { result } = await startAiGeneration(drawingScreen, INK);
+        await endpoint.fail();
+        await result.getByRole('button', { name: 'Report a problem' }).click();
+        const gate = page.getByRole('dialog', { name: 'Grown-Ups Only', exact: true });
+        await expect(gate).toBeVisible();
+        await expectSettled(gate);
+
+        await expectNoSeriousViolations(page, dialogNamed('Grown-Ups Only'));
+        await solveParentalGate(page);
+      });
     });
   }
 });

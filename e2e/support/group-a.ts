@@ -374,10 +374,11 @@ export function aiImageButton(page: Page): Locator {
 
 /** Draws a stroke, asks for a Magical picture, and answers with the result dialog and the stroke. */
 export async function startAiGeneration(
-  screen: DrawingScreen
+  screen: DrawingScreen,
+  colorName = 'Black'
 ): Promise<{ result: Locator; stroke: AiStroke }> {
   const { page } = screen;
-  await screen.pickColor('Black');
+  await screen.pickColor(colorName);
   const stroke = await screen.drawStroke();
   await openDrawer(page);
   await aiImageButton(page).click();
@@ -392,11 +393,12 @@ export async function startAiGeneration(
 
 /** A stubbed endpoint, AI turned on, and a generation under way: the dialog and the endpoint. */
 export async function openAiResult(
-  screen: DrawingScreen
+  screen: DrawingScreen,
+  colorName = 'Black'
 ): Promise<{ result: Locator; endpoint: AiEndpoint; stroke: AiStroke }> {
   const endpoint = await stubAiEndpoint(screen.page);
   await enableAi(screen);
-  return { endpoint, ...(await startAiGeneration(screen)) };
+  return { endpoint, ...(await startAiGeneration(screen, colorName)) };
 }
 
 const GATE_QUESTION = /^What is (\d+) times (\d+)\?$/;
