@@ -107,6 +107,27 @@ export function pageVariantCss() {
   ].join('');
 }
 
+// Every variant carries the page's fragment targets (its section ids), and a browser follows a
+// fragment to the first element with that id, which without a script is usually a hidden variant.
+// So each variant's targets, and the in-page links to them, carry the variant's key; the boot script
+// strips it from the variant it keeps before hydration, so the hydrated markup is the page's own.
+export const VARIANT_FRAGMENT_SEPARATOR = '~';
+
+export function withVariantFragments(html, key) {
+  const linked = new Set([...html.matchAll(/ href="#([^"]+)"/g)].map((match) => match[1]));
+  const targets = new Set(
+    [...html.matchAll(/ id="([^"]+)"/g)].map((match) => match[1]).filter((id) => linked.has(id))
+  );
+  const suffix = `${VARIANT_FRAGMENT_SEPARATOR}${key}`;
+  return html
+    .replace(/ id="([^"]+)"/g, (attribute, id) =>
+      targets.has(id) ? ` id="${id}${suffix}"` : attribute
+    )
+    .replace(/ href="#([^"]+)"/g, (attribute, id) =>
+      targets.has(id) ? ` href="#${id}${suffix}"` : attribute
+    );
+}
+
 // Without a script, what one would reveal shows, and the control that would reveal it hides.
 export function withoutScriptCss() {
   const shown = `[${SHOWN_WITHOUT_SCRIPT_ATTRIBUTE}]`;
@@ -128,6 +149,10 @@ export function pageBootScript() {
     'if(f){',
     'for(i=0;i<v.length;i++)if(v[i]!==f)v[i].remove();',
     "f.id='root';",
+    `var s=${JSON.stringify(VARIANT_FRAGMENT_SEPARATOR)}+c+'-'+t,n=s.length,e=f.querySelectorAll('[id$="'+s+'"]');`,
+    'for(i=0;i<e.length;i++)e[i].id=e[i].id.slice(0,-n);',
+    `e=f.querySelectorAll('a[href$="'+s+'"]');`,
+    "for(i=0;i<e.length;i++)e[i].setAttribute('href',e[i].getAttribute('href').slice(0,-n));",
     hydrationFlagScriptContents(),
     "painted=document.visibilityState==='visible';",
     '}}catch(e){}',
@@ -174,7 +199,7 @@ export function pageDocumentHtml(
   const pageStyle = `<style>${fontFaceRules}${pageVariantCss()}</style>\n<noscript><style>${withoutScriptCss()}</style></noscript>`;
   const body = variants.map(
     ({ key, viewport, html }) =>
-      `<div ${PAGE_VARIANT_ATTRIBUTE}="${key}" ${FIRST_FRAME_VIEWPORT_ATTRIBUTE}="${formatFirstFrameViewport(viewport)}">${html}</div>`
+      `<div ${PAGE_VARIANT_ATTRIBUTE}="${key}" ${FIRST_FRAME_VIEWPORT_ATTRIBUTE}="${formatFirstFrameViewport(viewport)}">${withVariantFragments(html, key)}</div>`
   );
   return template
     .replace(HTML_ELEMENT, (element) =>

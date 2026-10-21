@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PAGE_TEXT_WITHOUT_JS,
   pageWithoutJsProblems,
+  sectionLinkProblems,
 } from '../migration/check-native-web-pages-without-js.mjs';
 import { documentPages } from '../migration/prerender-native-web-pages.mjs';
 
@@ -46,5 +47,25 @@ describe('without JavaScript', () => {
     expect(problems({ text: 'Splotch is a drawing app' })[0]).toContain(
       'does not name the address of'
     );
+  });
+});
+
+describe('a followed section link', () => {
+  const at = 'privacy.html (desktop-light, JavaScript off)';
+  const followed = { href: '#reports', found: true, visible: true, top: -0.4, viewportHeight: 800 };
+
+  it('accepts a target scrolled into view', () => {
+    expect(sectionLinkProblems(at, followed)).toEqual([]);
+  });
+
+  it('rejects a missing, hidden or out-of-view target, and a page with no section link', () => {
+    expect(
+      sectionLinkProblems(at, { ...followed, found: false, visible: false, top: null })
+    ).toEqual([`${at} follows #reports to no target, not into view`]);
+    expect(sectionLinkProblems(at, { ...followed, visible: false })[0]).toContain(
+      'a hidden target'
+    );
+    expect(sectionLinkProblems(at, { ...followed, top: 900 })[0]).toContain('a target at 900 px');
+    expect(sectionLinkProblems(at, null)).toEqual([`${at} has no in-page section link to follow`]);
   });
 });

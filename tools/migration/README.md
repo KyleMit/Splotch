@@ -94,7 +94,9 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `<page>.html`, which a static host serves at the page's path by pretty URL:
   * The page's whole markup, rendered in Node from `src/pageDocument/prerender.tsx`, once per layout
     (phone, short, framed, desktop) and theme. Without JavaScript a media query shows the one that
-    fits; with it the boot script keeps that one as the root and hydrates it.
+    fits; with it the boot script keeps that one as the root and hydrates it. Each variant's
+    fragment targets carry its key, so a link without JavaScript reaches the shown copy; the boot
+    script strips the key from the kept one.
   * Every style sheet inline, and the page entry (`src/pageDocument/pageApp.ts`) held until the page
     has painted. The entry is its own bundle, chunked as `expo export` chunks the drawing screen's,
     never a branch of the drawing screen's entry. Its bundles resolve the lazy facades listed in

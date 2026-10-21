@@ -22,6 +22,8 @@ const PRIVACY_POLICY = join(
   'experiments/native-architecture/src/information/privacy.generated.json'
 );
 const OUTSIDE_LINK = /^https?:\/\//;
+// A followed target scrolled to the top of its scroller can sit a fraction of a pixel above it.
+const SUBPIXEL_PX = 1;
 
 // What each page document must read without JavaScript, from the content its page renders.
 export const PAGE_TEXT_WITHOUT_JS = {
@@ -34,6 +36,7 @@ export const PAGE_TEXT_WITHOUT_JS = {
       heading: title,
       text: [lede, ...sections.map((section) => section.title)],
       outsideLinks: [...new Set(hrefs.filter((href) => OUTSIDE_LINK.test(href)))],
+      followsSectionLinks: true,
     };
   },
 };
@@ -84,6 +87,40 @@ function readPage(variantAttribute) {
   };
 }
 
+// Follows the shown variant's last in-page section link and reports where its target landed.
+async function followSectionLink(tab, variantAttribute, key) {
+  const links = tab
+    .locator(`[${variantAttribute}="${key}"] a[href^="#"]`)
+    .filter({ visible: true });
+  const named = [];
+  for (const link of await links.all())
+    if ((await link.innerText()).trim().length > 1) named.push(link);
+  const link = named.at(-1);
+  if (!link) return null;
+  const href = await link.getAttribute('href');
+  await link.click();
+  return tab.evaluate((followed) => {
+    const target = document.getElementById(location.hash.slice(1));
+    return {
+      href: followed,
+      found: target !== null,
+      visible: target?.checkVisibility() ?? false,
+      top: target?.getBoundingClientRect().top ?? null,
+      viewportHeight: innerHeight,
+    };
+  }, href);
+}
+
+export function sectionLinkProblems(at, followed) {
+  if (!followed) return [`${at} has no in-page section link to follow`];
+  const { href, found, visible, top, viewportHeight } = followed;
+  if (!found || !visible || top <= -SUBPIXEL_PX || top >= viewportHeight)
+    return [
+      `${at} follows ${href} to ${found ? (visible ? `a target at ${Math.round(top)} px` : 'a hidden target') : 'no target'}, not into view`,
+    ];
+  return [];
+}
+
 export function pageWithoutJsProblems(file, key, expected, read) {
   const problems = [];
   const at = `${file} (${key}, JavaScript off)`;
@@ -129,19 +166,27 @@ export async function checkPageDocumentsWithoutJavaScript({
           const tab = await context.newPage();
           await tab.goto(`${origin}${path}`);
           await tab.evaluate(() => document.fonts.ready);
+          const key = `${layout}-${colorScheme}`;
           problems.push(
             ...pageWithoutJsProblems(
               file,
-              `${layout}-${colorScheme}`,
+              key,
               expected,
               await tab.evaluate(readPage, PAGE_VARIANT_ATTRIBUTE)
             )
           );
+          if (expected.followsSectionLinks)
+            problems.push(
+              ...sectionLinkProblems(
+                `${file} (${key}, JavaScript off)`,
+                await followSectionLink(tab, PAGE_VARIANT_ATTRIBUTE, key)
+              )
+            );
           await context.close();
         }
       if (problems.length === 0)
         log(
-          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes, ${expected.outsideLinks.length} outside links named, not linked`
+          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes, ${expected.outsideLinks.length} outside links named, not linked, and its section links followed into view`
         );
     }
   } finally {

@@ -27,6 +27,7 @@ import {
   pageEntryScripts,
   pageOnlyChunks,
   pageVariantClass,
+  withVariantFragments,
 } from '../migration/prerender-native-web-pages.mjs';
 import {
   STARTUP_SCRIPTS_ELEMENT_ID,
@@ -67,7 +68,7 @@ function variants() {
     ['light', 'dark'].map((theme) => ({
       key: `${layout}-${theme}`,
       viewport,
-      html: `<main class="css-used"><h1>Privacy policy</h1><p>${layout} ${theme}</p></main>`,
+      html: `<main class="css-used"><h1>Privacy policy</h1><p>${layout} ${theme}</p><a href="#counting">Counting</a><section id="counting" aria-labelledby="«r0»"></section><p id="«r0»"></p></main>`,
     }))
   );
 }
@@ -182,6 +183,19 @@ describe('the page document', () => {
   });
 });
 
+describe("each variant's fragments", () => {
+  it('keys only the ids an in-page link targets, and those links', () => {
+    expect(
+      withVariantFragments(
+        '<a href="#counting">x</a><a href="#gone">y</a><section id="counting"></section><p id="«r0»"></p>',
+        'phone-light'
+      )
+    ).toBe(
+      '<a href="#counting~phone-light">x</a><a href="#gone">y</a><section id="counting~phone-light"></section><p id="«r0»"></p>'
+    );
+  });
+});
+
 describe("the page document's boot script", () => {
   function boot({ width, height, theme, scheme = 'light' }) {
     window.happyDOM.settings.handleDisabledFileLoadingAsSuccess = true;
@@ -206,6 +220,12 @@ describe("the page document's boot script", () => {
     expect(root.getAttribute(FIRST_FRAME_VIEWPORT_ATTRIBUTE)).toBe('412x915@2.625');
     expect(document.querySelectorAll(`[${PAGE_VARIANT_ATTRIBUTE}]`)).toHaveLength(1);
     expect(globalThis.__EXPO_ROUTER_HYDRATE__).toBe(true);
+  });
+
+  it("gives the kept variant back the page's own fragment targets and links", () => {
+    const root = boot({ width: 412, height: 915 });
+    expect(root.querySelector('section').id).toBe('counting');
+    expect(root.querySelector('a').getAttribute('href')).toBe('#counting');
   });
 
   it('follows a saved theme over the system one', () => {

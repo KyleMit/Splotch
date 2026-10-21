@@ -270,7 +270,7 @@ function PrivacyReadingColumn({
           }
           onLayout={({ nativeEvent }) => onSectionLayout(section.id, nativeEvent.layout.y)}
         >
-          <html.section style={[styles.section, index === 0 && styles.first]}>
+          <html.section id={section.id} style={[styles.section, index === 0 && styles.first]}>
             <RsdPrivacyHeading
               section={SECTIONS[index]}
               copied={links.copied === section.id}
