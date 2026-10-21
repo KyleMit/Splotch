@@ -17,6 +17,7 @@ that touches a native input, in a path-filtered workflow nothing waits on.
 | Unit (RN renderer)    | Vitest (happy-dom)  | `npm run test:migration:rsd-selection` | every push / PR (browserless job)          |
 | E2E (web)             | Playwright          | `npm run test:e2e`                     | every push / PR                            |
 | E2E (RN web export)   | Playwright          | `npm run test:e2e:rn`                  | every push / PR (sharded job)              |
+| Page load (RN export) | Lighthouse          | `npm run test:lighthouse:ci`           | every push / PR (RN web export)            |
 | Smoke (API contract)  | Node function host  | `npm run test:api:smoke`               | every push / PR (browserless job)          |
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL       |
 | Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (RN web export)            |
@@ -673,6 +674,22 @@ SPLOTCH_E2E_PORT=<port> npm run test:e2e:rn -- --workers=1   # builds the export
 SPLOTCH_E2E_PREBUILT=1 npm run test:firefox:smoke            # serves the export already built
 ```
 
+### Page-load gate — `tools/page-load/`
+
+Pinned Lighthouse times the React Native web export on a simulated Slow 4G, 4x CPU phone and tablet,
+first visit and repeat visit, three samples each, and fails when a median first or largest
+contentful paint crosses its limit in `tools/page-load/baseline.json`. It serves the export the way
+the Netlify deploy does: the suite's `e2e/server` site, behind a layer that adds the brotli and ETag
+revalidation Netlify's edge applies and that site leaves out. `tools/page-load/README.md` covers the
+method, the baseline and how to recalibrate it. The startup byte caps in
+`tools/migration/check-native-web-startup.mjs` are a separate, stricter gate that `build:site`
+enforces.
+
+```bash
+npm run test:lighthouse:ci -- --port=<port>             # builds the export first
+npm run test:lighthouse:ci -- --no-build --port=<port>  # times the export already built
+```
+
 ### Cross-engine critical-path smoke — `tests/engine-smoke.spec.ts`
 
 CI's Firefox and WebKit jobs now run the RN web suite's `@smoke` specs (above), so this SvelteKit
@@ -910,11 +927,11 @@ it serializes shards behind `needs:`), and each uploads its own `playwright-repo
 artifact. The app-driver and worker-sweep smokes ride shard 1 only. The RN web suite (`e2e/`) runs
 differently: the `native-web-build` job uploads the export it built from the deploy's install, and
 the `rn-web-e2e` shards and the Firefox and WebKit smokes download it and serve it with
-`SPLOTCH_E2E_PREBUILT=1`, so CI builds that export once. With `fullyParallel` on, `--shard` deals
-out individual tests (not files) in a deterministic order, balanced by count and blind to duration —
-so the longest shard is bounded by the slowest single test, which lives among the deliberately heavy
-stress tests of `tests/flows-tile-history.spec.ts` (the header comment there explains why their cost
-is intrinsic).
+`SPLOTCH_E2E_PREBUILT=1`, and the page-load job downloads it to time it, so CI builds that export
+once. With `fullyParallel` on, `--shard` deals out individual tests (not files) in a deterministic
+order, balanced by count and blind to duration — so the longest shard is bounded by the slowest
+single test, which lives among the deliberately heavy stress tests of
+`tests/flows-tile-history.spec.ts` (the header comment there explains why their cost is intrinsic).
 
 The 2026-08-19 shard-count measurement is preserved in the
 [shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring
