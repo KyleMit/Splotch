@@ -18,6 +18,7 @@ import {
 } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
 import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
+import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
@@ -28,6 +29,7 @@ import {
 } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 import { prerenderNativeWeb } from './prerender-native-web.mjs';
+import { pageOnlyChunks, prerenderNativeWebPages } from './prerender-native-web-pages.mjs';
 import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
@@ -117,6 +119,16 @@ export function bootAppSurfaceHeadTag() {
   return `<script>if(${JSON.stringify(DRAWING_PATHS)}.includes(location.pathname))document.documentElement.setAttribute(${JSON.stringify(APP_SURFACE_ATTRIBUTE)},'');</script>`;
 }
 
+// A page document starts from the export's document without the drawing screen's surface lock,
+// which only the drawing paths take.
+export function pageDocumentTemplate(exportedHtml) {
+  const tag = `${bootAppSurfaceHeadTag()}
+`;
+  if (!exportedHtml.includes(tag))
+    throw new Error('The exported document has no surface lock tag.');
+  return exportedHtml.replace(tag, '');
+}
+
 // Expo's tree shaking, still flagged unstable in SDK 58, drops the exports no module reads
 // (ADR-0179's fifth cut). Expo reads both flags from the environment, so setting them on this
 // process alone keeps them off the bundles Gradle and Xcode build through expo export:embed.
@@ -204,37 +216,42 @@ export function pinPrecacheToExport(outputDir, shell) {
   });
 }
 
-// Workbox serializes each matcher on its own, so each carries the app paths inline;
-// native-web-not-found.test.mjs pins them to APP_PAGE_PATHS and holds the two matchers to at most
-// one route per page load.
-export function isNativeAppNavigation({ request, url }) {
-  return (
-    request.mode === 'navigate' &&
-    ['/', '/index.html', '/privacy', '/changelog', '/feedback'].includes(url.pathname)
-  );
+// Every path the app answers with one of its own documents: the drawing screen's, and each route
+// table page's (appPages.ts).
+export const NATIVE_APP_DOCUMENT_PATHS = [
+  ...new Set([...DRAWING_PATHS, ...Object.values(APP_PAGE_PATHS)]),
+];
+
+// Workbox serializes each matcher on its own, so each is compiled with the app paths inline.
+function navigationMatcher(test) {
+  return new Function(
+    `return function ({ request, url }) { return request.mode === 'navigate' && ${test}; };`
+  )();
 }
+
+// A route table page is answered by the network, waited on for NAVIGATION_NETWORK_TIMEOUT_SECONDS,
+// and otherwise by the app shell, which shows the same page over the paper.
+export const isNativeAppNavigation = navigationMatcher(
+  `${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname)`
+);
 
 // Any other page load except the hosted /admin console, which shipping's worker leaves alone. The
 // host answers it, its 404 status included; only when the network fails does the app shell answer,
 // and the shell shows shipping's not-found page for a path it does not know
 // (src/platform/appPath.web.ts). A slow answer is waited for, never replaced by the shell.
-export function isOtherNativeNavigation({ request, url }) {
-  return (
-    request.mode === 'navigate' &&
-    !['/', '/index.html', '/privacy', '/changelog', '/feedback'].includes(url.pathname) &&
-    !url.pathname.startsWith('/admin')
-  );
-}
+export const isOtherNativeNavigation = navigationMatcher(
+  `!${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname) && !url.pathname.startsWith('/admin')`
+);
 
 // How many navigation routes look up the app shell from each fallback callback:
 // check-native-web-precache.mjs holds the built worker to these counts.
 export const APP_SHELL_FALLBACK_ROUTES = { cachedResponseWillBeUsed: 1, handlerDidError: 2 };
 
-export function nativeWebServiceWorkerConfig(outputDir, shell) {
+export function nativeWebServiceWorkerConfig(outputDir, shell, { pageOnlyFiles = [] } = {}) {
   return {
     globDirectory: outputDir,
     globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,ttf,woff2,webmanifest}'],
-    globIgnores: [NATIVE_WEB_SERVICE_WORKER, EXPORT_METADATA_FILE],
+    globIgnores: [NATIVE_WEB_SERVICE_WORKER, EXPORT_METADATA_FILE, ...pageOnlyFiles],
     swDest: join(outputDir, NATIVE_WEB_SERVICE_WORKER),
     inlineWorkboxRuntime: true,
     sourcemap: false,
@@ -276,14 +293,20 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
   copyShippingInstallAssets(outputDir, appVersion);
   copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
   await prerenderNativeWeb(join(outputDir, APP_SHELL_FILE));
+  const pageDocuments = await prerenderNativeWebPages(
+    outputDir,
+    pageDocumentTemplate(readFileSync(join(outputDir, NOT_FOUND_FILE), 'utf8'))
+  );
   // Each document's policy hashes its own inline scripts, so it is written after their last edit.
-  for (const file of [APP_SHELL_FILE, NOT_FOUND_FILE]) {
+  for (const file of [APP_SHELL_FILE, NOT_FOUND_FILE, ...pageDocuments.map(({ file }) => file)]) {
     const path = join(outputDir, file);
     writeFileSync(path, withContentSecurityPolicy(readFileSync(path, 'utf8')));
   }
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
-    nativeWebServiceWorkerConfig(outputDir, shell)
+    nativeWebServiceWorkerConfig(outputDir, shell, {
+      pageOnlyFiles: pageOnlyChunks(outputDir, APP_SHELL_FILE),
+    })
   );
   if (warnings.length) throw new Error(warnings.join('\n'));
   console.log(`[native-web] ${outputDir}: ${count} precached files / ${size} bytes`);

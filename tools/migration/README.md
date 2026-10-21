@@ -89,6 +89,27 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   generated shell. A module the drawing screen's first frame reads must render in Node (no `window`
   at import or during render, a server snapshot on every `useSyncExternalStore`), or this step fails
   the build.
+* `prerender-native-web-pages.mjs` runs next, for every route-table page whose document is its own
+  (`APP_PAGE_DOCUMENTS` in `src/information/appPages.ts`; `/privacy` first). It writes
+  `<page>.html`, which a static host serves at the page's path by pretty URL:
+  * The page's whole markup, rendered in Node from `src/pageDocument/prerender.tsx`, once per layout
+    (phone, short, framed, desktop) and theme. Without JavaScript a media query shows the one that
+    fits; with it the boot script keeps that one as the root and hydrates it. Each variant's
+    fragment targets carry its key, so a link without JavaScript reaches the shown copy; the boot
+    script strips the key from the kept one.
+  * Every style sheet inline, and the page entry (`src/pageDocument/pageApp.ts`) held until the page
+    has painted. The entry is its own bundle, chunked as `expo export` chunks the drawing screen's,
+    never a branch of the drawing screen's entry. Its bundles resolve the lazy facades listed in
+    `experiments/native-architecture/scripts/page-document-resolution.cjs` to the modules they wrap.
+  * A drift guard first resolves the drawing screen's whole module graph and fails the build if it
+    reaches anything under `src/pageDocument/`. Chunks only a page document loads stay out of the
+    precache: the worker answers a page document's path from the network, and offline from the app
+    shell, which shows the same page over the paper.
+  * `check-native-web-startup.mjs` holds each page document to its own first-paint and page-entry
+    budgets (`MAX_NATIVE_WEB_PAGE_BYTES`, each page's first measured build plus 10%), then
+    `check-native-web-pages-without-js.mjs` loads it in Chromium with JavaScript off in every layout
+    and theme and fails unless it reads in full, with each link that would ask for the grown-up
+    check naming its address instead of linking it.
 
 ## Layout
 

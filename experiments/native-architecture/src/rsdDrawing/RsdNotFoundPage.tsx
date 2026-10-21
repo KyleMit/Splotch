@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -34,7 +36,7 @@ import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
-import { APP_PAGE_PATHS } from '../information/appPages';
+import { APP_PAGE_PATHS, type AppPage } from '../information/appPages';
 import { landFocus, retainFocus } from './landFocus';
 import { RsdNotFoundLink } from './notFoundLink';
 import { RsdPageHero } from './RsdPageHero';
@@ -213,6 +215,18 @@ const styles = css.create({
 
 function startDrawing() {
   openAppPage('drawing');
+}
+
+type OpenAppPage = (page: AppPage, fragment?: string) => void;
+
+// Where an information page's own links lead. In the drawing screen's document every page opens
+// over the paper (platform/appPath); a page document provides one that loads any other page's
+// document instead (pageDocument/PageDocument.tsx). It lives beside the page sheet every page
+// uses, so it adds no module to the drawing screen's graph.
+export const PageNavigation = createContext<OpenAppPage>((...open) => openAppPage(...open));
+
+export function usePageNavigation() {
+  return useContext(PageNavigation);
 }
 
 // The system-colour blob shipping's BackToTopLink draws in forced colors, a CanvasText border inside

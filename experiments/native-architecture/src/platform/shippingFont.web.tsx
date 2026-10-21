@@ -31,6 +31,15 @@ function shippingFontFaces() {
   ));
 }
 
+// The same faces as stylesheet rules, for a prerendered page document to paint in before any
+// script runs (tools/migration/prerender-native-web-pages.mjs).
+export function shippingFontFaceRules() {
+  return SHIPPING_FONT_SUBSETS.map(
+    ({ subset, unicodeRange }) =>
+      `@font-face{font-family:${JSON.stringify(SHIPPING_FONT_FAMILY)};src:url(${webAssetUri(SUBSET_FILES[subset])}) format('woff2');font-weight:${SHIPPING_FONT_WEIGHT_RANGE};font-display:${SHIPPING_FONT_DISPLAY};unicode-range:${unicodeRange}}`
+  ).join('');
+}
+
 // Added faces load on first use, like stylesheet @font-face rules, so text the subset's
 // unicode-range never covers never downloads it; until then text swaps in from the
 // fallback, as the shipping app's does, so nothing waits on the font.

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Linking, Modal, Platform } from 'react-native';
-import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useInitialSafeAreaMetrics } from '../platform/safeAreaMetrics';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
-import { openAppPage, setDocumentTitle } from '../platform/appPath';
+import { setDocumentTitle } from '../platform/appPath';
+import { usePageNavigation } from './RsdNotFoundPage';
 import { visitInformationFragment } from '../platform/informationFragment';
 import { drawingArrival } from '../platform/drawingArrival';
 import { useDialogBack } from '../platform/BrowserBack';
@@ -25,7 +27,11 @@ import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { useModalPresence } from './useModalPresence';
 import { FOLLOW_APP_ORIENTATION, ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
-import { resolveBackLabel } from '../../../../web/src/lib/components/page/backLabel';
+import {
+  COLD_VISIT_LABEL,
+  resolveBackLabel,
+  type BackLabel,
+} from '../../../../web/src/lib/components/page/backLabel';
 import { DRAWING_ROUTE } from '../../../../web/src/lib/boot/appSurfaceRoute';
 
 type Page = Exclude<AppPage, 'drawing'>;
@@ -35,7 +41,7 @@ const PAGE_TITLES: Record<Page, string> = {
   feedback: FEEDBACK_PAGE_COPY.title,
 };
 // Shipping's <title> tags, which title-case what the page headings write in sentence case.
-const DOCUMENT_TITLES: Record<Page, string> = {
+export const DOCUMENT_TITLES: Record<Page, string> = {
   privacy: 'Privacy Policy · Splotch',
   changelog: 'Changelog · Splotch',
   feedback: 'Send Feedback · Splotch',
@@ -46,6 +52,19 @@ const PAGE_LEDES: Record<Page, string> = {
     'Every public Splotch release, newest first, with the notes that shipped alongside it.',
   feedback: FEEDBACK_PAGE_COPY.lede,
 };
+
+const unchanging = () => () => {};
+
+// A prerendered page document cannot know how its visitor arrived, so its render and hydration
+// carry shipping's server-rendered cold-visit label and the next render takes the arrival's.
+function useBackLabel(drawingVisited: boolean): BackLabel {
+  return useSyncExternalStore(
+    unchanging,
+    () =>
+      resolveBackLabel({ fromPath: drawingVisited ? DRAWING_ROUTE : null, ...drawingArrival() }),
+    () => COLD_VISIT_LABEL
+  );
+}
 
 type InformationProduct = Pick<
   ReturnType<typeof useDrawingProduct>,
@@ -63,7 +82,7 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
   const { owner, state, feedback } = product;
   const delivery = useNativeFeedbackState(feedback.owner)?.delivery;
   const sent = page === 'feedback' && delivery?.status === 'success';
-  const [arrival] = useState(drawingArrival);
+  const backLabel = useBackLabel(drawingVisited);
   useEffect(
     () => () => {
       if (owner?.getState().gate.open) owner.gate.dismiss();
@@ -76,6 +95,7 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
   const card = useModalPresence(gate?.open ? gate : null);
   const parentCenter = useModalPresence(state?.parentCenterOpen ? true : null);
   const reading = useInformationPageScroll(page);
+  const openAppPage = usePageNavigation();
   const returnToDrawing = () => {
     onDrawingReturn();
     openAppPage('drawing');
@@ -106,10 +126,7 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
       <RsdPageSheet
         title={sent ? FEEDBACK_PAGE_COPY.sentTitle : PAGE_TITLES[page]}
         onDrawingReturn={returnToDrawing}
-        backLabel={resolveBackLabel({
-          fromPath: drawingVisited ? DRAWING_ROUTE : null,
-          ...arrival,
-        })}
+        backLabel={backLabel}
         lede={sent ? FEEDBACK_PAGE_COPY.sentLede : PAGE_LEDES[page]}
         scrollRef={reading.scroll}
         onBodyOffset={reading.onBodyOffset}
@@ -132,7 +149,12 @@ function PageContent({ page, product, drawingVisited, onDrawingReturn }: Informa
         ) : (
           <RsdFeedbackPageContent owner={feedback.owner} onPrivacy={() => openAppPage('privacy')} />
         )}
-        <RsdInformationFooter page={page} onExternal={onLink} onDrawingReturn={returnToDrawing} />
+        <RsdInformationFooter
+          page={page}
+          onExternal={onLink}
+          onDrawingReturn={returnToDrawing}
+          openAppPage={openAppPage}
+        />
       </RsdPageSheet>
       {owner && card.shown ? (
         <RsdParentGateSheet
@@ -168,6 +190,8 @@ export function RsdInformationPage({
   standalone,
   onDrawingReturn,
 }: InformationPageProps) {
+  const openAppPage = usePageNavigation();
+  const initialMetrics = useInitialSafeAreaMetrics();
   const close = () => openAppPage('drawing');
   useEffect(() => {
     const previous = setDocumentTitle(DOCUMENT_TITLES[page]);
@@ -177,7 +201,7 @@ export function RsdInformationPage({
   }, [page]);
   const content = (
     <DrawingAppearanceProvider preference={product.state?.settings?.appearance ?? bootAppearance()}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <SafeAreaProvider initialMetrics={initialMetrics}>
         <PageContent
           key={page}
           page={page}

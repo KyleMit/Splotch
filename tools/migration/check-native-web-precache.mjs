@@ -33,17 +33,20 @@ import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { startupScriptList } from './prerender-native-web.mjs';
 import { documentPolicyProblems } from './lib/native-web-csp.mjs';
+import { documentPages, pageOnlyChunks } from './prerender-native-web-pages.mjs';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // The version endpoint must reach the network; the worker, build identity and host's not-found
-// answer are not page assets.
+// answer are not page assets. A page document is answered by the network, and offline by the app
+// shell, which shows the same page over the paper (build-native-web.mjs's navigation routes).
 const UNFETCHED_EXPORT_FILES = new Set([
   NATIVE_WEB_SERVICE_WORKER,
   'metadata.json',
   NOT_FOUND_FILE,
   VERSION_JSON_FILENAME,
+  ...documentPages().map(({ file }) => file),
 ]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';
@@ -175,6 +178,7 @@ export function nativeWebPrecacheProblems({
   lazySamples,
   precacheBytes,
   maxPrecacheBytes = MAX_NATIVE_WEB_PRECACHE_BYTES,
+  pageOnlyFiles = [],
 }) {
   const precacheUrls = precacheEntries.map((entry) => entry.url);
   const problems = shellProblems({ precacheUrls, expectedShellUrl, appShellFallbackLookups });
@@ -192,9 +196,19 @@ export function nativeWebPrecacheProblems({
   );
   if (missingOnDisk.length)
     problems.push(`Precached files missing from the export: ${missingOnDisk.join(', ')}`);
+  const pageOnly = new Set(pageOnlyFiles);
   const notPrecached = exportedFiles.filter(
-    (file) => !UNFETCHED_EXPORT_FILES.has(file) && file !== APP_SHELL_FILE && !precached.has(file)
+    (file) =>
+      !UNFETCHED_EXPORT_FILES.has(file) &&
+      !pageOnly.has(file) &&
+      file !== APP_SHELL_FILE &&
+      !precached.has(file)
   );
+  const pageOnlyPrecached = pageOnlyFiles.filter((file) => precached.has(file));
+  if (pageOnlyPrecached.length)
+    problems.push(
+      `Chunks only a page document loads are precached: ${pageOnlyPrecached.join(', ')}`
+    );
   if (notPrecached.length)
     problems.push(`Exported files missing from the precache: ${notPrecached.join(', ')}`);
   const unbackedReferences = shellReferences.filter((path) => !precached.has(path));
@@ -286,10 +300,13 @@ export function checkNativeWebPrecache({
     lazySamples,
     precacheBytes,
     maxPrecacheBytes,
+    pageOnlyFiles: pageOnlyChunks(exportDir, APP_SHELL_FILE),
   });
   problems.push(
     ...documentPolicyProblems(indexHtml.toString('utf8'), APP_SHELL_FILE),
-    ...documentPolicyProblems(readFileSync(join(exportDir, NOT_FOUND_FILE), 'utf8'), NOT_FOUND_FILE)
+    ...[NOT_FOUND_FILE, ...documentPages().map(({ file }) => file)].flatMap((file) =>
+      documentPolicyProblems(readFileSync(join(exportDir, file), 'utf8'), file)
+    )
   );
   if (problems.length) throw new Error(problems.join('\n'));
   log(

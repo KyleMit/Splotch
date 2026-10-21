@@ -7,6 +7,7 @@ import {
   checkNativeWebPrecache,
   lazyIconSamples,
   lazyModuleSamples,
+  nativeWebPrecacheProblems,
   releaseNoteSamples,
   shellAssetReferences,
   starterBookImages,
@@ -61,6 +62,10 @@ const NOT_FOUND = withContentSecurityPolicy(
 const ASSETS = {
   'index.html': INDEX,
   '404.html': NOT_FOUND,
+  // The route table's page document (prerender-native-web-pages.mjs), which the network answers.
+  'privacy.html': withContentSecurityPolicy(
+    '<!doctype html><html><head></head><body><script>var page=1;</script></body></html>'
+  ),
   [ENTRY]: 'var app={};',
   [CAT]: `var d="${OUTLINES[0].sample}";`,
   [COW]: `var d="${OUTLINES[1].sample}";`,
@@ -325,4 +330,29 @@ it('references the scripts a prerendered shell loads after its first frame paint
     '_expo/static/css/strict-1.css',
     '_expo/static/js/web/index-1.js',
   ]);
+});
+
+// Chunks only a page document loads (prerender-native-web-pages.mjs's pageOnlyChunks).
+it('neither requires nor allows a page-only chunk in the precache', () => {
+  const problems = (precached) =>
+    nativeWebPrecacheProblems({
+      precacheEntries: precached.map((url) => ({ url, revision: null, integrity: 'x' })),
+      appShellFallbackLookups: [],
+      expectedShellUrl: '',
+      integrityOnDisk: new Map(precached.map((url) => [url, 'x'])),
+      shellReferences: [],
+      exportedFiles: ['index.html', '_expo/static/js/web/pageApp-1.js'],
+      precachedScripts: [],
+      precachedHashes: new Set(),
+      shellScripts: [],
+      starterOutlines: [],
+      starterImages: [],
+      lazySamples: [],
+      precacheBytes: 0,
+      pageOnlyFiles: ['_expo/static/js/web/pageApp-1.js'],
+    });
+  expect(problems([]).filter((problem) => problem.includes('pageApp'))).toEqual([]);
+  expect(problems(['_expo/static/js/web/pageApp-1.js'])).toContain(
+    'Chunks only a page document loads are precached: _expo/static/js/web/pageApp-1.js'
+  );
 });

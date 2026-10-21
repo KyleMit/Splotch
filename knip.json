@@ -53,7 +53,11 @@
       }
     },
     "experiments/native-architecture": {
-      "entry": ["src/prerenderFirstFrame.tsx"],
+      "entry": [
+        "src/prerenderFirstFrame.tsx",
+        "src/pageDocument/pageApp.ts",
+        "src/pageDocument/prerender.tsx"
+      ],
       "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"],
       "ignore": ["src/feedback/report.ts", "src/feedback/deviceReport.ts"]
     }
