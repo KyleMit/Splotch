@@ -19,6 +19,7 @@ import {
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
 import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
 import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
@@ -35,6 +36,7 @@ import {
   pageOnlyChunks,
   prerenderNativeWebPages,
 } from './prerender-native-web-pages.mjs';
+import { prerenderNativeWebAdmin } from './prerender-native-web-admin.mjs';
 import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
@@ -260,12 +262,13 @@ export const isNativeAppNavigation = navigationMatcher(
   `${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname)`
 );
 
-// Any other page load except the hosted /admin console, which shipping's worker leaves alone. The
-// host answers it, its 404 status included; only when the network fails does the app shell answer,
-// and the shell shows shipping's not-found page for a path it does not know
-// (src/platform/appPath.web.ts). A slow answer is waited for, never replaced by the shell.
+// Any other page load except an unlinked document's (the /admin console), which the worker leaves
+// to the network alone, as shipping's does. The host answers it, its 404 status included; only
+// when the network fails does the app shell answer, and the shell shows shipping's not-found page
+// for a path it does not know (src/platform/appPath.web.ts). A slow answer is waited for, never
+// replaced by the shell.
 export const isOtherNativeNavigation = navigationMatcher(
-  `!${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname) && !url.pathname.startsWith('/admin')`
+  `!${JSON.stringify(NATIVE_APP_DOCUMENT_PATHS)}.includes(url.pathname) && !${JSON.stringify(Object.values(UNLINKED_DOCUMENT_PATHS))}.some(function (path) { return url.pathname.startsWith(path); })`
 );
 
 // How many navigation routes look up the app shell from each fallback callback:
@@ -320,10 +323,11 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
   await prerenderNativeWeb(join(outputDir, APP_SHELL_FILE));
   const shellPath = join(outputDir, APP_SHELL_FILE);
   writeFileSync(shellPath, withDrawingNoscript(readFileSync(shellPath, 'utf8')));
-  const pageDocuments = await prerenderNativeWebPages(
-    outputDir,
-    pageDocumentTemplate(readFileSync(join(outputDir, NOT_FOUND_FILE), 'utf8'))
-  );
+  const template = pageDocumentTemplate(readFileSync(join(outputDir, NOT_FOUND_FILE), 'utf8'));
+  const pageDocuments = [
+    ...(await prerenderNativeWebPages(outputDir, template)),
+    await prerenderNativeWebAdmin(outputDir, template),
+  ];
   // Each document's policy hashes its own inline scripts, so it is written after their last edit.
   for (const file of new Set([
     APP_SHELL_FILE,
