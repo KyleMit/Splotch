@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { MANAGED_ACCESS_CODE } from '../server/serverEnv.ts';
 import { expect, test } from '../fixtures.ts';
 import { waitForDrawingScreen } from '../support/app.ts';
+import { openDrawingScreen } from '../support/drawing.ts';
 import {
   closeDialog,
   gateCard,
@@ -121,15 +122,13 @@ async function chooseStyle(page: Page) {
 }
 
 test.describe('AI pictures', () => {
-  test('a fresh installation shows no AI button and asks for no allowance', async ({
-    drawingScreen,
-  }) => {
-    const { page } = drawingScreen;
+  test('a fresh installation shows no AI button and asks for no allowance', async ({ page }) => {
     const allowanceRequests: string[] = [];
     page.on('request', (request) => {
       if (request.url().includes('/api/free-generation-grant'))
         allowanceRequests.push(request.url());
     });
+    await openDrawingScreen(page);
 
     await openDrawer(page);
     await page.waitForTimeout(LATE_REQUEST_WINDOW_MS);
