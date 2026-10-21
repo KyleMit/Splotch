@@ -12,6 +12,7 @@ import {
 } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
 import {
   ADMIN_LOGIN_PATH,
+  ADMIN_STATS_PATH,
   ADMIN_TOKENS_PATH,
   createAdminApi,
 } from '../../experiments/native-architecture/src/pageDocument/admin/adminApi.ts';
@@ -32,6 +33,7 @@ import { pageOnlyChunks, writtenPageDocuments } from '../migration/prerender-nat
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
 import { isNativeAppNavigation, isOtherNativeNavigation } from '../migration/build-native-web.mjs';
 import { ADMIN_DOCUMENT_SOURCES } from '../../experiments/native-architecture/scripts/admin-document-styles.mjs';
+import { GRANTS, RECORDED_STATS, STATS, USED } from './native-admin-stats-fixture.mjs';
 
 vi.mock('react-strict-dom/postcss-plugin', () => ({ default: (options) => ({ options }) }));
 
@@ -149,6 +151,46 @@ describe("the admin console's API client", () => {
     const api = createAdminApi(async () => answer(200, { ok: true, invites: 'nope' }));
     await expect(api.list(SESSION)).rejects.toThrow('a shape the console does not read');
   });
+
+  it("reads each code's tally and the grant figures with the bearer session", async () => {
+    const request = vi.fn(async () => answer(200, STATS));
+    const result = await createAdminApi(request).stats(SESSION);
+    expect(request).toHaveBeenCalledExactlyOnceWith(ADMIN_STATS_PATH, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${SESSION}` },
+    });
+    expect(result.kind).toBe('read');
+    expect([...result.stats.usage]).toEqual([
+      ['alpha', { count: 3, lastUsed: USED.lastUsed }],
+      ['beta', null],
+    ]);
+    expect(result.stats.freeGrantStats).toMatchObject({
+      dailyProviderStarts: 4,
+      recent: [{ installation: 'cccccccc', successful: 2, lastFailureKind: 'safety' }],
+    });
+  });
+
+  it("reads the function's own recorded answer: no tallies, the in-memory grant figures", async () => {
+    const result = await createAdminApi(async () => answer(200, RECORDED_STATS)).stats(SESSION);
+    expect(result.stats.usage).toBeNull();
+    expect(result.stats.freeGrantStats).toMatchObject({ persistent: false, recent: [] });
+  });
+
+  it('reports a 401 on the stats read as an unauthorized session', async () => {
+    const api = createAdminApi(async () => answer(401, { ok: false, error: 'Unauthorized' }));
+    expect(await api.stats(SESSION)).toEqual({ kind: 'unauthorized' });
+  });
+
+  it('refuses figures it cannot read', async () => {
+    for (const body of [
+      { ...STATS, codes: [{ token: 'alpha', usage: { count: 'three' } }] },
+      { ...STATS, freeGrantStats: { ...GRANTS, sampledFailures: -1 } },
+      { ...STATS, usageAvailable: 'yes' },
+    ]) {
+      const api = createAdminApi(async () => answer(200, body));
+      await expect(api.stats(SESSION)).rejects.toThrow('a shape the console does not read');
+    }
+  });
 });
 
 describe("the admin console's state", () => {
@@ -180,10 +222,43 @@ describe("the admin console's state", () => {
   }
 
   it('opens the console from a stored session without signing in again', async () => {
-    const request = vi.fn(async () => answer(200, SNAPSHOT));
+    const request = vi.fn(async (path) =>
+      answer(200, path === ADMIN_STATS_PATH ? STATS : SNAPSHOT)
+    );
     await mount({ stored: SESSION, request });
     expect(latest.view).toMatchObject({ mode: 'signedIn', session: SESSION });
-    expect(request).toHaveBeenCalledExactlyOnceWith(ADMIN_TOKENS_PATH, expect.anything());
+    expect(latest.view.figures.stats.usage.get('alpha')).toEqual({
+      count: 3,
+      lastUsed: USED.lastUsed,
+    });
+    expect(request.mock.calls.map(([path]) => path).sort()).toEqual(
+      [ADMIN_STATS_PATH, ADMIN_TOKENS_PATH].sort()
+    );
+  });
+
+  it('lists the codes when the figures cannot be read', async () => {
+    await mount({
+      stored: SESSION,
+      request: async (path) =>
+        path === ADMIN_STATS_PATH
+          ? answer(500, { ok: false, error: 'Something went wrong' })
+          : answer(200, SNAPSHOT),
+    });
+    expect(latest.view).toMatchObject({ mode: 'signedIn', figures: { kind: 'unavailable' } });
+  });
+
+  it('keeps the figures it read across a write', async () => {
+    await mount({
+      stored: SESSION,
+      request: async (path, { method }) =>
+        path === ADMIN_STATS_PATH
+          ? answer(200, STATS)
+          : answer(200, method === 'GET' ? SNAPSHOT : { ...SNAPSHOT, changed: true }),
+    });
+    await act(async () => latest.setDraft('gamma'));
+    await act(async () => latest.add(SESSION));
+    expect(latest.flash).toEqual({ kind: 'success', text: 'Added “gamma”' });
+    expect(latest.view.figures.stats.freeGrantStats.dailyProviderStarts).toBe(4);
   });
 
   it('forgets a stored session the API answers 401, and asks for the key', async () => {
@@ -236,16 +311,63 @@ describe("the admin console's state", () => {
     const { pending, request } = deferredRequests();
     const storage = await mount({ stored: SESSION, request });
     await act(async () => latest.signOut());
-    await act(async () => pending[0].resolve(answer(200, SNAPSHOT)));
+    await act(async () => {
+      for (const { path, resolve } of pending)
+        resolve(answer(200, path === ADMIN_STATS_PATH ? STATS : SNAPSHOT));
+    });
     expect(latest.view).toEqual({ mode: 'signedOut', error: null });
     expect(storage.items.has(ADMIN_SESSION_KEY)).toBe(false);
   });
 
+  it('lists the codes without waiting on the figures, and adds them when they land', async () => {
+    const { pending, request } = deferredRequests();
+    await mount({ stored: SESSION, request });
+    const answerTo = (path, body) =>
+      act(async () => pending.find((call) => call.path === path).resolve(answer(200, body)));
+    await answerTo(ADMIN_TOKENS_PATH, SNAPSHOT);
+    expect(latest.view).toMatchObject({ mode: 'signedIn', figures: { kind: 'pending' } });
+    await answerTo(ADMIN_STATS_PATH, STATS);
+    expect(latest.view.figures.stats.freeGrantStats.dailyProviderStarts).toBe(4);
+  });
+
+  it('frees the console after a sign-in while the figures are still out', async () => {
+    let statsAnswer;
+    const request = vi.fn(async (path, { method }) => {
+      if (path === ADMIN_STATS_PATH) return new Promise((resolve) => (statsAnswer = resolve));
+      if (path === ADMIN_LOGIN_PATH) return answer(200, { ok: true, session: SESSION });
+      return answer(200, method === 'GET' ? SNAPSHOT : { ...SNAPSHOT, changed: true });
+    });
+    await mount({ request });
+    await act(async () => latest.signIn('the-key'));
+    expect(latest.view).toMatchObject({ mode: 'signedIn', figures: { kind: 'pending' } });
+    expect(latest.busy).toBe(false);
+    await act(async () => latest.setDraft('gamma'));
+    await act(async () => latest.add(SESSION));
+    expect(request).toHaveBeenCalledWith(
+      ADMIN_TOKENS_PATH,
+      expect.objectContaining({ method: 'POST' })
+    );
+    await act(async () => statsAnswer(answer(200, STATS)));
+    expect(latest.view.figures.kind).toBe('read');
+  });
+
+  it('ignores figures that land after their session was signed out', async () => {
+    const { pending, request } = deferredRequests();
+    await mount({ stored: SESSION, request });
+    const tokens = pending.find((call) => call.path === ADMIN_TOKENS_PATH);
+    await act(async () => tokens.resolve(answer(200, SNAPSHOT)));
+    await act(async () => latest.signOut());
+    const stats = pending.find((call) => call.path === ADMIN_STATS_PATH);
+    await act(async () => stats.resolve(answer(200, STATS)));
+    expect(latest.view).toEqual({ mode: 'signedOut', error: null });
+  });
+
   it("keeps a new session when the old one's late 401 lands", async () => {
-    let lateAnswer;
+    const lateAnswers = [];
+    const lateAnswer = (response) => lateAnswers.forEach((resolve) => resolve(response.clone()));
     const request = async (path, init) => {
       if (init.headers.Authorization === 'Bearer old-session')
-        return new Promise((resolve) => (lateAnswer = resolve));
+        return new Promise((resolve) => lateAnswers.push(resolve));
       return path === ADMIN_LOGIN_PATH
         ? answer(200, { ok: true, session: SESSION })
         : answer(200, SNAPSHOT);
@@ -262,9 +384,10 @@ describe("the admin console's state", () => {
     const request = vi.fn(async () => answer(200, { ...SNAPSHOT, changed: true }));
     const confirm = vi.fn(() => false);
     await mount({ stored: SESSION, request, confirm });
+    request.mockClear();
     await act(async () => latest.remove(SESSION, 'alpha'));
     expect(confirm).toHaveBeenCalledWith(removalQuestion('alpha'));
-    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).not.toHaveBeenCalled();
   });
 });
 

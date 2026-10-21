@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AdminApi, TokenSnapshot } from './adminApi';
+import type { AdminApi, AdminStats, TokenSnapshot } from './adminApi';
 import type { AdminSessionStore } from './adminSession';
 
 // What the console shows. The build renders `restoring` and so does hydration; the stored session
@@ -9,7 +9,21 @@ export type ConsoleView =
   | Readonly<{ mode: 'signedOut'; error: string | null }>
   | Readonly<{ mode: 'loading'; session: string }>
   | Readonly<{ mode: 'unavailable'; session: string }>
-  | Readonly<{ mode: 'signedIn'; session: string; snapshot: TokenSnapshot }>;
+  | Readonly<{
+      mode: 'signedIn';
+      session: string;
+      snapshot: TokenSnapshot;
+      figures: Figures;
+    }>;
+
+// The usage figures, read beside the code list and shown once they land: 'unavailable' when they
+// could not be read, so the console says the tallies are unavailable.
+export type Figures =
+  | Readonly<{ kind: 'pending' }>
+  | Readonly<{ kind: 'unavailable' }>
+  | Readonly<{ kind: 'read'; stats: AdminStats }>;
+
+const PENDING: Figures = { kind: 'pending' };
 
 export type Flash = Readonly<{ kind: 'success' | 'error'; text: string }>;
 
@@ -64,14 +78,20 @@ export function useAdminConsole({
     async (session: string) => {
       const mine = generation.current;
       setView({ mode: 'loading', session });
+      const figures = readFigures(api, session);
       try {
         const result = await api.list(session);
         if (generation.current !== mine) return;
-        if (result.kind === 'unauthorized') signOutWith(SESSION_ENDED);
-        else setView({ mode: 'signedIn', session, snapshot: result.snapshot });
+        if (result.kind === 'unauthorized') return signOutWith(SESSION_ENDED);
+        setView({ mode: 'signedIn', session, snapshot: result.snapshot, figures: PENDING });
       } catch {
         if (generation.current === mine) setView({ mode: 'unavailable', session });
+        return;
       }
+      // Detached, so a sign-in (which awaits this load) frees the console before the figures land.
+      void figures.then((read) => {
+        if (generation.current === mine) setView(withFigures(read));
+      });
     },
     [api, signOutWith]
   );
@@ -110,7 +130,7 @@ export function useAdminConsole({
         if (generation.current !== mine) return;
         if (result.kind === 'unauthorized') return signOutWith(SESSION_ENDED);
         if (result.kind === 'refused') return setFlash({ kind: 'error', text: result.message });
-        setView({ mode: 'signedIn', session, snapshot: result.snapshot });
+        setView(withSnapshot(session, result.snapshot));
         setFlash({ kind: 'success', text: describe(result.changed) });
         onDone();
       },
@@ -154,6 +174,33 @@ export function useAdminConsole({
     remove,
     copy,
   };
+}
+
+// A write's snapshot replaces the list and keeps the figures already read.
+function withSnapshot(session: string, snapshot: TokenSnapshot) {
+  return (previous: ConsoleView): ConsoleView => ({
+    mode: 'signedIn',
+    session,
+    snapshot,
+    figures: previous.mode === 'signedIn' ? previous.figures : PENDING,
+  });
+}
+
+function withFigures(figures: Figures) {
+  return (current: ConsoleView): ConsoleView =>
+    current.mode === 'signedIn' ? { ...current, figures } : current;
+}
+
+// The figures are extra to the code list: the list never waits on them, the console still lists,
+// adds and removes codes when they cannot be read, and the tokens call alone decides whether the
+// session still works.
+async function readFigures(api: AdminApi, session: string): Promise<Figures> {
+  try {
+    const result = await api.stats(session);
+    return result.kind === 'read' ? { kind: 'read', stats: result.stats } : { kind: 'unavailable' };
+  } catch {
+    return { kind: 'unavailable' };
+  }
 }
 
 // The "Copied!" a row's button shows for COPY_FEEDBACK_MS after its clipboard write lands.

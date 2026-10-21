@@ -657,9 +657,10 @@ store and labels all grant-derived success, failure, active/exhausted, reservati
 figures as sampled. The raw Capacitor identifier is never sent or stored.
 
 JSON twin of the server-rendered `/admin` console, driven by `tools/api-smoke/lib/admin-client.mjs`
-(the local and deploy smoke tests). Both front doors call the same core
-(`web/src/lib/server/admin.ts` \+ `web/src/lib/server/tokens.ts`) — the web console executes it
-directly in its form actions and **never** loops back through these endpoints.
+(the local and deploy smoke tests) and by the React Native web export's `/admin` console
+(`experiments/native-architecture/src/pageDocument/admin/`). Both front doors call the same core
+(`web/src/lib/server/admin.ts` \+ `web/src/lib/server/tokens.ts`) — the server-rendered console
+executes it directly in its form actions and **never** loops back through these endpoints.
 
 ### Authentication model
 
@@ -746,6 +747,70 @@ records, normally within 24 hours, and also drops legacy raw-keyed records. If i
 during `DELETE` fails, the fixed deadline remains the backstop. Rotating `USAGE_GRANT_ID_SECRET`
 starts new opaque IDs without making old records readable through current codes; the scheduled purge
 still removes them at their existing deadlines.
+
+### `GET /api/admin/stats`
+
+The figures the server-rendered console's loader reads beside the code list: each listed code's
+generation tally and the free-generation grant figures above. Same bearer session and uniform `401`
+as `/api/admin/tokens`; `GET` (and `HEAD`) only, every other method is `405`. It is a sibling
+endpoint rather than more fields on the tokens snapshot, so that snapshot stays exactly what
+installed clients read, and a slow or failing tally read never holds up the code list.
+
+```json
+{
+  "ok": true,
+  "usageAvailable": true,
+  "codes": [
+    {
+      "token": "sunny-meadow",
+      "usage": {
+        "count": 3,
+        "firstUsed": "2026-10-01T09:00:00.000Z",
+        "lastUsed": "2026-10-02T09:00:00.000Z",
+        "deleteAfter": "2026-10-31T09:00:00.000Z",
+        "lastStyle": "Crayon",
+        "lastOutcome": "succeeded"
+      }
+    },
+    { "token": "rainy-day", "usage": null }
+  ],
+  "freeGrantStats": {
+    "persistent": true,
+    "dailyProviderStarts": 4,
+    "dailyProviderStartLimit": 500,
+    "sampledGrantCount": 1,
+    "grantSampleLimit": 200,
+    "grantSamplePartial": false,
+    "sampledSuccessful": 2,
+    "sampledAttempts": 3,
+    "sampledFailures": 1,
+    "sampledActiveGrants": 1,
+    "sampledExhaustedGrants": 0,
+    "sampledActiveReservations": 0,
+    "recent": [
+      {
+        "installation": "cccccccc",
+        "successful": 2,
+        "attempts": 3,
+        "failures": 1,
+        "remaining": 8,
+        "lastActivityAt": "2026-10-02T09:00:00.000Z",
+        "lastFailureKind": "safety"
+      }
+    ]
+  }
+}
+```
+
+* `codes` lists every code in the token list, in its order. `usage` is the minimized tally record
+  described above, or `null` for a code with no tally.
+* `usageAvailable: false` means the tally store is unreachable or `USAGE_GRANT_ID_SECRET` is unset.
+  Every `usage` is then `null` for that reason, not because the code was never used.
+* Like the server-rendered console's load, the read deletes each expired tally it meets.
+* `freeGrantStats` is `null` when the grant store could not be read; the tallies are unaffected.
+  `persistent: false` means the figures come from this server instance's memory. `installation` is
+  the first eight characters of the hashed installation ID, never the raw identifier.
+* The response type is `AdminStatsSnapshot` in `web/src/lib/server/api/adminStats.ts`.
 
 ### Example
 

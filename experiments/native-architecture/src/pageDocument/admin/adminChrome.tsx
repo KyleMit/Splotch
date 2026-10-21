@@ -330,7 +330,7 @@ export function AdminSection({ children }: { children: ReactNode }) {
   return <html.section style={styles.section}>{children}</html.section>;
 }
 
-export function AdminRuleLabel({ children, count }: { children: string; count?: number }) {
+export function AdminRuleLabel({ children, count }: { children: string; count?: number | string }) {
   return (
     <html.h2 style={styles.rule}>
       <html.span>{count === undefined ? children : `${children} · ${count}`}</html.span>
