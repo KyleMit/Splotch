@@ -9,12 +9,12 @@
     "phone-portrait": {
       "first": {
         "baseline": {
-          "fcpMs": 771,
-          "lcpMs": 1057
+          "fcpMs": 773,
+          "lcpMs": 1056
         },
         "limits": {
-          "fcpMs": 1600,
-          "lcpMs": 2200
+          "fcpMs": 1300,
+          "lcpMs": 1700
         }
       },
       "repeat": {
@@ -23,20 +23,20 @@
           "lcpMs": 900
         },
         "limits": {
-          "fcpMs": 1300,
-          "lcpMs": 1800
+          "fcpMs": 1100,
+          "lcpMs": 1500
         }
       }
     },
     "tablet-landscape": {
       "first": {
         "baseline": {
-          "fcpMs": 775,
+          "fcpMs": 774,
           "lcpMs": 1054
         },
         "limits": {
-          "fcpMs": 1600,
-          "lcpMs": 2200
+          "fcpMs": 1300,
+          "lcpMs": 1700
         }
       },
       "repeat": {
@@ -45,8 +45,8 @@
           "lcpMs": 900
         },
         "limits": {
-          "fcpMs": 1300,
-          "lcpMs": 1800
+          "fcpMs": 1100,
+          "lcpMs": 1500
         }
       }
     }
