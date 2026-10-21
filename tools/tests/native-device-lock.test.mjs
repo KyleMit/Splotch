@@ -14,13 +14,11 @@ const { DEVICE_LOCK_MODULE, isDeviceLocked } =
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const APP = 'experiments/native-architecture/';
 const SOURCES = {
-  swift: read(`${APP}ios/HelloWorld/SplotchDeviceLock.swift`),
-  bridge: read(`${APP}ios/HelloWorld/SplotchDeviceLock.m`),
-  project: read(`${APP}ios/HelloWorld.xcodeproj/project.pbxproj`),
-  kotlin: read(`${APP}android/app/src/main/java/art/splotch/migration/probe/SplotchDeviceLock.kt`),
-  application: read(
-    `${APP}android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt`
-  ),
+  swift: read(`${APP}ios/Splotch/SplotchDeviceLock.swift`),
+  bridge: read(`${APP}ios/Splotch/SplotchDeviceLock.m`),
+  project: read(`${APP}ios/Splotch.xcodeproj/project.pbxproj`),
+  kotlin: read(`${APP}android/app/src/main/java/art/splotch/app/SplotchDeviceLock.kt`),
+  application: read(`${APP}android/app/src/main/java/art/splotch/app/MainApplication.kt`),
   shippingSwift: read('ios/App/App/DeviceLockPlugin.swift'),
   shippingJava: read('android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java'),
 };

@@ -11,7 +11,7 @@ export type BackdropBlurTransition = Readonly<{
   theme: PaperTheme;
 }>;
 
-// SplotchBackdropBlur (ios/HelloWorld/SplotchBackdropBlur.swift).
+// SplotchBackdropBlur (ios/Splotch/SplotchBackdropBlur.swift).
 const NativeBackdropBlur = requireNativeComponent<ViewProps & { blur: BackdropBlurTransition }>(
   'SplotchBackdropBlur'
 );

@@ -6,7 +6,7 @@ const SHIPPING_WORKER = new URL(
   import.meta.url
 );
 const NATIVE_PROBE = new URL(
-  '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/',
+  '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/',
   import.meta.url
 );
 const NATIVE_WORKER = new URL('SplotchLibraryWorker.kt', NATIVE_PROBE);

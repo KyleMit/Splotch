@@ -297,25 +297,19 @@ const candidate = new URL('../../experiments/native-architecture/', import.meta.
 describe('native bridge registration and private storage contract', () => {
   it('registers both platform modules and pins their bounded hash limit to the manifest owner', async () => {
     const android = await readFile(
-      new URL(
-        'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt',
-        candidate
-      ),
+      new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryEnvironment.kt', candidate),
       'utf8'
     );
     const ios = await readFile(
-      new URL('ios/HelloWorld/SplotchLibraryEnvironment.swift', candidate),
+      new URL('ios/Splotch/SplotchLibraryEnvironment.swift', candidate),
       'utf8'
     );
     const androidFiles = await readFile(
-      new URL(
-        'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryFiles.kt',
-        candidate
-      ),
+      new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryFiles.kt', candidate),
       'utf8'
     );
     const iosFiles = await readFile(
-      new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate),
+      new URL('ios/Splotch/SplotchLibraryFiles.swift', candidate),
       'utf8'
     );
     expect(Number(androidFiles.match(/MAX_FILE_BYTES = (\d+)/)[1])).toBe(MAX_PACK_FILE_BYTES);
@@ -332,7 +326,7 @@ describe('native bridge registration and private storage contract', () => {
       iosFiles.match(/"(splotch-offline-library-v\d+)"/)[1]
     );
     const objc = await readFile(
-      new URL('ios/HelloWorld/SplotchLibraryEnvironment.m', candidate),
+      new URL('ios/Splotch/SplotchLibraryEnvironment.m', candidate),
       'utf8'
     );
     expect(objc).toContain(
@@ -360,15 +354,12 @@ describe('native bridge registration and private storage contract', () => {
     expect(manifest).toContain('android:allowBackup="false"');
     expect(manifest).toContain('android.permission.ACCESS_NETWORK_STATE');
     const application = await readFile(
-      new URL(
-        'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
-        candidate
-      ),
+      new URL('android/app/src/main/java/art/splotch/app/MainApplication.kt', candidate),
       'utf8'
     );
     expect(application).toContain('SplotchLibraryPackage()');
     const xcode = await readFile(
-      new URL('ios/HelloWorld.xcodeproj/project.pbxproj', candidate),
+      new URL('ios/Splotch.xcodeproj/project.pbxproj', candidate),
       'utf8'
     );
     expect(xcode.match(/SplotchLibraryEnvironment.swift in Sources/g)).toHaveLength(2);
@@ -380,24 +371,18 @@ describe('native bridge registration and private storage contract', () => {
 
 it('preserves shipping native network and background transfer policy', async () => {
   const android = await readFile(
-    new URL(
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryDownloads.kt',
-      candidate
-    ),
+    new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryDownloads.kt', candidate),
     'utf8'
   );
   const worker = await readFile(
-    new URL(
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryWorker.kt',
-      candidate
-    ),
+    new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryWorker.kt', candidate),
     'utf8'
   );
   const ios = await readFile(
-    new URL('ios/HelloWorld/SplotchLibraryDownloads.swift', candidate),
+    new URL('ios/Splotch/SplotchLibraryDownloads.swift', candidate),
     'utf8'
   );
-  const delegate = await readFile(new URL('ios/HelloWorld/AppDelegate.swift', candidate), 'utf8');
+  const delegate = await readFile(new URL('ios/Splotch/AppDelegate.swift', candidate), 'utf8');
   const shippingAndroid = await readFile(
     new URL('../../android/app/build.gradle', import.meta.url),
     'utf8'
@@ -443,13 +428,10 @@ it('pins native pack validation to the JavaScript catalog limits', async () => {
   const [manifest, android, ios] = await Promise.all([
     readFile(new URL('src/offlineLibrary/manifest.ts', candidate), 'utf8'),
     readFile(
-      new URL(
-        'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryFiles.kt',
-        candidate
-      ),
+      new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryFiles.kt', candidate),
       'utf8'
     ),
-    readFile(new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate), 'utf8'),
+    readFile(new URL('ios/Splotch/SplotchLibraryFiles.swift', candidate), 'utf8'),
   ]);
   const fileCount = Number(manifest.match(/const PACK_FILE_COUNT = (\d+);/)[1]);
   const maxPackBytes =
@@ -464,10 +446,7 @@ it('pins native pack validation to the JavaScript catalog limits', async () => {
 
 it('ignores an existing Android backoff while observing failure of a joined running attempt', async () => {
   const source = await readFile(
-    new URL(
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryDownloads.kt',
-      candidate
-    ),
+    new URL('android/app/src/main/java/art/splotch/app/SplotchLibraryDownloads.kt', candidate),
     'utf8'
   );
   const shipping = await readFile(
@@ -489,11 +468,11 @@ it('ignores an existing Android backoff while observing failure of a joined runn
 
 it('prunes only superseded same-book iOS transfer stages and retains published Undo files', async () => {
   const source = await readFile(
-    new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate),
+    new URL('ios/Splotch/SplotchLibraryFiles.swift', candidate),
     'utf8'
   );
   const downloads = await readFile(
-    new URL('ios/HelloWorld/SplotchLibraryDownloads.swift', candidate),
+    new URL('ios/Splotch/SplotchLibraryDownloads.swift', candidate),
     'utf8'
   );
   const shipping = await readFile(

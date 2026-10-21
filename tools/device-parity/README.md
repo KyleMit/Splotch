@@ -130,21 +130,22 @@ Booting emulators is outside this tooling, but each of these cost a 2026-10-21 c
 
 ## Checking a JS-only change without a native build
 
-`swap-js-bundle.mjs` puts freshly built JavaScript into a Release probe that a full Gradle or Xcode
+`swap-js-bundle.mjs` puts freshly built JavaScript into a Release build that a full Gradle or Xcode
 build already produced, then installs that copy. A change to TS or TSX reaches the device in about
 ten seconds instead of a native rebuild, and the device stays on a Release build, so timing checks
-still hold (issue 3083).
+still hold (issue 3083). The base is the `art.splotch.app.dev` app: a plain Release build carries
+that ID and installs beside the store copy.
 
 ```sh
-# Android: the base APK from `./gradlew assembleRelease`, signed again with the same keystore so
-# `adb install -r` keeps the app's data
+# Android: the base APK from `npm run native:android:apk`, which signs with the local debug key;
+# signing again with that key lets `adb install -r` keep the app's data
 node tools/device-parity/swap-js-bundle.mjs --platform=android --base=<app-release.apk> \
-  --bundle=<probe id> --keystore=<candidate-release.keystore> --key-alias=<alias> \
-  --ks-pass=env:<VAR> --out=<new dir> --device=<serial>
+  --bundle=art.splotch.app.dev --keystore=$HOME/.android/debug.keystore \
+  --key-alias=androiddebugkey --ks-pass=pass:android --out=<new dir> --device=<serial>
 # iOS: the base .app from `xcodebuild … -configuration Release`, signed again with the identity
 # that signed it
-node tools/device-parity/swap-js-bundle.mjs --platform=ios --base=<HelloWorld.app> \
-  --bundle=<probe id> --identity="Apple Development" --out=<new dir> --device=<udid>
+node tools/device-parity/swap-js-bundle.mjs --platform=ios --base=<Splotch.app> \
+  --bundle=art.splotch.app.dev --identity="Apple Development" --out=<new dir> --device=<udid>
 ```
 
 Relaunch the app afterwards. `--ks-pass` and `--key-pass` take apksigner's forms (`env:NAME`,

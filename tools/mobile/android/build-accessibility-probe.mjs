@@ -39,10 +39,9 @@ function regularFile(path) {
   }
 }
 
-export function prepareAccessibilityProbeProject({ outputDir, nativeDir, signingInit }) {
+export function prepareAccessibilityProbeProject({ outputDir, nativeDir }) {
   const output = resolve(outputDir);
   const native = resolve(nativeDir);
-  const signing = resolve(signingInit);
   if (existsSync(output))
     throw new Error('Output already exists; preserve it and select a fresh directory');
   if (!outsideDirectory(ROOT, output))
@@ -52,7 +51,6 @@ export function prepareAccessibilityProbeProject({ outputDir, nativeDir, signing
   }
   regularFile(join(native, 'settings.gradle'));
   regularFile(join(native, 'app/build.gradle'));
-  regularFile(signing);
   const canonicalOutput = join(realpathSync.native(dirname(output)), basename(output));
   if (!outsideDirectory(realpathSync.native(ROOT), canonicalOutput))
     throw new Error('Output parent resolves inside the checkout');
@@ -74,19 +72,16 @@ export function prepareAccessibilityProbeProject({ outputDir, nativeDir, signing
     bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex'),
   }));
-  return { output, native, project, signing, include, sourceManifest };
+  return { output, native, project, include, sourceManifest };
 }
 
 export function runBuildAccessibilityProbe(argv) {
   const { values } = parseArgs({
     args: argv,
-    options: { output: { type: 'string' }, 'signing-init': { type: 'string' } },
+    options: { output: { type: 'string' } },
     strict: true,
   });
-  if (!values.output || !values['signing-init'])
-    throw new Error(
-      'Required: --output <fresh-private-directory> --signing-init <existing-opaque-Gradle-init>'
-    );
+  if (!values.output) throw new Error('Required: --output <fresh-private-directory>');
   const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
   if (git(['status', '--porcelain']))
     throw new Error('Commit the reviewable source before building its diagnostic APK');
@@ -94,15 +89,12 @@ export function runBuildAccessibilityProbe(argv) {
   const plan = prepareAccessibilityProbeProject({
     outputDir: values.output,
     nativeDir: NATIVE_DIR,
-    signingInit: values['signing-init'],
   });
   const command = [
     `:${PROJECT_NAME}:assembleRelease`,
     '--no-daemon',
     '--max-workers=2',
     '--console=plain',
-    '--init-script',
-    plan.signing,
     '--init-script',
     plan.include,
   ];

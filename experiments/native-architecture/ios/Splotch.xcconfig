@@ -1,0 +1,4 @@
+// The project-level base configuration of Splotch.xcodeproj, for every build.
+// Personal signing (DEVELOPMENT_TEAM) lives in the untracked local.xcconfig; copy
+// local.xcconfig.example to start one.
+#include? "local.xcconfig"

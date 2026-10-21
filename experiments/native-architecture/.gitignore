@@ -3,7 +3,13 @@ dist/
 ios/Pods/
 ios/build/
 ios/.xcode.env.local
-ios/HelloWorld.xcworkspace/xcuserdata/
+ios/Splotch.xcworkspace/xcuserdata/
 android/.gradle/
+android/.kotlin/
 android/app/.cxx/
 android/local.properties
+# Release signing: the upload key and the Apple team stay on the release machine.
+android/keystore.properties
+*.jks
+*.keystore
+ios/local.xcconfig

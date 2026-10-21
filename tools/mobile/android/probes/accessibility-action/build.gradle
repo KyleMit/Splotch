@@ -15,13 +15,8 @@ android {
         manifest.srcFile 'AndroidManifest.xml'
         java.srcDirs = ['src']
     }
-    signingConfigs {
-        candidateRelease {
-            initWith project(':app').android.signingConfigs.candidateRelease
-        }
-    }
     buildTypes.release {
-        signingConfig signingConfigs.candidateRelease
+        signingConfig signingConfigs.debug
         minifyEnabled false
     }
 }

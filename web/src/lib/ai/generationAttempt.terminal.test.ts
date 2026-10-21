@@ -107,14 +107,14 @@ it('negotiates only one exact header value without a capability fallback', () =>
 it('pins both independent native terminal status and JSON cap copies to the shared owner', () => {
   const android = readFileSync(
     new URL(
-      '../../../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
+      '../../../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchAIJournal.kt',
       import.meta.url
     ),
     'utf8'
   );
   const apple = readFileSync(
     new URL(
-      '../../../../experiments/native-architecture/ios/HelloWorld/SplotchAIJournal.swift',
+      '../../../../experiments/native-architecture/ios/Splotch/SplotchAIJournal.swift',
       import.meta.url
     ),
     'utf8'

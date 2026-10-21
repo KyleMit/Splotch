@@ -12,14 +12,14 @@ const { execFileSync } = vi.hoisted(() => ({ execFileSync: vi.fn() }));
 vi.mock('node:child_process', () => ({ execFileSync, spawn: vi.fn() }));
 
 const RESOURCE_REPORTS = [
-  'HelloWorld.cpu_resource-2026-10-19-221530.ips',
-  'HelloWorld.diskwrites_resource-2026-10-19-221531.ips',
-  'HelloWorld.wakeups_resource-2026-10-19-221532.ips',
+  'Splotch.cpu_resource-2026-10-19-221530.ips',
+  'Splotch.diskwrites_resource-2026-10-19-221531.ips',
+  'Splotch.wakeups_resource-2026-10-19-221532.ips',
 ];
 const CRASH_REPORTS = [
-  'HelloWorld-2026-10-19-221533.ips',
+  'Splotch-2026-10-19-221533.ips',
   'JetsamEvent-2026-10-19-221534.ips',
-  'ExcUserFault_HelloWorld-2026-10-19-221535.ips',
+  'ExcUserFault_Splotch-2026-10-19-221535.ips',
 ];
 
 describe('classifyCrashReports', () => {
@@ -35,7 +35,7 @@ describe('ipadVerdict', () => {
   const alive = {
     appState: IOS_APP_RUNNING_FOREGROUND,
     source: '<XCUIElementTypeApplication/>',
-    processName: 'HelloWorld',
+    processName: 'Splotch',
     readReport: () => null,
   };
 
@@ -69,12 +69,12 @@ describe('ipadVerdict on a JetsamEvent', () => {
   const JETSAM = 'JetsamEvent-2026-10-19-221534.ips';
   const header = JSON.stringify({ bug_type: '298', os_version: 'iPhone OS 26.0 (23A000)' });
   const jetsamReport = (processes) =>
-    `${header}\n${JSON.stringify({ largestProcess: 'HelloWorld', processes }, null, 2)}`;
+    `${header}\n${JSON.stringify({ largestProcess: 'Splotch', processes }, null, 2)}`;
   const verdictFor = (text) =>
     ipadVerdict({
       appState: IOS_APP_RUNNING_FOREGROUND,
       source: '<XCUIElementTypeApplication/>',
-      processName: 'HelloWorld',
+      processName: 'Splotch',
       newReports: [JETSAM],
       readReport: (path) => (path === JETSAM ? text : null),
     });
@@ -85,7 +85,7 @@ describe('ipadVerdict on a JetsamEvent', () => {
   ])('calls a report whose target entry carries %s crashed', (_, kill) => {
     const verdict = verdictFor(
       jetsamReport([
-        { name: 'HelloWorld', pid: 4321, states: ['frontmost'], ...kill },
+        { name: 'Splotch', pid: 4321, states: ['frontmost'], ...kill },
         { name: 'mediaserverd', pid: 88, states: ['daemon'] },
       ])
     );
@@ -98,7 +98,7 @@ describe('ipadVerdict on a JetsamEvent', () => {
   it('keeps a report that killed only another process as a diagnostic', () => {
     const verdict = verdictFor(
       jetsamReport([
-        { name: 'HelloWorld', pid: 4321, states: ['frontmost'] },
+        { name: 'Splotch', pid: 4321, states: ['frontmost'] },
         { name: 'MobileSafari', pid: 555, states: ['suspended'], reason: 'per-process-limit' },
       ])
     );

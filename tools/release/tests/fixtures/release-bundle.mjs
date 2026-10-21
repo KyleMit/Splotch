@@ -14,14 +14,16 @@ function manifestAttribute(name, value) {
 }
 
 // An Android release bundle that passes every publish check for 1.6.0 (8).
-// Pass null for `versionCode`, `mapping`, or `signatureBlock` to leave it out.
+// Pass null for `appId`, `versionCode`, `mapping`, or `signatureBlock` to leave it out.
 export function releaseBundle({
+  appId = 'art.splotch.app',
   versionName = '1.6.0',
   versionCode = '8',
   mapping = R8_MAPPING,
   signatureBlock = 'META-INF/UPLOAD.RSA',
 } = {}) {
   const attributes = [manifestAttribute('versionName', versionName)];
+  if (appId !== null) attributes.unshift(manifestAttribute('package', appId));
   if (versionCode !== null) attributes.push(manifestAttribute('versionCode', versionCode));
   const entries = [{ name: 'base/manifest/AndroidManifest.xml', data: Buffer.concat(attributes) }];
   if (mapping !== null) {

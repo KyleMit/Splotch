@@ -23,9 +23,7 @@ function fixture() {
   mkdirSync(join(nativeDir, 'app'), { recursive: true });
   writeFileSync(join(nativeDir, 'settings.gradle'), 'rootProject.name = "fixture"');
   writeFileSync(join(nativeDir, 'app/build.gradle'), '');
-  const signingInit = join(root, 'existing-signing.gradle');
-  writeFileSync(signingInit, 'opaque-signing-init-fixture');
-  return { root, nativeDir, signingInit, outputDir: join(root, 'private-output') };
+  return { root, nativeDir, outputDir: join(root, 'private-output') };
 }
 
 afterEach(() => {
@@ -65,15 +63,14 @@ describe('private accessibility probe preparation', () => {
     expect(readFileSync(canary, 'utf8')).toBe('retain this evidence');
   });
 
-  it('rejects a signing-init symlink before creating output', () => {
+  it('rejects a symlinked app build file before creating output', () => {
     const f = fixture();
-    const alias = join(f.root, 'signing-link.gradle');
-    symlinkSync(f.signingInit, alias);
-    expect(() => prepareAccessibilityProbeProject({ ...f, signingInit: alias })).toThrow(
-      /regular file/
-    );
+    const target = join(f.root, 'elsewhere.gradle');
+    writeFileSync(target, '');
+    rmSync(join(f.nativeDir, 'app/build.gradle'));
+    symlinkSync(target, join(f.nativeDir, 'app/build.gradle'));
+    expect(() => prepareAccessibilityProbeProject(f)).toThrow(/regular file/);
     expect(existsSync(f.outputDir)).toBe(false);
-    expect(readFileSync(f.signingInit, 'utf8')).toBe('opaque-signing-init-fixture');
   });
 
   it('escapes Gradle paths and restricts injection to the canonical main project', () => {
@@ -98,12 +95,9 @@ describe('private accessibility probe preparation', () => {
     expect(statSync(plan.output).mode & 0o777).toBe(0o700);
   });
 
-  it('prepares a private build without copying or evaluating the signing init', () => {
+  it('prepares a private copy of the probe sources', () => {
     const f = fixture();
     const plan = prepareAccessibilityProbeProject(f);
-    expect(readFileSync(f.signingInit, 'utf8')).toBe('opaque-signing-init-fixture');
-    expect(plan.signing).toBe(f.signingInit);
-    expect(existsSync(join(plan.output, 'existing-signing.gradle'))).toBe(false);
     expect(plan.sourceManifest.map((row) => row.path)).toContain('AndroidManifest.xml');
     expect(readFileSync(join(plan.project, 'AndroidManifest.xml'), 'utf8')).toContain(
       'android:targetPackage="art.splotch.parity.driver"'

@@ -129,6 +129,30 @@ effective configuration and mapping, and install/smoke the optimized Release APK
 or keep rules. Google Play recommendation clearance can only be checked after Play analyzes the next
 uploaded bundle.
 
+### React Native store build
+
+The store release builds the React Native app in `experiments/native-architecture`, with no
+`cap:sync`:
+
+```bash
+npm run native:android:bundle # store AAB -> experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab
+npm run native:android:apk    # art.splotch.app.dev Release APK -> experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+```
+
+Store identity is opt-in (ADR-0182). A Gradle build of that project is `art.splotch.app.dev`, signed
+with the local debug key, unless its command line carries `-Psplotch.store=true`, and only
+`native:android:bundle` passes it; a `splotch.store` in `gradle.properties` or the environment fails
+the build instead. So a Debug build, `native:android:apk`, and any Release build installed for
+testing or device performance install beside the store copy, never over it. The store build signs
+with the upload key named in `experiments/native-architecture/android/keystore.properties`
+(git-ignored; template `keystore.properties.example` beside it), whose `storeFile` points at the
+shipping `android/upload-keystore.jks`: Play accepts the update only under that key. Without the
+file the build fails at configuration rather than writing an unsigned bundle. The script then runs
+the `jarsigner` check `android:verify` runs, and
+`npm run release:publish -- --only=android --dry-run` checks the bundle's embedded app ID, version,
+signature block and R8 mapping. The Capacitor `android:*` scripts above still build the WebView app;
+the release tooling neither versions nor publishes it.
+
 ### Running the web app on a real device
 
 Two options depending on what you want to test:
@@ -273,9 +297,9 @@ Three things that will waste your time here:
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then rerun `npm run gen:android:assets`.
 * [ ] Confirm `npm run release` bumped `versionCode` / `versionName` —
-      `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into
-      `android/app/build.gradle`, which is the source of truth. Only a hand-built release needs them
-      set manually.
+      `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into the
+      React Native `experiments/native-architecture/android/app/build.gradle`, which is the source
+      of truth. Only a hand-built release needs them set manually.
 * [ ] Confirm both Android rows in the shared
       [native support matrix](native.md#6-native-support-matrix) passed for this tag before
       publishing signed artifacts.
@@ -309,10 +333,14 @@ Three things that will waste your time here:
 
 ### Signing & bundling
 
-* [x] **Signing is wired up:** `android/app/build.gradle` reads creds from
-      `android/keystore.properties` (git-ignored; `.gitignore` updated, template at
-      `android/keystore.properties.example`). Without that file, release builds are unsigned; with
-      it, `bundleRelease` is signed automatically.
+* [x] **Signing is wired up:** the React Native
+      `experiments/native-architecture/android/app/build.gradle` signs a store build
+      (`-Psplotch.store=true`) with the upload key named in
+      `experiments/native-architecture/android/keystore.properties` (git-ignored; template beside
+      it), and refuses to configure one without that file. Every other build is
+      `art.splotch.app.dev`, signed with the local debug key. The Capacitor
+      `android/app/build.gradle` reads `android/keystore.properties` and leaves its release unsigned
+      without it.
 * [x] **Upload keystore created** at `android/upload-keystore.jks` (alias `upload`, RSA 2048, ~valid
       to 2053), and `android/keystore.properties` is filled in. Both are git-ignored. **Store the
       `.jks` + passwords in a password manager — losing them means you can't update the app.**
@@ -321,16 +349,18 @@ Three things that will waste your time here:
     keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
       -keyalg RSA -keysize 2048 -validity 10000
     ```
-    then `cp keystore.properties.example keystore.properties` and fill it in.
+    then `cp keystore.properties.example keystore.properties` and fill it in, in `android/` and in
+    `experiments/native-architecture/android/`, whose `storeFile` names this same keystore by its
+    path relative to that folder.
   * ⚠️ In `keystore.properties`, do **not** wrap values in quotes — Java `.properties` treats quotes
     as literal characters, so a quoted password fails with *"keystore password was incorrect"*.
 * [x] Enroll in **Play App Signing** (recommended) when creating the app. Done: Play makes it
       mandatory for apps created after August 2021 that upload an AAB, so the key Play registered
       for developer verification is the Play-held app signing key, not the upload key.
-* [x] **Produce a signed release `.aab`:** `npm run android:bundle` →
-      `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB). Verify it's
-      signed with `npm run android:verify` (expect `jar verified`; the self-signed / no-timestamp
-      warnings are normal for an upload key).
+* [ ] **Produce the signed release `.aab`:** `npm run native:android:bundle` →
+      `experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`
+      (Play requires AAB). The script ends with the `jarsigner` check (expect `jar verified`; the
+      self-signed / no-timestamp warnings are normal for an upload key).
 
 ### Google Play Console setup
 

@@ -16,8 +16,8 @@ import { traceFile } from '../migration/gen-replay-traces.mjs';
 
 const ROOT = join(import.meta.dirname, '../..');
 const APP = 'experiments/native-architecture/';
-const ANDROID = `${APP}android/app/src/main/java/art/splotch/migration/probe/`;
-const IOS = `${APP}ios/HelloWorld/`;
+const ANDROID = `${APP}android/app/src/main/java/art/splotch/app/`;
+const IOS = `${APP}ios/Splotch/`;
 const CONTEXT = {
   platform: 'ios',
   build: 'abc1234',
@@ -222,7 +222,7 @@ describe('the native replay drivers', () => {
 
   it('register the module JavaScript calls on both platforms', () => {
     const bridge = read(`${IOS}SplotchPaperReplay.m`);
-    const project = read(`${APP}ios/HelloWorld.xcodeproj/project.pbxproj`);
+    const project = read(`${APP}ios/Splotch.xcodeproj/project.pbxproj`);
     expect(swift).toContain(`@objc(${REPLAY_MODULE})`);
     expect(bridge).toContain(`RCT_EXTERN_MODULE(${REPLAY_MODULE}, NSObject)`);
     expect(bridge).toContain('RCT_EXTERN_METHOD(requestedTrace:(NSString *)launchKey');

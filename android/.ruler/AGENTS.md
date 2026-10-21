@@ -14,6 +14,7 @@
 * Release signing reads `android/keystore.properties` (git-ignored; template at
   `keystore.properties.example`). Values must not be quoted. Without the file, `bundleRelease`
   produces an unsigned AAB.
-* Don't hand-edit `versionCode`/`versionName` in `app/build.gradle` — `npm run release` sets them
-  via `tools/release/lib/native-version.mjs`.
+* The stores ship the React Native app in `experiments/native-architecture`, so `npm run release`
+  versions that project's `android/app/build.gradle` (`tools/release/lib/native-version.mjs`), not
+  this one.
 * Full toolchain setup, device workflows, and the store release checklist: `mobile` skill.

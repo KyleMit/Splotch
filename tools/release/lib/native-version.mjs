@@ -1,10 +1,9 @@
-// Reads and bumps the native app version numbers directly in the Android and iOS
-// project files — the two edits the release script used to shell out to the
-// archived `capacitor-set-version` package for (issue #332):
+// Reads and bumps the native app version numbers directly in the React Native app's
+// Android and iOS project files (tools/release/lib/native-app.mjs names them):
 //
-//   Android (android/app/build.gradle, Groovy):
+//   Android (app/build.gradle, Groovy):
 //     versionName "<x.y.z>"   and   versionCode <n>
-//   iOS (ios/App/App.xcodeproj/project.pbxproj, modern managed versions):
+//   iOS (Splotch.xcodeproj/project.pbxproj, modern managed versions):
 //     MARKETING_VERSION = <x.y.z>;   and   CURRENT_PROJECT_VERSION = <n>;
 //
 // The transforms are line-based and fail closed: only whole lines matching the
@@ -16,7 +15,7 @@
 // readAndroidVersion() reads through the same rules, so it accepts exactly the
 // Gradle files bumpAndroidGradle() can rewrite.
 //
-// Only the modern (non-legacy) iOS layout is handled: this project's Info.plist
+// Only the modern (non-legacy) iOS layout is handled: the app's Info.plist
 // resolves CFBundleShortVersionString from $(MARKETING_VERSION), so the values
 // live in project.pbxproj — no plist rewrite (and no `plist` dependency) needed.
 //
@@ -25,9 +24,14 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ANDROID_PROJECT_DIR, IOS_PROJECT_DIR, IOS_PROJECT_NAME } from './native-app.mjs';
 
-export const ANDROID_GRADLE_PATH = join('android', 'app', 'build.gradle');
-export const IOS_PBXPROJ_PATH = join('ios', 'App', 'App.xcodeproj', 'project.pbxproj');
+export const ANDROID_GRADLE_PATH = join(ANDROID_PROJECT_DIR, 'app', 'build.gradle');
+export const IOS_PBXPROJ_PATH = join(
+  IOS_PROJECT_DIR,
+  `${IOS_PROJECT_NAME}.xcodeproj`,
+  'project.pbxproj'
+);
 
 // Each pattern captures the indentation, then the value.
 const ANDROID_VERSION_NAME = {

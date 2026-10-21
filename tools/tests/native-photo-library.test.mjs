@@ -146,7 +146,7 @@ describe('shipping parity', () => {
     expect(plugin).toContain('Environment.DIRECTORY_PICTURES + File.separator + ALBUM_NAME');
     expect(plugin.match(/String ALBUM_NAME = "([^"]+)";/)?.[1]).toBe(ANDROID_ALBUM_NAME);
     const native = read(
-      'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchPhotoLibrary.kt'
+      'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchPhotoLibrary.kt'
     );
     expect(native.match(/const val ALBUM_NAME = "([^"]+)"/)?.[1]).toBe(ANDROID_ALBUM_NAME);
     const stagedDirectory = read(
@@ -189,7 +189,7 @@ describe('shipping parity', () => {
   it('asks iOS for add-only access with the shipping purpose string and never for read access', () => {
     const usage = (plist) =>
       plist.match(/<key>NSPhotoLibraryAddUsageDescription<\/key>\s*<string>([^<]*)<\/string>/)?.[1];
-    const candidate = read('experiments/native-architecture/ios/HelloWorld/Info.plist');
+    const candidate = read('experiments/native-architecture/ios/Splotch/Info.plist');
     expect(usage(candidate)).toBeDefined();
     expect(usage(candidate)).toBe(usage(read('ios/App/App/Info.plist')));
     expect(candidate).not.toContain('NSPhotoLibraryUsageDescription');

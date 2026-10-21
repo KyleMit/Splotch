@@ -174,13 +174,13 @@ it('admits one C2PA caBX chunk, as provider pictures carry', async () => {
   const admitted = ['cHRM', 'gAMA', 'sRGB', 'sBIT', 'pHYs', 'PLTE', 'caBX'];
   expect(
     nativeChunks(
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      'android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt',
       /!dataSeen && type in setOf\(([^)]*)\)/
     )
   ).toEqual(admitted);
   expect(
     nativeChunks(
-      'ios/HelloWorld/SplotchAIEnvironment.swift',
+      'ios/Splotch/SplotchAIEnvironment.swift',
       /!dataSeen && \[([^\]]*)\]\.contains\(type\)/
     )
   ).toEqual(admitted);
@@ -385,12 +385,12 @@ it('admits exactly the JPEG frame types both native decoders admit', async () =>
   expect(admitted).toEqual([0xc0, 0xc1, 0xc2]);
   expect(
     native(
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      'android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt',
       /check\(marker in setOf\(([^)]*)\)/
     )
   ).toEqual(admitted);
   expect(
-    native('ios/HelloWorld/SplotchAIEnvironment.swift', /require\(\[([^\]]*)\]\.contains\(marker\)/)
+    native('ios/Splotch/SplotchAIEnvironment.swift', /require\(\[([^\]]*)\]\.contains\(marker\)/)
   ).toEqual(admitted);
 });
 it('rejects WebP inconsistent RIFF lengths, animation and oversized frame dimensions', async () => {
@@ -411,10 +411,10 @@ it('honors cancellation before image work and pins actual bounded native decodin
   ).rejects.toThrow('cancelled');
   const root = new URL('../../experiments/native-architecture/', import.meta.url);
   const kotlin = readFileSync(
-    new URL('android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt', root),
+    new URL('android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt', root),
     'utf8'
   );
-  const swift = readFileSync(new URL('ios/HelloWorld/SplotchAIEnvironment.swift', root), 'utf8');
+  const swift = readFileSync(new URL('ios/Splotch/SplotchAIEnvironment.swift', root), 'utf8');
   for (const text of [kotlin, swift]) {
     expect(text).toContain('maxImageDimension = 4096');
     expect(text).toContain('maxImagePixels = 4 * 1024 * 1024');
@@ -424,7 +424,7 @@ it('honors cancellation before image work and pins actual bounded native decodin
     expect(text).toContain('purpose == "original"');
     expect(text).toContain('decodeOriginal');
   }
-  const bridge = readFileSync(new URL('ios/HelloWorld/SplotchAIEnvironment.m', root), 'utf8');
+  const bridge = readFileSync(new URL('ios/Splotch/SplotchAIEnvironment.m', root), 'utf8');
   expect(bridge).toContain('purpose:(NSString *)purpose');
   expect(kotlin).toContain('bitmap.recycle()');
   expect(kotlin).toContain('decoder.setOnPartialImageListener { false }');

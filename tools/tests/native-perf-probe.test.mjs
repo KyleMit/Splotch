@@ -72,7 +72,7 @@ vi.mock('react-native-svg', async () => {
 });
 
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
-const ANDROID = `${APP}android/app/src/main/java/art/splotch/migration/probe/`;
+const ANDROID = `${APP}android/app/src/main/java/art/splotch/app/`;
 
 // The input path and the ink import ./perfProbe, which resolves to the no-op contract outside
 // Metro's native bundles; each test hands them a freshly evaluated native probe instead.
@@ -278,9 +278,9 @@ afterEach(() => {
 
 describe('the SplotchPerfLog native module', () => {
   it('registers the name JavaScript writes to and logs under the probe tag on both platforms', () => {
-    const swift = read(`${APP}ios/HelloWorld/SplotchPerfLog.swift`);
-    const bridge = read(`${APP}ios/HelloWorld/SplotchPerfLog.m`);
-    const project = read(`${APP}ios/HelloWorld.xcodeproj/project.pbxproj`);
+    const swift = read(`${APP}ios/Splotch/SplotchPerfLog.swift`);
+    const bridge = read(`${APP}ios/Splotch/SplotchPerfLog.m`);
+    const project = read(`${APP}ios/Splotch.xcodeproj/project.pbxproj`);
     const kotlin = read(`${ANDROID}SplotchPerfLog.kt`);
     expect(swift).toContain(`@objc(${PERF_LOG_MODULE})`);
     expect(swift).toContain(`category: "${PERF_LOG_TAG}"`);

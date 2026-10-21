@@ -11,7 +11,7 @@ const fixture = await vi.hoisted(async () => {
   const dir = mkdtempSync(join(tmpdir(), 'splotch-r8-'));
   return { dir, aabPath: join(dir, 'app-release.aab') };
 });
-vi.mock('../../mobile/android/lib/android-toolchain.mjs', async (importOriginal) => ({
+vi.mock('../lib/native-app.mjs', async (importOriginal) => ({
   ...(await importOriginal()),
   get RELEASE_AAB() {
     return fixture.aabPath;

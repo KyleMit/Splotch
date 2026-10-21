@@ -8,7 +8,8 @@
 //
 // This wrapper runs jarsigner, treats the literal `jar verified.` line as the
 // only success signal, and stays quiet on success. On failure it dumps the full
-// jarsigner output so the real problem is visible. Used by `npm run android:verify`.
+// jarsigner output so the real problem is visible. Used by `npm run android:verify`
+// for the Capacitor bundle, and with a bundle path by tools/release/build-native-release.mjs.
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -24,7 +25,7 @@ const {
   stderr = '',
   status,
   error,
-} = spawnSync(jarsigner, ['-verify', RELEASE_AAB], { encoding: 'utf8' });
+} = spawnSync(jarsigner, ['-verify', process.argv[2] ?? RELEASE_AAB], { encoding: 'utf8' });
 if (error) fail(`[verify-release-bundle] failed to run jarsigner: ${error.message}`);
 
 const output = stdout + stderr;

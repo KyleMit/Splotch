@@ -62,17 +62,17 @@ beforeEach(() => {
 
 describe('Apple Pencil double-tap', () => {
   it('declares the iOS emitter the JavaScript adapter listens to', () => {
-    const swift = read('ios/HelloWorld/SplotchPencil.swift');
+    const swift = read('ios/Splotch/SplotchPencil.swift');
     expect(swift).toContain('@objc(SplotchPencil)');
     expect(swift).toContain(`private let doubleTapEvent = "${PENCIL_DOUBLE_TAP_EVENT}"`);
     expect(swift).toMatch(/window\.addInteraction\(pencil\)/);
     expect(swift).toMatch(
       /func pencilInteractionDidTap\(_ interaction: UIPencilInteraction\) \{\s*sendEvent\(withName: doubleTapEvent/
     );
-    expect(read('ios/HelloWorld/SplotchPencil.m')).toContain(
+    expect(read('ios/Splotch/SplotchPencil.m')).toContain(
       'RCT_EXTERN_MODULE(SplotchPencil, RCTEventEmitter)'
     );
-    const xcode = read('ios/HelloWorld.xcodeproj/project.pbxproj');
+    const xcode = read('ios/Splotch.xcodeproj/project.pbxproj');
     expect(xcode.match(/SplotchPencil\.swift in Sources/g)).toHaveLength(2);
     expect(xcode.match(/SplotchPencil\.m in Sources/g)).toHaveLength(2);
   });

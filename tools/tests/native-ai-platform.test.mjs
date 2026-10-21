@@ -146,15 +146,9 @@ it.each([
 });
 it('resolves an absent iOS secure value as null, as Android does', async () => {
   const native = new URL('../../experiments/native-architecture/', import.meta.url);
-  const swift = await readFile(
-    new URL('ios/HelloWorld/SplotchAIEnvironment.swift', native),
-    'utf8'
-  );
+  const swift = await readFile(new URL('ios/Splotch/SplotchAIEnvironment.swift', native), 'utf8');
   const kotlin = await readFile(
-    new URL(
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
-      native
-    ),
+    new URL('android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt', native),
     'utf8'
   );
   expect(swift).toContain('do { resolve(try operation() ?? NSNull()) }');

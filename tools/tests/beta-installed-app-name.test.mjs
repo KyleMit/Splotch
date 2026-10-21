@@ -17,7 +17,7 @@ describe('beta installed app identity', () => {
       new URL('android/app/src/main/res/values/strings.xml', candidate),
       'utf8'
     );
-    const ios = readFileSync(new URL('ios/HelloWorld/Info.plist', candidate), 'utf8');
+    const ios = readFileSync(new URL('ios/Splotch/Info.plist', candidate), 'utf8');
     expect(config.expo.name).toBe('Splotch');
     expect(installedNames(android, ios)).toEqual([config.expo.name, config.expo.name]);
   });

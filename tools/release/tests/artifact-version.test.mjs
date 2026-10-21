@@ -41,9 +41,10 @@ beforeAll(() => {
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('readAabVersion', () => {
-  it('reads versionName and versionCode out of the protobuf manifest', () => {
+  it('reads the app ID, versionName and versionCode out of the protobuf manifest', () => {
     const manifest = Buffer.concat([
       Buffer.from('android'),
+      attribute('package', 'art.splotch.app'),
       attribute('compileSdkVersion', '34'),
       attribute('versionCode', '6'),
       attribute('versionName', '1.4.0'),
@@ -56,7 +57,11 @@ describe('readAabVersion', () => {
       ])
     );
 
-    expect(readAabVersion(aabPath())).toEqual({ versionName: '1.4.0', versionCode: '6' });
+    expect(readAabVersion(aabPath())).toEqual({
+      appId: 'art.splotch.app',
+      versionName: '1.4.0',
+      versionCode: '6',
+    });
   });
 
   it('throws rather than guessing when the manifest carries no versionName', () => {

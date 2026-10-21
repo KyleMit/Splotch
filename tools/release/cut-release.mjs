@@ -93,7 +93,8 @@ export function findStrayReleasePaths(status, releasePaths) {
 
 // A hand edit inside an allowed path passes the path check: Xcode stores a signing
 // Team as DEVELOPMENT_TEAM in project.pbxproj (docs/MOBILE/ios.md keeps it in the
-// untracked ios/local.xcconfig), and a debugging line can sit in build.gradle. So
+// untracked local.xcconfig beside the project), and a debugging line can sit in
+// build.gradle. So
 // each version file must also equal its HEAD content through the owned bump.
 // package.json is compared as data because pnpm owns its formatting.
 export function findHandEditedVersionFiles({ version, versionCode, head, working }) {
@@ -190,7 +191,7 @@ const PLAY_MAX_VERSION_CODE = 2_100_000_000;
 // dry run already bumped Gradle to it.
 export function chooseVersionCode({ pin, version, gradleCode, gradleVersionName }) {
   if (!Number.isInteger(gradleCode)) {
-    throw new Error('android/app/build.gradle has no versionCode line');
+    throw new Error(`${ANDROID_GRADLE_PATH} has no versionCode line`);
   }
   if (!pin) return { versionCode: gradleCode + 1, pinned: false };
   const versionCode = Number(pin);
@@ -204,7 +205,7 @@ export function chooseVersionCode({ pin, version, gradleCode, gradleVersionName 
   if (versionCode <= gradleCode && !rerun) {
     throw new Error(
       `${version}.md pins androidVersionCode ${versionCode}, which does not move past ` +
-        `versionCode ${gradleCode} (versionName ${gradleVersionName}) in android/app/build.gradle`
+        `versionCode ${gradleCode} (versionName ${gradleVersionName}) in ${ANDROID_GRADLE_PATH}`
     );
   }
   return { versionCode, pinned: true };
@@ -319,7 +320,9 @@ function publish(version, body) {
     `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
   );
   console.log('\nNext: build the store artifacts for this version, then attach them:');
-  console.log('  the build skill           (or npm run android:bundle / npm run ios:ipa)');
+  console.log(
+    '  the build skill           (or npm run native:android:bundle / npm run native:ios:ipa)'
+  );
   console.log(`  npm run release:publish   attaches them to v${version}`);
 }
 

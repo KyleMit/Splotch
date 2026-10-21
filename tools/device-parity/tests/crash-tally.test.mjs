@@ -37,8 +37,8 @@ describe('tallyCrashRuns', () => {
 
   it('counts diagnostics on valid runs only', () => {
     const [row] = tallyCrashRuns([
-      run({ diagnostics: ['HelloWorld.cpu_resource-1.ips'] }),
-      run({ diagnostics: ['HelloWorld.cpu_resource-2.ips'], scenarioError: 'no Clear drawing' }),
+      run({ diagnostics: ['Splotch.cpu_resource-1.ips'] }),
+      run({ diagnostics: ['Splotch.cpu_resource-2.ips'], scenarioError: 'no Clear drawing' }),
     ]);
 
     expect(row).toMatchObject({ valid: 1, invalid: 1, diagnostics: 1 });

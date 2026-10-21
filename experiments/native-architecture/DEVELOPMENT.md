@@ -28,42 +28,35 @@ cd experiments/native-architecture/ios
 pod install
 ```
 
-Open `HelloWorld.xcworkspace` in Xcode (or use `xcodebuild -workspace HelloWorld.xcworkspace`) and
-build the `HelloWorld` scheme for a simulator or device.
+Open `Splotch.xcworkspace` in Xcode (or use `xcodebuild -workspace Splotch.xcworkspace`) and build
+the `Splotch` scheme for a simulator or device.
 
 * **Release** embeds the JavaScript bundle and runs without Metro.
 * **Debug** loads JavaScript from Metro. Start it from `experiments/native-architecture` with
   `npx expo start`, choosing a free port (`npm --silent run show:free-port`) and passing it with
   `--port`.
 
+Both install as `art.splotch.app.dev`, beside the store app. Only the store archive
+(`npm run native:ios:archive`, `docs/MOBILE/ios.md`) is `art.splotch.app`. A device build signs with
+the team in the untracked `ios/local.xcconfig`; copy `ios/local.xcconfig.example` to start one.
+
 `Pods/` and `build/` are ignored; `Podfile.lock` and the workspace are committed.
 
 ## Android
 
-Every Gradle invocation requires the four Release signing properties declared in
-`android/app/build.gradle`. The keystore must be named `candidate-release.keystore` and live outside
-the repository:
+Every build is `art.splotch.app.dev`, signed with Android's local debug key, so it installs beside
+the store-installed `art.splotch.app` and never over it. `npm run native:android:apk` builds the
+Release APK, as does `./gradlew :app:assembleRelease` from
+`experiments/native-architecture/android`:
 
 ```sh
-cd experiments/native-architecture/android
-./gradlew assembleRelease \
-  -Psplotch.probe.release.storeFile=/absolute/path/outside/repo/candidate-release.keystore \
-  -Psplotch.probe.release.storePassword=... \
-  -Psplotch.probe.release.keyAlias=... \
-  -Psplotch.probe.release.keyPassword=...
+npm run native:android:apk
+adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; install it with
-`adb install -r`. A local keystore supports development only and is not store signing.
-
-A keystore kept under `/private/tmp` can be cleared between sessions; the 2026-10-20 crash hunt
-found its campaign keystore gone. For a local probe install, sign with Android's debug key instead:
-copy `~/.android/debug.keystore` to an absolute path outside the repository under the name
-`candidate-release.keystore`, pass that path as `storeFile`, and pass `storePassword=android`,
-`keyAlias=androiddebugkey` and `keyPassword=android`. Those are Android's published debug-key
-defaults, not secrets. An APK signed with a different key cannot replace the installed probe
-(`adb install -r` refuses the update), so uninstall the probe first, which deletes its data. Never
-touch the store-installed `art.splotch.app`.
+Only the store bundle (`npm run native:android:bundle`, `docs/MOBILE/android.md`) is
+`art.splotch.app`; it signs with the upload key and is never installed on a device. Never touch the
+store-installed `art.splotch.app`.
 
 ### Configuration changes
 
@@ -77,13 +70,13 @@ keeps its old position until it reopens.
 
 ## Checking a JS-only change on a device
 
-A change to TS or TSX alone needs no native rebuild. Build the Release probe once per device as
-above, then put each change's JavaScript into it with `tools/device-parity/swap-js-bundle.mjs`:
+A change to TS or TSX alone needs no native rebuild. Build the Release app once per device as above,
+then put each change's JavaScript into it with `tools/device-parity/swap-js-bundle.mjs`:
 
 ```sh
 node tools/device-parity/swap-js-bundle.mjs --platform=android --base=<app-release.apk> \
-  --bundle=<probe id> --keystore=<candidate-release.keystore> --key-alias=<alias> \
-  --ks-pass=env:<VAR> --out=<new dir> --device=<serial>
+  --bundle=art.splotch.app.dev --keystore=$HOME/.android/debug.keystore \
+  --key-alias=androiddebugkey --ks-pass=pass:android --out=<new dir> --device=<serial>
 ```
 
 It bundles and compiles the JavaScript exactly as the Release build does, in about ten seconds, and
@@ -135,10 +128,10 @@ up to date, so an Android build that turns the probe on or back off reruns that 
 ```sh
 export EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1 EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD="$(git rev-parse --short HEAD)"
 # iOS, from ios/ (after pod install)
-xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration Release \
+xcodebuild -workspace Splotch.xcworkspace -scheme Splotch -configuration Release \
   -destination generic/platform=iOS build
-# Android, from android/, with the signing properties from the Android section; unset the two
-# variables and run the same command again to return to a build without the probe
+# Android, from android/; unset the two variables and run the same command again to return to a
+# build without the probe
 ./gradlew :app:createBundleReleaseJsAndAssets --rerun :app:assembleRelease
 ```
 
@@ -147,7 +140,7 @@ Read the lines from the host:
 * **Android:** `adb logcat -s SplotchPerf:I -v raw`.
 * **iOS device:** collect the log after the run rather than streaming it whenever the line's timing
   matters (`emissionLateness`, input-to-submission). A live stream
-  (`pymobiledevice3 syslog live --udid <udid> -pn HelloWorld -m '"probe":"SplotchPerf"'`) keeps
+  (`pymobiledevice3 syslog live --udid <udid> -pn Splotch -m '"probe":"SplotchPerf"'`) keeps
   `diagnosticd` and the USB link busy about once a second. On the iPad that held the main thread 25
   to 50 ms in Skia's `CAMetalLayer` drawable wait and put every replay past a frame (issue 3003).
   The same replays measured with a collected archive stayed under 26 ms with the drawing sound off:
@@ -157,13 +150,13 @@ Read the lines from the host:
   pymobiledevice3 syslog collect --udid <udid> --start-time $((T0 - 2)) run.logarchive
   # The full path: zsh, the macOS default shell, has its own `log` builtin.
   /usr/bin/log show --archive run.logarchive --style compact \
-    --predicate 'process == "HelloWorld" AND eventMessage CONTAINS "SplotchPerf"'
+    --predicate 'process == "Splotch" AND eventMessage CONTAINS "SplotchPerf"'
   ```
 
-  On iPadOS 26.5, `idevicesyslog -p HelloWorld` printed nothing for the whole 2026-10-19 campaign.
-  The unified log caps a message near 1 KB, live or archived, so a long cohort line arrives cut off
-  and fails to parse as JSON. Fields past the cut are missing from the device log, though the
-  earlier ones survive.
+  On iPadOS 26.5, `idevicesyslog -p` with the app's process name printed nothing for the whole
+  2026-10-19 campaign. The unified log caps a message near 1 KB, live or archived, so a long cohort
+  line arrives cut off and fails to parse as JSON. Fields past the cut are missing from the device
+  log, though the earlier ones survive.
 * **iOS simulator:**
   `xcrun simctl spawn <udid> log stream --style compact --predicate 'category == "SplotchPerf"'`.
 
@@ -194,12 +187,12 @@ passes or the next contact begins; the line is written then, never while a later
 A probe build can also draw without a finger. Launched with a trace name, it waits for the paper
 input view's first layout and `REPLAY_SETTLE_MS` more, then sends every packet of that trace on the
 main thread at its scheduled time, open loop, through the same payload builder and `onPaperInput`
-dispatch real touches use (`ios/HelloWorld/SplotchPaperReplay.swift`,
-`android/app/src/main/java/art/splotch/migration/probe/SplotchPaperReplay.kt`). A sample carries the
-time it was due at on the touch clock, so emission that runs late shows up in `inputToSubmission` as
-late touch delivery would. Android delivers a real finger's moves batched once per frame, while the
-replay emits each packet at its own time, so there it drives the packet path at the trace's rate
-rather than the frame-aligned one. Only the probe's JavaScript asks the native driver for a trace
+dispatch real touches use (`ios/Splotch/SplotchPaperReplay.swift`,
+`android/app/src/main/java/art/splotch/app/SplotchPaperReplay.kt`). A sample carries the time it was
+due at on the touch clock, so emission that runs late shows up in `inputToSubmission` as late touch
+delivery would. Android delivers a real finger's moves batched once per frame, while the replay
+emits each packet at its own time, so there it drives the packet path at the trace's rate rather
+than the frame-aligned one. Only the probe's JavaScript asks the native driver for a trace
 (`src/drawing/perfReplay.ts`); a build without the probe ignores the launch argument, and its bundle
 holds neither the driver's caller nor the traces.
 
@@ -219,18 +212,19 @@ fractions of the paper input view, so one trace covers any device and orientatio
 stays out of the repository.
 
 Build and install a probe Release as above, then launch it with a trace name. Leave the screen
-untouched until the replay's line appears:
+untouched until the replay's line appears. The `.dev` suffix renames the app, not its classes, so
+Android names the activity in full:
 
 ```sh
 # iOS device (devicectl hands the app DEVICECTL_CHILD_* variables, not dash arguments)
-xcrun devicectl device install app --device <device> <derived data>/Build/Products/Release-iphoneos/HelloWorld.app
+xcrun devicectl device install app --device <device> <derived data>/Build/Products/Release-iphoneos/Splotch.app
 DEVICECTL_CHILD_SplotchReplay=long-no-lift xcrun devicectl device process launch \
-  --device <device> --terminate-existing art.splotch.migration.probe
+  --device <device> --terminate-existing art.splotch.app.dev
 # iOS simulator
-xcrun simctl launch --terminate-running-process <udid> art.splotch.migration.probe -SplotchReplay long-no-lift
+xcrun simctl launch --terminate-running-process <udid> art.splotch.app.dev -SplotchReplay long-no-lift
 # Android (-S stops the running app first, so the extra reaches a fresh launch)
 adb -s <serial> install -r android/app/build/outputs/apk/release/app-release.apk
-adb -s <serial> shell am start -S -n art.splotch.migration.probe/.MainActivity -e SplotchReplay long-no-lift
+adb -s <serial> shell am start -S -n art.splotch.app.dev/art.splotch.app.MainActivity -e SplotchReplay long-no-lift
 ```
 
 The replay writes one line to the same log as the cohort lines, with the trace in its `replay`
@@ -340,10 +334,10 @@ storage and sharing uses a cache PNG. iOS asks only for add-only Photos access
 deliberately not registered in `app.json`: it would add the read permissions and
 `requestLegacyExternalStorage`. `tools/migration/tests/native-permissions.test.mjs` guards the
 manifest, including every permission expo-media-library declares. Check a built APK's merged
-permissions when a dependency changes; without a keystore, `:app:processReleaseMainManifest` writes
-the merged manifest under `android/app/build/intermediates/merged_manifest/release/`. `expo-haptics`
-merges the normal-level `VIBRATE` permission for the drag-to-clear threshold haptic, as the shipping
-app's `@capacitor/haptics` does.
+permissions when a dependency changes; `:app:processReleaseMainManifest` writes the merged manifest
+under `android/app/build/intermediates/merged_manifest/release/`. `expo-haptics` merges the
+normal-level `VIBRATE` permission for the drag-to-clear threshold haptic, as the shipping app's
+`@capacitor/haptics` does.
 
 ## AI invite links
 

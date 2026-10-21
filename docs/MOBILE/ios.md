@@ -95,6 +95,38 @@ npm run ios:clean     # xcodebuild clean
 provisioning profile. The `.ipa` export settings live in `ios/App/ExportOptions.plist` (App Store
 Connect method, automatic signing).
 
+### React Native store build
+
+The store release builds the React Native app in `experiments/native-architecture/ios`
+(`Splotch.xcworkspace`, scheme `Splotch`). Each script runs `pod install` first; `Pods/` is ignored
+and `Podfile.lock` pins it.
+
+```bash
+npm run native:ios:archive # store archive -> experiments/native-architecture/ios/build/Splotch.xcarchive
+npm run native:ios:ipa     # native:ios:archive + export -> experiments/native-architecture/ios/build/ipa/Splotch.ipa
+```
+
+Store identity is opt-in (ADR-0182). Debug is `art.splotch.app.dev`, and Release is
+`art.splotch.app$(SPLOTCH_APP_ID_SUFFIX)` with the suffix `.dev` set on the target, so a plain
+Release build, including one installed for testing or device performance, installs beside the store
+copy. Only the two scripts pass `-xcconfig Store.xcconfig`, which clears the suffix. The team comes
+from `experiments/native-architecture/ios/local.xcconfig` (gitignored; template
+`local.xcconfig.example` beside it), which the project's base configuration `Splotch.xcconfig` and
+`Store.xcconfig` both include: it must be the shipping app's team, so the archive updates the store
+app in place. The export settings live in `experiments/native-architecture/ios/ExportOptions.plist`
+(App Store Connect method, automatic signing). `npm run release:publish -- --only=ios --dry-run`
+checks the exported `.ipa`'s bundle ID and version. The Capacitor `ios:*` scripts above still build
+the WebView app; the release tooling neither versions nor publishes it.
+
+An unsigned compile of the store configuration needs no team:
+
+```bash
+cd experiments/native-architecture/ios
+xcodebuild -workspace Splotch.xcworkspace -scheme Splotch -configuration Release \
+  -destination "generic/platform=iOS Simulator" -derivedDataPath build/sim \
+  -xcconfig Store.xcconfig CODE_SIGNING_ALLOWED=NO build
+```
+
 Regenerate launcher icons / splash after changing artwork in `assets/`:
 
 ```bash
@@ -172,10 +204,12 @@ required floor gate unless a successful run is captured.
 * [x] **`ios/` project committed** (`npx cap add ios`, Capacitor 8) using **Swift Package Manager**
       — plugins resolve via `ios/App/CapApp-SPM/Package.swift`, which `cap sync` regenerates. No
       CocoaPods (ADR-0020).
-* [x] Bundle ID `art.splotch.app`, display name **Splotch** (`ios/App/App.xcodeproj`, `Info.plist`).
-* [x] Version `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` match Android's
-      `versionName`/`versionCode` — `tools/release/cut-release.mjs` bumps both via
-      `tools/release/lib/native-version.mjs`; never edit them by hand.
+* [x] Bundle ID `art.splotch.app`, display name **Splotch** (`ios/App/App.xcodeproj`, `Info.plist`;
+      the React Native store build in `experiments/native-architecture/ios`).
+* [x] Version `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in the React Native
+      `Splotch.xcodeproj` match Android's `versionName`/`versionCode` —
+      `tools/release/cut-release.mjs` bumps both via `tools/release/lib/native-version.mjs`; never
+      edit them by hand.
 * [x] `NSPhotoLibraryAddUsageDescription` in `Info.plist` (gallery save uses iOS add-only photo
       permission — the code never reads the library on iOS).
 * [x] `ITSAppUsesNonExemptEncryption = false` in `Info.plist` (HTTPS only), so TestFlight uploads
@@ -221,7 +255,9 @@ required floor gate unless a successful run is captured.
    `ios:run`, `ios:run:emulator`, `ios:run:device`, and Xcode's `cap:ios` Run), and `ios:archive`
    passes it with `-xcconfig ../local.xcconfig` for the Release/IPA path. Find your Team ID in Xcode
    → Settings → Accounts (or developer.apple.com → Membership). One-time per clone; `cap sync` never
-   clobbers it.
+   clobbers it. The React Native store build reads its own
+   `experiments/native-architecture/ios/local.xcconfig` with the same line (see
+   [React Native store build](#react-native-store-build)).
 4. Accept the agreements in App Store Connect (<https://appstoreconnect.apple.com> → Business) —
    uploads fail with a cryptic error until the Paid/Free Apps agreement is accepted.
 
@@ -231,8 +267,9 @@ required floor gate unless a successful run is captured.
 
 ### Build & upload
 
-* [ ] `npm run ios:ipa` → `ios/App/build/ipa/App.ipa` (archives with `-allowProvisioningUpdates`,
-      exports per `ios/App/ExportOptions.plist`).
+* [ ] `npm run native:ios:ipa` → `experiments/native-architecture/ios/build/ipa/Splotch.ipa`
+      (archives with `-allowProvisioningUpdates`, exports per
+      `experiments/native-architecture/ios/ExportOptions.plist`).
 * [ ] Upload: drag the `.ipa` into Apple's **Transporter** app (Mac App Store), or use Xcode →
       Window → Organizer → Distribute App. (CLI alternative: `xcrun altool`/`notarytool` are
       deprecated for apps — use `xcodebuild -exportArchive` + Transporter.)

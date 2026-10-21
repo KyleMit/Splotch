@@ -1,4 +1,4 @@
-package art.splotch.migration.probe
+package art.splotch.app
 
 import android.util.Log
 import com.facebook.react.ReactPackage

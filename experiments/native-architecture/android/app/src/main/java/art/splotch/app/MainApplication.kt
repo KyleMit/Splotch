@@ -1,4 +1,4 @@
-package art.splotch.migration.probe
+package art.splotch.app
 
 import android.app.Application
 import android.content.res.Configuration

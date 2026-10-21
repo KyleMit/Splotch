@@ -1,4 +1,4 @@
-package art.splotch.migration.probe
+package art.splotch.app
 
 import android.media.AudioAttributes
 import android.media.SoundPool

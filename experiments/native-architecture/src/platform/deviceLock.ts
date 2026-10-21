@@ -1,6 +1,6 @@
 import { NativeModules } from 'react-native';
 
-// SplotchDeviceLock (ios/HelloWorld/SplotchDeviceLock.swift, android .../SplotchDeviceLock.kt)
+// SplotchDeviceLock (ios/Splotch/SplotchDeviceLock.swift, android .../SplotchDeviceLock.kt)
 // answers whether Guided Access or App Pinning holds the app, as the shipping DeviceLock plugin
 // does; native-device-lock.test.mjs reads both sides.
 export const DEVICE_LOCK_MODULE = 'SplotchDeviceLock';

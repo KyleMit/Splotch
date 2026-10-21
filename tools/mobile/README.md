@@ -37,7 +37,7 @@ release artifacts, not source, and builds nothing itself:
 ```sh
 npm run report:app-size -- \
   --android-shipping=<app-release.aab> --android-rn=<app-release.aab> \
-  --ios-shipping=<App.xcarchive> --ios-rn=<HelloWorld.xcarchive> \
+  --ios-shipping=<App.xcarchive> --ios-rn=<Splotch.xcarchive> \
   --json=<report.json>
 ```
 
@@ -72,12 +72,12 @@ Producing the inputs:
 * Shipping Android: the `app-release.aab` attached to the GitHub Release is the exact store upload
   (`gh release download <tag> -p app-release.aab`); `npm run android:bundle` builds one from source.
 * Shipping iOS: `npm run ios:archive` at the release tag writes `ios/App/build/App.xcarchive`.
-* RN Android: `./gradlew bundleRelease` from `experiments/native-architecture/android`, with the
-  signing properties in `experiments/native-architecture/DEVELOPMENT.md`; leave the perf-probe
-  variables unset.
+* RN Android: `./gradlew bundleRelease` from `experiments/native-architecture/android`, which signs
+  the `art.splotch.app.dev` bundle with the local debug key; size does not depend on the identity or
+  key. Leave the perf-probe variables unset.
 * RN iOS: after `pod install`,
-  `xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration Release -destination generic/platform=iOS -archivePath <out>.xcarchive -xcconfig ../../../ios/local.xcconfig archive`
-  from `experiments/native-architecture/ios`.
+  `xcodebuild -workspace Splotch.xcworkspace -scheme Splotch -configuration Release -destination generic/platform=iOS -archivePath <out>.xcarchive archive`
+  from `experiments/native-architecture/ios`, with the team in its untracked `local.xcconfig`.
 
 `tools/mobile/tests/app-size.test.mjs` pins the bundletool and thinning-report parsers and the flag
 handling.

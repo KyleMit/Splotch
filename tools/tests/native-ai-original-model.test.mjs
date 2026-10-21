@@ -17,8 +17,8 @@ import {
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { MAGIC_RAINBOW_COUNT } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 const ROOT = join(import.meta.dirname, '../..');
-const ANDROID = 'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt';
-const APPLE = 'ios/HelloWorld/SplotchAIJournal.swift';
+const ANDROID = 'android/app/src/main/java/art/splotch/app/SplotchAIJournal.kt';
+const APPLE = 'ios/Splotch/SplotchAIJournal.swift';
 function nativeFiles() {
   return new Map(
     [ANDROID, APPLE].map((path) => [

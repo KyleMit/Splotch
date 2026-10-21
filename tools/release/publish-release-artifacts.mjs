@@ -1,4 +1,4 @@
-// Uploads the built store artifacts to the GitHub Release for a version.
+// Uploads the React Native app's built store artifacts to the GitHub Release for a version.
 //
 //   node tools/release/publish-release-artifacts.mjs                 publish package.json's version
 //   node tools/release/publish-release-artifacts.mjs 1.4.0           publish a specific version
@@ -12,18 +12,17 @@
 // which put a 1.2.0 bundle on the v1.4.0 release. See ADR-0077.
 //
 // Every artifact is verified against the release it is being attached to by
-// reading the version out of the binary itself, and an Android bundle must also
-// carry its JAR signature and embedded R8 mapping — stale, unsigned, or unmapped
-// builds are refused, not uploaded.
+// reading the version and app ID out of the binary itself, and an Android bundle
+// must also carry its JAR signature and embedded R8 mapping — stale, local (.dev),
+// unsigned, or unmapped builds are refused, not uploaded.
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { ROOT, fail, run, isMain, parseOrFail } from '../lib/proc.mjs';
 import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
-import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
-import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
+import { ANDROID_PROJECT_DIR, RELEASE_AAB, RELEASE_IPA, STORE_APP_ID } from './lib/native-app.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 import { readAabR8Metadata } from './lib/aab-r8-mapping.mjs';
 import { readEntry } from './lib/zip.mjs';
@@ -33,17 +32,23 @@ const PLATFORMS = ['android', 'ios'];
 const ARTIFACTS = {
   android: {
     label: 'Android bundle',
-    path: RELEASE_AAB,
+    path: resolve(ROOT, RELEASE_AAB),
     read: readAabVersion,
-    rebuild: 'npm run android:bundle',
+    rebuild: 'npm run native:android:bundle',
   },
-  ios: { label: 'iOS app', path: RELEASE_IPA, read: readIpaVersion, rebuild: 'npm run ios:ipa' },
+  ios: {
+    label: 'iOS app',
+    path: resolve(ROOT, RELEASE_IPA),
+    read: readIpaVersion,
+    rebuild: 'npm run native:ios:ipa',
+  },
 };
 
-// android/app/build.gradle signs the release bundle only when
-// android/keystore.properties exists, and AGP writes app-release.aab either way.
-// readEntry throws when no entry matches, so reading the signature block is the
-// presence check. Anchored at the archive root: a module's root/META-INF/ holds
+const UPLOAD_KEY_PROPERTIES = join(ANDROID_PROJECT_DIR, 'keystore.properties');
+
+// A store build refuses to configure without the upload key, but a bundle copied
+// in from elsewhere or signed by hand may still lack a signature. readEntry throws
+// when no entry matches, so reading the signature block is the presence check. Anchored at the archive root: a module's root/META-INF/ holds
 // packaged Java resources, never the bundle's own signature.
 const JAR_SIGNATURE_BLOCK = /^META-INF\/[^/]+\.(RSA|DSA|EC)$/;
 
@@ -157,7 +162,7 @@ function androidBundleProblems(aabPath) {
   } catch {
     problems.push(
       'unsigned: no META-INF/*.RSA, *.DSA or *.EC signature block; ' +
-        'rebuild it with android/keystore.properties in place'
+        `rebuild it with ${UPLOAD_KEY_PROPERTIES} in place`
     );
   }
   try {
@@ -178,6 +183,11 @@ export function inspectArtifact(expected, platform, path) {
     return { problems: [`unreadable: ${error.message}`] };
   }
   const problems = compareArtifactVersion(expected, actual);
+  // A Release build installed for testing carries the .dev ID; only the store
+  // build's opt-in produces the ID the stores know.
+  if (actual.appId !== STORE_APP_ID) {
+    problems.push(`app ID is ${actual.appId ?? 'none'}, expected ${STORE_APP_ID}`);
+  }
   if (platform === 'android') problems.push(...androidBundleProblems(path));
   return { actual, problems };
 }

@@ -1,4 +1,4 @@
-// Rebuilds only the React Native app's JavaScript and puts it into a Release probe that a full
+// Rebuilds only the React Native app's JavaScript and puts it into a Release build that a full
 // Gradle or Xcode build already produced, then installs that copy. A JS-only change reaches the
 // device in about a minute instead of a native rebuild (issue 3083). Native code, resources and
 // signing entitlements come unchanged from the base build, so a Kotlin or Swift change, or a new
@@ -14,13 +14,13 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync 
 import { basename, join, resolve } from 'node:path';
 import { fail, isMain, runMain } from '../lib/proc.mjs';
 import { ADB, ANDROID_HOME } from '../mobile/android/lib/android-toolchain.mjs';
+import { STORE_APP_ID } from '../release/lib/native-app.mjs';
 import { choiceFlag, parseFlags } from './lib/cli-flags.mjs';
 import {
   APK_BUNDLE_ENTRY,
   APP_DIR,
   BUNDLE_NAME,
   PLATFORMS,
-  STORE_BUNDLE_ID,
   apkResourceNames,
   bundleArgs,
   expoCliPath,
@@ -62,7 +62,8 @@ export function parseSwapFlags(argv) {
     required: ['platform', 'base', 'bundle', 'out'],
   });
   const platform = choiceFlag(values, 'platform', PLATFORMS);
-  if (values.bundle === STORE_BUNDLE_ID) fail(`--bundle ${STORE_BUNDLE_ID} is the store app`);
+  // The Play Store and App Store app. A swapped bundle never goes near it.
+  if (values.bundle === STORE_APP_ID) fail(`--bundle ${STORE_APP_ID} is the store app`);
   const needed = platform === 'android' ? ['keystore', 'key-alias', 'ks-pass'] : ['identity'];
   const missing = needed.filter((name) => values[name] === undefined);
   if (missing.length) {

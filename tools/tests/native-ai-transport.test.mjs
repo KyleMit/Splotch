@@ -131,14 +131,14 @@ it('bounds capture bytes and rejects a PNG with dimensions different from the dr
 it('pins native secure owner semantics and the namespaced app pseudonym without exposing platform identifiers', () => {
   const kotlin = readFileSync(
     new URL(
-      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt',
       import.meta.url
     ),
     'utf8'
   );
   const swift = readFileSync(
     new URL(
-      '../../experiments/native-architecture/ios/HelloWorld/SplotchAIEnvironment.swift',
+      '../../experiments/native-architecture/ios/Splotch/SplotchAIEnvironment.swift',
       import.meta.url
     ),
     'utf8'

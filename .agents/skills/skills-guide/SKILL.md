@@ -280,8 +280,8 @@ the skill that ran is its in-file special case.
 These three run **in order, and the order is load-bearing**: an artifact can only carry a version
 that is already committed, so `cut-release` creates the GitHub Release with nothing attached,
 `build` produces the binaries for the version it just tagged, and `publish-artifacts` attaches them
-— refusing any artifact whose embedded version does not match. Attaching at release time is how
-v1.4.0 shipped a 1.2.0 bundle; see ADR-0077.
+— refusing any artifact whose embedded app ID or version does not match. Attaching at release time
+is how v1.4.0 shipped a 1.2.0 bundle; see ADR-0077.
 
 ## External image services
 

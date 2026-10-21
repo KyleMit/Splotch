@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		078526B2011FC602CB497DE0 /* libPods-HelloWorld.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C272FBE329B4F496D047019 /* libPods-HelloWorld.a */; };
+		078526B2011FC602CB497DE0 /* libPods-Splotch.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C272FBE329B4F496D047019 /* libPods-Splotch.a */; };
 		0891EFB09A93FC2D659F4701 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81878F3D7D853732FF2BCE1 /* ExpoModulesProvider.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		276400000000000000000003 /* SplotchPencil.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276400000000000000000001 /* SplotchPencil.swift */; };
@@ -20,66 +20,67 @@
 		287800000000000000000004 /* SplotchBackdropBlur.m in Sources */ = {isa = PBXBuildFile; fileRef = 287800000000000000000002 /* SplotchBackdropBlur.m */; };
 		291400000000000000000003 /* SplotchLibraryFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 291400000000000000000001 /* SplotchLibraryFiles.swift */; };
 		291400000000000000000004 /* SplotchLibraryDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 291400000000000000000002 /* SplotchLibraryDownloads.swift */; };
+		297800000000000000000003 /* SplotchPerfLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000001 /* SplotchPerfLog.swift */; };
+		297800000000000000000004 /* SplotchPerfLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000002 /* SplotchPerfLog.m */; };
+		297800000000000000000007 /* SplotchPaperReplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000005 /* SplotchPaperReplay.swift */; };
+		297800000000000000000008 /* SplotchPaperReplay.m in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000006 /* SplotchPaperReplay.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		A12863000000000000000001 /* SplotchAIEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12863000000000000000003 /* SplotchAIEnvironment.swift */; };
 		A12863000000000000000002 /* SplotchAIEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = A12863000000000000000004 /* SplotchAIEnvironment.m */; };
 		A12870000000000000000001 /* SplotchAIJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12870000000000000000002 /* SplotchAIJournal.swift */; };
 		B727C4CAF029FA28F7204012 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DF277C58AB46B059F0E82D6D /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		D29120000000000000000001 /* SplotchPaperInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000003 /* SplotchPaperInput.swift */; };
+		D29120000000000000000002 /* SplotchPaperInput.m in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000004 /* SplotchPaperInput.m */; };
 		D29150000000000000000001 /* SplotchGateKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000003 /* SplotchGateKeyboard.swift */; };
 		D29150000000000000000002 /* SplotchGateKeyboard.m in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000004 /* SplotchGateKeyboard.m */; };
 		D29150000000000000000005 /* SplotchFeedbackDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000007 /* SplotchFeedbackDevice.swift */; };
 		D29150000000000000000006 /* SplotchFeedbackDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000008 /* SplotchFeedbackDevice.m */; };
-		D29120000000000000000001 /* SplotchPaperInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000003 /* SplotchPaperInput.swift */; };
-		D29120000000000000000002 /* SplotchPaperInput.m in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000004 /* SplotchPaperInput.m */; };
 		D29300000000000000000003 /* SplotchClearSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29300000000000000000001 /* SplotchClearSound.swift */; };
 		D29300000000000000000004 /* SplotchClearSound.m in Sources */ = {isa = PBXBuildFile; fileRef = D29300000000000000000002 /* SplotchClearSound.m */; };
-		297800000000000000000003 /* SplotchPerfLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000001 /* SplotchPerfLog.swift */; };
-		297800000000000000000004 /* SplotchPerfLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000002 /* SplotchPerfLog.m */; };
-		297800000000000000000007 /* SplotchPaperReplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000005 /* SplotchPaperReplay.swift */; };
-		297800000000000000000008 /* SplotchPaperReplay.m in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000006 /* SplotchPaperReplay.m */; };
+		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* HelloWorld.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloWorld.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = HelloWorld/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HelloWorld/Info.plist; sourceTree = "<group>"; };
-		276400000000000000000001 /* SplotchPencil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchPencil.swift; path = HelloWorld/SplotchPencil.swift; sourceTree = "<group>"; };
-		276400000000000000000002 /* SplotchPencil.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchPencil.m; path = HelloWorld/SplotchPencil.m; sourceTree = "<group>"; };
-		282900000000000000000001 /* SplotchDeviceLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchDeviceLock.swift; path = HelloWorld/SplotchDeviceLock.swift; sourceTree = "<group>"; };
-		282900000000000000000002 /* SplotchDeviceLock.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchDeviceLock.m; path = HelloWorld/SplotchDeviceLock.m; sourceTree = "<group>"; };
-		285700000000000000000001 /* SplotchLibraryEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryEnvironment.swift; path = HelloWorld/SplotchLibraryEnvironment.swift; sourceTree = "<group>"; };
-		285700000000000000000002 /* SplotchLibraryEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchLibraryEnvironment.m; path = HelloWorld/SplotchLibraryEnvironment.m; sourceTree = "<group>"; };
-		287800000000000000000001 /* SplotchBackdropBlur.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchBackdropBlur.swift; path = HelloWorld/SplotchBackdropBlur.swift; sourceTree = "<group>"; };
-		287800000000000000000002 /* SplotchBackdropBlur.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchBackdropBlur.m; path = HelloWorld/SplotchBackdropBlur.m; sourceTree = "<group>"; };
-		291400000000000000000001 /* SplotchLibraryFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryFiles.swift; path = HelloWorld/SplotchLibraryFiles.swift; sourceTree = "<group>"; };
-		291400000000000000000002 /* SplotchLibraryDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryDownloads.swift; path = HelloWorld/SplotchLibraryDownloads.swift; sourceTree = "<group>"; };
-		5904545F09537900898C5C07 /* Pods-HelloWorld.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HelloWorld.release.xcconfig"; path = "Target Support Files/Pods-HelloWorld/Pods-HelloWorld.release.xcconfig"; sourceTree = "<group>"; };
-		9C272FBE329B4F496D047019 /* libPods-HelloWorld.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HelloWorld.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		9F70A562809115B57A09B470 /* Pods-HelloWorld.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HelloWorld.debug.xcconfig"; path = "Target Support Files/Pods-HelloWorld/Pods-HelloWorld.debug.xcconfig"; sourceTree = "<group>"; };
-		A12863000000000000000003 /* SplotchAIEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchAIEnvironment.swift; sourceTree = "<group>"; };
-		A12863000000000000000004 /* SplotchAIEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchAIEnvironment.m; sourceTree = "<group>"; };
-		A12870000000000000000002 /* SplotchAIJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchAIJournal.swift; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = HelloWorld/SplashScreen.storyboard; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* Splotch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Splotch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Splotch/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Splotch/Info.plist; sourceTree = "<group>"; };
+		276400000000000000000001 /* SplotchPencil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchPencil.swift; path = Splotch/SplotchPencil.swift; sourceTree = "<group>"; };
+		276400000000000000000002 /* SplotchPencil.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchPencil.m; path = Splotch/SplotchPencil.m; sourceTree = "<group>"; };
+		282900000000000000000001 /* SplotchDeviceLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchDeviceLock.swift; path = Splotch/SplotchDeviceLock.swift; sourceTree = "<group>"; };
+		282900000000000000000002 /* SplotchDeviceLock.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchDeviceLock.m; path = Splotch/SplotchDeviceLock.m; sourceTree = "<group>"; };
+		285700000000000000000001 /* SplotchLibraryEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryEnvironment.swift; path = Splotch/SplotchLibraryEnvironment.swift; sourceTree = "<group>"; };
+		285700000000000000000002 /* SplotchLibraryEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchLibraryEnvironment.m; path = Splotch/SplotchLibraryEnvironment.m; sourceTree = "<group>"; };
+		287800000000000000000001 /* SplotchBackdropBlur.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchBackdropBlur.swift; path = Splotch/SplotchBackdropBlur.swift; sourceTree = "<group>"; };
+		287800000000000000000002 /* SplotchBackdropBlur.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchBackdropBlur.m; path = Splotch/SplotchBackdropBlur.m; sourceTree = "<group>"; };
+		291400000000000000000001 /* SplotchLibraryFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryFiles.swift; path = Splotch/SplotchLibraryFiles.swift; sourceTree = "<group>"; };
+		291400000000000000000002 /* SplotchLibraryDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryDownloads.swift; path = Splotch/SplotchLibraryDownloads.swift; sourceTree = "<group>"; };
+		297800000000000000000001 /* SplotchPerfLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchPerfLog.swift; sourceTree = "<group>"; };
+		297800000000000000000002 /* SplotchPerfLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchPerfLog.m; sourceTree = "<group>"; };
+		297800000000000000000005 /* SplotchPaperReplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchPaperReplay.swift; sourceTree = "<group>"; };
+		297800000000000000000006 /* SplotchPaperReplay.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchPaperReplay.m; sourceTree = "<group>"; };
+		315800000000000000000001 /* Splotch.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Splotch.xcconfig; sourceTree = "<group>"; };
+		5904545F09537900898C5C07 /* Pods-Splotch.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Splotch.release.xcconfig"; path = "Target Support Files/Pods-Splotch/Pods-Splotch.release.xcconfig"; sourceTree = "<group>"; };
+		9C272FBE329B4F496D047019 /* libPods-Splotch.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Splotch.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9F70A562809115B57A09B470 /* Pods-Splotch.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Splotch.debug.xcconfig"; path = "Target Support Files/Pods-Splotch/Pods-Splotch.debug.xcconfig"; sourceTree = "<group>"; };
+		A12863000000000000000003 /* SplotchAIEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchAIEnvironment.swift; sourceTree = "<group>"; };
+		A12863000000000000000004 /* SplotchAIEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchAIEnvironment.m; sourceTree = "<group>"; };
+		A12870000000000000000002 /* SplotchAIJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchAIJournal.swift; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Splotch/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C81878F3D7D853732FF2BCE1 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-HelloWorld/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		DF277C58AB46B059F0E82D6D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = HelloWorld/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C81878F3D7D853732FF2BCE1 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Splotch/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		D29120000000000000000003 /* SplotchPaperInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchPaperInput.swift; sourceTree = "<group>"; };
+		D29120000000000000000004 /* SplotchPaperInput.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchPaperInput.m; sourceTree = "<group>"; };
+		D29150000000000000000003 /* SplotchGateKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchGateKeyboard.swift; sourceTree = "<group>"; };
+		D29150000000000000000004 /* SplotchGateKeyboard.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchGateKeyboard.m; sourceTree = "<group>"; };
+		D29150000000000000000007 /* SplotchFeedbackDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchFeedbackDevice.swift; sourceTree = "<group>"; };
+		D29150000000000000000008 /* SplotchFeedbackDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchFeedbackDevice.m; sourceTree = "<group>"; };
+		D29300000000000000000001 /* SplotchClearSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Splotch/SplotchClearSound.swift; sourceTree = "<group>"; };
+		D29300000000000000000002 /* SplotchClearSound.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Splotch/SplotchClearSound.m; sourceTree = "<group>"; };
+		DF277C58AB46B059F0E82D6D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Splotch/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HelloWorld/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "HelloWorld-Bridging-Header.h"; path = "HelloWorld/HelloWorld-Bridging-Header.h"; sourceTree = "<group>"; };
-		D29150000000000000000003 /* SplotchGateKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchGateKeyboard.swift; sourceTree = "<group>"; };
-		D29150000000000000000004 /* SplotchGateKeyboard.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchGateKeyboard.m; sourceTree = "<group>"; };
-		D29150000000000000000007 /* SplotchFeedbackDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchFeedbackDevice.swift; sourceTree = "<group>"; };
-		D29150000000000000000008 /* SplotchFeedbackDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchFeedbackDevice.m; sourceTree = "<group>"; };
-		D29120000000000000000003 /* SplotchPaperInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchPaperInput.swift; sourceTree = "<group>"; };
-		D29120000000000000000004 /* SplotchPaperInput.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchPaperInput.m; sourceTree = "<group>"; };
-		D29300000000000000000001 /* SplotchClearSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchClearSound.swift; sourceTree = "<group>"; };
-		D29300000000000000000002 /* SplotchClearSound.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchClearSound.m; sourceTree = "<group>"; };
-		297800000000000000000001 /* SplotchPerfLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchPerfLog.swift; sourceTree = "<group>"; };
-		297800000000000000000002 /* SplotchPerfLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchPerfLog.m; sourceTree = "<group>"; };
-		297800000000000000000005 /* SplotchPaperReplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchPaperReplay.swift; sourceTree = "<group>"; };
-		297800000000000000000006 /* SplotchPaperReplay.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchPaperReplay.m; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Splotch/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* Splotch-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Splotch-Bridging-Header.h"; path = "Splotch/Splotch-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,14 +88,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				078526B2011FC602CB497DE0 /* libPods-HelloWorld.a in Frameworks */,
+				078526B2011FC602CB497DE0 /* libPods-Splotch.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* HelloWorld */ = {
+		13B07FAE1A68108700A75B9A /* Splotch */ = {
 			isa = PBXGroup;
 			children = (
 				D29300000000000000000001 /* SplotchClearSound.swift */,
@@ -123,21 +124,21 @@
 				282900000000000000000001 /* SplotchDeviceLock.swift */,
 				287800000000000000000002 /* SplotchBackdropBlur.m */,
 				287800000000000000000001 /* SplotchBackdropBlur.swift */,
-				F11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* Splotch-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				DF277C58AB46B059F0E82D6D /* PrivacyInfo.xcprivacy */,
 			);
-			name = HelloWorld;
+			name = Splotch;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				9C272FBE329B4F496D047019 /* libPods-HelloWorld.a */,
+				9C272FBE329B4F496D047019 /* libPods-Splotch.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -152,7 +153,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* HelloWorld */,
+				13B07FAE1A68108700A75B9A /* Splotch */,
+				315800000000000000000001 /* Splotch.xcconfig */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -167,24 +169,24 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* HelloWorld.app */,
+				13B07F961A680F5B00A75B9A /* Splotch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AC4E04C3BA58FBCDE60B8178 /* HelloWorld */ = {
+		AC4E04C3BA58FBCDE60B8178 /* Splotch */ = {
 			isa = PBXGroup;
 			children = (
 				C81878F3D7D853732FF2BCE1 /* ExpoModulesProvider.swift */,
 			);
-			name = HelloWorld;
+			name = Splotch;
 			sourceTree = "<group>";
 		};
 		B248EB8DF217DE58E1961F7A /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				9F70A562809115B57A09B470 /* Pods-HelloWorld.debug.xcconfig */,
-				5904545F09537900898C5C07 /* Pods-HelloWorld.release.xcconfig */,
+				9F70A562809115B57A09B470 /* Pods-Splotch.debug.xcconfig */,
+				5904545F09537900898C5C07 /* Pods-Splotch.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -196,13 +198,13 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = HelloWorld/Supporting;
+			path = Splotch/Supporting;
 			sourceTree = "<group>";
 		};
 		E0D2200141ECF0F110D830DF /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				AC4E04C3BA58FBCDE60B8178 /* HelloWorld */,
+				AC4E04C3BA58FBCDE60B8178 /* Splotch */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -210,9 +212,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* HelloWorld */ = {
+		13B07F861A680F5B00A75B9A /* Splotch */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HelloWorld" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Splotch" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				C035D9D3A32AE1835E89F7C7 /* [Expo] Configure project */,
@@ -227,9 +229,9 @@
 			);
 			dependencies = (
 			);
-			name = HelloWorld;
-			productName = HelloWorld;
-			productReference = 13B07F961A680F5B00A75B9A /* HelloWorld.app */;
+			name = Splotch;
+			productName = Splotch;
+			productReference = 13B07F961A680F5B00A75B9A /* Splotch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -245,7 +247,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "HelloWorld" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Splotch" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -258,7 +260,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* HelloWorld */,
+				13B07F861A680F5B00A75B9A /* Splotch */,
 			);
 		};
 /* End PBXProject section */
@@ -310,7 +312,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-HelloWorld-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-Splotch-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -323,13 +325,12 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HelloWorld/Pods-HelloWorld-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Splotch/Pods-Splotch-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-timing/React-timing_privacy.bundle",
 			);
@@ -340,13 +341,12 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoMediaLibrary_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-timing_privacy.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HelloWorld/Pods-HelloWorld-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Splotch/Pods-Splotch-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		89C892DA1D8E8195D12BC9CD /* [CP] Embed Pods Frameworks */ = {
@@ -355,7 +355,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HelloWorld/Pods-HelloWorld-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Splotch/Pods-Splotch-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem.framework/ExpoFileSystem",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoFont/ExpoFont.framework/ExpoFont",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary.framework/ExpoMediaLibrary",
@@ -380,7 +380,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HelloWorld/Pods-HelloWorld-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Splotch/Pods-Splotch-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		C035D9D3A32AE1835E89F7C7 /* [Expo] Configure project */ = {
@@ -394,17 +394,17 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-HelloWorld/expo-configure-project.sh",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Splotch/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-HelloWorld/ExpoModulesProvider.swift",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Splotch/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-HelloWorld/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Splotch/expo-configure-project.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -448,33 +448,33 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 9F70A562809115B57A09B470 /* Pods-HelloWorld.debug.xcconfig */;
+			baseConfigurationReference = 9F70A562809115B57A09B470 /* Pods-Splotch.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = HelloWorld/Info.plist;
+				INFOPLIST_FILE = Splotch/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.6.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = art.splotch.migration.probe;
-				PRODUCT_NAME = HelloWorld;
-				SWIFT_OBJC_BRIDGING_HEADER = "HelloWorld/HelloWorld-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = art.splotch.app.dev;
+				PRODUCT_NAME = Splotch;
+				SWIFT_OBJC_BRIDGING_HEADER = "Splotch/Splotch-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -484,28 +484,29 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5904545F09537900898C5C07 /* Pods-HelloWorld.release.xcconfig */;
+			baseConfigurationReference = 5904545F09537900898C5C07 /* Pods-Splotch.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = HelloWorld/Info.plist;
+				CURRENT_PROJECT_VERSION = 8;
+				INFOPLIST_FILE = Splotch/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.6.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = art.splotch.migration.probe;
-				PRODUCT_NAME = HelloWorld;
-				SWIFT_OBJC_BRIDGING_HEADER = "HelloWorld/HelloWorld-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = "art.splotch.app$(SPLOTCH_APP_ID_SUFFIX)";
+				PRODUCT_NAME = Splotch;
+				SPLOTCH_APP_ID_SUFFIX = .dev;
+				SWIFT_OBJC_BRIDGING_HEADER = "Splotch/Splotch-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -514,6 +515,7 @@
 		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 315800000000000000000001 /* Splotch.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -586,6 +588,7 @@
 		};
 		83CBBA211A601CBA00E9B192 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 315800000000000000000001 /* Splotch.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -651,7 +654,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HelloWorld" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Splotch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -660,7 +663,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "HelloWorld" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Splotch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

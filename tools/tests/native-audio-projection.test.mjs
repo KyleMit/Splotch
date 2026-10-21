@@ -294,7 +294,7 @@ describe('native Clear sampler binding', () => {
 
 const sourceText = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const clearActivitySources = {
-  sampler: sourceText('experiments/native-architecture/ios/HelloWorld/SplotchClearSound.swift'),
+  sampler: sourceText('experiments/native-architecture/ios/Splotch/SplotchClearSound.swift'),
   expoPatch: sourceText('patches/expo-audio@58.0.9.patch'),
 };
 function assertClearAudioActivity(sources) {
@@ -324,7 +324,7 @@ const nativeMediaPolicy = {
   android: ANDROID_PLAYS_IN_SILENT_MODE,
   mode: sourceText('experiments/native-architecture/src/audio/playbackMode.ts'),
   sampler: sourceText(
-    'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchClearSound.kt'
+    'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchClearSound.kt'
   ),
 };
 function assertNativeMediaPolicy(policy) {
@@ -399,15 +399,15 @@ describe('native Clear audio session boundary', () => {
   it('registers the same Clear sampler and methods on Android and iOS', () => {
     const ts = sourceText('experiments/native-architecture/src/platform/clearNotes.native.ts');
     const swift = clearActivitySources.sampler;
-    const bridge = sourceText('experiments/native-architecture/ios/HelloWorld/SplotchClearSound.m');
+    const bridge = sourceText('experiments/native-architecture/ios/Splotch/SplotchClearSound.m');
     const kotlin = sourceText(
-      'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchClearSound.kt'
+      'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchClearSound.kt'
     );
     const application = sourceText(
-      'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt'
+      'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainApplication.kt'
     );
     const project = sourceText(
-      'experiments/native-architecture/ios/HelloWorld.xcodeproj/project.pbxproj'
+      'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj'
     );
     const name = /const CLEAR_NOTE_MODULE = '([^']+)'/.exec(ts)?.[1];
     expect(name).toBe('SplotchClearSound');

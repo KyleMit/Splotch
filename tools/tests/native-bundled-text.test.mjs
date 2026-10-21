@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const ASSET_ID = 7;
 const ANDROID_RESOURCE = '__web_static_coloring_farm_catwideoverlay';
-const IOS_FILE = 'file:///private/var/containers/Bundle/Application/X/HelloWorld.app/assets/a.svg';
+const IOS_FILE = 'file:///private/var/containers/Bundle/Application/X/Splotch.app/assets/a.svg';
 const DEV_SERVER = 'http://localhost:8081/assets/web/static/coloring/farm/cat-wide.overlay.svg';
 const OVERLAY_TEXT = '<svg viewBox="0 0 1536 1024"><path d="M0 0h1"/></svg>';
 
