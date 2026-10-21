@@ -15,6 +15,8 @@ import { blobPath } from './blob';
 import { rgba } from './colorMix';
 import { focusRingHost } from './focusRing';
 import { landFocus } from './landFocus';
+import { SHOWN_WITHOUT_SCRIPT_ATTRIBUTE } from './pageFrame';
+import { usePrerenderedMarkup } from './pageDocumentState';
 import { styles as controls } from './controls';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
 
@@ -127,17 +129,21 @@ const styles = css.create({
   top: { top: 0 },
   bottom: { bottom: 0 },
   fade: (backgroundImage: string) => ({ backgroundImage }),
+  folded: { display: 'none' },
 });
 
 function ContentsPanel<Id extends string>({
   items,
   active,
   label,
+  folded,
   onSelect,
 }: {
   items: readonly PageContentsItem<Id>[];
   active: Id;
   label: string;
+  // Closed, in a prerendered page: hidden until a script opens it, and shown without one.
+  folded: boolean;
   onSelect: (id: Id) => void;
 }) {
   const theme = useDrawingTheme();
@@ -149,7 +155,10 @@ function ContentsPanel<Id extends string>({
   );
   const [extent, setExtent] = useState({ viewport: 0, content: 0, offset: 0 });
   return (
-    <html.div style={styles.panel}>
+    <html.div
+      {...(folded ? { [SHOWN_WITHOUT_SCRIPT_ATTRIBUTE]: true } : {})}
+      style={[styles.panel, folded && styles.folded]}
+    >
       <ScrollView
         testID="page-contents-panel"
         style={{ maxHeight }}
@@ -244,6 +253,7 @@ export function RsdPageContents<Id extends string>({
   const reduceMotion = useReduceMotion();
   const current = items.find((section) => section.id === active);
   const readout = entered ? current?.label : noun;
+  const prerendered = usePrerenderedMarkup();
   return (
     <View
       testID="page-contents-disclosure"
@@ -302,11 +312,12 @@ export function RsdPageContents<Id extends string>({
             <html.span style={[controls.boldText, styles.markText]}>›</html.span>
           </html.div>
         </RsdPressable>
-        {open ? (
+        {open || prerendered ? (
           <ContentsPanel
             items={items}
             label={label}
             active={active}
+            folded={!open}
             onSelect={(id) => {
               landFocus(summary.current);
               onSelect(id);

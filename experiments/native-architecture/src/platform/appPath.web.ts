@@ -1,8 +1,9 @@
 import { APP_PAGE_PATHS, appPageAt, type AppPage } from '../information/appPages';
 // The paths the export serves the drawing screen at: the ones the service worker answers with the
-// app shell (appShellRoute.ts's isAppShellNavigation). A host sends every other path the shell as
-// its 404.html (tools/migration/build-native-web.mjs), and the shell shows shipping's not-found
-// page there. native-web-not-found.test.mjs holds the list to the worker's route.
+// app shell (appShellRoute.ts's isAppShellNavigation). A host answers every other path with the
+// not-found page's own document (404.html, tools/migration/build-native-web.mjs); offline, the
+// worker answers with the shell, which shows the same page there. native-web-not-found.test.mjs
+// holds the list to the worker's route.
 import { DRAWING_PATHS } from './appSurfacePolicy';
 export { DRAWING_PATHS } from './appSurfacePolicy';
 

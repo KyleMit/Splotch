@@ -1,13 +1,12 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect } from 'react';
 import { Linking, Modal, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useInitialSafeAreaMetrics } from '../platform/safeAreaMetrics';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
 import { setDocumentTitle } from '../platform/appPath';
-import { usePageNavigation } from './RsdNotFoundPage';
+import { useBackLabel, usePageNavigation } from './pageDocumentState';
 import { visitInformationFragment } from '../platform/informationFragment';
-import { drawingArrival } from '../platform/drawingArrival';
 import { useDialogBack } from '../platform/BrowserBack';
 import { ModalKeyboardScope } from '../platform/KeyboardScope';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
@@ -27,12 +26,6 @@ import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { useModalPresence } from './useModalPresence';
 import { FOLLOW_APP_ORIENTATION, ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
-import {
-  COLD_VISIT_LABEL,
-  resolveBackLabel,
-  type BackLabel,
-} from '../../../../web/src/lib/components/page/backLabel';
-import { DRAWING_ROUTE } from '../../../../web/src/lib/boot/appSurfaceRoute';
 
 type Page = Exclude<AppPage, 'drawing'>;
 const PAGE_TITLES: Record<Page, string> = {
@@ -52,19 +45,6 @@ const PAGE_LEDES: Record<Page, string> = {
     'Every public Splotch release, newest first, with the notes that shipped alongside it.',
   feedback: FEEDBACK_PAGE_COPY.lede,
 };
-
-const unchanging = () => () => {};
-
-// A prerendered page document cannot know how its visitor arrived, so its render and hydration
-// carry shipping's server-rendered cold-visit label and the next render takes the arrival's.
-function useBackLabel(drawingVisited: boolean): BackLabel {
-  return useSyncExternalStore(
-    unchanging,
-    () =>
-      resolveBackLabel({ fromPath: drawingVisited ? DRAWING_ROUTE : null, ...drawingArrival() }),
-    () => COLD_VISIT_LABEL
-  );
-}
 
 type InformationProduct = Pick<
   ReturnType<typeof useDrawingProduct>,

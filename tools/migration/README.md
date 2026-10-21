@@ -89,9 +89,13 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   generated shell. A module the drawing screen's first frame reads must render in Node (no `window`
   at import or during render, a server snapshot on every `useSyncExternalStore`), or this step fails
   the build.
+* `build-native-web.mjs` then replaces Expo's bare "enable JavaScript" `<noscript>` line in
+  `index.html` with a note that links the pages that read without a script. It carries inline style
+  attributes, never a `<style>`, so the drawing screen's first-paint bytes do not move.
 * `prerender-native-web-pages.mjs` runs next, for every route-table page whose document is its own
-  (`APP_PAGE_DOCUMENTS` in `src/information/appPages.ts`; `/privacy` first). It writes
-  `<page>.html`, which a static host serves at the page's path by pretty URL:
+  (`APP_PAGE_DOCUMENTS` in `src/information/appPages.ts`: `/privacy`, `/changelog` and the web-only
+  `/beta`), and for the not-found page. It writes `<page>.html`, which a static host serves at the
+  page's path by pretty URL, and `404.html`, which it answers every other path with:
   * The page's whole markup, rendered in Node from `src/pageDocument/prerender.tsx`, once per layout
     (phone, short, framed, desktop) and theme. Without JavaScript a media query shows the one that
     fits; with it the boot script keeps that one as the root and hydrates it. Each variant's
@@ -101,6 +105,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     has painted. The entry is its own bundle, chunked as `expo export` chunks the drawing screen's,
     never a branch of the drawing screen's entry. Its bundles resolve the lazy facades listed in
     `experiments/native-architecture/scripts/page-document-resolution.cjs` to the modules they wrap.
+  * A page's own head tags (`/beta`'s `noindex` and the boot script that stamps its `?os=` tab
+    before first paint) come from `pageDocumentHead` in `src/pageDocument/prerender.tsx`. `/beta`
+    lives under `src/pageDocument/` and outside `APP_PAGE_PATHS`, so its store links reach neither
+    the drawing screen nor the native app. Its styles are inline, not `css.create`: every
+    `css.create` in the app compiles into `strict.css`, which the drawing screen inlines.
   * A drift guard first resolves the drawing screen's whole module graph and fails the build if it
     reaches anything under `src/pageDocument/`. Chunks only a page document loads stay out of the
     precache: the worker answers a page document's path from the network, and offline from the app
@@ -113,8 +122,8 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   * `check-native-web-startup.mjs` holds each page document to its own first-paint and page-entry
     budgets (`MAX_NATIVE_WEB_PAGE_BYTES`, each page's first measured build plus 10%), then
     `check-native-web-pages-without-js.mjs` loads it in Chromium with JavaScript off in every layout
-    and theme and fails unless it reads in full, with each link that would ask for the grown-up
-    check naming its address instead of linking it.
+    and theme and fails unless it reads in full, links what it must, follows a section link into
+    view, and names (instead of linking) each address the grown-up check would guard.
 * `prerender-native-web-admin.mjs` then writes `admin.html`, the admin console at `/admin`
   (`UNLINKED_DOCUMENT_PATHS` in `src/information/unlinkedDocuments.ts`; ADR-0101: no page links to
   it):
