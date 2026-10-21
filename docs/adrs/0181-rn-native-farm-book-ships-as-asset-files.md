@@ -105,9 +105,15 @@ loaded, so neither draws a page without its outline.
   Cold start to a drawable paper (Galaxy first launch 953 → 918 ms, iPad 391 → 377 ms) and first ink
   (Galaxy 33 → 37 ms, iPad 31 → 30 ms) stayed within run-to-run spread.
 * − A Farm page's line art loads after the page is chosen on native: on first use per launch the app
-  reads and parses four SVG files. Parsing a page takes 0.12 to 0.19 ms in Node, a few milliseconds
-  in Hermes, and the Galaxy's page switch settled in 469 to 561 ms against 475 to 510 ms before,
-  inside its spread. The art keeps its entrance animation, which starts when the art arrives.
+  reads and parses four SVG files. Parsing a page takes 0.12 to 0.19 ms in Node (Hermes, untimed, is
+  slower). Recorded from tile tap to a settled screen, the Galaxy's first switch to each of three
+  pages took 469 to 561 ms against 475 to 510 ms before: no consistent delay, though three
+  recordings per build are too few to establish the run-to-run spread. The art keeps its entrance
+  animation, which starts when the art arrives.
+* − The Android read depends on expo-file-system's legacy `readAsStringAsync` opening a raw resource
+  by its bare name, which `File` does not do. An Expo upgrade that drops the legacy module needs
+  another reader; `tools/tests/native-bundled-text.test.mjs` pins the call, and a Galaxy check of a
+  Farm page is the only proof it still reads the resource.
 * − The native line art can fail to load, which the bundle could not. A failure is logged and the
   next consumer retries, as `createLazyExport` does on web. With the files inside the app package,
   no failure is expected outside disk corruption.
