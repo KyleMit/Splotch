@@ -9,7 +9,7 @@ import {
 } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
 import { checkAccessToken } from './tokens';
-import { isInstallationId } from '$lib/installationId';
+import { isInstallationId } from '../installationId';
 import { verifyReportToken, type ReportTokenBinding, type ReportTokenContext } from './reportToken';
 import { AI_REPORTING_UNAVAILABLE_MESSAGE } from './imageReportUnavailable';
 

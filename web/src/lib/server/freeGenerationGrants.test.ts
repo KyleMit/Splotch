@@ -12,7 +12,7 @@ const { entries, getStoreMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
-vi.mock('$app/environment', () => ({ dev: false }));
+vi.mock('$lib/server/runtimeMode', () => ({ dev: false }));
 
 import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';

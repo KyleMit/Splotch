@@ -1,5 +1,5 @@
-import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
-import { FREE_GENERATION_LIMIT, type FreeGenerationFailureKind } from '$lib/freeGenerations';
+import { FREE_RESERVATION_LEASE_MS } from '../ai/limits';
+import { FREE_GENERATION_LIMIT, type FreeGenerationFailureKind } from '../freeGenerations';
 import { FREE_GENERATION_DAILY_PROVIDER_START_LIMIT } from './freeGenerationLedgerPolicy';
 
 export const RECOVERY_GRANT_RECEIPT_LIMIT = 64;

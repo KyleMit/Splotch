@@ -1,8 +1,8 @@
-import { env } from '$env/dynamic/private';
-import { ASYNC_GENERATION_HEADER } from '$lib/apiHeaders';
+import { env } from './privateEnv';
+import { ASYNC_GENERATION_HEADER } from '../apiHeaders';
 import { config } from './config';
-import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
-import type { StartedGeneration } from '$lib/ai/generationResult';
+import { GENERATE_DEADLINE_MS } from '../ai/limits';
+import type { StartedGeneration } from '../ai/generationResult';
 import {
   claimJob,
   discardJob,

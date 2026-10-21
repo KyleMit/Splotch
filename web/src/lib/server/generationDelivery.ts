@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
-import { SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
+import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '../apiHeaders';
+import { SAFETY_REFUSAL_STATUS } from '../ai/generationResult';
 import { hasPunchedBackground, type StyleName } from '../ai/styles';
 import { fail } from './http';
 import { issueReportToken, type ReportTokenBinding } from './reportToken';

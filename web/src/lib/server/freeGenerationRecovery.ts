@@ -1,7 +1,7 @@
 // Every deployment that can write these shared records must preserve recovery
 // receipts before recovery is activated; an older normalizer can erase them by CAS.
-import { FREE_GENERATION_LIMIT, type FreeGenerationFailureKind } from '$lib/freeGenerations';
-import { isInstallationId } from '$lib/installationId';
+import { FREE_GENERATION_LIMIT, type FreeGenerationFailureKind } from '../freeGenerations';
+import { isInstallationId } from '../installationId';
 import {
   dailyProviderStartKey,
   FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,

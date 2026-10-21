@@ -1,17 +1,13 @@
 import { createIssue, escapeIssueMarkdown, isReportingConfigured } from './github';
-import {
-  describeDeviceInfo,
-  sanitizeDeviceInfo,
-  type DeviceInfo,
-} from '$lib/platform/deviceReport';
+import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '../platform/deviceReport';
 import {
   attachesDevice,
   MAX_REPORT_MESSAGE_LENGTH,
   parseReportKind,
   type ReportKind,
   type ReportRequestBody,
-} from '$lib/report';
-import { truncateCodeUnits } from '$lib/truncate';
+} from '../report';
+import { truncateCodeUnits } from '../truncate';
 
 // Server-only core of the feedback flow, shared by its two front doors: the
 // `/api/report` JSON endpoint the in-app form in Settings posts to, and the
@@ -176,7 +172,7 @@ export async function submitReport({
   // defeating any amount of markup obfuscation. Reaching here means the
   // submission would have succeeded, so the caught bot gets exactly what a real
   // submitter gets on every path. Each door's tests hold the two answers against
-  // each other rather than against a literal: routes/api/report/server.test.ts
+  // each other rather than against a literal: lib/server/api/report.test.ts
   // for the JSON body, routes/feedback/page.server.test.ts for the form's
   // redirect and its failures.
   if (typeof hp === 'string' && hp.trim()) return { ok: true };

@@ -1,10 +1,10 @@
-import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
+import { FREE_RESERVATION_LEASE_MS } from '../ai/limits';
 import {
   FREE_GENERATION_LIMIT,
   type FreeGenerationFailureKind,
   type FreeGenerationGrantAdminStats,
-} from '$lib/freeGenerations';
-import { isInstallationId } from '$lib/installationId';
+} from '../freeGenerations';
+import { isInstallationId } from '../installationId';
 import { loggableError } from './logRedaction';
 import { sleep } from './sleep';
 import {

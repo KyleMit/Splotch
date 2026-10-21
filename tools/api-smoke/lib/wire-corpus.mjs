@@ -11,13 +11,13 @@
 // multipart generate-image body (ADR-0064), and the cross-site form posts
 // SvelteKit's CSRF guard refuses before any handler runs.
 
-export const WIRE_ORIGIN = 'https://splotch.art';
+const WIRE_ORIGIN = 'https://splotch.art';
 
 const ADMIN_SECRET = 'wire-admin-secret';
 
 // Every private variable the API reads, declared so neither host inherits one from
 // the ambient environment. `applyWireEnv` deletes the empty ones.
-export const WIRE_ENV = {
+const WIRE_ENV = {
   ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
   ALLOWED_TOKENS_LIST: 'alpha,beta',
   AI_RECOVERY_V1_ENABLED: '',
@@ -107,7 +107,7 @@ const cspReportingApi = [
 ];
 
 /** The ordered request list. Each case names its own client address, so no case spends another's budget. */
-export function wireCases() {
+function wireCases() {
   let address = 0;
   const ip = () => `203.0.113.${++address}`;
   const session = '__ADMIN_SESSION__';

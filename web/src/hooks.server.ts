@@ -1,24 +1,7 @@
 import { building } from '$app/environment';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import {
-  ACCESS_TOKEN_HEADER,
-  API_KEY_HEADER,
-  ASYNC_GENERATION_HEADER,
-  FREE_GENERATIONS_REMAINING_HEADER,
-  INSTALLATION_ID_HEADER,
-  REPORT_TOKEN_HEADER,
-} from '$lib/apiHeaders';
-import {
-  RECOVERY_VERSION_HEADER,
-  RECOVERY_NONCE_HEADER,
-  RECOVERY_CREATED_HEADER,
-  RECOVERY_INPUT_DIGEST_HEADER,
-  RECOVERY_TERMINAL_HEADER,
-  RECOVERY_EXPIRES_HEADER,
-  RECOVERY_DIGEST_HEADER,
-  RECOVERY_RECEIPT_HEADER,
-} from '$lib/ai/generationAttempt';
+import { API_CORS_HEADERS, applyApiCacheDefault } from '$lib/server/apiCors';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { devHarnessEnabled } from '$lib/server/devHarness';
 import { loggableFailure } from '$lib/server/logRedaction';
@@ -29,27 +12,7 @@ import {
   securityHeadersFor,
 } from '$lib/server/securityHeaders';
 
-// The native apps load from a WebView origin (https://localhost on Android,
-// capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
-// cross-origin requests, so the endpoints need permissive CORS. Credentialed
-// routes authenticate each request; the unauthenticated free-generation path
-// is bounded by its durable daily provider-start ceiling and per-IP rate limit.
-// None of the APIs relies on cookies (the wildcard origin is incompatible with
-// credentialed requests anyway).
-// Only /api/* is opened up; the rest of the site stays same-origin.
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-  // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
-  // generate-image credentials (secrets kept out of the query string).
-  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${ASYNC_GENERATION_HEADER}, ${INSTALLATION_ID_HEADER}, ${REPORT_TOKEN_HEADER}, ${RECOVERY_VERSION_HEADER}, ${RECOVERY_NONCE_HEADER}, ${RECOVERY_CREATED_HEADER}, ${RECOVERY_INPUT_DIGEST_HEADER}, ${RECOVERY_TERMINAL_HEADER}`,
-  'Access-Control-Expose-Headers': `${FREE_GENERATIONS_REMAINING_HEADER}, ${REPORT_TOKEN_HEADER}, ${RECOVERY_VERSION_HEADER}, ${RECOVERY_EXPIRES_HEADER}, ${RECOVERY_DIGEST_HEADER}, ${RECOVERY_RECEIPT_HEADER}`,
-  // Let native clients cache the preflight for a day instead of paying an
-  // extra OPTIONS round trip on every cross-origin JSON request.
-  'Access-Control-Max-Age': '86400',
-};
-
-function applyHeaders(response: Response, headers: Record<string, string>) {
+function applyHeaders(response: Response, headers: Readonly<Record<string, string>>) {
   for (const [key, value] of Object.entries(headers)) {
     // SvelteKit's SSR response already carries the full nonce-bearing policy.
     // SECURITY_HEADERS has only the meta-unsupported fallback for static pages;
@@ -59,33 +22,30 @@ function applyHeaders(response: Response, headers: Record<string, string>) {
   }
 }
 
+// The /api/* endpoints are Netlify Functions (netlify/functions/api-*.ts), whose
+// apiFunction wrapper answers the same way. What still reaches SvelteKit under
+// /api/ is a path no function claims, and its 404 keeps the same headers.
 const handleCors: Handle = async ({ event, resolve }) => {
   if (!event.url.pathname.startsWith('/api/')) return resolve(event);
 
   // Answer the CORS preflight before hitting any route logic.
   if (event.request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: API_CORS_HEADERS });
   }
 
   const response = await resolve(event);
 
   // Cross-origin /api/* calls from the native WebView origins (ADR-0007).
-  applyHeaders(response, CORS_HEADERS);
+  applyHeaders(response, API_CORS_HEADERS);
 
   return response;
 };
 
-// No /api/* response is worth a cache entry, and several carry a credential (the
-// admin token list, a report token) or one installation's state. So `no-store`
-// is the default rather than a per-route choice a new route can forget; a route
-// that does want caching says so with its own Cache-Control, which this leaves
-// alone. Ordered after handleCors, so the OPTIONS preflight — cached through its
-// Access-Control-Max-Age, not by HTTP caching — never reaches it.
+// The no-store default (apiCors.ts) runs after handleCors, so the OPTIONS
+// preflight, which returns before resolve(), never reaches it.
 const handleApiCaching: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
-  if (event.url.pathname.startsWith('/api/') && !response.headers.has('cache-control')) {
-    response.headers.set('cache-control', 'no-store');
-  }
+  if (event.url.pathname.startsWith('/api/')) applyApiCacheDefault(response);
   return response;
 };
 
@@ -128,9 +88,9 @@ export const handle: Handle = sequence(handleCors, handleApiCaching, handleSecur
 // Server twin of hooks.client.ts's handleError. No third-party telemetry by
 // design, so the Netlify function log is the only record of an unexpected
 // SSR failure — SvelteKit only calls this for unexpected errors, so expected
-// error(4xx) responses never land here. Wrapped /api/* handlers don't either:
-// apiHandler (lib/server/http.ts) catches at the route boundary and emits the
-// same-format log line itself.
+// error(4xx) responses never land here. The /api/* functions don't either:
+// apiHandler (lib/server/http.ts) and apiFunction (lib/server/api/apiFunction.ts)
+// catch at the endpoint boundary and emit the same-format log line themselves.
 export const handleError: HandleServerError = ({ error, event, status }) => {
   console.error(ERROR_LOG_PREFIX.server, event.url.pathname, status, loggableFailure(error));
   // `message` isn't read by +error.svelte/ErrorScreen (their copy is fixed independently), but

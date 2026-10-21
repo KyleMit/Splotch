@@ -45,7 +45,7 @@ const CLIENT_FILES = [
 
 const SERVER_FILES = [
   'web/src/lib/server/ai/probe.ts',
-  'web/src/routes/api/probe/+server.ts',
+  'web/src/lib/server/api/probe.ts',
   'web/src/routes/probe/+page.server.ts',
   'web/src/hooks.server.ts',
   'web/src/lib/ai/probe.test.ts',

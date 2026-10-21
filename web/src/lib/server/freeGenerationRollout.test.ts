@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { getStoreMock } = vi.hoisted(() => ({ getStoreMock: vi.fn() }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
-vi.mock('$app/environment', () => ({ dev: false }));
+vi.mock('$lib/server/runtimeMode', () => ({ dev: false }));
 vi.mock('./sleep', () => ({ sleep: async () => {} }));
 
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';

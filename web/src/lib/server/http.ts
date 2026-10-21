@@ -1,5 +1,5 @@
 import { isHttpError, json } from '@sveltejs/kit';
-import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
+import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '../errorLog';
 import { loggableFailure } from './logRedaction';
 
 export function contentTypeOf(request: Request): string {

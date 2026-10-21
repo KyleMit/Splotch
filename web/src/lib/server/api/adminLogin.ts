@@ -1,0 +1,32 @@
+import { json } from '@sveltejs/kit';
+import { beginAdminLogin, MAX_ADMIN_LOGIN_BODY_BYTES } from '../admin';
+import { apiHandler, readJsonBody, stringField, throttled } from '../http';
+import type { ApiHandler } from './apiEvent';
+
+type LoginResponse = { ok: true; session: string } | { ok: false; error: string };
+
+/**
+ * Exchange the raw admin secret for a derived session token. This is the API
+ * twin of the /admin page's `login` form action, driven by the API smoke tests
+ * (tools/api-smoke/lib/admin-client.mjs); no in-product client calls it
+ * (ADR-0101). Body: { key }.
+ * Returns { ok: true, session } on success — the client sends that session
+ * back as `Authorization: Bearer <session>` on /api/admin/tokens requests.
+ * The session is the same HMAC the cookie flow uses (see $lib/server/admin),
+ * never the raw secret.
+ */
+export const POST: ApiHandler = apiHandler(async ({ request, getClientAddress }) => {
+  const attempt = beginAdminLogin(getClientAddress());
+  if (!attempt.ok) return throttled(attempt.retryAfter);
+
+  const parsed = await readJsonBody(request, MAX_ADMIN_LOGIN_BODY_BYTES);
+  if (!parsed.ok) return parsed.response;
+  const key = stringField(parsed.body, 'key');
+  const result = attempt.verify(key);
+  if (!result.ok) {
+    return json({ ok: false, error: 'Incorrect access key.' } satisfies LoginResponse, {
+      status: 403,
+    });
+  }
+  return json({ ok: true, session: result.session } satisfies LoginResponse);
+});

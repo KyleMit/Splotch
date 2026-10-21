@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 // github.ts reads GITHUB_ISSUE_TOKEN/REPO from $env/dynamic/private at call time;
 // escapeIssueMarkdown touches no env, but the module still imports it.
 const envState = vi.hoisted(() => ({}) as Record<string, string | undefined>);
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 
 import { GITHUB_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { createIssue, escapeIssueMarkdown } from './github';

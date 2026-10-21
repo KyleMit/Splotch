@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { constantTimeEqual } from './admin';
 import { config } from './config';
-import { truncateCodeUnits } from '$lib/truncate';
+import { truncateCodeUnits } from '../truncate';
 
 // Proof that this server actually ran the AI attempt being reported. Free
 // picture tokens authorize the report for a locally-mintable installation id;

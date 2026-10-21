@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { env } from './privateEnv';
 import { getStore } from '@netlify/blobs';
 import type { StyleName } from '../ai/styles';
 import type { TokenUsage, UsageOutcome } from '../usageRecord';

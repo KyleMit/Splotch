@@ -13,7 +13,7 @@ const { envState, checkAccessToken, peekRateLimit, rateLimit, verifyKey } = vi.h
   verifyKey: vi.fn<AiImageProvider['verifyKey']>(),
 }));
 
-vi.mock('$env/dynamic/private', () => ({ env: envState }));
+vi.mock('$lib/server/privateEnv', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ checkAccessToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 vi.mock('./ai/provider', () => ({ aiProvider: { verifyKey } }));

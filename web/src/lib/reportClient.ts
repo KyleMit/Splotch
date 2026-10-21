@@ -2,8 +2,8 @@ import { apiUrl } from '$lib/api';
 import type { StyleName } from '$lib/ai/styles';
 import { IMAGE_REPORT_FORM_FIELDS, type AiReportKind } from '$lib/imageReport';
 import type { ReportRequestBody } from '$lib/report';
-import type { ReportResponse } from '../routes/api/report/+server';
-import type { ImageReportResponse } from '../routes/api/report-image/+server';
+import type { ReportResponse } from './server/api/report';
+import type { ImageReportResponse } from './server/api/reportImage';
 import { narrowReportReply } from './reportReply';
 
 // The client half of the two report endpoints' wire contract. Each request is
