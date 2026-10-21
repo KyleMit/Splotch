@@ -1,4 +1,4 @@
-import { isHttpError, json, text } from '@sveltejs/kit';
+import { isHttpError, json, text } from '../http';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '../../errorLog';
 import { API_CORS_HEADERS, applyApiCacheDefault } from '../apiCors';
 import { isCrossSiteFormSubmission } from '../csrf';

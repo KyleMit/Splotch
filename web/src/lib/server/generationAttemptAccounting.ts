@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error } from './http';
 import { RECOVERY_PROTOCOL, RecoveryFault } from '../ai/generationAttempt';
 import {
   attemptDigest,

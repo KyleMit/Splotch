@@ -1,16 +1,19 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
-import { error } from '@sveltejs/kit';
 import {
   apiHandler,
   asRecord,
   contentTypeOf,
+  error,
   fail,
   formStringField,
+  isHttpError,
+  json,
   readBodyWithinLimit,
   readFormBody,
   readJsonBody,
   stringField,
+  text,
   throttled,
   unreadableFormBody,
   type JsonBodyResult,
@@ -288,10 +291,69 @@ describe('fail', () => {
   });
 });
 
+describe('json', () => {
+  it('sets the byte length and JSON type of its body', async () => {
+    const response = json({ word: 'crème' }, { status: 201 });
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get('content-type')).toBe('application/json');
+    expect(response.headers.get('content-length')).toBe('17');
+    expect(await response.text()).toBe('{"word":"crème"}');
+  });
+
+  it('keeps a content type the caller names', () => {
+    const response = json({}, { headers: { 'Content-Type': 'application/problem+json' } });
+
+    expect(response.headers.get('content-type')).toBe('application/problem+json');
+  });
+});
+
+describe('text', () => {
+  it('sets the byte length of its body and no content type', async () => {
+    const response = text('POST method not allowed', { status: 405, headers: { allow: 'GET' } });
+
+    expect(response.status).toBe(405);
+    expect(response.headers.get('allow')).toBe('GET');
+    expect(response.headers.get('content-length')).toBe('23');
+    expect(response.headers.has('content-type')).toBe(false);
+    expect(await response.text()).toBe('POST method not allowed');
+  });
+});
+
+describe('error', () => {
+  function thrownBy(run: () => unknown): unknown {
+    try {
+      run();
+    } catch (cause) {
+      return cause;
+    }
+    throw new Error('nothing was thrown');
+  }
+
+  it('throws an HTTP error carrying its status and message', () => {
+    const thrown = thrownBy(() => error(404, 'Not found'));
+
+    expect(isHttpError(thrown)).toBe(true);
+    expect(thrown).toMatchObject({ status: 404, body: { message: 'Not found' } });
+    expect(String(thrown)).toBe('{"message":"Not found"}');
+  });
+
+  it('refuses a status outside the error range', () => {
+    const thrown = thrownBy(() => error(200, 'Fine'));
+
+    expect(isHttpError(thrown)).toBe(false);
+    expect(thrown).toBeInstanceOf(Error);
+  });
+
+  it('is not confused with an Error that carries a status', () => {
+    expect(isHttpError(Object.assign(new Error('platform cap'), { status: 413 }))).toBe(false);
+  });
+});
+
 describe('apiHandler', () => {
   const event = { url: { pathname: '/api/test' } };
 
-  it('converts a thrown SvelteKit error into the canonical failure shape', async () => {
+  it('converts a thrown HTTP error into the canonical failure shape', async () => {
     const handler = apiHandler(async () => {
       throw error(413, 'Image is too large');
     });

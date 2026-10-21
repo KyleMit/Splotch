@@ -19,7 +19,7 @@ amendment records why its obsolete pre-merge blob-encoding guard retired.
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                   | every push / PR                              |
 | Unit (RN renderer)    | Vitest (happy-dom)  | `npm run test:migration:rsd-selection` | every push / PR (browserless job)            |
 | E2E (web)             | Playwright          | `npm run test:e2e`                     | every push / PR                              |
-| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`               | every push / PR (browserless job)            |
+| Smoke (API contract)  | Node function host  | `npm run test:api:smoke`               | every push / PR (browserless job)            |
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL         |
 | Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (parallel job)               |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (parallel job)               |
@@ -160,13 +160,13 @@ the 2026-09 clean-code campaign found (rule 9 of `docs/CODING-STANDARDS.md`):
 
 Three Node smoke entry points guard the server contract:
 
-* **`test:api:smoke`** boots a throwaway `vite dev`, whose function host serves the `/api` Netlify
-  Functions, and checks the `/api/*` shapes (admin auth flow, bearer gate, token add/remove,
-  `verify-access-code`) plus the CORS/preflight contract the native apps depend on. No Blobs, so it
-  asserts the snapshot's `persistent` is `false`. CI runs it in the `browserless` job on every
-  push/PR; run it locally after any endpoint change (see the `api` skill). Its dev server listens on
-  `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`; in a concurrent worktree, set `SMOKE_PORT` to an unused
-  port.
+* **`test:api:smoke`** serves the `/api` Netlify Function in process on a throwaway plain Node host
+  (`tools/lib/netlify-function-host.mjs`: dev mode, no SvelteKit, no `vite dev`, no dotenv file) and
+  checks the `/api/*` shapes (admin auth flow, bearer gate, token add/remove, `verify-access-code`)
+  plus the CORS/preflight contract the native apps depend on. No Blobs, so it asserts the snapshot's
+  `persistent` is `false`. CI runs it in the `browserless` job on every push/PR; run it locally
+  after any endpoint change (see the `api` skill). Its host listens on `127.0.0.1:SMOKE_PORT`, not
+  `SPLOTCH_E2E_PORT`; in a concurrent worktree, set `SMOKE_PORT` to an unused port.
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
   SSR-rendered `/admin`, security and cache headers, `version.json` (exactly the checked-out
   commit's on a preview or loopback target), both native-origin CORS preflights, safe

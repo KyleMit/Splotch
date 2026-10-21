@@ -1,4 +1,3 @@
-import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites, bearerToken } from '../admin';
 import type { Invite } from '../admin';
 import {
@@ -9,7 +8,7 @@ import {
   MUTATION_FAILURE_STATUS,
 } from '../tokens';
 import type { MutationFailure, MutationResult } from '../tokens';
-import { apiHandler, readJsonBody, stringField } from '../http';
+import { apiHandler, error, json, readJsonBody, stringField } from '../http';
 import type { ApiHandler } from './apiEvent';
 
 // JSON twin of the /admin console's token management, driven by the API smoke

@@ -1,8 +1,7 @@
-import { json } from '@sveltejs/kit';
 import { rateLimit } from '../rateLimit';
 import { reportBucket } from '../rateLimitKeys';
 import { rateLimitPolicy } from '../rateLimitPolicy';
-import { apiHandler, asRecord, readJsonBody, throttled } from '../http';
+import { apiHandler, asRecord, json, readJsonBody, throttled } from '../http';
 import { MAX_REPORT_BODY_BYTES, submitReport } from '../report';
 import { REPORT_HONEYPOT_FIELD } from '../../report';
 import type { ApiHandler } from './apiEvent';

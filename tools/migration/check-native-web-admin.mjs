@@ -1,8 +1,9 @@
 // Drives the export's admin document in Chromium on a Netlify-shaped local host: the export's
 // files, then pretty URLs, then 404.html with status 404, and /api/* answered by the real /api
-// function (netlify/functions/api.ts) under a test admin secret. Never calls the hosted API.
+// function (netlify/functions/api.ts) under a test admin secret, loaded through the SvelteKit-free
+// function host (tools/lib/netlify-function-host.mjs). Never calls the hosted API.
 //
-// Two hosts, as the function runs in two modes. Under Vite's dev pipeline its token store keeps
+// Two hosts, as the function runs in two modes. In dev mode its token store keeps
 // edits in memory, so the console signs in, keeps its bearer session across a reload, lists, adds
 // and removes codes, and forgets the session on a 401 and on sign-out. Deployed it has no such
 // store without Netlify Blobs and its CSRF guard is on: the console's same-origin bearer writes
@@ -14,16 +15,18 @@
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
-import { Readable } from 'node:stream';
 import { chromium } from '@playwright/test';
-import { createServer as createViteServer } from 'vite';
 import { ADMIN_STATS_PATH } from '../../experiments/native-architecture/src/pageDocument/admin/adminApi.ts';
 import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
 import { SESSION_ENDED } from '../../experiments/native-architecture/src/pageDocument/admin/useAdminConsole.ts';
 import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
-import { netlifyFunctionRoutes } from '../lib/netlify-function-routes.mjs';
+import {
+  invokeFunction,
+  loadNetlifyFunctions,
+  writeResponse,
+} from '../lib/netlify-function-host.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
+import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { NATIVE_WEB_EXPORT_DIR, NOT_FOUND_FILE } from './build-native-web.mjs';
 import { ADMIN_ROBOTS_META } from './prerender-native-web-admin.mjs';
 
@@ -33,8 +36,6 @@ const TEST_ADMIN_SECRET = 'test-admin-secret';
 const SEED_TOKENS = ['alpha', 'beta'];
 const ADMIN_PATH = UNLINKED_DOCUMENT_PATHS.admin;
 const TOKENS_PATH = '/api/admin/tokens';
-const FUNCTIONS_DIR = join(ROOT, 'netlify/functions');
-const RUNTIME_MODE_MODULE = join(ROOT, 'web/src/lib/server/runtimeMode.ts');
 const FREE_GRANTS_MODULE = join(ROOT, 'web/src/lib/server/freeGenerationGrants.ts');
 // A synthetic installation the dev function's in-memory grant ledger is seeded with.
 const SEEDED_INSTALLATION = 'f'.repeat(64);
@@ -56,61 +57,6 @@ const CONTENT_TYPES = {
   '.webmanifest': 'application/manifest+json',
 };
 
-function toRequest(request, origin) {
-  const headers = new Headers();
-  for (let i = 0; i < request.rawHeaders.length; i += 2)
-    headers.append(request.rawHeaders[i], request.rawHeaders[i + 1]);
-  const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
-  return new Request(new URL(request.url, origin), {
-    method: request.method,
-    headers,
-    body: hasBody ? Readable.toWeb(request) : undefined,
-    duplex: 'half',
-  });
-}
-
-// The function as web/netlifyFunctionsHost.ts loads it: a module runner reads the deployed mode
-// only while NODE_ENV is production, so the function and its mode load before it is restored.
-async function loadApiFunction(mode) {
-  const previous = process.env.NODE_ENV;
-  if (mode === 'production') process.env.NODE_ENV = 'production';
-  const vite = await createViteServer({
-    configFile: false,
-    root: join(ROOT, 'web'),
-    mode,
-    logLevel: 'warn',
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: false, ws: false },
-  });
-  try {
-    const { dev } = await vite.ssrLoadModule(RUNTIME_MODE_MODULE);
-    if (dev !== (mode === 'development'))
-      throw new Error(`The /api function loaded with dev ${dev} for ${mode}`);
-    const routes = new Map(
-      await Promise.all(
-        netlifyFunctionRoutes(FUNCTIONS_DIR).map(async ({ file, path }) => [
-          path,
-          (await vite.ssrLoadModule(file)).default,
-        ])
-      )
-    );
-    return {
-      handlerFor: (pathname) =>
-        routes.get(pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname) ?? null,
-      // A server module from the function's own module graph, so state it writes is the
-      // function's.
-      serverModule: (file) => vite.ssrLoadModule(file),
-      close: () => vite.close(),
-    };
-  } catch (error) {
-    await vite.close();
-    throw error;
-  } finally {
-    if (previous === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = previous;
-  }
-}
-
 export async function startAdminHost({
   exportDir = NATIVE_WEB_EXPORT_DIR,
   mode = 'development',
@@ -119,7 +65,7 @@ export async function startAdminHost({
   process.env.ADMIN_ACCESS_TOKEN = TEST_ADMIN_SECRET;
   process.env.ALLOWED_TOKENS_LIST = SEED_TOKENS.join(',');
   delete process.env.USAGE_GRANT_ID_SECRET;
-  const functions = await loadApiFunction(mode);
+  const functions = await loadNetlifyFunctions(mode);
   const base = resolve(exportDir);
   const fileAt = (pathname) => {
     const candidate = resolve(base, `.${decodeURIComponent(pathname)}`);
@@ -130,14 +76,10 @@ export async function startAdminHost({
   const calls = [];
   const server = createServer((request, response) => {
     void (async () => {
-      const origin = `http://${request.headers.host}`;
-      const { pathname } = new URL(request.url, origin);
-      const handler = functions.handlerFor(pathname);
+      const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+      const handler = functions.functionFor(pathname);
       if (handler) {
-        const answer = await handler(toRequest(request, origin), {
-          ip: request.socket.remoteAddress ?? '127.0.0.1',
-          waitUntil: (promise) => void promise.catch(() => {}),
-        });
+        const answer = await invokeFunction(handler, request);
         calls.push({
           method: request.method,
           path: pathname,
@@ -145,9 +87,7 @@ export async function startAdminHost({
           authorization: request.headers.authorization ?? null,
           status: answer.status,
         });
-        response.statusCode = answer.status;
-        for (const [name, value] of answer.headers) response.setHeader(name, value);
-        response.end(Buffer.from(await answer.arrayBuffer()));
+        await writeResponse(response, answer);
         return;
       }
       const file = fileAt(pathname) ?? fileAt(`${pathname}.html`);
@@ -427,7 +367,6 @@ export async function checkNativeWebAdmin({
   exportDir = NATIVE_WEB_EXPORT_DIR,
   log = console.log,
 } = {}) {
-  run(process.execPath, [join(ROOT, 'tools/run-web-tool.mjs'), 'svelte-kit', 'sync']);
   const dev = await startAdminHost({ exportDir, mode: 'development' });
   const deployed = await startAdminHost({ exportDir, mode: 'production' });
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });

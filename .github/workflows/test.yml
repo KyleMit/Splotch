@@ -199,9 +199,10 @@ jobs:
       # The /api/* contract (CORS/preflight, admin auth, oracle shapes, the
       # canonical error envelope) has no other per-PR coverage. The hosted
       # deploy smoke (hosted-deploy-smoke.yml) checks the deployed contract
-      # against production daily, after merge. Self-contained: boots its own
-      # throwaway vite dev server on the smoke's default port, needs no
-      # browser and no model/Blobs credentials.
+      # against production daily, after merge. Self-contained: serves the
+      # function on its own throwaway plain Node host (no SvelteKit, no vite
+      # dev) on the smoke's default port, needs no browser and no model/Blobs
+      # credentials.
       - name: API contract smoke
         run: npm run test:api:smoke
 

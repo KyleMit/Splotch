@@ -17,7 +17,7 @@ async function checkGenerationResult(base) {
 
   // 404 where the job store is reachable and the job simply is not there; 503
   // with GENERATION_UNAVAILABLE where it is not reachable at all, which is this
-  // server, since a throwaway vite dev has no Netlify Blobs. The code is the
+  // server, since the throwaway local host has no Netlify Blobs. The code is the
   // point: it is what tells the client to keep waiting rather than abandon a
   // picture that may be sitting there finished. Neither is the 500 an unguarded
   // store read produced.

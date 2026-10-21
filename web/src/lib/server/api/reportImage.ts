@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import {
   ACCESS_TOKEN_HEADER,
   API_KEY_HEADER,
@@ -10,7 +9,7 @@ import { isReportingConfigured } from '../github';
 import { MAX_REPORT_REQUEST_BYTES, submitImageReport } from '../imageReport';
 import { authorizeImageReport } from '../imageReportAuthorization';
 import { AI_REPORTING_UNAVAILABLE_MESSAGE } from '../imageReportUnavailable';
-import { apiHandler, readFormBody } from '../http';
+import { apiHandler, json, readFormBody } from '../http';
 import type { ApiHandler } from './apiEvent';
 
 export type ImageReportResponse = { ok: true; reportId: string } | { ok: false; error: string };

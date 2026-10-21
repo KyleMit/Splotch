@@ -1,7 +1,6 @@
-import { error } from '@sveltejs/kit';
 import { API_KEY_HEADER, ACCESS_TOKEN_HEADER } from '../../apiHeaders';
 import { GENERATION_JOB_PARAM } from '../../apiParams';
-import { apiHandler, throttled } from '../http';
+import { apiHandler, error, throttled } from '../http';
 import {
   GENERATION_ACCEPTED_STATUS,
   GENERATION_UNAVAILABLE_CODE,
