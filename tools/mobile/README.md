@@ -20,12 +20,67 @@ production `splotch.art` host.
 | `check-app-ids.mjs`       | `precheck`                   | Verify app identifiers and display names across native owners                                                                                                                                |
 | `strip-static-assets.mjs` | `build:cap`                  | Remove web-only assets from the static Capacitor export                                                                                                                                      |
 | `check-static-bundle.mjs` | `postbuild`, `postbuild:cap` | Prove native-only lifecycle code stays out of the web bundle; reject web-only routes, services, or assets in the native export; and require the store-mandated pages to ship *and* be linked |
+| `report-app-size.mjs`     | `report:app-size`            | Report store download size and on-device install size for the shipping app and the React Native app, per platform, from release artifacts                                                    |
 
 The build entry points read `capacitor.config.json`, native project configuration, active mobile
 documentation, and `web/build/`. Pruning changes only the freshly generated `web/build/` output; it
 never edits `web/static/`. The checker proves the resume lifecycle is present only in the native
 build, requires the bundled privacy and changelog pages, permits only the starter coloring book, and
 fails if web-only hosts, admin copy, or PWA boot markers remain.
+
+## App size: shipping vs React Native
+
+`npm run report:app-size` measures what a user downloads from the store and what the app occupies
+once installed, so the RN cutover decision compares sizes the way the stores serve them. It takes
+release artifacts, not source, and builds nothing itself:
+
+```sh
+npm run report:app-size -- \
+  --android-shipping=<app-release.aab> --android-rn=<app-release.aab> \
+  --ios-shipping=<App.xcarchive> --ios-rn=<HelloWorld.xcarchive> \
+  --json=<report.json>
+```
+
+Pass any subset; a platform with both apps also gets an RN-vs-shipping delta line.
+
+* **Android** runs `bundletool build-apks`, then `get-size total` for the download Play would serve
+  the reference device and the range across every device configuration, and `extract-apks` for that
+  device's splits, whose total is the install size. Install size excludes ART-compiled code and app
+  data. The reference device is `android-reference-device-spec.json`, the profiling Galaxy S21 FE
+  trimmed to the fields that select splits (ABI, density, SDK, locale); `--android-device-spec`
+  names another `bundletool get-device-spec` file. A universal `.apk` is accepted and measured with
+  `apkanalyzer`, but it carries every ABI and density, so the report flags it as not comparable.
+* **iOS** exports the archive with `<thin-for-all-variants>` through `xcodebuild -exportArchive`
+  (method `debugging`, automatic signing) and reads Xcode's `App Thinning Size Report.txt`: download
+  is the variant's compressed size, install its uncompressed size, for the profiling iPad
+  (`iPad13,8` on iPadOS 26.5) unless `--ios-device` and `--ios-os` name another model and OS. A
+  variant's os-version is its minimum OS, so the report takes the newest variant that OS can
+  install, never a newer one the device could not run. `--allow-provisioning-updates` passes the
+  same flag to `xcodebuild` when export needs a profile created. A thinning report `.txt` is also
+  accepted directly. The App Store encrypts the executable before delivery, which compresses worse,
+  so App Store Connect reports a somewhat larger download than the thinning report.
+
+Prerequisites: `bundletool` on `PATH` (`brew install bundletool`) or `BUNDLETOOL_JAR` naming a
+`bundletool-all` jar, Java, the Android SDK's `apkanalyzer` for `.apk` input, and Xcode with a
+development signing identity for `.xcarchive` input. Thinning the RN app also needs Xcode's Metal
+Toolchain (`xcodebuild -downloadComponent MetalToolchain`), because react-native-svg bundles
+`.metallib` shaders; the shipping app has none. Each measurement fails on its own with the tool's
+output; the report still prints the ones that succeeded, exits non-zero, and writes no JSON.
+
+Producing the inputs:
+
+* Shipping Android: the `app-release.aab` attached to the GitHub Release is the exact store upload
+  (`gh release download <tag> -p app-release.aab`); `npm run android:bundle` builds one from source.
+* Shipping iOS: `npm run ios:archive` at the release tag writes `ios/App/build/App.xcarchive`.
+* RN Android: `./gradlew bundleRelease` from `experiments/native-architecture/android`, with the
+  signing properties in `experiments/native-architecture/DEVELOPMENT.md`; leave the perf-probe
+  variables unset.
+* RN iOS: after `pod install`,
+  `xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration Release -destination generic/platform=iOS -archivePath <out>.xcarchive -xcconfig ../../../ios/local.xcconfig archive`
+  from `experiments/native-architecture/ios`.
+
+`tools/mobile/tests/app-size.test.mjs` pins the bundletool and thinning-report parsers and the flag
+handling.
 
 ## Shared support
 
