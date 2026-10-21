@@ -1,13 +1,15 @@
 import { renderToString } from 'react-dom/server';
 import { Dimensions } from 'react-native';
 import AppRegistry from 'expo/src/launch/AppRegistry.web';
-import type { DocumentPage } from '../information/appPages';
-import { pageDocumentInputs } from './appDocument';
+import { pageDocumentInputs, type DocumentContent } from './appDocument';
+import { NOT_FOUND_DOCUMENT } from './appDocumentContract';
+import { BETA_DOCUMENT_HEAD } from './BetaPage';
 import { prerenderInputs } from '../platform/prerenderInputs';
 import { getSheet } from '../platform/reactNativeWebSheet';
 import { shippingFontFaceRules } from '../platform/shippingFont.web';
 import type { FirstFrameViewport } from '../prerenderFirstFrame';
 import { DOCUMENT_TITLES } from '../rsdDrawing/RsdInformationPage';
+import { NOT_FOUND_COPY } from '../rsdDrawing/RsdNotFoundPage';
 import type { AppearancePreference } from '../settings/appearance';
 import { PageDocument } from './PageDocument';
 export { pageIconsSettled } from './PageDocument';
@@ -24,7 +26,7 @@ export function prerenderPage({
   viewport,
   appearance,
 }: {
-  page: DocumentPage;
+  page: DocumentContent;
   viewport: FirstFrameViewport;
   appearance: AppearancePreference;
 }) {
@@ -37,6 +39,13 @@ export function prerenderPage({
   return { html, sheet: getSheet() };
 }
 
-export function pageDocumentHead(page: DocumentPage) {
-  return { title: DOCUMENT_TITLES[page], fontFaceRules: shippingFontFaceRules() };
+// Each document's <title>, and the tags its page adds to the export's head.
+function documentHead(page: DocumentContent) {
+  if (page === NOT_FOUND_DOCUMENT) return { title: NOT_FOUND_COPY.documentTitle, head: '' };
+  if (page === 'beta') return BETA_DOCUMENT_HEAD;
+  return { title: DOCUMENT_TITLES[page], head: '' };
+}
+
+export function pageDocumentHead(page: DocumentContent) {
+  return { ...documentHead(page), fontFaceRules: shippingFontFaceRules() };
 }

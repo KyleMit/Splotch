@@ -1,4 +1,4 @@
-import { Platform, View } from 'react-native';
+import { Platform, View, type LayoutChangeEvent } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import releases from '../../../../web/src/lib/releases.json';
@@ -21,7 +21,12 @@ import { styles as controls } from './controls';
 import { useReleaseHistory } from './useReleaseHistory';
 import { useInformationViewport } from './useInformationViewport';
 import { RsdTextLink } from './RsdTextLink';
-import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
+import {
+  HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE,
+  PAGE_FRAMED_MAX_WIDTH_PX,
+  SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
+} from './pageFrame';
+import { usePrerenderedMarkup } from './pageDocumentState';
 import { colors, dimensions, fonts } from './tokens.css';
 
 const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
@@ -92,6 +97,7 @@ const styles = css.create({
   },
   inlineVersion: { display: 'block' },
   inlineVersionLink: { display: 'inline-flex' },
+  folded: { display: 'none' },
 });
 const CONTENTS = releases.map((release) => ({
   ...release,
@@ -117,7 +123,11 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
   const entered =
     positions[CONTENTS[0].id] !== undefined &&
     geometry.columnTop + positions[CONTENTS[0].id] <= line;
-  const visible = olderOpen ? RELEASE_NOTES : RELEASE_NOTES.slice(0, RELEASES_SHOWN_OPEN);
+  // A prerendered page also carries the older releases, folded away until a script opens them and
+  // shown without one, so every contents link has its release to land on.
+  const prerendered = usePrerenderedMarkup();
+  const shown = olderOpen ? RELEASE_NOTES : RELEASE_NOTES.slice(0, RELEASES_SHOWN_OPEN);
+  const folded = olderOpen || !prerendered ? [] : RELEASE_NOTES.slice(RELEASES_SHOWN_OPEN);
   const railOffset = Math.max(
     0,
     Math.min(
@@ -185,33 +195,31 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
           style={{ flex: wide ? 1 : undefined, minWidth: 0 }}
           onLayout={navigation.columnLayout}
         >
-          {visible.map((release, index) => {
-            const meta = CONTENTS[index];
-            return (
-              <View
-                key={release.version}
-                testID={`changelog-position-${meta.id}`}
-                style={{ position: 'relative' }}
-                onLayout={(event) => navigation.articleLayout(meta.id, event)}
-              >
-                <html.div style={[styles.article, index === 0 && styles.first]}>
-                  {index > 0 ? (
-                    <html.div style={styles.rule}>
-                      <RsdReleaseRule hue={meta.hue} />
-                    </html.div>
-                  ) : null}
-                  <RsdReleaseArticle
-                    release={release}
-                    datetime={meta.datetime}
-                    hue={meta.hue}
-                    latest={index === 0}
-                  />
-                </html.div>
-              </View>
-            );
-          })}
+          {shown.map((release, index) => (
+            <ReleasePosition
+              key={release.version}
+              release={release}
+              index={index}
+              onLayout={navigation.articleLayout}
+            />
+          ))}
+          {folded.length ? (
+            <html.div
+              {...{ [SHOWN_WITHOUT_SCRIPT_ATTRIBUTE]: true }}
+              data-testid="changelog-folded-releases"
+              style={styles.folded}
+            >
+              {folded.map((release, index) => (
+                <ReleasePosition
+                  key={release.version}
+                  release={release}
+                  index={RELEASES_SHOWN_OPEN + index}
+                />
+              ))}
+            </html.div>
+          ) : null}
           {!olderOpen && RELEASE_NOTES.length > RELEASES_SHOWN_OPEN ? (
-            <html.div style={styles.older}>
+            <html.div {...{ [HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE]: true }} style={styles.older}>
               <html.div style={styles.rule}>
                 <RsdReleaseRule />
               </html.div>
@@ -226,6 +234,40 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
           <ReleaseHistoryEnd height={viewport.height} onLink={onLink} />
         </View>
       </View>
+    </View>
+  );
+}
+
+// One release in the reading column, carrying its contents link's target.
+function ReleasePosition({
+  release,
+  index,
+  onLayout,
+}: {
+  release: (typeof RELEASE_NOTES)[number];
+  index: number;
+  onLayout?: (id: string, event: LayoutChangeEvent) => void;
+}) {
+  const meta = CONTENTS[index];
+  return (
+    <View
+      testID={`changelog-position-${meta.id}`}
+      style={{ position: 'relative' }}
+      onLayout={onLayout && ((event) => onLayout(meta.id, event))}
+    >
+      <html.div id={meta.id} style={[styles.article, index === 0 && styles.first]}>
+        {index > 0 ? (
+          <html.div style={styles.rule}>
+            <RsdReleaseRule hue={meta.hue} />
+          </html.div>
+        ) : null}
+        <RsdReleaseArticle
+          release={release}
+          datetime={meta.datetime}
+          hue={meta.hue}
+          latest={index === 0}
+        />
+      </html.div>
     </View>
   );
 }

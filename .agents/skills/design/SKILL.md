@@ -382,7 +382,12 @@ the page cannot drift from the implementation. The chrome those partials share (
 section titles, intro paragraphs, inline `code`, the `.value` caption) lives once in
 `styleguide/sectionChrome.css` at zero specificity; a partial's own style block holds only what
 differs. `prerender = false` keeps the page out of the native static export — no native surface
-links to it — and serves it via SSR on the web. Use it to:
+links to it — and serves it via SSR on the web. The React Native app's styleguide is its rebuild on
+RN web, served as `design.html` by `npm run native:web:build` from
+`experiments/native-architecture/src/pageDocument/design/` (web only; no native route). It renders
+the RN token module (`rsdDrawing/tokens.css.ts`) and the ported `Rsd*` primitives, with each token's
+value and usage rule read from `tokens.ts` and `tokenUsage.ts`; a token or primitive the RN app
+gains belongs there too. Use either to:
 
 * review a token or primitive change in both themes (screenshot it for the PR — see the
   `pr-screenshots` skill);

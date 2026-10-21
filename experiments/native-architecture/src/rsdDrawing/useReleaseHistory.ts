@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import releaseHistoryPolicy from '../../../../web/src/lib/releaseHistoryPolicy.json';
+import { informationFragmentAtLaunch } from '../platform/informationFragment';
 
 const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 
@@ -24,6 +25,12 @@ export function useReleaseHistory(
   const offsets = useRef({ root: 0, body: 0, column: 0 });
   const pending = useRef<string | null>(null);
   const base = () => offsets.current.root + offsets.current.body + offsets.current.column;
+  // A link to an older release opens the older releases, as a browser opens shipping's folded
+  // <details> for its fragment; the page's deep link then reaches it once it lays out.
+  useEffect(() => {
+    const fragment = informationFragmentAtLaunch();
+    if (items.findIndex(({ id }) => id === fragment) >= RELEASES_SHOWN_OPEN) setOlderOpen(true);
+  }, [items]);
   const resumeJump = () => {
     if (!contentsOpen && pending.current && positions.current[pending.current] !== undefined) {
       onLink(`#${pending.current}`);

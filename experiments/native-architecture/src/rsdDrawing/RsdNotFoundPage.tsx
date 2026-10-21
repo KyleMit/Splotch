@@ -1,30 +1,13 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-  type Ref,
-  type RefObject,
-} from 'react';
+import { useEffect, useMemo, useRef, type ReactNode, type Ref, type RefObject } from 'react';
 import { Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { ScrollView } from '../platform/ScrollView';
-import { drawingArrival } from '../platform/drawingArrival';
 import { useForcedColors } from '../platform/forcedColors';
-import {
-  initialWindowMetrics,
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useInitialSafeAreaMetrics } from '../platform/safeAreaMetrics';
 import { SvgXml } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
-import {
-  resolveBackLabel,
-  type BackLabel,
-} from '../../../../web/src/lib/components/page/backLabel';
+import type { BackLabel } from '../../../../web/src/lib/components/page/backLabel';
 import {
   BREAKPOINT_EPSILON_PX,
   NARROW_PHONE_MIN_WIDTH_PX,
@@ -36,17 +19,19 @@ import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
-import { APP_PAGE_PATHS, type AppPage } from '../information/appPages';
+import { APP_PAGE_PATHS, INFORMATION_TOP_ID } from '../information/appPages';
 import { landFocus, retainFocus } from './landFocus';
 import { RsdNotFoundLink } from './notFoundLink';
 import { RsdPageHero } from './RsdPageHero';
 import { pageTextRef } from './pageTypography';
 import { RsdNotFoundFooter } from './notFoundFooter';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
+import { useBackLabel, usePageNavigation } from './pageDocumentState';
 export { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { RsdPressable } from './RsdPressable';
 import { RsdPageAnchor } from './RsdPageAnchor';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
+import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 import { blobPath, blobXml } from './blob';
 import { styles as controlStyles } from './controls';
 import { fontTheme } from './fontTheme';
@@ -217,18 +202,6 @@ function startDrawing() {
   openAppPage('drawing');
 }
 
-type OpenAppPage = (page: AppPage, fragment?: string) => void;
-
-// Where an information page's own links lead. In the drawing screen's document every page opens
-// over the paper (platform/appPath); a page document provides one that loads any other page's
-// document instead (pageDocument/PageDocument.tsx). It lives beside the page sheet every page
-// uses, so it adds no module to the drawing screen's graph.
-export const PageNavigation = createContext<OpenAppPage>((...open) => openAppPage(...open));
-
-export function usePageNavigation() {
-  return useContext(PageNavigation);
-}
-
 // The system-colour blob shipping's BackToTopLink draws in forced colors, a CanvasText border inside
 // its edge; BackLink.svelte leaves its own to the browser, which blanks the disc and the chevron.
 function withForcedBorder(xml: string, size: number) {
@@ -238,7 +211,7 @@ function withForcedBorder(xml: string, size: number) {
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
-function BackLink({
+export function RsdBackLink({
   label,
   short,
   onDrawingReturn,
@@ -293,15 +266,21 @@ function blobShadow(hex: string) {
 }
 
 // PageShell.svelte's masthead mark is a second anchor home on the web; native shows the mark alone.
-function BrandMark({
+export function RsdBrandMark({
   phone,
-  narrow,
+  narrow: pinnedNarrow,
+  suffix,
   onDrawingReturn,
 }: {
   phone: boolean;
-  narrow: boolean;
+  // The styleguide's specimen pins it; the page sheet follows the window.
+  narrow?: boolean;
+  suffix?: string;
   onDrawingReturn: () => void;
 }) {
+  const narrowWindow =
+    useWindowDimensions().width <= NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX;
+  const narrow = pinnedNarrow ?? narrowWindow;
   const crayon = CRAYON[phone ? 'phone' : 'wide'];
   const tracking = WORDMARK_TRACKING_EM[phone ? 'phone' : 'wide'];
   const mark = (
@@ -317,7 +296,18 @@ function BrandMark({
         </html.div>
       )}
       <html.span style={[controlStyles.boldText, styles.wordmark(WORDMARK_FONT_PX * tracking)]}>
-        {NOT_FOUND_COPY.wordmark}
+        {suffix === undefined ? (
+          NOT_FOUND_COPY.wordmark
+        ) : phone ? (
+          // BrandMark.svelte: at phone width a two-word mark would wrap beside the back link, so
+          // it shows only its suffix and keeps the name for the link's accessible name.
+          <>
+            <RsdVisuallyHidden>{`${NOT_FOUND_COPY.wordmark} `}</RsdVisuallyHidden>
+            {suffix}
+          </>
+        ) : (
+          `${NOT_FOUND_COPY.wordmark} ${suffix}`
+        )}
       </html.span>
     </html.div>
   );
@@ -344,6 +334,7 @@ export function RsdPageSheet({
   backLabel = NOT_FOUND_COPY.startDrawing,
   onScroll,
   collapsibleLede = true,
+  wordmarkSuffix,
   onDrawingReturn = startDrawing,
 }: {
   title: string;
@@ -354,6 +345,8 @@ export function RsdPageSheet({
   backLabel?: BackLabel;
   onScroll?: (y: number) => void;
   collapsibleLede?: boolean;
+  // The word after "Splotch" in the masthead's mark: /beta's "beta".
+  wordmarkSuffix?: string;
   onDrawingReturn?: () => void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -363,7 +356,6 @@ export function RsdPageSheet({
   const insets = useSafeAreaInsets();
   const frame = pageFrame(window.width);
   const phone = frame === 'phone';
-  const narrow = window.width <= NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX;
   const short = window.height <= SHORT_PAGE_HEIGHT_PX;
   const side = short && !phone ? SHORT_SHEET_GUTTER_PX : gutter(window.width);
   const sheet = short
@@ -398,6 +390,7 @@ export function RsdPageSheet({
       <PageSheetFocus title={title} titleRef={titleRef}>
         <html.main
           ref={pageTextRef}
+          id={INFORMATION_TOP_ID}
           style={[
             styles.page,
             phone ? styles.plain : styles.ground,
@@ -419,8 +412,12 @@ export function RsdPageSheet({
             ]}
           >
             <html.div style={[styles.topbar, short && styles.shortTopbar]}>
-              <BackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
-              <BrandMark phone={phone} narrow={narrow} onDrawingReturn={onDrawingReturn} />
+              <RsdBackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
+              <RsdBrandMark
+                phone={phone}
+                suffix={wordmarkSuffix}
+                onDrawingReturn={onDrawingReturn}
+              />
             </html.div>
             {/* RN Web does not report position-only layout changes on the body. */}
             <View
@@ -476,18 +473,21 @@ function PageSheetFocus({
 export function RsdNotFoundPage() {
   const window = useWindowDimensions();
   const short = window.height <= SHORT_PAGE_HEIGHT_PX;
-  const [arrival] = useState(drawingArrival);
+  const backLabel = useBackLabel(false);
+  const openAppPage = usePageNavigation();
+  const initialMetrics = useInitialSafeAreaMetrics();
   useEffect(() => {
     setDocumentTitle(NOT_FOUND_COPY.documentTitle);
   }, []);
   return (
     <DrawingAppearanceProvider preference={bootAppearance()}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics} style={scroll.fill}>
+      <SafeAreaProvider initialMetrics={initialMetrics} style={scroll.fill}>
         <RsdPageSheet
           title={NOT_FOUND_COPY.title}
           lede={NOT_FOUND_COPY.lede}
-          backLabel={resolveBackLabel({ fromPath: null, ...arrival })}
+          backLabel={backLabel}
           collapsibleLede={false}
+          onDrawingReturn={() => openAppPage('drawing')}
         >
           <html.div style={styles.body(short ? dimensions.space4 : dimensions.space6)}>
             <html.div aria-hidden style={styles.mark}>
@@ -495,23 +495,23 @@ export function RsdNotFoundPage() {
             </html.div>
             <html.ul role="list" style={styles.links}>
               <html.li style={window.width <= PHONE_MAX_WIDTH_PX && styles.firstLink}>
-                <RsdNotFoundLink page="drawing" variant="brand">
+                <RsdNotFoundLink page="drawing" variant="brand" onOpen={openAppPage}>
                   {NOT_FOUND_COPY.startDrawing}
                 </RsdNotFoundLink>
               </html.li>
               <html.li>
-                <RsdNotFoundLink page="changelog" variant="wash">
+                <RsdNotFoundLink page="changelog" variant="wash" onOpen={openAppPage}>
                   {NOT_FOUND_COPY.changelog}
                 </RsdNotFoundLink>
               </html.li>
               <html.li>
-                <RsdNotFoundLink page="privacy" variant="wash">
+                <RsdNotFoundLink page="privacy" variant="wash" onOpen={openAppPage}>
                   {NOT_FOUND_COPY.privacy}
                 </RsdNotFoundLink>
               </html.li>
             </html.ul>
           </html.div>
-          <RsdNotFoundFooter />
+          <RsdNotFoundFooter openAppPage={openAppPage} />
         </RsdPageSheet>
       </SafeAreaProvider>
     </DrawingAppearanceProvider>
