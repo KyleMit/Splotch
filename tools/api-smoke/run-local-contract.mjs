@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Self-contained smoke test for the /api/* HTTP contract (see the `api` skill).
-// Boots a throwaway `vite dev` with test env, exercises the CORS/preflight
+// Boots a throwaway `vite dev` with test env, whose function host
+// (web/netlifyFunctionsHost.ts) serves the /api Netlify Functions, exercises the CORS/preflight
 // contract, the admin auth flow, the public oracles, the csp-report receiver,
 // and generate-image's auth gate against the documented shapes, then tears the
 // server down. No model key or Netlify Blobs needed — every case here is
@@ -19,7 +20,7 @@ import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 import { checkGenerationRecoveryContract } from './lib/recovery-contract.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
-// so the assertions below name the same headers the hook stamps: /api/* takes
+// so the assertions below name the same headers apiFunction stamps: /api/* takes
 // API_RESPONSE_HEADERS and must not carry the rest, which is checked by
 // subtraction — a new security header is covered the moment it's added to that
 // module, whichever side of the split it lands on.
@@ -126,15 +127,14 @@ async function checkAdminAuth(admin) {
   return { auth: authHeader(session), noAuth };
 }
 
-// --- CORS contract (hooks.server.ts `handleCors`, ADR-0007) ---
+// --- CORS contract (apiFunction's API_CORS_HEADERS, ADR-0007) ---
 async function checkCorsContract(base, noAuth) {
   // The native WebViews call /api/* from a foreign origin, so the preflight is
   // answered before any route logic and every /api/* response carries the CORS
   // set. The security headers split: a non-OPTIONS response takes
   // API_RESPONSE_HEADERS (nosniff — the part that means something on a
-  // non-document body) and none of the rest, while a preflight short-circuits
-  // the handle sequence before `handleSecurityHeaders` runs at all and so takes
-  // neither. The remainder is named by subtraction below, so a header added to
+  // non-document body) and none of the rest, while apiFunction answers a
+  // preflight before it stamps either, so the preflight takes neither. The remainder is named by subtraction below, so a header added to
   // SECURITY_HEADERS without being deliberately admitted to the API subset
   // fails here immediately.
   const wrongCors = (res) =>
