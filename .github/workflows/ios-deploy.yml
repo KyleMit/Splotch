@@ -29,7 +29,8 @@ jobs:
     name: Maestro launch smoke test (iOS simulator)
     # macOS runners ship full Xcode and pre-installed iPhone simulators.
     runs-on: macos-latest
-    timeout-minutes: 50
+    # The Release build alone runs about 20 minutes on a hosted runner.
+    timeout-minutes: 80
     env:
       # CocoaPods refuses to run under a non-UTF-8 locale.
       LANG: en_US.UTF-8
@@ -62,8 +63,11 @@ jobs:
       # smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
-        # Leave time to upload diagnostics before the job-wide cancellation deadline.
-        timeout-minutes: 20
+        # A cold hosted simulator's first boot, the Release app's install, XCTest
+        # driver startup and clearState's reinstall each take minutes before the
+        # flow's first assertion. Leave time to upload diagnostics before the
+        # job-wide cancellation deadline.
+        timeout-minutes: 40
         env:
           # Budget cold hosted XCTest startup separately from the app's paint assertion.
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000
