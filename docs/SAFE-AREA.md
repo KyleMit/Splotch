@@ -3,12 +3,23 @@
 How `env(safe-area-inset-*)` behaves on the hardware Splotch ships to, how the app consumes it, and
 how to test a layout change against the whole device matrix without owning the devices.
 
-Two tools do the testing, and they answer different questions:
+Each app has its tools, and they answer different questions. The React Native app's check is the one
+that outlives the SvelteKit app; the shipping tools go with it.
 
-| Tool                       | Command                                | Answers                                                                                                      |
-| -------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `/dev/notch` harness       | `npm run dev`, then open `/dev/notch`  | "What does this look like on a Pixel in landscape?" — every profile, every orientation, the live HUD, by eye |
-| `safe-area-matrix.spec.ts` | `npm run test:e2e -- safe-area-matrix` | "Did anything break?" — the same matrix, asserted, in CI                                                     |
+| App          | Tool                                             | Command                                                                                                                                      | Answers                                                                                                                      |
+| ------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| React Native | `tools/migration/check-native-web-safe-area.mjs` | `npm run native:web:build` (its post-build checks run it)                                                                                    | "Did anything break?" — every profile, every orientation, asserted against the RN web export                                 |
+| React Native | the same check's `--gallery`                     | `node --experimental-strip-types tools/migration/check-native-web-safe-area.mjs --gallery <dir>` after a build, then open `<dir>/index.html` | "What does this look like on a Pixel in landscape?" — every scenario's screenshot with the claimable region outlined, by eye |
+| Shipping     | `/dev/notch` harness                             | `npm run dev`, then open `/dev/notch`                                                                                                        | The same by-eye question for the SvelteKit HUD                                                                               |
+| Shipping     | `safe-area-matrix.spec.ts`                       | `npm run test:e2e -- safe-area-matrix`                                                                                                       | The same matrix, asserted against the SvelteKit app, in CI                                                                   |
+
+The RN check drives the drawing screen through CDP's real insets (the RN app reads `env()` through
+`react-native-safe-area-context`, which has no override seam), reports each landscape rotation's
+screen orientation as a portrait-natural device would (`landscape-primary` at 90°), and asserts what
+the spec asserts: the insets reach the app, every drawing control's tap point is inside the
+claimable region, nothing scrolls, the Notch Band paints exactly `diagnose()`'s edges at their
+insets' depth, and the coloring picker's card clears the side insets. The RN web build is not a CI
+job yet, so the check runs wherever `npm run native:web:build` does.
 
 ## The consumption seam
 
@@ -68,7 +79,7 @@ fixed-position probe rather than `getComputedStyle` on the custom property — t
 | `env()` fallback argument                 | —                                | **No.** Fires only when unsupported, never on `0`                       |
 | `--safe-area-*` override                  | No — the properties, not `env()` | **Yes** for layout. What `/dev/notch` uses; works in any browser        |
 | Chrome DevTools device mode               | No                               | **No.** Always reports `0`, for every device preset                     |
-| CDP `Emulation.setSafeAreaInsetsOverride` | **Yes**                          | **Yes.** Chromium only. What the matrix spec uses                       |
+| CDP `Emulation.setSafeAreaInsetsOverride` | **Yes**                          | **Yes.** Chromium only. What the matrix spec and the RN check use       |
 | iOS Simulator (Safari + WKWebView)        | **Yes**                          | **Yes** — best free fidelity, but screenshots only; see the traps below |
 | Android emulator with a cutout AVD        | **Yes**                          | **Yes**, and scriptable over CDP — measured 42px on a Pixel 7 Pro AVD   |
 | Android dev options → simulate a cutout   | OS-level yes                     | Propagation into `env()` is **unverified**; see the open questions      |
@@ -96,7 +107,7 @@ the per-platform mechanics are in
 
 ## What the devices actually report
 
-The full dataset with per-entry sources and confidence is `web/src/routes/dev/notch/lib/devices.ts`.
+The full dataset with per-entry sources and confidence is `web/src/lib/safeAreaMatrix/devices.ts`.
 The rules worth carrying in your head:
 
 **iOS reports both landscape sides identically.** `safe-area-inset-left` and `-right` are both set
@@ -232,11 +243,11 @@ own policy on top by calling the app's own function, so the two cannot drift.
 
 ## Adding a device
 
-Add an entry to `DEVICE_PROFILES` in `web/src/routes/dev/notch/lib/devices.ts` with its sources and
-an honest `confidence`. Both the harness and the matrix spec read that one array, so a new profile
-appears as a section in the gallery and as a set of scenarios in CI on the next run. Add a profile
-only for a **distinct inset tuple** — a second phone reporting the same four numbers at the same
-viewport exercises nothing the first didn't.
+Add an entry to `DEVICE_PROFILES` in `web/src/lib/safeAreaMatrix/devices.ts` with its sources and an
+honest `confidence`. The harness, the matrix spec and the RN check all read that one array, so a new
+profile appears as a section in each gallery and as a set of scenarios in every check on the next
+run. Add a profile only for a **distinct inset tuple** — a second phone reporting the same four
+numbers at the same viewport exercises nothing the first didn't.
 
 ## Settled by measurement
 

@@ -12,6 +12,16 @@ import type { AiFailureDetails } from './sessionContract';
 import { AiRecoverySession } from './recoverySession';
 import { bytesBase64 } from './base64';
 import { encodeAiUpload } from '../platform/aiUpload';
+// IndexedDB refuses a write with a QuotaExceededError DOMException when the device is out of space.
+function storageFullError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'QuotaExceededError'
+  );
+}
+
 export class NativeAiController extends AiRecoverySession {
   // Where a run goes when only a grown-up's setup can fix it; the flow sends it to Settings.
   protected needsSetup = () => {};
@@ -30,7 +40,9 @@ export class NativeAiController extends AiRecoverySession {
     const id = journal.id;
     let retained: Awaited<ReturnType<typeof this.deps.storage.retain>>;
     try {
-      retained = await this.deps.storage.retain(id, reply.bytes, reply.mime);
+      retained = await this.storageCall(() =>
+        this.deps.storage.retain(id, reply.bytes, reply.mime)
+      );
     } catch {
       const result = {
         uri: `data:${reply.mime};base64,${bytesBase64(reply.bytes)}`,
@@ -90,6 +102,7 @@ export class NativeAiController extends AiRecoverySession {
             status: null,
             endpoint: poll ? '/api/generation-result' : '/api/generate-image',
             message: 'The picture that came back could not be opened.',
+            storageFull: false,
           },
           message:
             'This AI picture could not be safely opened. Your original drawing is saved. A generation will not be retried automatically.',
@@ -142,8 +155,8 @@ export class NativeAiController extends AiRecoverySession {
   };
   // A run that failed in a way the same drawing may fix: the error card offers Try again until
   // shipping's repeated-failure limit.
-  private failRun = async (journal: AiJournal, failure: AiFailureDetails) => {
-    this.update({ failures: this.state.failures + 1, failure });
+  private failRun = async (journal: AiJournal, failure: Omit<AiFailureDetails, 'storageFull'>) => {
+    this.update({ failures: this.state.failures + 1, failure: { ...failure, storageFull: false } });
     const failed: AiJournal = { ...journal, phase: 'failed' };
     try {
       await this.persist(failed);
@@ -236,7 +249,7 @@ export class NativeAiController extends AiRecoverySession {
         await this.persist({ ...receipt.journal, phase: 'failed' });
         return true;
       }
-      const upload = await this.deps.storage.readPreparedUpload(receipt);
+      const upload = await this.storageCall(() => this.deps.storage.readPreparedUpload(receipt));
       if (!this.currentGenerationPermission(proof)) {
         await this.persist({
           ...receipt.journal,
@@ -272,7 +285,8 @@ export class NativeAiController extends AiRecoverySession {
         () => {}
       );
       await this.settle(id, reply, false);
-    } catch {
+    } catch (error) {
+      const storageFull = !uploadStarted && storageFullError(error);
       this.update({
         failures: this.state.failures + 1,
         failure: {
@@ -280,12 +294,17 @@ export class NativeAiController extends AiRecoverySession {
           endpoint: '/api/generate-image',
           message: uploadStarted
             ? 'The request did not finish.'
-            : 'The drawing could not be saved before sending.',
+            : storageFull
+              ? 'The drawing could not be saved before sending: this device is out of storage space.'
+              : 'The drawing could not be saved before sending.',
+          storageFull,
         },
         ...(this.state.attempt?.kind === 'starting' ? { attempt: { kind: 'stopped' } } : {}),
         message: uploadStarted
           ? 'That did not finish. Your original drawing is still here. A sent generation will not be retried automatically.'
-          : 'AI storage did not confirm the save. Nothing was sent. Your drawing is still here.',
+          : storageFull
+            ? 'This device is out of storage space. Nothing was sent. Free up some space, then try again.'
+            : 'AI storage did not confirm the save. Nothing was sent. Your drawing is still here.',
       });
     } finally {
       this.active = false;
@@ -434,7 +453,7 @@ export class NativeAiController extends AiRecoverySession {
     const held = this.heldBytes;
     this.active = true;
     try {
-      await this.deps.storage.read();
+      await this.rereadStorage();
       await this.settle(
         held.id,
         {

@@ -65,14 +65,16 @@ export function aiRun(state: AiState): AiRun | null {
 
 // Why the AI Result shows no picture: a refusal guides the child to draw something else; `retry`
 // offers Try again; `rest` is shipping's repeated-failure card, which this app also shows while a
-// saved recovery record or a throttled allowance check holds the wand.
-export type AiErrorReason = 'safety' | 'retry' | 'rest';
+// saved recovery record or a throttled allowance check holds the wand; `storage` asks for free
+// space and keeps offering Try again, since nothing was sent.
+export type AiErrorReason = 'safety' | 'retry' | 'rest' | 'storage';
 export type AiResultPhase =
   | Readonly<{ kind: 'generating' }>
   | Readonly<{ kind: 'result'; picture: AiResult }>
   | Readonly<{ kind: 'error'; reason: AiErrorReason }>;
 
 function failedReason(state: AiState): AiErrorReason {
+  if (state.failure?.storageFull) return 'storage';
   return state.failures >= AI_FAILURE_RETRY_LIMIT ? 'rest' : 'retry';
 }
 

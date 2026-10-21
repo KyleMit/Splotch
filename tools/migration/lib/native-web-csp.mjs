@@ -1,14 +1,14 @@
-// The Content-Security-Policy the React Native web export's documents carry: shipping's native
-// meta policy (nativeMetaCspDirectives in web/securityPolicy.ts), whose connect-src admits the
-// hosted API origin the export's transports call from wherever it is served, with script-src
+// The Content-Security-Policy the React Native web export's documents carry: the site's web meta
+// policy (webMetaCspDirectives in web/securityPolicy.ts), whose connect-src is the page's own
+// origin, which serves the /api function the export's transports call by path, with script-src
 // holding 'self' and the hash of every inline executable script the document itself carries, never
-// 'unsafe-inline' (issue 3017). A meta tag cannot carry the directives that policy leaves out; the
-// hosting response delivers those, as it does for shipping.
+// 'unsafe-inline' (issue 3017). A meta tag cannot carry the directives that policy leaves out;
+// netlify.toml's response policy delivers those.
 import { createHash } from 'node:crypto';
 import {
   inlineExecutableScriptBodies,
-  nativeMetaCspDirectives,
   serializeCspDirectives,
+  webMetaCspDirectives,
 } from '../../../web/securityPolicy.ts';
 
 const CSP_META = /<meta http-equiv="Content-Security-Policy" content="([^"]*)">/i;
@@ -24,7 +24,7 @@ function inlineScriptHashes(html) {
 }
 
 function nativeWebCspDirectives(html) {
-  return { ...nativeMetaCspDirectives(), 'script-src': ['self', ...inlineScriptHashes(html)] };
+  return { ...webMetaCspDirectives(), 'script-src': ['self', ...inlineScriptHashes(html)] };
 }
 
 // The policy goes first in <head>, ahead of every script it governs.

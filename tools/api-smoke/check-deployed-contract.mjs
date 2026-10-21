@@ -33,16 +33,17 @@ const VERSION_CACHE_CONTROL = ['no-cache', 'no-store', 'must-revalidate'];
 const ADMIN_CACHE_CONTROL = ['no-store'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
 const HSTS_HEADER = 'Strict-Transport-Security';
-const CSP_HEADER = 'Content-Security-Policy';
 const NETLIFY_HOST_SUFFIX = '.netlify.app';
 const MINIMUM_HSTS_MAX_AGE_SECONDS = 31_536_000;
 const NETLIFY_EDGE_SECURITY_HEADERS = new Set([HSTS_HEADER, 'X-Content-Type-Options']);
 const EXACT_STATIC_SECURITY_HEADERS = Object.fromEntries(
   Object.entries(SECURITY_HEADERS).filter(([name]) => name !== HSTS_HEADER)
 );
-const EXACT_SSR_SECURITY_HEADERS = Object.fromEntries(
-  Object.entries(SECURITY_HEADERS).filter(([name]) => name !== HSTS_HEADER && name !== CSP_HEADER)
-);
+// Every deployed document is a static file of the React Native web export, whose meta policy
+// allows 'self' and hashes its own inline scripts (tools/migration/lib/native-web-csp.mjs).
+const DOCUMENT_CSP_DIRECTIVES = { ...WEB_CSP_DIRECTIVES, 'script-src': ['self'] };
+const DEPLOYED_DOCUMENTS = ['/', '/privacy', '/admin'];
+const IMMUTABLE_ASSET = /["'](\/_expo\/static\/[^"'?]+\.(?:css|js))["'?]/;
 const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
@@ -100,16 +101,16 @@ function normalizedCsp(policy) {
   );
 }
 
-function cspProblems(policy, { html, prerendered }) {
+function cspProblems(policy, html) {
   if (!policy) return ['Content-Security-Policy=null'];
   const directives = normalizedCsp(policy);
   const problems = [];
-  const expectedDirectives = new Set(Object.keys(WEB_CSP_DIRECTIVES));
+  const expectedDirectives = new Set(Object.keys(DOCUMENT_CSP_DIRECTIVES));
   for (const directive of directives.keys()) {
     if (!expectedDirectives.has(directive)) problems.push(`${directive}=unexpected`);
   }
-  for (const [directive, expectedSources] of Object.entries(WEB_CSP_DIRECTIVES)) {
-    if (prerendered && SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive)) {
+  for (const [directive, expectedSources] of Object.entries(DOCUMENT_CSP_DIRECTIVES)) {
+    if (SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive)) {
       if (directives.has(directive)) problems.push(`${directive} must be response-header-only`);
       continue;
     }
@@ -130,25 +131,16 @@ function cspProblems(policy, { html, prerendered }) {
 
   const scriptSources = directives.get('script-src') ?? new Set();
   if (scriptSources.has('unsafe-inline')) problems.push('script-src contains unsafe-inline');
-  const expectedScriptSources = new Set(WEB_CSP_DIRECTIVES['script-src']);
+  const expectedScriptSources = new Set(DOCUMENT_CSP_DIRECTIVES['script-src']);
   const generatedSources = [...scriptSources].filter(
     (source) => !expectedScriptSources.has(source)
   );
-  if (prerendered) {
-    if (generatedSources.some((source) => !/^sha256-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
-      problems.push('script-src has a non-hash generated source');
-    }
-    for (const script of inlineExecutableScriptBodies(html)) {
-      const hash = `sha256-${createHash('sha256').update(script).digest('base64')}`;
-      if (!scriptSources.has(hash)) problems.push(`script-src missing inline ${hash}`);
-    }
-  } else {
-    if (!generatedSources.some((source) => /^nonce-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
-      problems.push('script-src missing an SSR nonce');
-    }
-    if (generatedSources.some((source) => !/^nonce-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
-      problems.push('script-src has a non-nonce generated source');
-    }
+  if (generatedSources.some((source) => !/^sha256-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
+    problems.push('script-src has a non-hash generated source');
+  }
+  for (const script of inlineExecutableScriptBodies(html)) {
+    const hash = `sha256-${createHash('sha256').update(script).digest('base64')}`;
+    if (!scriptSources.has(hash)) problems.push(`script-src missing inline ${hash}`);
   }
   return problems;
 }
@@ -159,31 +151,17 @@ function metaCspPolicies(html) {
   ].map((match) => match[1]);
 }
 
-/** Exported so the deploy-smoke fixture can pin the SSR-specific policy shape. */
-export function missingSsrSecurityHeaders(response, hostname, html) {
-  const missing = missingHeaders(response, EXACT_SSR_SECURITY_HEADERS);
-  missing.push(...hstsProblems(response, hostname));
-  missing.push(...cspProblems(response.headers.get(CSP_HEADER), { html, prerendered: false }));
-  if (metaCspPolicies(html).length !== 0) missing.push('SSR HTML contains a CSP meta tag');
-  return missing;
-}
-
 async function checkStaticRoutes(hostname) {
   let rootHtml = '';
-  for (const path of ['/', '/privacy', '/admin']) {
+  for (const path of DEPLOYED_DOCUMENTS) {
     const response = await fetch(`${BASE}${path}`);
     const body = await response.text();
-    const prerendered = path !== '/admin';
-    const missingSecurity = prerendered
-      ? missingStaticSecurityHeaders(response, hostname)
-      : missingSsrSecurityHeaders(response, hostname, body);
-    if (prerendered) {
-      const policies = metaCspPolicies(body);
-      if (policies.length !== 1) {
-        missingSecurity.push(`CSP meta tag count=${policies.length}`);
-      } else {
-        missingSecurity.push(...cspProblems(policies[0], { html: body, prerendered: true }));
-      }
+    const missingSecurity = missingStaticSecurityHeaders(response, hostname);
+    const policies = metaCspPolicies(body);
+    if (policies.length !== 1) {
+      missingSecurity.push(`CSP meta tag count=${policies.length}`);
+    } else {
+      missingSecurity.push(...cspProblems(policies[0], body));
     }
     check(
       `GET ${path} → deployed HTML with security headers`,
@@ -193,9 +171,8 @@ async function checkStaticRoutes(hostname) {
         missingSecurity.length === 0,
       `got ${response.status}; missing/wrong ${missingSecurity.join(', ')}`
     );
-    // The admin console renders every live access code, so its document must
-    // never be stored. Asserted on the unauthenticated response because the
-    // loader sets the header before its auth branch.
+    // The admin console renders every live access code once signed in, so its
+    // document must never be stored (netlify.toml's /admin rule).
     if (path === '/admin') {
       check(
         'GET /admin → no-store, so the console is never written to a cache',
@@ -206,13 +183,11 @@ async function checkStaticRoutes(hostname) {
     if (path === '/') rootHtml = body;
   }
 
-  const assetPath = rootHtml.match(
-    /(?:src|href)="([^"?]*\/_app\/immutable\/[^"?]+\.(?:css|js|woff2))[^"]*"/i
-  )?.[1];
+  const assetPath = rootHtml.match(IMMUTABLE_ASSET)?.[1];
   check(
     'home page names a hashed immutable asset',
     Boolean(assetPath),
-    `searched ${rootHtml.length} response bytes for /_app/immutable/*.{css,js,woff2}`
+    `searched ${rootHtml.length} response bytes for /_expo/static/*.{css,js}`
   );
   if (assetPath) {
     const response = await fetch(new URL(assetPath, BASE));

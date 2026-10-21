@@ -127,6 +127,18 @@ export function nativeMetaCspDirectives(): ContentSecurityPolicyDirectives {
   );
 }
 
+// What a static web document's meta tag carries: the site's policy, less the directives a meta
+// policy cannot hold, which netlify.toml's response policy delivers. Its connect-src is the page's
+// own origin, whose host serves the /api function.
+export function webMetaCspDirectives(): ContentSecurityPolicyDirectives {
+  return Object.fromEntries(
+    Object.entries(WEB_CSP_DIRECTIVES).filter(
+      ([directive]) =>
+        !SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive as ContentSecurityPolicyDirective)
+    )
+  );
+}
+
 function scriptAttribute(attributes: string, name: 'src' | 'type'): string | undefined {
   const match = new RegExp(`\\s${name}\\s*=\\s*(?:["']([^"']*)["']|([^\\s>]+))`, 'i').exec(
     attributes

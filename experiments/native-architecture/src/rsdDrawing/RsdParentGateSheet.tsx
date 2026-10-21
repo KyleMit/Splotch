@@ -17,6 +17,7 @@ import { gateSizeClass, type GateSizeClass } from './modalGeometry';
 import { PARENT_GATE_METRICS } from '../parentCenter/parentGateMetrics';
 import { brandColors, colors, dimensions, fonts, motion } from './tokens.css';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
+import { DRAWING_SCALE } from '../drawing/theme';
 import { paletteHex } from '../drawing/palette';
 import { colorFamilyShade } from '../../../../web/src/lib/hexPickerLayout';
 import { PARENT_GATE_COPY } from '../parentCenter/parentGateCopy';
@@ -40,6 +41,11 @@ const SUCCESS_GAP_PX = 10;
 const SUCCESS_BADGE_PX = 72;
 const SUCCESS_ICON_PX = 40;
 const FOOTER_MIN_HEIGHT_PX = 44;
+// Quicksand's ascent plus descent, in ems: the height native gives one line of its text.
+const QUICKSAND_LINE_EM = 1.25;
+// iOS's largest ordinary text size (1.353×) still fits the phone's one-row equation. From the first
+// accessibility size the question stands over its answer, so each row keeps its glyphs whole.
+export const GATE_EQUATION_ONE_ROW_MAX_FONT_SCALE = 1.4;
 
 const ignore = () => {};
 
@@ -169,8 +175,26 @@ function GateHeader({ size, managing }: { size: GateSizeClass; managing: boolean
   );
 }
 
+// The shipping splats hold a digit at ordinary text sizes; past that each grows, keeping its
+// proportions, until it holds one line of its digit at the OS text size.
+function equationGeometry(size: GateSizeClass, fontScale: number) {
+  const metrics = PARENT_GATE_METRICS[size];
+  const digitLine = DRAWING_SCALE.fontSizeXl * fontScale * QUICKSAND_LINE_EM;
+  const growth = Math.max(1, digitLine / metrics.operand);
+  return {
+    stacked: fontScale > GATE_EQUATION_ONE_ROW_MAX_FONT_SCALE,
+    operand: Math.ceil(metrics.operand * growth),
+    dab: {
+      width: Math.ceil(metrics.dab.width * growth),
+      height: Math.ceil(metrics.dab.height * growth),
+    },
+  };
+}
+
 function GateProblem({ state, size }: { state: ParentGateState; size: GateSizeClass }) {
   const metrics = PARENT_GATE_METRICS[size];
+  const { fontScale } = useWindowDimensions();
+  const geometry = equationGeometry(size, fontScale);
   return (
     <html.div data-testid="gate-problem">
       {/* The row's label carries the whole equation for assistive tech; the digits inside are
@@ -178,28 +202,36 @@ function GateProblem({ state, size }: { state: ParentGateState; size: GateSizeCl
       <RsdGateEquation
         role="img"
         aria-label={`What is ${state.x} times ${state.y}?`}
-        style={[styles.equation, styles.gap(metrics.equationGap)]}
+        style={[
+          styles.equation,
+          geometry.stacked && styles.equationStacked,
+          styles.gap(metrics.equationGap),
+        ]}
       >
-        {[state.x, state.y].map((operand, index) => (
-          <html.div key={index} aria-hidden style={styles.pair(metrics.equationGap)}>
-            <GateOperand value={operand} index={index} size={metrics.operand} />
-            <html.span style={styles.operator}>{index === 0 ? '×' : '='}</html.span>
-          </html.div>
-        ))}
-        {answerDabs(state).map((digit, index) => (
-          <GateDab
-            key={index}
-            digit={digit}
-            width={metrics.dab.width}
-            height={metrics.dab.height}
-          />
-        ))}
+        <html.div aria-hidden style={styles.group(metrics.equationGap)}>
+          <GateOperand value={state.x} index={0} size={geometry.operand} />
+          <html.span style={styles.operator}>×</html.span>
+          <GateOperand value={state.y} index={1} size={geometry.operand} />
+        </html.div>
+        <html.div aria-hidden style={styles.group(metrics.equationGap)}>
+          <html.span style={styles.operator}>=</html.span>
+          {answerDabs(state).map((digit, index) => (
+            <GateDab
+              key={index}
+              digit={digit}
+              width={geometry.dab.width}
+              height={geometry.dab.height}
+            />
+          ))}
+        </html.div>
       </RsdGateEquation>
       <html.p
         aria-hidden
         style={[
           styles.error,
-          styles.errorHeight(metrics.errorHeight),
+          // The reserved line follows the OS text size; a message that wraps there takes the
+          // lines it needs.
+          styles.errorHeight(metrics.errorHeight * Math.max(1, fontScale)),
           size === 'phoneLandscape' && styles.errorLandscape,
           (size === 'tablet' || size === 'largeTablet') && styles.fontSm,
         ]}
@@ -356,8 +388,9 @@ const styles = css.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  equationStacked: { flexDirection: 'column' },
   gap: (gap: number) => ({ gap }),
-  pair: (gap: number) => ({ display: 'flex', flexDirection: 'row', alignItems: 'center', gap }),
+  group: (gap: number) => ({ display: 'flex', flexDirection: 'row', alignItems: 'center', gap }),
   splat: (size: number) => ({
     position: 'relative',
     display: 'flex',
@@ -396,7 +429,7 @@ const styles = css.create({
     fontFamily: fonts.boldFamily,
     fontWeight: fonts.boldWeight,
   },
-  // A fixed-height line, so the message appearing does not shift the keypad.
+  // A reserved line, so a message appearing does not shift the keypad.
   error: {
     display: 'flex',
     alignItems: 'center',
@@ -409,7 +442,7 @@ const styles = css.create({
     fontWeight: fonts.semiboldWeight,
     textAlign: 'center',
   },
-  errorHeight: (height: number) => ({ height }),
+  errorHeight: (minHeight: number) => ({ minHeight }),
   errorLandscape: { marginTop: dimensions.space3 },
   footer: {
     boxSizing: 'border-box',

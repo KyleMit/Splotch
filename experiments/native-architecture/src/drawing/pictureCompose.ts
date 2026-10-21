@@ -24,17 +24,18 @@ function release(...instances: Array<SkJSIInstance<string> | null>) {
 }
 
 // The shipping export compositor's stack (exportCompositor.ts): the paper color, the grain tiled
-// one texel per CSS pixel, then the captured ink and line art stretched onto the saved grid.
+// one texel per CSS pixel, then each captured layer, bottom first, stretched onto the saved grid.
 export async function composePicture(
-  layerBase64: string,
+  layersBase64: readonly string[],
   picture: PictureExport,
   includePaperTexture = true
 ) {
-  const layer = decode(Skia.Data.fromBase64(layerBase64));
+  const layers: SkImage[] = [];
   const { width, height } = picture.size;
   const surface = Skia.Surface.Make(width, height);
   const paint = Skia.Paint();
   try {
+    for (const layer of layersBase64) layers.push(decode(Skia.Data.fromBase64(layer)));
     if (!surface) throw new Error('Picture export is unavailable.');
     const texture = includePaperTexture ? await loadPaperGrain() : null;
     const canvas = surface.getCanvas();
@@ -51,13 +52,14 @@ export async function composePicture(
       );
       canvas.drawPaint(paint);
     }
-    canvas.drawImageRectCubic(
-      layer,
-      Skia.XYWHRect(0, 0, layer.width(), layer.height()),
-      Skia.XYWHRect(0, 0, width, height),
-      MITCHELL_B,
-      MITCHELL_C
-    );
+    for (const layer of layers)
+      canvas.drawImageRectCubic(
+        layer,
+        Skia.XYWHRect(0, 0, layer.width(), layer.height()),
+        Skia.XYWHRect(0, 0, width, height),
+        MITCHELL_B,
+        MITCHELL_C
+      );
     surface.flush();
     const snapshot = surface.makeImageSnapshot();
     try {
@@ -66,6 +68,6 @@ export async function composePicture(
       release(snapshot);
     }
   } finally {
-    release(paint, surface, layer);
+    release(paint, surface, ...layers);
   }
 }

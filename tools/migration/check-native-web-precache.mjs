@@ -26,6 +26,9 @@ import {
   NOT_FOUND_FILE,
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
+  documentCards as writtenDocumentCards,
+  isHostedStaticFile,
+  socialCardHeadTags,
   subresourceIntegrity,
   webVersionHeadTag,
 } from './build-native-web.mjs';
@@ -33,17 +36,22 @@ import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { startupScriptList } from './prerender-native-web.mjs';
 import { documentPolicyProblems } from './lib/native-web-csp.mjs';
+import { pageOnlyChunks, writtenPageDocuments } from './prerender-native-web-pages.mjs';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // The version endpoint must reach the network; the worker, build identity and host's not-found
-// answer are not page assets.
+// answer are not page assets. A page document is answered by the network, and offline by the app
+// shell, which shows the same page over the paper, or the not-found page for a document-only page
+// such as /beta (build-native-web.mjs's navigation routes); an unlinked document by the network
+// alone.
 const UNFETCHED_EXPORT_FILES = new Set([
   NATIVE_WEB_SERVICE_WORKER,
   'metadata.json',
   NOT_FOUND_FILE,
   VERSION_JSON_FILENAME,
+  ...writtenPageDocuments().map(({ file }) => file),
 ]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';
@@ -52,6 +60,8 @@ const PRECACHE_ENTRY = new RegExp(
   'g'
 );
 const SHELL_ASSET_REFERENCE = /(?:src|href)="\/([^"?#]+)"/g;
+// An anchor names a page to navigate to, never a file the shell loads.
+const ANCHOR_START_TAG = /<a\s[^>]*>/gi;
 const PATH_DATA = / d="([^"]+)"/;
 // Shorter path data (a lone circle or square) could recur in a startup icon by coincidence.
 const MIN_LAZY_ICON_SAMPLE_CHARS = 40;
@@ -106,6 +116,19 @@ export function lazyModuleSamples() {
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
+// The directories netlify.toml caches immutable for a year, which only a name that changes with its
+// bytes may be (ADR-0042). Expo names every file under them with the MD5 of its content.
+export const IMMUTABLE_EXPORT_DIRECTORIES = ['_expo/static/', 'assets/'];
+const CONTENT_HASHED_NAME = /[-.][0-9a-f]{32}\.[a-z0-9]+$/;
+
+export function unhashedImmutableFiles(exportedFiles) {
+  return exportedFiles.filter(
+    (file) =>
+      IMMUTABLE_EXPORT_DIRECTORIES.some((directory) => file.startsWith(directory)) &&
+      !CONTENT_HASHED_NAME.test(file)
+  );
+}
+
 // Every image the bundled starter book shows, by the hash of the shipping file the web export
 // serves as a hashed asset.
 export function starterBookImages() {
@@ -134,7 +157,9 @@ export function precacheEntriesFromSource(source) {
 export function shellAssetReferences(indexHtml) {
   return [
     ...new Set([
-      ...[...indexHtml.matchAll(SHELL_ASSET_REFERENCE)].map((match) => match[1]),
+      ...[...indexHtml.replace(ANCHOR_START_TAG, '').matchAll(SHELL_ASSET_REFERENCE)].map(
+        (match) => match[1]
+      ),
       ...startupScriptList(indexHtml).map((src) => src.replace(/^\//, '')),
     ]),
   ];
@@ -175,6 +200,7 @@ export function nativeWebPrecacheProblems({
   lazySamples,
   precacheBytes,
   maxPrecacheBytes = MAX_NATIVE_WEB_PRECACHE_BYTES,
+  pageOnlyFiles = [],
 }) {
   const precacheUrls = precacheEntries.map((entry) => entry.url);
   const problems = shellProblems({ precacheUrls, expectedShellUrl, appShellFallbackLookups });
@@ -192,9 +218,30 @@ export function nativeWebPrecacheProblems({
   );
   if (missingOnDisk.length)
     problems.push(`Precached files missing from the export: ${missingOnDisk.join(', ')}`);
+  const pageOnly = new Set(pageOnlyFiles);
+  const unhashed = unhashedImmutableFiles(exportedFiles);
+  if (unhashed.length)
+    problems.push(
+      `Files the host caches immutable carry no content hash in their name: ${unhashed.join(', ')}`
+    );
+  const hostedPrecached = precacheUrls.filter(isHostedStaticFile);
+  if (hostedPrecached.length)
+    problems.push(
+      `Files the host serves beside the app are precached: ${hostedPrecached.join(', ')}`
+    );
   const notPrecached = exportedFiles.filter(
-    (file) => !UNFETCHED_EXPORT_FILES.has(file) && file !== APP_SHELL_FILE && !precached.has(file)
+    (file) =>
+      !UNFETCHED_EXPORT_FILES.has(file) &&
+      !isHostedStaticFile(file) &&
+      !pageOnly.has(file) &&
+      file !== APP_SHELL_FILE &&
+      !precached.has(file)
   );
+  const pageOnlyPrecached = pageOnlyFiles.filter((file) => precached.has(file));
+  if (pageOnlyPrecached.length)
+    problems.push(
+      `Chunks only a page document loads are precached: ${pageOnlyPrecached.join(', ')}`
+    );
   if (notPrecached.length)
     problems.push(`Exported files missing from the precache: ${notPrecached.join(', ')}`);
   const unbackedReferences = shellReferences.filter((path) => !precached.has(path));
@@ -230,12 +277,21 @@ export function nativeWebPrecacheProblems({
   return problems;
 }
 
+// A pasted link and a search result read these from the document itself, before any script.
+export function socialCardProblems(html, file, card) {
+  const missing = socialCardHeadTags(card).filter((tag) => !html.includes(tag));
+  return missing.length
+    ? [`${file} lacks ${missing.length} of ${card.path}'s description and link-preview tags`]
+    : [];
+}
+
 export function checkNativeWebPrecache({
   exportDir = NATIVE_WEB_EXPORT_DIR,
   starterOutlines = starterOutlineSamples(),
   starterImages = starterBookImages(),
   lazySamples = lazyModuleSamples(),
   maxPrecacheBytes,
+  documentCards = writtenDocumentCards(),
   log = console.log,
 } = {}) {
   const swPath = join(exportDir, NATIVE_WEB_SERVICE_WORKER);
@@ -286,10 +342,16 @@ export function checkNativeWebPrecache({
     lazySamples,
     precacheBytes,
     maxPrecacheBytes,
+    pageOnlyFiles: pageOnlyChunks(exportDir, APP_SHELL_FILE),
   });
   problems.push(
     ...documentPolicyProblems(indexHtml.toString('utf8'), APP_SHELL_FILE),
-    ...documentPolicyProblems(readFileSync(join(exportDir, NOT_FOUND_FILE), 'utf8'), NOT_FOUND_FILE)
+    ...[...new Set([NOT_FOUND_FILE, ...writtenPageDocuments().map(({ file }) => file)])].flatMap(
+      (file) => documentPolicyProblems(readFileSync(join(exportDir, file), 'utf8'), file)
+    ),
+    ...documentCards.flatMap(({ file, card }) =>
+      socialCardProblems(readFileSync(join(exportDir, file), 'utf8'), file, card)
+    )
   );
   if (problems.length) throw new Error(problems.join('\n'));
   log(

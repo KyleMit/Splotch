@@ -19,7 +19,7 @@ import {
 afterEach(cleanupFixtures);
 
 describe('Netlify second production installer', () => {
-  it('gates the actual Netlify build and staging command on the installer', () => {
+  it('gates the actual Netlify build command on the installer', () => {
     const source = readFileSync(join(ROOT, 'netlify.toml'), 'utf8');
     const sections = source.split(/^\[build\]\s*$/m);
     expect(sections).toHaveLength(2);
@@ -27,7 +27,7 @@ describe('Netlify second production installer', () => {
     const commands = [...build.matchAll(/^\s*command\s*=\s*"([^"]*)"\s*$/gm)];
     expect(commands).toHaveLength(1);
     expect(commands[0][1]).toBe(
-      'git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs'
+      'git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build:site'
     );
   });
 

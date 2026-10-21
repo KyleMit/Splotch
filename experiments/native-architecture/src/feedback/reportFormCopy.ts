@@ -20,6 +20,10 @@ export const REPORT_FORM_COPY = {
   sendIdea: 'Send idea',
   sending: 'Sending…',
   sent: 'Thanks for your feedback.',
+  // The /feedback page's way out when a report could not be delivered, around the address.
+  emailFallbackLead: 'You can also email it to ',
+  emailFallbackTail: ' instead — we read that too.',
+  emailSubject: 'Splotch feedback',
 } as const;
 
 // What the message box asks for each kind.

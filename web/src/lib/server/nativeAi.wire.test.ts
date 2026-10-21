@@ -65,6 +65,8 @@ const PNG_FIXTURE = Uint8Array.from(
 const ID = 'a'.repeat(64),
   JOB = 'b'.repeat(64);
 const wire: { input: string; init: RequestInit }[] = [];
+const PAGE_ORIGIN = 'https://deploy-preview.example';
+
 beforeEach(() => {
   wire.length = 0;
   fixture.rate.mockReturnValue({ limited: false });
@@ -79,10 +81,11 @@ beforeEach(() => {
   fixture.provider.mockImplementation(() => {
     throw new Error('A controlled fixture must never call the provider');
   });
+  // The web transport calls a path on the page's own origin, as a browser resolves it.
   vi.stubGlobal('fetch', async (input: string, init: RequestInit) => {
     wire.push({ input, init });
-    const request = new Request(input, init);
-    const url = new URL(input);
+    const url = new URL(input, PAGE_ORIGIN);
+    const request = new Request(url, init);
     if (url.pathname === '/api/free-generation-grant')
       return GET({ request, getClientAddress: () => '203.0.113.10' } as unknown as Parameters<
         typeof GET

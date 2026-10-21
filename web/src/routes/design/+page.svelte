@@ -11,13 +11,13 @@
   import '$lib/components/styleguide/sectionChrome.css';
   import BackLink from '$lib/components/page/BackLink.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
+  import { PAGE_CARDS } from '$lib/components/page/socialCard';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { primitiveSections } from '$lib/components/styleguide/primitiveSections';
   import type { PageProps } from './$types';
 
-  const DESCRIPTION =
-    "The Splotch visual language — tokens, components, and voice — rendered live from the app's own sources.";
+  const DESCRIPTION = PAGE_CARDS['/design'].description;
 
   let { data }: PageProps = $props();
 
@@ -146,7 +146,7 @@
   <meta name="description" content={DESCRIPTION} />
 </svelte:head>
 
-<SocialCard path="/design" title="Splotch Design System" description={DESCRIPTION} />
+<SocialCard {...PAGE_CARDS['/design']} />
 
 <div class="page">
   <StyleguideHeader

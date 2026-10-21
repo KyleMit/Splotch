@@ -149,6 +149,8 @@ describe('beta web public coloring assets', () => {
             };
           if (specifier === './scripts/serve-coloring-assets.cjs')
             return { createColoringAssetsMiddleware: createMiddleware };
+          if (specifier === './scripts/page-document-resolution.cjs')
+            return require('../../experiments/native-architecture/scripts/page-document-resolution.cjs');
           return require(specifier);
         },
       });

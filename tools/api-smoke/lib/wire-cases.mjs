@@ -11,15 +11,16 @@ const TINY_PNG = Buffer.from(
 );
 const INSTALLATION_ID = 'a'.repeat(64);
 const JOB_ID = 'b'.repeat(64);
-const UNTRUSTED_ORIGIN = 'https://attacker.example';
+export const UNTRUSTED_ORIGIN = 'https://attacker.example';
 // rateLimitPolicy.verifyAccessCode's limit, which the base the baseline was
 // recorded from also enforced.
 const SHARED_GUESS_BUDGET = 10;
 const CODE_GUESSER = '198.51.100.10';
 const TOKEN_GUESSER = '198.51.100.20';
 const ANDROID_ORIGIN = 'https://localhost';
-const IOS_ORIGIN = 'capacitor://localhost';
+export const IOS_ORIGIN = 'capacitor://localhost';
 
+// The paths SvelteKit served, whose answers fixtures/wire-baseline.json recorded.
 export const API_PATHS = [
   '/api/admin/login',
   '/api/admin/tokens',
@@ -34,7 +35,7 @@ export const API_PATHS = [
   '/api/verify-key',
 ];
 
-const json = (body) => ({
+export const jsonBody = (body) => ({
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify(body),
 });
@@ -96,13 +97,13 @@ export function wireCases() {
       name: 'admin login, wrong key',
       method: 'POST',
       path: '/api/admin/login',
-      ...json({ key: 'nope' }),
+      ...jsonBody({ key: 'nope' }),
     },
     {
       name: 'admin login, right key',
       method: 'POST',
       path: '/api/admin/login',
-      ...json({ key: ADMIN_SECRET }),
+      ...jsonBody({ key: ADMIN_SECRET }),
     },
     {
       name: 'admin login, malformed body',
@@ -115,14 +116,14 @@ export function wireCases() {
       name: 'admin login, oversized body',
       method: 'POST',
       path: '/api/admin/login',
-      ...json({ key: 'x'.repeat(9 * 1024) }),
+      ...jsonBody({ key: 'x'.repeat(9 * 1024) }),
     },
     { name: 'admin login, GET', method: 'GET', path: '/api/admin/login' },
     {
       name: 'admin login, trailing slash',
       method: 'POST',
       path: '/api/admin/login/?x=1',
-      ...json({ key: 'nope' }),
+      ...jsonBody({ key: 'nope' }),
     },
     {
       name: 'admin login, cross-site text/plain form post',
@@ -177,19 +178,19 @@ export function wireCases() {
       name: 'verify-access-code, empty',
       method: 'POST',
       path: '/api/verify-access-code',
-      ...json({ code: '  ' }),
+      ...jsonBody({ code: '  ' }),
     },
     {
       name: 'verify-access-code, wrong',
       method: 'POST',
       path: '/api/verify-access-code',
-      ...json({ code: 'zeta' }),
+      ...jsonBody({ code: 'zeta' }),
     },
     {
       name: 'verify-access-code, seeded',
       method: 'POST',
       path: '/api/verify-access-code',
-      ...json({ code: 'alpha' }),
+      ...jsonBody({ code: 'alpha' }),
     },
     {
       name: 'verify-access-code, malformed',
@@ -206,7 +207,7 @@ export function wireCases() {
       body: JSON.stringify({ code: 'zeta' }),
     },
 
-    { name: 'verify-key, empty', method: 'POST', path: '/api/verify-key', ...json({}) },
+    { name: 'verify-key, empty', method: 'POST', path: '/api/verify-key', ...jsonBody({}) },
     {
       name: 'verify-key, malformed',
       method: 'POST',
@@ -224,31 +225,36 @@ export function wireCases() {
       headers: { 'x-installation-id': INSTALLATION_ID },
     },
     { name: 'free grant, HEAD', method: 'HEAD', path: '/api/free-generation-grant' },
-    { name: 'free grant, POST', method: 'POST', path: '/api/free-generation-grant', ...json({}) },
+    {
+      name: 'free grant, POST',
+      method: 'POST',
+      path: '/api/free-generation-grant',
+      ...jsonBody({}),
+    },
 
     {
       name: 'report, empty message',
       method: 'POST',
       path: '/api/report',
-      ...json({ kind: 'bug', message: '   ' }),
+      ...jsonBody({ kind: 'bug', message: '   ' }),
     },
     {
       name: 'report, bad kind',
       method: 'POST',
       path: '/api/report',
-      ...json({ kind: 'nope', message: 'hi' }),
+      ...jsonBody({ kind: 'nope', message: 'hi' }),
     },
     {
       name: 'report, unconfigured',
       method: 'POST',
       path: '/api/report',
-      ...json({ kind: 'feature', message: 'A stamps tool please' }),
+      ...jsonBody({ kind: 'feature', message: 'A stamps tool please' }),
     },
     {
       name: 'report, honeypot',
       method: 'POST',
       path: '/api/report',
-      ...json({ kind: 'feature', message: 'A stamps tool please', hp: 'bot' }),
+      ...jsonBody({ kind: 'feature', message: 'A stamps tool please', hp: 'bot' }),
     },
     {
       name: 'report, cross-site text/plain form post',
@@ -471,7 +477,7 @@ function sharedGuessBudgetCases() {
     name: `shared guess budget, wrong code ${n} from ${ip}`,
     method: 'POST',
     path: '/api/verify-access-code',
-    ...json({ code: `wrong-${n}` }),
+    ...jsonBody({ code: `wrong-${n}` }),
     ip,
   });
   const wrongToken = (n, ip) => ({

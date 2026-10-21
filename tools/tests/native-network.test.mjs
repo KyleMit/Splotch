@@ -108,7 +108,7 @@ it('declares the native network module where Expo autolinking reads it', () => {
       'utf8'
     )
   );
-  const version = native.devDependencies['expo-network'];
+  const version = native.dependencies['expo-network'];
   expect(version).toBeDefined();
   const pods = readFileSync(
     new NodeURL('../../experiments/native-architecture/ios/Podfile.lock', import.meta.url),

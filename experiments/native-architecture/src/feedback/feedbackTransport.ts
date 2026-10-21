@@ -1,7 +1,8 @@
 import { NETWORK_ERROR_MESSAGE } from '../../../../web/src/lib/latestRequest';
 import type { ReportRequestBody } from './report';
 
-export const FEEDBACK_URL = 'https://splotch.art/api/report';
+export const FEEDBACK_PATH = '/api/report';
+export const FEEDBACK_URL = `https://splotch.art${FEEDBACK_PATH}`;
 export const MAX_FEEDBACK_REPLY_BYTES = 8192;
 export const FEEDBACK_UNKNOWN_DELIVERY_NOTICE =
   'Splotch may already have received it. Sending again could send it twice.';

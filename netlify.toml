@@ -1,8 +1,12 @@
-# Production deploy config — the Netlify site builds from the repo ROOT (base directory = root,
-# the default), because package.json + the lockfile live here so the install works. The SvelteKit
-# app lives in web/ (ADR-0024): `npm run build` runs the build with cwd=web/, so adapter-netlify
-# writes its output under web/; tools/stage-netlify-functions.mjs then copies web/.netlify ->
-# .netlify so Netlify finds the SSR function at the root; static assets publish from web/build.
+# Production deploy config. The Netlify site builds from the repo ROOT (base directory = root, the
+# default), because package.json + the lockfile live here so the install works.
+#
+# The site is the React Native web export (experiments/native-architecture, ADR-0180) and one
+# Netlify Function for every /api path (netlify/functions/api.ts). Netlify answers a request with,
+# in order: a [[redirects]] rule below; a published file, by pretty URL (/privacy -> privacy.html,
+# / -> index.html); a function whose config.path matches; then the export's 404.html, the React
+# Native not-found page (docs/scratchpad/2026-10-20-rn-web-single-app/README.md, Hosting on
+# Netlify).
 #
 # Local development reads web/netlify.toml instead (`npm run dev:netlify` runs
 # `netlify dev --cwd web`), which configures only the dev server and which the deploy never reads.
@@ -13,30 +17,35 @@
   # release tag and the web version would fall back to major.minor.0+<sha>
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.
-  command = "git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs"
+  #
+  # `build:site` is the export plus its browserless checks. The checks that drive
+  # Chromium (every page without JavaScript, the admin console against the /api
+  # function) need Playwright, which the --prod install leaves out; CI's
+  # "Native web build" job runs them on every pull request.
+  command = "git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build:site"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # reads. The paths on the `ignore` line below are the whole watched set. Its
   # tools/ capability folders are enumerated rather than watching all of tools/,
   # so a change inside a folder the build never runs does not redeploy; every
   # flat tools/*.mjs entry point is watched, whether the build runs it or not.
-  # pnpm-workspace.yaml is watched alongside the lockfile because it carries the
-  # dependency overrides, so editing it changes what the build installs.
+  # The React Native app is watched except its Android and iOS projects, which
+  # the web export never reads. pnpm-workspace.yaml is watched alongside the
+  # lockfile because it carries the dependency overrides, so editing it changes
+  # what the build installs.
   #
   # ':(glob)' on the flat entry points is load-bearing: in a plain Git pathspec
   # '*' crosses directory separators, so 'tools/*.mjs' would match every .mjs
   # under tools/ rather than only the flat ones, rebuilding on every
   # capability-folder change. tools/tests/enumerated-build-paths.test.mjs pins
   # that semantics, and checks the enumeration against the tools/ folders the
-  # npm prebuild/build/postbuild scripts reach through relative `from '…'`
-  # imports. That check does not follow the `command` line's staging step or
-  # other import forms (side-effect or dynamic imports).
+  # build:site script reaches through relative `from '…'` imports. That check
+  # does not follow other import forms (side-effect or dynamic imports).
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/migration tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
-  # Static assets are published straight from web/build (no copy needed). Only the SSR function
-  # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
-  # but adapter-netlify writes it under web/.netlify, so stage-netlify-functions.mjs copies that one tree up.
-  publish = "web/build"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify experiments/native-architecture ':(exclude)experiments/native-architecture/android' ':(exclude)experiments/native-architecture/ios' ':(glob)tools/*.mjs' tools/lib tools/migration tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml patches netlify.toml"
+  # The export, with the files the host serves beside it (build-native-web.mjs's
+  # HOSTED_STATIC_ENTRIES: the coloring books, robots.txt, the deny page, ...).
+  publish = "experiments/native-architecture/dist/web"
 
 [build.environment]
   # dependencies == what this Netlify build needs; devDependencies == local/CI-only
@@ -51,16 +60,10 @@
   # tools/tests/workflow-hygiene.test.mjs guards this agreement.
   NODE_VERSION = "22"
 
-# Edge deny-rules (issue #347). The site is one catch-all SSR function
-# (adapter-netlify emits `config.path = ["/*"]`), so every junk path a scanner
-# probes — `/.env`, `/.git/config` — otherwise invokes (and bills) the function
-# just to 404. These `[[redirects]]` are user rules in netlify.toml, which
-# Netlify evaluates BEFORE the framework's function catch-all, so a matching
-# probe short-circuits to the static `deny.html` (served from the CDN, zero
-# invocation) with the same 404 the function used to return.
-#
-# Deliberately narrow: only unambiguous credential/VCS dotfile probes. Do NOT
-# blanket-block `*.json` — the app serves `/version.json` and the webmanifest.
+# Edge deny-rules (issue #347): only unambiguous credential/VCS dotfile probes,
+# answered with the static `deny.html` and a 404, so a scanner's `/.env` or
+# `/.git/config` never reaches a page document. Do NOT blanket-block `*.json` —
+# the app serves `/version.json` and the webmanifest.
 [[redirects]]
   from = "/.env*"
   to = "/deny.html"
@@ -78,11 +81,8 @@
 
 # Deprecated tester links (ADR-0112). /android-beta and /ios-beta were single
 # pages before /beta's two tabs replaced them, and both were handed out on their
-# own, so they redirect rather than 404. Here rather than only in the app for the
-# same reason as the deny rules above: a user rule short-circuits at the edge,
-# so retiring a URL costs no function invocation. web/src/routes/*-beta/+page.ts
-# carries the same redirect for dev, `vite preview`, and the E2E suite, where
-# this file is not in play — betaPlatform.test.ts fails if the two disagree.
+# own, so they redirect rather than 404. betaPlatform.test.ts fails if these and
+# the /beta page's tabs (web/src/lib/components/beta/betaPlatform.ts) disagree.
 [[redirects]]
   from = "/android-beta"
   to = "/beta?os=android"
@@ -124,8 +124,9 @@
     # The CSP reporting endpoint group. Browser and delivery limits are recorded
     # in ADR-0073; securityHeaders.test.ts drift-guards this literal value.
     Reporting-Endpoints = 'csp="/api/csp-report"'
-    # The enforcing platform subset. web/securityPolicy.ts owns its derivation;
-    # ADR-0073 records how it composes with SvelteKit's resource policies.
+    # The directives a document's meta policy cannot carry. Each exported
+    # document's own meta policy (tools/migration/lib/native-web-csp.mjs) holds
+    # the rest, with its inline scripts hashed; web/securityPolicy.ts owns both.
     Content-Security-Policy = """\
       frame-ancestors 'none'; \
       report-uri /api/csp-report\
@@ -136,52 +137,38 @@
   [headers.values]
     Content-Type = "application/manifest+json"
 
+# The credentialed console (ADR-0101) is never cached, by the browser or the CDN;
+# the service worker leaves it to the network too (build-native-web.mjs).
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
 # Only a name that changes with its bytes may be cached immutable, or for longer than
 # the week ADR-0042 allows a stable name: tools/tests/netlify-cache-rules.test.mjs
-# fails on such a rule for any other path. No rule is needed for /_app/immutable/*
-# (hashed JS/CSS/fonts/assets): adapter-netlify appends `/_app/immutable/*` ->
-# `public, immutable, max-age=31536000` to the _headers file it writes into the
-# publish dir, and tools/api-smoke/check-deployed-contract.mjs checks a deployed
-# asset under that path for it. The two rules below cover the content-hashed scripts
-# the service worker loads from the root: vite-plugin-pwa's workbox-<hash>.js and the
-# page-cache cleanup import named by web/src/lib/pwa/pageCacheCleanup.ts.
+# fails on such a rule for any other path. Expo names every file under these two
+# with its content hash, and the post-build precache check fails an export that
+# holds an unhashed one. Page-only chunks are never precached, so this rule is
+# what keeps a page document's repeat visit off the network.
 [[headers]]
-  for = "/workbox-*.js"
+  for = "/_expo/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/sw-page-cache-cleanup-*.js"
+  for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/sounds/*"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
-
-[[headers]]
-  for = "/styles/*"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
-
-[[headers]]
-  for = "/icons/*"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/coloring/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
-
-# The manifest's name carries the app version (coloringPackManifestPath). Keep this
-# rule after /coloring/*, which also matches it: Netlify's docs leave unspecified
-# which matching rule's Cache-Control wins, and this order serves it immutable.
-[[headers]]
-  for = "/coloring/manifest-*.json"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/sw.js"

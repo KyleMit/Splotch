@@ -61,6 +61,16 @@ it('sends only the selected upload bytes when the input shares a larger backing 
   expect([...new Uint8Array(await options.body.arrayBuffer())]).toEqual([1, 2, 3]);
   expect(options).toMatchObject({ credentials: 'omit', redirect: 'error', signal });
 });
+
+it("calls the page's own origin, whose host serves the /api function", async () => {
+  const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response());
+  const signal = new AbortController().signal;
+  await aiTransport(
+    { path: '/api/generation-result', query: 'job=abc', method: 'GET', headers: {} },
+    signal
+  );
+  expect(fetch.mock.calls[0][0]).toBe('/api/generation-result?job=abc');
+});
 it('admits a tablet original at capture resolution while retaining the remote-result budget', async () => {
   const width = 2564;
   const height = 2048;

@@ -53,8 +53,16 @@
       }
     },
     "experiments/native-architecture": {
-      "entry": ["src/prerenderFirstFrame.tsx"],
-      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"],
+      "entry": [
+        "src/prerenderFirstFrame.tsx",
+        "src/pageDocument/pageApp.ts",
+        "src/pageDocument/prerender.tsx",
+        "src/pageDocument/design/designApp.ts",
+        "src/pageDocument/design/prerender.tsx",
+        "src/pageDocument/admin/adminApp.tsx",
+        "src/pageDocument/admin/prerender.tsx"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.{cjs,mjs}"],
       "ignore": ["src/feedback/report.ts", "src/feedback/deviceReport.ts"]
     }
   }
