@@ -424,13 +424,16 @@ it('gives the privacy contents, section anchors and in-page links their fragment
     expect(copy?.getAttribute('href')).toBe(`#${section.id}`);
     expect(copy?.getAttribute('data-focus-ring')).toBe('radiusBlob2');
   }
-  const inText = [...host.querySelectorAll('a:not([data-testid="sidebar-row"]):not([aria-label])')]
+  const inText = [
+    ...host.querySelectorAll('a[href]:not([data-testid="sidebar-row"]):not([aria-label])'),
+  ]
     .map((link) => [link.textContent, link.getAttribute('href')])
     .filter(([, href]) => href.startsWith('#'));
   expect(inText).toEqual([
     ['How the counting works', '#counting'],
     ['Reporting a picture', '#reports'],
   ]);
+  // The default policy asks for a check, which keeps the links that leave the app addressless.
   expect(anchors.some(([, href]) => href.startsWith('https:'))).toBe(false);
 });
 
@@ -472,4 +475,35 @@ it('follows a contents entry in place, and leaves a modified click to the browse
   await act(async () => row().dispatchEvent(plain));
   expect(plain.defaultPrevented).toBe(true);
   expect(location.hash).toBe(`#${SECTIONS[2].id}`);
+});
+
+it('gives the page shipping’s inherited leading and pretty wrapping', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
+    'utf8'
+  );
+  expect(shipping).toContain('text-wrap: pretty;');
+  const pageLeading = shipping.match(/line-height: ([\d.]+);/)[1];
+  records.os = 'web';
+  useCaller();
+  await loadAt('/unknown-page');
+  const ancestors = [];
+  for (let node = host.querySelector('[role="heading"]'); node; node = node.parentElement)
+    ancestors.push(node);
+  const page = ancestors.find((node) => node.style.lineHeight === pageLeading);
+  expect(page).toBeDefined();
+  expect(page.style.getPropertyValue('text-wrap')).toBe('pretty');
+  expect(page.contains(host.querySelector('[aria-label="Splotch pages"]'))).toBe(true);
+});
+
+it('runs the footer’s release line as one paragraph, as shipping’s does', async () => {
+  records.os = 'web';
+  useCaller();
+  await loadAt('/unknown-page');
+  const link = [...host.querySelectorAll('a[href]')].find(
+    (node) => node.textContent === "What's new"
+  );
+  expect(link.parentElement.textContent).toBe(
+    `Splotch ${releases[0].version} · released ${releases[0].dateLabel} · What's new`
+  );
 });

@@ -31,7 +31,7 @@ const read = (path) =>
   readFileSync(join(ROOT, 'experiments/native-architecture/src', path), 'utf8');
 const DESKTOP_CHROME =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
-const PROPS = { strokes: 0, hidden: false, controlSize: 52 };
+const PROPS = { strokes: 0, hidden: false };
 let root;
 let host;
 

@@ -14,7 +14,7 @@ import { paletteHex } from '../drawing/palette';
 import type privacy from '../information/privacy.generated.json';
 import { RsdList } from './RsdList';
 import { RsdSidebarRow } from './RsdSidebarRow';
-import { RsdPageAnchor } from './RsdPageAnchor';
+import { RsdGatedAnchor, RsdPageAnchor } from './RsdPageAnchor';
 import { RsdPrivacyHeading } from './RsdPrivacyHeading';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 import { usePrivacySectionLinks } from './usePrivacySectionLinks';
@@ -117,9 +117,11 @@ const styles = css.create({
 export function PolicySpans({
   spans,
   onLink,
+  externalCheckDue,
 }: {
   spans: readonly Span[];
   onLink: (href: string) => void;
+  externalCheckDue: () => boolean;
 }) {
   return spans.map((span, index) => {
     const href = span.href;
@@ -128,13 +130,23 @@ export function PolicySpans({
       span.italic && styles.italic,
       !!href && styles.link,
     ];
-    // A section of this page or another app page is a real anchor on the web, as shipping's is; a
-    // link that leaves the app keeps its grown-up check, which an address would let a click skip.
-    if (href && /^[#/]/.test(href) && Platform.OS === 'web')
-      return (
+    // On the web every link is a real anchor, as shipping's is: a section of this page or another
+    // app page follows in place, and a link that leaves the app opens behind its grown-up check.
+    if (href && Platform.OS === 'web')
+      return /^[#/]/.test(href) ? (
         <RsdPageAnchor key={index} href={href} onFollow={() => onLink(href)} style={style}>
           {span.text}
         </RsdPageAnchor>
+      ) : (
+        <RsdGatedAnchor
+          key={index}
+          href={href}
+          checkDue={externalCheckDue}
+          onOpen={() => onLink(href)}
+          style={style}
+        >
+          {span.text}
+        </RsdGatedAnchor>
       );
     return (
       <html.span
@@ -172,9 +184,11 @@ function policyRuns(blocks: readonly Block[]) {
 function PolicyBlocks({
   blocks,
   onLink,
+  externalCheckDue,
 }: {
   blocks: readonly Block[];
   onLink: (href: string) => void;
+  externalCheckDue: () => boolean;
 }) {
   const theme = useDrawingTheme();
   const runs = policyRuns(blocks);
@@ -189,13 +203,22 @@ function PolicyBlocks({
           gapPx={POLICY_ITEM_GAP_PX}
           markerColor={theme.text}
           items={run.blocks.map((block, at) => (
-            <PolicySpans key={at} spans={block.spans} onLink={onLink} />
+            <PolicySpans
+              key={at}
+              spans={block.spans}
+              onLink={onLink}
+              externalCheckDue={externalCheckDue}
+            />
           ))}
         />
       </html.div>
     ) : (
       <html.p key={index} style={[styles.paragraph, index === runs.length - 1 && styles.flush]}>
-        <PolicySpans spans={run.blocks[0].spans} onLink={onLink} />
+        <PolicySpans
+          spans={run.blocks[0].spans}
+          onLink={onLink}
+          externalCheckDue={externalCheckDue}
+        />
       </html.p>
     )
   );
@@ -204,6 +227,8 @@ function PolicyBlocks({
 type PrivacyContentProps = {
   policy: Policy;
   onLink: (href: string) => void;
+  // Whether a link that leaves the app would ask for the grown-up check now.
+  externalCheckDue: () => boolean;
   onSectionLayout: (id: string, y: number) => void;
   scrollY: number;
 };
@@ -221,6 +246,7 @@ function reportPrivacySectionPositions(
 function PrivacyReadingColumn({
   policy,
   onLink,
+  externalCheckDue,
   onSectionLayout,
   wide,
   links,
@@ -251,7 +277,11 @@ function PrivacyReadingColumn({
               wide={wide}
               onCopy={() => void links.copy(SECTIONS[index].id)}
             />
-            <PolicyBlocks blocks={section.blocks} onLink={onLink} />
+            <PolicyBlocks
+              blocks={section.blocks}
+              onLink={onLink}
+              externalCheckDue={externalCheckDue}
+            />
           </html.section>
         </View>
       ))}
@@ -259,7 +289,13 @@ function PrivacyReadingColumn({
   );
 }
 
-function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyContentProps) {
+function PrivacyDetails({
+  policy,
+  onLink,
+  externalCheckDue,
+  onSectionLayout,
+  scrollY,
+}: PrivacyContentProps) {
   const wide = useWindowDimensions().width > PAGE_FRAMED_MAX_WIDTH_PX;
   const viewport = useInformationViewport();
   const links = usePrivacySectionLinks(onLink);
@@ -364,6 +400,7 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
         <PrivacyReadingColumn
           policy={policy}
           onLink={onLink}
+          externalCheckDue={externalCheckDue}
           wide={wide}
           links={links}
           onSectionLayout={(id, y) => {

@@ -5,9 +5,7 @@ import { openAppPage } from '../platform/appPath';
 import { buttonSkin } from './RsdButton';
 import { isPlainActivation } from './RsdPageAnchor';
 import type { NotFoundLinkProps } from './notFoundLink';
-
-// Button.svelte anchors inherit PageShell's leading; rsd-native-web-app-pages.test.mjs pins it.
-const PAGE_LINE_HEIGHT = 1.62;
+import { PAGE_LINE_HEIGHT } from './pageTypography.web';
 
 export function RsdNotFoundLink({ page, variant, children }: NotFoundLinkProps) {
   const styles = buttonSkin();
@@ -26,6 +24,7 @@ export function RsdNotFoundLink({ page, variant, children }: NotFoundLinkProps) 
         ...chrome.style,
         display: 'inline-flex',
         boxSizing: 'border-box',
+        // Button.svelte anchors inherit PageShell's leading, which the button skin's own replaces.
         lineHeight: PAGE_LINE_HEIGHT,
         textDecoration: 'none',
         touchAction: 'manipulation',

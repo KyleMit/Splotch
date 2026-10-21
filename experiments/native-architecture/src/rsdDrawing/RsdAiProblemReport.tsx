@@ -126,6 +126,7 @@ const styles = css.create({
     alignItems: 'center',
     gap: dimensions.space2,
     width: '100%',
+    marginTop: dimensions.space4,
   },
   diagnostics: {
     borderWidth: dimensions.borderWidth,

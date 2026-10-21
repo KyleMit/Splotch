@@ -79,6 +79,28 @@ async function perArmBehindProxy(browser, profile, run, options = {}) {
   return result;
 }
 
+function shortUrl(url) {
+  return new URL(url).search || new URL(url).pathname;
+}
+
+// Playwright's framenavigated fires for document loads and for same-document history writes
+// alike, so a replaceState that stamps history.state reads as a navigation. CDP reports the two
+// separately: Page.frameNavigated only for a new document, Page.navigatedWithinDocument otherwise.
+async function recordDocumentEvents(s) {
+  const loads = [];
+  const sameDocument = [];
+  await s.cdp.send('Page.enable');
+  const { frameTree } = await s.cdp.send('Page.getFrameTree');
+  const mainFrameId = frameTree.frame.id;
+  s.cdp.on('Page.frameNavigated', ({ frame }) => {
+    if (frame.id === mainFrameId) loads.push(frame.url);
+  });
+  s.cdp.on('Page.navigatedWithinDocument', ({ frameId, url }) => {
+    if (frameId === mainFrameId) sameDocument.push(url);
+  });
+  return { loads, sameDocument };
+}
+
 async function registerByStrokes(s) {
   await drawStrokes(s, 3);
   return waitFor(s, (state) => state.active === 'activated');
@@ -248,6 +270,7 @@ export const SW_CELLS = {
         s.page.on('framenavigated', (frame) => {
           if (frame === s.page.mainFrame()) navigations.push({ url: frame.url(), at: Date.now() });
         });
+        const documentEvents = await recordDocumentEvents(s);
         const blank = await regionDigest(s, [0.45, 0.425]);
         await contact(s, [
           [
@@ -289,6 +312,8 @@ export const SW_CELLS = {
           navigations: navigations.map(
             (entry) => new URL(entry.url).search || new URL(entry.url).pathname
           ),
+          documentLoads: documentEvents.loads.map(shortUrl),
+          sameDocumentWrites: documentEvents.sameDocument.map(shortUrl),
           afterHiddenBlank,
           proxyOverrides: proxy.log
             .filter((entry) => entry.override)
@@ -325,6 +350,13 @@ export const SW_CELLS = {
         navigations: [...navigations],
         state: await s.page.evaluate(workerState),
       };
+      const offlineFailures = [];
+      s.page.on('requestfailed', (request) =>
+        offlineFailures.push(
+          `${request.failure()?.errorText ?? '?'} ${request.resourceType()} ${new URL(request.url()).pathname}`
+        )
+      );
+      const consoleErrorsBeforeOffline = s.consoleErrors.length;
       await s.ctx.setOffline(true);
       await s.page.reload().catch(() => {});
       const offlineAfterDeploy = await s.page
@@ -332,10 +364,35 @@ export const SW_CELLS = {
         .waitFor({ state: 'visible', timeout: 15_000 })
         .then(() => true)
         .catch(() => false);
+      await s.page.waitForTimeout(1500);
+      const stylesheets = await s.page
+        .evaluate(() => ({
+          sheets: document.styleSheets.length,
+          links: [...document.querySelectorAll('link[rel="stylesheet"]')].map((link) => ({
+            href: new URL(link.href).pathname,
+            loaded: !!link.sheet,
+          })),
+        }))
+        .catch((error) => ({ error: error.message }));
+      // A prerendered or server-rendered first frame shows the paper before any script runs, so
+      // only a stroke that inks proves the offline document actually booted.
+      const probe = [0.5, 0.27];
+      const inkedOffline = offlineAfterDeploy
+        ? await (async () => {
+            const before = await regionDigest(s, probe);
+            await contact(s, [[[0.3, 0.25], probe, [0.7, 0.25]]]);
+            return before !== (await regionDigest(s, probe));
+          })().catch(() => false)
+        : false;
       return {
         first,
         blankLaunch,
         offlineAfterDeploy,
+        inkedOffline,
+        offlineFailures,
+        offlineConsoleErrors: s.consoleErrors.slice(consoleErrorsBeforeOffline),
+        stylesheets,
+        controller: await s.page.evaluate(workerState).catch((error) => ({ error: error.message })),
         shot: await capture(s, `sw-stale-launch-offline-${s.arm}`),
       };
     }),

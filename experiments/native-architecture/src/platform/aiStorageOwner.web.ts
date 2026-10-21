@@ -66,9 +66,21 @@ function assertReceiptProgress(previous: WebAiAttempt, next: WebAiAttempt): void
     invalidAiStorage();
 }
 
-// A new plain run replaces saved attempts, including a run abandoned by another process.
-function supersededAttempt(previous: WebAiAttempt, newest: WebAiReceipt | undefined): boolean {
-  return newest?.kind === 'prepared' && previous.receipt.journal.id < newest.journal.id;
+// A finished plain run, which storage holds only while its picture is on screen (#3025).
+function releasable(attempt: WebAiAttempt): boolean {
+  return (
+    attempt.receipt.kind === 'prepared' &&
+    ['result', 'failed'].includes(attempt.receipt.journal.phase)
+  );
+}
+
+// A new plain run replaces saved attempts, including a run abandoned by another process. A plain
+// run also leaves once its picture is closed, possibly after another process last saw it unfinished.
+function departedAttempt(previous: WebAiAttempt, newest: WebAiReceipt | undefined): boolean {
+  return (
+    previous.receipt.kind === 'prepared' ||
+    (newest?.kind === 'prepared' && previous.receipt.journal.id < newest.journal.id)
+  );
 }
 
 export class WebAiStorageOwner {
@@ -94,11 +106,12 @@ export class WebAiStorageOwner {
     }
     return this.connection;
   }
-  queue<T>(reading: boolean, work: () => Promise<T>): Promise<T> {
+  // Work that rereads the stored state before acting on it may run after an unconfirmed write.
+  queue<T>(rereads: boolean, work: () => Promise<T>): Promise<T> {
     const next = this.pending
       .catch(() => {})
       .then(async () => {
-        if (this.uncertain && !reading) invalidAiStorage();
+        if (this.uncertain && !rereads) invalidAiStorage();
         try {
           return await work();
         } catch (error) {
@@ -121,7 +134,7 @@ export class WebAiStorageOwner {
         (attempt) => attempt.receipt.journal.id === previous.receipt.journal.id
       );
       if (next) assertReceiptProgress(previous, next);
-      else if (!supersededAttempt(previous, newest)) invalidAiStorage();
+      else if (!departedAttempt(previous, newest)) invalidAiStorage();
     }
   }
   async readState(): Promise<WebAiState | null> {
@@ -170,6 +183,18 @@ export class WebAiStorageOwner {
       invalidAiStorage();
   }
   async commit(attempts: readonly WebAiAttempt[]): Promise<WebAiReceipt> {
+    const receipt = (await this.save(attempts)).attempts.at(-1)?.receipt;
+    if (!receipt) invalidAiStorage();
+    return receipt;
+  }
+  // Drops the finished run `id` once its picture is closed, leaving an unfinished or unknown one.
+  async release(id: number): Promise<void> {
+    const attempts = this.attempts();
+    const released = attempts.find((attempt) => attempt.receipt.journal.id === id);
+    if (!released || !releasable(released)) return;
+    await this.save(attempts.filter((attempt) => attempt !== released));
+  }
+  private async save(attempts: readonly WebAiAttempt[]): Promise<WebAiState> {
     const before = this.snapshot;
     const revision = (before?.revision ?? 0) + 1;
     if (!Number.isSafeInteger(revision)) invalidAiStorage();
@@ -187,8 +212,8 @@ export class WebAiStorageOwner {
       transaction.done,
     ]);
     this.snapshot = next;
-    this.current = next.attempts.at(-1)!.receipt;
-    return this.current;
+    this.current = next.attempts.at(-1)?.receipt ?? null;
+    return next;
   }
   async replace(receipt: WebAiReceipt): Promise<WebAiReceipt> {
     if (!this.snapshot) invalidAiStorage();

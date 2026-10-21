@@ -33,7 +33,8 @@ export function RsdAiResultError({
   owner: NativeAiOwner;
   state: AiState;
   reason: AiErrorReason;
-  // What a held run still lets a grown-up do (the recovery actions).
+  // The problem report's outcome, which carries its own space above it, as shipping's
+  // .ai-image-report does: the card reserves none while there is no outcome to show.
   children?: ReactNode;
 }) {
   if (reason === 'safety') return <SafetyRefusal owner={owner} state={state} />;
@@ -122,7 +123,7 @@ function RsdAiErrorCard({
         </RsdButton>
       </html.div>
       {copy.note ? <html.p style={[styles.medium, styles.note]}>{copy.note}</html.p> : null}
-      {children ? <html.div style={styles.extra}>{children}</html.div> : null}
+      {children}
     </html.div>
   );
 }
@@ -195,5 +196,4 @@ const styles = css.create({
     color: colors.textSoft,
     fontSize: dimensions.fontSizeSm,
   },
-  extra: { alignSelf: 'stretch', marginTop: dimensions.space4 },
 });

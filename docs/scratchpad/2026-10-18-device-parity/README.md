@@ -18,8 +18,11 @@ hunt (`results/crash-hunt-2026-10-20.md`) found and fixed the Clear memory crash
 pre-registered stress matrix then ran on four targets and both arms with no crash. The LIFE-1,
 SAVE-1, A11Y-2 and Android DS-1 slices in `results/` changed no row and found no `rn` defect. The
 KEY-1 slice (`results/key1-slice-2026-10-19.md`) failed two rows on an Android phone (#3031). Its
-fix was rerun on that cell and the rows returned to unverified. Diagnostic build inspections are
-recorded separately.
+fix was rerun on that cell and the rows returned to unverified. The WEB-1 and AI-1 runs in Chromium
+(`results/web-1-2026-10-19.md`, `results/ai-1-web-2026-10-19.md`) tracked their failures on defect
+issues rather than as `failed` rows. Each fix's rerun is recorded on its rows. Three findings, #3014
+and two items of #3027, were harness artifacts or did not reproduce on a quiet host. Their rows are
+recorded as no-defect reruns. Diagnostic build inspections are recorded separately.
 
 ## Execution plan
 
@@ -30,14 +33,14 @@ emulators. A native target pairs the RN candidate with the reconstructed v1.6.0 
 same runtime; RN web pairs with production web source. Physical devices are reserved for
 physical-only properties and one drawing-screen sanity check.
 
-| Classification   | Requirements | Status today                                               |
-| ---------------- | -----------: | ---------------------------------------------------------- |
-| `protocol`       |         1232 | `unverified`; 14 `blocked`; 5 `failed` by DS-2, 2 by KEY-1 |
-| `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone        |
-| `automated-test` |           25 | AC-1: 24 `verified`, 1 `failed` (L0161, #3008)             |
-| `settled`        |           20 | Accepted owner decisions, never defects                    |
-| `out-of-scope`   |          136 | Each with a stated reason                                  |
-| **Total**        |         1541 | **24 `verified`** (logic contracts only)                   |
+| Classification   | Requirements | Status today                                                    |
+| ---------------- | -----------: | --------------------------------------------------------------- |
+| `protocol`       |         1232 | `unverified`; 14 `blocked`; 0 `failed` after the reruns         |
+| `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone             |
+| `automated-test` |           25 | AC-1: 24 `verified`; L0161 fixed by #3008, awaits an AC-1 rerun |
+| `settled`        |           20 | Accepted owner decisions, never defects                         |
+| `out-of-scope`   |          136 | Each with a stated reason                                       |
+| **Total**        |         1541 | **24 `verified`** (logic contracts only)                        |
 
 A mapping to a protocol or test is not a pass. A row becomes `verified` only when its protocols have
 run on all their targets and arms at one candidate head and the public result record is linked.
@@ -162,7 +165,7 @@ the mapping uses.
 
 | Target class                     | Required emphasis                                                                                       | Present qualification                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Notched iPhone simulator         | Compact/wide transitions, safe areas, maximum font, dialogs, both orientations/themes                   | Fresh target admitted for causal-unit diagnostics; final matrix pending      |
+| Notched iPhone simulator         | Compact/wide transitions, safe areas, maximum font, dialogs, both orientations/themes                   | Admitted for causal-unit diagnostics; #3102 AX5 cell passed; matrix pending  |
 | iPad mini and 13-inch simulators | Full T1 axes, T2 in natural orientation, tablet navigation, all selected widths                         | Mini diagnostic setup available; 13-inch pending                             |
 | Physical iPad                    | Real contacts/palm, held-contact rotation, speech, Photos, audio, idle, launch/drawing/Undo             | Operator grant/window and faithful mutable shipping comparator pending       |
 | Physical Galaxy                  | Display0 public behavior, TalkBack, Save/files, system navigation, idle constraints, paired performance | Ownership, artifact and driver qualification pending; stay-awake remains 15  |
@@ -285,9 +288,11 @@ Private diagnostic inspections include adjustable slider, reading-page, Settings
 page-chip comparisons. The chip's ordinary-font before/after originals are byte-identical; its
 maximum-font frame grows to contain the complete label. Long dialog titles, Settings choices, picker
 captions and live font-reduction behavior remain under #2985, an API child of #2978. They are
-unresolved product work. Source invalidation has advanced the ledger without promoting any
-diagnostic observation to a final candidate matrix pass. The epic still has 91 direct children and
-92 recursive children.
+unresolved product work. #3102 fixed its phone-landscape compact Settings subcase at AX5: on a fresh
+notched iPhone simulator, and on an API 36 phone emulator at font scale 2.0, every quick-toggle
+label reads whole and every toggle can be reached. Source invalidation has advanced the ledger
+without promoting any diagnostic observation to a final candidate matrix pass. The epic still has 91
+direct children and 92 recursive children.
 
 ## Stopping checkpoint and next work
 

@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import releases from '../../../../web/src/lib/releases.json';
@@ -90,6 +90,8 @@ const styles = css.create({
     color: colors.brandText,
     textDecorationLine: 'underline',
   },
+  inlineVersion: { display: 'block' },
+  inlineVersionLink: { display: 'inline-flex' },
 });
 const CONTENTS = releases.map((release) => ({
   ...release,
@@ -237,6 +239,21 @@ export function RsdLatestReleaseLabel({
   onPress: (id: string) => void;
 }) {
   const latest = releases[0];
+  // PageFooter.svelte's line runs as one paragraph, so the browser picks where it breaks; native
+  // text cannot hold a pressable inline, so there the link sits beside the text.
+  if (Platform.OS === 'web')
+    return (
+      <html.p style={[styles.version, styles.inlineVersion]}>
+        {`Splotch ${latest.version} · released ${latest.dateLabel} · `}
+        <RsdTextLink
+          href={`${hrefBase}#${latest.id}`}
+          style={[styles.versionLink, styles.inlineVersionLink]}
+          onPress={() => onPress(latest.id)}
+        >
+          <html.span>What's new</html.span>
+        </RsdTextLink>
+      </html.p>
+    );
   return (
     <html.div style={styles.version}>
       <html.span>{`Splotch ${latest.version} · released ${latest.dateLabel} ·`}</html.span>
