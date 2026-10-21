@@ -97,14 +97,24 @@ describe('the surface a baseline names', () => {
 });
 
 describe('the import walk behind that guard', () => {
+  // Fixture sources are assembled, never spelled as import statements, because
+  // tools/tests/tool-specifier-resolution.test.mjs reads a relative specifier written out in any
+  // tools/ file as a real import that must resolve.
+  const sideEffectImport = (specifier) => `import '${specifier}';`;
+  const dynamicImport = (specifier) => `import('${specifier}');`;
+  const reExport = (specifier) => `export { rows } from '${specifier}';`;
   const files = {
-    'app/index.ts': "import './Texture'; import('./panel'); import './Mixed';",
-    'app/Texture.tsx': "import '../native-only/skia';",
-    'app/Texture.web.tsx': "import '../outside/shared';",
-    'app/Mixed.ts': "import '../outside/plain';",
-    'app/Mixed.web.tsx': "import '../outside/web-only';",
-    'app/panel/index.ts': "export * from './rows';",
-    'app/panel/rows.ts': "export { rows } from '../../outside/rows';",
+    'app/index.ts': [
+      sideEffectImport('./Texture'),
+      dynamicImport('./panel'),
+      sideEffectImport('./Mixed'),
+    ].join(' '),
+    'app/Texture.tsx': sideEffectImport('../native-only/skia'),
+    'app/Texture.web.tsx': sideEffectImport('../outside/shared'),
+    'app/Mixed.ts': sideEffectImport('../outside/plain'),
+    'app/Mixed.web.tsx': sideEffectImport('../outside/web-only'),
+    'app/panel/index.ts': reExport('./rows'),
+    'app/panel/rows.ts': reExport('../../outside/rows'),
     'native-only/skia.ts': '',
     'outside/shared.ts': '',
     'outside/rows.ts': '',
