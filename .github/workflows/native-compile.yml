@@ -101,7 +101,8 @@ jobs:
   ios:
     name: iOS Release simulator build
     runs-on: macos-latest
-    timeout-minutes: 40
+    # The pod install and Release build take 20 to 30 minutes on a hosted runner.
+    timeout-minutes: 60
     env:
       # CocoaPods refuses to run under a non-UTF-8 locale.
       LANG: en_US.UTF-8
