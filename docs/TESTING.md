@@ -4,31 +4,27 @@
 
 Splotch's automated suites span three test layers. The app-unit, asset-pipeline, store-drawing,
 repo-script, and E2E suites run on every push/PR, alongside the Firefox and WebKit smoke jobs. The
-two-scenario WebKit commit-timing gate runs post-merge, on pushes to `main`, because its verdict is
-a millisecond P95 that needs WebKit and a quiet host; its full seven-scenario form and the
 real-device launch tests run only on tagged releases. The native shells still compile on every PR
-that touches a native input, in a path-filtered workflow nothing waits on. ADR-0100's 2026-08-11
-amendment records why its obsolete pre-merge blob-encoding guard retired.
+that touches a native input, in a path-filtered workflow nothing waits on.
 
-| Layer                 | Tool                | Command                                | Runs in CI                                   |
-| --------------------- | ------------------- | -------------------------------------- | -------------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`           | every push / PR                              |
-| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`               | every push / PR                              |
-| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`          | every push / PR                              |
-| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`      | tracer/consumer paths + manual dispatch      |
-| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                   | every push / PR                              |
-| Unit (RN renderer)    | Vitest (happy-dom)  | `npm run test:migration:rsd-selection` | every push / PR (browserless job)            |
-| E2E (web)             | Playwright          | `npm run test:e2e`                     | every push / PR                              |
-| E2E (RN web export)   | Playwright          | `npm run test:e2e:rn`                  | every push / PR (sharded job)                |
-| Smoke (API contract)  | Node function host  | `npm run test:api:smoke`               | every push / PR (browserless job)            |
-| Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL         |
-| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (RN web export)              |
-| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (RN web export)              |
-| Compile (Android)     | Gradle javac        | `npm run android:compile`              | PRs touching native inputs (path-filtered)   |
-| Compile (iOS)         | xcodebuild          | `npm run ios:build:release`            | PRs touching native inputs (macOS runner)    |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`                 | **tagged releases only** (API 33 + API 24)   |
-| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                     | **tagged releases only** (macOS runner)      |
-| WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast`    | pushes to `main`; full suite on release tags |
+| Layer                 | Tool                | Command                                | Runs in CI                                 |
+| --------------------- | ------------------- | -------------------------------------- | ------------------------------------------ |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`           | every push / PR                            |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`               | every push / PR                            |
+| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`          | every push / PR                            |
+| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`      | tracer/consumer paths + manual dispatch    |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                   | every push / PR                            |
+| Unit (RN renderer)    | Vitest (happy-dom)  | `npm run test:migration:rsd-selection` | every push / PR (browserless job)          |
+| E2E (web)             | Playwright          | `npm run test:e2e`                     | every push / PR                            |
+| E2E (RN web export)   | Playwright          | `npm run test:e2e:rn`                  | every push / PR (sharded job)              |
+| Smoke (API contract)  | Node function host  | `npm run test:api:smoke`               | every push / PR (browserless job)          |
+| Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL       |
+| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (RN web export)            |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (RN web export)            |
+| Build (Android)       | Gradle Release APK  | `npm run native:android:apk`           | PRs touching the RN app (path-filtered)    |
+| Build (iOS)           | xcodebuild          | `npm run native:ios:simulator`         | PRs touching the RN app (macOS runner)     |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`                 | **tagged releases only** (API 33 + API 24) |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                     | **tagged releases only** (macOS runner)    |
 
 A separate `quality` CI job (the web and native candidate type checks, ESLint, Prettier
 `--format:check`, and `pnpm audit --audit-level=high`) also runs on every push/PR alongside the
@@ -775,20 +771,22 @@ web E2E run — no separate command or workflow:
 ### What it does and why
 
 The web E2E suite runs in a browser, so it can't tell you whether the *shipped native app* actually
-boots. The smoke test fills that gap: it installs the app on a real Android emulator or iOS
-simulator, launches it, and asserts that the UI renders — proving the Capacitor WebView started
-**and** loaded the production web bundle (not a white screen or a crash).
+boots. The smoke test fills that gap: it installs the React Native app's Release build under the
+store identity (`art.splotch.app`) on a real Android emulator or iOS simulator, launches it, and
+asserts that the UI renders — proving native startup and the embedded JavaScript bundle worked (not
+a blank screen or a crash).
 
-The assertion is a single, meaningful signal: the **"Settings"** button (the always-present corner
-button, `web/src/lib/components/SettingsButton.svelte`) must become visible. Seeing its
-accessibility label means real UI painted, not just that the process launched.
+The assertion is a single, meaningful signal: the **"Settings"** button (the drawing screen's corner
+button, `experiments/native-architecture/src/rsdDrawing/RsdEdgeControls.tsx`) must become visible.
+Seeing its accessibility label means real UI painted, not just that the process launched.
 
 That the flow stops there is a decision, not an omission — **ADR-0120**. Steps that navigated the UI
 broke on a UI change within three releases every time they were added, and because these workflows
 are tag-only, each break surfaced as a red release gate instead of a failing PR. Coverage of what
 the UI *does* belongs in Playwright, which runs on every push and can select elements properly. Do
-not grow this flow; `tools/tests/native-smoke-flow.test.mjs` fails on `npm test` if it selects a
-string the app no longer renders, or selects by pattern instead of by exact label.
+not grow this flow; `tools/tests/native-smoke-flow.test.mjs` fails on `npm test` if the component
+that owns a selected label stops declaring it, or if the flow selects by pattern instead of by exact
+label.
 
 ### The flow
 
@@ -806,9 +804,9 @@ appId: art.splotch.app
 ```
 
 `takeScreenshot` writes `smoke-launch.png` under `.maestro/screenshots/`; it's git-ignored. On CI
-the whole Maestro report — flow log plus the screenshot taken at a failing step — is uploaded as a
-build artifact, and a failure on a **tag** push files or comments on a GitHub issue, since nobody is
-watching a tag-triggered run at the moment it goes red.
+the whole Maestro report — flow log, that screenshot, and the screenshot taken at a failing step —
+is uploaded as a build artifact, and a failure on a **tag** push files or comments on a GitHub
+issue, since nobody is watching a tag-triggered run at the moment it goes red.
 
 The iOS job budgets XCTest driver startup with `MAESTRO_DRIVER_STARTUP_TIMEOUT` separately from the
 flow's app-paint timeout. Its report also retains `~/Library/Logs/maestro/xctest_runner_logs/`:
@@ -820,22 +818,22 @@ with no flow execution or screenshot.
 
 After a Maestro failure, `test:ios` also captures a bounded diagnostic relaunch of the installed app
 in `~/.maestro/tests/ios-app-relaunch.log` before simulator teardown. The console can expose native
-or WebView startup errors; it describes a second launch and does not replace the original failure
+or JavaScript startup errors; it describes a second launch and does not replace the original failure
 evidence. A successful relaunch never changes the smoke result.
 
 ### npm scripts
 
 ```bash
-npm run test:android          # headless one-shot: boot → build+install → test → tear down
-npm run test:android:device   # run against an emulator you already have running
+npm run test:android          # headless one-shot: build → boot → install → test → tear down
+npm run test:android:device   # run against the store-identity app on an emulator you already have running
 npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
-| Script                | What happens                                                                                                                                                                                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
-| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                      |
-| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.      |
+| Script                | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: builds the `.dev` Release APK (`native:android:apk`), boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`) on a console port no other emulator holds, installs the APK with `adb -s`, runs Maestro against `art.splotch.app.dev`, and **always** kills that emulator afterward — even on failure. It smokes `.dev` because a store-identity APK signs with whatever key `keystore.properties` names, which locally is the upload key or nothing; the flow runs from a copy whose only change is its `appId`. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected, for the store-identity app (`art.splotch.app`). Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                                                                                                                                                                                                                                           |
+| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: builds the store-identity Release simulator app (`native:ios:simulator`), boots a shut-down iPhone simulator on the newest runtime — never one someone else booted — installs via `simctl`, runs the same Maestro flow, and shuts that simulator down. `--skip-build` installs the app an earlier `native:ios:simulator` built. No signing required.                                                                                                                                                                  |
 
 > The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
@@ -886,22 +884,26 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 # Simplest — one command, nothing to clean up:
 npm run test:android
 
-# Fast iteration — boot once, run many times:
-npm run android:emulator        # boot + build + install (or: boot an AVD, then npm run android:run)
+# Fast iteration — boot once, install the store-identity APK, run many times:
+npm run android:boot            # boot the AVD
+npm run native:android:apk:store  # needs experiments/native-architecture/android/keystore.properties
+adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
 npm run test:android:device     # re-run as often as you like
 ```
+
+Install a store-identity build on an emulator or simulator only, never on a physical device.
 
 ---
 
 ## Continuous integration
 
-| Workflow                                    | Trigger                                           | What it runs                                                                                                                                                                    |
-| ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/test.yml`                | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml`      | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                                    |
-| `.github/workflows/ios-deploy.yml`          | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                                   |
-| `.github/workflows/native-compile.yml`      | PRs and `main` pushes touching native inputs      | Android Release Java compile (no web build) and iOS Release simulator compile, in parallel with `test.yml`; no emulator or simulator boots                                      |
-| `.github/workflows/hosted-deploy-smoke.yml` | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip               |
+| Workflow                                    | Trigger                                           | What it runs                                                                                                                                                      |
+| ------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`                | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs                                                           |
+| `.github/workflows/android-deploy.yml`      | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed, store-identity React Native Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                 |
+| `.github/workflows/ios-deploy.yml`          | **`v*` tag push** + manual `workflow_dispatch`    | Store-identity React Native Release simulator build without signing, then the Maestro boot smoke on that same app (macOS runner)                                  |
+| `.github/workflows/native-compile.yml`      | PRs and `main` pushes touching the RN app         | Android `.dev` Release APK build (one ABI) and iOS store-identity Release simulator build, in parallel with `test.yml`; no emulator or simulator boots            |
+| `.github/workflows/hosted-deploy-smoke.yml` | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
@@ -935,110 +937,27 @@ admin secret; without it the automatic job fails at the login step. A manually s
 use that same secret. Production never creates a probe token. A process-level interruption of a
 preview check can strand an unguessable but live `blobs-smoke-*` credential; inspect and remove one
 manually from the admin console because an automatic prefix sweep could race a smoke against another
-URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the debug build targets the
-simulator, so no signing secrets are involved. Both deploy workflows file a tag failure from a
-downstream `report-failure` job keyed on the build and smoke jobs' results, so a job cut off by its
-timeout still files, and only that reporter holds `issues: write`.
+URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the Release build targets the
+simulator without signing, so no signing secrets are involved. Both deploy workflows file a tag
+failure from a downstream `report-failure` job keyed on the build and smoke jobs' results, so a job
+cut off by its timeout still files, and only that reporter holds `issues: write`.
 
 The Native compile workflow (`native-compile.yml`) is the pre-merge half of those tag gates. Its
-path filter is `android/**`, `ios/**`, `capacitor.config.json`, `package.json` (which holds both
-compile commands), `pnpm-lock.yaml`, the Gradle helper and its imports, and the workflow itself. A
-match costs runner minutes, not merge wall clock. Android compiles only the Release Java (the app
-and every Capacitor plugin module): `cap update` regenerates the gitignored Cordova plugin project
-that `settings.gradle` includes, and an empty Android web-assets directory stops it from copying a
-web build that javac never reads. iOS runs the tag gate's `ios:build:release`, web build included,
-because Xcode copies the synced `public/` and `capacitor.config.json` as bundle resources. Neither
-job is required by a branch rule. ADR-0008's 2026-09-28 amendment records both jobs' measured wall
-time against the slowest `test.yml` job.
-
-ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
-The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside
-a commit. Tiled history (ADR-0085/0086) has no encode path, so that pre-merge job and command
-retired instead of passing vacuously.
-
-**Post-merge**, on pushes to `main`, the `webkit-commit-gate-fast` job keeps the `COMMIT_GATE_MS`
-P95 verdict over `multi-finger` (the sole multi-pointer exerciser) and `crayon-scribbles` (the sole
-mid-stroke pass-split exerciser) on `macos-latest`. That verdict genuinely needs a faithful engine
-and absolute milliseconds, and it is expensive: it was the wall-clock floor of a pull-request run,
-so it remains off that path.
-
-**That verdict is advisory, as a standing decision** (ADR-0173). `COMMIT_GATE_ENFORCED`
-(`tools/perf/lib/undo-commit-gate.mjs`) is off, because the gate's breaches were bisected to the
-WebKit 26.6 browser build rather than the app, and a gate that fails every merge cannot catch a
-regression. The commit contract is held by the physical iPad instead, checked once per release (the
-iOS release checklist in `docs/MOBILE/ios.md`). The job still measures, confirms and reports a
-breach and still uploads its diagnostics — it exits 0. The retry and filing described next key on
-this job failing, so neither runs while it is advisory. A green job with a nonempty failure
-fingerprint puts that finding in the run's step summary and keeps the raw distributions in the
-diagnostics artifact. A reporter failure is also surfaced there rather than read as an empty
-fingerprint. The release-tag full gate is advisory under the same switch but does not yet publish a
-fingerprint; its evidence stays in its diagnostics artifact. ADR-0173 records the decision and the
-rejected alternatives; issue 1779 has the evidence.
-
-A failure does not file on its own. `webkit-commit-gate-fast-retry` re-runs the identical gate on a
-fresh `macos-latest` VM, and an issue opens only when **the same scenario failed the same way on
-both runners** — a shared runner can stall long enough to span one whole job, measurement and in-job
-confirmation together, so a second VM is the only rerun that changes the environment the failure
-happened in. Each runner publishes a failure fingerprint derived from its own `undo-scenarios.json`
-(`multi-finger:breach`, `crayon-scribbles:incomplete`, `run:no-commit-samples`) via
-`tools/perf/report-undo-gate-failures.mjs`, and the retry publishes the intersection to
-`webkit-commit-gate-fast-report`. Comparing job outcomes instead filed a 2026-09-02 run where one
-runner skipped `crayon-scribbles` and the other breached `multi-finger` — two failures with nothing
-in common (ADR-0158). A pair that cannot be compared at all files, which is the fail-closed
-direction. The issue comments on the existing open one rather than filing per red commit, and the
-first job stays red either way as telemetry.
-
-The first run and retry measure independently across commits. Only the downstream Ubuntu reporter
-holds `issues: write`; it checks out no source and installs or builds nothing. The reporter receives
-the retry gate outcome, comparison outcome and reproduced fingerprint through job outputs, including
-after a reproduced breach re-fails the retry. Its constant concurrency group serializes the issue
-check and create. `cancel-in-progress: false` and `queue: max` retain up to 100 pending reporters;
-additional pending jobs can still be canceled. This is a bounded queue, not an unlimited guarantee
-of per-commit filing. A canceled workflow does not report.
-
-**Release tags** run all seven scenarios.
-
-A timing breach, an incomplete or unknown requested scenario, or a bundle with no `engine.commit`
-samples fails the job. Every tier attempts to upload `undo-scenarios.json` and `undo-scenarios.md`
-after a failure; an early build/browser failure may leave no reports, which warns without masking
-the original error.
-
-**A slow history settle is not an incomplete scenario.** After each scenario's batched draw the
-harness waits for tiled history to reach its idle steady state — no open command, nothing left for
-the fold loop to fold — before it reads the memory table and starts the undo phase. That wait is
-diagnostic: the `engine.commit` samples the gate scores are complete before it begins. So its
-deadline (`DEFAULT_HISTORY_SETTLE_TIMEOUT_MS` in `tools/perf/web/run-undo-scenarios.mjs`) bounds
-wall clock only. An expired wait records `settle.settled: false` with the whole poll trace on the
-scenario result, marks the report row "history unsettled", and the gate scores the scenario as
-measured. Through 2026-09-06 that expiry was a thrown skip and fingerprinted as
-`crayon-scribbles:incomplete` on roughly one main push in four, because a shared runner stalls the
-page's main thread for 5–10 s after a crayon burst before the first poll can return (ADR-0161).
-
-The workflow's concurrency group folds `github.sha` in for `push` events. Pull requests still
-collapse per ref so a new push cancels the run it supersedes, but back-to-back merges no longer
-cancel each other — which would drop a commit's only WebKit coverage exactly when merge traffic is
-highest.
-
-Every tier scores the **raw** `engine.commit` P95 against the 25 ms gate — nothing is normalized.
-ADR-0140 retired the crayon divisor: its calibration rested on a single run, and `Math.max(1, …)`
-meant it could only ever move a score toward passing. The host slowdown it was derived from is still
-measured and reported per run (`hostSlowdown` in the artifact), so the multi-run `macos-latest`
-distribution a real calibration needs can be collected from ordinary runs; `NORMALIZATION_ENABLED`
-turns it back on once someone has. What replaced it is confirmation: a scenario whose first pass
-breached is re-measured through the same `runUndoScenario` and fails only if it breaches again, and
-a confirmation that could not be scored acquits nothing. The JSON and Markdown diagnostics retain
-raw P95, maximum, every sample, the measured host slowdown, and the gate value; `confirmations`
-holds each re-measured scenario's full result, so a confirmed breach can be read as a distribution
-rather than as two numbers.
-
-`FAST_UNDO_SCENARIO_KEYS` is the fast set's only declaration. A repo-script unit test derives sole
-exercisers from every scenario's declared paths and requires each one in that set. Release runs also
-restore and update the durable `webkit-undo-full-history` artifact: the harness records each
-scenario's measured-to-budget ratio, recomputes ideal membership from the three most recent full
-runs, and records whether the fast tier would have caught a breach. Membership drift and two
-consecutive fast-set misses fail the full job; the updated history and full diagnostics upload even
-when that check fails. Invalid restored history falls back to the compatible seed, and a full run
-without commit samples is rejected without appending zero-valued evidence.
+path filter is the React Native app (`experiments/native-architecture/**`, minus its Markdown), the
+pnpm inputs (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `patches/**`), the release
+build script and its imports, `setup-pnpm`, the workflow itself, and each module the bundle imports
+from elsewhere in the repository by path (the privacy page's `contents.ts` and `sectionLink.ts`).
+`tools/mobile/tests/native-release-configurations.test.mjs` fails when a build input, or a module
+the app imports from outside its own tree, falls outside it. The shared `web/src/lib` and
+`web/static` trees the bundle imports from are left out on purpose: the Quality job type-checks the
+app against them on every PR, and including them would spend macOS minutes on most web-tree PRs. A
+match costs runner minutes, not merge wall clock. Both jobs are Release builds, so each also bundles
+the JavaScript as the store build embeds it. Android builds the `.dev` Release APK
+(`native:android:apk`) for one ABI, set through `ORG_GRADLE_PROJECT_reactNativeArchitectures`; the
+tagged smoke builds all four. iOS builds `native:ios:simulator` — `pod install`, then the unsigned
+store-identity Release build for the simulator, for the runner's architecture only — the same app
+the iOS deploy smoke installs. Neither job is required by a branch rule. ADR-0008's 2026-09-28
+amendment records the Capacitor-era jobs' measured wall time against the slowest `test.yml` job.
 
 A timing failure is not product evidence until it is causal. Compare the failing head and its exact
 base with the same command and runner class; for noisy gates, use repeated or interleaved runs. If
@@ -1049,16 +968,16 @@ gate.
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
 The Android workflow runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
-runners hit an HVF init failure). Its build job generates a disposable test key, builds the
-**Release** APK once with R8 and resource shrinking, and uploads that shared artifact. Both matrix
-legs download and boot the same APK on the current API 33 emulator and the declared API 24 floor.
-The matrix reads those levels from their source modules rather than carrying a second floor literal
-in YAML. Each leg runs `npm run test:android:device` through
-`reactivecircus/android-emulator-runner`; the Play upload key never enters CI. The iOS job first
-compiles a Release simulator app without store signing, with `CODE_SIGNING_ALLOWED=NO`, then runs
-`npm run test:ios` on a macOS runner, which boots a simulator, builds the Debug app, and runs the
-same Maestro flow. The Release compile catches configuration-only failures while the established
-Debug smoke remains the boot signal. Each Maestro leg uploads its own report artifact.
+runners hit an HVF init failure). Its build job generates a disposable test key, builds the React
+Native app's **Release** APK once under the store identity (`native:android:apk:store`), with R8 and
+resource shrinking, and uploads that shared artifact. Both matrix legs download and boot the same
+APK on the current API 33 emulator and the declared API 24 floor. The matrix reads those levels from
+their source modules rather than carrying a second floor literal in YAML. Each leg runs
+`npm run test:android:device` through `reactivecircus/android-emulator-runner`; the Play upload key
+never enters CI. The iOS job builds the store-identity Release simulator app without signing
+(`native:ios:simulator`, `CODE_SIGNING_ALLOWED=NO`), then runs `npm run test:ios -- --skip-build`,
+which boots a simulator, installs that same app, and runs the same Maestro flow. Each Maestro leg
+uploads its own report artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
 > provides a booted emulator — the one-shot would try to boot a second one.

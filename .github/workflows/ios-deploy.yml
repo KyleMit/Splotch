@@ -1,13 +1,14 @@
 # Runtime smoke test for the iOS *deployment* — the simulator/Xcode counterpart
-# of android-deploy.yml. Compiles a Release simulator app without store signing, then boots
-# an iPhone simulator, builds + installs the Debug app, and asserts via Maestro
-# that the UI renders (the Capacitor WebView booted and loaded the production web
-# bundle). Neither the web E2E suite (test.yml) nor the Android smoke can catch
-# Release-only compiler/configuration errors or an iOS-only WebView boot failure.
+# of android-deploy.yml. Builds the React Native app's Release simulator app
+# under the store identity (art.splotch.app) without signing, boots an iPhone
+# simulator, installs that same app, and asserts via Maestro that the drawing
+# screen paints (.maestro/smoke.yaml, ADR-0120). Neither the web E2E suite
+# (test.yml) nor the Android smoke can catch a Release-only compiler or
+# configuration error or an iOS-only startup failure.
 #
 # Tag-only by design: macOS runners are the most expensive thing in CI, so this
 # runs only when a release tag is pushed (the moment an iOS crash would reach App
-# Store users), plus on demand from the Actions tab. The debug build targets the
+# Store users), plus on demand from the Actions tab. The app targets the
 # simulator, so no signing secrets or provisioning profiles are involved.
 name: iOS Deploy Smoke
 
@@ -28,7 +29,11 @@ jobs:
     name: Maestro launch smoke test (iOS simulator)
     # macOS runners ship full Xcode and pre-installed iPhone simulators.
     runs-on: macos-latest
-    timeout-minutes: 40
+    # The Release build alone runs about 20 minutes on a hosted runner.
+    timeout-minutes: 80
+    env:
+      # CocoaPods refuses to run under a non-UTF-8 locale.
+      LANG: en_US.UTF-8
     permissions:
       contents: read
     # The reporter below names the failing phase from these. A job cut off by
@@ -41,23 +46,32 @@ jobs:
 
       - uses: ./.github/actions/setup-pnpm
 
-      - name: Compile iOS Release app without store signing
-        run: npm run ios:build:release
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('experiments/native-architecture/ios/Podfile.lock') }}
+
+      - name: Build iOS Release simulator app
+        run: npm run native:ios:simulator
 
       - uses: ./.github/actions/install-maestro
 
-      # ios:build:release already ran cap:sync, so --skip-sync reuses that exact production web
-      # bundle. test:ios (tools/mobile/ios/run-simulator-smoke-test.mjs) auto-discovers and boots
-      # an iPhone simulator, builds the Debug app, installs it, runs .maestro/smoke.yaml — the
-      # same flow the Android smoke runs — then shuts the simulator down.
+      # --skip-build installs the app the step above built. test:ios
+      # (tools/mobile/ios/run-simulator-smoke-test.mjs) boots an iPhone simulator,
+      # installs the app, runs .maestro/smoke.yaml — the same flow the Android
+      # smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
-        # Leave time to upload diagnostics before the job-wide cancellation deadline.
-        timeout-minutes: 20
+        # A cold hosted simulator's first boot, the Release app's install, XCTest
+        # driver startup and clearState's reinstall each take minutes before the
+        # flow's first assertion. Leave time to upload diagnostics before the
+        # job-wide cancellation deadline.
+        timeout-minutes: 40
         env:
           # Budget cold hosted XCTest startup separately from the app's paint assertion.
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000
-        run: npm run test:ios -- --skip-sync
+        run: npm run test:ios -- --skip-build
 
       - name: Upload Maestro report
         id: report
@@ -65,10 +79,12 @@ jobs:
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-ios-report
-          # Collect both legacy appdirs and session-local XCTest logs across CLI upgrades.
+          # Collect both legacy appdirs and session-local XCTest logs across CLI upgrades,
+          # and the flow's own screenshot of the painted screen.
           path: |
             ~/.maestro/tests/
             ~/Library/Logs/maestro/xctest_runner_logs/
+            .maestro/screenshots/
 
   # Same reasoning as android-deploy.yml's report-failure job. Filing from a
   # downstream job, not a step inside the smoke job, is what lets a smoke job

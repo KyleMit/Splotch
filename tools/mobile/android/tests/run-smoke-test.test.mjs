@@ -4,11 +4,13 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sh } from '../../../lib/proc.mjs';
+import { ROOT, sh } from '../../../lib/proc.mjs';
 import { FAKE_ANDROID_SERIAL } from '../../../perf/lib/device-identifiers.mjs';
+import { DEV_APP_ID, RELEASE_APK } from '../../../release/lib/native-app.mjs';
 import { runMaestroSmoke } from '../../lib/mobile-smoke-test.mjs';
-import { ADB, ANDROID_DIR, AVD_NAME, EMULATOR, GRADLEW } from '../lib/android-toolchain.mjs';
+import { ADB, AVD_NAME, EMULATOR } from '../lib/android-toolchain.mjs';
 import {
+  BUILD_RELEASE_APK,
   emulatorArgs,
   emulatorSerial,
   pickConsolePort,
@@ -157,26 +159,40 @@ describe('runAndroidSmokeTest', () => {
     vi.restoreAllMocks();
   });
 
-  it('boots, installs to, tests, and shuts down only the emulator it starts', async () => {
+  it('builds, then boots, installs to, tests, and shuts down only the emulator it starts', async () => {
     const emulator = fakeEmulator();
     spawn.mockReturnValue(emulator);
     desk.execFileAsync.mockImplementation(bootingDesk);
 
     await runAndroidSmokeTest();
 
+    expect(sh.mock.calls).toEqual([['node tools/release/build-native-release.mjs apk']]);
+    expect(BUILD_RELEASE_APK).toBe('node tools/release/build-native-release.mjs apk');
+    expect(sh.mock.invocationCallOrder[0]).toBeLessThan(spawn.mock.invocationCallOrder[0]);
     expect(spawn).toHaveBeenCalledExactlyOnceWith(EMULATOR, emulatorArgs(5556), expect.any(Object));
     expect(adbCalls()).toEqual([
       ['devices'],
       ['-s', NEW_SERIAL, 'wait-for-device'],
       ['-s', NEW_SERIAL, 'shell', 'getprop', 'sys.boot_completed'],
+      ['-s', NEW_SERIAL, 'install', '-r', join(ROOT, RELEASE_APK)],
       ['-s', NEW_SERIAL, 'emu', 'kill'],
     ]);
-    expect(sh.mock.calls).toEqual([
-      ['npm run cap:sync'],
-      [`ANDROID_SERIAL=${NEW_SERIAL} "${GRADLEW}" :app:installDebug`, ANDROID_DIR],
-    ]);
-    expect(runMaestroSmoke).toHaveBeenCalledExactlyOnceWith({ device: NEW_SERIAL });
+    expect(runMaestroSmoke).toHaveBeenCalledExactlyOnceWith({
+      device: NEW_SERIAL,
+      appId: DEV_APP_ID,
+    });
     expect(emulator.kill).not.toHaveBeenCalled();
+  });
+
+  it('boots no emulator when the build fails', async () => {
+    const buildFailure = new Error('exited 1: node tools/release/build-native-release.mjs apk');
+    sh.mockRejectedValue(buildFailure);
+    desk.execFileAsync.mockImplementation(bootingDesk);
+
+    await expect(runAndroidSmokeTest()).rejects.toBe(buildFailure);
+    expect(spawn).not.toHaveBeenCalled();
+    expect(adbCalls()).toEqual([]);
+    expect(runMaestroSmoke).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -197,7 +213,7 @@ describe('runAndroidSmokeTest', () => {
     expect(waits.map((signal) => signal.aborted)).toEqual([true]);
     expect(adbCalls()).toEqual([['devices'], ['-s', NEW_SERIAL, 'wait-for-device']]);
     expect(emulator.kill).not.toHaveBeenCalled();
-    expect(sh).not.toHaveBeenCalled();
+    expect(sh.mock.calls).toEqual([[BUILD_RELEASE_APK]]);
     expect(runMaestroSmoke).not.toHaveBeenCalled();
   });
 
@@ -213,46 +229,33 @@ describe('runAndroidSmokeTest', () => {
     await expect(runAndroidSmokeTest()).rejects.toBe(adbFailure);
     expect(emulator.kill).toHaveBeenCalledOnce();
     expect(adbCalls()).toEqual([['devices'], ['-s', NEW_SERIAL, 'wait-for-device']]);
-    expect(sh).not.toHaveBeenCalled();
+    expect(sh.mock.calls).toEqual([[BUILD_RELEASE_APK]]);
   });
 
   // Another emulator takes the console port between the probe and the spawn and
   // answers on the serial; this run's emulator, refused that port, exits later.
-  it.each([
-    ['while the app syncs', 'npm run cap:sync', [['npm run cap:sync']]],
-    [
-      'while the app installs',
-      ':app:installDebug',
-      [
-        ['npm run cap:sync'],
-        [`ANDROID_SERIAL=${NEW_SERIAL} "${GRADLEW}" :app:installDebug`, ANDROID_DIR],
-      ],
-    ],
-  ])(
-    'touches the serial no further once its own emulator exits %s',
-    async (_case, exitingStep, shCalls) => {
-      const emulator = fakeEmulator();
-      spawn.mockReturnValue(emulator);
-      desk.execFileAsync.mockImplementation(bootingDesk);
-      sh.mockImplementation(async (command) => {
-        if (command.includes(exitingStep)) exitEmulator(emulator, [1, null]);
-      });
+  it('touches the serial no further once its own emulator exits while the app installs', async () => {
+    const emulator = fakeEmulator();
+    spawn.mockReturnValue(emulator);
+    desk.execFileAsync.mockImplementation(async (file, args) => {
+      if (args.includes('install')) exitEmulator(emulator, [1, null]);
+      return bootingDesk(file, args);
+    });
 
-      await expect(runAndroidSmokeTest()).rejects.toThrow(
-        new Error(
-          `The emulator this run started has exited, so ${NEW_SERIAL} may belong to another emulator; the run stopped without touching it further.`
-        )
-      );
-      expect(sh.mock.calls).toEqual(shCalls);
-      expect(runMaestroSmoke).not.toHaveBeenCalled();
-      expect(adbCalls()).toEqual([
-        ['devices'],
-        ['-s', NEW_SERIAL, 'wait-for-device'],
-        ['-s', NEW_SERIAL, 'shell', 'getprop', 'sys.boot_completed'],
-      ]);
-      expect(emulator.kill).not.toHaveBeenCalled();
-    }
-  );
+    await expect(runAndroidSmokeTest()).rejects.toThrow(
+      new Error(
+        `The emulator this run started has exited, so ${NEW_SERIAL} may belong to another emulator; the run stopped without touching it further.`
+      )
+    );
+    expect(runMaestroSmoke).not.toHaveBeenCalled();
+    expect(adbCalls()).toEqual([
+      ['devices'],
+      ['-s', NEW_SERIAL, 'wait-for-device'],
+      ['-s', NEW_SERIAL, 'shell', 'getprop', 'sys.boot_completed'],
+      ['-s', NEW_SERIAL, 'install', '-r', join(ROOT, RELEASE_APK)],
+    ]);
+    expect(emulator.kill).not.toHaveBeenCalled();
+  });
 });
 
 describe('run-smoke-test.mjs', () => {

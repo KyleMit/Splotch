@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import capacitorConfig from '../../../../capacitor.config.json' with { type: 'json' };
+import { STORE_APP_ID } from '../../../release/lib/native-app.mjs';
 import { runMaestroSmoke } from '../../lib/mobile-smoke-test.mjs';
 
 const APP_LOG_CAPTURE_MS = 15000;
@@ -14,7 +14,7 @@ async function captureFailedAppStartup(device) {
   const output = await new Promise((resolve) => {
     execFile(
       'xcrun',
-      ['simctl', 'launch', '--terminate-running-process', '--console', device, capacitorConfig.appId],
+      ['simctl', 'launch', '--terminate-running-process', '--console', device, STORE_APP_ID],
       { timeout: APP_LOG_CAPTURE_MS, maxBuffer: APP_LOG_MAX_BYTES },
       (error, stdout, stderr) => resolve({ stdout, stderr, message: error?.message })
     );

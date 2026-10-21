@@ -174,7 +174,7 @@ leave DerivedData, Gradle output and extracted builds behind; on 2026-10-21 they
 scratchpad to 41 GB, and deleting finished lanes' rebuildable output freed 19 GB. Have each lane
 build into its own named directory under one parent, so its weight is one place to measure. After
 the lane's PR merges, delete that directory by relative path, keeping logs, screenshots and evidence
-(`docs/PROFILING-CAMPAIGNS.md`, "Build caches fill the host disk").
+(`docs/PROFILING.md`, "Device traps that still apply").
 
 **Point lanes at the base, never at another lane's PR branch.** The merge's `--delete-branch`
 removes the branch, so a lane told to read a design note from an open PR loses it the moment that PR

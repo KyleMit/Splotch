@@ -81,8 +81,8 @@ extra focus areas:
   summary.
 
 Empirical verification: <what running/measuring is authorized — e.g. "run the code and tests";
-include physical-device checks only when the rig is genuinely in scope, naming
-`start-capture-session` as the entry; "static review only" when it is not>.
+include physical-device checks only when the devices are genuinely in scope, naming the `profiling`
+skill as the entry; "static review only" when it is not>.
 
 Boundaries: review only — do not modify, commit to, or push any branch under review, and do not
 merge or close anything. Expected end state: one posted review per PR, the checkout clean and every
