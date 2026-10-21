@@ -110,6 +110,8 @@ an output directory without redacting it; `npm run check:device-identifiers` fai
   `failure.png` and `failure.xml` in its directory. A slice step whose action throws keeps its
   recording, capture, and sidecar, the batch runs on, and the step's error fails its arm.
 * Verdict probes read only state created after a run starts and never clear a log.
+* An Android logcat read that fails throws `No verdict: logcat is unreadable` with adb's stderr, so
+  the run fails instead of coming back `alive` on `pidof` and dropbox alone.
 
 ## Checking a JS-only change without a native build
 
@@ -237,6 +239,11 @@ rules below).
   and only the excerpts stored in the result are capped. On a physical iPad a new JetsamEvent is
   pulled and counts only when its process list shows the target's process with a kill `reason` (or
   `killed`); any other is a diagnostic, with each report's kills under `jetsam`.
+* **adb passes logcat's `-T` stamp as one argv element, unquoted.** adb escapes each argument for
+  the device shell, so shell quotes around the stamp reach logcat as part of the time and it rejects
+  it (`tests/crash-verdict.logcat.test.mjs`). Every Android verdict this harness reached before
+  issue 3106, including the device sweep that found it, rested on `pidof` and dropbox alone; the
+  2026-10-20 crash hunt's came from the scratch harness it was ported from and may share the gap.
 * `log show` reads a zone-less time as host-local, so every timestamp passed to it carries `+0000`.
 * **Never edit a runner script while it runs.** The shell reads a script from disk as it executes
   it, so during the 2026-10-20 crash hunt an edit to a shell queue that looped the device matrix
