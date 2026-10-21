@@ -6,6 +6,7 @@ import {
   goToSettingsSection,
   openDrawer,
   openSettings,
+  waitUntilSettled,
 } from '../support/group-b.ts';
 
 test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
@@ -14,6 +15,12 @@ test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
 // than a stroke leaves, and a blank paper leaves none.
 const LINE_ART_MIN_PIXELS = 500;
 const FARM_PAGE_COUNT = 6;
+// A tap that lands soon after a dialog opens is swallowed, so a toddler mashing a button does not
+// dismiss or answer what it just opened. A mashing child's second tap lands a couple of tenths of a
+// second after the first; the observation then idles past the repeat tap's effect.
+const REPEAT_TAP_DELAY_MS = 250;
+const TAP_GUARD_OBSERVATION_MS = 300;
+const BACKDROP_CORNER_INSET_PX = 10;
 
 async function openColoringBooks(page: Page) {
   await openDrawer(page);
@@ -93,5 +100,53 @@ test.describe('coloring books', () => {
     await closeDialog(settings);
 
     await expect(page.getByRole('button', { name: 'Coloring books', exact: true })).toHaveCount(0);
+  });
+
+  test('a repeat tap where the launch button sat does not dismiss the picker just opened', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await openDrawer(page);
+    const launcher = page.getByRole('button', { name: 'Coloring books', exact: true });
+    const spot = await launcher.boundingBox();
+    if (!spot) throw new Error('The Coloring books button is not laid out');
+    await launcher.click();
+    const farm = page.getByRole('dialog', { name: 'Farm' });
+    await expect(farm).toBeVisible();
+
+    await page.waitForTimeout(REPEAT_TAP_DELAY_MS);
+    await page.mouse.click(spot.x + spot.width / 2, spot.y + spot.height / 2);
+    await page.waitForTimeout(TAP_GUARD_OBSERVATION_MS);
+    await expect(farm).toBeVisible();
+
+    const viewport = page.viewportSize();
+    if (!viewport) throw new Error('The window has no size');
+    await page.mouse.click(viewport.width - BACKDROP_CORNER_INSET_PX, BACKDROP_CORNER_INSET_PX);
+    await expect(farm).toBeHidden();
+  });
+
+  test('a repeat tap on a book cover does not pick the page that lands under it', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    await openColoringBooks(page);
+    await closeDialog(page.getByRole('dialog', { name: 'Farm' }));
+    await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
+    const books = page.getByRole('dialog', { name: 'Coloring Books' });
+    const cover = books.getByRole('button', { name: 'Farm coloring book', exact: true });
+    await waitUntilSettled(cover);
+    const spot = await cover.boundingBox();
+    if (!spot) throw new Error('The Farm cover is not laid out');
+    const [x, y] = [spot.x + spot.width / 2, spot.y + spot.height / 2];
+
+    await page.mouse.click(x, y);
+    const farm = page.getByRole('dialog', { name: 'Farm' });
+    await expect(farm).toBeVisible();
+    await page.waitForTimeout(REPEAT_TAP_DELAY_MS);
+    await page.mouse.click(x, y);
+    await page.waitForTimeout(TAP_GUARD_OBSERVATION_MS);
+
+    await expect(farm).toBeVisible();
+    await expect(statusSaying(page, 'Cat ready.')).toBeHidden();
   });
 });

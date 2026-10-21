@@ -13,6 +13,8 @@ import {
   openSettings,
   setGatePolicies,
   solveGate,
+  solveGateByKeyboard,
+  waitUntilSettled,
   wrongGateAnswer,
 } from '../support/group-b.ts';
 
@@ -22,6 +24,15 @@ const REPORT_MESSAGE = 'The purple crayon draws green';
 const WRONG_ANSWER_MESSAGE = 'Not quite — try this one';
 const MANAGE_FOOTER = /Manage these checks in/;
 const MANAGING_SUBTITLE = 'Solve the problem to manage grown-up checks';
+// The shortest landscape phone the card is tuned for, and two common larger ones.
+const LANDSCAPE_PHONES = [
+  ['a short landscape phone', { width: 568, height: 320 }],
+  ['a small phone in landscape', { width: 812, height: 375 }],
+  ['a large phone in landscape', { width: 956, height: 440 }],
+] as const;
+// The card is raised on a phone held upright, then the phone is turned to the shape under test.
+const PHONE_PORTRAIT = { width: 375, height: 812 };
+const KEYPAD_KEY_COUNT = 12;
 const GITHUB_LINK = 'View on GitHub (opens outside Splotch)';
 
 // The card announces a wrong answer and a lockout through its status line.
@@ -224,4 +235,48 @@ test.describe('the Grown-Ups Only check', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible();
     await expect(gateCard(page)).toBeHidden();
   });
+
+  test('an answer typed on a freshly opened card is checked by Enter', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    const reports = await countReports(page);
+    await setGatePolicies(page, 'Every time', ['Sending feedback']);
+    await sendReportFromSettings(page);
+
+    await solveGateByKeyboard(page);
+
+    await expect.poll(() => reports).toEqual(['POST']);
+  });
+
+  for (const [label, viewport] of LANDSCAPE_PHONES) {
+    test(`${label} holds the whole card on screen, with the reason for a wrong answer`, async ({
+      drawingScreen,
+    }) => {
+      const { page } = drawingScreen;
+      await setGatePolicies(page, 'Every time', ['Sending feedback']);
+      await page.setViewportSize(PHONE_PORTRAIT);
+      const hub = await openSettings(page);
+      await hub.getByRole('button', { name: /^Feedback, / }).click();
+      const feedback = page.getByRole('dialog', { name: 'Feedback' });
+      await feedback.getByRole('textbox', { name: 'What went wrong?' }).fill(REPORT_MESSAGE);
+      await feedback.getByRole('button', { name: 'Send report', exact: true }).click();
+      await expect(gateCard(page)).toBeVisible();
+
+      await page.setViewportSize(viewport);
+      await waitUntilSettled(gateCard(page).getByRole('button', { name: 'Check answer' }));
+      await answerGate(page, await wrongGateAnswer(page));
+
+      const card = gateCard(page);
+      // The reason for a wrong answer fades after a couple of seconds, so it is read first.
+      await expect(card.getByText(WRONG_ANSWER_MESSAGE).first()).toBeInViewport({ ratio: 1 });
+      await expect(card.getByRole('button')).toHaveCount(KEYPAD_KEY_COUNT + 2);
+      for (const part of [
+        ...(await card.getByRole('button').all()),
+        card.getByRole('heading', { name: 'Grown-Ups Only' }),
+      ]) {
+        await expect(part).toBeInViewport({ ratio: 1 });
+      }
+    });
+  }
 });

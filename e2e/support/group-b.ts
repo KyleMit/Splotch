@@ -29,6 +29,8 @@ const HUE_SECTOR_MIN_PIXELS = 40;
 const CENTRAL_BAND = { left: 0.15, top: 0.1, right: 0.85, bottom: 0.75 } as const;
 const CLEAR_DRAG_STEPS = 12;
 const PAPER_SAMPLE_SIDE_PX = 24;
+// Below the light paper's grain and above any ink a stroke leaves, so only ink adds to a darkness sum.
+const INK_DARKNESS_CEILING = 200;
 const RGB_CHANNEL_COUNT = 3;
 // The light paper's mean sits near 240 and the dark paper's near 30; anything under this is dark.
 const DARK_PAPER_LUMINANCE_MAX = 128;
@@ -99,6 +101,21 @@ export async function inkHuesInCentralBand(page: Page): Promise<number> {
     if (hue !== null) populations[Math.floor((hue / FULL_TURN_DEGREES) * HUE_SECTORS)]++;
   }
   return populations.filter((pixelCount) => pixelCount >= HUE_SECTOR_MIN_PIXELS).length;
+}
+
+/**
+ * How much dark ink the paper's central band holds, each pixel counting by how far it falls below
+ * the light paper. Solid ink and a wax crayon's grainy coverage both register, and a second pass over
+ * the same stroke adds to it only where the first left bare paper showing.
+ */
+export async function inkDarknessInCentralBand(page: Page): Promise<number> {
+  const pixels = await centralBandPixels(page);
+  let darkness = 0;
+  for (let offset = 0; offset < pixels.length; offset += RGBA_CHANNELS) {
+    const brightest = Math.max(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
+    darkness += Math.max(0, INK_DARKNESS_CEILING - brightest);
+  }
+  return darkness;
 }
 
 /** Black ink pixels in the paper's central band. */
@@ -208,6 +225,12 @@ export async function solveGate(page: Page, keypad: 'ready' | 'paused' = 'ready'
   await answerGate(page, String(x * y), keypad);
 }
 
+/** Answers the card from the keyboard alone: the digits, then Enter to check them. */
+export async function solveGateByKeyboard(page: Page): Promise<void> {
+  const [x, y] = await gateOperands(page);
+  for (const key of [...String(x * y), 'Enter']) await page.keyboard.press(key);
+}
+
 /** A guaranteed wrong answer with as many digits as the right one, so the keypad takes it all. */
 export async function wrongGateAnswer(page: Page): Promise<string> {
   const [x, y] = await gateOperands(page);
@@ -238,13 +261,8 @@ export async function setGatePolicies(
   await closeDialog(settings);
 }
 
-/**
- * Presses the middle of a control with the mouse once it has stopped moving. A control that sits
- * under a gesture surface (the colour picker's hexagons) refuses Playwright's own click for being
- * covered, but takes a press at its coordinates as a finger would, and a press that lands while the
- * dialog is still flying in picks a different one.
- */
-export async function pressWhereItSettles(page: Page, target: Locator): Promise<void> {
+/** Waits until a control's box has stopped moving, as a dialog's fly-in leaves it. */
+export async function waitUntilSettled(target: Locator): Promise<void> {
   let previous = '';
   await expect
     .poll(async () => {
@@ -254,6 +272,16 @@ export async function pressWhereItSettles(page: Page, target: Locator): Promise<
       return settled;
     })
     .toBe(true);
+}
+
+/**
+ * Presses the middle of a control with the mouse once it has stopped moving. A control that sits
+ * under a gesture surface (the colour picker's hexagons) refuses Playwright's own click for being
+ * covered, but takes a press at its coordinates as a finger would, and a press that lands while the
+ * dialog is still flying in picks a different one.
+ */
+export async function pressWhereItSettles(page: Page, target: Locator): Promise<void> {
+  await waitUntilSettled(target);
   const box = await target.boundingBox();
   if (!box) throw new Error('The control to press is not laid out');
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);

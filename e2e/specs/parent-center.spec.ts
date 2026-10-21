@@ -166,4 +166,37 @@ test.describe('Parent Center', () => {
       page.getByRole('dialog', { name: 'Turn off the Parent Center check?' })
     ).toBeHidden();
   });
+
+  test('the warning can be reached and dismissed from the keyboard alone', async ({
+    drawingScreen,
+  }) => {
+    const { page } = drawingScreen;
+    const settings = await reopenBehindItsCheck(page);
+    await unlockWithChallenge(page, settings);
+
+    await gatePolicy(settings, PARENT_CENTER)
+      .getByRole('radio', { name: 'Every time', exact: true })
+      .focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+
+    const confirm = page.getByRole('dialog', { name: 'Turn off the Parent Center check?' });
+    await expect(confirm).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (name) =>
+            document
+              .querySelector(`[role="dialog"][aria-label="${name}"]`)
+              ?.contains(document.activeElement) ?? false,
+          'Turn off the Parent Center check?'
+        )
+      )
+      .toBe(true);
+
+    await page.keyboard.press('Escape');
+
+    await expect(confirm).toBeHidden();
+    await expectMode(settings, PARENT_CENTER, 'Per session');
+  });
 });

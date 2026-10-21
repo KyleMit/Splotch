@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures.ts';
+import { openDrawingScreen } from '../support/drawing.ts';
 import { closeDialog, goToSettingsSection, openSettings } from '../support/group-b.ts';
 
 test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
@@ -193,5 +194,28 @@ test.describe('Settings on a phone', () => {
 
     await back.click();
     await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+  });
+});
+
+test.describe('Settings and the browser Back button on a touch screen', () => {
+  test.use({ hasTouch: true, isMobile: true });
+
+  test('Back closes Settings, spends one drawing guard, and only then leaves the drawing screen', async ({
+    page,
+  }) => {
+    await page.goto('/privacy');
+    const drawingScreen = await openDrawingScreen(page);
+    await drawingScreen.drawStroke();
+    const settings = await openSettings(page);
+
+    await page.goBack();
+    await expect(settings).toBeHidden();
+    await expect(page).toHaveURL(/\/$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/privacy$/);
   });
 });
