@@ -27,18 +27,23 @@ export const TESTS_WORKFLOW_FILE = 'test.yml';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Job name → the artifact its upload step writes. The names are test.yml's `name:` templates for
-// the sharded Tests job and the two engine smoke jobs; flaky-digest-workflow.test.mjs pins both
-// sides.
+// the sharded Tests job, the sharded RN web E2E job and the two engine smoke jobs;
+// flaky-digest-workflow.test.mjs pins both sides.
 const REPORT_JOBS = [
   {
     pattern: /^Tests \((\d+)\/(\d+)\)$/,
     artifact: (match) => `playwright-report-shard-${match[1]}`,
   },
+  {
+    pattern: /^RN web E2E \((\d+)\/(\d+)\)$/,
+    artifact: (match) => `playwright-report-rn-shard-${match[1]}`,
+  },
   { pattern: /^Firefox smoke$/, artifact: () => 'playwright-report-firefox' },
   { pattern: /^WebKit smoke$/, artifact: () => 'playwright-report-webkit' },
 ];
 
-export const REPORT_ARTIFACT_PATTERN = /^playwright-report-(shard-\d+|firefox|webkit)$/;
+export const REPORT_ARTIFACT_PATTERN =
+  /^playwright-report-(shard-\d+|rn-shard-\d+|firefox|webkit)$/;
 
 export function reportArtifactForJob(jobName) {
   for (const { pattern, artifact } of REPORT_JOBS) {

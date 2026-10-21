@@ -2,13 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { REPORT_FOLDER } from '../../e2e/playwright.config.ts';
 import { playwrightReportFolder } from '../../web/playwright.shared.ts';
 import { jobBlocks, stepBlocks, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
 
-// playwright.shared.ts pins the folder both Playwright reporters write to, and
-// test.yml uploads it by a literal path YAML cannot import. This is the guard
-// against the two drifting apart: a moved folder would leave every Playwright
-// job uploading nothing (if-no-files-found: error) — or, worse, an old copy.
+// web/playwright.shared.ts and e2e/playwright.config.ts each pin the folder both
+// of their Playwright reporters write to, and test.yml uploads it by a literal
+// path YAML cannot import. This is the guard against the sides drifting apart: a
+// moved folder would leave every Playwright job uploading nothing
+// (if-no-files-found: error) — or, worse, an old copy.
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const gitignore = readFileSync(join(repoRoot, '.gitignore'), 'utf8').split('\n');
@@ -33,11 +35,16 @@ describe('Playwright report folder', () => {
     name?.startsWith('playwright-report-')
   );
 
+  it('is one folder for both suites', () => {
+    expect(REPORT_FOLDER).toBe(playwrightReportFolder);
+  });
+
   // Pinned by name, not counted: a step whose name fails to parse drops out of the filter, and
   // the steps that remain keep any count above zero.
   it('is what every Playwright job in test.yml uploads', () => {
     expect(reportUploads.map(({ name }) => name).sort()).toEqual([
       'playwright-report-firefox',
+      'playwright-report-rn-shard-${{ matrix.shard }}',
       'playwright-report-shard-${{ matrix.shard }}',
       'playwright-report-webkit',
     ]);

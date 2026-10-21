@@ -40,16 +40,24 @@ describe('test.yml report uploads', () => {
     artifact?.startsWith('playwright-report-')
   );
 
-  it('finds the sharded Tests job and both engine smoke jobs', () => {
+  const sharded = ({ jobName }) => jobName.includes('${{ matrix.shard }}');
+
+  it('finds both sharded suites and both engine smoke jobs', () => {
     expect(uploads.map(({ jobName }) => jobName).sort()).toEqual([
       'Firefox smoke',
+      'RN web E2E (${{ matrix.shard }}/${{ strategy.job-total }})',
       'Tests (${{ matrix.shard }}/${{ strategy.job-total }})',
       'WebKit smoke',
     ]);
   });
 
-  it.each([1, 8])('maps shard %i job to the artifact its upload step writes', (shard) => {
-    const upload = uploads.find(({ jobName }) => jobName.startsWith('Tests ('));
+  it.each([
+    ['Tests', 1],
+    ['Tests', 8],
+    ['RN web E2E', 1],
+    ['RN web E2E', 8],
+  ])('maps the %s shard %i job to the artifact its upload step writes', (suite, shard) => {
+    const upload = uploads.find(({ jobName }) => jobName.startsWith(`${suite} (`));
     const substitute = (text) =>
       text.replace('${{ matrix.shard }}', String(shard)).replace('${{ strategy.job-total }}', '8');
     const artifact = substitute(upload.artifact);
@@ -58,7 +66,7 @@ describe('test.yml report uploads', () => {
   });
 
   it('maps each engine smoke job to the artifact its upload step writes', () => {
-    for (const upload of uploads.filter(({ jobName }) => !jobName.startsWith('Tests ('))) {
+    for (const upload of uploads.filter((upload) => !sharded(upload))) {
       expect(reportArtifactForJob(upload.jobName)).toBe(upload.artifact);
       expect(REPORT_ARTIFACT_PATTERN.test(upload.artifact)).toBe(true);
     }

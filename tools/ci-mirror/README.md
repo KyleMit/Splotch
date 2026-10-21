@@ -15,9 +15,10 @@ Each script owns its command list (`QUALITY_COMMANDS`, `BROWSERLESS_TEST_COMMAND
 `lib/job-mirror.mjs`. That module runs every command from the repository root and continues after a
 failure, unlike CI, so one run reports every failing step instead of one step per push.
 
-The browser jobs (the sharded Playwright `Tests`, the Firefox and WebKit smokes, page-load
-performance) have no mirror here. Run their `test:*` commands directly. `npm test` does not mirror a
-job: it adds the Playwright suite and omits `test:api:smoke`.
+The browser jobs (the sharded Playwright `Tests`, the sharded RN web E2E, the Firefox and WebKit
+smokes, the native web build's Chromium checks, page-load performance) have no mirror here. Run
+their `test:*` commands directly; `e2e/README.md` covers the RN web suite's. `npm test` does not
+mirror a job: it adds the Playwright suites and omits `test:api:smoke`.
 
 ## Inputs and outputs
 
