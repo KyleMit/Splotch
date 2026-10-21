@@ -11,7 +11,6 @@ that outlives the SvelteKit app; the shipping tools go with it.
 | React Native | `tools/migration/check-native-web-safe-area.mjs` | `npm run native:web:build` (its post-build checks run it)                                                                                    | "Did anything break?" — every profile, every orientation, asserted against the RN web export                                 |
 | React Native | the same check's `--gallery`                     | `node --experimental-strip-types tools/migration/check-native-web-safe-area.mjs --gallery <dir>` after a build, then open `<dir>/index.html` | "What does this look like on a Pixel in landscape?" — every scenario's screenshot with the claimable region outlined, by eye |
 | Shipping     | `/dev/notch` harness                             | `npm run dev`, then open `/dev/notch`                                                                                                        | The same by-eye question for the SvelteKit HUD                                                                               |
-| Shipping     | `safe-area-matrix.spec.ts`                       | `npm run test:e2e -- safe-area-matrix`                                                                                                       | The same matrix, asserted against the SvelteKit app, in CI                                                                   |
 
 The RN check drives the drawing screen through CDP's real insets (the RN app reads `env()` through
 `react-native-safe-area-context`, which has no override seam), reports each landscape rotation's
@@ -62,13 +61,12 @@ Three tests hold the seam together:
   source calls `env(safe-area-inset-*)` directly. A consumer that slips back to `env()` still looks
   right on a real device, which is exactly why nothing else would catch it, and becomes invisible to
   the harness.
-* `safe-area-matrix.spec.ts` — at runtime, `var(--safe-area-top)` resolves to the same number as
-  `env(safe-area-inset-top)`. The static guard proves nobody bypassed the properties; this proves
-  the properties still carry the value when Capacitor has not supplied one.
+* `tools/migration/check-native-web-safe-area.mjs` — at runtime, `env(safe-area-inset-*)` resolves
+  to the emulated insets. The SvelteKit `safe-area-matrix.spec.ts` also read `var(--safe-area-top)`
+  against it; that seam retired with the SvelteKit app (ADR-0182).
 * `capacitor-safe-area.spec.ts` (retired with the Capacitor shell) — injected portrait/landscape
   values and explicit zero override conflicting `env()` values; removing an injected property
-  restores the web fallback. The React Native export has no such override seam; its insets are held
-  at every matrix device by `tools/migration/check-native-web-safe-area.mjs`.
+  restores the web fallback. The React Native export has no such override seam.
 
 `measureSafeAreaInsets()` (`lib/platform/safeArea.ts`) reads the numbers with a hidden
 fixed-position probe rather than `getComputedStyle` on the custom property — the property read is
@@ -136,9 +134,10 @@ iPhone min 44) no longer holds on its iPad side; the run is written up in
 [scratchpad/safe-area-device-verification-2026-08-24.md](scratchpad/safe-area-device-verification-2026-08-24.md).
 
 The profile numbers are deliberately left at 24 until the constant is decided, because
-`safe-area-matrix.spec.ts` derives `expectedBandEdges` from the app's own `bandEdges()` applied to
-those numbers — raising the profile to 32 alone would make CI assert that iPads are *supposed* to
-paint a band. The inset and the threshold have to move in one change.
+`tools/migration/check-native-web-safe-area.mjs` derives its expected band edges from `diagnose()`,
+which applies the app's own `bandEdges()` to those numbers — raising the profile to 32 alone would
+make CI assert that iPads are *supposed* to paint a band. The inset and the threshold have to move
+in one change.
 
 **Rounded corners do not inset the sides.** An iPad 10th gen has the largest corner radius Apple
 ships (25pt) and still reports `left: 0, right: 0`. Android waterfall/curved-edge insets default to

@@ -317,11 +317,10 @@ Configured in `tools/store-drawings/vitest.config.mjs`. These run in Node agains
 samples and static instruction module. They cover the supported SVG subset, coordinate fitting,
 closed width/color vocabularies, and exact generator drift without launching a browser.
 
-`web/tests/store-drawing-replay.spec.ts` is the complementary browser contract for ADR-0122's hero
-capture seam: it invokes one stroke on the real drawing route and asserts that the engine commits a
-rendered history command without leaving synthetic pointer chrome behind. A small three-stroke scene
-then runs through both the pointer and engine paths on separate live pages and requires their
-composited canvases to retain greater than 0.9998 soft color fidelity.
+ADR-0122's hero capture seam (`window.__replayStroke`) and its browser contract, the
+`store-drawing-replay` spec, belonged to the SvelteKit app and retired with it. The React Native
+export replays strokes through its in-app probe, which `tools/tests/native-replay-probe.test.mjs`
+and `tools/tests/native-replay-traces.test.mjs` pin.
 
 ## Opt-in centerline tracing
 
@@ -497,8 +496,8 @@ Write specs that can't race in the first place:
   load**: (a) deliberately idling *past* a known threshold to reproduce a timing bug (e.g. the
   settle past the departing page's flight in `e2e/specs/clear.spec.ts`), or (b) proving a *negative*
   — that state must **not** change within a window (e.g. the "SW never registers" check in
-  `pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases, so they
-  can't false-red. Comment the reason when you keep one.
+  `e2e/specs/pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases,
+  so they can't false-red. Comment the reason when you keep one.
 * **Use the drawing app's durable ready state.** `gotoApp()` does not return merely because the
   prerendered `#drawingCanvas` is visible: it waits for the hydrated drawing debug seam and a
   non-zero rendered composite. Specs intentionally covering first paint or hydration navigate with
@@ -726,8 +725,8 @@ browser engine has an automated push/PR signal:
   `tools/tests/e2e-engine-tags.test.mjs` rejects literals and unknown tags, requires a tagged spec,
   and guards agreement among the project, script, and CI-job names.
 * Keep the spec cross-engine portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and
-  the `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
-  assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
+  the `touchDriver` in `e2e/specs/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes,
+  no assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
   already in the full suite.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.

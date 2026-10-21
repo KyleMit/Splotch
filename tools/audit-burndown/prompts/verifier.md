@@ -24,11 +24,11 @@ states a constraint — "inlined so this module never pulls X's chunk", a named 
 comment is the evidence, not the defect. A new static import edge between `web/src` modules can
 re-partition the bundle however dependency-light the imported module is; the edge itself is the
 problem, not the payload (a six-line predicate hoist once pulled the whole save pipeline onto the
-startup critical path and broke `startup-bundle.spec.ts`, from a fix its finding believed respected
+startup critical path and broke the `startup-bundle` spec, from a fix its finding believed respected
 that exact constraint). Judge such a finding INVALID unless the proposed fix demonstrably preserves
-the constraint. The driver independently gates any fix that adds a static import under `web/src` on
-`tests/startup-bundle.spec.ts`, but your verdict is what keeps a doomed finding from burning a full
-implement/review cycle first.
+the constraint. The driver no longer gates a fix that adds a static import under `web/src` on a
+bundle spec (the `startup-bundle` spec retired with the SvelteKit suite, ADR-0182), so your verdict
+is what keeps a doomed finding from burning a full implement/review cycle.
 
 If INVALID because the problem no longer exists at HEAD, your reason must say which of two things
 happened, not just that it's stale: either the finding was **never accurate** (check it against the

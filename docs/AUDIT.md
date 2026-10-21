@@ -125,7 +125,8 @@ hydration. The bare toolbar's glass panes need the same treatment for whatever g
 Run the `audit-page-load` driver on a phone profile with
 `--storage "splotch-action-button-scale=120"` and, separately, emulate a bottom inset through the
 `/dev/notch` harness (`docs/SAFE-AREA.md`); `cumulative-layout-shift` must stay 0 and the
-`layout-shifts` audit empty. `safe-area-matrix.spec.ts` is the place for a regression check.
+`layout-shifts` audit empty. `tools/migration/check-native-web-safe-area.mjs` is the place for a
+regression check.
 
 ### [Performance] SvelteKit fetches the error route's chunks and stylesheet on every load
 

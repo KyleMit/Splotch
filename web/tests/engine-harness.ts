@@ -23,8 +23,6 @@ export async function drawStroke(
 
 export const state = (page: Page) => page.evaluate(() => window.__engineState);
 export const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
-export const alphaAt = (page: Page, x: number, y: number) =>
-  page.evaluate(([px, py]) => window.__engine.pixelAt(px, py)[3], [x, y] as const);
 
 // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady
 // in onMount. Against the default `vite preview` build this settles on the

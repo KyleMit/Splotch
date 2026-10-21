@@ -28,7 +28,7 @@ changing the shipped artifact. The separate Google Play feature graphic is
 
 `gen-promotional-image.mjs` parses the source SVG into palette-mapped strokes, drives them through
 the real app canvas, and captures the 1920×1080 PNG. The Open Graph and Twitter metadata in
-`web/src/app.html` depend on those dimensions, with `web/tests/page.spec.ts` guarding agreement. The
+`web/src/app.html` depend on those dimensions, with `e2e/specs/page.spec.ts` guarding agreement. The
 command replaces the committed PNG only after the live-app replay succeeds. Like the store-drawings
 compiler, it fails before driving the app on SVG input the replay cannot reproduce: an unmapped
 stroke color, a fill or caps and joins that are not round, a path other than one `M` followed by `L`

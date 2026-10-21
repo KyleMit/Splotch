@@ -279,9 +279,10 @@ its own surface instead of a system track painted through its rounded corners. I
 `:root` declaration, and deliberately color only — the gutter's width is the reader's OS preference
 — using the standard property rather than `::-webkit-scrollbar`, which would trade WebKit's overlay
 scrollbar for a permanent gutter on iOS and macOS Safari. Don't restyle scrollbars per component;
-`scrollbar-chrome.spec.ts` guards the shared treatment, and `scrollbarThumbContrast.test.ts` holds
-the thumb to the 3:1 non-text minimum on every ground it can be revealed over — an authored
-`scrollbar-color` forfeits the UA-control exemption in WCAG 2.2 SC 1.4.11.
+`e2e/specs/scrollbar-chrome.spec.ts` guards the shared treatment, and
+`scrollbarThumbContrast.test.ts` holds the thumb to the 3:1 non-text minimum on every ground it can
+be revealed over — an authored `scrollbar-color` forfeits the UA-control exemption in WCAG 2.2 SC
+1.4.11.
 
 **Extract a new primitive at the third duplicate**, not before — and add it to `/design` and the
 component table above when you do.
