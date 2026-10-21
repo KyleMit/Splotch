@@ -5,10 +5,13 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useBundledPageOutlines } from '../../experiments/native-architecture/src/drawing/bundledOutlines.web.ts';
-import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
+import { loadNativePageOutlines } from './native-bundled-outlines-fixture.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { ROOT } from '../lib/proc.mjs';
 
+// A page chunk's first import transforms its module, which can outlast a single tick.
+const CHUNK_LOAD_TIMEOUT_MS = 5000;
+const CHUNK_POLL_MS = 5;
 const read = (path) =>
   readFileSync(join(ROOT, 'experiments/native-architecture/src', path), 'utf8');
 const NATIVE_REEXPORT = /^export \{ (\w+) \} from '([^']+)';$/gm;
@@ -90,11 +93,15 @@ describe('bundled page line art on the web export', () => {
 
   it('renders nothing first, then the page chunk once it loads', async () => {
     const seen = await render('farm/dog');
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    const deadline = Date.now() + CHUNK_LOAD_TIMEOUT_MS;
+    while (seen.at(-1) === undefined && Date.now() < deadline)
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, CHUNK_POLL_MS));
+      });
     expect(seen[0]).toBeUndefined();
-    expect(seen.at(-1)).toEqual(BUNDLED_BOOK_OUTLINES['farm/dog']);
+    // The native apps parse the shipped overlay files the web chunk was generated from.
+    const native = await loadNativePageOutlines(['farm/dog']);
+    expect(seen.at(-1)).toEqual(native['farm/dog']);
   });
 
   it('loads nothing for a page outside the bundled book', async () => {

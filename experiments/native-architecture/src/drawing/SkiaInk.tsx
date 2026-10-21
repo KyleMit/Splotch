@@ -36,7 +36,7 @@ import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import type { PageId } from './pages';
 import type { PaperTheme } from './theme';
-import { decodeDataUriImage, type InkPaintContext } from './skiaInkPainter';
+import { decodeBundledImage, decodeDataUriImage, type InkPaintContext } from './skiaInkPainter';
 import type { Stroke } from './model';
 import type { RasterInkHandle } from './RasterInk';
 import type { UndoGhost } from './undoFeedback';
@@ -76,7 +76,8 @@ function useBookFill(
   onError: (error: unknown) => void
 ) {
   const offline = useContext(OfflineArtworkScope);
-  const uri = isFarmPageId(pageId)
+  const bundled = isFarmPageId(pageId);
+  const uri = bundled
     ? bundledFill(pageId, theme, paper)
     : isOfflinePageId(pageId)
       ? (offline[pageId]?.[artOrientation(paper)][theme].fill ?? null)
@@ -87,7 +88,7 @@ function useBookFill(
   useEffect(() => {
     if (!uri) return;
     let current = true;
-    loadUriImage(uri).then(
+    (bundled ? decodeBundledImage(uri) : loadUriImage(uri)).then(
       (image) => {
         if (current) setLoaded({ uri, image });
       },
@@ -98,8 +99,8 @@ function useBookFill(
     return () => {
       current = false;
     };
-  }, [uri]);
-  const needed = isFarmPageId(pageId) || isOfflinePageId(pageId);
+  }, [uri, bundled]);
+  const needed = bundled || isOfflinePageId(pageId);
   const image = loaded && loaded.uri === uri ? loaded.image : null;
   return { needed, image, ready: !needed || image !== null };
 }

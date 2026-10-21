@@ -10,11 +10,15 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   (`experiments/native-architecture/src/offlineLibrary/books.generated.ts`).
 * `gen-bundled-farm.mjs` generates the bundled starter book's art modules
   (`experiments/native-architecture/src/drawing/bundledFarm/`) from the shipping Farm overlays, the
-  compact-tier fills, the wide selectors and the covers in `web/static/coloring`: one line-art
-  module per page, which the web export loads per page on first use (`bundledOutlines.web.ts`);
-  `images.ts`, the same images as data URIs for the native apps; and `images.web.ts`, which imports
-  the shipping files as hashed Metro assets so no image rides in a web startup script. `--check`
-  verifies them and `tools/tests/native-starter-book.test.mjs` runs that check.
+  compact-tier fills, the wide selectors and the covers in `web/static/coloring`. Every module
+  imports the shipped files as Metro assets, so no image or line art rides in the native JavaScript
+  bundle, which the apps store uncompressed: `images.ts` and `pickerImages.ts` resolve the WebP
+  files to native asset URIs, `images.web.ts` and `pickerImages.web.ts` to hashed web URLs, and
+  `outlineFiles.ts` names each page's overlay SVGs, which the native apps read and parse on first
+  use (`bundledOutlines.ts`). The web export instead loads one generated line-art module per page
+  (`bundledOutlines.web.ts`). Both targets parse the overlays with
+  `experiments/native-architecture/src/drawing/overlayOutline.ts`. `--check` verifies the modules
+  and `tools/tests/native-starter-book.test.mjs` runs that check.
 * `gen-native-icons.mjs` generates the native icon registry from every shipping SVG in
   `web/src/lib/icons` and its `deferred/` subdirectory, resolving themed parts and page tokens per
   theme and re-inking through `currentColor` exactly the icons outside the shipping `COLOR_ICONS`.

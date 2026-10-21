@@ -1,23 +1,47 @@
-import { catOutlines } from './bundledFarm/cat';
-import { cowOutlines } from './bundledFarm/cow';
-import { dogOutlines } from './bundledFarm/dog';
-import { duckOutlines } from './bundledFarm/duck';
-import { horseOutlines } from './bundledFarm/horse';
-import { pigOutlines } from './bundledFarm/pig';
+import { BUNDLED_FARM_OUTLINE_FILES } from './bundledFarm/outlineFiles';
+import { createLazyExport, useLazyValue, type LazyExport } from '../lazyExport';
+import { readBundledText } from '../platform/bundledText.native';
+import { parseOverlay } from './overlayOutline';
 import type { FarmPageId } from './bundledBooks';
-import type { BundledPageOutlines } from './bundledBookAssets';
+import type { BundledOutlineVariant, BundledPageOutlines } from './bundledBookAssets';
 
-export const BUNDLED_BOOK_OUTLINES = {
-  'farm/cat': catOutlines,
-  'farm/cow': cowOutlines,
-  'farm/dog': dogOutlines,
-  'farm/duck': duckOutlines,
-  'farm/horse': horseOutlines,
-  'farm/pig': pigOutlines,
-} satisfies Record<FarmPageId, BundledPageOutlines>;
+async function loadVariant(file: number | string, name: string): Promise<BundledOutlineVariant> {
+  return parseOverlay(await readBundledText(file), name);
+}
 
-// The native apps carry every page's line art in their one bundle, so it is ready on the first
-// render; the web export loads each page's on first use (bundledOutlines.web.ts).
+// A page's line art ships as its overlay SVGs: files the app package compresses, not strings in the
+// JavaScript bundle, which the apps keep uncompressed. A page reads and parses its four on first
+// use, offline; the web export loads the same art as per-page chunks (bundledOutlines.web.ts).
+async function loadPage(pageId: FarmPageId): Promise<BundledPageOutlines> {
+  const { landscape, portrait } = BUNDLED_FARM_OUTLINE_FILES[pageId];
+  const [wideLight, wideDark, tallLight, tallDark] = await Promise.all([
+    loadVariant(landscape.light, `${pageId} wide light`),
+    loadVariant(landscape.dark, `${pageId} wide dark`),
+    loadVariant(portrait.light, `${pageId} tall light`),
+    loadVariant(portrait.dark, `${pageId} tall dark`),
+  ]);
+  return {
+    landscape: { light: wideLight, dark: wideDark },
+    portrait: { light: tallLight, dark: tallDark },
+  };
+}
+
+const lazyPage = (pageId: FarmPageId) => createLazyExport(() => loadPage(pageId));
+const PAGE_OUTLINES = {
+  'farm/cat': lazyPage('farm/cat'),
+  'farm/cow': lazyPage('farm/cow'),
+  'farm/dog': lazyPage('farm/dog'),
+  'farm/duck': lazyPage('farm/duck'),
+  'farm/horse': lazyPage('farm/horse'),
+  'farm/pig': lazyPage('farm/pig'),
+} satisfies Record<FarmPageId, LazyExport<BundledPageOutlines>>;
+
+const wholePage = (outlines: BundledPageOutlines) => outlines;
+
 export function useBundledPageOutlines(pageId: FarmPageId | null): BundledPageOutlines | undefined {
-  return pageId === null ? undefined : BUNDLED_BOOK_OUTLINES[pageId];
+  return useLazyValue(
+    pageId === null ? null : PAGE_OUTLINES[pageId],
+    wholePage,
+    'Coloring page line art'
+  );
 }

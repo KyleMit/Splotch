@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -30,6 +31,7 @@ import { createContactResponder } from '../../experiments/native-architecture/sr
 import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { loadNativePageOutlines } from './native-bundled-outlines-fixture.mjs';
 
 vi.mock('react-native', () => ({ findNodeHandle: (target) => target }));
 vi.mock('react-native-svg', async () => {
@@ -277,7 +279,9 @@ describe('coloring pages on a non-4:3 paper', () => {
     );
   });
 
-  it('fits bundled book art to the whole paper, not the canonical frame', () => {
+  it('fits bundled book art to the whole paper, not the canonical frame', async () => {
+    // The native line art loads on first use; the static render below draws it once loaded.
+    await loadNativePageOutlines(['farm/cat']);
     const markup = outline('farm/cat', PORTRAIT_SIZE);
     expect(markup).toContain('width="567"');
     expect(markup).toContain('height="1024"');

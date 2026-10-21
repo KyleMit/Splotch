@@ -55,23 +55,43 @@ export type InkPaintContext = Readonly<{
 export const DECODED_IMAGE_LIMIT = 48;
 const decodedImages = new Map<string, SkImage>();
 
-export function decodeDataUriImage(uri: string): SkImage {
+function recentImage(uri: string): SkImage | undefined {
   const cached = decodedImages.get(uri);
   if (cached) {
     decodedImages.delete(uri);
     decodedImages.set(uri, cached);
-    return cached;
   }
-  const comma = uri.indexOf(',');
-  if (!uri.startsWith('data:') || comma < 0 || !uri.slice(0, comma).endsWith(';base64'))
-    throw new Error('Ink textures must be base64 data URIs.');
-  const image = Skia.Image.MakeImageFromEncoded(Skia.Data.fromBase64(uri.slice(comma + 1)));
-  if (!image) throw new Error('An ink texture could not be decoded.');
+  return cached;
+}
+
+function rememberImage(uri: string, image: SkImage) {
   decodedImages.set(uri, image);
   if (decodedImages.size > DECODED_IMAGE_LIMIT) {
     const oldest = decodedImages.keys().next().value;
     if (oldest !== undefined) decodedImages.delete(oldest);
   }
+}
+
+export function decodeDataUriImage(uri: string): SkImage {
+  const cached = recentImage(uri);
+  if (cached) return cached;
+  const comma = uri.indexOf(',');
+  if (!uri.startsWith('data:') || comma < 0 || !uri.slice(0, comma).endsWith(';base64'))
+    throw new Error('Ink textures must be base64 data URIs.');
+  const image = Skia.Image.MakeImageFromEncoded(Skia.Data.fromBase64(uri.slice(comma + 1)));
+  if (!image) throw new Error('An ink texture could not be decoded.');
+  rememberImage(uri, image);
+  return image;
+}
+
+// A file that ships in the app (nativeAssetUri) keeps its decoded image in the same cache, so
+// returning to a bundled page reuses its fill as it would a data URI's.
+export async function decodeBundledImage(uri: string): Promise<SkImage> {
+  const cached = recentImage(uri);
+  if (cached) return cached;
+  const image = Skia.Image.MakeImageFromEncoded(await Skia.Data.fromURI(uri));
+  if (!image) throw new Error('A bundled image could not be decoded.');
+  rememberImage(uri, image);
   return image;
 }
 

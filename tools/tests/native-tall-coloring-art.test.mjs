@@ -20,7 +20,6 @@ import {
   bundledOutline,
 } from '../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
 import { BUNDLED_FARM_IMAGES } from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
-import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
@@ -53,6 +52,9 @@ const { BundledMagicFill } =
   await import('../../experiments/native-architecture/src/drawing/BundledBookArtwork.tsx');
 const { OfflineMagicFill } =
   await import('../../experiments/native-architecture/src/offlineLibrary/artwork.tsx');
+const { loadNativePageOutlines } = await import('./native-bundled-outlines-fixture.mjs');
+// The native line art loads on first use; the static renders below draw it once loaded.
+const BUNDLED_BOOK_OUTLINES = await loadNativePageOutlines(FARM_PAGE_IDS);
 
 // The paper area beside the swatch bar on a 390x844 phone held upright, and the same phone
 // turned on its side.
