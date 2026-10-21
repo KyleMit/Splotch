@@ -138,8 +138,8 @@ await page.locator('#magicBrushButton').click();
 > CommonJS-only resolver hint and is ignored by the ESM `import` loader.
 
 To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a book and a page,
-and wait for `#coloringOverlay` to be visible. A full worked example (all these steps) is the
-`applyFarmPage` helper in `web/tests/flows-harness.ts`, which the SvelteKit coloring specs drive.
+and wait for `#coloringOverlay` to be visible. The retired SvelteKit suite's `applyFarmPage` helper
+was a worked example of all these steps.
 
 > **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite', 'dev', …])` +
 > `server.kill('SIGTERM')` does **not** work: `npx` exits but the real `vite` keeps running, and

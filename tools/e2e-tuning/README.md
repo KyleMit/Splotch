@@ -30,8 +30,7 @@ preview-only — one fresh server per repetition, env declared by `commonWebServ
 `CI` and `GITHUB_ACTIONS` from the suite environment so retries do not contaminate the measurement,
 writes a raw Playwright JSON report per repetition under `--out`, and prints the newline-delimited
 `SWEEPRESULT` and `SWEEPTOTAL` records to the job log plus a GitHub step summary when that
-environment is available. `--grep=<pattern>` narrows a repetition to matching tests — that is what
-`npm run test:sweep:smoke` uses to prove the harness end-to-end in CI.
+environment is available. `--grep=<pattern>` narrows a repetition to matching tests.
 
 Each failed, missing, or **empty** report counts as a red repetition without abandoning completed
 work: a repetition whose report holds zero test executions (skipped rows are not executions, and a
@@ -59,10 +58,9 @@ output together. Do not hand-edit the generated page.
 
 The [Worker Sweep workflow](../../.github/workflows/worker-sweep.yml) provides CI hardware, invokes
 the same runner for each worker count, and uploads raw reports. Keep the build, repetition loop, and
-aggregation in the runner so local and CI measurements cannot drift into different protocols.
-`npm run test:sweep:smoke` runs one grepped repetition on every pull request (test.yml, shard 1) so
-a Playwright-config change that breaks the harness surfaces immediately instead of at the next
-re-tune.
+aggregation in the runner so local and CI measurements cannot drift into different protocols. A
+smoke that ran one grepped repetition on every pull request retired with the SvelteKit suite
+(ADR-0182): the harness drives that suite's Playwright config, which now has no specs.
 
 Run focused verification with:
 

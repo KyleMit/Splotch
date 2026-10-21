@@ -86,7 +86,8 @@ fixed-position probe rather than `getComputedStyle` on the custom property — t
 | Android dev options → simulate a cutout   | OS-level yes                     | Propagation into `env()` is **unverified**; see the open questions      |
 | Real-device clouds                        | **Yes**                          | Yes, and expensive. Release branches, not every PR                      |
 
-Two traps in the CDP path, both handled by `overrideSafeAreaInsets` in `web/tests/cdp.ts`:
+Two traps in the CDP path, both handled by the helper the SvelteKit suite had (retired with it,
+ADR-0182):
 
 * **Send all eight keys.** The protocol says "unset values will cause the respective variables to be
   undefined, even if previously overridden" — omitting `left` un-defines it rather than leaving it

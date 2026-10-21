@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 // treats the positional arg as a path pattern). That was issue #785: one spec
 // split stranded citations across the testing and run-splotch skills.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const testsDir = join(repoRoot, 'web', 'tests');
+const testsDirs = [join(repoRoot, 'e2e', 'specs'), join(repoRoot, 'web', 'tests')];
 
 // The live instruction surface — what an agent is told is true *now*. `tools`
 // is here for the audit-burndown role prompts, which an agent reads and greps
@@ -105,7 +105,8 @@ const NOT_A_LITERAL_PATH = /[*<>{}$?]/;
 // the E2E tree, which also covers the shared helper modules beside the specs.
 // Both anchor on an alphanumeric so a stripped-down `*.spec.ts` can't read as
 // a filename.
-const CITATION = /^(?:\.\/)?(?:web\/)?(?:tests\/)?([A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts)$/;
+const CITATION =
+  /^(?:\.\/)?(?:e2e\/specs\/|web\/)?(?:tests\/)?([A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts)$/;
 const TREE_PATH = /^(?:\.\/)?(?:web\/)?tests\/([A-Za-z0-9][A-Za-z0-9_.\-/]*\.ts)$/;
 
 function citedTestPaths(source) {
@@ -122,7 +123,7 @@ function citedTestPaths(source) {
 describe('agent instructions cite E2E test files that exist', () => {
   it('finds the instruction docs to check', () => {
     expect(docs.length).toBeGreaterThan(0);
-    expect(existsSync(testsDir)).toBe(true);
+    expect(testsDirs.every((dir) => existsSync(dir))).toBe(true);
   });
 
   // A root emptied rather than deleted would slip past ENOENT, and the two
@@ -168,11 +169,14 @@ describe('agent instructions cite E2E test files that exist', () => {
     const cited = citedTestPaths(readFileSync(doc, 'utf8'));
     if (cited.length === 0) continue;
 
-    it(`${relative(repoRoot, doc).split(sep).join('/')} names only files in web/tests/`, () => {
-      const missing = cited.filter((path) => {
-        const target = join(testsDir, path);
-        return !existsSync(target) || !statSync(target).isFile();
-      });
+    it(`${relative(repoRoot, doc).split(sep).join('/')} names only files in e2e/specs/ or web/tests/`, () => {
+      const missing = cited.filter(
+        (path) =>
+          !testsDirs.some((dir) => {
+            const target = join(dir, path);
+            return existsSync(target) && statSync(target).isFile();
+          })
+      );
 
       expect(missing).toEqual([]);
     });

@@ -88,8 +88,8 @@ paths:
 * Shared per-test setup lives in a Playwright **fixture**, never in a top-level `test.beforeEach` in
   a helper module: a helper is evaluated once per worker, so such a hook attaches only to the first
   spec file that imports it and every later spec file in that worker silently runs with no setup.
-  Extend `test` in the helper and import `test`/`expect` from it (`tests/engine-harness.ts`);
-  `tools/tests/e2e-harness-imports.test.mjs` guards the import.
+  Extend `test` in the helper and import `test`/`expect` from it (`engine-harness` in the retired
+  SvelteKit suite).
 * **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
   there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
   interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or

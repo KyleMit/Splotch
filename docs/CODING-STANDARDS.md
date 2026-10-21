@@ -886,8 +886,9 @@ The 2026-09-29 evening campaign found five comments whose claim about another si
   it does not cross (PR #2508).
 * The store-frames `paths.ts` header said the render route's params were declared once while the
   render page re-typed them (PR #2510).
-* A `web/tests/helpers.ts` comment said a raised install-banner threshold would fail its specs by
-  timeout, after a unit guard had come to fail on a divergence in either direction (PR #2517).
+* A comment in the SvelteKit suite's `helpers` module said a raised install-banner threshold would
+  fail its specs by timeout, after a unit guard had come to fail on a divergence in either direction
+  (PR #2517).
 
 The 2026-10-03 campaign found five more comments describing code that was not there: a dry run the
 burndown preflight never made (PR #2664), a squash-merge "hypothesis" that was in fact the proof a

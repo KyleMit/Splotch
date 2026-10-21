@@ -373,39 +373,40 @@ describe('workflow hygiene', () => {
   });
 
   describe('Playwright e2e sharding', () => {
-    // The SvelteKit suite's Tests shards and the RN web suite's shards.
-    it.each([
-      { id: 'test', name: 'Tests' },
-      { id: 'rn-web-e2e', name: 'RN web E2E' },
-    ])("keeps $id's job total equal to its contiguous shard axis", ({ id, name }) => {
-      const testsWorkflow = workflows.find(({ name }) => name === 'test.yml');
-      const testJob = jobs(testsWorkflow.lines).find((job) => job.id === id);
-      const matrixStart = testJob.lines.findIndex((line) => line === '      matrix:');
-      expect(matrixStart).toBeGreaterThanOrEqual(0);
+    it.each([{ id: 'rn-web-e2e', name: 'RN web E2E' }])(
+      "keeps $id's job total equal to its contiguous shard axis",
+      ({ id, name }) => {
+        const testsWorkflow = workflows.find(({ name }) => name === 'test.yml');
+        const testJob = jobs(testsWorkflow.lines).find((job) => job.id === id);
+        const matrixStart = testJob.lines.findIndex((line) => line === '      matrix:');
+        expect(matrixStart).toBeGreaterThanOrEqual(0);
 
-      const matrixLines = [];
-      for (const line of testJob.lines.slice(matrixStart + 1)) {
-        if (/^ {8}/.test(line)) matrixLines.push(line);
-        else if (line.trim() !== '') break;
+        const matrixLines = [];
+        for (const line of testJob.lines.slice(matrixStart + 1)) {
+          if (/^ {8}/.test(line)) matrixLines.push(line);
+          else if (line.trim() !== '') break;
+        }
+        const axes = matrixLines
+          .map((line) => line.match(/^ {8}([\w-]+):/)?.[1])
+          .filter((axis) => axis !== undefined);
+        const shardLine = matrixLines.find((line) => /^ {8}shard: \[/.test(line));
+        expect(shardLine).toBeDefined();
+        const shardValues = shardLine
+          .match(/\[(.*)\]/)[1]
+          .split(',')
+          .map((value) => Number(value.trim()));
+        const jobText = testJob.lines.join('\n');
+
+        expect(axes).toEqual(['shard']);
+        expect(shardValues).toEqual(
+          Array.from({ length: shardValues.length }, (_, index) => index + 1)
+        );
+        expect(jobText).toContain(
+          `name: ${name} (\${{ matrix.shard }}/\${{ strategy.job-total }})`
+        );
+        expect(jobText).toContain('--shard=${{ matrix.shard }}/${{ strategy.job-total }}');
       }
-      const axes = matrixLines
-        .map((line) => line.match(/^ {8}([\w-]+):/)?.[1])
-        .filter((axis) => axis !== undefined);
-      const shardLine = matrixLines.find((line) => /^ {8}shard: \[/.test(line));
-      expect(shardLine).toBeDefined();
-      const shardValues = shardLine
-        .match(/\[(.*)\]/)[1]
-        .split(',')
-        .map((value) => Number(value.trim()));
-      const jobText = testJob.lines.join('\n');
-
-      expect(axes).toEqual(['shard']);
-      expect(shardValues).toEqual(
-        Array.from({ length: shardValues.length }, (_, index) => index + 1)
-      );
-      expect(jobText).toContain(`name: ${name} (\${{ matrix.shard }}/\${{ strategy.job-total }})`);
-      expect(jobText).toContain('--shard=${{ matrix.shard }}/${{ strategy.job-total }}');
-    });
+    );
   });
 
   // These steps run only when a gate has already gone red, so a broken one is
