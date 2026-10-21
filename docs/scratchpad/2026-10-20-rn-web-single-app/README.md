@@ -366,7 +366,11 @@ and usage rule read from the source the RN projection is generated from
   `/`'s first paint and `strict.css`'s hash are unchanged.
 * **One layout.** It lays itself out with media queries instead of the window, so it carries one
   variant per theme (`FLUID_LAYOUTS`) where an information page carries eight.
-* **Budgets:** DESIGN_BUDGET_LINE
+* **Budgets:** first paint 42,708 bytes and page entry 867,757 on its first measured build, so caps
+  of 46,979 and 954,533 (`MAX_NATIVE_WEB_PAGE_BYTES.design`). The entry carries React Native Web,
+  since the specimens are the app's own `Rsd*` components; an `html.*`-only entry like the admin
+  console's would have to re-draw them. The document is about 0.74 MB of HTML, two copies of a long
+  page with every icon inline.
 
 ### `/dev/*` triage (report only; step 7 removes)
 
@@ -381,6 +385,10 @@ Found by `rg` over `tools/`, `web/tests/`, `web/src/` (outside the routes), `.ru
 | `/dev/notch`, `/dev/notch/frame`                     | `web/tests/safe-area-matrix.spec.ts` (CI); `docs/SAFE-AREA.md` and the knowledge map; `securityHeaders.ts`'s `FRAMEABLE_ROUTE`; `lint-token-styles.mjs`'s allowlist                                                                                                                                        | Port. It is the only check of the safe-area matrix, by eye and in CI. Keep the framework-free dataset (`lib/devices.ts`, `orientations.ts`, `deviceProfile.ts`) and render the RN drawing screen under each profile's insets on rn-web-chromium; retire the Svelte frames.    |
 | `/dev/share-cards`                                   | `npm run gen:share-cards` (`tools/marketing-assets/gen-share-cards.mjs`, `share-card-inputs.mjs`); `web/tests/share-cards.spec.ts`                                                                                                                                                                         | Port. The committed link-preview PNGs keep serving after step 7, but regenerating them needs a renderer. Render `ShareCard` as an RN page document (or a static template) for `gen:share-cards`.                                                                              |
 | `/dev/store-frames` (`render`, `identity`, `assets`) | `npm run gen:store-assets` and `:frames`; `gen:readme-hero` (`STORE_FRAME_IDENTITY_PATH`); `tools/mobile/check-static-bundle.mjs` (`storePage` copy); `committed-captures.test.mjs`; ADR-0122; `lint-token-styles.mjs`'s allowlist                                                                         | Port. Store screenshots and the README hero must show the RN app once it ships. The frame data (`lib/geometry.ts`, `pages.ts`, `targets.ts`, `paths.ts`, `marks.ts`) is framework-free and stays; the Svelte frame components and the capture flow move to the RN web export. |
+
+The device-parity ledger also cites two of these files as evidence. Rows B0013, B0155 and L0095 name
+`web/src/routes/dev/store-frames/lib/geometry.test.ts`, and B0201, B0202 and B0226 name
+`web/src/routes/dev/page.test.ts`. Step 7 moves or repoints that evidence before it deletes them.
 
 ## Files
 
