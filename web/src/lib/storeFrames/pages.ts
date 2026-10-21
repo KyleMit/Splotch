@@ -1,9 +1,9 @@
-// The store-screenshot page copy: one entry per marketing screenshot, shared
-// by the /dev/store-frames harness and tools/marketing-assets/
-// gen-store-assets.mjs (which imports this under
-// `node --experimental-strip-types` — relative imports only).
+// The store-screenshot page copy: one entry per marketing screenshot, read by
+// tools/marketing-assets/gen-store-assets.mjs and the frame documents it
+// renders (which import this under `node --experimental-strip-types` —
+// relative imports only).
 
-import { paletteHex } from '../../../../lib/palette.ts';
+import { paletteHex } from '../palette.ts';
 
 export type StorePageId = '01-draw' | '02-books' | '03-magic' | '04-ai' | '05-parents';
 
@@ -71,6 +71,6 @@ export function storePage(id: StorePageId): StorePage {
 }
 
 // Every page except the composed AI showcase places a live app capture in its
-// frame — the generator captures one, and the harness loads it from
+// frame — the generator captures one, and the frame document loads it from
 // store-assets/captures/.
 export const pageHasCapture = (page: StorePage): boolean => !page.showcase;

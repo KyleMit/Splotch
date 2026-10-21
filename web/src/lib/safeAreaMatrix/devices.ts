@@ -1,4 +1,4 @@
-import { NO_CUTOUT, type Cutout, type DeviceProfile } from './deviceProfile';
+import { NO_CUTOUT, type Cutout, type DeviceProfile } from './deviceProfile.ts';
 
 // The safe-area profiles worth rendering, one per distinct inset tuple rather
 // than one per model — a second phone reporting the same four numbers at the

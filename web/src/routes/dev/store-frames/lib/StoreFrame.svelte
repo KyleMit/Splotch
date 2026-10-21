@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { StoreTarget } from './targets.ts';
-  import { frameGeometry, L_BASE_H } from './geometry.ts';
-  import type { StorePage } from './pages.ts';
-  import { MARKS, MARK_BASE_W, marksFor } from './marks.ts';
+  import type { StoreTarget } from '$lib/storeFrames/targets';
+  import { frameGeometry, L_BASE_H } from '$lib/storeFrames/geometry';
+  import type { StorePage } from '$lib/storeFrames/pages';
+  import { MARKS, MARK_BASE_W, marksFor } from '$lib/storeFrames/marks';
   import {
     CHIP_SPEC,
     DARK_BG,
@@ -14,7 +14,7 @@
     INK_ON_DARK,
     LIGHT_BG,
     TYPE_SPEC,
-  } from './frameStyle.ts';
+  } from '$lib/storeFrames/frameStyle';
   import { assetUrl, captureAssetFile } from './paths.ts';
   import ShowcaseScene from './ShowcaseScene.svelte';
 

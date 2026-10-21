@@ -322,4 +322,6 @@ if (isMain(import.meta.url))
     await checkPageDocumentsWithoutJavaScript();
     const { checkNativeWebAdmin } = await import('./check-native-web-admin.mjs');
     await checkNativeWebAdmin();
+    const { checkNativeWebSafeArea } = await import('./check-native-web-safe-area.mjs');
+    await checkNativeWebSafeArea();
   });

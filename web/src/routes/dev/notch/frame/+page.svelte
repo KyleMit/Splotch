@@ -7,10 +7,10 @@
   import SettingsButton from '$lib/components/SettingsButton.svelte';
   import { page } from '$app/state';
   import { SAFE_AREA_EDGES, SAFE_AREA_PROPERTIES, ZERO_INSETS } from '$lib/platform/safeArea';
-  import { DEVICE_PROFILES } from '../lib/devices';
-  import { appliedInsets } from '../lib/diagnostics';
+  import { DEVICE_PROFILES } from '$lib/safeAreaMatrix/devices';
+  import { appliedInsets } from '$lib/safeAreaMatrix/diagnostics';
   import { NOTCH_FRAME_READY_ATTRIBUTE } from '../lib/frameReady';
-  import { ORIENTATION_ANGLES, isOrientation } from '../lib/orientations';
+  import { ORIENTATION_ANGLES, isOrientation } from '$lib/safeAreaMatrix/orientations';
 
   // One scenario's worth of the real HUD, rendered at the device's own CSS
   // viewport under that device's insets. The gallery mounts this in an <iframe>

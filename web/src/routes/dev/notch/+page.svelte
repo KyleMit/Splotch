@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { DEVICE_PROFILES } from './lib/devices';
+  import { DEVICE_PROFILES } from '$lib/safeAreaMatrix/devices';
   import {
     SYMMETRIC_LANDSCAPE_NOTE,
     sizeClassOf,
     supportedOrientations,
-  } from './lib/deviceProfile';
+  } from '$lib/safeAreaMatrix/deviceProfile';
   import ScenarioTile from './lib/ScenarioTile.svelte';
   import '$lib/components/deferredIcons';
 

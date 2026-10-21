@@ -4,7 +4,7 @@
 // trail from the doodle into the wand, growing sparkles burst out toward the
 // polaroid. The wand is never rotated: its AI badge must read flat.
 
-import type { PaletteLabel } from '../../../../lib/palette.ts';
+import type { PaletteLabel } from '../palette.ts';
 import type { StoreOrientation } from './targets.ts';
 
 interface ShowcasePlacement {

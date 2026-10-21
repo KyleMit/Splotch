@@ -1,14 +1,14 @@
-import { PAPER_COLORS } from '$lib/theme';
+import { PAPER_COLORS } from '../theme.ts';
 import {
   bandEdges,
   hasNotch,
   statusBarHiddenFor,
   type NotchBandInput,
   type NotchEdge,
-} from '$lib/platform/notchBand';
-import { SAFE_AREA_EDGES, type SafeAreaInsets } from '$lib/platform/safeArea';
-import type { DeviceProfile } from './deviceProfile';
-import { ORIENTATION_ANGLES, isLandscape, type Orientation } from './orientations';
+} from '../platform/notchBand.ts';
+import { SAFE_AREA_EDGES, type SafeAreaInsets } from '../platform/safeArea.ts';
+import type { DeviceProfile } from './deviceProfile.ts';
+import { ORIENTATION_ANGLES, isLandscape, type Orientation } from './orientations.ts';
 
 // What the app decides for a scenario, next to where the hardware actually is.
 // Both halves come from production code — bandEdges and hasNotch are the same
