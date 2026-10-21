@@ -1,8 +1,8 @@
 // Loads every page document the web export wrote with JavaScript disabled, at each layout and
 // colour scheme its variants cover, and fails unless the page reads in full: the one variant that
-// fits is the one shown, its heading and body text are the page's own, and every link that would
-// ask for the grown-up check names its address as plain text instead of linking it
-// (prerender-native-web-pages.mjs, RsdPageAnchor.tsx).
+// fits is the one shown, its heading and body text are the page's own, every link it must offer is
+// a link, and every link that would ask for the grown-up check names its address as plain text
+// instead of linking it (prerender-native-web-pages.mjs, RsdPageAnchor.tsx).
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
@@ -14,8 +14,20 @@ import { FIRST_FRAME_THEMES } from './prerender-native-web.mjs';
 import {
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
+  VARIANT_FRAGMENT_SEPARATOR,
   documentPages,
 } from './prerender-native-web-pages.mjs';
+import releases from '../../web/src/lib/releases.json' with { type: 'json' };
+import {
+  BETA_OPT_IN_URL,
+  PLAY_STORE_LISTING_URL,
+  TESTERS_GROUP_URL,
+} from '../../web/src/lib/components/beta/androidBeta.ts';
+import {
+  TESTFLIGHT_APP_URL,
+  TESTFLIGHT_INVITE_URL,
+} from '../../web/src/lib/components/beta/iosBeta.ts';
+import { BETA_COPY } from '../../experiments/native-architecture/src/pageDocument/betaCopy.ts';
 
 const PRIVACY_POLICY = join(
   ROOT,
@@ -37,6 +49,48 @@ export const PAGE_TEXT_WITHOUT_JS = {
       text: [lede, ...sections.map((section) => section.title)],
       outsideLinks: [...new Set(hrefs.filter((href) => OUTSIDE_LINK.test(href)))],
       followsSectionLinks: true,
+    };
+  },
+  // Every release reads, the older ones a script would fold away included, and the contents link
+  // to the oldest lands on it.
+  changelog() {
+    return {
+      heading: 'Changelog',
+      text: [
+        ...releases.map(({ version }) => `Version ${version}`),
+        `That's every release since ${releases.at(-1).dateLabel}.`,
+      ],
+      outsideLinks: [],
+      linked: ['/', '/privacy'],
+      followsSectionLinks: releases.at(-1).id,
+    };
+  },
+  // Both platforms' steps read, stacked, under links that jump to either one.
+  beta() {
+    return {
+      heading: BETA_COPY.title,
+      text: [BETA_COPY.lede, BETA_COPY.android, BETA_COPY.ios, BETA_COPY.troubleshooting],
+      outsideLinks: [],
+      linked: [
+        TESTERS_GROUP_URL,
+        BETA_OPT_IN_URL,
+        PLAY_STORE_LISTING_URL,
+        TESTFLIGHT_APP_URL,
+        TESTFLIGHT_INVITE_URL,
+        '/feedback',
+        '/',
+      ],
+      followsSectionLinks: 'beta-ios',
+    };
+  },
+  // NOT_FOUND_COPY in RsdNotFoundPage.tsx, which a Node script cannot import.
+  notFound() {
+    return {
+      heading: 'This page wandered off',
+      text: ['The link may be old. These are still here:'],
+      outsideLinks: [],
+      linked: ['/', '/changelog', '/privacy'],
+      followsSectionLinks: false,
     };
   },
 };
@@ -87,15 +141,21 @@ function readPage(variantAttribute) {
   };
 }
 
-// Follows the shown variant's last in-page section link and reports where its target landed.
-async function followSectionLink(tab, variantAttribute, key) {
+// Follows the shown variant's in-page link to `target` (a fragment id), or its last section link,
+// and reports where its target landed.
+async function followSectionLink(tab, variantAttribute, key, target) {
   const links = tab
     .locator(`[${variantAttribute}="${key}"] a[href^="#"]`)
     .filter({ visible: true });
   const named = [];
   for (const link of await links.all())
     if ((await link.innerText()).trim().length > 1) named.push(link);
-  const link = named.at(-1);
+  const aimed = [];
+  if (typeof target === 'string')
+    for (const link of named)
+      if ((await link.getAttribute('href'))?.split(VARIANT_FRAGMENT_SEPARATOR)[0] === `#${target}`)
+        aimed.push(link);
+  const link = typeof target === 'string' ? aimed.at(-1) : named.at(-1);
   if (!link) return null;
   const href = await link.getAttribute('href');
   await link.click();
@@ -121,6 +181,14 @@ export function sectionLinkProblems(at, followed) {
   return [];
 }
 
+// A visible link's resolved address against an expected one: absolute, or a path on the page's own
+// origin.
+function sameAddress(link, href) {
+  if (!href.startsWith('/')) return link === href;
+  const { pathname, search, hash } = new URL(link);
+  return pathname + search + hash === href;
+}
+
 export function pageWithoutJsProblems(file, key, expected, read) {
   const problems = [];
   const at = `${file} (${key}, JavaScript off)`;
@@ -128,7 +196,11 @@ export function pageWithoutJsProblems(file, key, expected, read) {
     return [`${at} shows variants [${read.shown.join(', ')}] instead of ${key}`];
   if (read.heading !== expected.heading)
     problems.push(`${at} is headed "${read.heading}", not "${expected.heading}"`);
-  const missing = expected.text.filter((text) => !read.text.includes(text.replace(/\s+/g, ' ')));
+  // innerText carries a heading's text-transform, so an uppercase rule label still reads its copy.
+  const reads = read.text.toLowerCase();
+  const missing = expected.text.filter(
+    (text) => !reads.includes(text.replace(/\s+/g, ' ').toLowerCase())
+  );
   if (missing.length) problems.push(`${at} does not read: ${missing.join(' | ')}`);
   const linked = expected.outsideLinks.filter((href) => read.links.includes(href));
   if (linked.length) problems.push(`${at} links outside the grown-up check: ${linked.join(', ')}`);
@@ -136,6 +208,10 @@ export function pageWithoutJsProblems(file, key, expected, read) {
     (href) => !read.text.includes(new URL(href).hostname.replace(/^www\./, ''))
   );
   if (unnamed.length) problems.push(`${at} does not name the address of: ${unnamed.join(', ')}`);
+  const unlinked = (expected.linked ?? []).filter(
+    (href) => !read.links.some((link) => sameAddress(link, href))
+  );
+  if (unlinked.length) problems.push(`${at} does not link: ${unlinked.join(', ')}`);
   return problems;
 }
 
@@ -179,14 +255,19 @@ export async function checkPageDocumentsWithoutJavaScript({
             problems.push(
               ...sectionLinkProblems(
                 `${file} (${key}, JavaScript off)`,
-                await followSectionLink(tab, PAGE_VARIANT_ATTRIBUTE, key)
+                await followSectionLink(
+                  tab,
+                  PAGE_VARIANT_ATTRIBUTE,
+                  key,
+                  expected.followsSectionLinks
+                )
               )
             );
           await context.close();
         }
       if (problems.length === 0)
         log(
-          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes, ${expected.outsideLinks.length} outside links named, not linked, and its section links followed into view`
+          `[native-web-pages] ${file} reads in full without JavaScript in all ${Object.keys(PAGE_VARIANT_VIEWPORTS).length * FIRST_FRAME_THEMES.length} layouts and colour schemes: ${expected.linked?.length ?? 0} links linked, ${expected.outsideLinks.length} outside links named, not linked${expected.followsSectionLinks ? ', and its section links followed into view' : ''}`
         );
     }
   } finally {

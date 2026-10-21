@@ -6,7 +6,10 @@ import { soundSettingsStorage } from '../platform/soundSettings';
 import { createDrawingProduct, type DrawingProductOwner } from '../product/createDrawingProduct';
 import { RsdInformationPage } from '../rsdDrawing/RsdInformationPage';
 import { RsdScreenBoundary } from '../rsdDrawing/RsdScreenBoundary';
-import { PageNavigation } from '../rsdDrawing/RsdNotFoundPage';
+import { RsdNotFoundPage } from '../rsdDrawing/RsdNotFoundPage';
+import { PageNavigation } from '../rsdDrawing/pageDocumentState';
+import { NOT_FOUND_DOCUMENT } from './appDocumentContract';
+import { BetaPage } from './BetaPage';
 import { deferredIconsSettled } from '../rsdDrawing/iconRegistry';
 
 // The saved settings and the grown-up check a page's links answer to. The owner is created after
@@ -52,13 +55,19 @@ export function PageDocument() {
     <ShippingFontGate>
       <RsdScreenBoundary>
         <PageNavigation.Provider value={navigation}>
-          <RsdInformationPage
-            page={page}
-            product={product}
-            drawingVisited={false}
-            standalone={false}
-            onDrawingReturn={ignoreDrawingReturn}
-          />
+          {page === NOT_FOUND_DOCUMENT ? (
+            <RsdNotFoundPage />
+          ) : page === 'beta' ? (
+            <BetaPage appearance={product.state?.settings?.appearance} />
+          ) : (
+            <RsdInformationPage
+              page={page}
+              product={product}
+              drawingVisited={false}
+              standalone={false}
+              onDrawingReturn={ignoreDrawingReturn}
+            />
+          )}
         </PageNavigation.Provider>
       </RsdScreenBoundary>
     </ShippingFontGate>

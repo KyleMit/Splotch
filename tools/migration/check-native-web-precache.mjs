@@ -40,7 +40,8 @@ import { documentPages, pageOnlyChunks } from './prerender-native-web-pages.mjs'
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // The version endpoint must reach the network; the worker, build identity and host's not-found
 // answer are not page assets. A page document is answered by the network, and offline by the app
-// shell, which shows the same page over the paper (build-native-web.mjs's navigation routes).
+// shell, which shows the same page over the paper, or the not-found page for a document-only page
+// such as /beta (build-native-web.mjs's navigation routes).
 const UNFETCHED_EXPORT_FILES = new Set([
   NATIVE_WEB_SERVICE_WORKER,
   'metadata.json',
@@ -55,6 +56,8 @@ const PRECACHE_ENTRY = new RegExp(
   'g'
 );
 const SHELL_ASSET_REFERENCE = /(?:src|href)="\/([^"?#]+)"/g;
+// An anchor names a page to navigate to, never a file the shell loads.
+const ANCHOR_START_TAG = /<a\s[^>]*>/gi;
 const PATH_DATA = / d="([^"]+)"/;
 // Shorter path data (a lone circle or square) could recur in a startup icon by coincidence.
 const MIN_LAZY_ICON_SAMPLE_CHARS = 40;
@@ -137,7 +140,9 @@ export function precacheEntriesFromSource(source) {
 export function shellAssetReferences(indexHtml) {
   return [
     ...new Set([
-      ...[...indexHtml.matchAll(SHELL_ASSET_REFERENCE)].map((match) => match[1]),
+      ...[...indexHtml.replace(ANCHOR_START_TAG, '').matchAll(SHELL_ASSET_REFERENCE)].map(
+        (match) => match[1]
+      ),
       ...startupScriptList(indexHtml).map((src) => src.replace(/^\//, '')),
     ]),
   ];
@@ -304,7 +309,7 @@ export function checkNativeWebPrecache({
   });
   problems.push(
     ...documentPolicyProblems(indexHtml.toString('utf8'), APP_SHELL_FILE),
-    ...[NOT_FOUND_FILE, ...documentPages().map(({ file }) => file)].flatMap((file) =>
+    ...[...new Set([NOT_FOUND_FILE, ...documentPages().map(({ file }) => file)])].flatMap((file) =>
       documentPolicyProblems(readFileSync(join(exportDir, file), 'utf8'), file)
     )
   );

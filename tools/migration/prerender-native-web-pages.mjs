@@ -18,15 +18,19 @@ import { dirname, join, relative, sep } from 'node:path';
 import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
 import {
   APP_PAGE_DOCUMENTS,
-  APP_PAGE_PATHS,
+  documentPagePath,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
-import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
+import {
+  APP_DOCUMENT_ATTRIBUTE,
+  NOT_FOUND_DOCUMENT,
+} from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import {
   FIRST_FRAME_VIEWPORT_ATTRIBUTE,
   formatFirstFrameViewport,
 } from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
 import {
+  HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE,
   PAGE_FRAMED_MAX_WIDTH_PX,
   SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
 } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
@@ -57,15 +61,25 @@ export const PAGE_RENDER_ENTRY = `${PAGE_DOCUMENT_DIR}/prerender.tsx`;
 const PAGE_DOCUMENT_RESOLUTION = { [PAGE_DOCUMENT_RESOLVER_OPTION]: true };
 export const PAGE_VARIANT_ATTRIBUTE = 'data-page-variant';
 const EMPTY_ROOT = '<div id="root"></div>';
-const EXPO_NOSCRIPT = /\s*<!--[^>]*-->\s*<noscript>[^<]*<\/noscript>/;
+export const EXPO_NOSCRIPT = /\s*<!--[^>]*-->\s*<noscript>[^<]*<\/noscript>/;
 const HTML_ELEMENT = /<html(\s[^>]*)?>/;
 const TITLE = /<title>[^<]*<\/title>/;
 
-// Every page the route table gives a document of its own, and the file the build writes it to.
+// The host's answer for a path no file serves, which the build writes as the not-found page's own
+// document; build-native-web.mjs re-exports it.
+export const NOT_FOUND_FILE = '404.html';
+// A path no file serves, which a static host answers with NOT_FOUND_FILE: where a check loads it.
+export const NOT_FOUND_PROBE_PATH = '/this-page-wandered-off';
+
+// Every page the route table gives a document of its own, and the file the build writes it to,
+// then the not-found document.
 export function documentPages(documents = APP_PAGE_DOCUMENTS) {
-  return Object.entries(documents)
-    .filter(([, { document }]) => document === 'page')
-    .map(([page]) => ({ page, path: APP_PAGE_PATHS[page], file: `${page}.html` }));
+  return [
+    ...Object.entries(documents)
+      .filter(([, { document }]) => document === 'page')
+      .map(([page]) => ({ page, path: documentPagePath(page), file: `${page}.html` })),
+    { page: NOT_FOUND_DOCUMENT, path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
+  ];
 }
 
 // The layouts an information page takes: RsdPageSheet's phone, framed and desktop frames, and its
@@ -133,10 +147,11 @@ export function withVariantFragments(html, key) {
     );
 }
 
-// Without a script, what one would reveal shows, and the control that would reveal it hides.
+// Without a script, what one would reveal shows, and the control that would reveal it hides, as
+// does a control marked as needing one.
 export function withoutScriptCss() {
   const shown = `[${SHOWN_WITHOUT_SCRIPT_ATTRIBUTE}]`;
-  return `html ${shown}{display:block}html button:has(+${shown}){display:none}`;
+  return `html ${shown}{display:block}html button:has(+${shown}),html [${HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE}]{display:none}`;
 }
 
 // Runs as the parser passes the variants: keeps the one for this window and theme as the root,
@@ -189,7 +204,7 @@ export function renderPageVariants(prerenderPage, page) {
 // held in the list the boot script loads instead of the drawing screen's.
 export function pageDocumentHtml(
   template,
-  { page, title, fontFaceRules, variants, sheet, scripts },
+  { page, title, head = '', fontFaceRules, variants, sheet, scripts },
   readExportFile
 ) {
   for (const [pattern, part] of [
@@ -217,7 +232,7 @@ export function pageDocumentHtml(
       EXPO_STYLESHEET,
       (_, href) => `<style>${readExportFile(href).toString('utf8')}</style>`
     )
-    .replace('</head>', `${style}\n${pageStyle}\n</head>`)
+    .replace('</head>', `${head}${style}\n${pageStyle}\n</head>`)
     .replace(EXPO_SCRIPT, '')
     .replace(EXPO_NOSCRIPT, '')
     .replace(

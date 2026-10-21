@@ -449,6 +449,24 @@ it('gives the changelog contents and Back to top their fragments', async () => {
   expect(pageAnchors()).toContainEqual(['Back to top', '#top']);
 });
 
+// A link to an older release opens the older releases, as a browser opens shipping's folded
+// <details> for its fragment, so the page can reach the release the link names.
+it('opens the older releases for a page loaded at one of them', async () => {
+  records.os = 'web';
+  records.dimensions = WIDE;
+  useCaller();
+  const positions = () =>
+    [...host.querySelectorAll('[data-testid^="changelog-position-"]')].map((node) =>
+      node.getAttribute('data-testid').replace('changelog-position-', '')
+    );
+  await loadAt(`/changelog#${releases[1].id}`);
+  await act(async () => {});
+  expect(positions()).toEqual(releases.slice(0, 3).map(({ id }) => id));
+  await loadAt(`/changelog#${releases.at(-1).id}`);
+  await act(async () => {});
+  expect(positions()).toEqual(releases.map(({ id }) => id));
+});
+
 it('follows a contents entry in place, and leaves a modified click to the browser', async () => {
   records.os = 'web';
   records.dimensions = WIDE;

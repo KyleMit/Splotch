@@ -50,6 +50,40 @@ describe('without JavaScript', () => {
   });
 });
 
+describe('a page whose links must stay links without JavaScript', () => {
+  const expected = {
+    heading: 'This page wandered off',
+    text: [],
+    outsideLinks: [],
+    linked: ['/', '/changelog', 'https://play.google.com/apps/testing/art.splotch.app'],
+  };
+  const read = {
+    shown: ['phone-light'],
+    heading: 'This page wandered off',
+    text: '',
+    links: [
+      'https://splotch.test/',
+      'https://splotch.test/changelog',
+      'https://play.google.com/apps/testing/art.splotch.app',
+    ],
+  };
+
+  it('accepts every expected link, on the page’s own origin or outside it', () => {
+    expect(pageWithoutJsProblems('404.html', 'phone-light', expected, read)).toEqual([]);
+  });
+
+  it('rejects a page missing one', () => {
+    expect(
+      pageWithoutJsProblems('404.html', 'phone-light', expected, {
+        ...read,
+        links: read.links.slice(0, 1),
+      })
+    ).toEqual([
+      '404.html (phone-light, JavaScript off) does not link: /changelog, https://play.google.com/apps/testing/art.splotch.app',
+    ]);
+  });
+});
+
 describe('a followed section link', () => {
   const at = 'privacy.html (desktop-light, JavaScript off)';
   const followed = { href: '#reports', found: true, visible: true, top: -0.4, viewportHeight: 800 };

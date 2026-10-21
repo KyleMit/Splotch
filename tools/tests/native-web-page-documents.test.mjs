@@ -9,6 +9,7 @@ const FIRST_PAINT_FALLBACK_MS = 2000;
 import {
   APP_PAGE_DOCUMENTS,
   APP_PAGE_PATHS,
+  DOCUMENT_ONLY_PAGE_PATHS,
   appPageAt,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
 import { crossDocumentNavigation } from '../../experiments/native-architecture/src/pageDocument/appDocument.ts';
@@ -16,6 +17,8 @@ import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/sr
 import { FIRST_FRAME_VIEWPORT_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import {
+  NOT_FOUND_FILE,
+  NOT_FOUND_PROBE_PATH,
   PAGE_DOCUMENT_DIR,
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
@@ -39,6 +42,7 @@ import {
 import {
   NATIVE_APP_DOCUMENT_PATHS,
   isNativeAppNavigation,
+  withDrawingNoscript,
 } from '../migration/build-native-web.mjs';
 import {
   PAGE_DOCUMENT_EAGER_MODULES,
@@ -107,10 +111,35 @@ function exportFixture(files) {
 
 describe('the route table', () => {
   it('writes a document for each page whose document is its own, and routes every page', () => {
-    expect(documentPages()).toEqual([{ page: 'privacy', path: '/privacy', file: 'privacy.html' }]);
+    expect(documentPages()).toEqual([
+      { page: 'privacy', path: '/privacy', file: 'privacy.html' },
+      { page: 'changelog', path: '/changelog', file: 'changelog.html' },
+      { page: 'beta', path: '/beta', file: 'beta.html' },
+      { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
+    ]);
     for (const [page, path] of Object.entries(APP_PAGE_PATHS)) expect(appPageAt(path)).toBe(page);
-    expect(Object.keys(APP_PAGE_DOCUMENTS)).toEqual(Object.keys(APP_PAGE_PATHS));
-    for (const { page } of documentPages()) expect(APP_PAGE_DOCUMENTS[page].render).toBe('ssg');
+    expect(Object.keys(APP_PAGE_DOCUMENTS)).toEqual([
+      ...Object.keys(APP_PAGE_PATHS),
+      ...Object.keys(DOCUMENT_ONLY_PAGE_PATHS),
+    ]);
+    const routed = documentPages().filter(({ page }) => page !== 'notFound');
+    expect(routed.map(({ page }) => APP_PAGE_DOCUMENTS[page].render)).toEqual(
+      routed.map(() => 'ssg')
+    );
+  });
+
+  // /beta's store links stay out of the native app and the drawing screen's bundle, so the drawing
+  // screen never routes to it: a host serves beta.html, and the shell answers it as not found.
+  it('keeps a document-only page out of the paths the drawing screen routes', () => {
+    expect(APP_PAGE_PATHS).not.toHaveProperty('beta');
+    expect(appPageAt(DOCUMENT_ONLY_PAGE_PATHS.beta)).toBe('notFound');
+    expect(NATIVE_APP_DOCUMENT_PATHS).not.toContain(DOCUMENT_ONLY_PAGE_PATHS.beta);
+    expect(
+      isNativeAppNavigation({
+        request: { mode: 'navigate' },
+        url: new URL('https://splotch.art/beta'),
+      })
+    ).toBe(false);
   });
 
   it("answers every route table page from the worker's app navigation", () => {
@@ -127,7 +156,10 @@ describe('the route table', () => {
         drawing: { render: 'ssg', document: 'drawing' },
         changelog: { render: 'ssg', document: 'page' },
       })
-    ).toEqual([{ page: 'changelog', path: '/changelog', file: 'changelog.html' }]);
+    ).toEqual([
+      { page: 'changelog', path: '/changelog', file: 'changelog.html' },
+      { page: 'notFound', path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
+    ]);
   });
 });
 
@@ -141,6 +173,38 @@ describe("a page document's navigation", () => {
     open('drawing');
     open('changelog', '1.6.0');
     expect(assign.mock.calls).toEqual([['/'], ['/changelog#1.6.0']]);
+  });
+
+  it('loads every page by its document from the not-found document', () => {
+    const openInPlace = vi.fn();
+    const assign = vi.fn();
+    const open = crossDocumentNavigation('notFound', openInPlace, { assign });
+    open('drawing');
+    open('privacy');
+    expect(openInPlace).not.toHaveBeenCalled();
+    expect(assign.mock.calls).toEqual([['/'], ['/privacy']]);
+  });
+});
+
+describe("the drawing screen's document without JavaScript", () => {
+  it("replaces Expo's bare line with a note linking the pages that read without a script", () => {
+    const shell = withDrawingNoscript(EXPORTED_DOCUMENT);
+    expect(shell).not.toContain('You need to enable JavaScript');
+    expect(shell).not.toContain('Use static rendering with Expo Router');
+    const note = /<noscript>([\s\S]*?)<\/noscript>/.exec(shell)[1];
+    expect(note).toContain('Splotch needs JavaScript to draw');
+    expect([...note.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual([
+      '/changelog',
+      '/privacy',
+    ]);
+    // Inline style attributes only: a <style> would count toward the drawing screen's first paint.
+    expect(note).not.toContain('<style');
+  });
+
+  it('refuses a shell with no Expo line to replace', () => {
+    expect(() => withDrawingNoscript('<html><body></body></html>')).toThrow(
+      'The app shell has no Expo <noscript> to replace.'
+    );
   });
 });
 
