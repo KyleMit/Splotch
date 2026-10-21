@@ -4,6 +4,10 @@ Candidate: b236d639160459eecd60900926c759af5d4ae080. This is a diagnostic browse
 migration parity acceptance. The web addendum overrides the original worker brief: this lane never
 uses Android or iOS devices, commits, pushes, or GitHub writes. Product source is unchanged.
 
+The `evidence/` folder (about 1.6 GB of screenshots, traces and receipts) is not committed, so every
+`evidence/` link below resolves only in the worker's original checkout. The negative-control scripts
+create the directory they write to; rerun a probe to regenerate its evidence.
+
 * [Status](status.md): timestamped progress and phase boundaries.
 * [Plan](plan.md): inherited inventory, corrected source expectations and web additions.
 * [Findings](findings.jsonl): only defects reproduced twice; WEB-001 and WEB-002 have executable

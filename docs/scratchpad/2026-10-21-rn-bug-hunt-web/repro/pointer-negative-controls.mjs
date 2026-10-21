@@ -1,10 +1,11 @@
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const repo = resolve('.');
 const out = resolve('docs/scratchpad/2026-10-21-rn-bug-hunt-web');
+mkdirSync(join(out, 'evidence'), { recursive: true });
 const sourcePath = resolve('experiments/native-architecture/src/drawing/PaperInputView.web.tsx');
 const original = readFileSync(sourcePath, 'utf8');
 const fixtures = mkdtempSync(join(out, 'repro', 'pointer-mutation-'));

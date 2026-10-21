@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const repo = resolve('.');
 const out = resolve('docs/scratchpad/2026-10-21-rn-bug-hunt-web');
+mkdirSync(join(out, 'evidence', 'run4'), { recursive: true });
 const source = resolve('experiments/native-architecture/src/rsdDrawing/RsdFeedbackPageContent.tsx');
 const original = readFileSync(source, 'utf8');
 const dir = mkdtempSync(join(out, 'repro', 'feedback-negative-'));
