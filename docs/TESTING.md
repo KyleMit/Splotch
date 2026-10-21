@@ -552,7 +552,7 @@ Write specs that can't race in the first place:
   to stop moving, and a real Playwright `.click()` only *usually* does: its stability check is two
   consecutive frames with an identical rect, and a CSS animation still **pending** its start time (a
   starved compositor grants it late) holds its first keyframe across frames and passes that check.
-  Captured under full-suite contention in the SvelteKit `ai-report.spec.ts`, which now runs as
+  Captured under full-suite contention in the SvelteKit suite's AI report spec, now
   `e2e/specs/ai-report.spec.ts`: the click on the confirmation's Send button dispatched 52ms after
   open, at a 17×21px dialog (the 5% keyframe), 9px from the launch origin — inside the dead zone
   below, so it was swallowed and nothing was sent. The immune tests in that spec were the ones that
@@ -596,7 +596,7 @@ Write specs that can't race in the first place:
   runs on rendered frames too, but it exposes `Animation.finished`, so there you await the browser's
   own signal instead of counting.
 * **Pace a spec on the animation it depends on, never on a clock sized to it.** The lifting-halo
-  spec in the SvelteKit suite's `drawing-motion.spec.ts` (retired; the React Native halo is held by
+  spec in the SvelteKit suite's drawing-motion spec (retired; the React Native halo is held by
   `tools/tests/native-pointer-halos.test.mjs`) needed a lift that has started and not ended when
   reduced motion switches it off, and the `animationcancel` that switch produces is dispatched only
   by a rendering update. Three fixed sleeps sized that on an idle machine and went red 8 times in 20
