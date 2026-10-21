@@ -53,8 +53,10 @@ export const MAX_NATIVE_WEB_CORE_CONTROLS_BYTES = 827_535;
 // loads the bundle itself again fails by the whole bundle.
 export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 // Each page document's budgets, by page (documentPages in prerender-native-web-pages.mjs). Its first
-// paint is its executable inline scripts and inline CSS, since it names no file before it paints;
-// its page entry is the bundle its boot script loads after that paint. The owner set each from
+// paint is its executable inline scripts and inline CSS, since it names no file before it paints.
+// Its prerendered markup is not counted, so the document's file size (a markup copy per variant it
+// prerenders) runs far above this figure. Its page entry is the bundle its boot script loads after
+// that paint. The owner set each from
 // the page's first measured build plus 10%, rounded up (issue 3007, 2026-10-20); ratcheting
 // them down is later work.
 // * privacy: first paint 33,026 measured (1,295 boot JS; 31,731 CSS, 26,866 of it strict.css);
