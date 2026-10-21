@@ -73,7 +73,7 @@ export function readConfig(env = process.env) {
     // edge under web/src (see withBundleGate). Playwright's web server builds
     // first, so this pays a production build per import-adding finding — set it
     // empty to fall back to CI-only detection of bundle re-partitioning.
-    BUNDLE_SPEC: env.BUNDLE_SPEC ?? 'tests/startup-bundle.spec.ts',
+    BUNDLE_SPEC: env.BUNDLE_SPEC ?? '',
     LINT_CMD: env.LINT_CMD ?? 'npx eslint', // per-finding lint gate, on the fix's changed files
     // Local full-suite gate before a push — OFF by default. Every push lands on the
     // draft PR, whose CI runs the whole suite anyway, in parallel, without sitting

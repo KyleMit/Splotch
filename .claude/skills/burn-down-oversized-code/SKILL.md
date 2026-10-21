@@ -166,7 +166,7 @@ moved to its own spec with its helpers in a shared helper module.
 * Scoped CSS stops reaching markup moved into a child component — the parent's show/hide rules must
   be rewritten, within `npm run lint:tokens`' budget of unscoped `:global()` overrides.
 * A static import into a startup-path module re-partitions chunks
-  (`web/tests/startup-bundle.spec.ts` pins the startup bundle).
+  (`tools/migration/check-native-web-startup.mjs` pins the React Native export's startup bundle).
 * Test placement (`tools/tests/test-file-placement.test.mjs`); a split that must re-declare a large
   `vi.mock` harness is usually counter-driven — Vitest mocks cannot be shared across files.
 * E2E groups carry `test.use()` settings (touch device, viewport) that must move with them.

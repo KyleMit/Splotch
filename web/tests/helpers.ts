@@ -19,10 +19,6 @@ export const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36';
 export const IPAD_UA =
   'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
-// Chrome on iOS — an iOS device whose Share sheet is not the one the manual
-// install steps describe (the CriOS token is what marks it).
-export const IPHONE_CHROME_UA =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124 Mobile/15E148 Safari/604.1';
 
 // Looked up rather than copied, so a retuned hue can't leave a spec clicking a
 // selector that matches nothing (the swatch carries its hex as data-color).
@@ -214,55 +210,6 @@ async function waitForCommittedDrawingHistory(
 
 /** Navigate to the drawing app and wait for its hydrated engine and rendered
  *  composite to become drawable. Early-boot specs navigate directly. */
-/**
- * Enters real element fullscreen — the state Chromium demands before it honors
- * `screen.orientation.lock()`, and so the state the Settings Orientation picker
- * renders in at all (`orientationLockApplies`).
- *
- * The app's own Fullscreen Toggle cannot do this from a spec: it renders only
- * for Android user agents. `requestFullscreen()` needs a user gesture, which
- * `evaluate()` does not carry, so the activation comes from a keypress the app
- * binds nothing to. A keypress rather than a click deliberately: a click needs
- * something to land on, and an overlay over an open dialog trips outside-click
- * handling and the launch dead zone. The viewport keeps its size, so layout
- * assertions still measure the box they were written against. Call it after
- * `gotoApp` — navigating leaves fullscreen.
- */
-export async function enterFullscreen(page: Page) {
-  await page.evaluate(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'F2') return;
-      document.removeEventListener('keydown', onKey, true);
-      void document.documentElement.requestFullscreen();
-    };
-    document.addEventListener('keydown', onKey, true);
-  });
-  await page.keyboard.press('F2');
-  await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
-}
-
-/**
- * Leaves element fullscreen. Chromium backs it with a fullscreen browser window
- * and then refuses `setViewportSize` with "restore it to normal state first", so
- * a spec that measures a second viewport has to exit between cases. Navigating
- * does not exit on its own. Exiting needs no user gesture.
- */
-export async function exitFullscreen(page: Page) {
-  await page.evaluate(() => (document.fullscreenElement ? document.exitFullscreen() : undefined));
-  await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
-}
-
-/**
- * Changes the viewport while leaving the page in fullscreen either side of it,
- * for a spec that measures a second viewport and needs the state Chromium
- * honors an orientation lock in at both.
- */
-export async function resizeInFullscreen(page: Page, size: { width: number; height: number }) {
-  await exitFullscreen(page);
-  await page.setViewportSize(size);
-  await enterFullscreen(page);
-}
-
 export async function gotoApp(
   page: Page,
   path = '/',
@@ -381,14 +328,13 @@ export async function settleFlyIn(dialog: Locator) {
 // (issue #918). A healthy fill is a frame or two per section plus that staging,
 // so this is more than an order of magnitude past it: a bound on a fill that has
 // genuinely stopped, never a schedule a live one can outrun.
-export const SETTINGS_FILL_FRAME_BUDGET = 300;
+const SETTINGS_FILL_FRAME_BUDGET = 300;
 
 // Wait for the wide Settings pane to stop reporting itself busy, i.e. for every
 // section to be in it — which is what makes an offset read off the pane, or a
 // node an axe scan walks, the final one. Sampled a frame at a time from inside
 // the page, on the fill's own clock: a round trip to the test process measures
-// the harness instead, and on a starved worker one can span the whole fill
-// (settings-mount.spec.ts watches the same fill the same way).
+// the harness instead, and on a starved worker one can span the whole fill.
 //
 // The frame budget is the whole of this wait's own bound, and it needs to be:
 // none of Playwright's timeouts reach the sampling. `locator.evaluate`'s
@@ -398,7 +344,7 @@ export const SETTINGS_FILL_FRAME_BUDGET = 300;
 // measured 10s in-page promise run to completion — and `actionTimeout` defaults
 // to 0 under the test runner anyway. So a fill that never finishes is bounded by
 // the test timeout, and the budget is what turns that into a pointed failure.
-export async function settleSettingsPane(pane: Locator) {
+async function settleSettingsPane(pane: Locator) {
   await pane.evaluate(
     (el, budget) =>
       new Promise<void>((resolve, reject) => {
@@ -544,7 +490,7 @@ export const INSTALL_BANNER_AUTO_CLEAR_STROKES = 5;
 // that releases deferred service-worker registration (routes/+page.svelte). The
 // demand path keeps that network work from delaying the visible banner, while
 // this timeout still covers a loaded worker's component import and rendering.
-export const BANNER_MOUNT_TIMEOUT_MS = 20_000;
+const BANNER_MOUNT_TIMEOUT_MS = 20_000;
 
 const INSTALL_BANNER_STROKE_SPACING_PX = 30;
 

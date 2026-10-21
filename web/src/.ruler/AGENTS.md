@@ -20,8 +20,8 @@ Where things live (full file-by-file map: `architecture` skill):
   behind an exported `initX()` a route must remember to call (see `layout.svelte.ts`,
   `appearance.svelte.ts`, `network.svelte.ts`, `fullscreen.svelte.ts`). `install.svelte.ts` is the
   one exception: its one-shot `beforeinstallprompt` listener must be eager (a deferred listener
-  could miss an event that fires before hydration, and `web/tests/startup-bundle.spec.ts` fails if
-  the module leaves the modulepreloaded startup set), but its state seeding stays behind
+  could miss an event that fires before hydration, and the retired `startup-bundle` spec failed if
+  the module left the modulepreloaded startup set, ADR-0182), but its state seeding stays behind
   `initInstallPrompt()`, called from `lib/boot/webOnlyServices.ts` — kept split for now to avoid
   touching its well-tested surface, not because the seeding itself needs to be deferred. Shared
   derived values are exposed as plain getter functions that recompute per call (`resolvedTheme()` in

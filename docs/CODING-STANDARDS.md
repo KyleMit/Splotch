@@ -516,10 +516,11 @@ one on PR #2406, and PR #2418 pinned the native count too.
 **Enforcement.** `STARTUP_MODULEPRELOAD_COUNT` and `NATIVE_STARTUP_MODULEPRELOAD_COUNT` in
 `tools/check-bundle-budgets.mjs` are exact, two-sided pins enforced by `npm run build` and
 `npm run build:cap` on the release build; a change in either direction fails and asks for the
-constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes, and
-`web/tests/startup-bundle.spec.ts` pins which modules load at startup, including
-`STARTUP_REQUIRED_MARKERS` for a module that must stay eager (the install prompt's listener, PR
-#2428). ADR-0032's 2026-09 amendments record the reasoning.
+constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes. On the React Native
+export `tools/migration/check-native-web-startup.mjs` holds the startup bytes, and
+`tools/tests/native-web-service-worker.test.mjs` keeps a module that must stay eager (the install
+prompt's listener, PR #2428) on the startup path; the SvelteKit `startup-bundle.spec.ts` that pinned
+both retired with its suite (ADR-0182). ADR-0032's 2026-09 amendments record the reasoning.
 
 ## 8. Tools
 
