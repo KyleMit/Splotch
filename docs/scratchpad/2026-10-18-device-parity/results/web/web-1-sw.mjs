@@ -350,6 +350,13 @@ export const SW_CELLS = {
         navigations: [...navigations],
         state: await s.page.evaluate(workerState),
       };
+      const offlineFailures = [];
+      s.page.on('requestfailed', (request) =>
+        offlineFailures.push(
+          `${request.failure()?.errorText ?? '?'} ${request.resourceType()} ${new URL(request.url()).pathname}`
+        )
+      );
+      const consoleErrorsBeforeOffline = s.consoleErrors.length;
       await s.ctx.setOffline(true);
       await s.page.reload().catch(() => {});
       const offlineAfterDeploy = await s.page
@@ -357,10 +364,35 @@ export const SW_CELLS = {
         .waitFor({ state: 'visible', timeout: 15_000 })
         .then(() => true)
         .catch(() => false);
+      await s.page.waitForTimeout(1500);
+      const stylesheets = await s.page
+        .evaluate(() => ({
+          sheets: document.styleSheets.length,
+          links: [...document.querySelectorAll('link[rel="stylesheet"]')].map((link) => ({
+            href: new URL(link.href).pathname,
+            loaded: !!link.sheet,
+          })),
+        }))
+        .catch((error) => ({ error: error.message }));
+      // A prerendered or server-rendered first frame shows the paper before any script runs, so
+      // only a stroke that inks proves the offline document actually booted.
+      const probe = [0.5, 0.27];
+      const inkedOffline = offlineAfterDeploy
+        ? await (async () => {
+            const before = await regionDigest(s, probe);
+            await contact(s, [[[0.3, 0.25], probe, [0.7, 0.25]]]);
+            return before !== (await regionDigest(s, probe));
+          })().catch(() => false)
+        : false;
       return {
         first,
         blankLaunch,
         offlineAfterDeploy,
+        inkedOffline,
+        offlineFailures,
+        offlineConsoleErrors: s.consoleErrors.slice(consoleErrorsBeforeOffline),
+        stylesheets,
+        controller: await s.page.evaluate(workerState).catch((error) => ({ error: error.message })),
         shot: await capture(s, `sw-stale-launch-offline-${s.arm}`),
       };
     }),

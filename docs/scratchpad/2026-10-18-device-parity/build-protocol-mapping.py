@@ -736,6 +736,90 @@ PROTOCOL_RERUN = {
     'L0210': ('WEB-1', 'results/web-1-2026-10-19.md', 3021,
               'rn-web-chromium rerun 2026-10-20 of ai-install-banner-suppression: the install banner hides '
               'while the picture is minimized, as on web-prod'),
+    'T2-25': ('WEB-1', 'results/web-1-2026-10-19.md', 3022,
+              'rn-web-chromium rerun 2026-10-20 of install-android, install-iphone-rotate and '
+              'install-preview-forced-colors: every card edge within 0 px of web-prod\'s in six views, '
+              'web-prod\'s line breaks at 412 px, and the call to action before Not now'),
+    'E0529': ('WEB-1', 'results/web-1-2026-10-19.md', 3022,
+              'rn-web-chromium rerun 2026-10-20 of install-android and install-iphone-rotate: both banner '
+              'states sit at web-prod\'s position, every card edge within 0 px, clear of the corner controls'),
+    'B0009': ('WEB-1', 'results/web-1-2026-10-19.md', 3019,
+              'rn-web-chromium rerun 2026-10-20 of engine-idle-gap-jump: a held mouse that idles 1.5 s and '
+              'resumes far away draws no connecting line, in one Undo step, the values web-prod recorded'),
+    'E0272': ('WEB-1', 'results/web-1-2026-10-19.md', 3019,
+              'rn-web-chromium rerun 2026-10-20 of engine-idle-gap-jump: a held mouse that idles 1.5 s and '
+              'resumes far away draws no connecting line, in one Undo step, the values web-prod recorded'),
+    'X31': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3025,
+            'rn-web-chromium rerun 2026-10-20 of ai-originals-storage: each closed picture leaves a 40-byte '
+            'record with no run, and origin usage after three pictures is 294,912 bytes (487,424 before '
+            'the fix), flat across a reload; the web-prod arm was not rerun'),
+    'L0146': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3025,
+              'rn-web-chromium rerun 2026-10-20 of ai-originals-storage: a closed picture\'s stored run is '
+              'released (X31)'),
+    'E0323': ('WEB-1', 'results/web-1-2026-10-19.md', 3026,
+              'rn-web-chromium rerun 2026-10-20 of not-found-layouts: 0 differences at 320 px in both '
+              'themes, every link box within 1 px of web-prod\'s'),
+    'E0326': ('WEB-1', 'results/web-1-2026-10-19.md', 3026,
+              'rn-web-chromium rerun 2026-10-20 of not-found-layouts: 0 differences in forced colors; the '
+              'divider is shipping\'s straight CanvasText rule, and the back-link disc takes shipping\'s '
+              'BackToTopLink forced treatment, since shipping\'s own disc loses its chevron'),
+    'L0167': ('AI-1', 'results/ai-1-web-2026-10-19.md', 3027,
+              'rn-web-chromium rerun 2026-10-20 of ai-retry-then-success at 390x844: Close at 273, Try '
+              'again at 460 and Report a problem at 545, the values web-prod recorded'),
+}
+
+# Rows whose slice result needed no RN fix: the cell's harness misread RN web, a one-off failure did
+# not reproduce on a quiet host, or a passed cell was repeated by such a rerun. Each rerun matched
+# web-prod. The row keeps its status (unverified, or blocked on another target) until its protocol
+# covers every target. The issue, when present, holds the no-defect finding.
+PROTOCOL_RERUN_NO_DEFECT = {
+    'X19': ('WEB-1', 'results/web-1-2026-10-19.md', 3014,
+            'failed, a harness artifact: the RN host answered /coloring/** with its SPA fallback',
+            'rn-web-chromium rerun 2026-10-20 of coloring-connection-policy with /coloring/** served '
+            '(#3097): an unknown connection downloads all seven extra books, as web-prod does'),
+    'B0285': ('WEB-1', 'results/web-1-2026-10-19.md', 3014,
+              'failed, a harness artifact: the RN host answered /coloring/** with its SPA fallback',
+              'rn-web-chromium rerun 2026-10-20 of coloring-connection-policy with /coloring/** served '
+              '(#3097): the default and no-API connections download all seven extra books (518 requests; '
+              'web-prod 527, its 9 more being the online starter book), as web-prod does'),
+    'L0180': ('WEB-1', 'results/web-1-2026-10-19.md', 3014,
+              'failed, a harness artifact: the RN host answered /coloring/** with its SPA fallback',
+              'rn-web-chromium rerun 2026-10-20 of coloring-connection-policy with /coloring/** served '
+              '(#3097): RN web fetches books from its own origin, as webStore.ts does, and downloads all '
+              'seven extra books on an unknown connection'),
+    'B0286': ('WEB-1', 'results/web-1-2026-10-19.md', 3014,
+              'blocked by a harness artifact: the RN host answered /coloring/** with its SPA fallback',
+              'rn-web-chromium rerun 2026-10-20 of coloring-connection-policy with /coloring/** served '
+              '(#3097): Save-Data, 2g and cellular request no extra-book file, as on web-prod'),
+    'E0178': ('WEB-1', 'results/web-1-2026-10-19.md', 3014,
+              'blocked by a harness artifact: the RN host answered /coloring/** with its SPA fallback',
+              'rn-web-chromium rerun 2026-10-20 of coloring-connection-policy with /coloring/** served '
+              '(#3097): Save-Data, 2g and cellular request no extra-book file, as on web-prod'),
+    'X51': ('WEB-1', 'results/web-1-2026-10-19.md', 3014,
+            'blocked by a harness artifact: the RN host answered /coloring/** with its SPA fallback',
+            'rn-web-chromium rerun 2026-10-20 of coloring-connection-policy with /coloring/** served '
+            '(#3097): Save-Data, 2g and cellular request no extra-book file, as on web-prod; the '
+            'network-return retry was not observed'),
+    'B0313': ('WEB-1', 'results/web-1-2026-10-19.md', 3027,
+              'failed, a harness artifact: the cell counted a same-document replaceState as a navigation',
+              'rn-web-chromium rerun 2026-10-20 of sw-update-lifecycle counting document loads apart '
+              '(#3100): both arms load /, then ?v=9.9.9+next; RN\'s extra entry is one same-document '
+              'history-state write from its browser-back owner'),
+    'L0204': ('WEB-1', 'results/web-1-2026-10-19.md', 3027,
+              'failed, a harness artifact: the cell counted a same-document replaceState as a navigation',
+              'rn-web-chromium rerun 2026-10-20 of sw-update-lifecycle counting document loads apart '
+              '(#3100): both arms load /, then ?v=9.9.9+next (B0313)'),
+    'E0328': ('WEB-1', 'results/web-1-2026-10-19.md', 3027,
+              'failed once on a loaded host (two precached resources ERR_FAILED, then __d is not defined), '
+              'then passed 13 isolated reruns',
+              'quiet-host rerun 2026-10-20 of sw-stale-launch at 3fe2fd9819151dc97fa40bcaf7740f19b1df5e58 '
+              '(1-minute load 1.30 to 7.56): rn-web booted offline after the deploy and inked a stroke in '
+              '20 of 20, with 0 ERR_FAILED, 0 page errors and 0 dropped stylesheets; web-prod showed the '
+              'paper in 10 of 10 but inked in 0 of 10 (shipping, recorded, not filed)'),
+    'L0207': ('WEB-1', 'results/web-1-2026-10-19.md', None,
+              'passed',
+              'quiet-host rerun 2026-10-20 of sw-stale-launch: after the deploy\'s newer version.json, '
+              'rn-web made the ?v= cache-bust navigation in 20 of 20 runs, as web-prod did in 10 of 10'),
 }
 
 
@@ -745,6 +829,12 @@ def protocol_result(rid, res):
         assert proto in res['protocols'] and res['status'] == 'unverified', rid
         res['evidence'] = f'{record};{ISSUE}{issue}'
         res['basis'] += f'; {proto} slice 2026-10-19: failed, fixed by #{issue}; {result}'
+    if rid in PROTOCOL_RERUN_NO_DEFECT:
+        proto, record, issue, earlier, result = PROTOCOL_RERUN_NO_DEFECT[rid]
+        assert proto in res['protocols'] and res['status'] in ('unverified', 'blocked'), rid
+        res['evidence'] = record if issue is None else f'{record};{ISSUE}{issue}'
+        earlier += '' if issue is None else f', no RN defect (#{issue})'
+        res['basis'] += f'; {proto} slice 2026-10-19: {earlier}; {result}'
     if rid not in PROTOCOL_FAILED:
         return res
     proto, record, issue, reason = PROTOCOL_FAILED[rid]
@@ -866,8 +956,10 @@ def main():
     # validation
     ids = [r['id'] for r, _ in out]
     assert len(ids) == len(set(ids)) == 1541, len(ids)
-    for table in (AC1_ADMITTED, AC1_REPAIRED, AC1_VERIFIED, AC1_MOVED, AC1_FAILED, AC1_RECORDED):
+    for table in (AC1_ADMITTED, AC1_REPAIRED, AC1_VERIFIED, AC1_MOVED, AC1_FAILED, AC1_RECORDED,
+                  PROTOCOL_FAILED, PROTOCOL_RERUN, PROTOCOL_RERUN_NO_DEFECT):
         assert set(table) <= set(ids), set(table) - set(ids)
+    assert not set(PROTOCOL_RERUN) & set(PROTOCOL_RERUN_NO_DEFECT)
     for r, res in out:
         for p in res['protocols']:
             assert p in PROTOCOLS, (r['id'], p)
