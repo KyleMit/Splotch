@@ -28,6 +28,7 @@ import {
   formatFirstFrameViewport,
 } from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
 import {
+  HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE,
   PAGE_FRAMED_MAX_WIDTH_PX,
   SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
 } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
@@ -183,10 +184,11 @@ export function withVariantFragments(html, key) {
     );
 }
 
-// Without a script, what one would reveal shows, and the control that would reveal it hides.
+// Without a script, what one would reveal shows, and the control that would reveal it hides, as
+// does a control that needs a script to do anything.
 export function withoutScriptCss() {
   const shown = `[${SHOWN_WITHOUT_SCRIPT_ATTRIBUTE}]`;
-  return `html ${shown}{display:block}html button:has(+${shown}){display:none}`;
+  return `html ${shown}{display:block}html button:has(+${shown}){display:none}html [${HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE}]{display:none}`;
 }
 
 // Runs as the parser passes the variants: keeps the one for this window and theme as the root,

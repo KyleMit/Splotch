@@ -423,3 +423,33 @@ it("keeps an earlier visit's report out of the next visit's form", async () => {
   expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(false);
   expect(caller.product.feedback.owner.getState().draft.message).toBe('Second visit, not sent');
 });
+
+// A page document's build renders and its browser hydrates the form before the owner exists, so
+// the page shows the form a fresh owner shows, and the field takes no typing it would then drop.
+it('shows the standalone form before its owner loads, as a fresh owner shows it', async () => {
+  await mount(createElement(RsdFeedbackSection, { owner: null, presentation: 'page' }));
+  // The one difference: the unloaded field takes no typing.
+  const unloaded = host.innerHTML.replace(' disabled=""', '');
+  expect(host.innerHTML).toContain(' disabled=""');
+  expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(false);
+  expect(host.textContent).toContain(REPORT_KINDS[0].label);
+  expect(records.props.findLast((props) => props.accessibilityLabel === BUG_FIELD).editable).toBe(
+    false
+  );
+  const owner = createNativeFeedback({
+    transport: vi.fn(),
+    device: () => ({ platform: 'Web' }),
+    policyStorage: { read: async () => null, write: async () => {} },
+  });
+  try {
+    await mount(createElement(RsdFeedbackSection, { owner, presentation: 'page' }));
+    expect(host.innerHTML).toBe(unloaded);
+    expect(
+      records.props.findLast((props) => props.accessibilityLabel === BUG_FIELD).editable
+    ).not.toBe(false);
+  } finally {
+    owner.dispose();
+  }
+  await mount(createElement(RsdFeedbackSection, { owner: null }));
+  expect(host.innerHTML).toBe('');
+});

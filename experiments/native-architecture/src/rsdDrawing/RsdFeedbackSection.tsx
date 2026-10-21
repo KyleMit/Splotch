@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import { supportEmail } from '../../../../web/src/lib/supportEmail';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import type { NativeFeedbackOwner, NativeFeedbackState } from '../feedback/feedback';
@@ -25,6 +27,8 @@ const PRIVACY_LINE_HEIGHT = 1.45;
 const TIGHT_PICKER_MAX_WIDTH_PX = 400;
 const PAGE_FIELD_GAP_PX = 14;
 const PAGE_PHONE_MAX_WIDTH_PX = 540;
+// The /feedback page's .fallback: the way out on its own line under the error.
+const FALLBACK_GAP_PX = 6;
 // The .report-textarea skin. The field is React Strict DOM's own textarea rather than the shared
 // RsdTextArea, whose React Native Web TextInput the color picker's chunk also loads: a module two
 // web chunks share is hoisted onto the startup path.
@@ -108,11 +112,50 @@ const styles = css.create({
   pageField: { borderRadius: dimensions.radiusMd },
   pageSubmit: { marginTop: dimensions.space1 },
   phoneSubmit: { width: '100%' },
+  fallback: { display: 'block', marginTop: FALLBACK_GAP_PX },
+  fallbackLink: {
+    color: 'inherit',
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
+    textDecorationLine: 'underline',
+    whiteSpace: 'nowrap',
+  },
 });
+
+type FormOwner = Pick<
+  NativeFeedbackOwner,
+  'setKind' | 'setMessage' | 'setIncludeDevice' | 'deviceRows' | 'submit' | 'submitPublic'
+>;
+type FormState = Pick<NativeFeedbackState, 'draft' | 'delivery' | 'validation' | 'policyReady'>;
+// editable: false holds the message field read-only, so nothing typed before the owner exists is
+// lost when it arrives with its empty draft.
+type Form = Readonly<{ owner: FormOwner; state: FormState; editable: boolean }>;
+
+const ignore = () => {};
+// The page's form before its owner exists: what a page document's build renders and its browser
+// hydrates, since the owner is created after hydration (PageDocument.tsx). A fresh owner's form,
+// whose controls answer nothing until the owner arrives.
+const UNLOADED_PAGE_FORM: Form = {
+  editable: false,
+  owner: {
+    setKind: ignore,
+    setMessage: ignore,
+    setIncludeDevice: ignore,
+    deviceRows: () => [],
+    submit: ignore,
+    submitPublic: ignore,
+  },
+  state: {
+    draft: { kind: REPORT_KINDS[0].value, message: '', includeDevice: false },
+    delivery: { status: 'idle' },
+    validation: '',
+    policyReady: false,
+  },
+};
 
 // What the parent hears after Send report: the shipping thanks on success, else the delivery's
 // own account of what happened, which says whether the report may already have arrived.
-function deliveryOutcome(state: NativeFeedbackState) {
+function deliveryOutcome(state: FormState) {
   const { delivery } = state;
   if (delivery.status === 'idle' || delivery.status === 'sending') return null;
   return delivery.status === 'success'
@@ -134,12 +177,14 @@ function inputValue(event: unknown): string | null {
 function MessageField({
   owner,
   state,
+  editable,
   label,
   placeholder,
   page,
 }: {
-  owner: NativeFeedbackOwner;
-  state: NativeFeedbackState;
+  owner: FormOwner;
+  state: FormState;
+  editable: boolean;
   label: string;
   placeholder: string;
   page: boolean;
@@ -147,6 +192,7 @@ function MessageField({
   return (
     <html.textarea
       aria-label={label}
+      readOnly={!editable}
       value={state.draft.message}
       rows={TEXTAREA_ROWS}
       maxLength={MAX_REPORT_MESSAGE_LENGTH}
@@ -161,15 +207,7 @@ function MessageField({
   );
 }
 
-function ReportFields({
-  owner,
-  state,
-  page,
-}: {
-  owner: NativeFeedbackOwner;
-  state: NativeFeedbackState;
-  page: boolean;
-}) {
+function ReportFields({ form: { owner, state, editable }, page }: { form: Form; page: boolean }) {
   const prompt = MESSAGE_PROMPT_BY_KIND[state.draft.kind];
   const tight = useWindowDimensions().width <= TIGHT_PICKER_MAX_WIDTH_PX;
   return (
@@ -185,6 +223,7 @@ function ReportFields({
       <MessageField
         owner={owner}
         state={state}
+        editable={editable}
         label={prompt.label}
         placeholder={prompt.placeholder}
         page={page}
@@ -209,7 +248,7 @@ function ReportFields({
 // introduction, then one card holding the kind, the message, the device opt-in with what it would
 // send, the privacy line and Send report, which asks for the grown-up check before anything
 // leaves. Each visit starts a fresh draft. The owner loads after first paint on the web, so until
-// it has the section shows nothing.
+// it has the Settings section shows nothing and the page shows its unloaded form.
 export function RsdFeedbackSection({
   owner,
   presentation = 'settings',
@@ -223,7 +262,37 @@ export function RsdFeedbackSection({
   useEffect(() => {
     owner?.reset();
   }, [owner]);
-  if (!owner || !state) return null;
+  const form = owner && state ? { owner, state, editable: true } : page ? UNLOADED_PAGE_FORM : null;
+  if (!form) return null;
+  return <FeedbackForm form={form} page={page} phone={phone} />;
+}
+
+// The page's failure sits above Send, where the eye is after pressing it, as shipping's does; a
+// report that could not be delivered also offers the support address, composed only here so no
+// prerendered document carries it (web/src/lib/supportEmail.ts).
+function PageMessage({ message, delivery }: { message: string; delivery: boolean }) {
+  const address = supportEmail();
+  return (
+    <RsdStatusMessage status="error">
+      {message}
+      {delivery && Platform.OS === 'web' ? (
+        <html.span style={styles.fallback}>
+          {REPORT_FORM_COPY.emailFallbackLead}
+          <html.a
+            href={`mailto:${address}?subject=${encodeURIComponent(REPORT_FORM_COPY.emailSubject)}`}
+            style={styles.fallbackLink}
+          >
+            {address}
+          </html.a>
+          {REPORT_FORM_COPY.emailFallbackTail}
+        </html.span>
+      ) : null}
+    </RsdStatusMessage>
+  );
+}
+
+function FeedbackForm({ form, page, phone }: { form: Form; page: boolean; phone: boolean }) {
+  const { owner, state } = form;
   const sending = state.delivery.status === 'sending';
   const outcome = deliveryOutcome(state);
   const message = state.validation
@@ -242,7 +311,10 @@ export function RsdFeedbackSection({
         </>
       ) : null}
       <html.div style={[styles.card, page && styles.pageCard]}>
-        <ReportFields owner={owner} state={state} page={page} />
+        <ReportFields form={form} page={page} />
+        {page && message ? (
+          <PageMessage message={message.message} delivery={message === outcome} />
+        ) : null}
         <html.div
           style={[styles.submit, page && styles.pageSubmit, page && phone && styles.phoneSubmit]}
         >
@@ -262,7 +334,7 @@ export function RsdFeedbackSection({
           </RsdButton>
         </html.div>
       </html.div>
-      {message ? (
+      {message && !page ? (
         <html.div style={styles.status}>
           <RsdStatusMessage status={message.status}>{message.message}</RsdStatusMessage>
         </html.div>
