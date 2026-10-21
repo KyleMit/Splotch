@@ -1,0 +1,55 @@
+CASE system-locale-fr-FR
+{"label": "system-locale-fr-FR-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Requested system locales: fr-FR
+{"label": "system-locale-fr-FR-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "system-locale-fr-FR-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Requested system locales: en-US
+Traceback (most recent call last):
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+    before=snapshot(label+'-before');assert any(n.get('content-desc')=='Drawing paper' for n in before['controls']), 'Missing drawing baseline';assert any(n.get('content-desc')=='Undo' and n.get('enabled')=='true' for n in before['controls']), 'Undo baseline unavailable';print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
+                                                                                                                                                                                                                                                                                                                                                                                                                    ~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 36, in snapshot
+    xml=tree(); LAST_XML=xml; p.with_suffix('.xml').write_text(xml)
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 19, in tree
+    assert 'dumped to:' in result, result
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+BLOCKED system-locale-fr-FR
+CASE system-locale-ar
+{"label": "system-locale-ar-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Requested system locales: ar
+{"label": "system-locale-ar-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "system-locale-ar-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Requested system locales: en-US
+{"label": "system-locale-ar-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "system-locale-ar-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE rotation-landscape
+{"label": "rotation-landscape-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "rotation-landscape-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "rotation-landscape-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "rotation-landscape-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "rotation-landscape-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE rotation-portrait
+{"label": "rotation-portrait-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "rotation-portrait-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "rotation-portrait-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "rotation-portrait-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "rotation-portrait-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "hardware-keyboard-direct-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "hardware-keyboard-direct-attached", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "hardware-keyboard-direct-attached-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "hardware-keyboard-direct-detached", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "hardware-keyboard-direct-detached-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "trim-running-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "trim-return", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "trim-return-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "kill-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "kill-return", "pid": "13397", "createCountInRetainedLog": 2, "localActivity": ["bfa92cc"]}

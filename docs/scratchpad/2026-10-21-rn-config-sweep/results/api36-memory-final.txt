@@ -1,0 +1,56 @@
+{"label": "trim-running-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+Traceback (most recent call last):
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 17, in <module>
+    print(sh('am send-trim-memory '+PKG+' COMPLETE'),flush=True)
+          ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+    def sh(cmd): return adb('shell',cmd)
+                        ~~~^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+    if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: 
+Exception occurred while executing 'send-trim-memory':
+java.lang.IllegalArgumentException: Unable to set a higher trim level than current level
+	at com.android.server.am.ActivityManagerService.setProcessMemoryTrimLevel(ActivityManagerService.java:3171)
+	at com.android.server.am.ActivityManagerShellCommand.runSendTrimMemory(ActivityManagerShellCommand.java:3383)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:387)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10418)
+	at android.os.Binder.shellCommand(Binder.java:1151)
+	at android.os.Binder.onTransact(Binder.java:953)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5739)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2735)
+	at android.os.Binder.execTransactInternal(Binder.java:1426)
+	at android.os.Binder.execTransact(Binder.java:1365)
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/memory.py", line 21, in <module>
+    print(sh('am send-trim-memory '+PKG+' RUNNING_CRITICAL'),flush=True)
+          ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+    def sh(cmd): return adb('shell',cmd)
+                        ~~~^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+    if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: 
+Exception occurred while executing 'send-trim-memory':
+java.lang.IllegalArgumentException: Unable to set a higher trim level than current level
+	at com.android.server.am.ActivityManagerService.setProcessMemoryTrimLevel(ActivityManagerService.java:3171)
+	at com.android.server.am.ActivityManagerShellCommand.runSendTrimMemory(ActivityManagerShellCommand.java:3383)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:387)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10418)
+	at android.os.Binder.shellCommand(Binder.java:1151)
+	at android.os.Binder.onTransact(Binder.java:953)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5739)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2735)
+	at android.os.Binder.execTransactInternal(Binder.java:1426)
+	at android.os.Binder.execTransact(Binder.java:1365)
+

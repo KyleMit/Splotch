@@ -1,0 +1,703 @@
+emulator-5688 [
+  {
+    label: 'baseline',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 28546,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 28546,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 28546,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 3287
+  },
+  {
+    label: 'font-largest-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29308,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4049
+  },
+  {
+    label: 'font-smallest-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29345,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-smallest-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29345,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-smallest-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4086
+  },
+  {
+    label: 'font-smallest-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29224,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-smallest-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 3965
+  },
+  {
+    label: 'density-larger-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29255,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-larger-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 30712,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-larger-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 26659,
+    undoRemovedPixels: 4053
+  },
+  {
+    label: 'density-larger-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 28301,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-larger-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 3042
+  },
+  {
+    label: 'density-smaller-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 28886,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-smaller-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29317,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-smaller-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25580,
+    undoRemovedPixels: 3737
+  },
+  {
+    label: 'density-smaller-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 30586,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-smaller-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 5327
+  },
+  {
+    label: 'night-on-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29341,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-on-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29326,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-on-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25248,
+    undoRemovedPixels: 4078
+  },
+  {
+    label: 'night-on-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29032,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-on-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 3773
+  },
+  {
+    label: 'night-off-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29307,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-off-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29307,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-off-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4048
+  },
+  {
+    label: 'night-off-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29291,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-off-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4032
+  },
+  {
+    label: 'contrast-on-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29280,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-on-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-on-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: -25259
+  },
+  {
+    label: 'contrast-on-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29395,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-on-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4136
+  },
+  {
+    label: 'bold-on-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29196,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'bold-on-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29196,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'bold-on-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29196,
+    undoRemovedPixels: 0
+  },
+  {
+    label: 'bold-on-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29344,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'bold-on-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4085
+  },
+  {
+    label: 'app-locale-fr-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29365,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-fr-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29365,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-fr-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4106
+  },
+  {
+    label: 'app-locale-fr-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29310,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-fr-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 4051
+  },
+  {
+    label: 'app-locale-ar-before',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29294,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-ar-applied',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 31436,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-ar-applied-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 27224,
+    undoRemovedPixels: 4212
+  },
+  {
+    label: 'app-locale-ar-restored',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 29152,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-ar-restored-undo',
+    pid: '4195',
+    creates: 1,
+    inkPixels: 25259,
+    undoRemovedPixels: 3893
+  },
+  {
+    label: 'contrast-fresh-1-before',
+    pid: '11910',
+    creates: 2,
+    inkPixels: 36324,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-1-applied',
+    pid: '11910',
+    creates: 2,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-1-waited',
+    pid: '11910',
+    creates: 2,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-1-applied-undo',
+    pid: '11910',
+    creates: 2,
+    inkPixels: 32628,
+    undoRemovedPixels: -32628
+  },
+  {
+    label: 'contrast-fresh-1-restored',
+    pid: '11910',
+    creates: 2,
+    inkPixels: 36289,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-2-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38288,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-2-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-2-waited',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-fresh-2-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: -34811
+  },
+  {
+    label: 'contrast-fresh-2-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38652,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38652,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38652,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 3841
+  },
+  {
+    label: 'system-locale-fr-FR-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38836,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-restored-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4025
+  },
+  {
+    label: 'system-locale-ar-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38829,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-ar-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 41252,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-ar-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 37072,
+    undoRemovedPixels: 4180
+  },
+  {
+    label: 'system-locale-ar-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 39044,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-ar-restored-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4233
+  },
+  {
+    label: 'rotation-landscape-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38882,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-landscape-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38882,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-landscape-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4071
+  },
+  {
+    label: 'rotation-landscape-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38898,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-landscape-restored-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4087
+  },
+  {
+    label: 'rotation-portrait-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38934,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-portrait-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38934,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-portrait-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4123
+  },
+  {
+    label: 'rotation-portrait-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38859,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-portrait-restored-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4048
+  },
+  {
+    label: 'navigation-threebutton-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38877,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-threebutton-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38877,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-threebutton-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4066
+  },
+  {
+    label: 'navigation-threebutton-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 39069,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-threebutton-restored-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4258
+  },
+  {
+    label: 'navigation-gestural-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38928,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-gestural-applied',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38928,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-gestural-applied-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4117
+  },
+  {
+    label: 'navigation-gestural-restored',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38887,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-gestural-restored-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4076
+  },
+  {
+    label: 'hardware-keyboard-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 39067,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'hardware-keyboard-attached',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 39067,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'hardware-keyboard-attached-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4256
+  },
+  {
+    label: 'hardware-keyboard-detached',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 39049,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'hardware-keyboard-detached-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4238
+  },
+  {
+    label: 'trim-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38936,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'trim-return',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38936,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'trim-return-undo',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 34811,
+    undoRemovedPixels: 4125
+  },
+  {
+    label: 'kill-before',
+    pid: '12582',
+    creates: 3,
+    inkPixels: 38924,
+    undoRemovedPixels: undefined
+  },
+  ... 37 more items
+]

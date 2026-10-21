@@ -1,0 +1,76 @@
+CASE system-locale-fr-FR
+{"label": "system-locale-fr-FR-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+Requested system locales: fr-FR
+{"label": "system-locale-fr-FR-applied", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "system-locale-fr-FR-applied-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+Requested system locales: en-US
+{"label": "system-locale-fr-FR-restored", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "system-locale-fr-FR-restored-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+CASE system-locale-ar
+{"label": "system-locale-ar-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+Requested system locales: ar
+{"label": "system-locale-ar-applied", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "system-locale-ar-applied-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+Requested system locales: en-US
+{"label": "system-locale-ar-restored", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "system-locale-ar-restored-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+CASE rotation-landscape
+{"label": "rotation-landscape-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "rotation-landscape-applied", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "rotation-landscape-applied-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "rotation-landscape-restored", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "rotation-landscape-restored-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+CASE rotation-portrait
+{"label": "rotation-portrait-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "rotation-portrait-applied", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "rotation-portrait-applied-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "rotation-portrait-restored", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "rotation-portrait-restored-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+CASE navigation-threebutton
+{"label": "navigation-threebutton-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "navigation-threebutton-applied", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "navigation-threebutton-applied-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "navigation-threebutton-restored", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "navigation-threebutton-restored-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+CASE navigation-gestural
+{"label": "navigation-gestural-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "navigation-gestural-applied", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "navigation-gestural-applied-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "navigation-gestural-restored", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "navigation-gestural-restored-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "hardware-keyboard-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "hardware-keyboard-attached", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "hardware-keyboard-attached-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "hardware-keyboard-detached", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "hardware-keyboard-detached-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "trim-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+{"label": "trim-return", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "trim-return-undo", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+{"label": "kill-before", "pid": "12582", "createCountInRetainedLog": 3, "localActivity": ["eb832ce"]}
+
+Traceback (most recent call last):
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/remaining.py", line 32, in <module>
+    (OUT/'kill-background-pid.txt').write_text(sh('pidof '+PKG));launch();snapshot('kill-return')
+                                               ~~^^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+    def sh(cmd): return adb('shell',cmd)
+                        ~~~^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+    if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError

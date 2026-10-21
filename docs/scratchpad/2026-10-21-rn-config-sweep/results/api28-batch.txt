@@ -1,0 +1,74 @@
+CASE font-largest
+{"label": "font-largest-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "font-largest-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "font-largest-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Deleted 1 rows
+{"label": "font-largest-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "font-largest-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE font-smallest
+{"label": "font-smallest-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "font-smallest-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "font-smallest-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Deleted 1 rows
+{"label": "font-smallest-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "font-smallest-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE density-larger
+{"label": "density-larger-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "density-larger-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "density-larger-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "density-larger-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "density-larger-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE density-smaller
+{"label": "density-smaller-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "density-smaller-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "density-smaller-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "density-smaller-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "density-smaller-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE night-on
+{"label": "night-on-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Night mode: yes
+{"label": "night-on-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "night-on-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Night mode: no
+{"label": "night-on-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "night-on-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+CASE night-off
+{"label": "night-off-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Night mode: no
+{"label": "night-off-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Traceback (most recent call last):
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 70, in <module>
+    before=snapshot(label+'-before');assert any(n.get('content-desc')=='Drawing paper' for n in before['controls']), 'Missing drawing baseline';assert any(n.get('content-desc')=='Undo' and n.get('enabled')=='true' for n in before['controls']), 'Undo baseline unavailable';print(sh(apply));time.sleep(1);launch();snapshot(label+'-applied');undo(label+'-applied');print(sh(restore));time.sleep(1);launch();snapshot(label+'-restored');undo(label+'-restored')
+                                                                                                                                                                                                                                                                                                                                                   ~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 55, in undo
+    tap('Undo',LAST_XML);snapshot(label+'-undo')
+                         ~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 36, in snapshot
+    xml=tree(); LAST_XML=xml; p.with_suffix('.xml').write_text(xml)
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 19, in tree
+    assert 'dumped to:' in result, result
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+Night mode: no
+BLOCKED night-off
+CASE contrast-on
+{"label": "contrast-on-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+
+{"label": "contrast-on-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "contrast-on-applied-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Deleted 1 rows
+{"label": "contrast-on-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "contrast-on-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+

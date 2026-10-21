@@ -1,0 +1,63 @@
+{"label": "font-smallest-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "font-smallest-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "font-smallest-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Deleted 1 rows
+{"label": "font-smallest-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "font-smallest-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "density-larger-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "density-larger-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "density-larger-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "density-larger-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "density-larger-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "density-smaller-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "density-smaller-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "density-smaller-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "density-smaller-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "density-smaller-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "night-on-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Night mode: yes
+{"label": "night-on-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "night-on-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Night mode: no
+{"label": "night-on-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "night-on-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "night-off-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Night mode: no
+{"label": "night-off-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "night-off-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Night mode: no
+{"label": "night-off-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "night-off-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "contrast-on-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "contrast-on-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "contrast-on-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Deleted 1 rows
+{"label": "contrast-on-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "contrast-on-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "bold-on-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "bold-on-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "bold-on-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+Deleted 1 rows
+{"label": "bold-on-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "bold-on-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "app-locale-fr-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "app-locale-fr-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "app-locale-fr-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "app-locale-fr-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "app-locale-fr-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "app-locale-ar-before", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "app-locale-ar-applied", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "app-locale-ar-applied-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+
+{"label": "app-locale-ar-restored", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}
+{"label": "app-locale-ar-restored-undo", "pid": "4195", "createCountInRetainedLog": 1, "localActivity": ["5727c1b"]}

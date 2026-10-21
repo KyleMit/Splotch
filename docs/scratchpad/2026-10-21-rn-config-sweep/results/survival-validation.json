@@ -1,0 +1,44 @@
+[
+  {
+    "serial": "emulator-5688",
+    "case": "font-largest",
+    "status": "pass",
+    "negativeControlsRejected": [
+      "pid",
+      "activity",
+      "creates",
+      "blank",
+      "disabled",
+      "ineffectiveUndo"
+    ],
+    "scope": "Offline Android evidence checker; effective configuration and chrome are reviewed separately."
+  },
+  {
+    "serial": "emulator-5690",
+    "case": "font-largest",
+    "status": "pass",
+    "negativeControlsRejected": [
+      "pid",
+      "activity",
+      "creates",
+      "blank",
+      "disabled",
+      "ineffectiveUndo"
+    ],
+    "scope": "Offline Android evidence checker; effective configuration and chrome are reviewed separately."
+  },
+  {
+    "serial": "emulator-5686",
+    "case": "font-largest",
+    "status": "pass",
+    "negativeControlsRejected": [
+      "pid",
+      "activity",
+      "creates",
+      "blank",
+      "disabled",
+      "ineffectiveUndo"
+    ],
+    "scope": "Offline Android evidence checker; effective configuration and chrome are reviewed separately."
+  }
+]

@@ -1,0 +1,4 @@
+{
+  "paths": [],
+  "note": "Compiled helper class files are reproducible from included Java sources and classes.dex; ignored paths need explicit inclusion if preserving the full package."
+}

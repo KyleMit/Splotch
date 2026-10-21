@@ -1,0 +1,1 @@
+Storage grants, user permission flags and photo-permission preference restored.

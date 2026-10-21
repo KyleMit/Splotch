@@ -1,0 +1,7 @@
+virtual device registered
+{"label": "split-fresh-2-before", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}
+{"label": "split-fresh-2-half", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}
+{"label": "split-fresh-2-small", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}
+{"label": "split-fresh-2-small-undo", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}
+{"label": "split-fresh-2-restored", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}
+{"label": "split-fresh-2-restored-undo", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}

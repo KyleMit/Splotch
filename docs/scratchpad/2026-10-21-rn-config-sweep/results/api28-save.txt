@@ -1,0 +1,10 @@
+{"label": "save-font-before", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "save-font-applied", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+Traceback (most recent call last):
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/save-api28.py", line 28, in <module>
+    time.sleep(3);foreground();snapshot('save-returned')
+                  ~~~~~~~~~~^^
+  File "/Users/kylemit/Code/Splotch/.claude/worktrees/codex-bughunt/docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 15, in foreground
+    assert re.search(r'mCurrentFocus=.*'+re.escape(PKG),s), 'Wrong foreground'
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Wrong foreground
