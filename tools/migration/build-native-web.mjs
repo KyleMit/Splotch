@@ -32,6 +32,7 @@ import { prerenderNativeWeb } from './prerender-native-web.mjs';
 import {
   EXPO_NOSCRIPT,
   NOT_FOUND_FILE,
+  drawingDocumentPages,
   pageOnlyChunks,
   prerenderNativeWebPages,
 } from './prerender-native-web-pages.mjs';
@@ -333,6 +334,8 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
     const path = join(outputDir, file);
     writeFileSync(path, withContentSecurityPolicy(readFileSync(path, 'utf8')));
   }
+  for (const { file } of drawingDocumentPages())
+    copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, file));
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
     nativeWebServiceWorkerConfig(outputDir, shell, {

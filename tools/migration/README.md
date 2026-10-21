@@ -105,6 +105,8 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     has painted. The entry is its own bundle, chunked as `expo export` chunks the drawing screen's,
     never a branch of the drawing screen's entry. Its bundles resolve the lazy facades listed in
     `experiments/native-architecture/scripts/page-document-resolution.cjs` to the modules they wrap.
+  * A page the drawing screen's document still shows over the paper at its own path (`/feedback`)
+    gets that document again as `<page>.html`, so the host serves it there instead of `404.html`.
   * A page's own head tags (`/beta`'s `noindex` and the boot script that stamps its `?os=` tab
     before first paint) come from `pageDocumentHead` in `src/pageDocument/prerender.tsx`. `/beta`
     lives under `src/pageDocument/` and outside `APP_PAGE_PATHS`, so its store links reach neither

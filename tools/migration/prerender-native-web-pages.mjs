@@ -18,6 +18,7 @@ import { dirname, join, relative, sep } from 'node:path';
 import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
 import {
   APP_PAGE_DOCUMENTS,
+  APP_PAGE_PATHS,
   documentPagePath,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
 import {
@@ -80,6 +81,15 @@ export function documentPages(documents = APP_PAGE_DOCUMENTS) {
       .map(([page]) => ({ page, path: documentPagePath(page), file: `${page}.html` })),
     { page: NOT_FOUND_DOCUMENT, path: NOT_FOUND_PROBE_PATH, file: NOT_FOUND_FILE },
   ];
+}
+
+// Every route-table page the drawing screen's document shows over the paper at a path of its own
+// (/feedback until it has a document). The build writes that document again as `<page>.html`, so a
+// static host serves it there by pretty URL instead of answering with the not-found document.
+export function drawingDocumentPages(documents = APP_PAGE_DOCUMENTS) {
+  return Object.entries(documents)
+    .filter(([page, { document }]) => document === 'drawing' && APP_PAGE_PATHS[page] !== '/')
+    .map(([page]) => ({ page, path: APP_PAGE_PATHS[page], file: `${page}.html` }));
 }
 
 // The layouts an information page takes: RsdPageSheet's phone, framed and desktop frames, and its

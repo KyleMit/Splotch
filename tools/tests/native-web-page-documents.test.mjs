@@ -23,6 +23,7 @@ import {
   PAGE_VARIANT_ATTRIBUTE,
   PAGE_VARIANT_VIEWPORTS,
   documentPages,
+  drawingDocumentPages,
   missingExportAssets,
   pageDocumentHtml,
   pageEntryModules,
@@ -126,6 +127,21 @@ describe('the route table', () => {
     expect(routed.map(({ page }) => APP_PAGE_DOCUMENTS[page].render)).toEqual(
       routed.map(() => 'ssg')
     );
+  });
+
+  // A static host answers a path with no file with the not-found document, so a page the drawing
+  // screen's document still shows over the paper gets that document at its own path.
+  it('serves the drawing document at each other path it shows a page at', () => {
+    expect(drawingDocumentPages()).toEqual([
+      { page: 'feedback', path: '/feedback', file: 'feedback.html' },
+    ]);
+    expect(
+      drawingDocumentPages({
+        drawing: { render: 'ssg', document: 'drawing' },
+        changelog: { render: 'client', document: 'drawing' },
+        privacy: { render: 'ssg', document: 'page' },
+      })
+    ).toEqual([{ page: 'changelog', path: '/changelog', file: 'changelog.html' }]);
   });
 
   // /beta's store links stay out of the native app and the drawing screen's bundle, so the drawing

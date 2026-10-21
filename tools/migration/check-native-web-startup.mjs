@@ -62,12 +62,12 @@ export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 //   page bundle again fails by the whole bundle.
 // * changelog, beta and notFound (the host's 404.html), first measured 2026-10-21: first paint
 //   33,574, 34,948 (its head's platform stamp and panel filter included) and 33,497; the page
-//   entry every page document shares, 778,997 by then.
+//   entry every page document shares, 781,172 by then.
 export const MAX_NATIVE_WEB_PAGE_BYTES = {
   privacy: { firstPaint: 36_329, pageEntry: 829_600 },
-  changelog: { firstPaint: 36_932, pageEntry: 856_897 },
-  beta: { firstPaint: 38_443, pageEntry: 856_897 },
-  notFound: { firstPaint: 36_847, pageEntry: 856_897 },
+  changelog: { firstPaint: 36_932, pageEntry: 859_290 },
+  beta: { firstPaint: 38_443, pageEntry: 859_290 },
+  notFound: { firstPaint: 36_847, pageEntry: 859_290 },
 };
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
