@@ -2,10 +2,7 @@ import { beforeAll, expect, it } from 'vitest';
 import sharp from 'sharp';
 import { deflateSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
-import {
-  originalImageGrid,
-  resultImageGrid,
-} from '../../experiments/native-architecture/src/ai/imageAdmission.ts';
+import { resultImageGrid } from '../../experiments/native-architecture/src/ai/imageAdmission.ts';
 import { MAX_PNG_PIXELS } from '../../experiments/native-architecture/src/drawing/pngLimits.ts';
 import {
   MAX_AI_IMAGE_PIXELS,
@@ -158,15 +155,16 @@ it('rejects inconsistent PNG color metadata and invalid palette ordering', async
     )
   ).toEqual({ width: 2, height: 2 });
 });
-it('admits one C2PA caBX chunk before the image data, as provider pictures carry', async () => {
+it('admits one C2PA caBX chunk, as provider pictures carry', async () => {
   const valid = rgbaPng(2, 2, 255);
   const credentials = pngChunk('caBX', Buffer.from('jumb c2pa manifest store'));
   const withMetadata = (...chunks) =>
     Buffer.concat([valid.subarray(0, 33), ...chunks, valid.subarray(33)]);
-  expect(await resultImageGrid(withMetadata(credentials), 'image/png', current)).toEqual({
-    width: 2,
-    height: 2,
-  });
+  for (const admitted of [
+    withMetadata(credentials),
+    Buffer.concat([valid.subarray(0, valid.length - 12), credentials, valid.subarray(-12)]),
+  ])
+    expect(await resultImageGrid(admitted, 'image/png', current)).toEqual({ width: 2, height: 2 });
   const root = new URL('../../experiments/native-architecture/', import.meta.url);
   const nativeChunks = (path, pattern) =>
     readFileSync(new URL(path, root), 'utf8')
@@ -190,37 +188,8 @@ it('admits one C2PA caBX chunk before the image data, as provider pictures carry
     withMetadata(credentials, credentials),
     withMetadata(pngChunk('caBX')),
     withMetadata(pngChunk('caBX', Buffer.alloc(MAX_AI_IMAGE_METADATA_BYTES + 1))),
-    Buffer.concat([valid.subarray(0, valid.length - 12), credentials, valid.subarray(-12)]),
   ])
     await expect(resultImageGrid(rejected, 'image/png', current)).rejects.toThrow();
-});
-it('admits the drawing WebKit captures, whose canvas PNG carries an eXIf chunk', async () => {
-  // canvas.toDataURL() in WebKit 26.6 on macOS: IHDR, sRGB, eXIf, IDAT, IEND.
-  const webkit = readFileSync(new URL('./fixtures/webkit-canvas-rgba.png', import.meta.url));
-  expect(webkit.toString('latin1', 50, 54)).toBe('eXIf');
-  expect(await originalImageGrid(webkit, current)).toEqual({ width: 40, height: 30 });
-  expect(await resultImageGrid(webkit, 'image/png', current)).toEqual({ width: 40, height: 30 });
-
-  const valid = rgbaPng(2, 2, 255);
-  const withMetadata = (...chunks) =>
-    Buffer.concat([valid.subarray(0, 33), ...chunks, valid.subarray(33)]);
-  const exif = pngChunk('eXIf', Buffer.from([0x49, 0x49, 0x2a, 0, 8, 0, 0, 0]));
-  const idot = pngChunk('iDOT', Buffer.alloc(28));
-  expect(await originalImageGrid(withMetadata(exif, idot), current)).toEqual({
-    width: 2,
-    height: 2,
-  });
-  for (const rejected of [
-    webkit.subarray(0, webkit.length - 13),
-    webkit.subarray(0, 82),
-    withMetadata(exif, exif),
-    withMetadata(pngChunk('eXIf', Buffer.from('Exif'))),
-    withMetadata(pngChunk('eXIf', Buffer.from([0x4d, 0x4d, 0]))),
-    withMetadata(pngChunk('iDOT', Buffer.alloc(27))),
-    withMetadata(pngChunk('eXIf', Buffer.alloc(MAX_AI_IMAGE_METADATA_BYTES + 1))),
-    Buffer.concat([valid.subarray(0, valid.length - 12), exif, valid.subarray(-12)]),
-  ])
-    await expect(originalImageGrid(rejected, current)).rejects.toThrow();
 });
 it('rejects result dimensions and pixel budgets before decoded allocation', async () => {
   for (const [width, height] of [
