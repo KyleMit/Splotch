@@ -133,6 +133,13 @@ gate them itself instead of resuming each worker:
    that tier: its targeted tests (Playwright specs included), and `npm run build` and
    `npm run build:cap` when it touched a startup module. A PR whose coverage the trial can't give is
    left out and resumes its worker instead.
+
+   Reuse a trial worktree only after `git merge --abort` (when a merge is in progress) and
+   `git reset --hard`. Before the gate, check that the trial's changed files
+   (`git diff --cached --name-only <base>`) equal the union of the joining PRs'
+   `git diff --name-only <base>...<head>`. `git checkout` silently keeps staged changes that don't
+   conflict: on 2026-10-21 an unaborted trial's staged edits from another PR rode into the next
+   trial's tree, and only that comparison caught it.
 3. On green, merge the PRs one at a time with `--match-head-commit` at the heads the trial covered,
    re-reading each PR's live state first and verifying each merge after, as steps 2 and 3 of the
    merging list do. A PR that moved, or work that reached `main` from outside the trial, voids the
