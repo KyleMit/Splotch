@@ -274,27 +274,6 @@ export async function gotoApp(
   await waitForDrawableRenderedCanvas(page);
 }
 
-// ADR-0168 keeps one shallow history entry per open dialog and retires it with a
-// `history.back()` as the dialog closes. That traversal commits asynchronously,
-// and a reload issued while it is still pending is cancelled by it — Chromium
-// either aborts the reload's document request (net::ERR_ABORTED) or drops the
-// reload without issuing one, and Playwright then waits on a load that never
-// comes. So a spec that closes a dialog and then relaunches waits here for the
-// retired layers to leave history.state before it reloads. The marker key is
-// the web back handler's WEB_BACK_PAGE_STATE_KEY, repeated here because that
-// module imports $app/navigation and cannot load in the test process.
-export async function reloadAfterDialogClose(page: Page) {
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const marker = history.state?.['sveltekit:states']?.splotchBackNavigation;
-        return typeof marker?.dialogs === 'number' ? marker.dialogs : 0;
-      })
-    )
-    .toBe(0);
-  await page.reload();
-}
-
 export async function registerServiceWorkerAndControl(page: Page) {
   await page.evaluate(async () => {
     await navigator.serviceWorker.register('/sw.js');
@@ -631,26 +610,6 @@ export async function opaquePixelCount(page: Page): Promise<number> {
         if (data[i] > 0) count++;
       }
       return count;
-    });
-  } finally {
-    await canvas.dispose();
-  }
-}
-
-export function isBlueDominant(px: Rgba) {
-  return px[2] > px[0];
-}
-
-export async function hasRedDominantPixel(page: Page): Promise<boolean> {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return await canvas.evaluate((c) => {
-      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120)
-          return true;
-      }
-      return false;
     });
   } finally {
     await canvas.dispose();
