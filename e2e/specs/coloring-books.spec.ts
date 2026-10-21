@@ -5,9 +5,11 @@ import {
   blackInkInCentralBand,
   closeDialog,
   goToSettingsSection,
-  openDrawer,
+  holdOnline,
   openBookShelf,
+  openDrawer,
   openSettings,
+  SHELF_TEST_TIMEOUT_MS,
   waitUntilSettled,
 } from '../support/group-b.ts';
 
@@ -68,6 +70,10 @@ function statusSaying(page: Page, text: string) {
 }
 
 test.describe('coloring books', () => {
+  test.beforeEach(async ({ drawingScreen }) => {
+    await holdOnline(drawingScreen.page);
+  });
+
   test('a first visit opens the Farm book, and a page picked from it lands on the paper', async ({
     drawingScreen,
   }) => {
@@ -87,6 +93,7 @@ test.describe('coloring books', () => {
   test('the next visit lists the books, and another book offers its own pages', async ({
     drawingScreen,
   }) => {
+    test.setTimeout(SHELF_TEST_TIMEOUT_MS);
     const { page } = drawingScreen;
     const books = await openBookShelf(page);
     await expect(books.getByRole('button', { name: 'Farm coloring book' })).toBeVisible();
@@ -102,6 +109,7 @@ test.describe('coloring books', () => {
   test('the active page shows as a chip in the picker, and the chip takes the page off', async ({
     drawingScreen,
   }) => {
+    test.setTimeout(SHELF_TEST_TIMEOUT_MS);
     const { page } = drawingScreen;
     await openColoringBooks(page);
     await page
@@ -163,6 +171,7 @@ test.describe('coloring books', () => {
   test('a repeat tap on a book cover does not pick the page that lands under it', async ({
     drawingScreen,
   }) => {
+    test.setTimeout(SHELF_TEST_TIMEOUT_MS);
     const { page } = drawingScreen;
     await installHeldClock(page);
     const books = await openBookShelf(page);
@@ -281,7 +290,12 @@ for (const { scheme, page: pageArt, cover: coverArt } of THEMED_ART) {
   test.describe(`the picker's art on a ${scheme} screen`, () => {
     test.use({ colorScheme: scheme });
 
+    test.beforeEach(async ({ drawingScreen }) => {
+      await holdOnline(drawingScreen.page);
+    });
+
     test('shows the thumbnails drawn for that theme', async ({ drawingScreen }) => {
+      test.setTimeout(SHELF_TEST_TIMEOUT_MS);
       const { page } = drawingScreen;
       await openColoringBooks(page);
       const farm = page.getByRole('dialog', { name: 'Farm' });

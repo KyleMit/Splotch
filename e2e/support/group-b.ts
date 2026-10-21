@@ -39,6 +39,12 @@ const REACT_PROPS_KEY = '__reactProps$';
 // the extra books' packs get this long, in all, to land.
 const SHELF_VIEW_TIMEOUT_MS = 2_000;
 const BOOKS_LAND_TIMEOUT_MS = 60_000;
+const SPEC_INTERACTIONS_TIMEOUT_MS = 30_000;
+/**
+ * The budget a test that opens the shelf of books sets for itself: the whole window the books get
+ * to land, plus what the spec does around it. The suite's default fits the second alone.
+ */
+export const SHELF_TEST_TIMEOUT_MS = BOOKS_LAND_TIMEOUT_MS + SPEC_INTERACTIONS_TIMEOUT_MS;
 
 /** Decides whether one pixel's red, green and blue channels read as the ink a spec looks for. */
 export type InkColor = (red: number, green: number, blue: number) => boolean;
@@ -93,18 +99,33 @@ function vividHue(red: number, green: number, blue: number): number | null {
 }
 
 /**
- * How many sectors of the colour wheel carry vivid ink in the paper's central band. A pen stroke
- * is one hue however long it is; the magic brush reveals the page's own colours, or a rainbow on a
- * blank page, so it reaches several.
+ * The vivid ink in the paper's central band, counted per sector of the colour wheel: the colours
+ * the magic brush revealed, as a signature two moments can be compared by.
  */
-export async function inkHuesInCentralBand(page: Page): Promise<number> {
+export async function inkHueSignatureInCentralBand(page: Page): Promise<number[]> {
   const pixels = await centralBandPixels(page);
   const populations = new Array<number>(HUE_SECTORS).fill(0);
   for (let offset = 0; offset < pixels.length; offset += RGBA_CHANNELS) {
     const hue = vividHue(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
     if (hue !== null) populations[Math.floor((hue / FULL_TURN_DEGREES) * HUE_SECTORS)]++;
   }
+  return populations;
+}
+
+/**
+ * How many sectors of the colour wheel carry vivid ink in the paper's central band. A pen stroke
+ * is one hue however long it is; the magic brush reveals the page's own colours, or a rainbow on a
+ * blank page, so it reaches several.
+ */
+export async function inkHuesInCentralBand(page: Page): Promise<number> {
+  const populations = await inkHueSignatureInCentralBand(page);
   return populations.filter((pixelCount) => pixelCount >= HUE_SECTOR_MIN_PIXELS).length;
+}
+
+/** How far one hue signature sits from another, as a fraction of the first's vivid pixels. */
+export function hueSignatureDistance(from: number[], to: number[]): number {
+  const moved = from.reduce((sum, count, sector) => sum + Math.abs(count - to[sector]), 0);
+  return moved / from.reduce((sum, count) => sum + count, 0);
 }
 
 /**
@@ -289,6 +310,18 @@ export async function pressWhereItSettles(page: Page, target: Locator): Promise<
   const box = await target.boundingBox();
   if (!box) throw new Error('The control to press is not laid out');
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/**
+ * Has the page report itself online. The coloring library fetches the extra books only while the
+ * browser says it is online, and a host with no network interface (a sandbox, a laptop in flight
+ * mode) reports offline even to a server on loopback, so a spec that needs those books says so.
+ * Call it before the picker first opens, which is when the books start to come.
+ */
+export async function holdOnline(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
+  );
 }
 
 /**

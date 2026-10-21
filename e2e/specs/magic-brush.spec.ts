@@ -3,11 +3,15 @@ import { expect, test } from '../fixtures.ts';
 import {
   blackInkInCentralBand,
   clearByDragging,
+  holdOnline,
+  hueSignatureDistance,
+  inkHueSignatureInCentralBand,
   inkHuesInCentralBand,
   inkInCentralBand,
   openBookShelf,
   openDrawer,
   RED_INK,
+  SHELF_TEST_TIMEOUT_MS,
 } from '../support/group-b.ts';
 
 test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
@@ -15,8 +19,11 @@ test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
 // A pen stroke reaches one hue. A reveal crosses at least two of the colours the page is filled
 // with, or of the rainbow a blank page holds.
 const MAGIC_MIN_HUES = 2;
-// The same page's line art measures a few pixels apart from one redraw to the next.
-const LINE_ART_TOLERANCE_FRACTION = 0.02;
+// The same page's line art and ink measure a few pixels apart from one redraw to the next.
+const REDRAW_TOLERANCE_FRACTION = 0.02;
+// Recoding to another page's colours moves a third of the ink between hues; this is far enough
+// from a redraw's drift that only a recode crosses it.
+const RECODED_INK_MIN_DISTANCE_FRACTION = 0.1;
 const SWEEP = [
   { x: 0.2, y: 0.25 },
   { x: 0.4, y: 0.6 },
@@ -41,6 +48,10 @@ async function pickFarmPage(page: Page, name: string) {
 }
 
 test.describe('the magic brush', () => {
+  test.beforeEach(async ({ drawingScreen }) => {
+    await holdOnline(drawingScreen.page);
+  });
+
   test('a pen stroke is one hue, so the hue count tells the brushes apart', async ({
     drawingScreen,
   }) => {
@@ -99,12 +110,14 @@ test.describe('the magic brush', () => {
   test('changing the coloring page recodes the ink, and Undo puts both back', async ({
     drawingScreen,
   }) => {
+    test.setTimeout(SHELF_TEST_TIMEOUT_MS);
     const { page } = drawingScreen;
     await pickFarmPage(page, 'Cat coloring page');
     await pickBrush(page, 'Magic brush');
     await drawingScreen.drawStroke(SWEEP);
     await expect.poll(() => inkHuesInCentralBand(page)).toBeGreaterThanOrEqual(MAGIC_MIN_HUES);
     const catInk = await blackInkInCentralBand(page);
+    const catHues = await inkHueSignatureInCentralBand(page);
 
     await (await openBookShelf(page)).getByRole('button', { name: 'Farm coloring book' }).click();
     await page
@@ -113,10 +126,17 @@ test.describe('the magic brush', () => {
       .click();
     await expect(page.getByRole('status').filter({ hasText: 'Cow ready.' })).toBeVisible();
     await expect.poll(() => blackInkInCentralBand(page)).not.toBe(catInk);
+    await expect.poll(() => inkHuesInCentralBand(page)).toBeGreaterThanOrEqual(MAGIC_MIN_HUES);
+    await expect
+      .poll(async () => hueSignatureDistance(catHues, await inkHueSignatureInCentralBand(page)))
+      .toBeGreaterThan(RECODED_INK_MIN_DISTANCE_FRACTION);
 
     await drawingScreen.undo();
     await expect
       .poll(async () => Math.abs((await blackInkInCentralBand(page)) - catInk) / catInk)
-      .toBeLessThan(LINE_ART_TOLERANCE_FRACTION);
+      .toBeLessThan(REDRAW_TOLERANCE_FRACTION);
+    await expect
+      .poll(async () => hueSignatureDistance(catHues, await inkHueSignatureInCentralBand(page)))
+      .toBeLessThan(REDRAW_TOLERANCE_FRACTION);
   });
 });
