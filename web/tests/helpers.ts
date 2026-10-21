@@ -4,7 +4,6 @@ import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { compositeVisibleLiveTiles } from '../src/lib/drawing/liveTileComposite';
 import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 import { paletteHex } from '../src/lib/palette';
-import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import type { HistoryDebug } from '../src/lib/drawing/undoHistory';
 
@@ -81,33 +80,6 @@ export function touchEventPrevented(
   );
 }
 
-/** Stamp the platform half of the shipped CSP onto document responses.
- *
- *  SvelteKit's hash-bearing meta tag already enforces the resource policy in
- *  `vite preview`; only Netlify's complementary frame/reporting header is absent
- *  locally. Stamping it here reproduces the two-policy production composition.
- *
- *  Call before `gotoApp`, and before any `page.route` a spec needs to win over
- *  this one: Playwright checks the most recently added handler first, so a
- *  route added later wins, and only requests it declines reach this one. */
-export async function enforceProductionCsp(page: Page) {
-  await page.route('**/*', async (route) => {
-    if (route.request().resourceType() !== 'document') return route.fallback();
-    const response = await route.fetch();
-    const existingPolicy = response.headers()['content-security-policy'];
-    const platformPolicy = SECURITY_HEADERS['Content-Security-Policy'];
-    await route.fulfill({
-      response,
-      headers: {
-        ...response.headers(),
-        'content-security-policy': existingPolicy
-          ? `${existingPolicy}, ${platformPolicy}`
-          : platformPolicy,
-      },
-    });
-  });
-}
-
 /** Parent Center holds an independent Grown-Ups Only policy per protected
  *  feature, and this suite drives the web build, which ships every one of them
  *  at Never — only the store builds arm them (ADR-0094). A spec states which it
@@ -145,15 +117,6 @@ export async function seedAiEnabled(page: Page) {
   await page.addInitScript(
     (aiImageEnabled) => localStorage.setItem(aiImageEnabled, 'true'),
     STORAGE_KEYS.aiImageEnabled
-  );
-}
-
-export async function seedCompletedSettingsActivitySessions(page: Page, count: number) {
-  await page.addInitScript(
-    ({ key, count }) => {
-      if (localStorage.getItem(key) === null) localStorage.setItem(key, String(count));
-    },
-    { key: STORAGE_KEYS.settingsActivitySessionCount, count }
   );
 }
 
@@ -381,17 +344,6 @@ export async function openSettingsModal(page: Page) {
   const pane = modal.locator('.settings-pane');
   if (await pane.count()) await settleSettingsPane(pane);
   return modal;
-}
-
-// Drill the phone Settings hub into one of its sections, identified by a field
-// only that section renders. The rows sit on a scroller that idle-mounts and
-// flies in, so the first tap can land before the section is wired — the hazard
-// openSettingsModal itself rides out.
-export async function openHubSection(page: Page, section: string, expectedField: string) {
-  await expect(async () => {
-    await page.locator(`.hub-row[data-section="${section}"]`).click({ timeout: 1000 });
-    await expect(page.locator(expectedField)).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
 }
 
 // The highlighted Settings row's own seat, measured against the column that

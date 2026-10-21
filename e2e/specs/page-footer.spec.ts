@@ -100,20 +100,24 @@ for (const { width, height, shape } of WINDOWS) {
     await page.setViewportSize({ width, height });
     await openDocument(page, '/privacy');
 
+    const [contents, attribute, value] =
+      shape === 'rail'
+        ? ([
+            page
+              .getByRole('navigation', { name: 'Privacy policy contents' })
+              .getByRole('link', { name: LAST_PRIVACY_SECTION }),
+            'aria-current',
+            'location',
+          ] as const)
+        : ([
+            page.getByRole('button', { name: /^Privacy policy contents/ }),
+            'aria-label',
+            `Privacy policy contents, ${LAST_PRIVACY_SECTION}`,
+          ] as const);
+
     await expect(async () => {
       await scrollToEnd(page);
-      if (shape === 'rail')
-        await expect(
-          page
-            .getByRole('navigation', { name: 'Privacy policy contents' })
-            .getByRole('link', { name: LAST_PRIVACY_SECTION })
-        ).toHaveAttribute('aria-current', 'location', { timeout: RETRY_STEP_MS });
-      else
-        await expect(
-          page.getByRole('button', { name: /^Privacy policy contents/ })
-        ).toHaveAttribute('aria-label', `Privacy policy contents, ${LAST_PRIVACY_SECTION}`, {
-          timeout: RETRY_STEP_MS,
-        });
+      await expect(contents).toHaveAttribute(attribute, value, { timeout: RETRY_STEP_MS });
     }).toPass();
   });
 
@@ -123,20 +127,24 @@ for (const { width, height, shape } of WINDOWS) {
     await page.setViewportSize({ width, height });
     await openDocument(page, '/changelog');
 
+    const [contents, attribute, value] =
+      shape === 'rail'
+        ? ([
+            page
+              .getByRole('navigation', { name: 'Changelog contents' })
+              .getByRole('link', { name: new RegExp(`^${LAST_VISIBLE_RELEASE}`) }),
+            'aria-current',
+            'location',
+          ] as const)
+        : ([
+            page.getByRole('button', { name: /^Changelog contents/ }),
+            'aria-label',
+            new RegExp(`${LAST_VISIBLE_RELEASE}`),
+          ] as const);
+
     await expect(async () => {
       await scrollToEnd(page);
-      if (shape === 'rail')
-        await expect(
-          page
-            .getByRole('navigation', { name: 'Changelog contents' })
-            .getByRole('link', { name: new RegExp(`^${LAST_VISIBLE_RELEASE}`) })
-        ).toHaveAttribute('aria-current', 'location', { timeout: RETRY_STEP_MS });
-      else
-        await expect(page.getByRole('button', { name: /^Changelog contents/ })).toHaveAttribute(
-          'aria-label',
-          new RegExp(`${LAST_VISIBLE_RELEASE}`),
-          { timeout: RETRY_STEP_MS }
-        );
+      await expect(contents).toHaveAttribute(attribute, value, { timeout: RETRY_STEP_MS });
     }).toPass();
     await expect(page.getByRole('button', { name: /^Show \d+ older releases$/ })).toBeVisible();
   });

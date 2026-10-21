@@ -111,7 +111,7 @@
     "test:deploy:smoke": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs",
     "test:blobs:smoke": "node tools/api-smoke/check-deployed-blobs.mjs",
     "test:driver:smoke": "node tools/app-driver/run-driver-smoke-test.mjs",
-    "test:sweep:smoke": "node tools/e2e-tuning/run-worker-sweep.mjs --workers=1 --reps=1 --prebuilt --grep=changelog.spec.ts --out=/tmp/sweep-smoke",
+    "test:sweep:smoke": "node tools/e2e-tuning/run-worker-sweep.mjs --workers=1 --reps=1 --prebuilt --grep=helpers.spec.ts --out=/tmp/sweep-smoke",
     "test:lighthouse:ci": "node tools/page-load/run-lighthouse-ci.mjs",
     "test:firefox:smoke": "playwright test --config e2e/playwright.config.ts --project firefox",
     "test:webkit:smoke": "playwright test --config e2e/playwright.config.ts --project webkit",

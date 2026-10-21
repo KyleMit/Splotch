@@ -181,12 +181,6 @@ export async function openAiResult(page: Page, options: AiGenerationOptions = {}
   return endpoint;
 }
 
-export async function revealAiResult(page: Page, options: AiGenerationOptions = {}) {
-  const endpoint = await openAiResult(page, options);
-  await endpoint.succeed(options.freeTier ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined);
-  await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
-}
-
 // The report confirmation after its fly-in has landed — the only state in which
 // a click on its buttons reaches them. AiImageReport flies the dialog in from
 // the Report control's center, and modalDialog arms the launch dead zone there,
