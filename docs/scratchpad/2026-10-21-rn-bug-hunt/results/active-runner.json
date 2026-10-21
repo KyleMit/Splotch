@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-10-21T08:19:18.020628+00:00",
+  "device": null,
+  "toolSessionId": null,
+  "command": null,
+  "log": null,
+  "result": null,
+  "state": "complete",
+  "deadlineUtc": "2026-10-21T08:30:00Z",
+  "privateAdb": {
+    "toolSessionId": 95849,
+    "socket": "localfilesystem:/private/tmp/rn-hunt-private-adb-5680/adb.sock",
+    "onlyRegisteredSerial": "emulator-5680",
+    "stopped": true
+  },
+  "nextSteps": [],
+  "functionalInputsComplete": true,
+  "quality": {
+    "check": 0,
+    "lint": 0,
+    "docRefs": 0,
+    "formatCheck": 0,
+    "qaHelperLint": 0
+  },
+  "finalVerification": {
+    "emulator-5680": 19,
+    "emulator-5682": 10,
+    "emulator-5684": 12
+  }
+}

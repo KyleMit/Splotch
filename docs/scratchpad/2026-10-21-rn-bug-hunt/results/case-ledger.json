@@ -1,0 +1,610 @@
+[
+  {
+    "id": "boot",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Root controls and paper present",
+    "evidence": ["evidence/android-boot.xml", "evidence/android-boot.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D01-cardinality",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Same path: three lifted contacts -> 3 Undo units; joined -> 1",
+    "evidence": ["evidence/android-admission.log.txt"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D02-stroke",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Pen solid stroke",
+    "evidence": ["evidence/android-brush-Pen.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D03-stroke",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Crayon textured stroke",
+    "evidence": ["evidence/android-brush-Crayon.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D04-page",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Magic reveal over bundled Cat art while offline",
+    "evidence": ["evidence/android-offline-cat-magic.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D05-eraser",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Eraser removes prior Magic stroke",
+    "evidence": ["evidence/android-brush-Magic-brush.png", "evidence/android-brush-Eraser.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D06-five",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Five virtual contacts; one Undo removes cohort",
+    "evidence": ["evidence/android-five-contacts.png", "evidence/android-five-contacts-undo.xml"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D09-picker",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Custom selection and reopened picker",
+    "evidence": ["evidence/android-custom-selected.png", "evidence/android-custom-reopened.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D12-clear-undo",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Clear retains art; Undo restores reveal",
+    "evidence": ["evidence/android-clear-page.png", "evidence/android-undo-clear-page.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D14-rotation",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Sensor landscape swaps palette for Colors",
+    "evidence": ["evidence/android-sensor-landscape.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S02-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Appearance section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-settings-appearance.xml",
+      "evidence/android-settings-appearance.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S03-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Sound section entry and return; settings mutations not scored",
+    "evidence": ["evidence/android-settings-sound.xml", "evidence/android-settings-sound.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S04-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Tool Drawer section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-settings-tool-drawer.xml",
+      "evidence/android-settings-tool-drawer.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S05-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Accessibility section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-settings-accessibility.xml",
+      "evidence/android-settings-accessibility.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S06-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Coloring section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-settings-coloring.xml",
+      "evidence/android-settings-coloring.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S07-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "AI Art section entry and return; settings mutations not scored",
+    "evidence": ["evidence/android-settings-ai-art.xml", "evidence/android-settings-ai-art.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S08-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Saving section entry and return; settings mutations not scored",
+    "evidence": ["evidence/android-settings-saving.xml", "evidence/android-settings-saving.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S09-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Parent Center section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-parent-center-unlocked.xml",
+      "evidence/android-parent-center-unlocked.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S10-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Install section entry and return; settings mutations not scored",
+    "evidence": ["evidence/android-settings-install.xml", "evidence/android-settings-install.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S11-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Feedback section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-settings-feedback.xml",
+      "evidence/android-settings-feedback.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S12-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "What's New section entry and return; settings mutations not scored",
+    "evidence": [
+      "evidence/android-settings-whats-new.xml",
+      "evidence/android-settings-whats-new.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S13-entry",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "About section entry and return; settings mutations not scored",
+    "evidence": ["evidence/android-settings-about.xml", "evidence/android-settings-about.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "G01-G04-hardware",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Digits, Delete and Enter solve gate",
+    "evidence": [
+      "evidence/android-gate-hardware-delete.xml",
+      "evidence/android-parent-center-unlocked.xml"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "G02-lockout",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Three wrong answers lock keypad; correct answer works after pause",
+    "evidence": [
+      "evidence/android-gate-lockout-fresh.log.txt",
+      "evidence/android-gate-after-lockout-unlocked.xml"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "C03-library",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Cached eight-book grid opens in airplane mode",
+    "evidence": ["evidence/android-offline-coloring.xml", "evidence/android-offline-root.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "C03-starter",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Bundled Farm page grid and Cat art open offline",
+    "evidence": ["evidence/android-offline-farm-pages.xml", "evidence/android-offline-cat.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "P01-ink",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Owned, non-pending valid PNG with Pen/Crayon ink",
+    "evidence": [
+      "evidence/android-mediastore.txt",
+      "evidence/android-saved-output.png",
+      "evidence/android-saved-metadata.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "P01-page-offline",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Owned, non-pending page/ink PNG saved offline",
+    "evidence": [
+      "evidence/android-mediastore-offline.txt",
+      "evidence/android-offline-saved-page.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L03-back",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "System Back closes Settings from Sound; root Back refused",
+    "evidence": ["evidence/android-system-back-hub.xml"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "X01-hub",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Font scale 2.0 Settings hub",
+    "evidence": ["evidence/android-font2-hub.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "X01-accessibility",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Font scale 2.0 Accessibility section",
+    "evidence": ["evidence/android-font2-accessibility.png"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "X02-dark",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "System dark theme changes root and Settings",
+    "evidence": [
+      "evidence/android-dark-font2-settings.png",
+      "evidence/android-restored-os-settings.txt"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L04-trim",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Critical trim-memory retains pixel-identical ink and Undo",
+    "evidence": ["evidence/android-lifecycle-paper-digests.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L04-home",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Home/resume retains pixel-identical ink and Undo",
+    "evidence": ["evidence/android-lifecycle-paper-digests.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L01-process",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Force-stop/relaunch starts blank, Undo disabled",
+    "evidence": [
+      "evidence/android-after-process-death.xml",
+      "evidence/android-lifecycle-paper-digests.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L06-stress",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "60-second five-contact scribble, PID stable, Undo works",
+    "evidence": ["evidence/android-stress-result.json", "evidence/android-stress.log.txt"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S04-optional-off",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "All five optional drawing-tool switches off",
+    "evidence": [
+      "evidence/android-tools-all-optional-off.xml",
+      "evidence/android-tool-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S04-root-tools-hidden",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Optional drawing tools hidden; Camera and Coloring retained",
+    "evidence": [
+      "evidence/android-tools-off-expanded.xml",
+      "evidence/android-tool-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L01-tool-preferences-persist",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Five hidden choices persist across process restart",
+    "evidence": [
+      "evidence/android-tool-off-persisted-section.xml",
+      "evidence/android-tool-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S04-drawer-disable-persists",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Master tool-drawer switch persists across restart; restored",
+    "evidence": [
+      "evidence/android-drawer-disabled-restarted.xml",
+      "evidence/android-tool-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D12-short",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Short Clear preserves identical paper pixels",
+    "evidence": [
+      "evidence/android-clear-short-returned.png",
+      "evidence/android-clear-cancel-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D12-reversed",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Threshold then return cancels and preserves identical ink",
+    "evidence": [
+      "evidence/android-clear-reversed-returned.png",
+      "evidence/android-clear-cancel-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D12-full-blank",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Full Clear exactly restores blank paper crop",
+    "evidence": [
+      "evidence/android-clear-full-committed.png",
+      "evidence/android-clear-cancel-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D12-undo-identical",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Undo exactly restores original ink after full Clear",
+    "evidence": [
+      "evidence/android-clear-full-undone.png",
+      "evidence/android-clear-cancel-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D11-depth",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "25 dots, 20 Undo steps retain the oldest five dots exactly",
+    "evidence": [
+      "evidence/android-deep-undo-exhausted.png",
+      "evidence/android-deep-undo-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D11-exhausted",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Extra Undo leaves the five-dot base unchanged",
+    "evidence": [
+      "evidence/android-deep-undo-extra-press.png",
+      "evidence/android-deep-undo-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "X06-native-ctrl-z",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Ctrl+Z removes a fresh stroke, restoring base pixels",
+    "evidence": [
+      "evidence/android-deep-undo-new-undone.png",
+      "evidence/android-deep-undo-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "X06-native-escape",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Escape closes Brush Menu",
+    "evidence": [
+      "evidence/android-shortcut-brushes-escaped.xml",
+      "evidence/android-deep-undo-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D10-pen-widths",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Five Pen sizes render strictly increasing widths matching source within 2 px",
+    "evidence": ["evidence/android-widths-pen-five.png", "evidence/android-widths-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "D10-eraser-widths",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Five Eraser sizes render strictly increasing gaps matching source within 2 px",
+    "evidence": ["evidence/android-widths-eraser-five.png", "evidence/android-widths-results.json"],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "L05-offline-cold",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "New app process in airplane mode with Wi-Fi disabled admits drawing, warm cache",
+    "evidence": [
+      "evidence/android-offline-cold-results.json",
+      "evidence/android-offline-cold-drawn.png"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S08-camera-hidden",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Camera setting hides Save screenshot",
+    "evidence": [
+      "evidence/android-prefs-camera-hidden.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S08-saving-persistence",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Camera off and Auto-Save on survive restart; restored",
+    "evidence": [
+      "evidence/android-prefs-saving-persisted-section.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S06-coloring-hidden",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Coloring setting hides root Coloring books",
+    "evidence": [
+      "evidence/android-prefs-coloring-hidden.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S06-coloring-persistence",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Coloring off survives restart without deleting seven cached extras; restored",
+    "evidence": [
+      "evidence/android-prefs-coloring-persisted-section.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S05-motion-persistence",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Reduce Motion preference survives restart; restored off",
+    "evidence": [
+      "evidence/android-prefs-motion-persisted-section.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S03-master-persistence",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Muted Sound master survives restart; restored on",
+    "evidence": [
+      "evidence/android-prefs-sound-persisted-section.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S03-sources-persistence",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Drawing and Deleting off survive restart; restored on",
+    "evidence": [
+      "evidence/android-prefs-sources-persisted-section.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "S02-appearance-persistence",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Dark and Flat choices survive restart; restored System/Raised",
+    "evidence": [
+      "evidence/android-prefs-appearance-persisted-section.xml",
+      "evidence/android-settings-preferences-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "P02-burst",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "Eight Camera taps inside source cooldown create one owned published image",
+    "evidence": [
+      "evidence/android-save-cooldown-mediastore.txt",
+      "evidence/android-save-cooldown-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "P02-draw-after-burst",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "A following drawing adds 7293 purple pixels in isolated crop",
+    "evidence": [
+      "evidence/android-save-cooldown-after-burst.png",
+      "evidence/android-save-cooldown-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  },
+  {
+    "id": "P02-next-save",
+    "surface": "android-emulator",
+    "status": "pass",
+    "description": "After cooldown a new Save creates one further owned published image",
+    "evidence": [
+      "evidence/android-save-cooldown-after-next.png",
+      "evidence/android-save-cooldown-results.json"
+    ],
+    "commit": "b236d639160459eecd60900926c759af5d4ae080"
+  }
+]
