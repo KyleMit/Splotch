@@ -18,7 +18,14 @@ const TRIMMED_APP_CALLS = [
   /\bSkia\.(Skottie|ParagraphBuilder|TypefaceFontProvider|SVG)\b/,
   /\.(drawSvg|drawParagraph|drawSkottie)\(/,
 ];
-const TRIMMED_IMPORTS = new Set(['ImageSVG', 'Paragraph', 'Skottie', 'useSVG', 'useFonts']);
+const TRIMMED_IMPORTS = new Set([
+  'ImageSVG',
+  'Paragraph',
+  'Skottie',
+  'useSVG',
+  'useFonts',
+  '* (namespace import)',
+]);
 
 function files(dir, pattern) {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -59,10 +66,23 @@ it('stops installing the trimmed factories', () => {
   expect(TRIMMED_FACTORIES.filter((factory) => getters.has(factory))).toEqual([]);
 });
 
+// The imported name, not a local alias, decides what is reached: `useFonts as load` is still
+// useFonts. A namespace import hides every name behind it, so the test reports it as a whole.
 function skiaImports(source) {
-  return [...source.matchAll(/import\s*\{([^}]*)\}\s*from '@shopify\/react-native-skia'/g)].flatMap(
-    (match) => match[1].split(',').map((name) => name.replace(/^\s*type\s+/, '').trim())
+  const named = [
+    ...source.matchAll(/import\s*\{([^}]*)\}\s*from '@shopify\/react-native-skia'/g),
+  ].flatMap((match) =>
+    match[1].split(',').map((specifier) =>
+      specifier
+        .replace(/^\s*type\s+/, '')
+        .split(/\s+as\s+/)[0]
+        .trim()
+    )
   );
+  const namespaces = [
+    ...source.matchAll(/import\s*\*\s*as\s+\w+\s+from '@shopify\/react-native-skia'/g),
+  ].map(() => '* (namespace import)');
+  return [...named, ...namespaces];
 }
 
 it('keeps the RN app off the trimmed Skia APIs', () => {
