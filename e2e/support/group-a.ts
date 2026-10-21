@@ -91,6 +91,53 @@ export async function expectPaperCleared(
   expect(await screen.inkedPixels(stroke)).toBe(0);
 }
 
+// A region of the screen measured against how it looked before something drew on it, for the specs
+// that put ink down through their own input rather than the drawing helpers' mouse.
+export type ScreenRegion = { x: number; y: number; width: number; height: number };
+const RGB_CHANNELS = 3;
+const INK_CHANNEL_DELTA = 48;
+const REGION_PADDING_PX = 24;
+
+/** The screen rectangle that holds the segment between two points, padded past a brush's width. */
+export function regionBetween(
+  from: { x: number; y: number },
+  to: { x: number; y: number }
+): ScreenRegion {
+  return {
+    x: Math.min(from.x, to.x) - REGION_PADDING_PX,
+    y: Math.min(from.y, to.y) - REGION_PADDING_PX,
+    width: Math.abs(from.x - to.x) + 2 * REGION_PADDING_PX,
+    height: Math.abs(from.y - to.y) + 2 * REGION_PADDING_PX,
+  };
+}
+
+/** The region's pixels as they are now, to measure ink against later. */
+export async function regionPixels(page: Page, region: ScreenRegion): Promise<Buffer> {
+  return sharp(await page.screenshot({ clip: region }))
+    .removeAlpha()
+    .raw()
+    .toBuffer();
+}
+
+/** How many pixels of the region differ markedly from `before`. */
+export async function inkedPixelsSince(
+  page: Page,
+  region: ScreenRegion,
+  before: Buffer
+): Promise<number> {
+  const after = await regionPixels(page, region);
+  let inked = 0;
+  for (let offset = 0; offset < before.length; offset += RGB_CHANNELS) {
+    const delta = Math.max(
+      Math.abs(before[offset] - after[offset]),
+      Math.abs(before[offset + 1] - after[offset + 1]),
+      Math.abs(before[offset + 2] - after[offset + 2])
+    );
+    if (delta > INK_CHANNEL_DELTA) inked++;
+  }
+  return inked;
+}
+
 export type BrushName = 'Pen' | 'Crayon' | 'Magic brush' | 'Eraser';
 
 /** Opens the tool drawer when it is folded; the drawer's own buttons answer once it is open. */
