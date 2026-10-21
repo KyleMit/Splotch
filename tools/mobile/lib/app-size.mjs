@@ -53,10 +53,20 @@ export function parseAppleSize(text) {
   return Math.round(Number(match[1]) * APPLE_UNIT_BYTES[/** @type {'KB'|'MB'|'GB'} */ (match[2])]);
 }
 
-/** @param {string} version e.g. "17.4" */
-function versionKey(version) {
-  const [major = 0, minor = 0] = version.split('.').map(Number);
-  return major * 1000 + minor;
+/**
+ * Compares dotted versions component by component, an omitted component counting as 0,
+ * so "26.5" equals "26.5.0" and sorts before "26.5.1".
+ * @param {string} a
+ * @param {string} b
+ */
+export function compareVersions(a, b) {
+  const left = a.split('.').map(Number);
+  const right = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
 }
 
 /**
@@ -105,17 +115,14 @@ export function selectThinningVariant(variants, deviceModel, osVersion) {
     ].sort();
     throw new Error(`No thinned variant lists ${deviceModel}. Variants cover: ${known.join(', ')}`);
   }
-  const compatible = forModel.filter((c) => versionKey(c.os) <= versionKey(osVersion));
+  const compatible = forModel.filter((c) => compareVersions(c.os, osVersion) <= 0);
   if (compatible.length === 0) {
-    const listed = [...new Set(forModel.map((c) => c.os))].sort(
-      (a, b) => versionKey(a) - versionKey(b)
-    );
+    const listed = [...new Set(forModel.map((c) => c.os))].sort(compareVersions);
     throw new Error(
       `No thinned variant for ${deviceModel} installs on OS ${osVersion}; it is listed for ${listed.join(', ')}`
     );
   }
-  return compatible.reduce((best, c) => (versionKey(c.os) > versionKey(best.os) ? c : best))
-    .variant;
+  return compatible.reduce((best, c) => (compareVersions(c.os, best.os) > 0 ? c : best)).variant;
 }
 
 /** @param {number[]} values */

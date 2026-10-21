@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  compareVersions,
   parseAppleSize,
   parseBundletoolSizeCsv,
   parseThinningReport,
@@ -89,6 +90,17 @@ describe('parseAppleSize', () => {
   });
 });
 
+describe('compareVersions', () => {
+  it.each([
+    ['26.5', '26.5.0', 0],
+    ['26.5', '26.5.1', -1],
+    ['26.10', '26.9', 1],
+    ['27', '26.5.2', 1],
+  ])('compares %s with %s', (a, b, sign) => {
+    expect(Math.sign(compareVersions(a, b))).toBe(sign);
+  });
+});
+
 describe('thinning report', () => {
   const variants = parseThinningReport(THINNING_REPORT);
 
@@ -127,6 +139,24 @@ describe('thinning report', () => {
   it('rejects a device OS older than every variant for the model', () => {
     expect(() => selectThinningVariant(variants, 'iPad13,8', '15.0')).toThrow(
       /installs on OS 15.0; it is listed for 16.4, 17.0, 26.0/
+    );
+  });
+
+  it('compares patch versions, so a newer patch minimum is not installable', () => {
+    const patchReport = `
+Variant: Newer.ipa
+Supported variant descriptors: [device: iPad13,8, os-version: 26.5.2]
+App size: 5 MB compressed, 9 MB uncompressed
+
+Variant: Fits.ipa
+Supported variant descriptors: [device: iPad13,8, os-version: 26.5]
+App size: 10 MB compressed, 19 MB uncompressed
+`;
+    const patchVariants = parseThinningReport(patchReport);
+    expect(selectThinningVariant(patchVariants, 'iPad13,8', '26.5.1').name).toBe('Fits.ipa');
+    expect(selectThinningVariant(patchVariants, 'iPad13,8', '26.5.2').name).toBe('Newer.ipa');
+    expect(selectThinningVariant([...patchVariants].reverse(), 'iPad13,8', '26.5.1').name).toBe(
+      'Fits.ipa'
     );
   });
 
