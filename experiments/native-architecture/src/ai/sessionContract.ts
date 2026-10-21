@@ -21,10 +21,12 @@ type AiAttempt =
   | Readonly<{ kind: 'stopped' }>;
 // What went wrong in the last run that failed, bounded to what a problem report may carry: the
 // HTTP status when there was a reply, the endpoint, and the app's own words for the failure.
+// `storageFull` marks a run the device's storage refused before anything was sent.
 export type AiFailureDetails = Readonly<{
   status: number | null;
   endpoint: '/api/generate-image' | '/api/generation-result';
   message: string;
+  storageFull: boolean;
 }>;
 // What became of a credential saved or forgotten from Settings › AI Art. Each is numbered, so a
 // section shows only the outcomes of its own visit; the server's own words come with a refusal.
