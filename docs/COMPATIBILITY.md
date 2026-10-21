@@ -210,7 +210,7 @@ non-polyfill choices:
 ## How the floor is validated
 
 * **Engine family:** every push/PR runs the Chromium E2E suite plus Firefox and WebKit critical-path
-  smoke jobs (`web/tests/engine-smoke.spec.ts` — boot, stroke, Settings, Color Picker). That covers
+  smoke jobs (`e2e/specs/smoke.spec.ts` — boot, a stroke and Undo, the privacy page). That covers
   Blink, Gecko, and WebKit, but not their floor *versions*: CI runs current desktop Firefox/WebKit,
   not Firefox 114 or Safari 16.4, and does not boot the native app. `web/src/browserFloor.test.ts`
   separately guards that the emitted bundle's declared Safari/iOS target remains at or below the

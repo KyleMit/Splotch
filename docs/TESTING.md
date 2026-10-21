@@ -384,7 +384,7 @@ npm run test:e2e:headed    # headed, slowed down (SLOWMO=500)
 npm run test:e2e:debug     # inspector
 
 # one spec / one title, not the whole suite (trailing args pass through to Playwright):
-npm run test:e2e -- flows-undo-persistence.spec.ts -g "the undo button enables on a stroke and reverts it"
+npm run test:e2e -- <spec>.spec.ts -g "<test title>"
 ```
 
 For ad-hoc validation of a single change, filter through the npm script — **not** raw
@@ -509,7 +509,7 @@ Write specs that can't race in the first place:
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
-  (`REVEAL_SETTLE_MS` in `flows-magic-brush.spec.ts`); the engine debounces resize by
+  (`REVEAL_SETTLE_MS` in the retired magic-brush spec); the engine debounces resize by
   `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot
   `await page.evaluate(...)` + `expect(...)`.
 * **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
@@ -534,10 +534,10 @@ Write specs that can't race in the first place:
   `pointerleave` runs the app's handler but leaves the browser's hover target where the cursor is.
   Any later hover recompute — an overlay under the parked cursor unmounting, such as a flyout
   closing on the click that chose from it — then sends a trusted `pointerenter` back to the element,
-  on whichever frame the removal paints. The eraser-bubble spec in `flows-palette-brush.spec.ts`
-  lost that race 3 in 60 single-worker runs (7 in 40 with event logging slowing the frame): the
-  flyout closed, the synthetic leave hid the bubble, and the recompute re-entered the canvas a frame
-  later. Hover a stable control instead (`locator.hover()`), which moves the hit-test target itself.
+  on whichever frame the removal paints. The retired eraser-bubble spec lost that race 3 in 60
+  single-worker runs (7 in 40 with event logging slowing the frame): the flyout closed, the
+  synthetic leave hid the bubble, and the recompute re-entered the canvas a frame later. Hover a
+  stable control instead (`locator.hover()`), which moves the hit-test target itself.
 * **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
   engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
   through a Svelte `$effect` (`setBrush` in `DrawingCanvas`), so `aria-pressed=true` does not prove
@@ -611,15 +611,15 @@ Write specs that can't race in the first place:
   component's keyframe names with its hash, so match `animationName` by suffix, not equality.
 
   A spec that has to act *inside* an animation needs the mirror-image move: widen the animation
-  rather than timing the act. The halo lift-off specs in `halo-lift.spec.ts` release the stroke
-  partway through a 120 ms grow-in, which no sleep can hit reliably, so they override
-  `--halo-in-duration` to 5 s through a `:root:root` rule that outranks the component's scoped
-  declaration — the lift keeps its real duration, and no slow frame can end the grow-in before the
-  release. The override has to come from a stylesheet rather than an inline style: the halo does not
-  exist until the press mounts it, so by the time a spec could reach the element a starved frame may
-  already have finished the grow-in. Those specs also resolve their outcome on the element's
-  *removal* as well as on its animation events, so the pre-fix product — which deleted the halo
-  before the lift could start — fails the assertion instead of hanging on an event that never comes.
+  rather than timing the act. The retired halo lift-off specs released the stroke partway through a
+  120 ms grow-in, which no sleep can hit reliably, so they override `--halo-in-duration` to 5 s
+  through a `:root:root` rule that outranks the component's scoped declaration — the lift keeps its
+  real duration, and no slow frame can end the grow-in before the release. The override has to come
+  from a stylesheet rather than an inline style: the halo does not exist until the press mounts it,
+  so by the time a spec could reach the element a starved frame may already have finished the
+  grow-in. Those specs also resolve their outcome on the element's *removal* as well as on its
+  animation events, so the pre-fix product — which deleted the halo before the lift could start —
+  fails the assertion instead of hanging on an event that never comes.
 * **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
   by any tap that repaints something else under the finger, so a spec can be swallowed well after
   the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's
@@ -689,20 +689,22 @@ npm run test:lighthouse:ci -- --port=<port>             # builds the export firs
 npm run test:lighthouse:ci -- --no-build --port=<port>  # times the export already built
 ```
 
-### Cross-engine critical-path smoke — `tests/engine-smoke.spec.ts`
+### Cross-engine critical-path smoke — `e2e/specs/smoke.spec.ts`
 
-CI's Firefox and WebKit jobs now run the RN web suite's `@smoke` specs (above), so this SvelteKit
-subset runs only where those browsers are installed locally, under `npm run test:e2e`. The rest of
-this section describes it until its specs are ported or deleted.
+CI's Firefox and WebKit jobs run the RN web suite's `@smoke` specs (above). The SvelteKit suite's
+own cross-engine subset is retired: `e2e/specs/smoke.spec.ts` covers its boot and stroke cases in
+every engine, and its Settings and Color Picker cases are Chromium specs in
+`e2e/specs/settings.spec.ts` and `e2e/specs/palette.spec.ts`. The rest of this section describes the
+RN suite's tagging convention.
 
-The full suite is Chromium-only. A tiny critical-path subset (boot, draw a stroke, Settings dialog,
-Color Picker dialog) also runs in the `firefox` and `webkit` Playwright projects so every declared
-browser engine has an automated push/PR signal:
+Chromium runs the whole suite. A tiny critical-path subset (boot, draw a stroke, Undo, the privacy
+page) also runs in the `firefox` and `webkit` Playwright projects so every declared browser engine
+has an automated push/PR signal:
 
 * Each project joins only when its binary is installed, so Chromium-only local and cloud checkouts
   keep working. CI explicitly installs the selected browser and sets `REQUIRE_FIREFOX` or
   `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with
-  `npm run test:e2e -- --project firefox` or `--project webkit`.
+  `npm run test:firefox:smoke` or `npm run test:webkit:smoke`.
 * CI keeps `firefox-smoke` and `webkit-smoke` parallel to the sharded Chromium Tests job. Firefox is
   the cheaper leg because it needs none of WebKit's GStreamer/ffmpeg stack. WebKit adds ~110 system
   packages, and installing them lands on every run; the setup action's apt cache removes network
@@ -715,17 +717,16 @@ browser engine has an automated push/PR signal:
   rotates, and `warm-playwright-cache.yml` repopulates the default-branch caches daily and on
   dependency merges so PR runs rarely take it. A setup step dragged out by a network-starved runner
   is bounded only by the job's `timeout-minutes` — re-run it by hand for a fresh machine.
-* **Routing is by tag, not filename.** `ENGINE_SMOKE_TAG` (`tests/tags.ts`) sits on the spec's
-  `test.describe`; Firefox and WebKit `grep` for it while Chromium `grepInvert`s it. Add portable
-  cross-engine coverage by tagging it; an untagged spec runs under Chromium.
+* **Routing is by tag, not filename.** `SMOKE_TAG` (`e2e/tags.ts`) sits on the spec's
+  `test.describe`; Firefox and WebKit `grep` for it, and Chromium runs every spec, tagged or not.
+  Add portable cross-engine coverage by tagging it; an untagged spec runs under Chromium only.
 * **Import the tag, never type it.** Playwright validates no tag, so a typo can route a spec to
   Chromium alone while both smoke jobs remain green on the correctly tagged tests.
   `tools/tests/e2e-engine-tags.test.mjs` rejects literals and unknown tags, requires a tagged spec,
   and guards agreement among the project, script, and CI-job names.
 * Keep the spec cross-engine portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and
   the `touchDriver` in `e2e/specs/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes,
-  no assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
-  already in the full suite.
+  no assertions tied to Chromium's rasterizer.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 
@@ -929,8 +930,8 @@ the `rn-web-e2e` shards and the Firefox and WebKit smokes download it and serve 
 `SPLOTCH_E2E_PREBUILT=1`, and the page-load job downloads it to time it, so CI builds that export
 once. With `fullyParallel` on, `--shard` deals out individual tests (not files) in a deterministic
 order, balanced by count and blind to duration — so the longest shard is bounded by the slowest
-single test, which lives among the deliberately heavy stress tests of
-`tests/flows-tile-history.spec.ts` (the header comment there explains why their cost is intrinsic).
+single test, which lives among the deliberately heavy stress tests of the retired tile-history spec
+(their header comment explained why their cost was intrinsic).
 
 The 2026-08-19 shard-count measurement is preserved in the
 [shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring
