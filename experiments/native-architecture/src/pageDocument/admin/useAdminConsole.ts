@@ -88,9 +88,10 @@ export function useAdminConsole({
         if (generation.current === mine) setView({ mode: 'unavailable', session });
         return;
       }
-      const read = await figures;
-      if (generation.current !== mine) return;
-      setView(withFigures(read));
+      // Detached, so a sign-in (which awaits this load) frees the console before the figures land.
+      void figures.then((read) => {
+        if (generation.current === mine) setView(withFigures(read));
+      });
     },
     [api, signOutWith]
   );

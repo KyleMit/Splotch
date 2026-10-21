@@ -330,6 +330,27 @@ describe("the admin console's state", () => {
     expect(latest.view.figures.stats.freeGrantStats.dailyProviderStarts).toBe(4);
   });
 
+  it('frees the console after a sign-in while the figures are still out', async () => {
+    let statsAnswer;
+    const request = vi.fn(async (path, { method }) => {
+      if (path === ADMIN_STATS_PATH) return new Promise((resolve) => (statsAnswer = resolve));
+      if (path === ADMIN_LOGIN_PATH) return answer(200, { ok: true, session: SESSION });
+      return answer(200, method === 'GET' ? SNAPSHOT : { ...SNAPSHOT, changed: true });
+    });
+    await mount({ request });
+    await act(async () => latest.signIn('the-key'));
+    expect(latest.view).toMatchObject({ mode: 'signedIn', figures: { kind: 'pending' } });
+    expect(latest.busy).toBe(false);
+    await act(async () => latest.setDraft('gamma'));
+    await act(async () => latest.add(SESSION));
+    expect(request).toHaveBeenCalledWith(
+      ADMIN_TOKENS_PATH,
+      expect.objectContaining({ method: 'POST' })
+    );
+    await act(async () => statsAnswer(answer(200, STATS)));
+    expect(latest.view.figures.kind).toBe('read');
+  });
+
   it('ignores figures that land after their session was signed out', async () => {
     const { pending, request } = deferredRequests();
     await mount({ stored: SESSION, request });
