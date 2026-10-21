@@ -15,6 +15,7 @@ import { crossDocumentNavigation } from '../../experiments/native-architecture/s
 import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
 import { FIRST_FRAME_VIEWPORT_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
 import {
   PAGE_DOCUMENT_DIR,
   PAGE_VARIANT_ATTRIBUTE,
@@ -107,7 +108,10 @@ function exportFixture(files) {
 
 describe('the route table', () => {
   it('writes a document for each page whose document is its own, and routes every page', () => {
-    expect(documentPages()).toEqual([{ page: 'privacy', path: '/privacy', file: 'privacy.html' }]);
+    expect(documentPages()).toEqual([
+      { page: 'privacy', path: '/privacy', file: 'privacy.html' },
+      { page: 'feedback', path: '/feedback', file: 'feedback.html' },
+    ]);
     for (const [page, path] of Object.entries(APP_PAGE_PATHS)) expect(appPageAt(path)).toBe(page);
     expect(Object.keys(APP_PAGE_DOCUMENTS)).toEqual(Object.keys(APP_PAGE_PATHS));
     for (const { page } of documentPages()) expect(APP_PAGE_DOCUMENTS[page].render).toBe('ssg');
@@ -172,6 +176,14 @@ describe('the page document', () => {
     expect(startupScriptList(html)).toEqual(PAGE_SCRIPTS);
     for (const { key } of variants()) expect(html).toContain(`${PAGE_VARIANT_ATTRIBUTE}="${key}"`);
     expect(html).toContain('<noscript><style>');
+  });
+
+  it('hides a control that needs a script only when no script runs', () => {
+    const html = privacyDocument();
+    const rule = `html [${HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE}]{display:none}`;
+    const noscript = html.match(/<noscript><style>([^<]*)<\/style><\/noscript>/);
+    expect(noscript?.[1]).toContain(rule);
+    expect(html.replace(noscript[0], '')).not.toContain(HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE);
   });
 
   it('refuses an exported document it cannot fill', () => {
