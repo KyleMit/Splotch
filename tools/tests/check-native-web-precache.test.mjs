@@ -11,6 +11,7 @@ import {
   releaseNoteSamples,
   shellAssetReferences,
   starterBookImages,
+  socialCardProblems,
   starterOutlineSamples,
   unhashedImmutableFiles,
 } from '../migration/check-native-web-precache.mjs';
@@ -24,6 +25,8 @@ import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
 import {
   HOSTED_STATIC_ENTRIES,
   contentAddressedShell,
+  documentCards,
+  withSocialCard,
   subresourceIntegrity,
   webVersionHeadTag,
 } from '../migration/build-native-web.mjs';
@@ -139,6 +142,7 @@ const check = (exportDir, options = {}) =>
       ...lazyIconSamples().map((sample) => ({ module: 'deferred icons', sample })),
       ...OUTLINES.map(({ pageId, sample }) => ({ module: `${pageId} line art`, sample })),
     ],
+    documentCards: [],
     log: () => {},
     ...options,
   });
@@ -433,4 +437,29 @@ it('names every file under an immutable directory by its content hash', () => {
     '_expo/static/js/web/entry.js',
     'assets/logo.png',
   ]);
+});
+
+// Shipping's routes rendered these through SocialCard.svelte; a pasted link reads them unscripted.
+it("requires each card's description and link-preview tags in its document", () => {
+  const card = { path: '/privacy', title: 'Privacy & more', description: 'No "ads".' };
+  const html = withSocialCard('<html><head></head><body></body></html>', card);
+  expect(html).toContain('<meta property="og:title" content="Privacy &amp; more">');
+  expect(html).toContain('<meta name="description" content="No &quot;ads&quot;.">');
+  expect(socialCardProblems(html, 'privacy.html', card)).toEqual([]);
+  expect(socialCardProblems('<html><head></head></html>', 'privacy.html', card)[0]).toMatch(
+    /^privacy\.html lacks 16 of \/privacy's description and link-preview tags$/
+  );
+  expect(() => withSocialCard(html, card)).toThrow('already carries a card');
+});
+
+it('gives the drawing screen and every carded page a card, and nothing else', () => {
+  expect(documentCards().map(({ file }) => file)).toEqual([
+    'index.html',
+    'privacy.html',
+    'changelog.html',
+    'feedback.html',
+    'beta.html',
+    'design.html',
+  ]);
+  expect(() => documentCards([])).toThrow("No document is written for /privacy's card.");
 });

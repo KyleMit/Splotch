@@ -26,7 +26,9 @@ import {
   NOT_FOUND_FILE,
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
+  documentCards as writtenDocumentCards,
   isHostedStaticFile,
+  socialCardHeadTags,
   subresourceIntegrity,
   webVersionHeadTag,
 } from './build-native-web.mjs';
@@ -275,12 +277,21 @@ export function nativeWebPrecacheProblems({
   return problems;
 }
 
+// A pasted link and a search result read these from the document itself, before any script.
+export function socialCardProblems(html, file, card) {
+  const missing = socialCardHeadTags(card).filter((tag) => !html.includes(tag));
+  return missing.length
+    ? [`${file} lacks ${missing.length} of ${card.path}'s description and link-preview tags`]
+    : [];
+}
+
 export function checkNativeWebPrecache({
   exportDir = NATIVE_WEB_EXPORT_DIR,
   starterOutlines = starterOutlineSamples(),
   starterImages = starterBookImages(),
   lazySamples = lazyModuleSamples(),
   maxPrecacheBytes,
+  documentCards = writtenDocumentCards(),
   log = console.log,
 } = {}) {
   const swPath = join(exportDir, NATIVE_WEB_SERVICE_WORKER);
@@ -337,6 +348,9 @@ export function checkNativeWebPrecache({
     ...documentPolicyProblems(indexHtml.toString('utf8'), APP_SHELL_FILE),
     ...[...new Set([NOT_FOUND_FILE, ...writtenPageDocuments().map(({ file }) => file)])].flatMap(
       (file) => documentPolicyProblems(readFileSync(join(exportDir, file), 'utf8'), file)
+    ),
+    ...documentCards.flatMap(({ file, card }) =>
+      socialCardProblems(readFileSync(join(exportDir, file), 'utf8'), file, card)
     )
   );
   if (problems.length) throw new Error(problems.join('\n'));

@@ -21,13 +21,13 @@
   import type { CommonIconName } from '$lib/components/iconTypes';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
+  import { PAGE_CARDS } from '$lib/components/page/socialCard';
   import { isAndroidBrowser, isIosDevice } from '$lib/platform';
   import '$lib/components/deferredIcons';
 
   // The sniff stays here rather than in betaPlatform.ts: that module is read by
   // the E2E specs, which run outside Vite and cannot resolve a `$app` import.
-  const DESCRIPTION =
-    "How to become a Splotch beta tester on Android via Google Play, or on iPhone and iPad via Apple's TestFlight.";
+  const DESCRIPTION = PAGE_CARDS['/beta'].description;
 
   function detectPlatform(): BetaPlatform | null {
     if (isIosDevice()) return 'ios';
@@ -102,7 +102,7 @@
   {@html `<script>${BETA_PLATFORM_BOOT_SCRIPT}${'<'}/script>`}
 </svelte:head>
 
-<SocialCard path="/beta" title="Join the Splotch Beta" description={DESCRIPTION} />
+<SocialCard {...PAGE_CARDS['/beta']} />
 
 <div class="beta">
   <PageShell title="Join the Splotch beta" wordmarkSuffix="beta">

@@ -17,7 +17,12 @@ import {
   SERVICE_WORKER_PATH,
 } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
-import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
+import {
+  HOME_CARD,
+  PAGE_CARDS,
+  shareImageFor,
+} from '../../web/src/lib/components/page/socialCard.ts';
+import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
 import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
 import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
@@ -35,6 +40,7 @@ import {
   NOT_FOUND_FILE,
   pageOnlyChunks,
   prerenderNativeWebPages,
+  writtenPageDocuments,
 } from './prerender-native-web-pages.mjs';
 import { prerenderNativeWebAdmin } from './prerender-native-web-admin.mjs';
 import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
@@ -203,6 +209,60 @@ export function withShippingTitle(indexHtml) {
   return indexHtml.replace(title, `<title>${HOME_CARD.title}</title>`);
 }
 
+const escapeAttribute = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+
+// What a search snippet and a pasted link show for a page: its meta description and shipping's
+// link-preview card (SocialCard.svelte), on the canonical origin with the page's share image.
+export function socialCardHeadTags({ path, title, description }) {
+  const url = `${SITE_ORIGIN}${path}`;
+  const image = shareImageFor(path);
+  const meta = (key, name, content) =>
+    `<meta ${key}="${name}" content="${escapeAttribute(content)}">`;
+  return [
+    meta('name', 'description', description),
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:url', url),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('property', 'og:image', image.url),
+    meta('property', 'og:image:width', image.width),
+    meta('property', 'og:image:height', image.height),
+    meta('property', 'og:image:alt', image.alt),
+    meta('property', 'og:site_name', 'Splotch'),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    meta('name', 'twitter:url', url),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+    meta('name', 'twitter:image', image.url),
+    meta('name', 'twitter:image:alt', image.alt),
+  ];
+}
+
+// The card each document carries, by the file the build writes for its path: the drawing screen's
+// and every page with a card. The not-found page and the unlinked console carry none.
+export function documentCards(documents = writtenPageDocuments()) {
+  const files = new Map(documents.map(({ path, file }) => [path, file]));
+  return [
+    { file: APP_SHELL_FILE, card: HOME_CARD },
+    ...Object.values(PAGE_CARDS).map((card) => {
+      const file = files.get(card.path);
+      if (!file) throw new Error(`No document is written for ${card.path}'s card.`);
+      return { file, card };
+    }),
+  ];
+}
+
+export function withSocialCard(html, card) {
+  if (html.includes('property="og:title"'))
+    throw new Error(`The document for ${card.path} already carries a card.`);
+  return withInstallHeadTags(html, socialCardHeadTags(card));
+}
+
 export function webVersionHeadTag(appVersion) {
   return `<meta name=${JSON.stringify(WEB_VERSION_META_NAME)} content=${JSON.stringify(appVersion)}>`;
 }
@@ -351,6 +411,10 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
     ...(await prerenderNativeWebPages(outputDir, template)),
     await prerenderNativeWebAdmin(outputDir, template),
   ];
+  for (const { file, card } of documentCards()) {
+    const path = join(outputDir, file);
+    writeFileSync(path, withSocialCard(readFileSync(path, 'utf8'), card));
+  }
   // Each document's policy hashes its own inline scripts, so it is written after their last edit.
   for (const file of new Set([
     APP_SHELL_FILE,

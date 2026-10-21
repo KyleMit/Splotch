@@ -5,6 +5,7 @@
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
+  import { PAGE_CARDS } from '$lib/components/page/socialCard';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReportFields from '$lib/components/report/ReportFields.svelte';
   import type { ReportKind } from '$lib/report';
@@ -12,8 +13,7 @@
   import { paletteHex } from '$lib/palette';
   import type { PageProps } from './$types';
 
-  const DESCRIPTION =
-    'Report a bug or suggest an idea for Splotch, the drawing app for toddlers. No account needed.';
+  const DESCRIPTION = PAGE_CARDS['/feedback'].description;
 
   const SUBMIT_LABEL_BY_KIND: Record<ReportKind, string> = {
     bug: 'Send report',
@@ -89,7 +89,7 @@
   <meta name="description" content={DESCRIPTION} />
 </svelte:head>
 
-<SocialCard path="/feedback" title="Send Feedback to Splotch" description={DESCRIPTION} />
+<SocialCard {...PAGE_CARDS['/feedback']} />
 
 {#snippet nextSteps()}
   <aside class="aside">
