@@ -25,7 +25,7 @@ import { RsdNotFoundLink } from './notFoundLink';
 import { RsdPageHero } from './RsdPageHero';
 import { pageTextRef } from './pageTypography';
 import { RsdNotFoundFooter } from './notFoundFooter';
-import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
+import { INFORMATION_PAGE_SCROLLER_TEST_ID, PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { useBackLabel, usePageNavigation } from './pageDocumentState';
 export { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { RsdPressable } from './RsdPressable';
@@ -389,7 +389,7 @@ export function RsdPageSheet({
           };
   return (
     <ScrollView
-      testID="information-page-scroll"
+      testID={INFORMATION_PAGE_SCROLLER_TEST_ID}
       ref={scrollRef}
       style={scroll.fill}
       contentContainerStyle={scroll.content}

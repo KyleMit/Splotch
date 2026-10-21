@@ -35,9 +35,9 @@ import {
   pageVariantClass,
   pageVariantCss,
   documentEntry,
-  withVariantFragments,
   writtenPageDocuments,
 } from '../migration/prerender-native-web-pages.mjs';
+import { PAGE_FRAGMENT_ATTRIBUTE } from '../migration/page-fragments.mjs';
 import {
   STARTUP_SCRIPTS_ELEMENT_ID,
   startupScriptList,
@@ -294,16 +294,31 @@ describe('the page document', () => {
   });
 });
 
-describe("each variant's fragments", () => {
-  it('keys only the ids an in-page link targets, and those links', () => {
-    expect(
-      withVariantFragments(
-        '<a href="#counting">x</a><a href="#gone">y</a><section id="counting"></section><p id="«r0»"></p>',
-        'phone-light'
-      )
-    ).toBe(
-      '<a href="#counting~phone-light">x</a><a href="#gone">y</a><section id="counting~phone-light"></section><p id="«r0»"></p>'
+describe("the page document's canonical section targets", () => {
+  // Issue 3136: a canonical /privacy#counting named no element without a script, so it opened at
+  // the top.
+  it('adds one canonical target per section outside the variants, only without a script', () => {
+    const html = privacyDocument();
+    const noscripts = [...html.matchAll(/<noscript>([\s\S]*?)<\/noscript>/g)].map((m) => m[1]);
+    expect(noscripts).toContain(`<span ${PAGE_FRAGMENT_ATTRIBUTE} id="counting"></span>`);
+    expect(html.match(/ id="counting"/g)).toHaveLength(1);
+    const css = noscripts.find((text) => text.startsWith('<style>'));
+    expect(css).toContain(
+      '[id^="counting~"]{anchor-name:--f0}[id="counting"]{top:anchor(--f0 top)}'
     );
+    expect(css).toContain('@supports (anchor-name:--f){');
+    expect(css).toContain(
+      'html :is([data-testid=information-page-scroll],[data-testid=design-page-scroll]){height:auto;overflow:visible;overflow-x:clip}'
+    );
+    expect(html.indexOf(`${PAGE_FRAGMENT_ATTRIBUTE} id="counting"`)).toBeGreaterThan(
+      html.lastIndexOf(`${PAGE_VARIANT_ATTRIBUTE}=`)
+    );
+  });
+
+  it('leaves a document without section links as it was', () => {
+    const html = designDocument();
+    expect(html).not.toContain(PAGE_FRAGMENT_ATTRIBUTE);
+    expect(html).not.toContain('anchor-name');
   });
 });
 

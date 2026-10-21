@@ -7,3 +7,8 @@ export const SHOWN_WITHOUT_SCRIPT_ATTRIBUTE = 'data-shown-without-script';
 // prerendered page document hides it when no script runs (the feedback form shows the <noscript>
 // note beside it instead).
 export const HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE = 'data-hidden-without-script';
+// Name each page document's own scroller. Without a script, a document whose sections a URL can
+// name lets the window scroll in its place, so the canonical target the prerenderer adds outside
+// the layout variants can reach a section (tools/migration/prerender-native-web-pages.mjs).
+export const INFORMATION_PAGE_SCROLLER_TEST_ID = 'information-page-scroll';
+export const DESIGN_PAGE_SCROLLER_TEST_ID = 'design-page-scroll';

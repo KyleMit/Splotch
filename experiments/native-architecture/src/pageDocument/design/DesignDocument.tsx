@@ -8,6 +8,7 @@ import { ShippingFontGate } from '../../platform/shippingFont';
 import { RsdBackLink, RsdBrandMark } from '../../rsdDrawing/RsdNotFoundPage';
 import { COLD_VISIT_LABEL } from '../../../../../web/src/lib/components/page/backLabel';
 import { RsdRuleLabel } from '../../rsdDrawing/RsdRuleLabel';
+import { DESIGN_PAGE_SCROLLER_TEST_ID } from '../../rsdDrawing/pageFrame';
 import { RsdSegmentedPicker } from '../../rsdDrawing/RsdSegmentedPicker';
 import { colors, darkTheme, dimensions, fonts } from '../../rsdDrawing/tokens.css';
 import type { AppearancePreference } from '../../settings/appearance';
@@ -353,7 +354,11 @@ function Themed({ children }: { children: ReactNode }) {
   const scroller = useRef<HTMLDivElement | null>(null);
   const active = useScrollspy(scroller);
   return (
-    <html.div ref={scroller} style={[styles.root, theme === 'dark' && darkTheme]}>
+    <html.div
+      ref={scroller}
+      data-testid={DESIGN_PAGE_SCROLLER_TEST_ID}
+      style={[styles.root, theme === 'dark' && darkTheme]}
+    >
       {/* The scroller can't be its own fragment target: a link to it never scrolls its content. */}
       <html.div id={TOP_ID} />
       {children}
