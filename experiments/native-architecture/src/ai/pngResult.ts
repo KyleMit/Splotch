@@ -1,4 +1,5 @@
 import { inflatePng } from '../drawing/pngInflate';
+import { captureMetadataFits, isCaptureMetadata } from '../drawing/pngCaptureMetadata';
 import type { PngWork } from '../drawing/pngWork';
 import { ascii, imageGrid, invalidImage, MAX_AI_IMAGE_METADATA_BYTES } from './imageBounds';
 import type { PngGrid } from '../drawing/pngLimits';
@@ -14,6 +15,16 @@ const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
   return crc >>> 0;
 });
 type Chunk = { type: string; data: Uint8Array };
+// A private ancillary chunk (lowercase first and second letters, PNG 3rd edition 5.4) has no
+// registered meaning, so a decoder ignores it and it cannot change the picture. Encoders add their
+// own, before or after the image data: the provider's C2PA caBX, Firefox's canvas-randomization
+// deBG. APNG's chunks predate that convention and carry the private bit, yet are registered and
+// make a picture animated. Registered ancillary chunks can change how the picture renders (colour
+// profiles, transparency, animation), so each stays named and checked in metadata().
+const REGISTERED_WITH_PRIVATE_BIT = new Set(['acTL', 'fcTL', 'fdAT']);
+function privateAncillary(type: string) {
+  return /^[a-z]{2}/.test(type) && !REGISTERED_WITH_PRIVATE_BIT.has(type);
+}
 async function chunks(bytes: Uint8Array, work: PngWork) {
   if (SIGNATURE.some((value, index) => bytes[index] !== value)) invalidImage();
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -62,7 +73,11 @@ function metadata(chunk: Chunk, channels: number) {
   } else if (chunk.type === 'caBX') {
     // The provider's C2PA content credentials. Its pictures carry one; it is kept, never read.
     if (!n) invalidImage();
-  } else invalidImage();
+  } else if (isCaptureMetadata(chunk.type)) {
+    // The original is the app's own canvas capture, which WebKit encodes with an eXIf chunk.
+    const tiffHeader = () => new DataView(chunk.data.buffer, chunk.data.byteOffset, n).getUint32(0);
+    if (!captureMetadataFits(chunk.type, n, tiffHeader)) invalidImage();
+  } else if (!privateAncillary(chunk.type)) invalidImage();
 }
 export async function pngResultGrid(
   bytes: Uint8Array,
@@ -80,20 +95,24 @@ export async function pngResultGrid(
     data: Uint8Array[] = [],
     seen = new Set<string>();
   let ended = false,
+    afterData = false,
     metadataBytes = 0;
   for (const chunk of all) {
     if (ended) invalidImage();
-    if (chunk.type === 'IDAT') data.push(chunk.data);
-    else if (chunk.type === 'IEND') {
+    if (chunk.type === 'IDAT') {
+      if (afterData) invalidImage();
+      data.push(chunk.data);
+    } else if (chunk.type === 'IEND') {
       if (chunk.data.length || !data.length || chunk !== all.at(-1)) invalidImage();
       ended = true;
     } else {
       if (
-        data.length ||
+        (data.length && !privateAncillary(chunk.type)) ||
         seen.has(chunk.type) ||
         (seen.has('PLTE') && BEFORE_PALETTE.has(chunk.type))
       )
         invalidImage();
+      afterData = data.length > 0;
       metadataBytes += chunk.data.length;
       if (metadataBytes > MAX_AI_IMAGE_METADATA_BYTES) invalidImage();
       seen.add(chunk.type);
