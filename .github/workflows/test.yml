@@ -382,9 +382,9 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          # Outside the playwright-report-* names the flaky digest harvests: its job list
-          # (tools/flaky-digest/lib/flaky-history.mjs) does not name this job yet.
-          name: rn-web-e2e-report-shard-${{ matrix.shard }}
+          # The flaky digest finds this artifact by the job's name
+          # (REPORT_JOBS in tools/flaky-digest/lib/flaky-history.mjs).
+          name: playwright-report-rn-shard-${{ matrix.shard }}
           # REPORT_FOLDER in e2e/playwright.config.ts. Drift-guarded by
           # tools/tests/playwright-report-folder.test.mjs.
           path: playwright-report/

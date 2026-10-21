@@ -71,12 +71,24 @@ describe("the RN E2E server's netlify.toml reader", () => {
     });
   });
 
+  // Netlify normalizes the trailing slash when it matches a redirect.
+  it.each(['/android-beta/', '/ios-beta/'])('redirects %s as it does without the slash', (path) => {
+    expect(redirectFor(site.redirects, path)).toEqual(
+      redirectFor(site.redirects, path.slice(0, -1))
+    );
+    expect(redirectFor(site.redirects, path)?.status).toBe(308);
+  });
+
   it.each([
     ['an escape', ['[[headers]]', 'for = "/*"', '[headers.values]', 'X-A = "\\u0041"']],
     ['a dotted key', ['[[headers]]', 'for = "/*"', 'headers.values.X-A = "a"']],
     ['a table it does not know', ['[[headers.values]]', 'X-A = "a"']],
     ['a redirect condition', ['[[redirects]]', 'from = "/a"', 'to = "/b"', 'query = "x"']],
     ['a placeholder', ['[[redirects]]', 'from = "/news/:year"', 'to = "/b"']],
+    [
+      'a header placeholder',
+      ['[[headers]]', 'for = "/assets/:file"', '[headers.values]', 'X = "a"'],
+    ],
     ['an unclosed string', ['[[headers]]', 'for = "/*"', '[headers.values]', 'X-A = """a']],
   ])('refuses %s instead of serving without it', (_spelling, lines) => {
     expect(() => readNetlifyConfig(toml('[build]', 'publish = "out"', ...lines))).toThrow(

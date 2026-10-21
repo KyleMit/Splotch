@@ -29,13 +29,10 @@ function uploadArtifactSteps(workflow) {
     }));
 }
 
-// The RN web suite's shards upload under their own names (test.yml says why).
-const REPORT_ARTIFACT = /^(?:playwright-report|rn-web-e2e-report)-/;
-
 describe('Playwright report folder', () => {
   const folder = relative(repoRoot, playwrightReportFolder);
   const reportUploads = uploadArtifactSteps(testWorkflow).filter(({ name }) =>
-    REPORT_ARTIFACT.test(name ?? '')
+    name?.startsWith('playwright-report-')
   );
 
   it('is one folder for both suites', () => {
@@ -47,9 +44,9 @@ describe('Playwright report folder', () => {
   it('is what every Playwright job in test.yml uploads', () => {
     expect(reportUploads.map(({ name }) => name).sort()).toEqual([
       'playwright-report-firefox',
+      'playwright-report-rn-shard-${{ matrix.shard }}',
       'playwright-report-shard-${{ matrix.shard }}',
       'playwright-report-webkit',
-      'rn-web-e2e-report-shard-${{ matrix.shard }}',
     ]);
     for (const { name, path } of reportUploads)
       expect({ name, path }).toEqual({ name, path: `${folder}/` });

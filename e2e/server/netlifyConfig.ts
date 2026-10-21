@@ -136,10 +136,12 @@ export function readNetlifyConfig(toml: string): NetlifyConfig {
   return {
     publish,
     redirects: redirects.map(redirectRule),
-    headers: headers.map((rule) => ({
-      for: stringValue(rule.for, 'a [[headers]] rule for'),
-      values: rule.values,
-    })),
+    headers: headers.map((rule) => {
+      const path = stringValue(rule.for, 'a [[headers]] rule for');
+      if (!path.startsWith('/') || path.includes(':'))
+        throw new Error(`netlify.toml: a header rule for ${path}, which this host cannot match`);
+      return { for: path, values: rule.values };
+    }),
   };
 }
 
@@ -150,12 +152,17 @@ function splatPattern(path: string): RegExp {
   return new RegExp(`^${escapeRegExp(path).replaceAll('*', '(.*)')}$`);
 }
 
+// Netlify matches a redirect with or without a trailing slash on either side.
+const withoutTrailingSlash = (path: string) => (path.length > 1 ? path.replace(/\/$/, '') : path);
+
 export function redirectFor(
   rules: readonly RedirectRule[],
   pathname: string
 ): (RedirectRule & { target: string }) | null {
   for (const rule of rules) {
-    const match = splatPattern(rule.from).exec(pathname);
+    const match = splatPattern(withoutTrailingSlash(rule.from)).exec(
+      withoutTrailingSlash(pathname)
+    );
     if (match) return { ...rule, target: rule.to.replaceAll(':splat', match[1] ?? '') };
   }
   return null;
