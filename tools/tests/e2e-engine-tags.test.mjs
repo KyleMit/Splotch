@@ -5,12 +5,15 @@ import { describe, expect, it } from 'vitest';
 
 import { jobBlock, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
 
-// Playwright tags decide which engine a spec runs on: Firefox and WebKit grep
-// for ENGINE_SMOKE_TAG while Chromium greps it out. Nothing validates a tag, so
-// a typo can route one spec to Chromium alone while both smoke jobs stay green.
+// Playwright tags decide which engine a spec runs on. In the RN web suite
+// (e2e/) Chromium runs every spec and Firefox and WebKit grep for SMOKE_TAG; the
+// CI smoke jobs run those two projects. In the SvelteKit suite (web/tests)
+// Firefox and WebKit grep for ENGINE_SMOKE_TAG while Chromium greps it out.
+// Nothing validates a tag, so a typo can route one spec to Chromium alone while
+// both smoke jobs stay green.
 //
-// Hence: tags come from tags.ts by import, never as a string literal, which
-// makes a typo a module-resolution error instead of a routing one.
+// Hence: tags come from each suite's tags.ts by import, never as a string
+// literal, which makes a typo a module-resolution error instead of a routing one.
 //
 // Syntax-only on purpose: the extractor below parses each spec but resolves no
 // types and loads no program, so this stays a Node-only suite.
@@ -23,17 +26,26 @@ const warmWorkflow = readFileSync(
   join(repoRoot, '.github', 'workflows', 'warm-playwright-cache.yml'),
   'utf8'
 );
+const rnSpecsDir = join(repoRoot, 'e2e', 'specs');
+const rnPlaywrightConfig = readFileSync(join(repoRoot, 'e2e', 'playwright.config.ts'), 'utf8');
+const RN_CONFIG_FLAG = '--config e2e/playwright.config.ts';
+const RN_TAGS_MODULE = '../tags.ts';
 const ENGINE_SMOKE_PROJECTS = [
   { label: 'Firefox', name: 'firefox', requirement: 'REQUIRE_FIREFOX' },
   { label: 'WebKit', name: 'webkit', requirement: 'REQUIRE_WEBKIT' },
 ];
 
-const tagsSource = readFileSync(join(testsDir, 'tags.ts'), 'utf8');
-const exportedTags = [...tagsSource.matchAll(/export const ([A-Z][A-Z0-9_]*)/g)].map((m) => m[1]);
+const exportedTagsOf = (source) =>
+  [...source.matchAll(/export const ([A-Z][A-Z0-9_]*)/g)].map((m) => m[1]);
+const exportedTags = exportedTagsOf(readFileSync(join(testsDir, 'tags.ts'), 'utf8'));
+const rnExportedTags = exportedTagsOf(readFileSync(join(repoRoot, 'e2e', 'tags.ts'), 'utf8'));
 
-const specs = readdirSync(testsDir)
-  .filter((name) => name.endsWith('.spec.ts'))
-  .map((name) => ({ name, source: readFileSync(join(testsDir, name), 'utf8') }));
+const specsIn = (dir) =>
+  readdirSync(dir)
+    .filter((name) => name.endsWith('.spec.ts'))
+    .map((name) => ({ name, source: readFileSync(join(dir, name), 'utf8') }));
+const specs = specsIn(testsDir);
+const rnSpecs = specsIn(rnSpecsDir);
 
 // The `tag:` value in a test()/test.describe() options object — a bare
 // identifier, a quoted literal, or an array of either. Literals keep their
@@ -81,10 +93,10 @@ function unwarmedStandardBrowsers(standardWorkflow, cacheWorkflow) {
   return used.filter((browser) => !matrix.includes(browser));
 }
 
-function engineProjectContract({ label, name, requirement }) {
+function engineProjectContract({ label, name, requirement }, tag = 'ENGINE_SMOKE') {
   return new RegExp(
     `engineAvailable\\('${label}', \\(\\) => ${name}\\.executablePath\\(\\), '${requirement}'\\)` +
-      `[\\s\\S]*?name: '${name}',\\s*grep: ENGINE_SMOKE,`
+      `[\\s\\S]*?name: '${name}',\\s*grep: ${tag},`
   );
 }
 
@@ -139,11 +151,19 @@ describe('E2E engine tags', () => {
   });
 
   it.each(ENGINE_SMOKE_PROJECTS)(
-    '$name agrees across Playwright, its npm command, and its CI job',
-    ({ label, name, requirement }) => {
-      expect(playwrightConfig).toMatch(engineProjectContract({ label, name, requirement }));
+    'the SvelteKit $name project greps the engine smoke',
+    (project) => {
+      expect(playwrightConfig).toMatch(engineProjectContract(project));
+    }
+  );
+
+  it.each(ENGINE_SMOKE_PROJECTS)(
+    'the RN $name smoke agrees across Playwright, its npm command, and its CI job',
+    (project) => {
+      const { name, requirement } = project;
+      expect(rnPlaywrightConfig).toMatch(engineProjectContract(project, 'SMOKE'));
       expect(packageJson.scripts[`test:${name}:smoke`]).toBe(
-        `node tools/run-web-tool.mjs playwright test --project ${name}`
+        `playwright test ${RN_CONFIG_FLAG} --project ${name}`
       );
 
       const job = jobBlock(testWorkflow, `${name}-smoke`);
@@ -152,6 +172,22 @@ describe('E2E engine tags', () => {
       expect(job).toContain(`${requirement}: 1`);
     }
   );
+
+  // Chromium is where the smoke specs prove the app in Blink too, so it must not grep them out.
+  it('the RN Chromium project runs every spec, the smoke ones included', () => {
+    const chromiumProject = rnPlaywrightConfig.match(/name: 'chromium',[\s\S]*?\n {4}\},/)?.[0];
+    expect(chromiumProject).toBeDefined();
+    expect(chromiumProject).not.toMatch(/grep/);
+  });
+
+  it('e2e/tags.ts exports the smoke tag', () => {
+    expect(rnExportedTags).toEqual(expect.arrayContaining(['SMOKE_TAG', 'SMOKE']));
+  });
+
+  it('at least one RN spec carries SMOKE_TAG', () => {
+    const tagged = rnSpecs.filter((spec) => taggedEntries(spec).includes('SMOKE_TAG'));
+    expect(tagged.map(({ name }) => name)).not.toHaveLength(0);
+  });
 
   it.each(ENGINE_SMOKE_PROJECTS)(
     '$name rejects another engine binary at its availability seam',
@@ -193,14 +229,18 @@ describe('E2E engine tags', () => {
     expect(unwarmedStandardBrowsers(testWorkflow, blockStyle)).toEqual([]);
   });
 
-  for (const spec of specs) {
-    const entries = taggedEntries(spec);
-    if (entries.length === 0) continue;
+  for (const [suite, suiteSpecs, tags, module] of [
+    ['web/tests', specs, exportedTags, TAGS_MODULE],
+    ['e2e/specs', rnSpecs, rnExportedTags, RN_TAGS_MODULE],
+  ])
+    for (const spec of suiteSpecs) {
+      const entries = taggedEntries(spec);
+      if (entries.length === 0) continue;
 
-    it(`${spec.name} takes its tags from ${TAGS_MODULE}, not string literals`, () => {
-      expect(entries.filter(isLiteral)).toEqual([]);
-      for (const entry of entries) expect(exportedTags).toContain(entry);
-      expect(spec.source).toContain(`from '${TAGS_MODULE}'`);
-    });
-  }
+      it(`${suite}/${spec.name} takes its tags from ${module}, not string literals`, () => {
+        expect(entries.filter(isLiteral)).toEqual([]);
+        for (const entry of entries) expect(tags).toContain(entry);
+        expect(spec.source).toContain(`from '${module}'`);
+      });
+    }
 });

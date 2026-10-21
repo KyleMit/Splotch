@@ -579,15 +579,19 @@ export default tseslint.config(
     // overrides each state why the file stays whole, and TOOLS_GRANDFATHERED_MAX_LINES freezes the
     // tools/ outliers at their size so they can only shrink. The burn-down-oversized-code skill's
     // measure.mjs reads this block as the one default scope, so tools/ shares it rather than taking
-    // its own. Excluded: generated pointer-instruction data and the frozen ideas-exploration
-    // archive.
+    // its own. Excluded: generated pointer-instruction data, the frozen ideas-exploration archive,
+    // and the one-epic person-present session driver.
     files: [
       'web/src/**',
       'web/tests/**',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
-    ignores: ['tools/store-drawings/generated/**', 'tools/asset-gen/ideas-exploration/**'],
+    ignores: [
+      'tools/store-drawings/generated/**',
+      'tools/asset-gen/ideas-exploration/**',
+      'tools/perf/run-person-session.mjs',
+    ],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
     },

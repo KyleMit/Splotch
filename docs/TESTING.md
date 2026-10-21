@@ -16,10 +16,11 @@ that touches a native input, in a path-filtered workflow nothing waits on.
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                   | every push / PR                            |
 | Unit (RN renderer)    | Vitest (happy-dom)  | `npm run test:migration:rsd-selection` | every push / PR (browserless job)          |
 | E2E (web)             | Playwright          | `npm run test:e2e`                     | every push / PR                            |
+| E2E (RN web export)   | Playwright          | `npm run test:e2e:rn`                  | every push / PR (sharded job)              |
 | Smoke (API contract)  | Node function host  | `npm run test:api:smoke`               | every push / PR (browserless job)          |
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL       |
-| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (parallel job)             |
-| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (parallel job)             |
+| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (RN web export)            |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (RN web export)            |
 | Compile (Android)     | Gradle javac        | `npm run android:compile`              | PRs touching native inputs (path-filtered) |
 | Compile (iOS)         | xcodebuild          | `npm run ios:build:release`            | PRs touching native inputs (macOS runner)  |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`                 | **tagged releases only** (API 33 + API 24) |
@@ -40,11 +41,11 @@ inline boot script in `web/src/app.html` also needs its CSP hash checked through
 adding or renaming a Playwright spec, run the repo-script tier too: it scans spec files outside the
 touched directory.
 
-`npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
-`test:tools` + `test:e2e`). It is not a mirror of any one CI job: it adds the Playwright suite and
-omits `test:api:smoke`, and `test:unit` alone runs only the first tier. The native smoke tests are
-intentionally **not** part of `npm test` — they need an emulator/simulator and the native
-toolchains.
+`npm test` runs the unit tiers and both Playwright suites (`test:unit:coverage` + `test:asset-gen` +
+`test:store-drawings` + `test:tools` + `test:migration:rsd-selection` + `test:e2e` + `test:e2e:rn`).
+It is not a mirror of any one CI job: it adds the Playwright suites and omits `test:api:smoke`, and
+`test:unit` alone runs only the first tier. The native smoke tests are intentionally **not** part of
+`npm test` — they need an emulator/simulator and the native toolchains.
 
 Centerline tracing is also intentionally outside `npm test`: it is the repository's first isolated
 Python/uv capability. Its dedicated path-filtered workflow provisions Python 3.11 and uv only when
@@ -657,7 +658,26 @@ Write specs that can't race in the first place:
   show every ~1-in-5 runs; raise `--repeat-each` until you've seen it both fail on the old code and
   hold on the new.
 
+### RN web E2E — `e2e/`
+
+The React Native web export has its own Playwright suite at the repo root, `e2e/`, with its own
+config. `e2e/README.md` is its guide: how a spec is written, its fixtures and tags, and where a
+porting lane puts its helpers. It serves the `npm run build:site` output as the Netlify deploy does,
+with `netlify.toml`'s headers and redirects, the 404 page, and `/api` from the real function on the
+same origin. Chromium runs every spec; Firefox and WebKit run the `@smoke` ones, which are what CI's
+`firefox-smoke` and `webkit-smoke` jobs run. The SvelteKit specs move into it, or are deleted with a
+recorded reason, under ADR-0182.
+
+```bash
+SPLOTCH_E2E_PORT=<port> npm run test:e2e:rn -- --workers=1   # builds the export first
+SPLOTCH_E2E_PREBUILT=1 npm run test:firefox:smoke            # serves the export already built
+```
+
 ### Cross-engine critical-path smoke — `tests/engine-smoke.spec.ts`
+
+CI's Firefox and WebKit jobs now run the RN web suite's `@smoke` specs (above), so this SvelteKit
+subset runs only where those browsers are installed locally, under `npm run test:e2e`. The rest of
+this section describes it until its specs are ported or deleted.
 
 The full suite is Chromium-only. A tiny critical-path subset (boot, draw a stroke, Settings dialog,
 Color Picker dialog) also runs in the `firefox` and `webkit` Playwright projects so every declared
@@ -666,7 +686,7 @@ browser engine has an automated push/PR signal:
 * Each project joins only when its binary is installed, so Chromium-only local and cloud checkouts
   keep working. CI explicitly installs the selected browser and sets `REQUIRE_FIREFOX` or
   `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with
-  `npm run test:firefox:smoke` or `npm run test:webkit:smoke`.
+  `npm run test:e2e -- --project firefox` or `--project webkit`.
 * CI keeps `firefox-smoke` and `webkit-smoke` parallel to the sharded Chromium Tests job. Firefox is
   the cheaper leg because it needs none of WebKit's GStreamer/ffmpeg stack. WebKit adds ~110 system
   packages, and installing them lands on every run; the setup action's apt cache removes network
@@ -881,11 +901,14 @@ public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:
 `browserless` job (`npm run test:browserless` locally), and the Playwright e2e suite runs as a
 matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured slower:
 it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`
-artifact. The app-driver and worker-sweep smokes ride shard 1 only. With `fullyParallel` on,
-`--shard` deals out individual tests (not files) in a deterministic order, balanced by count and
-blind to duration — so the longest shard is bounded by the slowest single test, which lives among
-the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts` (the header comment there
-explains why their cost is intrinsic).
+artifact. The app-driver and worker-sweep smokes ride shard 1 only. The RN web suite (`e2e/`) runs
+differently: the `native-web-build` job uploads the export it built from the deploy's install, and
+the `rn-web-e2e` shards and the Firefox and WebKit smokes download it and serve it with
+`SPLOTCH_E2E_PREBUILT=1`, so CI builds that export once. With `fullyParallel` on, `--shard` deals
+out individual tests (not files) in a deterministic order, balanced by count and blind to duration —
+so the longest shard is bounded by the slowest single test, which lives among the deliberately heavy
+stress tests of `tests/flows-tile-history.spec.ts` (the header comment there explains why their cost
+is intrinsic).
 
 The 2026-08-19 shard-count measurement is preserved in the
 [shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring

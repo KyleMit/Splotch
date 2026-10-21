@@ -373,9 +373,13 @@ describe('workflow hygiene', () => {
   });
 
   describe('Playwright e2e sharding', () => {
-    it('keeps the job total equal to the contiguous shard axis', () => {
+    // The SvelteKit suite's Tests shards and the RN web suite's shards.
+    it.each([
+      { id: 'test', name: 'Tests' },
+      { id: 'rn-web-e2e', name: 'RN web E2E' },
+    ])("keeps $id's job total equal to its contiguous shard axis", ({ id, name }) => {
       const testsWorkflow = workflows.find(({ name }) => name === 'test.yml');
-      const testJob = jobs(testsWorkflow.lines).find(({ id }) => id === 'test');
+      const testJob = jobs(testsWorkflow.lines).find((job) => job.id === id);
       const matrixStart = testJob.lines.findIndex((line) => line === '      matrix:');
       expect(matrixStart).toBeGreaterThanOrEqual(0);
 
@@ -399,7 +403,7 @@ describe('workflow hygiene', () => {
       expect(shardValues).toEqual(
         Array.from({ length: shardValues.length }, (_, index) => index + 1)
       );
-      expect(jobText).toContain('name: Tests (${{ matrix.shard }}/${{ strategy.job-total }})');
+      expect(jobText).toContain(`name: ${name} (\${{ matrix.shard }}/\${{ strategy.job-total }})`);
       expect(jobText).toContain('--shard=${{ matrix.shard }}/${{ strategy.job-total }}');
     });
   });
