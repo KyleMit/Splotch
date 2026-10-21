@@ -17,6 +17,10 @@ const PAPER_GRAIN_TILE_PX = 148;
 
 const styles = StyleSheet.create({
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
+  // The grain scales from its physical top-left corner, and React Native never mirrors a transform
+  // origin. In RTL it swaps `left` to the start edge, so without this the scaled grain hangs off
+  // the right side and leaves the left of the paper bare.
+  physical: { direction: 'ltr' },
 });
 
 // Shipping tiles the grain one CSS pixel per image pixel (app.css --paper-texture). The grain box
@@ -54,7 +58,7 @@ export const PaperTexture = memo(function PaperTexture({
     <View
       testID="paper-texture"
       pointerEvents="none"
-      style={[styles.fill, { backgroundColor: paper }]}
+      style={[styles.fill, styles.physical, { backgroundColor: paper }]}
     >
       <View testID="paper-grain-phase" style={[styles.fill, { left, top }]}>
         <Image testID="paper-grain" source={source} resizeMode="repeat" style={grainBox(density)} />

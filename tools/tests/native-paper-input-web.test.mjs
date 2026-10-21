@@ -86,6 +86,25 @@ it('cancels on capture loss and ignores the departed contact until a fresh point
   expect(input.mock.calls.map(([packet]) => packet.phase)).toEqual(['start', 'cancel']);
 });
 
+it('retains the latest move when the browser coalesced batch ends before it', () => {
+  const paper = host.firstChild;
+  paper.dispatchEvent(pointer('pointerdown', 50, 50, 100));
+  const move = pointer('pointermove', 200, 100, 130);
+  Object.defineProperty(move, 'getCoalescedEvents', {
+    value: () => [pointer('pointermove', 100, 100, 110), pointer('pointermove', 150, 50, 120)],
+  });
+  paper.dispatchEvent(move);
+  expect(readPaperInput(input.mock.calls.at(-1)[0])?.contacts[0].samples).toEqual([
+    { pageX: 100, pageY: 100, timestamp: 110 },
+    { pageX: 150, pageY: 50, timestamp: 120 },
+    { pageX: 200, pageY: 100, timestamp: 130 },
+  ]);
+  paper.dispatchEvent(pointer('pointermove', 240, 150, 140));
+  expect(readPaperInput(input.mock.calls.at(-1)[0])?.contacts[0].samples).toEqual([
+    { pageX: 240, pageY: 150, timestamp: 140 },
+  ]);
+});
+
 it('cancels a held contact on unmount and removes all late event listeners', async () => {
   const paper = host.firstChild;
   paper.dispatchEvent(pointer('pointerdown', 50, 50, 100));
@@ -93,6 +112,48 @@ it('cancels a held contact on unmount and removes all late event listeners', asy
   paper.dispatchEvent(pointer('pointermove', 80, 80, 120));
   window.dispatchEvent(new Event('blur'));
   expect(input.mock.calls.map(([packet]) => packet.phase)).toEqual(['start', 'cancel']);
+});
+
+it('cancels every held pointer on window blur and accepts a fresh contact afterward', () => {
+  const paper = host.firstChild;
+  paper.dispatchEvent(pointer('pointerdown', 50, 50, 100));
+  paper.dispatchEvent(pointer('pointerdown', 90, 90, 110, { pointerType: 'touch', pointerId: 9 }));
+  window.dispatchEvent(new Event('blur'));
+  const canceled = readPaperInput(input.mock.calls.at(-1)[0]);
+  expect(canceled).toMatchObject({ phase: 'cancel', changed: ['7', '9'] });
+  expect(canceled.contacts.map((contact) => contact.identifier)).toEqual(['7', '9']);
+  paper.dispatchEvent(pointer('pointermove', 100, 100, 120));
+  paper.dispatchEvent(pointer('pointerup', 110, 110, 130, { pointerId: 9 }));
+  expect(input).toHaveBeenCalledTimes(3);
+  paper.dispatchEvent(pointer('pointerdown', 150, 150, 140));
+  expect(readPaperInput(input.mock.calls.at(-1)[0])).toMatchObject({
+    phase: 'start',
+    changed: ['7'],
+    contacts: [{ identifier: '7', startedAt: 140 }],
+  });
+  expect(claim).toHaveBeenCalledTimes(3);
+});
+
+it('keeps the other pointer active when one contact is canceled', () => {
+  const paper = host.firstChild;
+  paper.dispatchEvent(pointer('pointerdown', 50, 50, 100));
+  paper.dispatchEvent(pointer('pointerdown', 90, 90, 110, { pointerType: 'touch', pointerId: 9 }));
+  paper.dispatchEvent(pointer('pointercancel', 50, 50, 120));
+  paper.dispatchEvent(pointer('pointermove', 60, 60, 130));
+  paper.dispatchEvent(
+    pointer('pointermove', 100, 100, 140, { pointerType: 'touch', pointerId: 9 })
+  );
+  expect(input.mock.calls.map(([packet]) => packet.phase)).toEqual([
+    'start',
+    'start',
+    'cancel',
+    'move',
+  ]);
+  expect(readPaperInput(input.mock.calls.at(-1)[0])).toMatchObject({
+    phase: 'move',
+    changed: ['9'],
+    contacts: [{ identifier: '9', samples: [{ pageX: 100, pageY: 100, timestamp: 140 }] }],
+  });
 });
 
 async function renderHovering(erasing) {
