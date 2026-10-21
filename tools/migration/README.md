@@ -105,16 +105,36 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
     reaches anything under `src/pageDocument/`. Chunks only a page document loads stay out of the
     precache: the worker answers a page document's path from the network, and offline from the app
     shell, which shows the same page over the paper.
-  * The styleguide, `/design`, is a web-only document beside the route table (`WEB_DOCUMENT_PATHS`).
-    It loads its own entry and renders from its own module under `src/pageDocument/design/`
-    (`DOCUMENT_ENTRIES`), carries one variant per theme because it lays out with media queries
-    (`FLUID_LAYOUTS`), and inlines its own React Strict DOM styles, which `strict.css` leaves out
-    (`postcss.config.mjs`) so no other document carries them.
+  * The styleguide, `/design`, is a web-only document beside the route table (`WEB_DOCUMENT_PATHS`
+    in `src/information/unlinkedDocuments.ts`). It loads its own entry and renders from its own
+    module under `src/pageDocument/design/` (`DOCUMENT_ENTRIES`), carries one variant per theme
+    because it lays out with media queries (`FLUID_LAYOUTS`), and inlines its own React Strict DOM
+    styles, which `strict.css` leaves out (`postcss.config.mjs`) so no other document carries them.
   * `check-native-web-startup.mjs` holds each page document to its own first-paint and page-entry
     budgets (`MAX_NATIVE_WEB_PAGE_BYTES`, each page's first measured build plus 10%), then
     `check-native-web-pages-without-js.mjs` loads it in Chromium with JavaScript off in every layout
     and theme and fails unless it reads in full, with each link that would ask for the grown-up
     check naming its address instead of linking it.
+* `prerender-native-web-admin.mjs` then writes `admin.html`, the admin console at `/admin`
+  (`UNLINKED_DOCUMENT_PATHS` in `src/information/unlinkedDocuments.ts`; ADR-0101: no page links to
+  it):
+  * Its own entry, `experiments/native-architecture/src/pageDocument/admin/adminApp.tsx`, hydrates
+    with React DOM and React Strict DOM's `html.*` alone, so it loads no React Native Web. It signs
+    in through `POST /api/admin/login` and keeps the bearer session in `localStorage` (issue 3007's
+    owner decision), managing codes through `/api/admin/tokens`.
+  * Its markup is rendered in Node from
+    `experiments/native-architecture/src/pageDocument/admin/prerender.tsx`, once per theme. Its CSS
+    is the console's own rules, compiled by the RSD PostCSS plugin over its sources
+    (`experiments/native-architecture/scripts/admin-document-styles.mjs`), which
+    `postcss.config.mjs` leaves out of the export's `strict.css`, so the drawing screen's inline
+    first paint carries none of them.
+  * Its head carries `noindex`; the worker never precaches it or its chunks and leaves `/admin` to
+    the network. The `Cache-Control: no-store` the SvelteKit console sends belongs in `netlify.toml`
+    once it publishes the export.
+  * `check-native-web-admin.mjs` runs last in the post-build hook. It drives the console in Chromium
+    on a Netlify-shaped local host with the real `/api` function under a test admin secret, in both
+    the dev mode (sign-in persisting across a reload, list, add, remove, a 401 and sign-out each
+    forgetting the session) and the deployed mode (same-origin bearer writes pass the CSRF guard).
 
 ## Layout
 

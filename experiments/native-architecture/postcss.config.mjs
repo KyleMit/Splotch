@@ -1,5 +1,6 @@
 import reactStrictPlugin from 'react-strict-dom/postcss-plugin';
-import pageDocumentResolution from './scripts/page-document-resolution.cjs';
+import { ADMIN_DOCUMENT_SOURCES } from './scripts/admin-document-styles.mjs';
+import { DESIGN_DOCUMENT_STYLE_SOURCES } from './scripts/design-document-styles.mjs';
 
 export default {
   plugins: [
@@ -7,8 +8,8 @@ export default {
       cwd: import.meta.dirname,
       include: ['src/**/*.{ts,tsx}'],
       // Android and iOS files theme from runtime values that the static web compile rejects. The
-      // styleguide's styles go only into its own document, never the sheet every document inlines.
-      exclude: ['src/**/*.native.{ts,tsx}', pageDocumentResolution.DESIGN_DOCUMENT_STYLE_SOURCES],
+      // admin console's and the styleguide's rules go into their own documents instead.
+      exclude: ['src/**/*.native.{ts,tsx}', ADMIN_DOCUMENT_SOURCES, DESIGN_DOCUMENT_STYLE_SOURCES],
     }),
   ],
 };

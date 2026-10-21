@@ -350,11 +350,11 @@ Still open, each with a recommendation:
 ### `/design`
 
 The styleguide is a web-only document, `design.html`, outside the app's navigation: its path is in
-`WEB_DOCUMENT_PATHS` beside the route table, not in `APP_PAGE_PATHS`, so `AppPage` never names it,
-the native app has no route to it, and the drawing screen's document treats `/design` as unknown. It
-renders the RN app's own tokens (`rsdDrawing/tokens.css.ts`) and components, with each token's value
-and usage rule read from the source the RN projection is generated from
-(`web/src/lib/design/tokens.ts`, `tokenUsage.ts`).
+`WEB_DOCUMENT_PATHS` (`src/information/unlinkedDocuments.ts`, which only the build reads), not in
+`APP_PAGE_PATHS`, so `AppPage` never names it, the native app has no route to it, and the drawing
+screen's document treats `/design` as unknown. It renders the RN app's own tokens
+(`rsdDrawing/tokens.css.ts`) and components, with each token's value and usage rule read from the
+source the RN projection is generated from (`web/src/lib/design/tokens.ts`, `tokenUsage.ts`).
 
 * **Its own entry**, `src/pageDocument/design/designApp.ts`, rendered in Node from
   `design/prerender.tsx`. The information pages share one page entry; adding the specimens to it

@@ -1,7 +1,7 @@
 import { renderToString } from 'react-dom/server';
 import { Dimensions } from 'react-native';
 import AppRegistry from 'expo/src/launch/AppRegistry.web';
-import type { WebDocument } from '../../information/appPages';
+import type { WebDocument } from '../../information/unlinkedDocuments';
 import { prerenderInputs } from '../../platform/prerenderInputs';
 import { getSheet } from '../../platform/reactNativeWebSheet';
 import { shippingFontFaceRules } from '../../platform/shippingFont.web';

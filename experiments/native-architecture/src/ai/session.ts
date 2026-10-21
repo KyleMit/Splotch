@@ -120,6 +120,24 @@ export class AiSession {
     );
   };
   private writing: Promise<unknown> = Promise.resolve();
+  // Storage refuses further writes after one it could not confirm until it is read again
+  // (WebAiStorageOwner.queue, durableAiStorage's queue). This session notes each storage call that
+  // failed, and its next run rereads storage first, so Try again or a reopened wand starts from what
+  // storage holds. Only the person's own tap starts that run; nothing is resent automatically.
+  private storageUnconfirmed = false;
+  protected storageCall = async <T>(call: () => Promise<T>): Promise<T> => {
+    try {
+      return await call();
+    } catch (error) {
+      this.storageUnconfirmed = true;
+      throw error;
+    }
+  };
+  protected rereadStorage = async () => {
+    this.storageUnconfirmed = true;
+    await this.deps.storage.read();
+    this.storageUnconfirmed = false;
+  };
   // The AI-on span in which an authoritative answer (a grant, a creation's count, a used-up refusal)
   // said no free creations are left. Turning AI off or on starts a new span, after which the grant
   // is read again, as shipping's is.
@@ -136,7 +154,7 @@ export class AiSession {
         try {
           if (this.journals.get(journal.id)?.phase === 'result' && journal.phase !== 'result')
             return;
-          const receipt = await this.deps.storage.write(journal);
+          const receipt = await this.storageCall(() => this.deps.storage.write(journal));
           this.journals.set(journal.id, receipt.journal);
           this.update({ journal: receipt.journal });
         } finally {
@@ -155,7 +173,7 @@ export class AiSession {
     try {
       await this.deps.storage.release(id);
     } catch {
-      await this.deps.storage.read().catch(() => null);
+      await this.rereadStorage().catch(() => null);
     }
   };
   protected releaseClosed = () => {
@@ -166,10 +184,9 @@ export class AiSession {
     const work = this.writing
       .catch(() => {})
       .then(async () => {
-        const receipt = await this.deps.storage.prepare(
-          journal,
-          prepared.originalModel,
-          prepared.bytes
+        if (this.storageUnconfirmed) await this.rereadStorage();
+        const receipt = await this.storageCall(() =>
+          this.deps.storage.prepare(journal, prepared.originalModel, prepared.bytes)
         );
         this.journals.set(journal.id, receipt.journal);
         this.update({ journal: receipt.journal });

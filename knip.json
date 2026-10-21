@@ -58,9 +58,11 @@
         "src/pageDocument/pageApp.ts",
         "src/pageDocument/prerender.tsx",
         "src/pageDocument/design/designApp.ts",
-        "src/pageDocument/design/prerender.tsx"
+        "src/pageDocument/design/prerender.tsx",
+        "src/pageDocument/admin/adminApp.tsx",
+        "src/pageDocument/admin/prerender.tsx"
       ],
-      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"],
+      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.{cjs,mjs}"],
       "ignore": ["src/feedback/report.ts", "src/feedback/deviceReport.ts"]
     }
   }

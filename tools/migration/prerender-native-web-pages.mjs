@@ -19,8 +19,11 @@ import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/brea
 import {
   APP_PAGE_DOCUMENTS,
   APP_PAGE_PATHS,
-  WEB_DOCUMENT_PATHS,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
+import {
+  UNLINKED_DOCUMENT_PATHS,
+  WEB_DOCUMENT_PATHS,
+} from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
 import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import {
@@ -32,10 +35,8 @@ import {
   PAGE_FRAMED_MAX_WIDTH_PX,
   SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
 } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
-import {
-  DESIGN_DOCUMENT_STYLE_SOURCES,
-  PAGE_DOCUMENT_RESOLVER_OPTION,
-} from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
+import { PAGE_DOCUMENT_RESOLVER_OPTION } from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
+import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../../experiments/native-architecture/scripts/design-document-styles.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
   EXPO_SCRIPT,
@@ -75,6 +76,19 @@ export function documentPages(documents = APP_PAGE_DOCUMENTS, webDocuments = WEB
       .filter(([, { document }]) => document === 'page')
       .map(([page]) => ({ page, path: APP_PAGE_PATHS[page], file: `${page}.html` })),
     ...Object.entries(webDocuments).map(([page, path]) => ({ page, path, file: `${page}.html` })),
+  ];
+}
+
+// Every document the build writes beside the drawing screen's: each route-table page with its own,
+// then each unlinked one (UNLINKED_DOCUMENT_PATHS), which prerender-native-web-admin.mjs writes.
+export function writtenPageDocuments() {
+  return [
+    ...documentPages(),
+    ...Object.entries(UNLINKED_DOCUMENT_PATHS).map(([page, path]) => ({
+      page,
+      path,
+      file: `${page}.html`,
+    })),
   ];
 }
 
@@ -295,7 +309,7 @@ export function pageDocumentHtml(
 // tree-shaken, content-hashed names under _expo/static), through the request ADR-0180's render
 // uses. Metro's out-of-band build does not hand a request's serializer options to Expo's
 // serializer, so they are passed to it for this one build.
-async function bundlePageEntry(entryFile) {
+export async function bundlePageEntry(entryFile = PAGE_ENTRY) {
   const { server, bundleRequest } = await expoBundleRequestFactory()(NATIVE_APP_DIR, {
     entryFile,
     platform: 'web',
@@ -367,7 +381,8 @@ export function reachableChunks(scripts, readExportFile) {
 }
 
 // The chunks only a page document can load. The worker answers a page document's path from the
-// network, and offline from the app shell, so none of them is ever fetched from its precache.
+// network, and offline from the app shell (an unlinked document's not at all), so none of them is
+// ever fetched from its precache.
 export function pageOnlyChunks(exportDir, shellFile) {
   const readExportFile = (file) => readFileSync(join(exportDir, file));
   const drawing = reachableChunks(
@@ -375,7 +390,7 @@ export function pageOnlyChunks(exportDir, shellFile) {
     readExportFile
   );
   const pages = reachableChunks(
-    documentPages().flatMap(({ file }) =>
+    writtenPageDocuments().flatMap(({ file }) =>
       existsSync(join(exportDir, file))
         ? startupScriptList(readExportFile(file).toString('utf8'))
         : []
@@ -396,7 +411,7 @@ export function missingExportAssets(sources, exportDir) {
   ].filter((url) => !existsSync(join(exportDir, url)));
 }
 
-function writeChunks(exportDir, chunks) {
+export function writeChunks(exportDir, chunks) {
   for (const { filename, source } of chunks) {
     const path = join(exportDir, filename);
     if (existsSync(path) && readFileSync(path, 'utf8') !== source)
