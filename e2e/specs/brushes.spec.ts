@@ -6,6 +6,7 @@ import {
   openDrawer,
   openSettings,
   undoButton,
+  waitUntilSettled,
 } from '../support/group-b.ts';
 import type { Page } from '@playwright/test';
 
@@ -152,10 +153,10 @@ test.describe('the Brush and Stroke width menus', () => {
     drawingScreen,
   }) => {
     const { page } = drawingScreen;
-    for (const _pick of [1, 2]) {
-      await openBrushMenu(page);
-      await brushMenu(page).getByRole('button', { name: 'Eraser', exact: true }).click();
-    }
+    await openBrushMenu(page);
+    await brushMenu(page).getByRole('button', { name: 'Eraser', exact: true }).click();
+    await openBrushMenu(page);
+    await brushMenu(page).getByRole('button', { name: 'Eraser', exact: true }).click();
 
     await openBrushMenu(page);
     await expect(
@@ -169,6 +170,7 @@ test.describe('the Brush and Stroke width menus', () => {
     const { page } = drawingScreen;
     await page.setViewportSize(PHONE_PORTRAIT_WITH_ROOM);
     await openStrokeWidthMenu(page);
+    await waitUntilSettled(strokeWidthMenu(page));
 
     const settingsButton = await page
       .getByRole('button', { name: 'Settings', exact: true })
@@ -199,6 +201,7 @@ test.describe('the Brush and Stroke width menus', () => {
 
     await page.setViewportSize(PHONE_LANDSCAPE);
     await openStrokeWidthMenu(page);
+    await waitUntilSettled(strokeWidthMenu(page));
 
     const menu = await strokeWidthMenu(page).boundingBox();
     expect(menu?.y ?? -1).toBeGreaterThanOrEqual(0);

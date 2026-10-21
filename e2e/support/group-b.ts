@@ -35,6 +35,10 @@ const RGB_CHANNEL_COUNT = 3;
 // The light paper's mean sits near 240 and the dark paper's near 30; anything under this is dark.
 const DARK_PAPER_LUMINANCE_MAX = 128;
 const REACT_PROPS_KEY = '__reactProps$';
+// One open of the picker gets this long to show its shelf before it is closed and opened again, and
+// the extra books' packs get this long, in all, to land.
+const SHELF_VIEW_TIMEOUT_MS = 2_000;
+const BOOKS_LAND_TIMEOUT_MS = 60_000;
 
 /** Decides whether one pixel's red, green and blue channels read as the ink a spec looks for. */
 export type InkColor = (red: number, green: number, blue: number) => boolean;
@@ -285,6 +289,24 @@ export async function pressWhereItSettles(page: Page, target: Locator): Promise<
   const box = await target.boundingBox();
   if (!box) throw new Error('The control to press is not laid out');
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/**
+ * Opens the coloring picker on its shelf of books. The picker picks its first view as it opens: while
+ * only the starter book is known it opens on that book's pages, and the other books join once their
+ * packs have landed, which a loaded machine takes longer to do. No wait reaches a view the open
+ * did not pick, so the picker is closed and opened again until one open lands on the shelf.
+ */
+export async function openBookShelf(page: Page): Promise<Locator> {
+  const shelf = page.getByRole('dialog', { name: 'Coloring Books' });
+  const farmPages = page.getByRole('dialog', { name: 'Farm' });
+  await openDrawer(page);
+  await expect(async () => {
+    if (await farmPages.isVisible()) await closeDialog(farmPages);
+    await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
+    await expect(shelf).toBeVisible({ timeout: SHELF_VIEW_TIMEOUT_MS });
+  }).toPass({ timeout: BOOKS_LAND_TIMEOUT_MS });
+  return shelf;
 }
 
 /** Opens Settings and answers its dialog. */

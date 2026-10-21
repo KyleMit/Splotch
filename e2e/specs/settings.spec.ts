@@ -1,6 +1,11 @@
 import { expect, test } from '../fixtures.ts';
 import { openDrawingScreen } from '../support/drawing.ts';
-import { closeDialog, goToSettingsSection, openSettings } from '../support/group-b.ts';
+import {
+  closeDialog,
+  goToSettingsSection,
+  openSettings,
+  waitUntilSettled,
+} from '../support/group-b.ts';
 
 test.use({ colorScheme: 'light', viewport: { width: 1280, height: 720 } });
 
@@ -180,6 +185,8 @@ test.describe('Settings on a phone', () => {
     const section = page.getByRole('dialog', { name: 'Appearance' });
     const back = section.getByRole('button', { name: 'Back', exact: true });
     const close = section.getByRole('button', { name: 'Close', exact: true });
+    await waitUntilSettled(back);
+    await waitUntilSettled(close);
     const [backBox, closeBox, titleBox] = [
       await back.boundingBox(),
       await close.boundingBox(),

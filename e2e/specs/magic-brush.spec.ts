@@ -5,6 +5,7 @@ import {
   clearByDragging,
   inkHuesInCentralBand,
   inkInCentralBand,
+  openBookShelf,
   openDrawer,
   RED_INK,
 } from '../support/group-b.ts';
@@ -105,11 +106,7 @@ test.describe('the magic brush', () => {
     await expect.poll(() => inkHuesInCentralBand(page)).toBeGreaterThanOrEqual(MAGIC_MIN_HUES);
     const catInk = await blackInkInCentralBand(page);
 
-    await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
-    await page
-      .getByRole('dialog', { name: 'Coloring Books' })
-      .getByRole('button', { name: 'Farm coloring book' })
-      .click();
+    await (await openBookShelf(page)).getByRole('button', { name: 'Farm coloring book' }).click();
     await page
       .getByRole('dialog', { name: 'Farm' })
       .getByRole('button', { name: 'Cow coloring page' })

@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test';
+import { TAP_ZONE_DURATION_MS } from '../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
 import { expect, test } from '../fixtures.ts';
 import {
   blackInkInCentralBand,
   closeDialog,
   goToSettingsSection,
   openDrawer,
+  openBookShelf,
   openSettings,
   waitUntilSettled,
 } from '../support/group-b.ts';
@@ -20,7 +22,41 @@ const FARM_PAGE_COUNT = 6;
 // second after the first; the observation then idles past the repeat tap's effect.
 const REPEAT_TAP_DELAY_MS = 250;
 const TAP_GUARD_OBSERVATION_MS = 300;
-const BACKDROP_CORNER_INSET_PX = 10;
+// Once the zone has lapsed the same spot answers as any other. The clock is let go and the lapse
+// waited out in real time, which a slower machine only lengthens; a press can still fall in a
+// quieter guard of the dialog's own while it settles, so it is repeated until it answers.
+const LAPSED_TAP_ANSWER_TIMEOUT_MS = 1_000;
+const HELD_CLOCK = '__heldClock';
+
+// The guard measures its dead zone with Date.now. The spec holds that clock still and moves it by
+// hand, so how long a loaded worker takes between two taps cannot decide whether the second one
+// falls inside the zone.
+async function installHeldClock(page: Page) {
+  await page.evaluate((key) => {
+    const realNow = Date.now.bind(Date);
+    let held: number | null = null;
+    Date.now = () => held ?? realNow();
+    Reflect.set(window, key, {
+      hold: () => {
+        held = realNow();
+      },
+      advance: (ms: number) => {
+        held = (held ?? realNow()) + ms;
+      },
+      release: () => {
+        held = null;
+      },
+    });
+  }, HELD_CLOCK);
+}
+
+async function heldClock(page: Page, action: 'hold' | 'advance' | 'release', ms = 0) {
+  await page.evaluate(([key, method, by]) => Reflect.get(window, key)[method](by), [
+    HELD_CLOCK,
+    action,
+    ms,
+  ] as const);
+}
 
 async function openColoringBooks(page: Page) {
   await openDrawer(page);
@@ -52,12 +88,7 @@ test.describe('coloring books', () => {
     drawingScreen,
   }) => {
     const { page } = drawingScreen;
-    await openColoringBooks(page);
-    const farm = page.getByRole('dialog', { name: 'Farm' });
-    await closeDialog(farm);
-
-    await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
-    const books = page.getByRole('dialog', { name: 'Coloring Books' });
+    const books = await openBookShelf(page);
     await expect(books.getByRole('button', { name: 'Farm coloring book' })).toBeVisible();
     await books.getByRole('button', { name: 'Dinosaurs coloring book', exact: true }).click();
 
@@ -79,8 +110,7 @@ test.describe('coloring books', () => {
       .click();
     await expect.poll(() => blackInkInCentralBand(page)).toBeGreaterThan(LINE_ART_MIN_PIXELS);
 
-    await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
-    const books = page.getByRole('dialog', { name: 'Coloring Books' });
+    const books = await openBookShelf(page);
     await books.getByRole('button', { name: 'Clear active coloring page: Cat' }).click();
 
     await expect(books).toBeHidden();
@@ -106,48 +136,59 @@ test.describe('coloring books', () => {
     drawingScreen,
   }) => {
     const { page } = drawingScreen;
+    await installHeldClock(page);
     await openDrawer(page);
     const launcher = page.getByRole('button', { name: 'Coloring books', exact: true });
     const spot = await launcher.boundingBox();
     if (!spot) throw new Error('The Coloring books button is not laid out');
+    const [x, y] = [spot.x + spot.width / 2, spot.y + spot.height / 2];
+
+    await heldClock(page, 'hold');
     await launcher.click();
     const farm = page.getByRole('dialog', { name: 'Farm' });
     await expect(farm).toBeVisible();
-
-    await page.waitForTimeout(REPEAT_TAP_DELAY_MS);
-    await page.mouse.click(spot.x + spot.width / 2, spot.y + spot.height / 2);
+    await heldClock(page, 'advance', REPEAT_TAP_DELAY_MS);
+    await page.mouse.click(x, y);
     await page.waitForTimeout(TAP_GUARD_OBSERVATION_MS);
     await expect(farm).toBeVisible();
 
-    const viewport = page.viewportSize();
-    if (!viewport) throw new Error('The window has no size');
-    await page.mouse.click(viewport.width - BACKDROP_CORNER_INSET_PX, BACKDROP_CORNER_INSET_PX);
-    await expect(farm).toBeHidden();
+    await heldClock(page, 'release');
+    await page.waitForTimeout(TAP_ZONE_DURATION_MS);
+    await expect(async () => {
+      await page.mouse.click(x, y);
+      await expect(farm).toBeHidden({ timeout: LAPSED_TAP_ANSWER_TIMEOUT_MS });
+    }).toPass();
   });
 
   test('a repeat tap on a book cover does not pick the page that lands under it', async ({
     drawingScreen,
   }) => {
     const { page } = drawingScreen;
-    await openColoringBooks(page);
-    await closeDialog(page.getByRole('dialog', { name: 'Farm' }));
-    await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
-    const books = page.getByRole('dialog', { name: 'Coloring Books' });
+    await installHeldClock(page);
+    const books = await openBookShelf(page);
     const cover = books.getByRole('button', { name: 'Farm coloring book', exact: true });
     await waitUntilSettled(cover);
     const spot = await cover.boundingBox();
     if (!spot) throw new Error('The Farm cover is not laid out');
     const [x, y] = [spot.x + spot.width / 2, spot.y + spot.height / 2];
 
+    await heldClock(page, 'hold');
     await page.mouse.click(x, y);
     const farm = page.getByRole('dialog', { name: 'Farm' });
     await expect(farm).toBeVisible();
-    await page.waitForTimeout(REPEAT_TAP_DELAY_MS);
+    await heldClock(page, 'advance', REPEAT_TAP_DELAY_MS);
     await page.mouse.click(x, y);
     await page.waitForTimeout(TAP_GUARD_OBSERVATION_MS);
-
     await expect(farm).toBeVisible();
     await expect(statusSaying(page, 'Cat ready.')).toBeHidden();
+
+    await heldClock(page, 'release');
+    await page.waitForTimeout(TAP_ZONE_DURATION_MS);
+    await expect(async () => {
+      await page.mouse.click(x, y);
+      await expect(farm).toBeHidden({ timeout: LAPSED_TAP_ANSWER_TIMEOUT_MS });
+    }).toPass();
+    await expect(statusSaying(page, 'Cat ready.')).toBeVisible();
   });
 });
 
@@ -250,9 +291,7 @@ for (const { scheme, page: pageArt, cover: coverArt } of THEMED_ART) {
         .toMatch(pageArt);
       await closeDialog(farm);
 
-      await page.getByRole('button', { name: 'Coloring books', exact: true }).click();
-      const farmCover = page
-        .getByRole('dialog', { name: 'Coloring Books' })
+      const farmCover = (await openBookShelf(page))
         .getByRole('button', { name: 'Farm coloring book', exact: true })
         .locator('img');
       await expect
