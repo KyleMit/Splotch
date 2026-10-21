@@ -13,13 +13,17 @@ import {
 } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
 
 // The native drawing loop's three takes: which one a stroke plays, and where in it, without the
-// seek a stroke start must never issue (issue 3003).
+// seek a stroke start must never issue (issue 3003), and each take's first play made before any
+// stroke (issue 3028).
 function nativePlayer() {
   const player = {
     volume: 0,
     loop: false,
     duration: 4,
-    play: vi.fn(),
+    reportsPlaying: true,
+    play: vi.fn(() => {
+      if (player.reportsPlaying) player.listener?.({ isLoaded: true, playing: true, error: null });
+    }),
     pause: vi.fn(),
     remove: vi.fn(),
     release: vi.fn(),
@@ -35,6 +39,14 @@ function nativePlayer() {
   return player;
 }
 beforeEach(() => native.create.mockReset());
+// Priming plays each loaded take once, muted, after the loop resolves; later counts start after it.
+async function afterPriming(players) {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  for (const player of players) {
+    player.play.mockClear();
+    player.pause.mockClear();
+  }
+}
 
 describe('pencil take variety', () => {
   function takes() {
@@ -47,7 +59,9 @@ describe('pencil take variety', () => {
     await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
     for (const player of f.players)
       player.listener({ isLoaded: true, playing: false, error: null });
-    return f.promise;
+    const loop = await f.promise;
+    await afterPriming(f.players);
+    return loop;
   }
   afterEach(() => vi.restoreAllMocks());
 
@@ -162,6 +176,7 @@ describe('pencil take variety', () => {
     f.players[1].listener({ isLoaded: false, playing: false, error: 'decoder error' });
     f.players[2].listener({ isLoaded: false, playing: false, error: 'decoder error' });
     const loop = await f.promise;
+    await afterPriming(f.players);
     const [only] = f.players;
     const land = holdSeeks(only);
     loop.start();
@@ -195,6 +210,7 @@ describe('pencil take variety', () => {
       for (const failed of players.slice(1))
         failed.listener({ isLoaded: false, playing: false, error: 'decoder error' });
       const loop = await promise;
+      await afterPriming(players);
       const [only] = players;
       const land = holdSeeks(only);
       loop.start();
@@ -214,6 +230,7 @@ describe('pencil take variety', () => {
     f.players[1].listener({ isLoaded: false, playing: false, error: 'decoder error' });
     f.players[2].listener({ isLoaded: true, playing: false, error: null });
     const loop = await f.promise;
+    await afterPriming(f.players);
     expect(f.players[1].release).toHaveBeenCalledOnce();
     vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0);
     loop.start();
@@ -240,5 +257,114 @@ describe('pencil take variety', () => {
     vi.spyOn(Math, 'random').mockReturnValueOnce(0.7).mockReturnValueOnce(0.1);
     expect(pickPencilTake(['a', 'b', 'c'])).toBe('c');
     expect(pickPencilStart()).toBe(0.1);
+  });
+});
+
+describe('pencil take priming', () => {
+  async function loadedQuietly(failing = 0) {
+    const players = PENCIL_SOUNDS.map(() => nativePlayer());
+    for (const player of players) player.reportsPlaying = false;
+    const promise = loadDrawingLoop(new NativeAbortController().signal, vi.fn());
+    await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+    players.forEach((player, index) =>
+      player.listener(
+        index >= players.length - failing
+          ? { isLoaded: false, playing: false, error: 'decoder error' }
+          : { isLoaded: true, playing: false, error: null }
+      )
+    );
+    const loop = await promise;
+    await Promise.resolve();
+    return { players, loop };
+  }
+  const reportPlaying = (player) => player.listener({ isLoaded: true, playing: true, error: null });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('plays each take once at volume 0 after its load seek lands, one take at a time', async () => {
+    const { players, loop } = await loadedQuietly();
+    const [first, second, third] = players;
+    expect(first.play).toHaveBeenCalledOnce();
+    expect(first.play.mock.invocationCallOrder[0]).toBeGreaterThan(
+      first.seekTo.mock.invocationCallOrder[0]
+    );
+    expect(first.volume).toBe(0);
+    expect(second.play).not.toHaveBeenCalled();
+    reportPlaying(first);
+    expect(first.pause).toHaveBeenCalled();
+    await vi.waitFor(() => expect(second.play).toHaveBeenCalledOnce());
+    expect(third.play).not.toHaveBeenCalled();
+    reportPlaying(second);
+    await vi.waitFor(() => expect(third.play).toHaveBeenCalledOnce());
+    reportPlaying(third);
+    expect(third.pause).toHaveBeenCalled();
+    for (const player of players) {
+      expect(player.play).toHaveBeenCalledOnce();
+      expect(player.volume).toBe(0);
+    }
+    loop.dispose();
+  });
+  it('sits a priming take out of a stroke', async () => {
+    const { players, loop } = await loadedQuietly();
+    const [first, second] = players;
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0);
+    loop.start();
+    expect(second.play).toHaveBeenCalledOnce();
+    expect(first.play).toHaveBeenCalledOnce();
+    loop.dispose();
+  });
+  it('lets a stroke that had to wait on a priming take keep it sounding', async () => {
+    const { players, loop } = await loadedQuietly(2);
+    const [only] = players;
+    expect(only.play).toHaveBeenCalledOnce();
+    loop.start();
+    expect(only.play).toHaveBeenCalledOnce();
+    const pauses = only.pause.mock.calls.length;
+    reportPlaying(only);
+    expect(only.pause.mock.calls.length).toBe(pauses);
+    expect(only.play).toHaveBeenCalledTimes(2);
+    loop.dispose();
+  });
+  it('releases a prime the native player never reports, so the take can still sound', async () => {
+    vi.useFakeTimers();
+    const { players, loop } = await loadedQuietly();
+    await vi.runAllTimersAsync();
+    for (const player of players) {
+      expect(player.play).toHaveBeenCalledOnce();
+      expect(player.pause).toHaveBeenCalledOnce();
+    }
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0);
+    loop.start();
+    expect(players[0].play).toHaveBeenCalledTimes(2);
+    loop.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('does not prime a take a stroke already played, whose seek may be in flight', async () => {
+    const { players, loop } = await loadedQuietly();
+    const [first, second, third] = players;
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9);
+    loop.start();
+    expect(third.play).toHaveBeenCalledOnce();
+    third.seekTo.mockReturnValueOnce(new Promise(() => {}));
+    loop.stop();
+    reportPlaying(first);
+    await vi.waitFor(() => expect(second.play).toHaveBeenCalledOnce());
+    reportPlaying(second);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(third.play).toHaveBeenCalledOnce();
+    loop.dispose();
+  });
+  it('never touches a take whose prime is pending once the loop is released', async () => {
+    vi.useFakeTimers();
+    const { players, loop } = await loadedQuietly();
+    const [first] = players;
+    loop.dispose();
+    const pauses = first.pause.mock.calls.length;
+    await vi.runAllTimersAsync();
+    expect(first.pause.mock.calls.length).toBe(pauses);
+    for (const player of players.slice(1)) expect(player.play).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
