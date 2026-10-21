@@ -167,7 +167,7 @@ async function press(label) {
 }
 
 describe('radio mode', () => {
-  it('names a radiogroup of checked options with one roving tab stop', async () => {
+  it('names a radiogroup of checked options, each enabled one a native focus and activation stop', async () => {
     await mount({ initial: 'dark' });
     expect(group().getAttribute('aria-label')).toBe('Theme');
     expect(group().getAttribute('role')).toBe('radiogroup');
@@ -181,14 +181,14 @@ describe('radio mode', () => {
       'true',
       'false',
     ]);
-    expect(options().map((button) => native(button).props.focusable)).toEqual([false, true, false]);
+    expect(options().map((button) => native(button).props.focusable)).toEqual([true, true, false]);
     expect(option('System').getAttribute('aria-disabled')).toBe('true');
     expect(native(option('System')).props.disabled).toBe(true);
   });
 
-  it('gives the first enabled option the tab stop while nothing is selected', async () => {
+  it('keeps every enabled option a native stop while nothing is selected', async () => {
     await mount({ initial: null });
-    expect(options().map((button) => native(button).props.focusable)).toEqual([true, false, false]);
+    expect(options().map((button) => native(button).props.focusable)).toEqual([true, true, false]);
     expect(thumb()).toBeNull();
   });
 
