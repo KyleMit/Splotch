@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import releases from '../../web/src/lib/releases.json' with { type: 'json' };
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
 import { expectWired } from '../support/group-a.ts';
 
 const PHONE = { width: 390, height: 844 };
@@ -134,5 +135,44 @@ test.describe('the changelog on a phone', () => {
       heading.boundingBox(),
     ]);
     expect(landed?.y).toBeGreaterThanOrEqual((row?.y ?? Infinity) + (row?.height ?? 0));
+  });
+});
+
+const LEDE = /Every public Splotch release/;
+const SHORT_LANDSCAPE_PHONES = [
+  { width: 956, height: 440 },
+  { width: 812, height: 375 },
+];
+
+test.describe('the changelog on a short screen', () => {
+  test('a short desktop window tucks the introduction behind About this page', async ({ page }) => {
+    await page.setViewportSize({ width: 683, height: 360 });
+    await openDocument(page, '/changelog');
+    await expect(page.getByText(LEDE)).toBeHidden();
+    const about = page.getByRole('button', { name: 'About this page' });
+    await expectWired(about);
+
+    await about.click();
+
+    await expect(page.getByText(LEDE)).toBeVisible();
+  });
+
+  test.describe('touch', () => {
+    test.use({ hasTouch: true });
+
+    for (const viewport of SHORT_LANDSCAPE_PHONES) {
+      test(`opens on the newest release at ${viewport.width}px and gives the introduction back when it can`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(viewport);
+        await openDocument(page, '/changelog');
+        await expect(page.getByText(LEDE)).toBeHidden();
+        await expect(releaseHeading(page, newest.version)).toBeInViewport();
+
+        await page.setViewportSize({ width: viewport.width, height: SHORT_PAGE_HEIGHT_PX + 1 });
+
+        await expect(page.getByText(LEDE)).toBeVisible();
+      });
+    }
   });
 });

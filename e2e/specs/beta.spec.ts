@@ -9,11 +9,13 @@ import {
   TESTFLIGHT_APP_URL,
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/beta/iosBeta.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
 import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
+import { BETA_COPY } from '../../experiments/native-architecture/src/pageDocument/betaCopy.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
-import { ANDROID_UA, IPAD_UA } from '../support/group-a.ts';
+import { ANDROID_UA, expectWired, IPAD_UA } from '../support/group-a.ts';
 
 const ANDROID_STEPS = 'How to join on Android';
 const IOS_STEPS = 'How to join on iPhone or iPad';
@@ -108,7 +110,9 @@ test.describe('the beta sign-up page', () => {
     await expect(address).toBeVisible();
     await expect(address).toHaveAttribute('href', '/feedback');
 
-    await page.getByRole('link', { name: 'Send feedback' }).first().click();
+    const send = page.getByRole('link', { name: 'Send feedback' }).first();
+    await expectWired(send);
+    await send.click();
     await expect(page).toHaveURL('/feedback');
     await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
   });
@@ -154,5 +158,55 @@ test.describe('an Android phone opening the bare address', () => {
     await openDocument(page, '/beta');
     await expect(tab(page, 'Android')).toBeChecked();
     await expect(page.getByRole('link', { name: 'Join the testers group' })).toBeVisible();
+  });
+});
+
+const SHORT_LANDSCAPE_PHONE = { width: 812, height: 375 };
+const SHORT_DESKTOP_WINDOW = { width: 683, height: 360 };
+
+test.describe('on a short screen', () => {
+  test('a short desktop window tucks the introduction behind About this page and keeps the picker', async ({
+    page,
+  }) => {
+    await page.setViewportSize(SHORT_DESKTOP_WINDOW);
+    await openDocument(page, '/beta');
+    await expect(page.getByText(BETA_COPY.lede)).toBeHidden();
+    const about = page.getByRole('button', { name: 'About this page' });
+    await expectWired(about);
+
+    await about.click();
+
+    await expect(page.getByText(BETA_COPY.lede)).toBeVisible();
+    await expect(page.getByRole('radiogroup', { name: BETA_COPY.picker })).toBeVisible();
+  });
+
+  test.describe('touch', () => {
+    test.use({ hasTouch: true });
+
+    for (const [platform, steps, other] of [
+      ['android', ANDROID_STEPS, 'ios'],
+      ['ios', IOS_STEPS, 'android'],
+    ] as const) {
+      test(`opens on the ${platform} steps and keeps the other platform one tap away`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(SHORT_LANDSCAPE_PHONE);
+        await openDocument(page, betaPathFor(platform));
+        await expect(page.getByRole('heading', { name: steps })).toBeInViewport();
+        await expect(page.getByRole('radiogroup', { name: BETA_COPY.picker })).toBeHidden();
+        await expect(page.getByText(BETA_COPY.lede)).toBeHidden();
+        const alternate = page.getByRole('link', { name: BETA_COPY.alternate[platform] });
+        await expect(alternate).toBeVisible();
+        await expectWired(alternate);
+
+        await alternate.click();
+
+        await expect(page).toHaveURL(betaPathFor(other));
+        await page.setViewportSize({ ...SHORT_LANDSCAPE_PHONE, height: SHORT_PAGE_HEIGHT_PX + 1 });
+        await expect(page.getByRole('radiogroup', { name: BETA_COPY.picker })).toBeVisible();
+        await expect(page.getByText(BETA_COPY.lede)).toBeVisible();
+        await expect(page.getByRole('link', { name: BETA_COPY.alternate[other] })).toBeHidden();
+      });
+    }
   });
 });
