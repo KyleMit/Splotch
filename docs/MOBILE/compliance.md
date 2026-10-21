@@ -454,9 +454,9 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 `web/src/lib/state/parentalGate.mash.test.ts`, `web/src/lib/state/parentalGate.lockout.test.ts`,
 `web/tests/flows-parental-gate.spec.ts`, `web/tests/flows-parent-center.spec.ts`,
 `web/tests/flows-parental-gate-lockout.spec.ts`, `web/tests/flows-parent-center-warning.spec.ts`,
-`web/tests/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`,
-`tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
-`web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.
+`e2e/specs/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`,
+`tools/mobile/tests/static-bundle.test.mjs`, `e2e/specs/admin.spec.ts`,
+`web/tests/feedback.spec.ts`, `e2e/specs/beta.spec.ts`.
 
 **Machine-checked consistency.** `tools/mobile/privacy-permission-inventory.json` declares the
 permissions, data categories, ephemeral-by-default / 30-day-on-confirmed-report boundary, and
