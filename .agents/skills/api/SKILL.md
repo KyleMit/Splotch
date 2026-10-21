@@ -22,8 +22,8 @@ development** (how `vite dev` and `vite preview` host the endpoint functions sam
 
 Before changing an endpoint:
 
-* Each endpoint is a plain Netlify Function (`netlify/functions/api-*.ts`) serving a module in
-  `web/src/lib/server/api/`; nothing on the wire may change without a deliberate contract change,
+* Every endpoint is served by one plain Netlify Function (`netlify/functions/api.ts`) from a module
+  in `web/src/lib/server/api/`; nothing on the wire may change without a deliberate contract change,
   and `tools/api-smoke/tests/wire-diff.test.mjs` holds the wrapper to the recorded answers.
 * These endpoints are **not bundled for native**. The apps call the hosted API through
   `__NATIVE_API_BASE__`, so a contract change ships to installed apps that were built against the

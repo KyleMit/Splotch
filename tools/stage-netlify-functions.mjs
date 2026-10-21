@@ -32,7 +32,7 @@ rmSync(to, { recursive: true, force: true });
 cpSync(from, to, { recursive: true });
 console.log(`[stage-netlify-functions] ${from} -> ${to}`);
 
-// Every /api endpoint is a function of its own in netlify/functions, at its config.path, and
+// Every /api endpoint is served by netlify/functions/api.ts at a path in its config.path, and
 // SvelteKit's catch-all `/*` matches the same paths. Netlify's docs order neither of two matching
 // functions ahead of the other, so the SvelteKit function is told to leave those paths alone:
 // whatever the platform's precedence, exactly one function answers each.

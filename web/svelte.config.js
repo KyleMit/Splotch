@@ -6,7 +6,7 @@ import { CSRF_TRUSTED_ORIGINS, nativeCspDirectives, WEB_CSP_DIRECTIVES } from '.
 import { standalonePageEntries } from './standalonePageEntries.ts';
 
 // The web app ships to Netlify (SSR for the /admin token console and /feedback;
-// the /api/* endpoints are separate functions in netlify/functions). The native
+// the /api/* endpoints are a separate function, netlify/functions/api.ts). The native
 // apps bundle a fully static export instead, so when CAPACITOR=true we swap in
 // adapter-static. The server-only routes (admin, dev) aren't reachable inside the
 // bundle and are skipped by `strict: false`; the native AI button talks to the
@@ -40,7 +40,7 @@ const config = {
     // element's own border-radius transition animates the square->round "snap"
     // (FOUC). Infinity inlines every CSS file regardless of size.
     inlineStyleThreshold: Infinity,
-    // The /api/* endpoints are Netlify Functions that repeat this guard
+    // The /api/* endpoints are a Netlify Function that repeats this guard
     // (src/lib/server/csrf.ts); here it covers SvelteKit's own form actions,
     // /feedback and /admin. securityPolicy.ts says why each origin is trusted.
     csrf: { trustedOrigins: [...CSRF_TRUSTED_ORIGINS] },

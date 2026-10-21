@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Self-contained smoke test for the /api/* HTTP contract (see the `api` skill).
 // Boots a throwaway `vite dev` with test env, whose function host
-// (web/netlifyFunctionsHost.ts) serves the /api Netlify Functions, exercises the CORS/preflight
+// (web/netlifyFunctionsHost.ts) serves the /api Netlify Function, exercises the CORS/preflight
 // contract, the admin auth flow, the public oracles, the csp-report receiver,
 // and generate-image's auth gate against the documented shapes, then tears the
 // server down. No model key or Netlify Blobs needed — every case here is

@@ -56,11 +56,11 @@ Where things live (full file-by-file map: `architecture` skill):
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;
   excluded from the native bundle. Server-only packages (`sharp`, `openai`, `@netlify/blobs`) are
   imported only here, in `+server.ts`/`*.server.ts` files, and in tests (lint-enforced).
-  `lib/server/api/` — the `/api/*` endpoint modules, each served by a `netlify/functions/api-*.ts`
-  function through `api/apiFunction.ts` (see `api` skill). Everything they import uses relative
-  paths, never a SvelteKit alias, so Netlify can bundle the functions. `lib/server/ai/` — the
-  provider-agnostic AI seam (ADR-0047): routes import `aiProvider` from `ai/provider.ts`; the
-  `openai` SDK is only touched inside that directory.
+  `lib/server/api/` — the `/api/*` endpoint modules, all served by the one
+  `netlify/functions/api.ts` function through `api/apiFunction.ts` (see `api` skill). Everything
+  they import uses relative paths, never a SvelteKit alias, so Netlify can bundle the functions.
+  `lib/server/ai/` — the provider-agnostic AI seam (ADR-0047): routes import `aiProvider` from
+  `ai/provider.ts`; the `openai` SDK is only touched inside that directory.
 * `lib/storage.ts` — dual-layer persistence (localStorage + Capacitor Preferences mirror on native,
   ADR-0005). `lib/secureStorage.ts` — client-held secrets. `lib/platform/index.ts` — native
   detection without importing `@capacitor/core` (ADR-0013). `lib/nativePlugin.ts` —

@@ -478,7 +478,7 @@ export default tseslint.config(
   },
   {
     // Adds the apiHandler guard to the /api endpoint modules (each served by a
-    // netlify/functions/api-*.ts function). Recomposes the whole web/src set, which this block's
+    // netlify/functions/api.ts function). Recomposes the whole web/src set, which this block's
     // entry would otherwise replace for these files.
     files: ['web/src/lib/server/api/*.ts'],
     ignores: [API_HANDLER_EXEMPT_ROUTE, '**/*.test.ts'],

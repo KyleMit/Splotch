@@ -30,15 +30,17 @@ paths:
   with its `readJsonBody(request)` (uniform `400` on malformed input). Form and multipart bodies,
   form actions included, go through its `readFormBody(request, maxBytes)`; never call
   `request.formData()`, which buffers whatever the client sends. Don't hand-roll either.
-* Every `/api/*` endpoint is a module in `src/lib/server/api/` served by a
-  `netlify/functions/api-*.ts` function whose default export is `apiFunction({ ... })` and whose
-  `config` is the literal `{ path: '/api/...' }` (the staging and the local host read it from
-  source). The endpoint closure imports nothing through a SvelteKit alias: relative paths,
-  `privateEnv.ts` for secrets and `runtimeMode.ts` for `dev` (`npm run check:netlify` fails on an
-  alias). `apiFunction` stamps `Cache-Control: no-store` unless the endpoint sets its own; don't
-  hand-set it, and document any endpoint that opts out in `docs/API.md`. A change to anything the
-  wrapper answers must keep `tools/api-smoke/tests/wire-diff.test.mjs` green, since installed native
-  builds call the same wire.
+* Every `/api/*` endpoint is a module in `src/lib/server/api/`, served by the one
+  `netlify/functions/api.ts` function: a new endpoint is a key in its `apiFunction({ ... })` table
+  and a literal entry in its `config.path` list (the staging and the local host read the list from
+  source). Keep it one function: the endpoints share rate-limit buckets by key (ADR-0014's shared
+  guess budget), and a second function would be a second instance with its own. The endpoint closure
+  imports nothing through a SvelteKit alias: relative paths, `privateEnv.ts` for secrets and
+  `runtimeMode.ts` for `dev` (`npm run check:netlify` fails on an alias). `apiFunction` stamps
+  `Cache-Control: no-store` unless the endpoint sets its own; don't hand-set it, and document any
+  endpoint that opts out in `docs/API.md`. A change to anything the wrapper answers must keep
+  `tools/api-smoke/tests/wire-diff.test.mjs` green, since installed native builds call the same
+  wire.
 * A failure on the generation-job or free-grant path is logged through `loggableError` in
   `src/lib/server/logRedaction.ts`, never as `err.message` or the raw error: a Blobs error can quote
   the key it failed on, and job ids and installation ids are both blob keys and capabilities.

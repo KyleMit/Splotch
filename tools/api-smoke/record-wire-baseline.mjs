@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Records what SvelteKit's adapter-netlify function answers to the wire-diff corpus
-// (lib/wire-corpus.mjs), the baseline the plain Netlify Functions are held to by
+// (lib/wire-corpus.mjs), the baseline the plain /api Netlify Function is held to by
 // tests/wire-diff.test.mjs. Run it against a production `npm run build`:
 //
 //   node tools/api-smoke/record-wire-baseline.mjs <path to sveltekit-render.mjs> [out.json]

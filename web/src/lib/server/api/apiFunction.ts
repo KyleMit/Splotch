@@ -7,14 +7,21 @@ import { dev } from '../runtimeMode';
 import { API_RESPONSE_HEADERS } from '../securityHeaders';
 import type { ApiEvent, ApiHandler } from './apiEvent';
 
-// An /api endpoint as a plain Netlify Function. Each endpoint used to be a
-// SvelteKit route answered by adapter-netlify's catch-all function, and installed
-// native builds keep calling it, so this answers every request as that function
-// did: SvelteKit's CSRF guard and trailing-slash redirect, hooks.server.ts's CORS
-// preflight and headers, its no-store default, the API security headers, the 405
-// for a method the endpoint lacks, and handleError's log line. The order is
-// SvelteKit's; tools/api-smoke/tests/wire-diff.test.mjs holds every answer to the
-// one SvelteKit gave.
+// The /api endpoints as one plain Netlify Function (netlify/functions/api.ts).
+// Each endpoint used to be a SvelteKit route answered by adapter-netlify's
+// catch-all function, and installed native builds keep calling them, so this
+// answers every request as that function did: SvelteKit's CSRF guard and
+// trailing-slash redirect, hooks.server.ts's CORS preflight and headers, its
+// no-store default, the API security headers, the 405 for a method the endpoint
+// lacks, and handleError's log line. The order is SvelteKit's;
+// tools/api-smoke/tests/wire-diff.test.mjs holds every answer to the one SvelteKit
+// gave.
+//
+// One function rather than one per endpoint, because the endpoints share
+// in-memory rate-limit buckets by key (rateLimitKeys.ts): verify-access-code,
+// generate-image, generation-attempt and report-image spend one per-IP
+// access-code guess budget (ADR-0014). A Netlify function instance holds its own
+// module state, so per-endpoint functions would give each its own budget.
 
 /** The method handlers an endpoint module exports, as a SvelteKit +server.ts did. */
 export type ApiEndpoint = Partial<Record<'GET' | 'POST' | 'DELETE', ApiHandler>>;
@@ -98,14 +105,23 @@ function stampApiHeaders(response: Response): Response {
   return response;
 }
 
-/** The Netlify Function that serves `endpoint` at its /api path. */
+// Netlify matches a config.path with or without a trailing slash.
+function routeOf(pathname: string): string {
+  return pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+}
+
+/** The Netlify Function that serves each endpoint at its /api path. */
 export function apiFunction(
-  endpoint: ApiEndpoint
+  endpoints: Readonly<Partial<Record<string, ApiEndpoint>>>
 ): (request: Request, context: NetlifyContext) => Promise<Response> {
   return async (request, context) => {
     const url = new URL(request.url);
     // SvelteKit skips its guard under vite dev, and so does the dev host.
     if (!dev && isCrossSiteFormSubmission(request, url)) return crossSiteRefusal(request);
+
+    // config.path admits only these paths; anything else is Netlify's to 404.
+    const endpoint = endpoints[routeOf(url.pathname)];
+    if (!endpoint) return new Response('Not Found', { status: 404 });
 
     const redirect = trailingSlashRedirect(url);
     if (redirect) return redirect;

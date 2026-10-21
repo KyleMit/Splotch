@@ -1,21 +1,23 @@
 # Splotch HTTP API
 
-The hosted site (Netlify, `https://splotch.art`) serves a small JSON API under `/api/*`, one plain
-Netlify Function per endpoint: `netlify/functions/api-*.ts`, each at its `config.path`, calling its
-endpoint module in `web/src/lib/server/api/`. On the web it's called same-origin; the native apps (a
-static export with no server) call the hosted endpoints cross-origin via `apiUrl()`
+The hosted site (Netlify, `https://splotch.art`) serves a small JSON API under `/api/*`, all from
+one plain Netlify Function, `netlify/functions/api.ts`, whose `config.path` lists every endpoint
+path and which calls each endpoint's module in `web/src/lib/server/api/`. It is one function so the
+endpoints share one instance's in-memory rate-limit buckets, as they did inside SvelteKit's single
+function: `verify-access-code`, `generate-image`, `generation-attempt` and `report-image` spend one
+per-IP failed-guess budget (see Rate limiting). On the web it's called same-origin; the native apps
+(a static export with no server) call the hosted endpoints cross-origin via `apiUrl()`
 (`web/src/lib/api.ts`, base injected at build time as `__NATIVE_API_BASE__`).
 
-**One wrapper:** every endpoint function is `apiFunction(...)`
-(`web/src/lib/server/api/apiFunction.ts`). The endpoints were SvelteKit routes until issue 3007, and
-installed native builds keep calling them, so the wrapper answers as SvelteKit and `hooks.server.ts`
-did, in their order: SvelteKit's CSRF guard (a form content type posted from an origin other than
-the site's own, `https://localhost` or `capacitor://localhost` gets a bare `403` before any handler
-runs; `web/src/lib/server/csrf.ts`), the `308` from a trailing slash to the bare path, the CORS
-preflight, a `405` with `Allow` for a method the endpoint lacks, and on every other answer the CORS
-set, the `no-store` default and `nosniff`. `tools/api-smoke/tests/wire-diff.test.mjs` holds every
-function to the answers SvelteKit gave a recorded request corpus
-(`tools/api-smoke/lib/wire-corpus.mjs`), status, headers and body.
+**One wrapper:** the function is `apiFunction(...)` (`web/src/lib/server/api/apiFunction.ts`). The
+endpoints were SvelteKit routes until issue 3007, and installed native builds keep calling them, so
+the wrapper answers as SvelteKit and `hooks.server.ts` did, in their order: SvelteKit's CSRF guard
+(a form content type posted from an origin other than the site's own, `https://localhost` or
+`capacitor://localhost` gets a bare `403` before any handler runs; `web/src/lib/server/csrf.ts`),
+the `308` from a trailing slash to the bare path, the CORS preflight, a `405` with `Allow` for a
+method the endpoint lacks, and on every other answer the CORS set, the `no-store` default and
+`nosniff`. `tools/api-smoke/tests/wire-diff.test.mjs` holds every function to the answers SvelteKit
+gave a recorded request corpus (`tools/api-smoke/lib/wire-corpus.mjs`), status, headers and body.
 
 **CORS:** `apiFunction` answers preflights and adds `Access-Control-Allow-Origin: *` to every
 `/api/*` response (the set is `API_CORS_HEADERS` in `web/src/lib/server/apiCors.ts`, which
@@ -75,9 +77,9 @@ the endpoint answers. No route opts out today. Several responses carry a credent
 list with its invite URLs, a report token) or one installation's state (its remaining free
 allowance), and none benefits from a cache, so the rule is a default a new route inherits rather
 than a header each route has to remember. The `OPTIONS` preflight returns before the hook and is
-cached through `Access-Control-Max-Age` instead. Every `/api/*` endpoint is a function whose wrapper
-applies it; Netlify's `netlify.toml` header rules reach only static files. The deploy staging
-(`tools/stage-netlify-functions.mjs`) adds every function's path to the SvelteKit catch-all
+cached through `Access-Control-Max-Age` instead. Every `/api/*` endpoint is served by that function,
+whose wrapper applies it; Netlify's `netlify.toml` header rules reach only static files. The deploy
+staging (`tools/stage-netlify-functions.mjs`) adds every `/api` path to the SvelteKit catch-all
 function's `excludedPath`, because Netlify's documentation orders neither of two functions that
 match one path ahead of the other.
 
@@ -813,13 +815,11 @@ persistence contract.
 
 ## Local development
 
-* `vite dev` and `vite preview` serve the endpoint functions same-origin ahead of SvelteKit
+* `vite dev` and `vite preview` serve the `/api` function same-origin ahead of SvelteKit
   (`web/netlifyFunctionsHost.ts`, which also loads `web/.env` under the shell's environment, as
   Netlify hands a function the site's environment) — no CORS in play. `netlify dev` proxies `/api`
-  to that same host. One process hosts every function locally, so the in-memory rate-limit buckets
-  two endpoints share by key are shared locally; on Netlify each function has its own instance and
-  buckets. Token mutations without Netlify Blobs credentials fall back to an in-memory list (seeded
-  from `ALLOWED_TOKENS_LIST`) that resets on restart.
+  to that same host. Token mutations without Netlify Blobs credentials fall back to an in-memory
+  list (seeded from `ALLOWED_TOKENS_LIST`) that resets on restart.
 * Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
   unset, every login fails (there is nothing to authenticate against).
 * E2E coverage lives in `tests/admin.spec.ts`; the Playwright web server starts with

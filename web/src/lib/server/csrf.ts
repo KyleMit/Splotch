@@ -1,7 +1,7 @@
 import { CSRF_TRUSTED_ORIGINS } from '../../../securityPolicy.ts';
 
 // SvelteKit's CSRF guard, which every /api route answered behind before the
-// endpoints became plain Netlify Functions; svelte.config.js still configures
+// endpoints became a plain Netlify Function; svelte.config.js still configures
 // SvelteKit's own for the pages it serves, from the same trusted origins.
 
 // Content types an HTML form can send without a preflight, plus SvelteKit's own

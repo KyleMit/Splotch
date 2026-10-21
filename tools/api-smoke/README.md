@@ -40,14 +40,14 @@ cannot make the smoke test reach a real service accidentally.
 
 ## Wire-diff inputs and outputs
 
-The `/api` endpoints moved from SvelteKit routes to plain Netlify Functions (issue 3007) with
+The `/api` endpoints moved from SvelteKit routes to a plain Netlify Function (issue 3007) with
 nothing allowed to change on the wire. `lib/wire-corpus.mjs` is a recorded request corpus — every
 endpoint's documented shapes, the legacy multipart `generate-image` body (ADR-0064), and the
 cross-site form posts SvelteKit's CSRF guard refuses — driven in process through a V2 function's
 `(Request, Context)` signature, with every case answered before a model call, a GitHub issue or a
 Blobs store. `record-wire-baseline.mjs <sveltekit-render.mjs>` drove it through the last
 adapter-netlify build that still served `/api` and wrote `fixtures/wire-baseline.json`;
-`tests/wire-diff.test.mjs` (in `npm run test:tools`) holds every function in `netlify/functions` to
+`tests/wire-diff.test.mjs` (in `npm run test:tools`) holds the function in `netlify/functions` to
 those answers, status, headers and body, and checks each `/api` path is claimed exactly once.
 
 ## Hosted deploy inputs and outputs
@@ -104,7 +104,7 @@ write persistence cannot be validated without a write and read-back.
 ## Maintenance
 
 The API contract is documented in `docs/API.md` and implemented in `web/src/lib/server/api/` (one
-endpoint module each, served by `netlify/functions/api-*.ts`). When an endpoint or response shape
+endpoint module each, all served by `netlify/functions/api.ts`). When an endpoint or response shape
 changes, update the reference, extend the local smoke assertions, and keep the owned admin client
 request-only. Changes to deployed persistence semantics must update the hosted deploy workflow and
 ADR-0025 expectations together.

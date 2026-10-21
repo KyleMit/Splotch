@@ -22,7 +22,7 @@ function applyHeaders(response: Response, headers: Readonly<Record<string, strin
   }
 }
 
-// The /api/* endpoints are Netlify Functions (netlify/functions/api-*.ts), whose
+// The /api/* endpoints are a Netlify Function (netlify/functions/api.ts), whose
 // apiFunction wrapper answers the same way. What still reaches SvelteKit under
 // /api/ is a path no function claims, and its 404 keeps the same headers.
 const handleCors: Handle = async ({ event, resolve }) => {

@@ -1564,5 +1564,469 @@
       ["x-content-type-options", "nosniff"]
     ],
     "body": "DELETE method not allowed"
+  },
+  "shared guess budget, wrong code 1 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 2 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 3 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 4 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 5 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 6 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 7 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 8 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 9 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong code 10 from 198.51.100.10": {
+    "status": 200,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "59"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"That access code was not recognized.\"}"
+  },
+  "shared guess budget, wrong token 1 from 198.51.100.10": {
+    "status": 429,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "58"],
+      ["content-type", "application/json"],
+      ["retry-after", "60"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Too many attempts. Please wait 60s.\"}"
+  },
+  "shared guess budget, wrong token 1 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 2 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 3 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 4 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 5 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 6 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 7 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 8 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 9 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong token 10 from 198.51.100.20": {
+    "status": 403,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "43"],
+      ["content-type", "application/json"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Invalid access token\"}"
+  },
+  "shared guess budget, wrong code 1 from 198.51.100.20": {
+    "status": 429,
+    "headers": [
+      [
+        "access-control-allow-headers",
+        "Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest, X-AI-Checked-Terminal"
+      ],
+      ["access-control-allow-methods", "GET, POST, DELETE, OPTIONS"],
+      ["access-control-allow-origin", "*"],
+      [
+        "access-control-expose-headers",
+        "X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt"
+      ],
+      ["access-control-max-age", "86400"],
+      ["cache-control", "no-store"],
+      ["content-length", "58"],
+      ["content-type", "application/json"],
+      ["retry-after", "60"],
+      ["x-content-type-options", "nosniff"]
+    ],
+    "body": "{\"ok\":false,\"error\":\"Too many attempts. Please wait 60s.\"}"
   }
 }

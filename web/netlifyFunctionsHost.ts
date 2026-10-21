@@ -4,15 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { createServer, loadEnv, type Connect, type Plugin, type ViteDevServer } from 'vite';
 import { netlifyFunctionRoutes } from '../tools/lib/netlify-function-routes.mjs';
 
-// Serves the /api Netlify Functions (netlify/functions/api-*.ts) on the Vite dev
+// Serves the /api Netlify Function (netlify/functions/api.ts) on the Vite dev
 // and preview servers' own origin, ahead of SvelteKit, the way Netlify routes a
 // function's config.path ahead of the SvelteKit function in a deploy. That keeps
 // `npm run dev`, the API smoke (which boots vite dev) and the Playwright suite
 // (which boots vite preview) calling /api same-origin, with no Netlify CLI.
-//
-// One process hosts every function here, so the in-memory rate-limit buckets the
-// endpoints share by key are shared across functions too. On Netlify each
-// function is its own instance with its own buckets.
 
 const FUNCTIONS_DIR = fileURLToPath(new URL('../netlify/functions', import.meta.url));
 const RUNTIME_MODE_MODULE = fileURLToPath(
