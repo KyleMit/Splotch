@@ -149,6 +149,11 @@ export async function regionOf(element: Locator): Promise<ScreenRegion> {
   return box;
 }
 
+// Seven books of a few megabytes each are fetched and stored one after another; a hosted runner
+// stores about one every four seconds, so the whole set takes the better part of half a minute.
+export const ALL_BOOKS_STORED_TIMEOUT_MS = 60_000;
+export const ALL_BOOKS_STORED_TEST_TIMEOUT_MS = 90_000;
+
 export type BrushName = 'Pen' | 'Crayon' | 'Magic brush' | 'Eraser';
 
 /** Opens the tool drawer when it is folded; the drawer's own buttons answer once it is open. */

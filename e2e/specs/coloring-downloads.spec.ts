@@ -1,7 +1,12 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures.ts';
 import { waitForDrawingScreen } from '../support/app.ts';
-import { openDrawer, openSettingsSection } from '../support/group-a.ts';
+import {
+  ALL_BOOKS_STORED_TEST_TIMEOUT_MS,
+  ALL_BOOKS_STORED_TIMEOUT_MS,
+  openDrawer,
+  openSettingsSection,
+} from '../support/group-a.ts';
 
 // Every file of a book that is not the starter, which the export carries inside the app.
 const COLORING_ROOT = '/coloring/';
@@ -96,6 +101,7 @@ test.describe('the coloring books a visit downloads', () => {
   });
 
   test('are all stored once a settled-in child has waited for them', async ({ drawingScreen }) => {
+    test.setTimeout(ALL_BOOKS_STORED_TEST_TIMEOUT_MS);
     const { page, paper } = drawingScreen;
     await drawingScreen.pickColor('Black');
     await drawStrokes(page, paper, 0, STROKES_THAT_SETTLE_IN);
@@ -103,7 +109,7 @@ test.describe('the coloring books a visit downloads', () => {
     const { summary } = await readDownloadedBooks(page);
 
     await expect(summary).toHaveText(/^(\d+) of \1 extra books/, {
-      timeout: DOWNLOAD_START_TIMEOUT_MS,
+      timeout: ALL_BOOKS_STORED_TIMEOUT_MS,
     });
   });
 

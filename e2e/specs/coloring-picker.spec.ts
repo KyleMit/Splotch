@@ -1,10 +1,14 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../fixtures.ts';
-import { openDrawer, openSettingsSection } from '../support/group-a.ts';
+import {
+  ALL_BOOKS_STORED_TEST_TIMEOUT_MS,
+  ALL_BOOKS_STORED_TIMEOUT_MS,
+  openDrawer,
+  openSettingsSection,
+} from '../support/group-a.ts';
 
 const STROKES_THAT_SETTLE_IN = 3;
 const STROKE_ROW_SPACING_PX = 60;
-const ALL_BOOKS_STORED_TIMEOUT_MS = 30_000;
 const COLORING_FILES = '**/coloring/**';
 
 function picker(page: Page): Locator {
@@ -71,6 +75,7 @@ test.describe('the coloring picker', () => {
   test('goes back to the starter book alone when the downloaded pictures are removed', async ({
     drawingScreen,
   }) => {
+    test.setTimeout(ALL_BOOKS_STORED_TEST_TIMEOUT_MS);
     const { page, paper } = drawingScreen;
     await settleIn(page, paper);
     const { section } = await waitForAllBooks(page);
@@ -95,6 +100,7 @@ test.describe('the coloring picker', () => {
   test('is switched off and on from Settings without losing the downloaded books, and starts without a page', async ({
     drawingScreen,
   }) => {
+    test.setTimeout(ALL_BOOKS_STORED_TEST_TIMEOUT_MS);
     const { page, paper } = drawingScreen;
     await settleIn(page, paper);
     const { section, summary } = await waitForAllBooks(page);
