@@ -10,7 +10,7 @@ import { TextZoomRevision } from '../platform/textZoomRevision';
 import { RsdIcon } from './RsdIcon';
 import { WholeWordText } from './WholeWordText';
 import { arrowDelta, nextEnabledIndex, rovingTabIndex } from './rovingRadio';
-import { brandColors, colors, dimensions, fonts } from './tokens.css';
+import { brandColors, colors, dimensions, fonts, shadows } from './tokens.css';
 import { SegmentThumb } from './segmentThumb';
 import { EASE_GLIDE, THUMB_TRAVEL_MS, type Cell } from './segmentThumbFace';
 
@@ -253,6 +253,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
               styles.columnOption,
             variant === 'segment' && tight && !stacked && styles.tightOption,
             active && (marks ? styles.markActive : ACTIVE_OPTION[variant]),
+            index === thumbIndex && !thumbCell && styles.unplacedThumb,
             option.disabled && styles.disabled,
           ]}
         >
@@ -450,6 +451,9 @@ const styles = css.create({
     whiteSpace: 'nowrap',
   },
   segmentActive: { color: { default: brandColors.onBrand, ':hover': brandColors.onBrand } },
+  // The thumb waits for its cell's measured frame, which a prerendered page without a script never
+  // gets, so until then the selected option paints the thumb's face itself.
+  unplacedThumb: { backgroundColor: colors.brandSolid, boxShadow: shadows.shadowControl },
   chipOption: {
     gap: CHIP_GAP_PX,
     paddingBlock: CHIP_PADDING_BLOCK_PX,
