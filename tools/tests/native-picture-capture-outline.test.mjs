@@ -18,7 +18,10 @@ vi.mock('react-native', () => ({
   StyleSheet: { create: (styles) => styles },
   View: ({ children }) => createElement('div', null, children),
 }));
-vi.mock('react-native-svg', () => ({ Image: () => null, Rect: () => null }));
+vi.mock('react-native-svg', () => ({
+  Image: ({ onLoad }) => createElement('button', { 'data-ink-image': '', onClick: onLoad }),
+  Rect: () => null,
+}));
 vi.mock('../../experiments/native-architecture/src/drawing/CaptureSvg.tsx', () => ({
   CaptureSvg: ({ children }) => createElement('div', null, children),
 }));
@@ -31,9 +34,6 @@ vi.mock('../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx',
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/drawing/DecodedPng.tsx', () => ({
-  DecodedPng: ({ onLoad }) => createElement('button', { 'data-decoded': '', onClick: onLoad }),
-}));
 vi.mock('../../experiments/native-architecture/src/drawing/svgCapture.ts', () => ({
   PNG_TIMEOUT_MS: 10_000,
   createSvgCapture: () => ({
@@ -91,7 +91,7 @@ async function mountPictureCapture() {
 it('captures the picture only after the page line art has loaded', async () => {
   const request = await mountPictureCapture();
   expect(state.captures).toEqual(['ink']);
-  await act(async () => host.querySelector('[data-decoded]').click());
+  await act(async () => host.querySelector('[data-ink-image]').click());
   expect(state.captures).toEqual(['ink']);
   expect(request.complete).not.toHaveBeenCalled();
   await act(async () => {

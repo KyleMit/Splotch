@@ -32,7 +32,7 @@ const state = vi.hoisted(() => ({
   nextFrame: 0,
 }));
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
-  composePicture: async (pixels) => pixels,
+  composePicture: async (layers) => layers.join('+'),
 }));
 vi.mock('react-native', async () => {
   const { nativeCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
@@ -133,7 +133,7 @@ it.each([
   ['capturePng', 1024, 768],
   ['exportPng', 2048, 1536],
 ])(
-  'loads cached Android checkpoints and flattened %s output through their own decoded grids',
+  'loads cached Android checkpoints through their decoded grids and composes the flattened %s ink',
   async (kind, width, height) => {
     state.platform.OS = 'android';
     const drawing = { ...legacyDrawing(), strokes: [crayon, erase] };
@@ -158,20 +158,14 @@ it.each([
     await frames();
     expect(state.captures).toHaveLength(2);
     await png(1, 'flattened-ink');
-    expect(state.captures).toHaveLength(2);
-    expect(host.querySelector('[data-output-image]').dataset.outputImage).toBe(
-      'data:image/png;base64,flattened-ink'
-    );
-    await act(async () => host.querySelector('[data-output-image]').click());
-    await frames();
-    expect(state.captures).toHaveLength(2);
-    await decode(width, height);
+    expect(host.querySelector('[data-output-image]')).toBeNull();
     await frames();
     expect(state.captures).toHaveLength(3);
+    expect(state.captures[2].options).toEqual({ width, height });
     await png(2, 'picture-output');
     await expect(
       promise.then((result) => (typeof result === 'string' ? result : result.base64))
-    ).resolves.toBe('picture-output');
+    ).resolves.toBe('flattened-ink+picture-output');
     expect(error).not.toHaveBeenCalled();
     release();
   }

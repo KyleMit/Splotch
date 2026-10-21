@@ -50,14 +50,14 @@ function paintPaper(
   context.resetTransform();
 }
 
-// The captured ink and line art, stretched onto the saved picture's grid over its paper.
+// Each captured layer, bottom first, stretched onto the saved picture's grid over its paper.
 export async function composePicture(
-  layerBase64: string,
+  layersBase64: readonly string[],
   picture: PictureExport,
   includePaperTexture = true
 ) {
-  const [layer, texture] = await Promise.all([
-    decodeImage(`${PNG_PREFIX}${layerBase64}`),
+  const [layers, texture] = await Promise.all([
+    Promise.all(layersBase64.map((layer) => decodeImage(`${PNG_PREFIX}${layer}`))),
     includePaperTexture ? loadGrain() : Promise.resolve(null),
   ]);
   const canvas = document.createElement('canvas');
@@ -68,7 +68,8 @@ export async function composePicture(
     if (!context) throw new Error('Picture export is unavailable.');
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
-    context.drawImage(layer, 0, 0, picture.size.width, picture.size.height);
+    for (const layer of layers)
+      context.drawImage(layer, 0, 0, picture.size.width, picture.size.height);
     paintPaper(context, picture, texture);
     const png = canvas.toDataURL('image/png');
     if (!png.startsWith(PNG_PREFIX)) throw new Error('Picture export did not return a PNG.');

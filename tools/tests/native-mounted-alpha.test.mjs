@@ -115,7 +115,7 @@ vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async 
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
-  composePicture: async (layer) => layer,
+  composePicture: async (layers) => layers.at(-1),
 }));
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);

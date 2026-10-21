@@ -64,7 +64,9 @@ vi.mock('@shopify/react-native-skia', () => {
       },
       Image: {
         MakeImageFromEncoded: (data) =>
-          data.base64 ? image('layer', 1557, 3072) : image('grain', 148, 148),
+          data.base64
+            ? { ...image('layer', 1557, 3072), source: data.base64 }
+            : image('grain', 148, 148),
       },
       Surface: {
         Make: (width, height) => {
@@ -218,7 +220,7 @@ describe('composing the saved picture on the web', () => {
     'stretches the picture onto the grid, then paints the shipping %s paper beneath it',
     async (theme) => {
       const picture = pictureExport(adoptPaper(390, 769, 1), theme, 1);
-      await expect(composeWebPicture('layer', picture)).resolves.toBe('web-composed');
+      await expect(composeWebPicture(['layer'], picture)).resolves.toBe('web-composed');
       const drawn = log.findIndex(([key]) => key === 'drawImage');
       const layer = log[drawn][1];
       const grain = log.find(([key]) => key === 'createPattern')[1];
@@ -253,7 +255,7 @@ describe('composing the saved picture on Android and iOS', () => {
     const { composePicture } =
       await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(402, 787 + 2 / 3, 3), 'dark', 3);
-    await expect(composePicture('ios-layer', picture)).resolves.toBe('native-composed');
+    await expect(composePicture(['ios-layer'], picture)).resolves.toBe('native-composed');
     const { width, height } = picture.size;
     const grain = skia.log.find(([key]) => key === 'shader')[1];
     expect(grain.args.slice(0, 2)).toEqual(['repeat', 'repeat']);
@@ -289,13 +291,25 @@ describe('composing the saved picture on Android and iOS', () => {
       await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
     skia.grainFails = true;
-    await expect(composePicture('layer', picture)).resolves.toBe('native-composed');
+    await expect(composePicture(['layer'], picture)).resolves.toBe('native-composed');
     expect(skia.log.some(([key]) => key === 'drawPaint')).toBe(false);
     skia.log.length = 0;
     skia.grainFails = false;
-    await composePicture('layer', picture);
+    await composePicture(['layer'], picture);
     expect(skia.log.filter(([key]) => key === 'fromURI')).toHaveLength(1);
     expect(skia.log.some(([key]) => key === 'drawPaint')).toBe(true);
+  });
+
+  it('stretches each layer onto the grid in order, the ink beneath the line art', async () => {
+    const { composePicture } =
+      await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
+    const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
+    await expect(composePicture(['ink', 'outline'], picture)).resolves.toBe('native-composed');
+    const drawn = skia.log.filter(([key]) => key === 'drawImageRectCubic');
+    expect(drawn.map(([, layer]) => layer.source)).toEqual(['ink', 'outline']);
+    for (const [, , , target] of drawn)
+      expect(target).toEqual({ x: 0, y: 0, width: 780, height: 1538 });
+    expect(skia.log.filter(([key, name]) => key === 'dispose' && name === 'layer')).toHaveLength(2);
   });
 
   it('omits paper grain from an AI upload while keeping the export pixel grid', async () => {
@@ -303,7 +317,7 @@ describe('composing the saved picture on Android and iOS', () => {
     const { composePicture } =
       await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
-    await expect(composePicture('layer', picture, false)).resolves.toBe('native-composed');
+    await expect(composePicture(['layer'], picture, false)).resolves.toBe('native-composed');
     expect(skia.log).toContainEqual(['surface', 780, 1538]);
     expect(skia.log.some(([key]) => key === 'drawPaint')).toBe(false);
     expect(skia.log.some(([key]) => key === 'fromURI')).toBe(false);
