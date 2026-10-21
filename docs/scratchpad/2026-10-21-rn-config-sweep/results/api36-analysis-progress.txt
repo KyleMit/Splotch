@@ -1,0 +1,703 @@
+emulator-5690 [
+  {
+    label: 'baseline',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57904,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57904,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57904,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2464
+  },
+  {
+    label: 'font-largest-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57698,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-largest-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2258
+  },
+  {
+    label: 'font-smallest-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57718,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-smallest-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57718,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-smallest-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2278
+  },
+  {
+    label: 'font-smallest-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57610,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'font-smallest-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2170
+  },
+  {
+    label: 'density-larger-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57670,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-larger-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57641,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-larger-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55416,
+    undoRemovedPixels: 2225
+  },
+  {
+    label: 'density-larger-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57498,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-larger-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2058
+  },
+  {
+    label: 'density-smaller-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57686,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-smaller-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57683,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-smaller-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55432,
+    undoRemovedPixels: 2251
+  },
+  {
+    label: 'density-smaller-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 58449,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'density-smaller-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 3009
+  },
+  {
+    label: 'night-on-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57617,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-on-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57609,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-on-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55432,
+    undoRemovedPixels: 2177
+  },
+  {
+    label: 'night-on-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57556,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-on-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2116
+  },
+  {
+    label: 'night-off-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57365,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-off-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57365,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-off-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 1925
+  },
+  {
+    label: 'night-off-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57634,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'night-off-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2194
+  },
+  {
+    label: 'contrast-on-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57621,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-on-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-on-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: -55440
+  },
+  {
+    label: 'contrast-on-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57555,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'contrast-on-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2115
+  },
+  {
+    label: 'bold-on-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57555,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'bold-on-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57555,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'bold-on-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2115
+  },
+  {
+    label: 'bold-on-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57546,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'bold-on-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2106
+  },
+  {
+    label: 'app-locale-fr-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57637,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-fr-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57637,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-fr-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2197
+  },
+  {
+    label: 'app-locale-fr-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57586,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-fr-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2146
+  },
+  {
+    label: 'app-locale-ar-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57555,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-ar-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57580,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-ar-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55466,
+    undoRemovedPixels: 2114
+  },
+  {
+    label: 'app-locale-ar-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57922,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'app-locale-ar-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2482
+  },
+  {
+    label: 'system-locale-fr-FR-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57650,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57650,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2210
+  },
+  {
+    label: 'system-locale-fr-FR-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57610,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-fr-FR-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2170
+  },
+  {
+    label: 'system-locale-ar-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57610,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-ar-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57636,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-ar-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55466,
+    undoRemovedPixels: 2170
+  },
+  {
+    label: 'system-locale-ar-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57894,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'system-locale-ar-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2454
+  },
+  {
+    label: 'rotation-portrait-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57642,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-portrait-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 25581,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-portrait-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 24576,
+    undoRemovedPixels: 1005
+  },
+  {
+    label: 'rotation-portrait-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 21299,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-portrait-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: -34141
+  },
+  {
+    label: 'rotation-landscape-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57562,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-landscape-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57562,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-landscape-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2122
+  },
+  {
+    label: 'rotation-landscape-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57507,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'rotation-landscape-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2067
+  },
+  {
+    label: 'navigation-threebutton-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57666,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-threebutton-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57666,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-threebutton-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2226
+  },
+  {
+    label: 'navigation-threebutton-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57602,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-threebutton-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2162
+  },
+  {
+    label: 'navigation-gestural-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57650,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-gestural-applied',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57650,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-gestural-applied-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2210
+  },
+  {
+    label: 'navigation-gestural-restored',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57610,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'navigation-gestural-restored-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2170
+  },
+  {
+    label: 'hardware-keyboard-direct-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57442,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'hardware-keyboard-direct-attached',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57442,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'hardware-keyboard-direct-attached-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2002
+  },
+  {
+    label: 'hardware-keyboard-direct-detached',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57606,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'hardware-keyboard-direct-detached-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2166
+  },
+  {
+    label: 'trim-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57578,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'trim-qualified-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57578,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'trim-running-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57578,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'trim-return',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57578,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'trim-return-undo',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 55440,
+    undoRemovedPixels: 2138
+  },
+  {
+    label: 'kill-before',
+    pid: '4058',
+    creates: 1,
+    inkPixels: 57604,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'kill-return',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'split-baseline',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 57921,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'split-entered',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 0,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'split-unfocused-waited',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 16911,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'split-focused',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 16056,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'split-focused-undo',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 15380,
+    undoRemovedPixels: 676
+  },
+  {
+    label: 'split-narrow',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 7662,
+    undoRemovedPixels: undefined
+  },
+  {
+    label: 'split-narrow-focused',
+    pid: '20390',
+    creates: 2,
+    inkPixels: 7662,
+    undoRemovedPixels: undefined
+  },
+  ... 8 more items
+]

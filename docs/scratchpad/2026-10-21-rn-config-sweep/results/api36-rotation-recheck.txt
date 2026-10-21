@@ -1,0 +1,16 @@
+virtual device registered
+{"label": "rotation-recheck-1-before", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+{"label": "rotation-recheck-1-portrait", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+{"label": "rotation-recheck-1-portrait-undo", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+{"label": "rotation-recheck-1-landscape", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+{"label": "rotation-recheck-1-landscape-waited", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+{"label": "rotation-recheck-1-landscape-undo", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+{"label": "rotation-recheck-1-restored", "pid": "23361", "createCountInRetainedLog": 3, "localActivity": ["26a1b76"]}
+virtual device registered
+{"label": "rotation-recheck-2-before", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}
+{"label": "rotation-recheck-2-portrait", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}
+{"label": "rotation-recheck-2-portrait-undo", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}
+{"label": "rotation-recheck-2-landscape", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}
+{"label": "rotation-recheck-2-landscape-waited", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}
+{"label": "rotation-recheck-2-landscape-undo", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}
+{"label": "rotation-recheck-2-restored", "pid": "24117", "createCountInRetainedLog": 4, "localActivity": ["7e68e38"]}

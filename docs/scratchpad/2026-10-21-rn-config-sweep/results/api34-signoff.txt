@@ -1,0 +1,3 @@
+{"label": "final-restored", "pid": "23237", "createCountInRetainedLog": 6, "localActivity": ["eb832ce"]}
+{"storedSettingsEqual": true, "densityEqual": true, "sizeEqual": true, "nightEqual": true, "appLocalesEqual": true, "enabledNavEqual": true, "virtualDeviceRemoved": true}
+Probe stopped; temporary helper files removed.

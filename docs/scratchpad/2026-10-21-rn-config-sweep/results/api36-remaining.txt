@@ -1,0 +1,86 @@
+CASE system-locale-fr-FR
+{"label": "system-locale-fr-FR-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+Requested system locales: fr-FR
+{"label": "system-locale-fr-FR-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "system-locale-fr-FR-applied-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+Requested system locales: en-US
+{"label": "system-locale-fr-FR-restored", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "system-locale-fr-FR-restored-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+CASE system-locale-ar
+{"label": "system-locale-ar-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+Requested system locales: ar
+{"label": "system-locale-ar-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "system-locale-ar-applied-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+Requested system locales: en-US
+{"label": "system-locale-ar-restored", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "system-locale-ar-restored-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+CASE rotation-portrait
+{"label": "rotation-portrait-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "rotation-portrait-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "rotation-portrait-applied-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "rotation-portrait-restored", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "rotation-portrait-restored-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+CASE rotation-landscape
+{"label": "rotation-landscape-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "rotation-landscape-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "rotation-landscape-applied-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "rotation-landscape-restored", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "rotation-landscape-restored-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+CASE navigation-threebutton
+{"label": "navigation-threebutton-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "navigation-threebutton-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "navigation-threebutton-applied-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "navigation-threebutton-restored", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "navigation-threebutton-restored-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+CASE navigation-gestural
+{"label": "navigation-gestural-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "navigation-gestural-applied", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "navigation-gestural-applied-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "navigation-gestural-restored", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "navigation-gestural-restored-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+
+{"label": "hardware-keyboard-direct-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "hardware-keyboard-direct-attached", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "hardware-keyboard-direct-attached-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "hardware-keyboard-direct-detached", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "hardware-keyboard-direct-detached-undo", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+{"label": "trim-before", "pid": "4058", "createCountInRetainedLog": 1, "localActivity": ["7e68e38"]}
+Traceback (most recent call last):
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/remaining.py", line 29, in <module>
+    print(sh('am send-trim-memory '+PKG+' COMPLETE'),flush=True)
+          ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 12, in sh
+    def sh(cmd): return adb('shell',cmd)
+                        ~~~^^^^^^^^^^^^^
+  File "docs/scratchpad/2026-10-21-rn-config-sweep/repro/sweep.py", line 10, in adb
+    if p.returncode: raise RuntimeError(p.stderr.decode()+p.stdout.decode(errors='replace'))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: 
+Exception occurred while executing 'send-trim-memory':
+java.lang.IllegalArgumentException: Unable to set a background trim level on a foreground process
+	at com.android.server.am.ActivityManagerService.setProcessMemoryTrimLevel(ActivityManagerService.java:3176)
+	at com.android.server.am.ActivityManagerShellCommand.runSendTrimMemory(ActivityManagerShellCommand.java:3383)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:387)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10418)
+	at android.os.Binder.shellCommand(Binder.java:1151)
+	at android.os.Binder.onTransact(Binder.java:953)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5739)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2735)
+	at android.os.Binder.execTransactInternal(Binder.java:1426)
+	at android.os.Binder.execTransact(Binder.java:1365)
+

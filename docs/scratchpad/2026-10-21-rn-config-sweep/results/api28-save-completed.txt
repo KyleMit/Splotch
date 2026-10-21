@@ -1,0 +1,5 @@
+{"label": "save-permission-prompt", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "save-returned", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "save-font-restored", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"label": "save-font-restored-undo", "pid": "4028", "createCountInRetainedLog": 1, "localActivity": ["cf29059"]}
+{"serial": "emulator-5686", "apiLevel": 28, "remoteFile": "/sdcard/Pictures/Splotch/splotch-2026-10-21_07-20-39.png", "bytes": 688525, "mediaStorePublished": true, "fontScale": "2.0", "evidence": "saved-after-font.png", "permissionBefore": [{"sdk": 28, "permission": "android.permission.WRITE_EXTERNAL_STORAGE", "beforeFlags": 0, "afterFlags": 0, "permissionCheck": -1, "clearedUserFlags": false}, {"sdk": 28, "permission": "android.permission.READ_EXTERNAL_STORAGE", "beforeFlags": 0, "afterFlags": 0, "permissionCheck": -1, "clearedUserFlags": false}], "prefBefore": "absent", "resumedPendingPermissionPrompt": true}

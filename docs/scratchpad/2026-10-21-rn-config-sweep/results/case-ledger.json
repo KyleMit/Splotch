@@ -1,0 +1,481 @@
+{
+  "counting": "One case per listed change/flow; apply and restoration form one case, repeats/diagnostics excluded. Not-applicable rows excluded from executed counts.",
+  "cases": [
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "font-largest",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "font-smallest",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "density-larger",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "density-smaller",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "night-on",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "night-off",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "contrast-on",
+      "status": "fail",
+      "finding": "RN-CONFIG-001"
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "bold-on",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "app-locale-fr",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "app-locale-ar",
+      "status": "known-issue",
+      "finding": "3140"
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "system-locale-fr-FR",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "system-locale-ar",
+      "status": "known-issue",
+      "finding": "3140"
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "rotation-landscape",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "rotation-portrait",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "navigation-threebutton",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "navigation-gestural",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "hardware-keyboard",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "memory-trim",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "process-death",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "split-screen",
+      "status": "fail",
+      "finding": "RN-CONFIG-002"
+    },
+    {
+      "serial": "emulator-5688",
+      "apiLevel": 34,
+      "case": "freeform",
+      "status": "blocked",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "font-largest",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "font-smallest",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "density-larger",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "density-smaller",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "night-on",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "night-off",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "contrast-on",
+      "status": "fail",
+      "finding": "RN-CONFIG-001"
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "bold-on",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "app-locale-fr",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "app-locale-ar",
+      "status": "known-issue",
+      "finding": "3140"
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "system-locale-fr-FR",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "system-locale-ar",
+      "status": "known-issue",
+      "finding": "3140"
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "rotation-landscape",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "rotation-portrait",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "navigation-threebutton",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "navigation-gestural",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "hardware-keyboard",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "memory-trim",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "process-death",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "split-screen",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5690",
+      "apiLevel": 36,
+      "case": "freeform",
+      "status": "blocked",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "font-largest",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "font-smallest",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "density-larger",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "density-smaller",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "night-on",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "night-off",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "contrast-on",
+      "status": "fail",
+      "finding": "RN-CONFIG-001"
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "system-locale-fr-FR",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "system-locale-ar",
+      "status": "known-issue",
+      "finding": "3140"
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "rotation-landscape",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "rotation-portrait",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "hardware-keyboard",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "memory-trim",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "process-death",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "split-screen",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "freeform",
+      "status": "blocked",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "save-after-font",
+      "status": "pass",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "bold-on",
+      "status": "not-applicable",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "app-locale-fr",
+      "status": "not-applicable",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "app-locale-ar",
+      "status": "not-applicable",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "navigation-threebutton",
+      "status": "not-applicable",
+      "finding": null
+    },
+    {
+      "serial": "emulator-5686",
+      "apiLevel": 28,
+      "case": "navigation-gestural",
+      "status": "not-applicable",
+      "finding": null
+    }
+  ],
+  "perDevice": {
+    "emulator-5688": {
+      "pass": 16,
+      "fail": 2,
+      "known-issue": 2,
+      "blocked": 1
+    },
+    "emulator-5690": {
+      "pass": 17,
+      "fail": 1,
+      "known-issue": 2,
+      "blocked": 1
+    },
+    "emulator-5686": {
+      "pass": 14,
+      "fail": 1,
+      "known-issue": 1,
+      "blocked": 1,
+      "not-applicable": 5
+    }
+  },
+  "totals": {
+    "pass": 47,
+    "fail": 4,
+    "known-issue": 5,
+    "blocked": 3,
+    "not-applicable": 5
+  }
+}
