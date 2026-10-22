@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDeferredRedraw } from '../../experiments/native-architecture/src/drawing/deferredRedraw.ts';
+import { createDeferredRedraw } from '../../src/drawing/deferredRedraw.ts';
 
 function fakeFrames() {
   const frames = new Map();

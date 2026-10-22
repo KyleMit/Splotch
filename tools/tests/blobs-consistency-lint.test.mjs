@@ -12,8 +12,8 @@ const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['web/src/**/*.ts'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],
@@ -40,19 +40,17 @@ describe('the Blobs consistency guard', () => {
     ['a consistency variable', 'getStore({ name: STORE_NAME, consistency: mode })'],
     ['a shorthand consistency', 'getStore({ name: STORE_NAME, consistency })'],
   ])('rejects %s', async (_shape, call) => {
-    expect(await violations('web/src/lib/server/probe.ts', call)).toHaveLength(1);
+    expect(await violations('netlify/server/probe.ts', call)).toHaveLength(1);
   });
 
   it.each([
     ['eventual', "getStore({ name: STORE_NAME, consistency: 'eventual' })"],
     ['strong', "getStore({ name: STORE_NAME, consistency: 'strong' })"],
   ])('allows an explicit %s mode', async (_mode, call) => {
-    expect(await violations('web/src/lib/server/probe.ts', call)).toHaveLength(0);
+    expect(await violations('netlify/server/probe.ts', call)).toHaveLength(0);
   });
 
   it('rejects an omission in a route module', async () => {
-    expect(
-      await violations('web/src/lib/server/api/probe.ts', "getStore('ai-usage')")
-    ).toHaveLength(1);
+    expect(await violations('netlify/server/api/probe.ts', "getStore('ai-usage')")).toHaveLength(1);
   });
 });

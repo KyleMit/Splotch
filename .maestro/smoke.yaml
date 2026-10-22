@@ -6,7 +6,7 @@
 # class, or a bundle that throws at startup fails here and nowhere else.
 #
 # "Settings" is the accessibility label of the drawing screen's corner Settings
-# button (experiments/native-architecture/src/rsdDrawing/RsdEdgeControls.tsx).
+# button (src/rsdDrawing/RsdEdgeControls.tsx).
 # Waiting on it proves real UI painted rather than that the process merely
 # started, and it is the whole assertion on purpose (ADR-0120): this flow
 # deliberately does not navigate the UI. Every step past the launch check that

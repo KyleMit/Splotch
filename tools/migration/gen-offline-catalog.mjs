@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createBookCatalog } from '../../web/src/lib/state/bookCatalog.ts';
+import { createBookCatalog } from '../../src/lib/state/bookCatalog.ts';
 import { format, resolveConfig } from 'prettier';
 import { isMain } from '../lib/proc.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const target = `${root}experiments/native-architecture/src/offlineLibrary/`;
+const target = `${root}src/offlineLibrary/`;
 const variants = ['compact', 'full'];
 const suffixes = [
   'light.webp',
@@ -43,7 +43,7 @@ export async function generateOfflineCatalog(argv) {
             variant === 'compact' && /\.(light|night)\.webp$/.test(path)
               ? path.replace('/coloring/', '/coloring/max-1152px/')
               : path;
-          const bytes = readFileSync(`${root}web/static${downloadPath}`);
+          const bytes = readFileSync(`${root}assets/static${downloadPath}`);
           return { path, downloadPath, bytes: bytes.length, sha256: hash(bytes) };
         });
         return [

@@ -433,15 +433,15 @@ export function createBurndownRun({ config, effects }) {
   // deferral label a human reads months later in docs/AUDIT-DEFERRED.md;
   // `detail` and the bounded command output are what the implementer gets.
   // Bundle composition is the one regression class every other gate is blind to:
-  // a new static import edge under web/src re-partitions Rollup's chunks however
+  // a new static import edge under src re-partitions Rollup's chunks however
   // small the imported module, and the failing marker can name a module the fix
   // never touched (PR #771). When the range under review adds one, gate on the
   // startup-bundle spec so the regression becomes this finding's fix round
   // instead of an asynchronous CI red the supervisor has to bisect.
   function withBundleGate(baseSha, specs) {
     if (!BUNDLE_SPEC || specs.includes(BUNDLE_SPEC)) return specs;
-    if (!diffAddsClientStaticImport(gitOut('diff', baseSha, 'HEAD', '--', 'web/src'))) return specs;
-    logLine(`  bundle gate: ${BUNDLE_SPEC} (the fix adds a static import under web/src)`);
+    if (!diffAddsClientStaticImport(gitOut('diff', baseSha, 'HEAD', '--', 'src'))) return specs;
+    logLine(`  bundle gate: ${BUNDLE_SPEC} (the fix adds a static import under src)`);
     return [...specs, BUNDLE_SPEC];
   }
 

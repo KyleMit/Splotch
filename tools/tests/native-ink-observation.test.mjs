@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createInkObservationController } from '../../experiments/native-architecture/src/drawing/inkObservation.ts';
+import { createInkObservationController } from '../../src/drawing/inkObservation.ts';
 
 function fixture() {
   const dispose = vi.fn();
@@ -74,10 +74,7 @@ describe('owned ink observation request', () => {
     expect(f.dispose).toHaveBeenCalledOnce();
   });
   it('binds Clear observation to the actual captured grid and guards history/owner before commit', () => {
-    const caller = readFileSync(
-      new URL('../../experiments/native-architecture/src/useDrawingScreen.ts', import.meta.url),
-      'utf8'
-    );
+    const caller = readFileSync(new URL('../../src/useDrawingScreen.ts', import.meta.url), 'utf8');
     const clear = caller.slice(caller.indexOf('async function clearCurrentPicture'));
     const observedClear = clear.slice(clear.indexOf('await runCommand(async () => {'));
     const prepare = observedClear.indexOf('observations.current?.begin(');

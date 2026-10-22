@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  createVolumePreview,
-  VOLUME_PREVIEW_SCRATCH_GAIN,
-} from '../../experiments/native-architecture/src/audio/volumePreview.ts';
+import { createVolumePreview, VOLUME_PREVIEW_SCRATCH_GAIN } from '../../src/audio/volumePreview.ts';
 
 async function settle() {
   for (let tick = 0; tick < 3; tick++) await Promise.resolve();

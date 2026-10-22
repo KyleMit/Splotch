@@ -19,7 +19,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { GENERATE_DEADLINE_MS } from '../../../web/src/lib/ai/limits.ts';
+import { GENERATE_DEADLINE_MS } from '../../../src/lib/ai/limits.ts';
 import { PRODUCTION_VARIANT, RATES } from './model-eval.mjs';
 import { esc } from '../../lib/html.mjs';
 import { chromeStyle, masthead, siteFooter } from '../../scrapbook/lib/scrapbook-chrome.mjs';

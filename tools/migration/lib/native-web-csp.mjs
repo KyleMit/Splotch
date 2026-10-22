@@ -1,5 +1,5 @@
 // The Content-Security-Policy the React Native web export's documents carry: the site's web meta
-// policy (webMetaCspDirectives in web/securityPolicy.ts), whose connect-src is the page's own
+// policy (webMetaCspDirectives in netlify/securityPolicy.ts), whose connect-src is the page's own
 // origin, which serves the /api function the export's transports call by path, with script-src
 // holding 'self' and the hash of every inline executable script the document itself carries, never
 // 'unsafe-inline' (issue 3017). A meta tag cannot carry the directives that policy leaves out;
@@ -9,7 +9,7 @@ import {
   inlineExecutableScriptBodies,
   serializeCspDirectives,
   webMetaCspDirectives,
-} from '../../../web/securityPolicy.ts';
+} from '../../../netlify/securityPolicy.ts';
 
 const CSP_META = /<meta http-equiv="Content-Security-Policy" content="([^"]*)">/i;
 

@@ -5,7 +5,7 @@ const VALID = {
   summary: 'Looked at everything.',
   findings: [
     {
-      path: 'web/src/a.ts',
+      path: 'src/a.ts',
       line: 3,
       startLine: null,
       side: 'RIGHT',

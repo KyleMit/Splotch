@@ -2,15 +2,15 @@ import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import {
   CRAYON_BANDS,
   CRAYON_TILE_PX,
   crayonPasses,
   crayonPhase,
-} from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { crayonTileUri } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+} from '../../src/drawing/crayon.ts';
+import { crayonTileUri } from '../../src/drawing/crayonTiles.ts';
+import { paletteHex } from '../../src/drawing/palette.ts';
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', async () => {
   const web = await import('react-native-svg/lib/module/elements.web.js');
@@ -20,13 +20,9 @@ vi.mock('react-native-svg', async () => {
       createElement(web.Pattern, { ...props, overflow: 'hidden' }, children),
   };
 });
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg, Rect } = await import('react-native-svg');
-const { Ink, InkArtwork } =
-  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } = await import('../../src/drawing/Ink.tsx');
 const WIDTH = 1024;
 const HEIGHT = 768;
 function line(color = 'Red', seed = 20, y = 550) {

@@ -17,24 +17,21 @@ import {
   radius,
   settle,
 } from './rsd-native-clear-fixture.mjs';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { CLEAR_SHEET_DURATION_MS } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { CLEAR_SHEET_DURATION_MS } from '../../../src/clear/dragToClear.ts';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
-import { adoptPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  fittedPaper,
-  paperLifted,
-} from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
+import { Animated } from '../../../src/platform/animated.ts';
+import { adoptPaper } from '../../../src/drawing/paperSpace.ts';
+import { fittedPaper, paperLifted } from '../../../src/drawing/paperGeometry.ts';
 import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
-import { PaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.tsx';
-import { PaperTexture as WebPaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.web.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
-import { RsdNotchBand } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotchBand.tsx';
-import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import { PAPER_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { PaperTexture } from '../../../src/drawing/PaperTexture.tsx';
+import { PaperTexture as WebPaperTexture } from '../../../src/drawing/PaperTexture.web.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { NativeFrame } from '../../../src/rsdDrawing/NativeFrame.tsx';
+import { RsdNotchBand } from '../../../src/rsdDrawing/RsdNotchBand.tsx';
+import { paletteHex } from '../../../src/drawing/palette.ts';
+import { PAPER_THEMES } from '../../../src/drawing/theme.ts';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const committedStyle = (node) => JSON.parse(node.dataset.committedProps).style;
@@ -57,9 +54,7 @@ it.each([1, 2, 3, 3.5])(
     else await act(async () => root.render(element));
     const grain = flat(records.props.findLast((props) => props.testID === 'paper-grain').style);
     const tile = await sharp(
-      readFileSync(
-        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
-      )
+      readFileSync(join(REPOSITORY, 'assets/paper/handmade-paper.webp'))
     ).metadata();
     expect(grain.minWidth * density).toBe(tile.width);
     expect(grain.minHeight * density).toBe(tile.height);
@@ -236,9 +231,7 @@ it.each(
         .map((props) => flat(props.style).backgroundColor)
     ).toEqual(edges.map(() => PAPER_THEMES[theme].paper));
     const tile = await sharp(
-      readFileSync(
-        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
-      )
+      readFileSync(join(REPOSITORY, 'assets/paper/handmade-paper.webp'))
     ).metadata();
     expect(
       records.props
@@ -311,9 +304,7 @@ it.each([
       backgroundColor: PAPER_THEMES.light.paper,
     });
     const tile = await sharp(
-      readFileSync(
-        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
-      )
+      readFileSync(join(REPOSITORY, 'assets/paper/handmade-paper.webp'))
     ).metadata();
     const anchor = {
       x: props.origin.x + (props.rightInset ? records.dimensions.width - props.rightInset : 0),
@@ -382,9 +373,7 @@ it.each([
     expect(slot.querySelector('[data-testid="paper-grain-phase"]') === null).toBe(lifted);
     await commitClear();
     const tile = await sharp(
-      readFileSync(
-        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
-      )
+      readFileSync(join(REPOSITORY, 'assets/paper/handmade-paper.webp'))
     ).metadata();
     for (const id of ['rsd-clear-cover', 'rsd-clear-sheet']) {
       const paper = host.querySelector(`[data-testid="${id}"]`);

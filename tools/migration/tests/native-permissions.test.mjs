@@ -4,10 +4,7 @@ import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const manifest = readFileSync(
-  new URL(
-    '../../../experiments/native-architecture/android/app/src/main/AndroidManifest.xml',
-    import.meta.url
-  ),
+  new URL('../../../android/app/src/main/AndroidManifest.xml', import.meta.url),
   'utf8'
 );
 

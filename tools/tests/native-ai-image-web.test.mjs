@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { rgbaPng } from './native-png-fixtures.mjs';
-import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
-import { admitAiImage } from '../../experiments/native-architecture/src/platform/aiImage.web.ts';
-import { aiTransport } from '../../experiments/native-architecture/src/platform/ai.web.ts';
+import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../src/ai/imageBounds.ts';
+import { admitAiImage } from '../../src/platform/aiImage.web.ts';
+import { aiTransport } from '../../src/platform/ai.web.ts';
 
 const decode = vi.fn();
 let picture;

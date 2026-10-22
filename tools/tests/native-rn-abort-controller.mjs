@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 
-const app = join(import.meta.dirname, '../../experiments/native-architecture');
+const app = join(import.meta.dirname, '../..');
 const appRequire = createRequire(join(app, 'package.json'));
 const babel = appRequire('@babel/core');
 const reactNative = dirname(appRequire.resolve('react-native/package.json'));

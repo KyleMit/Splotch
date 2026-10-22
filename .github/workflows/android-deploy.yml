@@ -42,8 +42,8 @@ jobs:
           java-version: 21
           cache: gradle
           cache-dependency-path: |
-            experiments/native-architecture/android/**/*.gradle*
-            experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.properties
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
 
       - uses: ./.github/actions/setup-pnpm
 
@@ -75,7 +75,7 @@ jobs:
             echo 'storePassword=android'
             echo 'keyAlias=release-smoke'
             echo 'keyPassword=android'
-          } > experiments/native-architecture/android/keystore.properties
+          } > android/keystore.properties
 
       - name: Build test-signed release APK
         run: npm run android:apk:store
@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: android-release-apk
-          path: experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 1
 
@@ -127,7 +127,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: android-release-apk
-          path: experiments/native-architecture/android/app/build/outputs/apk/release
+          path: android/app/build/outputs/apk/release
 
       - uses: ./.github/actions/install-maestro
 
@@ -145,7 +145,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            adb install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
             # :device runs the store-identity flow against the emulator this action already booted.
             # (Plain `test:android` builds the .dev APK and boots + tears down its own emulator.)
             npm run test:android:device

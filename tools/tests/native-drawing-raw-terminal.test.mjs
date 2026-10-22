@@ -1,20 +1,12 @@
-import {
-  paperProjection,
-  drawingPaper,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, drawingPaper } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { legacyDrawing, createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { addStrokes, createHistory, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
 
 const native = vi.hoisted(() => ({ input: null, sequence: 0, layout: null }));
 

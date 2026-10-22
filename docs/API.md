@@ -2,25 +2,24 @@
 
 The hosted site (Netlify, `https://splotch.art`) serves a small JSON API under `/api/*`, all from
 one plain Netlify Function, `netlify/functions/api.ts`, whose `config.path` lists every endpoint
-path and which calls each endpoint's module in `web/src/lib/server/api/`. It is one function so the
+path and which calls each endpoint's module in `netlify/server/api/`. It is one function so the
 endpoints share one instance's in-memory rate-limit buckets, as they did inside SvelteKit's single
 function: `verify-access-code`, `generate-image`, `generation-attempt` and `report-image` spend one
 per-IP failed-guess budget (see Rate limiting). On the web it's called same-origin; the native apps
-call the hosted endpoints through the transport in
-`experiments/native-architecture/src/ai/transport.ts` and its platform adapter.
+call the hosted endpoints through the transport in `src/ai/transport.ts` and its platform adapter.
 
-**One wrapper:** the function is `apiFunction(...)` (`web/src/lib/server/api/apiFunction.ts`). The
+**One wrapper:** the function is `apiFunction(...)` (`netlify/server/api/apiFunction.ts`). The
 endpoints were SvelteKit routes until issue 3007, and installed native builds keep calling them, so
 the wrapper answers as SvelteKit and `hooks.server.ts` did, in their order: SvelteKit's CSRF guard
 (a form content type posted from an origin other than the site's own, `https://localhost` or
-`capacitor://localhost` gets a bare `403` before any handler runs; `web/src/lib/server/csrf.ts`),
-the `308` from a trailing slash to the bare path, the CORS preflight, a `405` with `Allow` for a
-method the endpoint lacks, and on every other answer the CORS set, the `no-store` default and
-`nosniff`. `tools/api-smoke/tests/wire-diff.test.mjs` holds every function to the answers SvelteKit
-gave a recorded request corpus (`tools/api-smoke/lib/wire-corpus.mjs`), status, headers and body.
+`capacitor://localhost` gets a bare `403` before any handler runs; `netlify/server/csrf.ts`), the
+`308` from a trailing slash to the bare path, the CORS preflight, a `405` with `Allow` for a method
+the endpoint lacks, and on every other answer the CORS set, the `no-store` default and `nosniff`.
+`tools/api-smoke/tests/wire-diff.test.mjs` holds every function to the answers SvelteKit gave a
+recorded request corpus (`tools/api-smoke/lib/wire-corpus.mjs`), status, headers and body.
 
 **CORS:** `apiFunction` answers preflights and adds `Access-Control-Allow-Origin: *` to every
-`/api/*` response (the set is `API_CORS_HEADERS` in `web/src/lib/server/apiCors.ts`, which
+`/api/*` response (the set is `API_CORS_HEADERS` in `netlify/server/apiCors.ts`, which
 `hooks.server.ts` also stamps on the 404 SvelteKit gives an `/api/` path no function claims), with
 `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` / `X-Access-Token` /
 `X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
@@ -35,9 +34,9 @@ and bounded. The credential-less `report` endpoint creates a sanitized private s
 ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
-hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
-shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `429` with a
-`Retry-After` header and the JSON body:
+hits/min, `netlify/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
+shape, built by `throttled(retryAfter)` in `netlify/server/http.ts` — a `429` with a `Retry-After`
+header and the JSON body:
 
 ```json
 { "ok": false, "error": "Too many attempts. Please wait 12s." }
@@ -66,14 +65,13 @@ Netlify; the form actions answer with the same `413 "Request body is too large"`
 
 The small credential and admin-mutation JSON endpoints cap their bodies at 8 KiB. `/api/report`
 allows 64 KiB for its 4,000-character message plus the optional device snapshot. Each cap lives in
-the core module both front doors share (`MAX_ADMIN_LOGIN_BODY_BYTES` in
-`web/src/lib/server/admin.ts`, `MAX_TOKEN_MUTATION_BODY_BYTES` in `web/src/lib/server/tokens.ts`,
-`MAX_REPORT_BODY_BYTES` in `web/src/lib/server/report.ts`), so the form action and its JSON twin
-stop reading at the same size.
+the core module both front doors share (`MAX_ADMIN_LOGIN_BODY_BYTES` in `netlify/server/admin.ts`,
+`MAX_TOKEN_MUTATION_BODY_BYTES` in `netlify/server/tokens.ts`, `MAX_REPORT_BODY_BYTES` in
+`netlify/server/report.ts`), so the form action and its JSON twin stop reading at the same size.
 
 **Caching:** every `/api/*` response carries `Cache-Control: no-store` unless its route sets its own
-Cache-Control — `applyApiCacheDefault` (`web/src/lib/server/apiCors.ts`) applies the default after
-the endpoint answers. No route opts out today. Several responses carry a credential (the admin token
+Cache-Control — `applyApiCacheDefault` (`netlify/server/apiCors.ts`) applies the default after the
+endpoint answers. No route opts out today. Several responses carry a credential (the admin token
 list with its invite URLs, a report token) or one installation's state (its remaining free
 allowance), and none benefits from a cache, so the rule is a default a new route inherits rather
 than a header each route has to remember. The `OPTIONS` preflight returns before the hook and is
@@ -110,27 +108,27 @@ A client that sends `X-Async-Generation: 1` is saying it can collect the picture
 When a background worker is reachable, the response is then **`202`** with
 `{ ok: true, jobId, pollAfterMs }` and the picture is collected from `/api/generation-result`
 (ADR-0115). The ticket shape, the `202` and `422` statuses, and the poll's `GENERATION_UNAVAILABLE`
-code are declared once in `web/src/lib/ai/generationResult.ts`, which both generation routes and the
-RN transport (`experiments/native-architecture/src/ai/transport.ts`) consume. The drawing is written
-to the job store for the handoff, because a background function's invocation body is capped in the
-low hundreds of KB, and the worker takes it in one read-and-delete. It is at rest for that handoff
-and no longer; the finished picture is at rest until the poll that hands it over deletes it. The
-request path stores those raw bytes without first base64-encoding them, and the drawing stays bytes
-through the provider seam; the single base64 encode happens inside the adapter, which needs it for
-the vendor's data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was
-never collected. The server still answers in-line wherever there is no worker (`vite dev`, whose
-function host serves no background function, or an unconfigured signing secret) and whenever the
-handoff fails with no worker owning the job (the job store could not take it, or the worker refused
-it), and a client that never sends the header always gets the synchronous shape. A generation slower
-than the synchronous deadline ends in the controlled `502` there, and the shipped model's slow tail
-reaches it (`docs/scratchpad/image-model-bakeoff-2026-09-10.md`). After a failed handoff the in-line
-call gets only what the request has left of that deadline, counted from when the handler began, so
-the reservations and the handoff both come out of it and a slow store is less likely to let the
-platform ceiling end the request first (ADR-0063); when too little is left for the model to answer
-at all, the model is not called and the answer is the same controlled `502`, with the free
-reservation released. A request without the header keeps the full deadline, its routine pre-work
-charged to ADR-0063's margin instead, so a slow store during that pre-work can still reach the
-platform ceiling.
+code are declared once in `src/lib/ai/generationResult.ts`, which both generation routes and the RN
+transport (`src/ai/transport.ts`) consume. The drawing is written to the job store for the handoff,
+because a background function's invocation body is capped in the low hundreds of KB, and the worker
+takes it in one read-and-delete. It is at rest for that handoff and no longer; the finished picture
+is at rest until the poll that hands it over deletes it. The request path stores those raw bytes
+without first base64-encoding them, and the drawing stays bytes through the provider seam; the
+single base64 encode happens inside the adapter, which needs it for the vendor's data URL. A job
+expires after 20 minutes, and an hourly sweep deletes whatever was never collected. The server still
+answers in-line wherever there is no worker (`vite dev`, whose function host serves no background
+function, or an unconfigured signing secret) and whenever the handoff fails with no worker owning
+the job (the job store could not take it, or the worker refused it), and a client that never sends
+the header always gets the synchronous shape. A generation slower than the synchronous deadline ends
+in the controlled `502` there, and the shipped model's slow tail reaches it
+(`docs/scratchpad/image-model-bakeoff-2026-09-10.md`). After a failed handoff the in-line call gets
+only what the request has left of that deadline, counted from when the handler began, so the
+reservations and the handoff both come out of it and a slow store is less likely to let the platform
+ceiling end the request first (ADR-0063); when too little is left for the model to answer at all,
+the model is not called and the answer is the same controlled `502`, with the free reservation
+released. A request without the header keeps the full deadline, its routine pre-work charged to
+ADR-0063's margin instead, so a slow store during that pre-work can still reach the platform
+ceiling.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -150,7 +148,7 @@ deliberately generous limit (30/min), because the branch is otherwise unauthenti
 502-vs-200 result is a key-validity oracle. Invalid managed tokens are an access-code oracle, so
 failed guesses share `/api/verify-access-code`'s per-IP budget: a limited IP gets the standard 429
 before the token is even checked (no allowlist read), while valid tokens never touch that bucket.
-See `web/src/lib/server/api/generateImage.ts` and ADR-0006 / ADR-0014.
+See `netlify/server/api/generateImage.ts` and ADR-0006 / ADR-0014.
 
 Managed access-code requests also update a durable abuse-prevention tally keyed by a dedicated-key
 HMAC grant ID: count, first/latest use, fixed deletion time, latest validated style category, and
@@ -188,7 +186,7 @@ render without a usable magenta border and substantial subject returns the retry
 for every credential type, including paid keys. A failed paid generation still incurs the upstream
 model charge; a free-grant reservation is released. The same check runs for synchronous and
 collected results: both routes build the picture, this `502`, and the safety refusal below through
-`web/src/lib/server/generationDelivery.ts`. A free-grant response also carries
+`netlify/server/generationDelivery.ts`. A free-grant response also carries
 `X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
 ran here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion is
 `403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
@@ -206,9 +204,9 @@ names no configuration, and the `[generate-image]` log line tells the operator w
 BYOK requests never need that key. A managed token the access-token store gave no answer about is
 also `503`, with the same body, rather than `403 Invalid access token` (see
 `/api/verify-access-code`). The route talks to the model through the provider-agnostic
-`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
-appears in route code. The safety vs. empty/error split is decided by `classifyOpenAiResponse` /
-`isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by the manual red-team suite
+`AiImageProvider` seam (`netlify/server/ai/provider.ts`, ADR-0047) — the vendor SDK never appears in
+route code. The safety vs. empty/error split is decided by `classifyOpenAiResponse` /
+`isSafetyError` in `netlify/server/ai/openaiSafety.ts`, and probed by the manual red-team suite
 (`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
@@ -226,7 +224,7 @@ that shape accepts a real system `instructions` field and lets the model answer 
 instead of a picture — the prose refusal the classifier turns into the `422`. `/v1/images/edits` has
 neither: against the red-team corpus it returned a finished image for a drawn gun. `tool_choice` is
 left on `auto`, since forcing the image tool would remove the model's ability to decline at all. The
-instruction and both model ids live in the adapter, `web/src/lib/server/ai/openai.ts`.
+instruction and both model ids live in the adapter, `netlify/server/ai/openai.ts`.
 
 ### `GET /api/generation-result`
 
@@ -400,8 +398,8 @@ valid families behind one NAT never spend it.
 
 An allowlist that could not be read is a **third** answer, as it is for `/api/verify-key`: a code
 added in `/admin` is not wrong just because the token store failed to answer. The verdict comes from
-`checkAccessToken` in `web/src/lib/server/tokens.ts`, which reports `unavailable` when a lost seed
-race could not be confirmed, and when a Blobs read threw and the env-seed stand-in lacks the code. A
+`checkAccessToken` in `netlify/server/tokens.ts`, which reports `unavailable` when a lost seed race
+could not be confirmed, and when a Blobs read threw and the env-seed stand-in lacks the code. A
 runtime with no Blobs at all (a production preview) still treats its seed as the whole list and
 answers a miss as unrecognized. The same verdict decides the failed-guess charge: an `unavailable`
 answer spends a guess only when it depended on the code. After a failed Blobs read, a seed code is
@@ -466,12 +464,12 @@ action calls it too, and throttles into the same `reportBucket` so the pair shar
 than doubling it. Change the behaviour there, not here — this route only adds the JSON wire shape.
 The page's action additionally echoes the submitted values back on failure and answers success with
 a 303 redirect, neither of which a JSON endpoint needs. Both doors hand the core the raw `kind` and
-`message`, which reads `kind` through `parseReportKind` (`web/src/lib/report.ts`), so an unknown
-kind or a message that is not text gets the same `400` at either one.
+`message`, which reads `kind` through `parseReportKind` (`src/lib/report.ts`), so an unknown kind or
+a message that is not text gets the same `400` at either one.
 
-The body below is declared once as `ReportRequestBody` in `web/src/lib/report.ts`: the in-app
-clients send it through `experiments/native-architecture/src/feedback/feedbackTransport.ts`, and the
-core's `ReportInput` is keyed by it, so a renamed key fails to compile on both sides.
+The body below is declared once as `ReportRequestBody` in `src/lib/report.ts`: the in-app clients
+send it through `src/feedback/feedbackTransport.ts`, and the core's `ReportInput` is keyed by it, so
+a renamed key fails to compile on both sides.
 
 ```json
 // request
@@ -493,32 +491,32 @@ core's `ReportInput` is keyed by it, so a renamed key fails to compile on both s
 { "ok": false, "error": "Could not send your report. Please try again later." }
 ```
 
-The GitHub REST call is isolated behind a server seam, `web/src/lib/server/github.ts` (mirroring the
-AI provider seam, ADR-0047) — route code never touches the token or the REST shape. Auth is a
+The GitHub REST call is isolated behind a server seam, `netlify/server/github.ts` (mirroring the AI
+provider seam, ADR-0047) — route code never touches the token or the REST shape. Auth is a
 fine-grained PAT in `GITHUB_ISSUE_TOKEN` (scope: *Issues: Read and write* on the target repo), read
 via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default private repository
 `KyleMit/splotch-feedback`. The optional `device` payload is shaped by the shared, dependency-free
-`web/src/lib/platform/deviceReport.ts` (also used client-side to preview exactly what will be sent)
-and re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the
-issue body. Whether a report carries it at all is `attachesDevice` in `web/src/lib/report.ts`, the
-rule the forms apply too: the server drops a `device` sent with a `feature` report. Because the
-endpoint is an unauthenticated public write and the message + device values are attacker-controlled,
-both are run through `escapeIssueMarkdown()` (same seam) before they are embedded in the Markdown
-body — it backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML
-(after escaping any backslash the text already carries, which would otherwise re-arm them) so a
-submitter can't make the issue notify people or load remote content. See ADR-0060. The AI-report
-issue passes its model-written refusal reason through the same seam.
+`src/lib/platform/deviceReport.ts` (also used client-side to preview exactly what will be sent) and
+re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the issue
+body. Whether a report carries it at all is `attachesDevice` in `src/lib/report.ts`, the rule the
+forms apply too: the server drops a `device` sent with a `feature` report. Because the endpoint is
+an unauthenticated public write and the message + device values are attacker-controlled, both are
+run through `escapeIssueMarkdown()` (same seam) before they are embedded in the Markdown body — it
+backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML (after
+escaping any backslash the text already carries, which would otherwise re-arm them) so a submitter
+can't make the issue notify people or load remote content. See ADR-0060. The AI-report issue passes
+its model-written refusal reason through the same seam.
 
 ### `POST /api/report-image`
 
 Privately reports either the AI result currently visible in `AiImageResult` or a safety refusal a
 parent believes is a false positive. This is a separate, credentialed endpoint because its multipart
 body carries child-created image content. It accepts the credential each of generation's three tiers
-can present, selected by `experiments/native-architecture/src/ai/reportTransport.ts`: `X-Api-Key`
-(BYOK), `X-Access-Token` (managed invite), or — on the free tier, where the caller holds neither —
-`X-Installation-Id` **plus `X-Report-Token`**. A managed token must still be active; a BYO key is
-verified against the provider. Valid reports are limited to 3/hour per managed token, per BYO caller
-IP, or per free caller IP. Authorization runs before multipart parsing.
+can present, selected by `src/ai/reportTransport.ts`: `X-Api-Key` (BYOK), `X-Access-Token` (managed
+invite), or — on the free tier, where the caller holds neither — `X-Installation-Id` **plus
+`X-Report-Token`**. A managed token must still be active; a BYO key is verified against the
+provider. Valid reports are limited to 3/hour per managed token, per BYO caller IP, or per free
+caller IP. Authorization runs before multipart parsing.
 
 The free tier's credential is not generation's. An installation id is a client-generated 64-hex
 string, so accepting it alone would leave an endpoint that writes image blobs and opens private
@@ -546,9 +544,9 @@ style=<StyleName or empty>
 ```
 
 For compatibility with already-installed clients, an absent `kind` is treated as `picture`. The four
-field names are declared once as `IMAGE_REPORT_FORM_FIELDS` in `web/src/lib/imageReport.ts`, set by
-the RN report transport (`experiments/native-architecture/src/ai/reportTransport.ts`) and read by
-the route. The API smoke and `e2e/specs/ai-report.spec.ts` cover the live request boundary.
+field names are declared once as `IMAGE_REPORT_FORM_FIELDS` in `src/lib/imageReport.ts`, set by the
+RN report transport (`src/ai/reportTransport.ts`) and read by the route. The API smoke and
+`e2e/specs/ai-report.spec.ts` cover the live request boundary.
 
 The raw multipart body is capped before it is parsed, at the 4 MiB bundle limit plus a fixed budget
 for part headers and boundaries; over that the request is rejected with 413 and never buffered
@@ -570,7 +568,7 @@ server-authenticated reason to the reviewer: verbatim in `metadata.json`, and th
 `escapeIssueMarkdown()` in the issue, since the signature proves the server minted the reason, not
 that the model's sentence is inert Markdown. If private notification fails, the bundle is deleted
 and the request fails rather than leaving unreachable evidence. That includes a GitHub call that
-stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`web/src/lib/ai/limits.ts`), which ADR-0063
+stalls: it is abandoned at `GITHUB_REQUEST_TIMEOUT_MS` (`src/lib/ai/limits.ts`), which ADR-0063
 sizes so that the key check plus the issue call leave part of the platform ceiling for the evidence
 write and its delete. Neither storage call has a deadline of its own, so a storage stall can still
 reach the platform kill, and a delete that fails leaves the bundle to the scheduled purge. An
@@ -608,7 +606,7 @@ hours. See ADR-0104.
 ```
 
 Every `503` carries that one sentence, `AI_REPORTING_UNAVAILABLE_MESSAGE` in
-`web/src/lib/server/imageReportUnavailable.ts`, whichever check refused.
+`netlify/server/imageReportUnavailable.ts`, whichever check refused.
 
 ---
 
@@ -656,9 +654,9 @@ figures as sampled. The raw Capacitor identifier is never sent or stored.
 
 JSON twin of the server-rendered `/admin` console, driven by `tools/api-smoke/lib/admin-client.mjs`
 (the local and deploy smoke tests) and by the React Native web export's `/admin` console
-(`experiments/native-architecture/src/pageDocument/admin/`). Both front doors call the same core
-(`web/src/lib/server/admin.ts` \+ `web/src/lib/server/tokens.ts`) — the server-rendered console
-executes it directly in its form actions and **never** loops back through these endpoints.
+(`src/pageDocument/admin/`). Both front doors call the same core (`netlify/server/admin.ts` \+
+`netlify/server/tokens.ts`) — the server-rendered console executes it directly in its form actions
+and **never** loops back through these endpoints.
 
 ### Authentication model
 
@@ -731,8 +729,8 @@ unavailable in a production-shaped runtime: `getStore()` threw, a Blobs read thr
 seed-race confirmation read threw. Writing into the in-memory fallback there would report a token
 add/revoke that no durable list saw. Only Vite dev accepts mutations into memory; its list is
 deliberately process-local so the admin workflow remains usable without Blobs. The status per
-failure reason is `MUTATION_FAILURE_STATUS` in `web/src/lib/server/tokens.ts`, shared with the
-`/admin` form action so both front doors answer the same failure identically.
+failure reason is `MUTATION_FAILURE_STATUS` in `netlify/server/tokens.ts`, shared with the `/admin`
+form action so both front doors answer the same failure identically.
 
 Invite URLs are built from the request origin, so they point at the host that served the API.
 
@@ -808,7 +806,7 @@ installed clients read, and a slow or failing tally read never holds up the code
 * `freeGrantStats` is `null` when the grant store could not be read; the tallies are unaffected.
   `persistent: false` means the figures come from this server instance's memory. `installation` is
   the first eight characters of the hashed installation ID, never the raw identifier.
-* The response type is `AdminStatsSnapshot` in `web/src/lib/server/api/adminStats.ts`.
+* The response type is `AdminStatsSnapshot` in `netlify/server/api/adminStats.ts`.
 
 ### Example
 

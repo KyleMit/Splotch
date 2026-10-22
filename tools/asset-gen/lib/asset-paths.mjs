@@ -1,7 +1,7 @@
 // Path + tree resolution for the asset-gen scripts, self-contained so this
 // project doesn't reach back into tools/lib/ (docs/architecture.md). The generators are
 // producers for the app's committed assets: source inputs live under tools/asset-gen/,
-// shipped outputs live under web/static/, and review scratch lands in the gitignored
+// shipped outputs live under assets/static/, and review scratch lands in the gitignored
 // .coloring-samples*/.
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,18 +10,18 @@ import { fileURLToPath } from 'node:url';
 export const ASSET_GEN_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const REPO_ROOT = join(ASSET_GEN_DIR, '..', '..');
 
-export const WEB_STATIC = join(REPO_ROOT, 'web', 'static');
+export const WEB_STATIC = join(REPO_ROOT, 'assets', 'static');
 export const COLORING_DIR = join(WEB_STATIC, 'coloring');
 export const STYLES_DIR = join(WEB_STATIC, 'styles');
 export const AI_VALUE_PROP_DIR = join(WEB_STATIC, 'ai-value-prop');
 export const STYLE_SOURCE_SVG = join(ASSET_GEN_DIR, 'style-covers', 'source.svg');
 
 // Committed source-of-truth for the colored fills WITH their outlines intact (the
-// raw model output). The shipped web/static/coloring/*.{light,night}.webp are the
+// raw model output). The shipped assets/static/coloring/*.{light,night}.webp are the
 // fills-only *punch* of these — their own outlines masked out so the overlay's line
 // art isn't doubled when the magic brush reveals a fill (see punch-fill-outlines.mjs
 // and ADR-0043). The raws keep the lines so the drift auditor can still
-// score outline registration. Deliberately OUTSIDE web/static so they never ship to
+// score outline registration. Deliberately OUTSIDE assets/static so they never ship to
 // web or native. Layout mirrors COLORING_DIR: {book}/{page}-{orient}.{light,night}.raw.webp
 export const FILL_SRC_DIR = join(ASSET_GEN_DIR, 'fill-src');
 

@@ -36,9 +36,9 @@ promotion to a real `gen:coloring-pen` script.
 
 ## Coloring-page scenes (cover, portrait, landscape)
 
-The hand-authoring prompts behind the committed coloring-book art in `web/static/coloring/` — one
+The hand-authoring prompts behind the committed coloring-book art in `assets/static/coloring/` — one
 per aspect ratio the catalog ships (square category cover, `2:3` portrait page, `3:2` landscape
-page; see `web/src/lib/state/books.ts`). Each block is self-contained: paste one, then append the
+page; see `src/lib/state/books.ts`). Each block is self-contained: paste one, then append the
 subject after the trailing `## Image` heading. The shared `## Style Rules` half is the toddler
 line-art contract every page must satisfy — thick closed outlines, no grey, no text, generous safe
 margins — and only the `## Aspect ratio and composition` half differs between the three.

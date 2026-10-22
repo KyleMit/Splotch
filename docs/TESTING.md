@@ -5,8 +5,8 @@
 The three layers are unit/mounted tests, Playwright against the RN web export, and native launch
 smokes (ADR-0008/0182). SvelteKit's component, SSR and tiled-engine browser suites are retired;
 their spec-by-spec decisions are recorded under `docs/scratchpad/2026-10-21-rn-e2e-dispositions/`.
-The app remains in `experiments/native-architecture/` pending root promotion, while retained shared
-TypeScript and server modules remain in `web/src/lib/`.
+The app remains in `` pending root promotion, while retained shared TypeScript and server modules
+remain in `src/lib/`.
 
 | Layer                     | Tool                     | Command                                                   | CI                            |
 | ------------------------- | ------------------------ | --------------------------------------------------------- | ----------------------------- |
@@ -65,7 +65,7 @@ expect(output.includes(hint)).toBe(scenario.wantsHint);
 ```
 
 The other two shapes that replace a branch: narrow a union through an `asserts`-signature `expect*`
-helper (`expectParsedBody` in `web/src/lib/server/http.test.ts`) rather than an `if` on the
+helper (`expectParsedBody` in `netlify/server/http.test.ts`) rather than an `if` on the
 discriminant, and split a case that asserts something genuinely different into its own parametrized
 block — pairing the split with a test that the two lists still partition the input, so an exception
 naming something that no longer exists fails rather than quietly emptying a block.
@@ -185,11 +185,11 @@ Three Node smoke entry points guard the server contract:
 npm run test:unit
 npm run test:unit:coverage
 npm run test:unit:watch
-node_modules/.bin/vitest run --config web/vitest.config.ts src/lib/server/securityHeaders.test.ts
+node_modules/.bin/vitest run --config vitest.config.ts src/lib/server/securityHeaders.test.ts
 npm run test:migration:rsd-selection
 ```
 
-`web/vitest.config.ts` runs the retained framework-free TypeScript tests. Its default is happy-dom;
+`vitest.config.ts` runs the retained framework-free TypeScript tests. Its default is happy-dom;
 files needing no browser carry `// @vitest-environment node`. Use happy-dom when any imported module
 reads `window`, `document` or `localStorage`, so the test exercises its intended path. Coverage
 measures the retained TypeScript denominator declared in the config; the former Svelte-era coverage
@@ -205,8 +205,8 @@ Vitest aborts a timed-out test's context signal but cannot stop an async continu
 poller that can touch shared mocks accepts `{ signal }` and calls `signal.throwIfAborted()` after
 each await. Prefer fake timers when faithful. Node's `AbortSignal.timeout` uses internal timers, so
 deadline tests stub it with an abort controller driven by the fake clock (the pattern in
-`web/src/lib/server/github.test.ts`). Scope a named larger timeout to a measured expensive test;
-never raise a whole file's cap to hide contention.
+`netlify/server/github.test.ts`). Scope a named larger timeout to a measured expensive test; never
+raise a whole file's cap to hide contention.
 
 ## Asset-pipeline unit tests — Vitest
 
@@ -379,8 +379,8 @@ build on an Android emulator or iOS simulator, launches it, and asserts that the
 proving native startup and the embedded JavaScript bundle worked (not a blank screen or a crash).
 
 The assertion is a single, meaningful signal: the **"Settings"** button (the drawing screen's corner
-button, `experiments/native-architecture/src/rsdDrawing/RsdEdgeControls.tsx`) must become visible.
-Seeing its accessibility label means real UI painted, not just that the process launched.
+button, `src/rsdDrawing/RsdEdgeControls.tsx`) must become visible. Seeing its accessibility label
+means real UI painted, not just that the process launched.
 
 That the flow stops there is a decision, not an omission — **ADR-0120**. Steps that navigated the UI
 broke on a UI change within three releases every time they were added, and because these workflows
@@ -488,8 +488,8 @@ npm run test:android
 
 # Fast iteration — boot once, install the store-identity APK, run many times:
 npm run android:boot            # boot the AVD
-npm run android:apk:store  # needs experiments/native-architecture/android/keystore.properties
-adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+npm run android:apk:store  # needs android/keystore.properties
+adb -s <serial> install -r android/app/build/outputs/apk/release/app-release.apk
 npm run test:android:device     # re-run as often as you like
 ```
 

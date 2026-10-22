@@ -1,16 +1,8 @@
 import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
-import {
-  createPngCapture,
-  createStrokeInput,
-} from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import {
-  addStroke,
-  createHistory,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+import { createPngCapture, createStrokeInput } from '../../src/drawing/interactions.ts';
+import { addStroke, createHistory, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
 
 describe('native drawing interaction ownership', () => {
   it('ignores an expired export callback after a new capture starts', async () => {

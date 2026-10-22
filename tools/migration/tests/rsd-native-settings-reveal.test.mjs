@@ -5,11 +5,11 @@ import { click, drawingScreen, flat, storedSettings } from './rsd-native-setting
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { Animated } from 'react-native';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { RsdSectionReveal } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSectionReveal.tsx';
-import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import { CALM_FADE_MS, SECTION_SLIDE_MS } from '../../../web/src/lib/motionDurations.ts';
-import { TOOL_DRAWER_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToolDrawerSection.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdSectionReveal } from '../../../src/rsdDrawing/RsdSectionReveal.tsx';
+import { ReduceMotionPreferenceProvider } from '../../../src/drawing/useReduceMotion.ts';
+import { CALM_FADE_MS, SECTION_SLIDE_MS } from '../../../src/lib/motionDurations.ts';
+import { TOOL_DRAWER_SPACING } from '../../../src/rsdDrawing/RsdToolDrawerSection.tsx';
 
 function revealProps() {
   return records.props.findLast((props) => props.testID === 'settings-section-reveal');

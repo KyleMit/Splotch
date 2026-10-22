@@ -1,11 +1,8 @@
 import { act, createElement } from 'react';
 import { vi } from 'vitest';
-import {
-  drawingPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { drawingPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
 
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+vi.mock('../../src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const { View } = await import('react-native');

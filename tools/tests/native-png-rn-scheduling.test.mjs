@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { deflateSync, inflateSync } from 'node:zlib';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
-import { createPngWork } from '../../experiments/native-architecture/src/drawing/pngWork.ts';
+import { createPngAlphaDecoder } from '../../src/drawing/pngAlpha.ts';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
+import { createPngWork } from '../../src/drawing/pngWork.ts';
 import { inkPng, pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
 
 const GRID = { width: 1024, height: 768 };

@@ -1,4 +1,4 @@
-import { purgeExpiredGenerationJobs } from '../../web/src/lib/server/generationJobs';
+import { purgeExpiredGenerationJobs } from '../server/generationJobs';
 
 export default async () => {
   const result = await purgeExpiredGenerationJobs();

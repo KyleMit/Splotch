@@ -4,10 +4,10 @@ import {
   RECOVERY_ADMISSION_AGE_MS,
   RECOVERY_FUTURE_SKEW_MS,
   RECOVERY_TTL_MS,
-} from '../../web/src/lib/ai/generationAttempt.ts';
-import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
+} from '../../src/lib/ai/generationAttempt.ts';
+import { JOB_TTL_MS } from '../../src/ai/contract.ts';
 const root = new URL('../../', import.meta.url);
-const candidate = new URL('experiments/native-architecture/', root);
+const candidate = new URL('', root);
 const android = 'android/app/src/main/java/art/splotch/app/SplotchAIJournal.kt';
 const apple = 'ios/Splotch/SplotchAIJournal.swift';
 it('closes the transitive native operation vocabulary and preserves the legacy generation wire', () => {
@@ -61,7 +61,7 @@ it('closes the transitive native operation vocabulary and preserves the legacy g
 
 it('pins native original-expiry interval to the actual recovery protocol skew without local-clock admission', () => {
   const protocol = readFileSync(new URL('src/ai/recoveryContract.ts', candidate), 'utf8');
-  expect(protocol).toMatch(/from '(?:\.\.\/){4}web\/src\/lib\/ai\/generationAttempt'/);
+  expect(protocol).toMatch(/from '\.\.\/lib\/ai\/generationAttempt'/);
   expect(protocol).toContain('RECOVERY_ADMISSION_AGE_MS as ADMISSION_AGE_MS');
   expect(protocol).toContain('RECOVERY_FUTURE_SKEW_MS as FUTURE_SKEW_MS');
   expect(RECOVERY_ADMISSION_AGE_MS).toBe(60_000);

@@ -2,13 +2,10 @@
 import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
-import {
-  InkAppearanceScope,
-  useInkAppearance,
-} from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { CRAYON_TILE_PX } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { RasterInk } from '../../src/drawing/RasterInk.tsx';
+import { InkAppearanceScope, useInkAppearance } from '../../src/drawing/InkAppearance.tsx';
+import { CRAYON_TILE_PX } from '../../src/drawing/crayon.ts';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 
 const state = vi.hoisted(() => ({
   captures: [],
@@ -23,15 +20,14 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('react-native', async () => {
   const { nativeRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
-  const { CRAYON_TILE_PX } =
-    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  const { CRAYON_TILE_PX } = await import('../../src/drawing/crayon.ts');
   return nativeRasterSdk(state, CRAYON_TILE_PX);
 });
 vi.mock('react-native-svg', async () => {
   const { svgRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
   return svgRasterSdk(state);
 });
-vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
+vi.mock('../../src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes, onImageLoad }) => {
     const appearance = useInkAppearance();
     if (checkpoint) state.imageLoads.push({ checkpoint, onImageLoad });

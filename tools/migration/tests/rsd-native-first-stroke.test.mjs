@@ -3,11 +3,11 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { caller, host, mount, records } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { paperInputPacket } from '../../tests/native-paper-fixtures.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import * as paperModule from '../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
-import * as geometryModule from '../../../experiments/native-architecture/src/drawing/measurePaper.ts';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
-import { MODAL_EXIT_MS } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import * as paperModule from '../../../src/rsdDrawing/NativePaper.tsx';
+import * as geometryModule from '../../../src/drawing/measurePaper.ts';
+import { Animated } from '../../../src/platform/animated.ts';
+import { MODAL_EXIT_MS } from '../../../src/rsdDrawing/modalGeometry.ts';
 
 const PAPER_FRAME = { width: 402, height: 806, pageX: 0, pageY: 68 };
 const VIEWPORT = { width: 402, height: 874, bottomInset: 0 };
@@ -29,7 +29,7 @@ const SEED_STROKE_POINTS = [
 // this boundary supplies a ready renderer and exposes its committed and live semantic strokes.
 // The renderer seam guards admission after retirement; the separate onset-order tests and native
 // comparisons qualify the timing change.
-vi.mock('../../../experiments/native-architecture/src/drawing/InkLayer.tsx', async () => {
+vi.mock('../../../src/drawing/InkLayer.tsx', async () => {
   const { createElement, forwardRef, useImperativeHandle, useLayoutEffect, useSyncExternalStore } =
     await import('react');
   return {
@@ -52,7 +52,7 @@ vi.mock('../../../experiments/native-architecture/src/drawing/InkLayer.tsx', asy
     }),
   };
 });
-vi.mock('../../../experiments/native-architecture/src/drawing/PointerHalos.tsx', () => ({
+vi.mock('../../../src/drawing/PointerHalos.tsx', () => ({
   PointerHalos: () => null,
 }));
 
@@ -66,9 +66,7 @@ beforeEach(async () => {
   vi.spyOn(geometryModule, 'measurePaper').mockImplementation((_host, complete) =>
     complete(PAPER_FRAME)
   );
-  const actual = await vi.importActual(
-    '../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx'
-  );
+  const actual = await vi.importActual('../../../src/rsdDrawing/NativePaper.tsx');
   vi.spyOn(paperModule, 'NativePaper').mockImplementation(actual.NativePaper);
 });
 afterEach(() => vi.restoreAllMocks());

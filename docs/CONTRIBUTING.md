@@ -32,9 +32,9 @@ npm run info
 npm run build:site
 ```
 
-Splotch is the Expo / React Native / React Strict DOM app in `experiments/native-architecture/`
-(ADR-0182). Root promotion is a later cutover step. Shared TypeScript and hosted assets still live
-under `web/`; that directory no longer holds a runnable SvelteKit application.
+Splotch is the Expo / React Native / React Strict DOM app in `` (ADR-0182). Root promotion is a
+later cutover step. Shared TypeScript and hosted assets still live under `web/`; that directory no
+longer holds a runnable SvelteKit application.
 
 For a local review of the production web export, select an unused port with
 `npm --silent run show:free-port`, then run:
@@ -48,10 +48,10 @@ comes from `e2e/server/serverEnv.ts`, with an unusable model key and issue submi
 permits repeatable local UI/API review without a live model call. The plain Node function host is
 `tools/lib/netlify-function-host.mjs`; there is no Netlify Dev or Svelte dev server to start.
 
-For native iteration, follow `experiments/native-architecture/DEVELOPMENT.md`. Debug uses Metro from
-that app directory (`npx expo start --port <unused-port>`); Release embeds its bundle.
-`npm run android:apk` builds the development-identity Release APK, and `npm run ios:simulator`
-builds the unsigned Release simulator app. The mobile guide owns store identities and signing.
+For native iteration, follow `DEVELOPMENT.md`. Debug uses Metro from that app directory
+(`npx expo start --port <unused-port>`); Release embeds its bundle. `npm run android:apk` builds the
+development-identity Release APK, and `npm run ios:simulator` builds the unsigned Release simulator
+app. The mobile guide owns store identities and signing.
 
 Use `npm run info` before guessing a script. The `scripts-info` block in `package.json` explains
 each command, and new or renamed commands need a matching description (ADR-0019).
@@ -74,20 +74,20 @@ keeping the RN export's generated artifacts current.
 ## Environment variables
 
 Drawing works without model credentials. The hosted `/api` function reads secrets through
-`web/src/lib/server/privateEnv.ts` from its process environment. Production values come from
-Netlify. The plain Node host does **not** implicitly load `web/.env`; its caller supplies the
-environment. The E2E host deliberately ignores shell/dotenv secrets.
+`netlify/server/privateEnv.ts` from its process environment. Production values come from Netlify.
+The plain Node host does **not** implicitly load `web/.env`; its caller supplies the environment.
+The E2E host deliberately ignores shell/dotenv secrets.
 
-| Variable                        | Server owner under `web/src/lib/` | Purpose                                                                   |
-| ------------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| `ALLOWED_TOKENS_LIST`           | `server/tokens.ts`                | One-time managed-code seed into Blobs; `/admin` owns subsequent edits.    |
-| `ADMIN_ACCESS_TOKEN`            | `server/admin.ts`                 | Admin secret and derived bearer-session signing key.                      |
-| `OPENAI_API_KEY`                | `server/config.ts`                | Hosted generation credential; unavailable grants fail closed when absent. |
-| `USAGE_GRANT_ID_SECRET`         | `server/usage.ts`                 | Opaque grant IDs for durable usage tallies.                               |
-| `GITHUB_ISSUE_TOKEN`            | `server/config.ts`                | Private feedback issue submission.                                        |
-| `GITHUB_ISSUE_REPO`             | `server/config.ts`                | Overrides the feedback repository.                                        |
-| `REPORT_TOKEN_SECRET`           | `server/reportToken.ts`           | Credential-bound generation/refusal report authorization.                 |
-| `GENERATE_DEADLINE_MS_OVERRIDE` | `server/generationStart.ts`       | Explicit manual red-team deadline override; not production configuration. |
+| Variable                        | Server owner under `src/lib/` | Purpose                                                                   |
+| ------------------------------- | ----------------------------- | ------------------------------------------------------------------------- |
+| `ALLOWED_TOKENS_LIST`           | `server/tokens.ts`            | One-time managed-code seed into Blobs; `/admin` owns subsequent edits.    |
+| `ADMIN_ACCESS_TOKEN`            | `server/admin.ts`             | Admin secret and derived bearer-session signing key.                      |
+| `OPENAI_API_KEY`                | `server/config.ts`            | Hosted generation credential; unavailable grants fail closed when absent. |
+| `USAGE_GRANT_ID_SECRET`         | `server/usage.ts`             | Opaque grant IDs for durable usage tallies.                               |
+| `GITHUB_ISSUE_TOKEN`            | `server/config.ts`            | Private feedback issue submission.                                        |
+| `GITHUB_ISSUE_REPO`             | `server/config.ts`            | Overrides the feedback repository.                                        |
+| `REPORT_TOKEN_SECRET`           | `server/reportToken.ts`       | Credential-bound generation/refusal report authorization.                 |
+| `GENERATE_DEADLINE_MS_OVERRIDE` | `server/generationStart.ts`   | Explicit manual red-team deadline override; not production configuration. |
 
 `e2e/server/serverEnv.ts` declares every private name the test-hosted function reads.
 `tools/tests/e2e-server-env.test.mjs` catches an omitted name when a new server variable is added.
@@ -105,22 +105,22 @@ Read the tool's guide before running it. In particular:
   `.env` and `web/.env`; its guide is `tools/elevenlabs/README.md`.
 * Red-team fixture loading is owned by `tools/redteam/lib/fixture-crypto.mjs`.
 * `EXPO_PUBLIC_SPLOTCH_PERF_PROBE` is an opt-in native Release build flag; follow the probe
-  instructions in `experiments/native-architecture/DEVELOPMENT.md`, not a generic dotenv recipe.
+  instructions in `DEVELOPMENT.md`, not a generic dotenv recipe.
 * `COREPACK_HOME`, `npm_config_cache` and `PLAYWRIGHT_CHROMIUM` are machine/tool settings. Cloud
   cache and browser overrides in `docs/CLOUD/Codex.md` should not be copied into a local profile.
 
 In production, a managed invite can be supplied with the `ai_access_token` query parameter
-(`web/src/lib/inviteLink.ts`). Never commit credentials, private drawings or decrypted report data.
+(`src/lib/inviteLink.ts`). Never commit credentials, private drawings or decrypted report data.
 
 ## Build and deployment
 
-| Target                      | Command                  | Output / serving                                               |
-| --------------------------- | ------------------------ | -------------------------------------------------------------- |
-| Web                         | `npm run build:site`     | `experiments/native-architecture/dist/web`, served by Netlify. |
-| Android development Release | `npm run android:apk`    | RN `.dev` APK, separate from the store install.                |
-| Android store               | `npm run android:bundle` | Upload-key-signed AAB; manual store upload.                    |
-| iOS simulator               | `npm run ios:simulator`  | Unsigned Release simulator app.                                |
-| iOS store                   | `npm run ios:ipa`        | Signed archive/export; manual store upload.                    |
+| Target                      | Command                  | Output / serving                                |
+| --------------------------- | ------------------------ | ----------------------------------------------- |
+| Web                         | `npm run build:site`     | `dist/web`, served by Netlify.                  |
+| Android development Release | `npm run android:apk`    | RN `.dev` APK, separate from the store install. |
+| Android store               | `npm run android:bundle` | Upload-key-signed AAB; manual store upload.     |
+| iOS simulator               | `npm run ios:simulator`  | Unsigned Release simulator app.                 |
+| iOS store                   | `npm run ios:ipa`        | Signed archive/export; manual store upload.     |
 
 Root `netlify.toml` publishes the export and routes `/api/*` to `netlify/functions/api.ts`. Platform
 file extensions choose native versus browser integrations. There is no `CAPACITOR` build flag,
@@ -180,10 +180,10 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 
 * Documentation images belong in `docs/assets/` as optimized WebP. The old Svelte-canvas README hero
   generator is retired; preserve committed captures until a deliberate RN capture replaces them.
-* Shipped PNG assets under `web/static/` get a WebP sibling through
+* Shipped PNG assets under `assets/static/` get a WebP sibling through
   `node tools/asset-gen/convert-png-to-webp.mjs`.
 * Committed proof sheets and measurement reports belong in `scrapbook/` (`scrapbook/README.md`).
-* Icon SVG sources remain in `web/src/lib/icons/`, with deferred-only art under `deferred/`.
+* Icon SVG sources remain in `assets/icons/`, with deferred-only art under `deferred/`.
   `tools/migration/gen-native-icons.mjs` projects them into the app; its
   `src/rsdDrawing/iconRegistry.ts` owns startup versus lazy registration. Keep unused page/settings
   art out of the drawing startup closure and verify the built startup budgets.

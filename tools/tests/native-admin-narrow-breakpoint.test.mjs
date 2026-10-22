@@ -1,13 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { BREAKPOINT_EPSILON_PX, NARROW_PHONE_MIN_WIDTH_PX } from '../../web/src/lib/breakpoints.ts';
+import { BREAKPOINT_EPSILON_PX, NARROW_PHONE_MIN_WIDTH_PX } from '../../src/lib/breakpoints.ts';
 import { ROOT } from '../lib/proc.mjs';
 
-const ADMIN_CHROME = join(
-  ROOT,
-  'experiments/native-architecture/src/pageDocument/admin/adminChrome.tsx'
-);
+const ADMIN_CHROME = join(ROOT, 'src/pageDocument/admin/adminChrome.tsx');
 
 // The admin console's masthead drops its crayon strip where shipping's PageShell does; its media
 // query is a literal because React Strict DOM compiles style keys statically.

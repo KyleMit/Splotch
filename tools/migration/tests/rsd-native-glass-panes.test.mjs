@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { GLASS_PANE_INKS } from '../../../experiments/native-architecture/src/rsdDrawing/glassPaneInk.ts';
-import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { glassPaneImage } from '../../../experiments/native-architecture/src/rsdDrawing/glassPaneImage.ts';
-import { glassPanePng } from '../../../experiments/native-architecture/src/rsdDrawing/glassPanePng.ts';
-import { RsdGlassPanes } from '../../../experiments/native-architecture/src/rsdDrawing/RsdBareGlass.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { GLASS_PANE_INKS } from '../../../src/rsdDrawing/glassPaneInk.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { EDGE_INSET_PX } from '../../../src/rsdDrawing/edgeLayout.ts';
+import { glassPaneImage } from '../../../src/rsdDrawing/glassPaneImage.ts';
+import { glassPanePng } from '../../../src/rsdDrawing/glassPanePng.ts';
+import { RsdGlassPanes } from '../../../src/rsdDrawing/RsdBareGlass.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
 
 beforeEach(() => {
   vi.mocked(glassPaneImage).mockReset().mockResolvedValue(null);

@@ -23,7 +23,7 @@ import {
 import { fail } from '../lib/asset-cli.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';
 import { LINE_ART_ALPHA_THRESHOLD, rasterizeLineArt } from '../lib/line-art.mjs';
-import { BOOKS } from '../../../web/src/lib/state/books.ts';
+import { BOOKS } from '../../../src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,

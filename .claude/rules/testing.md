@@ -1,17 +1,17 @@
 ---
 paths:
   - "e2e/**"
-  - "web/src/**/*.test.ts"
-  - "web/*.test.ts"
+  - "src/**/*.test.ts"
+  - "netlify/**/*.test.ts"
   - "e2e/playwright.config.ts"
-  - "web/vitest.config.ts"
+  - "vitest.config.ts"
   - ".maestro/**"
 ---
 
 # Testing rules
 
-* Three layers (ADR-0008): Vitest unit tests, colocated with their subject (`web/src/**/*.test.ts`
-  for app modules, `web/*.test.ts` for build-time modules at the web root), Playwright E2E
+* Three layers (ADR-0008): Vitest unit tests, colocated with their subject (`src/**/*.test.ts` for
+  app modules, colocated `.test.ts` files for server and build-time modules), Playwright E2E
   (`e2e/specs/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared
   by Android and iOS). Pick the lowest layer that can catch the regression.
 * Unit tests cover pure logic and state modules only; UI flows belong in Playwright. The Vitest
@@ -48,11 +48,11 @@ paths:
   a side-effect-free module.
 * **A test that cannot fail is a lint error**, not something a reviewer has to notice:
   `npm run lint` scopes `@vitest/eslint-plugin` onto `**/*.test.{ts,mjs}` and
-  `web/src/**/*TestHarness.ts` and `eslint-plugin-playwright` onto `e2e/specs/**/*.spec.ts`, and
-  rejects a body with no assertion, a committed `.only`, an unconditional skip, an `expect` that
-  never reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first assertion), and
-  an assertion reachable only through a branch. The other `e2e/specs/**/*.ts` helper modules get
-  only the three assertion-shape rules (`valid-expect`, `missing-playwright-await`,
+  `src/**/*TestHarness.ts` and `eslint-plugin-playwright` onto `e2e/specs/**/*.spec.ts`, and rejects
+  a body with no assertion, a committed `.only`, an unconditional skip, an `expect` that never
+  reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first assertion), and an
+  assertion reachable only through a branch. The other `e2e/specs/**/*.ts` helper modules get only
+  the three assertion-shape rules (`valid-expect`, `missing-playwright-await`,
   `valid-expect-in-promise`), since helpers are not tests. The branch rule shapes how a parametrized
   case is written: state the expectation as a value the table carries
   (`await expect(label).toBeVisible({ visible: expected === 'shown' })`,

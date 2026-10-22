@@ -4,12 +4,12 @@ import {
   PARENT_MODES,
   endsParentCenterProtection,
   isParentModeAvailable,
-} from '../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
+} from '../../src/parentCenter/parentPolicy.ts';
 
 import {
   PARENT_GATE_KEYPAD_METRICS,
   PARENT_GATE_METRICS,
-} from '../../experiments/native-architecture/src/parentCenter/parentGateMetrics.ts';
+} from '../../src/parentCenter/parentGateMetrics.ts';
 
 describe('Parent Center policies against parentalGate.svelte.ts', () => {
   it('takes Never off external links on iOS alone, as isParentalGateModeAvailable does', () => {

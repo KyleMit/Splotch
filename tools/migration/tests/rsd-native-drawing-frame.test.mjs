@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { themes } from '../../../web/src/lib/design/tokens.ts';
+import { themes } from '../../../src/lib/design/tokens.ts';
 
 import {
   flat,
@@ -12,7 +12,7 @@ import {
   resolved,
   toolbarScreen,
 } from './rsd-native-toolbar-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 import {
   MORE_COLORS_POP_SCALE,
   PALETTE_FLOWS,
@@ -23,23 +23,17 @@ import {
   columnEndClearance,
   paletteSlots,
   selectionRingColor,
-} from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import { RsdPaintAction } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
+} from '../../../src/rsdDrawing/paletteGeometry.ts';
+import { RsdPaintAction } from '../../../src/rsdDrawing/RsdSwatch.tsx';
 import {
   CORNER_BUTTON_SIZE_PX,
   CORNER_IDLE_OPACITY,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import {
-  PALETTE_COLORS,
-  paintAppearance,
-} from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import {
-  DRAWING_THEMES,
-  TOUCH_TARGET,
-} from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { actionPanelLayout } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { getRingColor } from '../../../web/src/lib/colorRing.ts';
+} from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { PALETTE_COLORS, paintAppearance } from '../../../src/drawing/palette.ts';
+import { DRAWING_THEMES, TOUCH_TARGET } from '../../../src/drawing/theme.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { actionPanelLayout } from '../../../src/rsdDrawing/edgeLayout.ts';
+import { getRingColor } from '../../../src/lib/colorRing.ts';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
@@ -84,7 +78,7 @@ const PALETTE_OCCUPANCY_INTERVALS = [
 describe('the shipping palette geometry', () => {
   it('sizes, spaces and pads both flows as trimGeometry.ts and ColorPalette.svelte do', () => {
     expect(PALETTE_FLOWS.column).toMatchObject({ swatchPx: 60, gapPx: 12, endPaddingPx: 12 });
-    const trim = read('web/src/lib/design/trimGeometry.ts');
+    const trim = read('src/lib/design/trimGeometry.ts');
     for (const [axis, name] of [['row', 'PALETTE_ROW_GEOMETRY']]) {
       const body = new RegExp(`${name}[^{]*\\{([^}]*)\\}`).exec(trim)[1];
       const value = (key) => Number(new RegExp(`${key}: (\\d+)`).exec(body)[1]);
@@ -135,12 +129,10 @@ describe('the shipping palette geometry', () => {
   });
 
   it('bundles the shipping handmade-paper grain byte for byte', () => {
-    const bundled = readFileSync(
-      join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
-    );
+    const bundled = readFileSync(join(REPOSITORY, 'assets/paper/handmade-paper.webp'));
 
     expect(
-      bundled.equals(readFileSync(join(REPOSITORY, 'web/static/icons/handmade-paper.webp')))
+      bundled.equals(readFileSync(join(REPOSITORY, 'assets/static/icons/handmade-paper.webp')))
     ).toBe(true);
   });
 });

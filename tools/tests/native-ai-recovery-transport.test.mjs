@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  aiUrl,
-  parseAiResponse,
-  requestAi,
-} from '../../experiments/native-architecture/src/ai/transport.ts';
+import { aiUrl, parseAiResponse, requestAi } from '../../src/ai/transport.ts';
 import {
   RECOVERY_PATH,
   RECOVERY_PROTOCOL,
@@ -14,8 +10,8 @@ import {
   RECOVERY_MAX_IMAGE_BYTES,
   RECOVERY_TERMINAL_HEADER,
   RECOVERY_TERMINAL_VALUE,
-} from '../../experiments/native-architecture/src/ai/recoveryContract.ts';
-import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
+} from '../../src/ai/recoveryContract.ts';
+import { recoveryDigest } from '../../src/ai/recoveryDigest.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 const CREATED = 1700000000000;
 const EXPIRES = CREATED + 1200000;
@@ -23,7 +19,7 @@ const ID = 'a'.repeat(64);
 const RECEIPT = 'b'.repeat(64);
 const BYTES = new Uint8Array(rgbaPng(2, 2, 255));
 const DIGEST = recoveryDigest(BYTES);
-/** @type {import('../../experiments/native-architecture/src/ai/transport.ts').RecoveryReadRequest} */
+/** @type {import('../../src/ai/transport.ts').RecoveryReadRequest} */
 const collect = {
   path: RECOVERY_PATH,
   method: 'GET',
@@ -37,7 +33,7 @@ const collect = {
     expiry: { kind: 'known', expiresAt: EXPIRES },
   },
 };
-/** @type {import('../../experiments/native-architecture/src/ai/transport.ts').RecoveryMutationRequest} */
+/** @type {import('../../src/ai/transport.ts').RecoveryMutationRequest} */
 const ack = {
   path: RECOVERY_PATH,
   method: 'POST',

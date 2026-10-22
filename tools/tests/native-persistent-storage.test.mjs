@@ -1,9 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { requestPersistentStorage } from '../../experiments/native-architecture/src/platform/persistentStorage.web.ts';
+import { requestPersistentStorage } from '../../src/platform/persistentStorage.web.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
-// Shipping's requestPersistentStorage (web/src/lib/idb.ts): one best-effort ask, whose refusal,
+// Shipping's requestPersistentStorage (src/lib/idb.ts): one best-effort ask, whose refusal,
 // failure or absence never fails the save that made it.
 it('asks the browser once and reports its answer', async () => {
   const persist = vi.fn(async () => true);

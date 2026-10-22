@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createContext, runInContext } from 'node:vm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const app = join(import.meta.dirname, '../../experiments/native-architecture');
+const app = join(import.meta.dirname, '../..');
 const require = createRequire(join(app, 'package.json'));
 const babel = require('@babel/core');
 const HALO_SIZE_PX = 12;

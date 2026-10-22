@@ -2,16 +2,16 @@ import { beforeAll, expect, it } from 'vitest';
 import sharp from 'sharp';
 import { deflateSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
-import { resultImageGrid } from '../../experiments/native-architecture/src/ai/imageAdmission.ts';
-import { MAX_PNG_PIXELS } from '../../experiments/native-architecture/src/drawing/pngLimits.ts';
+import { resultImageGrid } from '../../src/ai/imageAdmission.ts';
+import { MAX_PNG_PIXELS } from '../../src/drawing/pngLimits.ts';
 import {
   MAX_AI_IMAGE_PIXELS,
   MAX_AI_IMAGE_DIMENSION_PX,
   MAX_AI_DECODED_BYTES,
   MAX_AI_IMAGE_METADATA_BYTES,
   imageGrid,
-} from '../../experiments/native-architecture/src/ai/imageBounds.ts';
-import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
+} from '../../src/ai/imageBounds.ts';
+import { parseAiResponse } from '../../src/ai/transport.ts';
 import { AI_OUTPUT_FIXTURES } from '../../e2e/fixtures/ai-output-fixtures.ts';
 import { pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
 const fixtures = new Map();
@@ -165,7 +165,7 @@ it('admits one C2PA caBX chunk, as provider pictures carry', async () => {
     Buffer.concat([valid.subarray(0, valid.length - 12), credentials, valid.subarray(-12)]),
   ])
     expect(await resultImageGrid(admitted, 'image/png', current)).toEqual({ width: 2, height: 2 });
-  const root = new URL('../../experiments/native-architecture/', import.meta.url);
+  const root = new URL('../../', import.meta.url);
   const nativeChunks = (path, pattern) =>
     readFileSync(new URL(path, root), 'utf8')
       .match(pattern)[1]
@@ -375,7 +375,7 @@ it('admits exactly the JPEG frame types both native decoders admit', async () =>
       (await admits(withFrame(fixtures.get('progressive').bytes, marker)))
     )
       admitted.push(marker);
-  const root = new URL('../../experiments/native-architecture/', import.meta.url);
+  const root = new URL('../../', import.meta.url);
   const native = (path, pattern) =>
     readFileSync(new URL(path, root), 'utf8')
       .match(pattern)[1]
@@ -409,7 +409,7 @@ it('honors cancellation before image work and pins actual bounded native decodin
   await expect(
     resultImageGrid(fixtures.get('rgba').bytes, 'image/png', () => false)
   ).rejects.toThrow('cancelled');
-  const root = new URL('../../experiments/native-architecture/', import.meta.url);
+  const root = new URL('../../', import.meta.url);
   const kotlin = readFileSync(
     new URL('android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt', root),
     'utf8'

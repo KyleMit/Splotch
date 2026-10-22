@@ -14,7 +14,7 @@ import {
 const FINDING = [
   '### [P3][duplication] Extract the shared glaze stamp',
   '',
-  '**File(s):** `web/src/lib/drawing/strokeOps.ts:395-413` — pinned at SHA f934d43',
+  '**File(s):** `src/lib/drawing/strokeOps.ts:395-413` — pinned at SHA f934d43',
   '',
   '#### Problem',
   '',

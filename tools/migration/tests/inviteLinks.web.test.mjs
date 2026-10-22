@@ -2,25 +2,19 @@
 
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AI_ACCESS_TOKEN_PARAM } from '../../../web/src/lib/inviteLink.ts';
-import {
-  AI_ORIGIN,
-  MAX_CREDENTIAL_CHARACTERS,
-} from '../../../experiments/native-architecture/src/ai/contract.ts';
-import { withCredentialLeases } from '../../../experiments/native-architecture/src/ai/credentialLease.ts';
+import { AI_ACCESS_TOKEN_PARAM } from '../../../src/lib/inviteLink.ts';
+import { AI_ORIGIN, MAX_CREDENTIAL_CHARACTERS } from '../../../src/ai/contract.ts';
+import { withCredentialLeases } from '../../../src/ai/credentialLease.ts';
 import {
   INVITE_SAVE_FAILED_WARNING,
   inviteAccessCode,
   nativeInviteAccessCode,
-} from '../../../experiments/native-architecture/src/ai/inviteLink.ts';
-import { createInviteCapture } from '../../../experiments/native-architecture/src/platform/inviteLinks.web.ts';
+} from '../../../src/ai/inviteLink.ts';
+import { createInviteCapture } from '../../../src/platform/inviteLinks.web.ts';
 
 const startInviteLinks = (loadVault) => createInviteCapture(loadVault).settle();
-import { browserHistoryPort } from '../../../experiments/native-architecture/src/platform/BrowserBack.web.tsx';
-import {
-  BROWSER_BACK_STATE_KEY,
-  createBrowserBack,
-} from '../../../experiments/native-architecture/src/product/browserBack.ts';
+import { browserHistoryPort } from '../../../src/platform/BrowserBack.web.tsx';
+import { BROWSER_BACK_STATE_KEY, createBrowserBack } from '../../../src/product/browserBack.ts';
 join(import.meta.dirname, '../../..');
 const ROUTER_STATE = { router: { index: 3 } };
 

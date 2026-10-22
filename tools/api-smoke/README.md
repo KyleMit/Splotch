@@ -109,7 +109,7 @@ write persistence cannot be validated without a write and read-back.
 
 ## Maintenance
 
-The API contract is documented in `docs/API.md` and implemented in `web/src/lib/server/api/` (one
+The API contract is documented in `docs/API.md` and implemented in `netlify/server/api/` (one
 endpoint module each, all served by `netlify/functions/api.ts`). When an endpoint or response shape
 changes, update the reference, extend the local smoke assertions, and keep the owned admin client
 request-only. Changes to deployed persistence semantics must update the hosted deploy workflow and
@@ -117,9 +117,9 @@ ADR-0025 expectations together.
 
 The [Hosted Deploy Smoke workflow](../../.github/workflows/hosted-deploy-smoke.yml) runs
 `check-deployed-contract.mjs` with `install: 'false'`. That entry point and everything it loads —
-including `web/buildVersion.ts`, `web/src/lib/server/securityHeaders.ts`, the deployed admin
-contract, and the shared tool modules — must stay dependency-free. Adding an npm dependency to any
-of them breaks the deploy gate at runtime rather than in CI's browserless job.
+including `tools/release/lib/buildVersion.ts`, `netlify/server/securityHeaders.ts`, the deployed
+admin contract, and the shared tool modules — must stay dependency-free. Adding an npm dependency to
+any of them breaks the deploy gate at runtime rather than in CI's browserless job.
 
 All workflow runs share a single concurrency group because previews and production use the same
 site-wide store. Keep target classification (Blobs writes and version strictness) in

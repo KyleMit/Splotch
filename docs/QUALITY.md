@@ -202,7 +202,7 @@ suite whose signal can be trusted rather than re-run until green.
 
 **Backed by.** `test:browserless` runs CI's browser-free test job in one pass - every Vitest tier
 and the API contract smoke - and reports every failure rather than the first. Unit specs sit beside
-their sources in `web/src`, end-to-end specs in `e2e/specs`, tool specs in `tools/tests`, and native
+their sources in `src`, end-to-end specs in `e2e/specs`, tool specs in `tools/tests`, and native
 flows in `.maestro`. `playwright-flaky-reporter.ts` surfaces flake; the WebKit commit gates carry a
 bounded retry leg rather than an open one; ESLint's vacuous-test rules fail a spec that asserts
 nothing, under both the vitest and playwright spellings. The `testing` skill carries the full

@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { createPngAlphaDecoder } from '../../src/drawing/pngAlpha.ts';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 import { pngChunk, rgbaPng } from './native-png-fixtures.mjs';
 
 const HEADER_BYTES = 33;

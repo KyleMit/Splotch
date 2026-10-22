@@ -6,16 +6,12 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { legacyDrawing } from './native-paper-fixtures.mjs';
-import {
-  COHORT_SETTLE_MS,
-  PERF_LOG_MODULE,
-  PERF_LOG_TAG,
-} from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
+import { COHORT_SETTLE_MS, PERF_LOG_MODULE, PERF_LOG_TAG } from '../../src/drawing/perfCohort.ts';
 
 // Paths, not new URL(..., import.meta.url): happy-dom runs this file through Vite's browser
 // transforms, which rewrite that form as an asset URL.
 const ROOT = join(fileURLToPath(import.meta.url), '../../..');
-const APP = 'experiments/native-architecture/';
+const APP = '';
 const drawingModule = (file) => import(pathToFileURL(join(ROOT, `${APP}src/drawing/${file}`)).href);
 const PLANE = { width: 400, height: 300 };
 const VIEWPORT = { width: 1024, height: 768, bottomInset: 0 };
@@ -63,7 +59,7 @@ vi.mock('@shopify/react-native-skia', async () => {
   const { recordingSkiaModule } = await import('./native-skia-recording-fixture.mjs');
   return recordingSkiaModule({});
 });
-vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
+vi.mock('../../src/drawing/skiaUndoGhostImage.ts', () => ({
   makeSkiaUndoGhost: () => null,
 }));
 vi.mock('react-native-svg', async () => {
@@ -81,7 +77,7 @@ async function loadProbe(flag) {
   vi.stubEnv('EXPO_PUBLIC_SPLOTCH_PERF_PROBE', flag);
   vi.stubEnv('EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD', BUILD);
   const probe = await drawingModule('perfProbe.native.ts');
-  vi.doMock('../../experiments/native-architecture/src/drawing/perfProbe.ts', () => probe);
+  vi.doMock('../../src/drawing/perfProbe.ts', () => probe);
   return probe;
 }
 
@@ -303,9 +299,7 @@ describe('the SplotchPerfLog native module', () => {
 
   it('implements every export of the no-op contract the web export and Node resolve', async () => {
     const native = await loadProbe('1');
-    const contract = await vi.importActual(
-      '../../experiments/native-architecture/src/drawing/perfProbe.ts'
-    );
+    const contract = await vi.importActual('../../src/drawing/perfProbe.ts');
     expect(Object.keys(native).sort()).toEqual(Object.keys(contract).sort());
     expect(contract.PERF_PROBE).toBe(false);
     const record = () => 1;

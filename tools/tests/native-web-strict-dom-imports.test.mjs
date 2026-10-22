@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../lib/proc.mjs';
 
-const APP = join(ROOT, 'experiments/native-architecture');
+const APP = join(ROOT, '.');
 const babel = createRequire(join(APP, 'package.json'))('@babel/core');
 const RSD_IMPORT = /from\s*["']react-strict-dom["']/;
 const COMPILED_ONLY = `import { css, html } from 'react-strict-dom';

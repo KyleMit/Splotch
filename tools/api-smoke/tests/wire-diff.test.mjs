@@ -22,7 +22,7 @@ import {
 
 // A deployed function reads runtimeMode's `dev` as false (runtimeMode.ts); Vitest
 // would read true and open the writable in-memory stores the baseline never had.
-vi.mock('../../../web/src/lib/server/runtimeMode.ts', () => ({ dev: false }));
+vi.mock('../../../netlify/server/runtimeMode.ts', () => ({ dev: false }));
 
 const FUNCTIONS_DIR = join(import.meta.dirname, '..', '..', '..', 'netlify', 'functions');
 const baseline = JSON.parse(

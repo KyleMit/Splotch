@@ -115,7 +115,7 @@ beforeEach(async () => {
   fixture.storage.mockImplementation(async (kind) =>
     JSON.stringify(kind === 'pictures' ? { pictures: [] } : { receipt: null })
   );
-  ({ aiStorage } = await import('../../experiments/native-architecture/src/platform/ai.ts'));
+  ({ aiStorage } = await import('../../src/platform/ai.ts'));
   await aiStorage.read();
   fixture.storage.mockClear();
 });
@@ -234,7 +234,7 @@ it('admits a separately tagged held recovery restart, rejects malformed and regr
 it('creates exact pinned recovery bytes, commits intent once and records only admitted original 202 expiry', async () => {
   const storage = aiStorage;
   const { parseRecoveryJson, RECOVERY_EXPIRES_HEADER } =
-    await import('../../experiments/native-architecture/src/ai/recoveryContract.ts');
+    await import('../../src/ai/recoveryContract.ts');
   const original = '  ' + originalModel + '\n';
   const bytes = new Uint8Array(rgbaPng(2, 2, 255));
   const reference = { kind: 'byok', reference: 'b'.repeat(64) };

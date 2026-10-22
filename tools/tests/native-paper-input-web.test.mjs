@@ -4,8 +4,8 @@ import { resolve } from 'node:path';
 import { act, createElement, forwardRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { PaperInputView } from '../../experiments/native-architecture/src/drawing/PaperInputView.web.tsx';
-import { readPaperInput } from '../../experiments/native-architecture/src/drawing/paperInput.ts';
+import { PaperInputView } from '../../src/drawing/PaperInputView.web.tsx';
+import { readPaperInput } from '../../src/drawing/paperInput.ts';
 
 vi.mock('react-native', () => ({
   View: forwardRef(({ children, testID, pointerEvents: _pointerEvents, ...props }, ref) =>
@@ -257,11 +257,7 @@ it.each([
 });
 
 it('binds both native paper views to the same direct event and public metadata APIs', () => {
-  const read = (path) =>
-    readFileSync(
-      resolve(import.meta.dirname, '../../experiments/native-architecture', path),
-      'utf8'
-    );
+  const read = (path) => readFileSync(resolve(import.meta.dirname, '../..', path), 'utf8');
   const adapter = read('src/drawing/PaperInputView.tsx');
   const surface = read('src/drawing/DrawingSurface.tsx');
   const webAdapter = read('src/drawing/PaperInputView.web.tsx');

@@ -28,11 +28,16 @@ const NODE_BUILTIN_IMPORT_RESTRICTIONS = builtinModules
     message: `Use the node: protocol (import from 'node:${name}').`,
   }));
 // The full no-restricted-imports set for web/src. Every block that configures the rule for a
-// slice of web/src spreads this, so the replace gotcha above can't silently drop an entry there.
+// slice of src spreads this, so the replace gotcha above can't silently drop an entry there.
 // tools/tests/server-only-imports-lint.test.mjs is the positive control.
+const SHARED_TYPESCRIPT_FILES = [
+  'src/lib/**/*.ts',
+  'netlify/server/**/*.ts',
+  'tools/{icons,marketing-assets,migration,release,store-drawings}/**/*.ts',
+];
 const WEB_SRC_IMPORT_RESTRICTIONS = [
   PLAYWRIGHT_IMPORT_RESTRICTION,
-  // web/src does import node builtins (server modules, colocated unit tests), so the node:
+  // src does import node builtins (server modules, colocated unit tests), so the node:
   // protocol restriction has to ride along here too — root coverage alone would be replaced away.
   ...NODE_BUILTIN_IMPORT_RESTRICTIONS,
 ];
@@ -40,21 +45,20 @@ const WEB_SRC_IMPORT_RESTRICTIONS = [
 // imports and re-exports; server modules live under lib/server/.
 const SERVER_ONLY_PACKAGES = ['sharp', 'openai', '@netlify/blobs'];
 const SERVER_ONLY_PACKAGE_MESSAGE =
-  'Server-only package: import it from a module under web/src/lib/server/ (or a +server.ts / *.server.ts file), and reach that module from server code only.';
+  'Server-only package: import it from a module under netlify/server/ (or a +server.ts / *.server.ts file), and reach that module from server code only.';
 const RATE_LIMIT_MESSAGE =
-  'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
+  'Build rate-limit bucket keys via netlify/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
 const RATE_LIMIT_ARGUMENT_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
 
 // no-restricted-syntax selectors shared across blocks. Flat config REPLACES a rule's earlier
 // entry rather than merging, so every block that configures no-restricted-syntax for a slice of
-// web/src must recompose the full set that applies there — these constants are what make that
+// src must recompose the full set that applies there — these constants are what make that
 // recomposition mechanical instead of copy-paste that drifts. The positive control
-// tools/tests/named-exports-lint.test.mjs fails if a web/src file shape stops rejecting a
+// tools/tests/named-exports-lint.test.mjs fails if a src file shape stops rejecting a
 // default export.
 const NAMED_EXPORTS_ONLY = {
   selector: 'ExportDefaultDeclaration',
-  message:
-    'web/src uses named exports only — a default export gets a new name at every import site.',
+  message: 'src uses named exports only — a default export gets a new name at every import site.',
 };
 // Mixing the it()/test() vocabularies makes greps and reporter output lie about which tier a
 // test is in — Vitest files use it()/describe(), test() is the Playwright vocabulary.
@@ -110,9 +114,9 @@ const BLOBS_CONSISTENCY_EXPLICIT = [
   'CallExpression[callee.name="getStore"] > ObjectExpression.arguments:not(:has(> Property[key.name="consistency"][value.value=/^(strong|eventual)$/]))',
 ].map((selector) => ({ selector, message: BLOBS_CONSISTENCY_MESSAGE }));
 
-// The full no-restricted-syntax set for web/src, applied by the web/src block and recomposed by
+// The full no-restricted-syntax set for src, applied by the src block and recomposed by
 // every later block that adds selectors for a slice of it. Each set is merged here rather than into
-// its own web/src block, which would silently replace the rate-limit selectors (that actually
+// its own src block, which would silently replace the rate-limit selectors (that actually
 // happened during evaluation). The Vitest block replaces this entry for its file shapes,
 // then a web/src-scoped block recomposes NAMED_EXPORTS_ONLY.
 const WEB_SRC_SYNTAX_RESTRICTIONS = [
@@ -134,7 +138,7 @@ const WEB_SRC_SYNTAX_RESTRICTIONS = [
 // apiHandler call, so a wrapped handler exported by another name or specifier is flagged too. A
 // selector matches the callee by name, not binding, so the second set pins that name to the
 // http.ts import: a local or differently imported apiHandler is flagged where it is bound.
-const API_HANDLER_EXEMPT_ROUTE = 'web/src/lib/server/api/cspReport.ts';
+const API_HANDLER_EXEMPT_ROUTE = 'netlify/server/api/cspReport.ts';
 const API_METHOD_EXPORT = '/^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD|fallback)$/';
 const API_HANDLER_MESSAGE =
   'Export every /api method handler as apiHandler(...) from lib/server/http, so a thrown failure answers { ok:false, error } and is logged (docs/API.md). csp-report is the one exemption.';
@@ -258,7 +262,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
 // — it covers correctness/style rules and the project conventions, not type errors. The one
 // deliberate exception is no-floating-promises, run type-aware by two scoped blocks near the
-// bottom (web/src TS and the native candidate's src), which pay the TS-program cost for that rule
+// bottom (src TS and the native candidate's src), which pay the TS-program cost for that rule
 // alone.
 export default tseslint.config(
   {
@@ -280,9 +284,9 @@ export default tseslint.config(
       'ios/',
       'scrapbook/',
       // The React Native web export (`npm run native:web:build`): bundled Expo output.
-      'experiments/native-architecture/dist/',
-      'web/src/lib/components/icon-names.d.ts',
-      'web/src/lib/releases.json',
+      'dist/',
+      'tools/icons/lib/icon-names.d.ts',
+      'src/lib/releases.json',
     ],
   },
   { linterOptions: { reportUnusedDisableDirectives: 'error' } },
@@ -310,7 +314,7 @@ export default tseslint.config(
       // Only @playwright/test is a declared dependency; the bare `playwright` package rides in
       // transitively and re-exports the same API, so imports of it work until an install shuffle
       // breaks them. NOTE (flat-config gotcha): a later block that configures
-      // no-restricted-imports REPLACES this entry — the web/src conventions block below must
+      // no-restricted-imports REPLACES this entry — the src conventions block below must
       // carry the playwright path too.
       'no-restricted-imports': [
         'error',
@@ -326,7 +330,7 @@ export default tseslint.config(
     // empirically: candidate rules were run over the real repo and only kept where the code
     // already complied. Rejected candidates are recorded in ADR-0031 — don't re-litigate them
     // here without new evidence.
-    files: ['**/*.{ts,mts,mjs,js}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
+    files: ['**/*.{ts,mts,mjs,js}', '**/*.{tsx,cjs}'],
     plugins: { [DISABLE_DIRECTIVES_PLUGIN_NAME]: disableDirectivesPlugin },
     rules: {
       // A suppression names its rules and says why, and one that suppresses nothing fails —
@@ -385,21 +389,21 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.{ts,mts,mjs,js}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
+    files: ['**/*.{ts,mts,mjs,js}', '**/*.{tsx,cjs}'],
     rules: { 'prefer-const': 'error' },
   },
   {
     // Rate-limit bucket keys are a shared contract (ADR-0014): every producer must go through
-    // the builders in src/lib/server/rateLimitKeys.ts, so an inline string key at a call site
+    // the builders in netlify/server/rateLimitKeys.ts, so an inline string key at a call site
     // can silently fork (or collide with) a bucket. Unit tests can use literal keys as fixtures.
-    files: ['web/src/**'],
+    files: SHARED_TYPESCRIPT_FILES,
     rules: { 'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS] },
   },
   {
     // Adds the apiHandler guard to the /api endpoint modules (each served by a
-    // netlify/functions/api.ts function). Recomposes the whole web/src set, which this block's
+    // netlify/functions/api.ts function). Recomposes the whole src set, which this block's
     // entry would otherwise replace for these files.
-    files: ['web/src/lib/server/api/*.ts'],
+    files: ['netlify/server/api/*.ts'],
     ignores: [API_HANDLER_EXEMPT_ROUTE, '**/*.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS, ...API_HANDLER_WRAPPED],
@@ -429,7 +433,7 @@ export default tseslint.config(
   {
     // Flat-config rule entries replace (not merge) across blocks, so this block must include
     // the shared repo-wide playwright restriction alongside its own paths.
-    files: ['web/src/**/*.ts'],
+    files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { paths: WEB_SRC_IMPORT_RESTRICTIONS }],
     },
@@ -437,13 +441,8 @@ export default tseslint.config(
   {
     // Server-only packages stay behind the server boundary. Replaces the block above for
     // everything outside the server paths and tests, so it recomposes that block's full list.
-    files: ['web/src/**/*.ts'],
-    ignores: [
-      'web/src/lib/server/**',
-      'web/src/**/+server.ts',
-      'web/src/**/*.server.ts',
-      'web/src/**/*.test.ts',
-    ],
+    files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+    ignores: ['netlify/server/**', 'src/**/+server.ts', 'src/**/*.server.ts', 'src/**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -467,8 +466,8 @@ export default tseslint.config(
     // "`as` is a boundary tool"). Scoped to shipped code: tests and the *TestHarness modules
     // use `!` as the idiomatic "the fixture guarantees it", and would carry ~420 disables.
     // ADR-0031 records the measured adoption.
-    files: ['web/src/**/*.ts'],
-    ignores: ['web/src/**/*.test.ts', 'web/src/**/*TestHarness.ts'],
+    files: SHARED_TYPESCRIPT_FILES,
+    ignores: ['**/*.test.ts', '**/*TestHarness.ts'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'error' },
   },
   {
@@ -479,12 +478,7 @@ export default tseslint.config(
     // measure.mjs reads this block as the one default scope, so tools/ shares it rather than taking
     // its own. Excluded: generated pointer-instruction data and the frozen ideas-exploration
     // archive.
-    files: [
-      'web/src/**',
-      'e2e/**',
-      'tools/**/*.{mjs,js,ts}',
-      'experiments/native-architecture/**/*.{ts,tsx,cjs}',
-    ],
+    files: ['src/**', 'e2e/**', 'tools/**/*.{mjs,js,ts}', '**/*.{ts,tsx,cjs}'],
     ignores: ['tools/store-drawings/generated/**', 'tools/asset-gen/ideas-exploration/**'],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
@@ -499,7 +493,7 @@ export default tseslint.config(
     // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly
     // gets a per-file cap below at its length + 25, with the WHY, rather than a counter-driven
     // split. Tests are excluded because they are mostly describe() callbacks.
-    files: ['web/src/**/*.ts', 'experiments/native-architecture/src/**/*.{ts,tsx}'],
+    files: ['src/**/*.ts', 'src/**/*.{ts,tsx}'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'max-lines-per-function': [
@@ -510,7 +504,7 @@ export default tseslint.config(
   },
   {
     // What remains in createPWAUpdates is the updateReload state machine, whose transitions read and write the same reload and registration state; the stateless and self-owning pieces are already module-scope helpers and sub-factories.
-    files: ['web/src/lib/pwa/updates.ts'],
+    files: ['src/lib/pwa/updates.ts'],
     rules: {
       'max-lines-per-function': [
         'error',
@@ -521,7 +515,7 @@ export default tseslint.config(
   {
     // Vitest files (unit + repo-script tests) — Playwright specs are *.spec.ts and keep test().
     // Mixing the vocabularies makes greps and reporter output lie about which tier a test is in.
-    // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
+    // This block's no-restricted-syntax deliberately replaces the src rateLimit-key rule:
     // unit tests construct ad-hoc literal bucket keys on purpose.
     files: ['**/*.test.ts', '**/*.test.mjs'],
     plugins: { vitest },
@@ -544,10 +538,10 @@ export default tseslint.config(
   },
   {
     // The Vitest block above replaces no-restricted-syntax for test files, which would silently
-    // exempt web/src's colocated unit tests from the named-exports ban — recompose the full
+    // exempt src's colocated unit tests from the named-exports ban — recompose the full
     // effective set for that slice. (The rate-limit selectors stay deliberately absent: ad-hoc
     // literal bucket keys are the point of a unit test.)
-    files: ['web/src/**/*.test.ts'],
+    files: ['src/**/*.test.ts', 'netlify/server/**/*.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS, NAMED_EXPORTS_ONLY],
     },
@@ -587,21 +581,26 @@ export default tseslint.config(
   {
     // A *TestHarness module is imported by the *.test.ts files that share it and can define it()
     // blocks of its own (describePolicyRevisions), so it gets the whole vacuous-test set.
-    files: ['web/src/**/*TestHarness.ts'],
+    files: ['src/**/*TestHarness.ts', 'netlify/server/**/*TestHarness.ts'],
     plugins: { vitest },
     rules: VACUOUS_TEST_RULES.vitest,
   },
   {
     // The type-aware exception to the fast non-type-aware design above: floating promises
     // in app code silently swallow rejections (a failed dynamic import, an unawaited native
-    // call), and only a TS program can see a call's return type. Scoped to web/src TS so the
+    // call), and only a TS program can see a call's return type. Scoped to src TS so the
     // project-service cost stays off tooling/scripts.
-    files: ['web/src/**/*.ts'],
+    files: [
+      'src/lib/**/*.ts',
+      'netlify/server/**/*.ts',
+      'tools/{icons,marketing-assets,migration,release,store-drawings}/**/*.ts',
+    ],
     ignores: ['**/*.d.ts'],
     languageOptions: {
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname + '/web',
+        projectService: false,
+        project: './tsconfig.shared.json',
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
@@ -613,12 +612,12 @@ export default tseslint.config(
     // File.write() return a promise, and ten unawaited calls verified or moved files before their
     // bytes landed (issue 3062). tools/tests/native-floating-promises-lint.test.mjs is the
     // positive control.
-    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
-    ignores: ['**/*.d.ts'],
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['**/*.d.ts', 'src/lib/**'],
     languageOptions: {
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname + '/experiments/native-architecture',
+        tsconfigRootDir: import.meta.dirname + '/.',
       },
     },
     rules: {
@@ -627,11 +626,12 @@ export default tseslint.config(
   },
   {
     // Released Metro/Babel configuration and the Node transform witness use CommonJS loaders.
-    files: ['experiments/native-architecture/**/*.cjs'],
+    files: ['**/*.cjs'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
-    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/**'],
     rules: {
       'no-restricted-syntax': ['error', NAMED_EXPORTS_ONLY],
     },
@@ -640,7 +640,7 @@ export default tseslint.config(
     // The two classic hooks rules only: the plugin's recommended preset also enables the React
     // Compiler's rules, which judge code against a compiler the candidate does not run.
     // tools/tests/native-react-hooks-lint.test.mjs is the positive control.
-    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
       'react-hooks/rules-of-hooks': 'error',

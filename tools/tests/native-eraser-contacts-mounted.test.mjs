@@ -16,12 +16,12 @@ import {
   open,
   twoContacts,
 } from './native-contacts-mounted-harness.mjs';
-import { createPaperScroll } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { measurePaper as measureWebPaper } from '../../experiments/native-architecture/src/drawing/measurePaper.web.ts';
-import { offlineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/runtime.ts';
-import { PageArtMotion } from '../../experiments/native-architecture/src/drawing/PageArtMotion.tsx';
-import { prepareColoringPage } from '../../experiments/native-architecture/src/drawing/pageArtSelection.ts';
-import { createLazyExport } from '../../experiments/native-architecture/src/lazyExport.ts';
+import { createPaperScroll } from '../../src/drawing/paperGeometry.ts';
+import { measurePaper as measureWebPaper } from '../../src/drawing/measurePaper.web.ts';
+import { offlineLibrary } from '../../src/offlineLibrary/runtime.ts';
+import { PageArtMotion } from '../../src/drawing/PageArtMotion.tsx';
+import { prepareColoringPage } from '../../src/drawing/pageArtSelection.ts';
+import { createLazyExport } from '../../src/lazyExport.ts';
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
 
 describe('mounted joint cohort, canonical history and capture ownership', () => {

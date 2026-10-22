@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createHandoffCadence,
-  HANDOFF_SPACING_MS,
-} from '../../experiments/native-architecture/src/drawing/handoffCadence.ts';
+import { createHandoffCadence, HANDOFF_SPACING_MS } from '../../src/drawing/handoffCadence.ts';
 
 const FRAME_MS = 1000 / 120;
 // Device costs on the JavaScript thread: taking one packet's samples, and one flush + scene record

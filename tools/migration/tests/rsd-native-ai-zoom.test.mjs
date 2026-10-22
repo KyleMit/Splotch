@@ -1,8 +1,8 @@
 import { act, createElement, useState } from 'react';
 import { expect, it } from 'vitest';
 import { mount, records } from './rsd-native-selection-host.mjs';
-import { RsdAiResultStage } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiResultStage.tsx';
-import { createPinchZoom } from '../../../web/src/lib/actions/pinchZoom.ts';
+import { RsdAiResultStage } from '../../../src/rsdDrawing/RsdAiResultStage.tsx';
+import { createPinchZoom } from '../../../src/lib/actions/pinchZoom.ts';
 
 const event = (touches) => ({
   nativeEvent: {

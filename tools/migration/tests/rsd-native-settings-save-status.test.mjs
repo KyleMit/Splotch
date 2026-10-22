@@ -2,8 +2,8 @@ import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { host, mount, root } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { NativeSoundSettingsDialog } from '../../../src/rsdDrawing/RsdSettingsDialog.tsx';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
 
 const SAVED = 'AI Art choice saved.';
 const FAILED = 'The AI Art choice was not saved. AI stays as it was. Retry saving.';

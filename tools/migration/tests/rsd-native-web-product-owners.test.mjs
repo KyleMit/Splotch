@@ -2,9 +2,9 @@ import { caller, host, mount, expandControls } from './rsd-native-selection-host
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { productOwners } from '../../../experiments/native-architecture/src/product/productOwnersLoader.web.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { productOwners } from '../../../src/product/productOwnersLoader.web.ts';
 
 // The web export's loader, with the chunk it fetches held until each test releases it.
 const chunk = vi.hoisted(() => {
@@ -13,20 +13,17 @@ const chunk = vi.hoisted(() => {
   return { imports: 0, arrived, release };
 });
 vi.mock(
-  '../../../experiments/native-architecture/src/product/productOwnersLoader.ts',
-  () => import('../../../experiments/native-architecture/src/product/productOwnersLoader.web.ts')
+  '../../../src/product/productOwnersLoader.ts',
+  () => import('../../../src/product/productOwnersLoader.web.ts')
 );
-vi.mock(
-  '../../../experiments/native-architecture/src/product/productChunk.web.ts',
-  async (importOriginal) => {
-    chunk.imports += 1;
-    await chunk.arrived;
-    return importOriginal();
-  }
-);
+vi.mock('../../../src/product/productChunk.web.ts', async (importOriginal) => {
+  chunk.imports += 1;
+  await chunk.arrived;
+  return importOriginal();
+});
 
 const JOB_ID = 'b'.repeat(64);
-// A frame, then the shipping idle gate's timer fallback (web/src/lib/idle.ts), with margin.
+// A frame, then the shipping idle gate's timer fallback (src/lib/idle.ts), with margin.
 const PAINT_AND_IDLE_WAIT_MS = 2000;
 const SENT_AGO_MS = 60_000;
 

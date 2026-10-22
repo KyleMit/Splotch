@@ -176,7 +176,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: rn-web-export
-          path: experiments/native-architecture/dist/web/
+          path: dist/web/
           if-no-files-found: error
           retention-days: 1
 
@@ -216,7 +216,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rn-web-export
-          path: experiments/native-architecture/dist/web/
+          path: dist/web/
 
       - name: Run page-load performance gate
         run: npm run test:lighthouse:ci -- --no-build --port=4197
@@ -258,7 +258,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rn-web-export
-          path: experiments/native-architecture/dist/web/
+          path: dist/web/
 
       - name: Run RN web E2E
         run: npm run test:e2e -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}
@@ -300,7 +300,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rn-web-export
-          path: experiments/native-architecture/dist/web/
+          path: dist/web/
 
       - name: Run Firefox smoke
         run: npm run test:firefox:smoke
@@ -348,7 +348,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rn-web-export
-          path: experiments/native-architecture/dist/web/
+          path: dist/web/
 
       - name: Run WebKit smoke
         run: npm run test:webkit:smoke

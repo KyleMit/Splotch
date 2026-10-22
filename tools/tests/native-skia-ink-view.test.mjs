@@ -3,28 +3,16 @@ import { act, createElement, StrictMode, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import {
-  drawingPaper,
-  paperProjection,
-  UNADOPTED_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
-import {
-  DrawingSessionProvider,
-  useDrawingHistory,
-} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { SkiaInk } from '../../experiments/native-architecture/src/drawing/SkiaInk.tsx';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
-import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { drawingPaper, paperProjection, UNADOPTED_PAPER } from '../../src/drawing/paperSpace.ts';
+import { useUndoAction } from '../../src/useUndoAction.ts';
+import { DrawingSessionProvider, useDrawingHistory } from '../../src/product/DrawingSession.tsx';
+import { SkiaInk } from '../../src/drawing/SkiaInk.tsx';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { createLiveInkFeed } from '../../src/drawing/liveInk.ts';
+import { InkPaperScope } from '../../src/drawing/InkPaper.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
+import { addStrokes, createHistory, emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
 
 const PLANE = { width: 400, height: 300 };
 
@@ -49,7 +37,7 @@ vi.mock('react-native', async () => {
   return nativeInkViewSdk(() => skia.plane, loadImage, skia.accessibility);
 });
 
-vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
+vi.mock('../../src/drawing/skiaUndoGhostImage.ts', () => ({
   makeSkiaUndoGhost: (request) => {
     skia.ghosts.push(request);
     return {
@@ -61,7 +49,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts
 }));
 
 // Each SkiaInk render runs its commit probe once.
-vi.mock('../../experiments/native-architecture/src/drawing/perfProbe.ts', async (original) => ({
+vi.mock('../../src/drawing/perfProbe.ts', async (original) => ({
   ...(await original()),
   useInkCommitProbe: () => {
     skia.inkRenders += 1;

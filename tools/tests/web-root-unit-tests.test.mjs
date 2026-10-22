@@ -3,25 +3,15 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-// web/buildVersion.test.ts sits at the web root, beside the build-time module it
-// tests, which puts it outside two globs that only cover src/: Vitest's collection
-// include (web/vitest.config.ts) and the type-check include SvelteKit generates
-// into .svelte-kit/tsconfig.json, restated in web/tsconfig.json.
-//
-// Dropping either glob is silent. Without the Vitest entry the root tests stop
-// being collected and the suite still reports green; without the tsconfig entry
-// svelte-check skips the files and still reports zero errors. So the guard cannot
-// live in a web-root test — that file is itself collected by the glob it would be
-// guarding. It runs here, in the tools suite, which reaches both configs as
-// plain files.
-//
-// Parse vitest.config.ts without importing it: evaluation would pull in the
-// SvelteKit plugin, while a text search cannot distinguish test.include from
-// nested settings such as test.coverage.include.
+// Build-time and hosting tests live beside their owners outside src/lib. A collection
+// or type-check glob that misses either silently drops coverage, so this guard lives
+// in the independent tools tier and reads the configuration syntax itself.
 const repoRoot = join(import.meta.dirname, '..', '..');
 
-const VITEST_ROOT_TEST_GLOB = '*.test.ts';
-const TSCONFIG_ROOT_TEST_GLOB = '*.ts';
+const BUILD_MODULE_TESTS = [
+  ['netlify/securityPolicy.test.ts', 'netlify/**/*.ts'],
+  ['tools/release/lib/buildVersion.test.ts', 'tools/release/lib/buildVersion*.ts'],
+];
 
 const propertyInitializer = (object, name) => {
   const property = object.properties.find(
@@ -65,18 +55,18 @@ const testIncludeGlobs = (source) => {
 };
 
 const vitestIncludeGlobs = () => {
-  const source = readFileSync(join(repoRoot, 'web', 'vitest.config.ts'), 'utf8');
+  const source = readFileSync(join(repoRoot, 'vitest.config.ts'), 'utf8');
   return testIncludeGlobs(source);
 };
 
 const tsconfigIncludeGlobs = () => {
-  const source = readFileSync(join(repoRoot, 'web', 'tsconfig.json'), 'utf8');
+  const source = readFileSync(join(repoRoot, 'tsconfig.shared.json'), 'utf8');
   return JSON.parse(source.replace(/^\s*\/\/.*$/gm, '')).include;
 };
 
-describe('web-root unit tests', () => {
-  it('are collected by Vitest', () => {
-    expect(vitestIncludeGlobs()).toContain(VITEST_ROOT_TEST_GLOB);
+describe('build-module unit tests', () => {
+  it.each(BUILD_MODULE_TESTS)('collects %s with Vitest', (testFile) => {
+    expect(vitestIncludeGlobs()).toContain(testFile);
   });
 
   it('selects test.include instead of nested include settings', () => {
@@ -89,7 +79,7 @@ describe('web-root unit tests', () => {
     expect(testIncludeGlobs(source)).toEqual(['*.test.ts']);
   });
 
-  it('are type-checked by TypeScript', () => {
-    expect(tsconfigIncludeGlobs()).toContain(TSCONFIG_ROOT_TEST_GLOB);
+  it.each(BUILD_MODULE_TESTS)('type-checks %s with TypeScript', (_testFile, sourceGlob) => {
+    expect(tsconfigIncludeGlobs()).toContain(sourceGlob);
   });
 });

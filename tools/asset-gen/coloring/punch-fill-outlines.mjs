@@ -5,7 +5,7 @@
 //
 // Inputs (committed, never shipped):  tools/asset-gen/fill-src/{book}/{page}-{orient}.{light,night}.raw.webp
 // Mask:                               canonical {page}.overlay.svg / .dark.overlay.svg alpha
-// Outputs (committed, shipped):       web/static/coloring/{book}/{page}-{orient}.{light,night}.webp
+// Outputs (committed, shipped):       assets/static/coloring/{book}/{page}-{orient}.{light,night}.webp
 //
 // Offline + deterministic: pure sharp, no network, no GEMINI_API_KEY. Safe to
 // re-run anytime; a raw fill with no matching line art fails loudly — except

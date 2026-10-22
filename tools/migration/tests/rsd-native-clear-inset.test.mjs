@@ -1,7 +1,7 @@
 import { host, records } from './rsd-native-selection-host.mjs';
 import { expect, it } from 'vitest';
 import { clearProps, mountClear, press } from './rsd-native-clear-fixture.mjs';
-import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
+import { paletteHex } from '../../../src/drawing/palette.ts';
 
 const byTestID = (testID) => flat(records.props.findLast((props) => props.testID === testID).style);
 const committed = (node) => JSON.parse(node.dataset.committedProps).style;

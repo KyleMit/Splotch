@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  BROWSER_BACK_STATE_KEY,
-  createBrowserBack,
-} from '../../experiments/native-architecture/src/product/browserBack.ts';
+import { BROWSER_BACK_STATE_KEY, createBrowserBack } from '../../src/product/browserBack.ts';
 
 function browser() {
   const entries = [

@@ -45,7 +45,7 @@ describe('agent instruction file names', () => {
     expect(
       caseCollidingInstructionFiles([
         'CLAUDE.md',
-        'web/src/AGENTS.md',
+        'src/AGENTS.md',
         'docs/X/Claude.md',
         'a/Agents.md',
         'b/claude.local.md',

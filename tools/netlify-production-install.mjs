@@ -7,7 +7,6 @@ import { delimiter, isAbsolute, join, relative, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { parseArgs } from 'node:util';
 import { qualifyAmbientPnpmConfig, verifyAmbientPnpmConfig } from './lib/netlify-cache-config.mjs';
-import { CANDIDATE_DIRECTORY } from './lib/native-candidate.mjs';
 import { verifyNetlifyRuntime } from './lib/netlify-runtime.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
@@ -15,13 +14,7 @@ const SUPPORTED_PNPM_VERSION = '11.22.0';
 const CONFIG_TIMEOUT_MS = 30_000;
 const INSTALL_TIMEOUT_MS = 15 * 60_000;
 const MAX_CONFIG_OUTPUT_BYTES = 16_384;
-const OWNER_PATHS = [
-  'package.json',
-  'pnpm-lock.yaml',
-  'pnpm-workspace.yaml',
-  `${CANDIDATE_DIRECTORY}/package.json`,
-  'netlify.toml',
-];
+const OWNER_PATHS = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'netlify.toml'];
 const ABSENT_CONFIG_KEYS = [
   'modules-dir',
   'virtual-store-dir',
@@ -103,13 +96,8 @@ function requireKind(root, path, kind, absentAllowed = false) {
 function qualifyRoots(root) {
   requireKind(root, root, 'isDirectory');
   assert.equal(realpathSync(root), root, 'Checkout root must be canonical before clean');
-  const candidate = join(root, CANDIDATE_DIRECTORY);
-  requireKind(root, join(root, 'experiments'), 'isDirectory');
-  requireKind(root, candidate, 'isDirectory');
   for (const path of OWNER_PATHS) requireKind(root, join(root, path), 'isFile');
-  for (const project of [root, candidate]) {
-    requireKind(root, join(project, 'node_modules'), 'isDirectory', true);
-  }
+  requireKind(root, join(root, 'node_modules'), 'isDirectory', true);
 }
 
 function globalConfigPath(env) {
@@ -182,13 +170,10 @@ function managerLauncher(root, env) {
     }
     const resolved = realpathSync(path);
     assert.ok(lstatSync(resolved).isFile(), 'pnpm launcher is not a regular file');
-    for (const project of [root, join(root, CANDIDATE_DIRECTORY)]) {
-      assert.ok(
-        !within(join(project, 'node_modules'), path) &&
-          !within(join(project, 'node_modules'), resolved),
-        'pnpm launcher would be cleaned'
-      );
-    }
+    assert.ok(
+      !within(join(root, 'node_modules'), path) && !within(join(root, 'node_modules'), resolved),
+      'pnpm launcher would be cleaned'
+    );
     return {
       path,
       resolvedPath: resolved,
@@ -238,10 +223,7 @@ function qualifyConfig(launcher, root, env, runChild, ambient) {
     'Actual linker differs from the shipping owner'
   );
   const packages = configSetting('packages', launcher, root, env, runChild);
-  assert.ok(
-    Array.isArray(packages) && packages.length === 1 && packages[0] === CANDIDATE_DIRECTORY,
-    'Actual workspace packages differ from the fixed roots'
-  );
+  assert.ok(packages === ABSENT, 'A root-only app has no workspace packages');
   const builds = configSetting('allowBuilds', launcher, root, env, runChild);
   assert.ok(
     builds &&
@@ -264,7 +246,7 @@ function qualifyConfig(launcher, root, env, runChild, ambient) {
         ambient.storeDir === null ? 'pnpm-11.22-source-default' : ambient.family.disposition,
     },
     { key: 'node-linker', value: 'hoisted' },
-    { key: 'packages', value: packages },
+    { key: 'packages', disposition: 'root-only-package' },
     { key: 'allowBuilds', value: builds },
   ];
 }
@@ -357,7 +339,6 @@ export function installNetlifyProductionDependencies(
   };
   const before = currentOwners(root);
   const manifest = readManifest(root, 'package.json');
-  readManifest(root, `${CANDIDATE_DIRECTORY}/package.json`);
   assert.ok(
     manifest.packageManager === `pnpm@${SUPPORTED_PNPM_VERSION}` &&
       manifest.devEngines?.packageManager === undefined,

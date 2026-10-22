@@ -169,7 +169,7 @@ Relaunch the app afterwards. `--ks-pass` and `--key-pass` take apksigner's forms
   for a different Hermes bytecode version, and an `--out` that already holds files.
 
 React Native's Debug build loading from Metro is the other way to skip a native build, for
-functional checks only; `experiments/native-architecture/DEVELOPMENT.md` describes it.
+functional checks only; `DEVELOPMENT.md` describes it.
 
 ## Scripted multi-finger touch on a physical Android device
 

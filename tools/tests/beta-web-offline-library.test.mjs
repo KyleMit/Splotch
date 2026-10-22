@@ -1,21 +1,18 @@
 import { createHash } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
-import { createDeferredLibrary } from '../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { createLibraryPlatform } from '../../src/platform/offlineLibrary.web.ts';
+import { createDeferredLibrary } from '../../src/offlineLibrary/deferredLibrary.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
 import {
   LIBRARY_DATABASE,
   MAX_LIBRARY_PATHS,
   readLibraryStartupDisposition,
-} from '../../experiments/native-architecture/src/platform/offlineLibraryStorage.web.ts';
-import { LIBRARY_FILE_TIMEOUT_MS } from '../../experiments/native-architecture/src/platform/offlineLibraryTransfer.web.ts';
-import {
-  createLibraryStore,
-  packDirectory,
-} from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { MAX_PACK_FILE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
-import { LIBRARY_TEXT_LIMIT_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
+} from '../../src/platform/offlineLibraryStorage.web.ts';
+import { LIBRARY_FILE_TIMEOUT_MS } from '../../src/platform/offlineLibraryTransfer.web.ts';
+import { createLibraryStore, packDirectory } from '../../src/offlineLibrary/store.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { MAX_PACK_FILE_BYTES } from '../../src/offlineLibrary/manifest.ts';
+import { LIBRARY_TEXT_LIMIT_BYTES } from '../../src/offlineLibrary/contract.ts';
 
 const idb = vi.hoisted(() => ({
   rows: new Map(),
@@ -26,7 +23,7 @@ const idb = vi.hoisted(() => ({
   opens: [],
   corruptReadback: false,
 }));
-vi.mock('../../web/src/lib/idle.ts', () => ({
+vi.mock('../../src/lib/idle.ts', () => ({
   scheduleIdle(callback) {
     let cancelled = false;
     const run = () => {
@@ -39,7 +36,7 @@ vi.mock('../../web/src/lib/idle.ts', () => ({
     };
   },
 }));
-vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
+vi.mock('../../src/lib/idbDatabase.ts', () => ({
   openDatabase: vi.fn(async (name, store) => {
     idb.opens.push([name, store]);
     return {

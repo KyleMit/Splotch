@@ -5,13 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 // tools/ shares the web size ratchet's default max-lines block. A glob that narrows, or an
 // exclusion that widens, keeps `npm run lint` green while a tools file grows past the cap; this
-// positive control fails instead. The cap is read from a web/src path rather than restated, so the
+// positive control fails instead. The cap is read from a src path rather than restated, so the
 // control pins parity between the trees, not the number.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const eslint = new ESLint({ cwd: repoRoot });
 
 const [, { max: defaultCap }] = (
-  await eslint.calculateConfigForFile(join(repoRoot, 'web/src/lib/probe.ts'))
+  await eslint.calculateConfigForFile(join(repoRoot, 'src/lib/probe.ts'))
 ).rules['max-lines'];
 
 const maxLinesMessages = async (fixture, lineCount) => {

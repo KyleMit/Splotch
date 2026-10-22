@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { addStrokes, createHistory, emptyDrawing } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { adoptPaper } from '../../src/drawing/paperSpace.ts';
 import { legacyDrawing } from './native-paper-fixtures.mjs';
 
 function contactedDrawing(frame) {

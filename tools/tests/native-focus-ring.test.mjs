@@ -4,20 +4,20 @@ import { join } from 'node:path';
 import { act, createElement as h, forwardRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { brand, scale } from '../../web/src/lib/design/tokens.ts';
-import { Animated } from '../../experiments/native-architecture/src/platform/animated.ts';
-import { RsdButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
-import { RsdIconButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { RsdSegmentedPicker } from '../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
-import { RsdHubRow } from '../../experiments/native-architecture/src/rsdDrawing/RsdHubRow.tsx';
-import { RsdToggleSwitch } from '../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.tsx';
-import { RsdSliderRow } from '../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
-import { RsdDisclosure } from '../../experiments/native-architecture/src/rsdDrawing/RsdDisclosure.tsx';
-import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
-import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
-import { DeviceCheckbox } from '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.tsx';
-import { RsdClearOverlay } from '../../experiments/native-architecture/src/rsdDrawing/RsdClearControl.tsx';
-import { RsdAiStylePrompt } from '../../experiments/native-architecture/src/rsdDrawing/RsdAiStylePrompt.tsx';
+import { brand, scale } from '../../src/lib/design/tokens.ts';
+import { Animated } from '../../src/platform/animated.ts';
+import { RsdButton } from '../../src/rsdDrawing/RsdButton.tsx';
+import { RsdIconButton } from '../../src/rsdDrawing/RsdIconButton.tsx';
+import { RsdSegmentedPicker } from '../../src/rsdDrawing/RsdSegmentedPicker.tsx';
+import { RsdHubRow } from '../../src/rsdDrawing/RsdHubRow.tsx';
+import { RsdToggleSwitch } from '../../src/rsdDrawing/RsdToggleSwitch.tsx';
+import { RsdSliderRow } from '../../src/rsdDrawing/RsdSlider.tsx';
+import { RsdDisclosure } from '../../src/rsdDrawing/RsdDisclosure.tsx';
+import { DialogHeader } from '../../src/rsdDrawing/DialogHeader.tsx';
+import { RsdPageSheet } from '../../src/rsdDrawing/RsdNotFoundPage.tsx';
+import { DeviceCheckbox } from '../../src/rsdDrawing/RsdDeviceOptIn.tsx';
+import { RsdClearOverlay } from '../../src/rsdDrawing/RsdClearControl.tsx';
+import { RsdAiStylePrompt } from '../../src/rsdDrawing/RsdAiStylePrompt.tsx';
 
 // The web export's controls as the browser gets them: React Native Web's View and focus
 // handling, each platform split's .web file, and React Strict DOM reduced to the plain elements
@@ -25,45 +25,39 @@ import { RsdAiStylePrompt } from '../../experiments/native-architecture/src/rsdD
 // cascade to whichever element the browser would focus.
 vi.mock('react-native', async () => import('react-native-web'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
-  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+  '../../src/platform/KeyboardScope.tsx',
+  () => import('../../src/platform/KeyboardScope.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/DepartingSheetInk.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/DepartingSheetInk.web.tsx')
+  '../../src/rsdDrawing/DepartingSheetInk.tsx',
+  () => import('../../src/rsdDrawing/DepartingSheetInk.web.tsx')
 );
+vi.mock('../../src/platform/flyoutFocus.ts', () => import('../../src/platform/flyoutFocus.web.ts'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
-  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
+  '../../src/platform/bootAppearance.ts',
+  () => import('../../src/platform/bootAppearance.web.ts')
 );
-vi.mock(
-  '../../experiments/native-architecture/src/platform/bootAppearance.ts',
-  () => import('../../experiments/native-architecture/src/platform/bootAppearance.web.ts')
-);
-vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
-);
+vi.mock('../../src/rsdDrawing/landFocus.ts', () => import('../../src/rsdDrawing/landFocus.web.ts'));
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+  '../../src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../src/rsdDrawing/ModalScrim.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+  '../../src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../src/rsdDrawing/RsdPressable.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.web.tsx')
+  '../../src/rsdDrawing/RsdToggleSwitch.tsx',
+  () => import('../../src/rsdDrawing/RsdToggleSwitch.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/segmentThumb.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/segmentThumb.web.tsx')
+  '../../src/rsdDrawing/segmentThumb.tsx',
+  () => import('../../src/rsdDrawing/segmentThumb.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/platform/clearActivation.ts',
-  () => import('../../experiments/native-architecture/src/platform/clearActivation.web.ts')
+  '../../src/platform/clearActivation.ts',
+  () => import('../../src/platform/clearActivation.web.ts')
 );
 vi.mock('react-native-safe-area-context', () => ({
   initialWindowMetrics: null,
@@ -108,10 +102,7 @@ const root = join(import.meta.dirname, '../..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 // The stylesheet without React Strict DOM's own rules, which the postcss plugin expands in place
 // of its directive.
-const RING_RULES = read('experiments/native-architecture/src/strict.css').replace(
-  '@react-strict-dom;',
-  ''
-);
+const RING_RULES = read('src/strict.css').replace('@react-strict-dom;', '');
 
 // A selector list split at its own commas, not those inside :is() or :where().
 function selectorList(selectors) {

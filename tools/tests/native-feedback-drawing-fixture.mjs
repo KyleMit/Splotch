@@ -1,13 +1,13 @@
 import { afterEach, expect, vi } from 'vitest';
 
-vi.mock('../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
+vi.mock('../../src/platform/useOnline.ts', () => ({
   useOnline: () => true,
 }));
-vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+vi.mock('../../src/platform/networkReturn.ts', () => ({
   subscribeNetworkReturn: () => () => {},
 }));
 
-vi.mock('../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
+vi.mock('../../src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
 
@@ -18,7 +18,7 @@ const feedback = vi.hoisted(() => ({
 }));
 
 // Drawing fixtures retain the actual feedback owner while refusing native SDK I/O outside their scope.
-vi.mock('../../experiments/native-architecture/src/platform/feedback.ts', () => ({
+vi.mock('../../src/platform/feedback.ts', () => ({
   feedbackTransport: feedback.send,
   feedbackDevice: feedback.device,
   feedbackOffline: () => false,

@@ -2,8 +2,8 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useFullscreen } from '../../../experiments/native-architecture/src/platform/useFullscreen.web.ts';
-import { useFullscreen as useNativeFullscreen } from '../../../experiments/native-architecture/src/platform/useFullscreen.ts';
+import { useFullscreen } from '../../../src/platform/useFullscreen.web.ts';
+import { useFullscreen as useNativeFullscreen } from '../../../src/platform/useFullscreen.ts';
 
 const ANDROID_CHROME =
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';

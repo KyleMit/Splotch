@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 
-vi.mock('../../../experiments/native-architecture/src/product/afterDrawingPaint.ts', async () => {
-  const { drawingPaint } =
-    await import('../../../experiments/native-architecture/src/product/drawingPaint.ts');
+vi.mock('../../../src/product/afterDrawingPaint.ts', async () => {
+  const { drawingPaint } = await import('../../../src/product/drawingPaint.ts');
   return { afterDrawingPaint: () => drawingPaint.painted().then(() => {}) };
 });
 
@@ -17,7 +16,7 @@ function drawerStoreValue() {
   if (drawerStore.value instanceof Error) throw drawerStore.value;
   return drawerStore.value;
 }
-vi.mock('../../../experiments/native-architecture/src/platform/drawerOpen.ts', () => ({
+vi.mock('../../../src/platform/drawerOpen.ts', () => ({
   drawerOpenStorage: {
     read: drawerStoreValue,
     write: (value) => {
@@ -26,7 +25,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/drawerOpen.ts', (
     },
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
+vi.mock('../../../src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
 
@@ -41,7 +40,7 @@ beforeEach(() => {
   for (const key of ['load', 'play', 'note']) clearSoundPort[key].mockClear();
   clearSoundPort.notes = 'unavailable';
 });
-vi.mock('../../../experiments/native-architecture/src/platform/clearSound.ts', () => ({
+vi.mock('../../../src/platform/clearSound.ts', () => ({
   loadClearPageTurn: async (signal, publishNotes) => {
     clearSoundPort.load(signal);
     if (clearSoundPort.notes === 'available') publishNotes(clearSoundPort.note);

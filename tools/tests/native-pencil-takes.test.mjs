@@ -5,12 +5,8 @@ vi.mock('expo-audio', () => ({
   setAudioModeAsync: async () => {},
   createAudioPlayer: native.create,
 }));
-import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
-import {
-  PENCIL_SOUNDS,
-  pickPencilStart,
-  pickPencilTake,
-} from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
+import { loadDrawingLoop } from '../../src/platform/drawingAudio.ts';
+import { PENCIL_SOUNDS, pickPencilStart, pickPencilTake } from '../../src/audio/pencilSounds.ts';
 
 // The native drawing loop's three takes: which one a stroke plays, and where in it, without the
 // seek a stroke start must never issue (issue 3003), and each take's first play made before any

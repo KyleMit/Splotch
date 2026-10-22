@@ -2,14 +2,17 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "include": ["dependencies", "unlisted", "unresolved", "binaries"],
   "entry": [
-    "netlify/functions/*.ts!",
+    "netlify/functions/{api,generate-image-background,generation-attempt-background,purge-*}.ts!",
     "tools/netlify-production-install.mjs!",
     "tools/migration/build-native-web.mjs!",
     "tools/migration/check-native-web-precache.mjs!",
-    "tools/migration/check-native-web-startup.mjs!"
+    "tools/migration/check-native-web-startup.mjs!",
+    "src/index.ts",
+    "*.cjs",
+    "postcss.config.mjs"
   ],
   "paths": {
-    "$lib/*": ["web/src/lib/*"]
+    "$lib/*": ["src/lib/*"]
   },
   "ignoreUnresolved": ["^\\$app/", "^\\$env/"],
   "ignoreDependencies": [
@@ -26,7 +29,5 @@
   "prettier": false,
   "stylelint": false,
   "svgo": false,
-  "vitest": false,
-  "capacitor": false,
-  "ignoreWorkspaces": ["experiments/native-architecture"]
+  "vitest": false
 }

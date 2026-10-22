@@ -14,7 +14,7 @@ import {
   readReplayTrace,
   REPLAY_TRACE_NAMES,
   sampleTimeMs,
-} from '../../experiments/native-architecture/src/drawing/replayTrace.ts';
+} from '../../src/drawing/replayTrace.ts';
 
 const FRAME_MS = 1000 / 120;
 const DIGITIZER_MS = 1000 / 240;

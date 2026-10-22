@@ -4,16 +4,16 @@ import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import browserslist from 'browserslist';
 import { features } from 'web-features';
-import { BROWSER_TARGETS } from '../web/browserTargets.ts';
+import { BROWSER_TARGETS } from './lib/browserTargets.ts';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 // Read-only evidence for the audit-compatibility skill: how many users the
-// declared floor reaches next to Baseline Widely Available, which web/src
+// declared floor reaches next to Baseline Widely Available, which src
 // sites probe for a platform feature, and where a named web-features feature
 // sits relative to the floor. It reports; every keep/raise/delete judgment
 // stays with the auditor.
 
-const SOURCE_ROOT = join(ROOT, 'web', 'src');
+const SOURCE_ROOT = join(ROOT, 'src');
 const REGISTER_DOC = join(ROOT, 'docs', 'COMPATIBILITY.md');
 const REGISTER_HEADING = '## API risk register';
 

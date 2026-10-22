@@ -45,7 +45,7 @@ import {
   imageFormat,
   pool,
 } from './lib/model-eval.mjs';
-import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
+import { buildPromptForStyle } from '../../src/lib/ai/prompt.ts';
 import { callVariant } from './lib/image-providers.mjs';
 import { scoreComposition } from './lib/composition-score.mjs';
 import { esc } from '../lib/html.mjs';
@@ -70,7 +70,7 @@ const REPORT_THUMB_JPEG_QUALITY = 82;
 
 // The default arm is whatever production renders with, resolved from the
 // IMAGE_MODEL/IMAGE_QUALITY pair the drift check pins to
-// web/src/lib/server/ai/openai.ts — a prompt round measured against a model the
+// netlify/server/ai/openai.ts — a prompt round measured against a model the
 // app does not ship is worse than no measurement. A lab may override `variant`
 // to pit another model+knob combo against the same prompts; gpt-image-1.5 is the
 // newest OpenAI model that still accepts input_fidelity (gpt-image-2 rejects the

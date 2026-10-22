@@ -1,5 +1,5 @@
-import type { StrokeSize } from '../../../web/src/lib/drawing/strokeSettings';
-import type { PaletteLabel } from '../../../web/src/lib/palette';
+import type { StrokeSize } from './strokeSettings';
+import type { PaletteLabel } from '../../../src/lib/palette';
 
 export interface InstructionBox {
   height: number;

@@ -3,23 +3,13 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NativeAbortController } from './native-rn-abort-controller.mjs';
-import {
-  AUDIO_LOAD_TIMEOUT_MS,
-  GAIN_RAMP_S,
-} from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
+import { AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S } from '../../src/audio/drawingAudio.ts';
 const native = vi.hoisted(() => ({ players: [], mode: vi.fn(async () => {}), create: vi.fn() }));
 vi.mock('expo-audio', () => ({ setAudioModeAsync: native.mode, createAudioPlayer: native.create }));
-import {
-  loadDrawingLoop,
-  loadPencilClip,
-} from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
-import {
-  PENCIL_SOUNDS,
-  pickPencilStart,
-  pickPencilTake,
-} from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
-import { PLAYBACK_AUDIO_MODE } from '../../experiments/native-architecture/src/audio/playbackMode.ts';
-import { createClearSound } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
+import { loadDrawingLoop, loadPencilClip } from '../../src/platform/drawingAudio.ts';
+import { PENCIL_SOUNDS, pickPencilStart, pickPencilTake } from '../../src/audio/pencilSounds.ts';
+import { PLAYBACK_AUDIO_MODE } from '../../src/audio/playbackMode.ts';
+import { createClearSound } from '../../src/audio/pageTurnSound.ts';
 
 const loadFirstClip = (signal, failure) => loadPencilClip(PENCIL_SOUNDS[0], signal, failure);
 function nativePlayer() {
@@ -64,7 +54,7 @@ function assertResetReleased(f) {
 }
 async function resetRefusalMutation() {
   const source = readFileSync(
-    join(import.meta.dirname, '../../experiments/native-architecture/src/platform/drawingAudio.ts'),
+    join(import.meta.dirname, '../../src/platform/drawingAudio.ts'),
     'utf8'
   );
   const guard = 'if (status.mediaServicesDidReset)';

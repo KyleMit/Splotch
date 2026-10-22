@@ -4,7 +4,7 @@
 import {
   DESIGN_PAGE_SCROLLER_TEST_ID,
   INFORMATION_PAGE_SCROLLER_TEST_ID,
-} from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
+} from '../../src/rsdDrawing/pageFrame.ts';
 
 // Every variant carries the page's fragment targets (its section ids), and a browser follows a
 // fragment to the first element with that id, which without a script is usually a hidden variant.

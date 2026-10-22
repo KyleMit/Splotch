@@ -13,8 +13,8 @@ import {
 } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
-import { IMAGE_REPORT_RETENTION_DAYS } from '../web/src/lib/imageReport.ts';
-import { IMAGE_REPORT_STORE_NAME } from '../web/src/lib/server/imageReportStoreName.ts';
+import { IMAGE_REPORT_RETENTION_DAYS } from '../src/lib/imageReport.ts';
+import { IMAGE_REPORT_STORE_NAME } from '../netlify/server/imageReportStoreName.ts';
 import { isMain, ROOT, runId, runMain } from './lib/proc.mjs';
 
 const PRODUCTION_DOMAIN = 'splotch.art';

@@ -3,16 +3,16 @@ import {
   BETA_OPT_IN_URL,
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
-} from '../../web/src/lib/components/beta/androidBeta.ts';
-import { betaPathFor } from '../../web/src/lib/components/beta/betaPlatform.ts';
+} from '../../src/lib/components/beta/androidBeta.ts';
+import { betaPathFor } from '../../src/lib/components/beta/betaPlatform.ts';
 import {
   TESTFLIGHT_APP_URL,
   TESTFLIGHT_INVITE_URL,
-} from '../../web/src/lib/components/beta/iosBeta.ts';
-import { SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
-import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
-import { BETA_COPY } from '../../experiments/native-architecture/src/pageDocument/betaCopy.ts';
-import { supportEmail } from '../../web/src/lib/supportEmail.ts';
+} from '../../src/lib/components/beta/iosBeta.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../src/lib/breakpoints.ts';
+import { SITE_ORIGIN } from '../../src/lib/siteUrl.ts';
+import { BETA_COPY } from '../../src/pageDocument/betaCopy.ts';
+import { supportEmail } from '../../src/lib/supportEmail.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
 import { ANDROID_UA, expectWired, IPAD_UA } from '../support/group-a.ts';

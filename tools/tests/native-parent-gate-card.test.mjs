@@ -4,12 +4,9 @@ import {
   PARENT_GATE_SUCCESS_HOLD_MS,
   PARENT_GATE_ERROR_VISIBLE_MS,
   PARENT_GATE_SHAKE_MS,
-} from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { PROTECTED_PARENT_POLICIES } from '../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
-import {
-  GATE_LOCKOUT_MAX_MS,
-  GATE_LOCKOUT_ENDED_MESSAGE,
-} from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
+} from '../../src/parentCenter/parentGate.ts';
+import { PROTECTED_PARENT_POLICIES } from '../../src/parentCenter/parentPolicy.ts';
+import { GATE_LOCKOUT_MAX_MS, GATE_LOCKOUT_ENDED_MESSAGE } from '../../src/feedback/gateLockout.ts';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());

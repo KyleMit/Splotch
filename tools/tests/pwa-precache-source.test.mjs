@@ -7,7 +7,7 @@ import {
 import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
-} from '../../web/src/lib/pwa/appShellRoute.ts';
+} from '../../src/lib/pwa/appShellRoute.ts';
 
 const appShellUrl = appShellPrecacheUrl('build-id');
 const appShellFallbackLookups = APP_SHELL_FALLBACK_CALLBACKS.map((callback) => ({

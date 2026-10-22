@@ -1,6 +1,6 @@
 // Declares only the exports TypeScript imports (web/netlifyFunctionsHost.ts); tools/ itself is untyped.
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { NetlifyContext } from '../../web/src/lib/server/api/apiFunction';
+import type { NetlifyContext } from '../../netlify/server/api/apiFunction';
 
 export type NetlifyFunction = (request: Request, context: NetlifyContext) => Promise<Response>;
 

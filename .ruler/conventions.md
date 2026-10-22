@@ -29,17 +29,17 @@
   (`@typescript-eslint/no-explicit-any` enforces the zero count).
 * **Near-universal conventions are lint rules, not review vigilance** (ADR-0031, which also records
   the measured rejected candidates — don't re-litigate them without new evidence). The empirically
-  ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
-  uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
-  `prefer-const` enforces immutable bindings, and "should" is banned from test titles. CSS gets its
-  own linter: `npm run lint:css` runs stylelint over hand-authored `.css` files in the repo, and its
-  rules were chosen the same measured way — the ones that catch CSS the parser keeps and the browser
-  silently never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
+  ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `src` uses
+  named exports only, a mixed import marks its types inline (`import { a, type B }`), `prefer-const`
+  enforces immutable bindings, and "should" is banned from test titles. CSS gets its own linter:
+  `npm run lint:css` runs stylelint over hand-authored `.css` files in the repo, and its rules were
+  chosen the same measured way — the ones that catch CSS the parser keeps and the browser silently
+  never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
   `selector-pseudo-class-no-unknown`) plus the notation conventions, colour included
-  (`rgb(0 0 0 / 60%)`, never `rgba(`). Test placement (`.test.ts` colocated under `web/src`,
-  `.spec.ts` in `e2e/specs`) is drift-guarded by `tools/tests/test-file-placement.test.mjs`.
-  Prose-only by choice: PascalCase component files, camelCase lib modules, and dot-joined
-  multi-aspect test names (`platform.osLabel.test.ts`).
+  (`rgb(0 0 0 / 60%)`, never `rgba(`). Test placement (`.test.ts` colocated under `src`, `.spec.ts`
+  in `e2e/specs`) is drift-guarded by `tools/tests/test-file-placement.test.mjs`. Prose-only by
+  choice: PascalCase component files, camelCase lib modules, and dot-joined multi-aspect test names
+  (`platform.osLabel.test.ts`).
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
   `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or

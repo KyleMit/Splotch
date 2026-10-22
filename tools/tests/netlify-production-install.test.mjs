@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { installNetlifyProductionDependencies } from '../netlify-production-install.mjs';
 import { ROOT } from '../lib/proc.mjs';
-import { CANDIDATE_DIRECTORY } from '../lib/native-candidate.mjs';
 import {
   CHILD_TIMEOUT_MS,
   cleanupFixtures,
@@ -48,7 +47,7 @@ describe('Netlify second production installer', () => {
     ).toBe(0);
     expect(
       context.records.find((row) => row.stage === 'second-production-install-qualified').owners
-    ).toHaveLength(5);
+    ).toHaveLength(4);
   });
 
   it('accepts a warm regular module tree and probes the fixed stale nested package', () => {
@@ -88,7 +87,14 @@ describe('Netlify second production installer', () => {
     }
   );
 
-  it.each(['node_modules', `${CANDIDATE_DIRECTORY}/node_modules`, 'experiments'])(
+  it('rejects workspace packages before cleaning the single root install', () => {
+    const context = fixture();
+    setSetting(context, 'packages', ['other-app']);
+    expect(context.run).toThrow('A root-only app has no workspace packages');
+    expect(context.calls().some((args) => args[0] === 'ci')).toBe(false);
+  });
+
+  it.each(['node_modules'])(
     'rejects linked root %s before the manager and preserves its real outside sentinel',
     (path) => {
       const context = fixture();
@@ -278,8 +284,8 @@ describe('Netlify second production installer', () => {
 
   it('refuses an install lifecycle script before manager execution', () => {
     const context = fixture();
-    put(context.root, `${CANDIDATE_DIRECTORY}/package.json`, {
-      name: '@splotch/native-architecture',
+    put(context.root, 'package.json', {
+      name: 'splotch',
       scripts: { postinstall: 'unexpected-child' },
     });
     expect(context.run).toThrow('Workspace lifecycle scripts need a reviewed clean-install route');
@@ -289,8 +295,6 @@ describe('Netlify second production installer', () => {
   it.each([
     ['package.json', 'preprepare'],
     ['package.json', 'postprepare'],
-    [`${CANDIDATE_DIRECTORY}/package.json`, 'preprepare'],
-    [`${CANDIDATE_DIRECTORY}/package.json`, 'postprepare'],
   ])('refuses %s %s before any manager child', (path, stage) => {
     const context = fixture();
     const manifest = JSON.parse(readFileSync(join(context.root, path), 'utf8'));

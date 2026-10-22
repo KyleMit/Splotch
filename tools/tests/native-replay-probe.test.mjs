@@ -1,21 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  PERF_LINE_VERSION,
-  PERF_LOG_MODULE,
-  PERF_LOG_TAG,
-} from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
+import { PERF_LINE_VERSION, PERF_LOG_MODULE, PERF_LOG_TAG } from '../../src/drawing/perfCohort.ts';
 import {
   REPLAY_LAUNCH_KEY,
   REPLAY_MODULE,
   REPLAY_SETTLE_MS,
   REPLAY_TRACE_NAMES,
-} from '../../experiments/native-architecture/src/drawing/replayTrace.ts';
+} from '../../src/drawing/replayTrace.ts';
 import { traceFile } from '../migration/gen-replay-traces.mjs';
 
 const ROOT = join(import.meta.dirname, '../..');
-const APP = 'experiments/native-architecture/';
+const APP = '';
 const ANDROID = `${APP}android/app/src/main/java/art/splotch/app/`;
 const IOS = `${APP}ios/Splotch/`;
 const CONTEXT = {
@@ -61,8 +57,7 @@ function nativeReplay(requested, report = null) {
 
 async function replay(module) {
   host.modules = { [REPLAY_MODULE]: module };
-  const { replayRequestedTrace } =
-    await import('../../experiments/native-architecture/src/drawing/perfReplay.ts');
+  const { replayRequestedTrace } = await import('../../src/drawing/perfReplay.ts');
   const lines = [];
   await replayRequestedTrace((line) => lines.push(JSON.parse(line)), CONTEXT);
   return lines;
@@ -166,7 +161,7 @@ describe('the probe gate on the replay', () => {
   async function loadProbe(flag) {
     vi.stubEnv('EXPO_PUBLIC_SPLOTCH_PERF_PROBE', flag);
     host.modules = { [REPLAY_MODULE]: nativeReplay(null), [PERF_LOG_MODULE]: { write: vi.fn() } };
-    await import('../../experiments/native-architecture/src/drawing/perfProbe.native.ts');
+    await import('../../src/drawing/perfProbe.native.ts');
     await vi.dynamicImportSettled();
     await new Promise((resolve) => setTimeout(resolve, 0));
     return host.modules[REPLAY_MODULE];

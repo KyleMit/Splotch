@@ -10,35 +10,30 @@ import {
   clearLadderStep,
   CLEAR_CANCEL_NOTES,
   CLEAR_CANCEL_STEP_SEMITONES,
-} from '../../web/src/lib/audio/clearSoundNotes.ts';
+} from '../../src/lib/audio/clearSoundNotes.ts';
 
-import { CLEAR_PAGE_TURN_ASSET_GAIN } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
-import { AUDIO_PLAYS_IN_SILENT_MODE as IOS_PLAYS_IN_SILENT_MODE } from '../../experiments/native-architecture/src/platform/audioSilentMode.ts';
-import { AUDIO_PLAYS_IN_SILENT_MODE as ANDROID_PLAYS_IN_SILENT_MODE } from '../../experiments/native-architecture/src/platform/audioSilentMode.android.ts';
+import { CLEAR_PAGE_TURN_ASSET_GAIN } from '../../src/audio/pageTurnSound.ts';
+import { AUDIO_PLAYS_IN_SILENT_MODE as IOS_PLAYS_IN_SILENT_MODE } from '../../src/platform/audioSilentMode.ts';
+import { AUDIO_PLAYS_IN_SILENT_MODE as ANDROID_PLAYS_IN_SILENT_MODE } from '../../src/platform/audioSilentMode.android.ts';
 import { describeMp3 } from '../sounds/lib/mp3-stream.mjs';
-import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
+import { PENCIL_SOUNDS } from '../../src/audio/pencilSounds.ts';
 
-import { impactThreshold } from '../../experiments/native-architecture/src/platform/clearHaptics.ts';
-import { clearActivationProps as nativeActivation } from '../../experiments/native-architecture/src/platform/clearActivation.ts';
-import { clearActivationProps as webActivation } from '../../experiments/native-architecture/src/platform/clearActivation.web.ts';
+import { impactThreshold } from '../../src/platform/clearHaptics.ts';
+import { clearActivationProps as nativeActivation } from '../../src/platform/clearActivation.ts';
+import { clearActivationProps as webActivation } from '../../src/platform/clearActivation.web.ts';
 import {
   impactThreshold as webImpactThreshold,
   WEB_IMPACT_MS,
-} from '../../experiments/native-architecture/src/platform/clearHaptics.web.ts';
+} from '../../src/platform/clearHaptics.web.ts';
 
-import { SETTINGS_METRICS } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { scale } from '../../web/src/lib/design/tokens.ts';
+import { SETTINGS_METRICS } from '../../src/drawing/theme.ts';
+import { scale } from '../../src/lib/design/tokens.ts';
 const root = join(import.meta.dirname, '../..');
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const takeNames = ['pencil-1.mp3', 'pencil-2.mp3', 'pencil-3.mp3'];
-const candidateTakes = readFileSync(
-  join(root, 'experiments/native-architecture/src/audio/pencilSounds.ts'),
-  'utf8'
-);
-const shippingAsset = readFileSync(join(root, 'web/static/sounds/pencil-1.mp3'));
-const candidateAsset = readFileSync(
-  join(root, 'experiments/native-architecture/src/audio/pencil-1.mp3')
-);
+const candidateTakes = readFileSync(join(root, 'src/audio/pencilSounds.ts'), 'utf8');
+const shippingAsset = readFileSync(join(root, 'assets/static/sounds/pencil-1.mp3'));
+const candidateAsset = readFileSync(join(root, 'src/audio/pencil-1.mp3'));
 describe('candidate-owned audio and Settings projections', () => {
   it('pins the bundled native clip to the reused portable MP3 bytes', () => {
     expect(digest(candidateAsset)).toBe(digest(shippingAsset));
@@ -46,9 +41,9 @@ describe('candidate-owned audio and Settings projections', () => {
   it('bundles every pencil take byte for byte and imports the complete set', () => {
     for (const name of takeNames) {
       expect(candidateTakes).toContain(`'./${name}'`);
-      expect(
-        digest(readFileSync(join(root, 'experiments/native-architecture/src/audio', name)))
-      ).toBe(digest(readFileSync(join(root, 'web/static/sounds', name))));
+      expect(digest(readFileSync(join(root, 'src/audio', name)))).toBe(
+        digest(readFileSync(join(root, 'assets/static/sounds', name)))
+      );
     }
     expect(PENCIL_SOUNDS).toHaveLength(takeNames.length);
   });
@@ -71,10 +66,7 @@ describe('candidate-owned audio and Settings projections', () => {
 const runtimeRequire = createRequire(import.meta.url);
 const { getAssetLocalPath } = runtimeRequire('@expo/cli/build/src/export/metroAssetLocalPath');
 const { getAndroidResourceIdentifier } = runtimeRequire('@react-native/asset-utils');
-const clearNoteSource = readFileSync(
-  join(root, 'experiments/native-architecture/src/audio/clearNoteAssets.ts'),
-  'utf8'
-);
+const clearNoteSource = readFileSync(join(root, 'src/audio/clearNoteAssets.ts'), 'utf8');
 function clearNoteAndroidAssets(source) {
   return [...source.matchAll(/import \w+ from '\.\/clear-bubbles\/([^']+)\.wav';/g)].map(
     ([, name]) => ({ name, type: 'wav', httpServerLocation: '/assets/src/audio/clear-bubbles' })
@@ -125,9 +117,7 @@ beforeEach(() => {
 });
 
 async function nativeNotesFixture() {
-  const { loadClearNotes } = await vi.importActual(
-    '../../experiments/native-architecture/src/platform/clearNotes.native.ts'
-  );
+  const { loadClearNotes } = await vi.importActual('../../src/platform/clearNotes.native.ts');
   const request = new NativeAbortController();
   const sound = await loadClearNotes(request.signal);
   return { sound, request };
@@ -135,9 +125,7 @@ async function nativeNotesFixture() {
 
 describe('native Clear sampler binding', () => {
   it('keeps every Clear note in a unique Android raw resource', async () => {
-    const { CLEAR_NOTE_ASSETS } = await vi.importActual(
-      '../../experiments/native-architecture/src/audio/clearNoteAssets.ts'
-    );
+    const { CLEAR_NOTE_ASSETS } = await vi.importActual('../../src/audio/clearNoteAssets.ts');
     expect(clearNoteAndroidAssets(clearNoteSource)).toHaveLength(CLEAR_NOTE_ASSETS.length);
     expect(() => assertClearNoteAndroidResources(clearNoteSource)).not.toThrow();
   });
@@ -154,9 +142,7 @@ describe('native Clear sampler binding', () => {
   });
 
   it('prepares the full shipping pitch vocabulary before playback', async () => {
-    const { CLEAR_NOTE_ASSETS } = await vi.importActual(
-      '../../experiments/native-architecture/src/audio/clearNoteAssets.ts'
-    );
+    const { CLEAR_NOTE_ASSETS } = await vi.importActual('../../src/audio/clearNoteAssets.ts');
     const expected = new Set();
     for (let step = 0; step <= clearLadderStep(Infinity); step += 1) {
       const semitone = Math.round(
@@ -223,9 +209,7 @@ describe('native Clear sampler binding', () => {
         arrive = resolve;
       })
     );
-    const { loadClearNotes } = await vi.importActual(
-      '../../experiments/native-architecture/src/platform/clearNotes.native.ts'
-    );
+    const { loadClearNotes } = await vi.importActual('../../src/platform/clearNotes.native.ts');
     const request = new NativeAbortController();
     const outcome = loadClearNotes(request.signal).catch((error) => error.message);
     try {
@@ -256,7 +240,7 @@ describe('native Clear sampler binding', () => {
 
 const sourceText = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const clearActivitySources = {
-  sampler: sourceText('experiments/native-architecture/ios/Splotch/SplotchClearSound.swift'),
+  sampler: sourceText('ios/Splotch/SplotchClearSound.swift'),
   expoPatch: sourceText('patches/expo-audio@58.0.9.patch'),
 };
 function assertClearAudioActivity(sources) {
@@ -284,10 +268,8 @@ function assertClearAudioActivity(sources) {
 const nativeMediaPolicy = {
   ios: IOS_PLAYS_IN_SILENT_MODE,
   android: ANDROID_PLAYS_IN_SILENT_MODE,
-  mode: sourceText('experiments/native-architecture/src/audio/playbackMode.ts'),
-  sampler: sourceText(
-    'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchClearSound.kt'
-  ),
+  mode: sourceText('src/audio/playbackMode.ts'),
+  sampler: sourceText('android/app/src/main/java/art/splotch/app/SplotchClearSound.kt'),
 };
 function assertNativeMediaPolicy(policy) {
   assert.equal(policy.ios, false, 'iOS follows its silent switch');
@@ -305,7 +287,7 @@ describe('native media playback policy', () => {
   it('uses Android media volume and retains the iOS silent switch across both audio owners', () => {
     expect(() => assertNativeMediaPolicy(nativeMediaPolicy)).not.toThrow();
     for (const owner of ['clearSound', 'drawingAudio'])
-      expect(sourceText(`experiments/native-architecture/src/platform/${owner}.ts`)).toContain(
+      expect(sourceText(`src/platform/${owner}.ts`)).toContain(
         'setAudioModeAsync(PLAYBACK_AUDIO_MODE)'
       );
   });
@@ -359,18 +341,12 @@ describe('native Clear audio session boundary', () => {
   });
 
   it('registers the same Clear sampler and methods on Android and iOS', () => {
-    const ts = sourceText('experiments/native-architecture/src/platform/clearNotes.native.ts');
+    const ts = sourceText('src/platform/clearNotes.native.ts');
     const swift = clearActivitySources.sampler;
-    const bridge = sourceText('experiments/native-architecture/ios/Splotch/SplotchClearSound.m');
-    const kotlin = sourceText(
-      'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchClearSound.kt'
-    );
-    const application = sourceText(
-      'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainApplication.kt'
-    );
-    const project = sourceText(
-      'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj'
-    );
+    const bridge = sourceText('ios/Splotch/SplotchClearSound.m');
+    const kotlin = sourceText('android/app/src/main/java/art/splotch/app/SplotchClearSound.kt');
+    const application = sourceText('android/app/src/main/java/art/splotch/app/MainApplication.kt');
+    const project = sourceText('ios/Splotch.xcodeproj/project.pbxproj');
     const name = /const CLEAR_NOTE_MODULE = '([^']+)'/.exec(ts)?.[1];
     expect(name).toBe('SplotchClearSound');
     expect(swift).toContain(`@objc(${name})`);
@@ -445,13 +421,10 @@ describe('Clear activation without a drag', () => {
 describe('native Clear page-turn PCM projection', () => {
   it('holds exactly doubled shipping PCM without clipping or changing its gapless length', () => {
     const source = readFileSync(
-      new URL('../../web/static/sounds/clear-page-turn.mp3', import.meta.url)
+      new URL('../../assets/static/sounds/clear-page-turn.mp3', import.meta.url)
     );
     const amplified = readFileSync(
-      new URL(
-        '../../experiments/native-architecture/src/audio/clear-page-turn-amplified.wav',
-        import.meta.url
-      )
+      new URL('../../src/audio/clear-page-turn-amplified.wav', import.meta.url)
     );
     // The PCM hash pins LAME's decoded source; the source hash requires re-deriving it when the clip changes.
     expect(createHash('sha256').update(source).digest('hex')).toBe(

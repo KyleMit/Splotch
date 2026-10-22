@@ -62,7 +62,7 @@ function writeTexturedWebp(path, { width, height }) {
     .webp()
     .toFile(path);
 }
-join(ROOT, 'web/src/lib/components');
+join(ROOT, 'src/lib/components');
 
 // Two flat halves, at 0 and at `peakLevel`, put each channel's standard
 // deviation at exactly half the level — a spread that can be placed either side

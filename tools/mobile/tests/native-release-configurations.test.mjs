@@ -10,12 +10,7 @@ import {
   STORE_XCCONFIG,
   TARGETS,
 } from '../../release/build-native-release.mjs';
-import {
-  ANDROID_PROJECT_DIR,
-  NATIVE_APP_DIR,
-  RELEASE_APK,
-  STORE_APP_ID,
-} from '../../release/lib/native-app.mjs';
+import { ANDROID_PROJECT_DIR, RELEASE_APK, STORE_APP_ID } from '../../release/lib/native-app.mjs';
 import { SKIP_BUILD_FLAG } from '../ios/run-simulator-smoke-test.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -34,12 +29,17 @@ const stepArgs = ({ steps }) => steps.flatMap(({ args }) => args);
 const PNPM_INSTALL_INPUTS = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'];
 const PNPM_PATCHES = 'patches';
 
-// Inputs the native builds read that the filter leaves out on purpose: the
-// shared modules the JavaScript bundle imports from the web tree. The Quality
-// job type-checks the app against them on every pull request, and a pull
-// request touching only them would otherwise spend macOS minutes on most of
-// the web tree's edits.
-const UNFILTERED_BUNDLE_INPUTS = ['web/src/lib/', 'web/static/'];
+const APP_BUILD_PATHS = [
+  'src',
+  'android',
+  'ios',
+  'assets',
+  'app.json',
+  'babel.config.cjs',
+  'metro.config.cjs',
+  'postcss.config.mjs',
+  'tsconfig.json',
+];
 
 const nativeCompilePathLists = () =>
   nativeCompileWorkflow
@@ -144,13 +144,13 @@ export function resolveNativeTargets(fromFile, specifier, exists = isRepoFile) {
 /** Repo paths outside the app that its tracked sources import, with the importer of each. */
 export function appExternalImports(appFiles) {
   return appFiles
-    .filter((file) => SOURCE_FILE.test(file))
+    .filter((file) => SOURCE_FILE.test(file) && !/\.test\./.test(file))
     .flatMap((file) =>
       [...read(file).matchAll(IMPORT_SPECIFIER)].flatMap(([, specifier]) =>
         resolveNativeTargets(file, specifier).map((target) => ({ file, target }))
       )
     )
-    .filter(({ target }) => !target.startsWith(`${NATIVE_APP_DIR}/`));
+    .filter(({ target }) => !target.startsWith('src/'));
 }
 
 const trackedFiles = (...paths) =>
@@ -282,7 +282,7 @@ describe('native release configuration gates', () => {
   });
 
   it('filters native compile on every input its commands read', () => {
-    const appFiles = trackedFiles(NATIVE_APP_DIR);
+    const appFiles = trackedFiles(...APP_BUILD_PATHS);
     expect(appFiles.some((file) => file.startsWith(`${ANDROID_PROJECT_DIR}/`))).toBe(true);
     const buildInputs = appFiles.filter((file) => !file.endsWith('.md'));
 
@@ -318,72 +318,67 @@ describe('native release configuration gates', () => {
     expect(unfiltered, 'build inputs no native-compile.yml path matches').toEqual([]);
   });
 
-  it('leaves out only the inputs it names, and the app Markdown no build reads', () => {
+  it('includes shared app modules and artwork while leaving documentation out', () => {
     const filter = nativeCompileFilter();
-    expect(filter(join(NATIVE_APP_DIR, 'DEVELOPMENT.md'))).toBe(false);
-    for (const input of UNFILTERED_BUNDLE_INPUTS) {
+    expect(filter('DEVELOPMENT.md')).toBe(false);
+    for (const input of ['src/lib/', 'assets/static/']) {
       const [tracked] = trackedFiles(input);
       expect(tracked, input).toBeTruthy();
-      expect(filter(tracked), tracked).toBe(false);
+      expect(filter(tracked), tracked).toBe(true);
     }
   });
 
   // The bundle reaches outside the app by relative import, and an edit to such a
   // module changes what both Release builds embed. Each one is either filtered by
   // path or under a tree left out on purpose.
-  it('filters every module the bundle imports from outside the app, bar the trees it names', () => {
+  it('filters every module the app and its compiler configuration import', () => {
     const filter = nativeCompileFilter();
-    const external = appExternalImports(trackedFiles(NATIVE_APP_DIR));
+    const external = appExternalImports(trackedFiles(...APP_BUILD_PATHS));
     expect(external.length, 'the walk finds the app imports outside its own tree').toBeGreaterThan(
       0
     );
     for (const { file, target } of external) {
       expect(existsSync(join(repoRoot, target)), `${file} imports ${target}`).toBe(true);
     }
-    const unfiltered = external.filter(
-      ({ target }) =>
-        !filter(target) && !UNFILTERED_BUNDLE_INPUTS.some((tree) => target.startsWith(tree))
-    );
+    const unfiltered = external.filter(({ target }) => !filter(target));
     expect(unfiltered, 'app imports no native-compile.yml path matches').toEqual([]);
   });
 
   it.each([
     [
       'a .native file over the plain one',
-      ['web/x/contents.native.ts', 'web/x/contents.ts'],
-      ['web/x/contents.native.ts'],
+      ['src/x/contents.native.ts', 'src/x/contents.ts'],
+      ['src/x/contents.native.ts'],
     ],
     [
       'each platform its own file',
-      ['web/x/contents.ios.ts', 'web/x/contents.android.ts', 'web/x/contents.ts'],
-      ['web/x/contents.ios.ts', 'web/x/contents.android.ts'],
+      ['src/x/contents.ios.ts', 'src/x/contents.android.ts', 'src/x/contents.ts'],
+      ['src/x/contents.ios.ts', 'src/x/contents.android.ts'],
     ],
     [
       'a platform file only one platform has',
-      ['web/x/contents.ios.ts', 'web/x/contents.ts'],
-      ['web/x/contents.ios.ts', 'web/x/contents.ts'],
+      ['src/x/contents.ios.ts', 'src/x/contents.ts'],
+      ['src/x/contents.ios.ts', 'src/x/contents.ts'],
     ],
     // metro-resolver's resolveSourceFile walks the extensions outermost.
     [
       'a plain .ts over a platform .tsx',
-      ['web/x/contents.android.tsx', 'web/x/contents.ts'],
-      ['web/x/contents.ts'],
+      ['src/x/contents.android.tsx', 'src/x/contents.ts'],
+      ['src/x/contents.ts'],
     ],
-    ['a directory index', ['web/x/contents/index.ts'], ['web/x/contents/index.ts']],
-    ['no file at all as the unresolved path', [], ['web/x/contents']],
+    ['a directory index', ['src/x/contents/index.ts'], ['src/x/contents/index.ts']],
+    ['no file at all as the unresolved path', [], ['src/x/contents']],
   ])('resolves as Metro does for both native builds: %s', (_case, files, expected) => {
     const present = new Set(files);
     expect(
-      resolveNativeTargets('app/src/Page.tsx', '../../web/x/contents', (path) => present.has(path))
+      resolveNativeTargets('app/src/Page.tsx', '../../src/x/contents', (path) => present.has(path))
     ).toEqual(expected);
   });
 
   it('resolves an extensionless import to the module it names', () => {
     expect(
-      appExternalImports([join(NATIVE_APP_DIR, 'src', 'rsdDrawing', 'RsdPrivacyContent.tsx')]).map(
-        ({ target }) => target
-      )
-    ).toContain('web/src/lib/privacy/contents.ts');
+      resolveNativeTargets('src/rsdDrawing/RsdPrivacyContent.tsx', '../lib/privacy/contents')
+    ).toContain('src/lib/privacy/contents.ts');
   });
 
   it('retains XCTest startup diagnostics and the flow screenshot alongside Maestro flow evidence', () => {

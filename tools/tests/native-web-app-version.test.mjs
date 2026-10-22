@@ -1,15 +1,12 @@
 import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
-import { buildMetadataOncePerProcess, deriveWebVersion } from '../../web/buildVersion.ts';
-import { isWhatsNewSeen } from '../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
-import { parseSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettingsCodec.ts';
+import { buildMetadataOncePerProcess, deriveWebVersion } from '../release/lib/buildVersion.ts';
+import { isWhatsNewSeen } from '../../src/settings/whatsNewStamp.ts';
+import { parseSoundSettings } from '../../src/settings/soundSettingsCodec.ts';
 import { webVersionHeadTag } from '../migration/build-native-web.mjs';
-import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
+import { FEEDBACK_APP_VERSION } from '../../src/feedback/feedbackCopy.ts';
 
-const WEB_APP_VERSION = join(
-  import.meta.dirname,
-  '../../experiments/native-architecture/src/platform/appVersion.web.ts'
-);
+const WEB_APP_VERSION = join(import.meta.dirname, '../../src/platform/appVersion.web.ts');
 
 // A document head holding exactly the tags given, answering `meta[name="…"]` as a browser does.
 function headWith(...tags) {

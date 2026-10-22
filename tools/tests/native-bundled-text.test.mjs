@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const ASSET_ID = 7;
 const ANDROID_RESOURCE = '__web_static_coloring_farm_catwideoverlay';
 const IOS_FILE = 'file:///private/var/containers/Bundle/Application/X/Splotch.app/assets/a.svg';
-const DEV_SERVER = 'http://localhost:8081/assets/web/static/coloring/farm/cat-wide.overlay.svg';
+const DEV_SERVER = 'http://localhost:8081/assets/assets/static/coloring/farm/cat-wide.overlay.svg';
 const OVERLAY_TEXT = '<svg viewBox="0 0 1536 1024"><path d="M0 0h1"/></svg>';
 
 const sdk = vi.hoisted(() => ({ resolved: null, read: [] }));
@@ -18,8 +18,7 @@ vi.mock('expo-file-system/legacy', () => ({
   },
 }));
 
-const { readBundledText } =
-  await import('../../experiments/native-architecture/src/platform/bundledText.native.ts');
+const { readBundledText } = await import('../../src/platform/bundledText.native.ts');
 
 afterEach(() => {
   sdk.read = [];

@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -9,24 +10,25 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 const root = realpathSync(join(import.meta.dirname, '../../..'));
-const candidate = join(root, 'experiments/native-architecture');
+const candidate = join(root, '.');
 const fixtures = [];
-// The Babel transform reads only JavaScript sources; in-tree native builds leave gigabytes here,
-// and native:web:build leaves its export under dist/.
-const NATIVE_PROJECT_ROOTS = /^(?:android|ios|dist)(?:\/|$)/;
 function fixture() {
   const path = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-rsd-transform-')));
   fixtures.push(path);
-  cpSync(candidate, path, {
-    recursive: true,
-    filter: (path) =>
-      !path.includes('/node_modules') &&
-      !path.includes('/.expo') &&
-      !NATIVE_PROJECT_ROOTS.test(relative(candidate, path)),
-  });
+  for (const input of [
+    'src',
+    'package.json',
+    'babel.config.cjs',
+    'tools/migration/check-rsd-transform.cjs',
+    'tools/migration/rsd-brush-source-guards.cjs',
+  ]) {
+    const target = join(path, input);
+    mkdirSync(join(target, '..'), { recursive: true });
+    cpSync(join(candidate, input), target, { recursive: true });
+  }
   symlinkSync(join(root, 'node_modules'), join(path, 'node_modules'));
   return path;
 }
@@ -36,7 +38,7 @@ function fixture() {
 const TRANSFORM_TIMEOUT_MS = 20_000;
 vi.setConfig({ testTimeout: TRANSFORM_TIMEOUT_MS });
 function run(path) {
-  return spawnSync(process.execPath, [join(path, 'scripts/check-rsd-transform.cjs')], {
+  return spawnSync(process.execPath, [join(path, 'tools/migration/check-rsd-transform.cjs')], {
     cwd: path,
     encoding: 'utf8',
     timeout: TRANSFORM_TIMEOUT_MS,

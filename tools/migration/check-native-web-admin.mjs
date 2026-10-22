@@ -16,10 +16,10 @@ import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { chromium } from '@playwright/test';
-import { ADMIN_STATS_PATH } from '../../experiments/native-architecture/src/pageDocument/admin/adminApi.ts';
-import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
-import { SESSION_ENDED } from '../../experiments/native-architecture/src/pageDocument/admin/useAdminConsole.ts';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
+import { ADMIN_STATS_PATH } from '../../src/pageDocument/admin/adminApi.ts';
+import { ADMIN_SESSION_KEY } from '../../src/pageDocument/admin/adminContract.ts';
+import { SESSION_ENDED } from '../../src/pageDocument/admin/useAdminConsole.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../src/information/unlinkedDocuments.ts';
 import {
   invokeFunction,
   loadNetlifyFunctions,
@@ -36,7 +36,7 @@ const TEST_ADMIN_SECRET = 'test-admin-secret';
 const SEED_TOKENS = ['alpha', 'beta'];
 const ADMIN_PATH = UNLINKED_DOCUMENT_PATHS.admin;
 const TOKENS_PATH = '/api/admin/tokens';
-const FREE_GRANTS_MODULE = join(ROOT, 'web/src/lib/server/freeGenerationGrants.ts');
+const FREE_GRANTS_MODULE = join(ROOT, 'netlify/server/freeGenerationGrants.ts');
 // A synthetic installation the dev function's in-memory grant ledger is seeded with.
 const SEEDED_INSTALLATION = 'f'.repeat(64);
 const TALLIES_UNAVAILABLE = 'Generation tallies are unavailable.';

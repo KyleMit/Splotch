@@ -10,28 +10,28 @@ import { describe, expect, it } from 'vitest';
 // three deliberate relaxations gets a case pinning what it lets through, so tightening one is a
 // decision rather than an accident.
 const repoRoot = join(import.meta.dirname, '..', '..');
-// The type-aware no-floating-promises block runs a TS project service over web/src/**/*.ts,
+// The type-aware no-floating-promises block runs a TS project service over src/**/*.ts,
 // which fatals on a virtual path instead of running any rules. It is orthogonal to what this
-// control pins, so the override switches that one layer off for the web/src probe path.
+// control pins, so the override switches that one layer off for the src probe path.
 const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['web/src/**/*.ts'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],
 });
 
 // None of these paths exists on disk — ESLint reads a file path only to pick the config blocks that
-// match it, and these are the globs the Vitest and Playwright blocks are scoped to. web/src's
+// match it, and these are the globs the Vitest and Playwright blocks are scoped to. src's
 // colocated unit tests get a fixture of their own because later blocks re-scope rules for that
 // slice, and a re-scoped block can drop what the Vitest block turned on. The shared E2E helpers and
 // the *TestHarness modules sit outside both test globs and have blocks of their own.
 const VITEST_FIXTURE = 'tools/tests/seeded-defect.test.mjs';
-const WEB_SRC_VITEST_FIXTURE = 'web/src/lib/seeded-defect.test.ts';
-const VITEST_HARNESS_FIXTURE = 'web/src/lib/seededTestHarness.ts';
+const WEB_SRC_VITEST_FIXTURE = 'src/lib/seeded-defect.test.ts';
+const VITEST_HARNESS_FIXTURE = 'src/lib/seededTestHarness.ts';
 const PLAYWRIGHT_FIXTURE = 'e2e/specs/seeded-defect.spec.ts';
 const PLAYWRIGHT_HELPER_FIXTURE = 'e2e/support/seeded-helper.ts';
 

@@ -1,18 +1,14 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { format, resolveConfig } from 'prettier';
-import { iconTokenEntries } from '../../web/src/lib/design/iconTokens.ts';
-import { brand, themes, toCssVarName } from '../../web/src/lib/design/tokens.ts';
-import {
-  COLOR_ICONS,
-  NON_RENDERABLE_ICONS,
-  iconNameFromPath,
-} from '../../web/src/lib/components/iconTypes.ts';
+import { iconTokenEntries } from '../icons/lib/iconTokens.ts';
+import { brand, themes, toCssVarName } from '../../src/lib/design/tokens.ts';
+import { COLOR_ICONS, NON_RENDERABLE_ICONS, iconNameFromPath } from '../icons/lib/iconTypes.ts';
 import { ROOT, isMain } from '../lib/proc.mjs';
 
-const ICON_DIR = `${ROOT}/web/src/lib/icons/`;
+const ICON_DIR = `${ROOT}/assets/icons/`;
 const DEFERRED_SUBDIR = 'deferred/';
-const NATIVE_ICON_DIR = `${ROOT}/experiments/native-architecture/src/rsdDrawing/`;
+const NATIVE_ICON_DIR = `${ROOT}/src/rsdDrawing/`;
 export const NATIVE_ICONS_TARGET = `${NATIVE_ICON_DIR}icons.generated.ts`;
 export const NATIVE_DEFERRED_ICONS_TARGET = `${NATIVE_ICON_DIR}icons.deferred.generated.ts`;
 export const NATIVE_SPLOTCHY_TARGET = `${NATIVE_ICON_DIR}splotchy.generated.ts`;
@@ -23,7 +19,7 @@ const DEFERRED_SPECIFIER = `./${basename(NATIVE_DEFERRED_ICONS_TARGET, '.ts')}`;
 // The icons the drawing screen mounts with, painted or one press away: More colors and the folded
 // palette's ink, the Clear control with its coachmark, the settings gear, the drawer toggle, and
 // the Fullscreen Toggle a phone browser shows in the corner. Every other shipping icon ships in
-// the lazily imported deferred module, as ADR-0164 keeps web/src/lib/icons/deferred/ off the
+// the lazily imported deferred module, as ADR-0164 keeps assets/icons/deferred/ off the
 // shipping startup path; the web export prewarms it in the background after first paint, and a
 // sheet opens with it (ADR-0179).
 export const NATIVE_STARTUP_ICONS = [
@@ -180,7 +176,7 @@ export function nativeIconModules({
   assertNativeMarkup(SPLOTCHY, splotchy);
   return {
     [NATIVE_ICONS_TARGET]: [
-      header('web/src/lib/icons'),
+      header('src/lib/icons'),
       '',
       `import type { NATIVE_DEFERRED_ICONS } from '${DEFERRED_SPECIFIER}';`,
       '',
@@ -197,7 +193,7 @@ export function nativeIconModules({
       '',
     ].join('\n'),
     [NATIVE_DEFERRED_ICONS_TARGET]: [
-      header('web/src/lib/icons'),
+      header('src/lib/icons'),
       '',
       ...lazy.declarations,
       '',
@@ -205,7 +201,7 @@ export function nativeIconModules({
       '',
     ].join('\n'),
     [NATIVE_SPLOTCHY_TARGET]: [
-      header(`web/src/lib/icons/${SPLOTCHY}${SVG_SUFFIX}`),
+      header(`assets/icons/${SPLOTCHY}${SVG_SUFFIX}`),
       '',
       `export const NATIVE_SPLOTCHY = ${JSON.stringify(splotchy)};`,
       '',

@@ -2,22 +2,20 @@
 
 The React Native app reads safe areas through `react-native-safe-area-context`. Its web export maps
 the browser's safe-area environment into that same provider. Read this before moving controls near a
-cutout, home indicator or system bar. The app is in `experiments/native-architecture/` until root
-promotion (ADR-0182).
+cutout, home indicator or system bar. The app is in `` until root promotion (ADR-0182).
 
 ## Current owners and checks
 
-* `experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx` supplies `SafeAreaProvider`.
-  Drawing chrome and modal geometry consume `useSafeAreaInsets()`.
-* `experiments/native-architecture/src/rsdDrawing/RsdNotchBand.tsx` paints the band in separate
-  cover/dock-side layers and applies native status-bar style/visibility through RN `StatusBar`.
-* `web/src/lib/platform/notchBand.ts` holds the pure cutout threshold, band-edge, color and
-  status-bar decisions. RN uses those decisions directly.
-* `experiments/native-architecture/src/platform/notchBandPlatform.ts` maps Expo orientations into
-  the retained angle vocabulary; its `.web.ts` counterpart reads the browser orientation and writes
-  `theme-color`.
-* `web/src/lib/safeAreaMatrix/devices.ts` holds the researched profiles, and
-  `web/src/lib/safeAreaMatrix/diagnostics.ts` applies product policy before diagnosing them.
+* `src/rsdDrawing/NativeFrame.tsx` supplies `SafeAreaProvider`. Drawing chrome and modal geometry
+  consume `useSafeAreaInsets()`.
+* `src/rsdDrawing/RsdNotchBand.tsx` paints the band in separate cover/dock-side layers and applies
+  native status-bar style/visibility through RN `StatusBar`.
+* `src/lib/platform/notchBand.ts` holds the pure cutout threshold, band-edge, color and status-bar
+  decisions. RN uses those decisions directly.
+* `src/platform/notchBandPlatform.ts` maps Expo orientations into the retained angle vocabulary; its
+  `.web.ts` counterpart reads the browser orientation and writes `theme-color`.
+* `tools/migration/lib/safeAreaMatrix/devices.ts` holds the researched profiles, and
+  `tools/migration/lib/safeAreaMatrix/diagnostics.ts` applies product policy before diagnosing them.
 
 | Check                    | Command                                                                                                        | Proves                                                                                          |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -59,8 +57,8 @@ WebView offset. The iOS runbook retains the screenshot-orientation caveats.
 
 The browser/WebView observations below retain their original measurement dates. Capacitor-era native
 measurements are evidence about that WebView configuration, not RN safe-area-provider measurements.
-The shared dataset with per-entry sources and confidence is `web/src/lib/safeAreaMatrix/devices.ts`.
-The rules worth carrying in your head:
+The shared dataset with per-entry sources and confidence is
+`tools/migration/lib/safeAreaMatrix/devices.ts`. The rules worth carrying in your head:
 
 **iOS reports both landscape sides identically.** `safe-area-inset-left` and `-right` are both set
 to the full cutout depth in landscape, whichever side the notch is physically on. *You cannot tell
@@ -127,8 +125,8 @@ platforms, for unrelated reasons:
   48dp it is deeper than the cutout's ~38dp. The rule picked the nav bar in *both* rotations,
   painting the drawing colour behind the back/home/recents buttons.
 
-The retained `landscapeBandEdges()` rule in `web/src/lib/platform/notchBand.ts` keys on
-**symmetry**, not depth:
+The retained `landscapeBandEdges()` rule in `src/lib/platform/notchBand.ts` keys on **symmetry**,
+not depth:
 
 | The two side insets        | What the band does | Why                                                                                                                                                |
 | -------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -140,8 +138,7 @@ The retained `landscapeBandEdges()` rule in `web/src/lib/platform/notchBand.ts` 
 ### The rotation angle, and the one version that disagreed
 
 `screen.orientation.angle` is at the browser floor (Chrome 38 / Safari 16.4), is already in the
-browser implementation's input in
-`experiments/native-architecture/src/platform/notchBandPlatform.web.ts`. The angle is the
+browser implementation's input in `src/platform/notchBandPlatform.web.ts`. The angle is the
 **device's** rotation *counter-clockwise* from natural, so **90 puts the natural top edge — and the
 cutout — on the LEFT**, and 270 on the right.
 
@@ -200,10 +197,10 @@ in a result, especially when a profile carries a historically measured WebView i
 
 ## Adding a device
 
-Add a distinct inset tuple to `DEVICE_PROFILES` in `web/src/lib/safeAreaMatrix/devices.ts`, with its
-source, runtime and honest confidence. The RN check/gallery derives scenarios from that one array. A
-second device with identical geometry adds no layout case; a new physical/runtime observation can
-still improve the provenance of an existing profile.
+Add a distinct inset tuple to `DEVICE_PROFILES` in `tools/migration/lib/safeAreaMatrix/devices.ts`,
+with its source, runtime and honest confidence. The RN check/gallery derives scenarios from that one
+array. A second device with identical geometry adds no layout case; a new physical/runtime
+observation can still improve the provenance of an existing profile.
 
 ## Historical measurements and remaining research
 

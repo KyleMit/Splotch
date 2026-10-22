@@ -14,11 +14,8 @@
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import OpenAI from 'openai';
-import { imageSizeFor } from '../../../web/src/lib/server/ai/imageSize.ts';
-import {
-  classifyOpenAiResponse,
-  isSafetyError,
-} from '../../../web/src/lib/server/ai/openaiSafety.ts';
+import { imageSizeFor } from '../../../netlify/server/ai/imageSize.ts';
+import { classifyOpenAiResponse, isSafetyError } from '../../../netlify/server/ai/openaiSafety.ts';
 import { ORCHESTRATOR_MODEL, ORCHESTRATOR_REASONING_EFFORT } from './model-eval.mjs';
 
 // Tighten every configurable Gemini harm category to its most aggressive

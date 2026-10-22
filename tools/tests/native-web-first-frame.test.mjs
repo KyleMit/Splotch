@@ -17,11 +17,11 @@ import {
   FIRST_FRAME_VIEWPORT_ATTRIBUTE,
   formatFirstFrameViewport,
   parseFirstFrameViewport,
-} from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+} from '../../src/platform/firstFrameViewport.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
 import { ROOT } from '../lib/proc.mjs';
 
-const SRC = join(ROOT, 'experiments/native-architecture/src');
+const SRC = join(ROOT, 'src');
 const SCRIPTS = ['/_expo/static/js/web/runtime-1.js', '/_expo/static/js/web/index-2.js'];
 const STYLESHEET = '/_expo/static/css/strict-1.css';
 const EXPORTED_SHELL = `<!DOCTYPE html><html><head><title>Splotch</title><link rel="preload" href="${STYLESHEET}" as="style">\n<link rel="stylesheet" href="${STYLESHEET}"></head><body><div id="root"></div>${SCRIPTS.map((src) => `<script src="${src}" defer></script>`).join('')}</body></html>`;

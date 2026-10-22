@@ -2,24 +2,18 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  RsdActionsPanel,
-  useFlyoutSlot,
-} from '../../experiments/native-architecture/src/rsdDrawing/RsdActionsPanel.tsx';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { RsdActionsPanel, useFlyoutSlot } from '../../src/rsdDrawing/RsdActionsPanel.tsx';
+import { emptyDrawing } from '../../src/drawing/model.ts';
 
 // React Native Web's own View, refs and responder system decide what the panel's slots are; only
 // React Strict DOM is reduced to the plain elements its web build emits.
 vi.mock('react-native', async () => import('react-native-web'));
 // The web build resolves each platform file to its web sibling; Vitest resolves the native one.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+  '../../src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../src/rsdDrawing/RsdPressable.web.tsx')
 );
-vi.mock(
-  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
-  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
-);
+vi.mock('../../src/platform/flyoutFocus.ts', () => import('../../src/platform/flyoutFocus.web.ts'));
 vi.mock('react-native-svg', () => ({ SvgXml: () => null }));
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),

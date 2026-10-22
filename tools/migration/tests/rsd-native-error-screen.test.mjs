@@ -2,23 +2,17 @@ import { act, createElement, useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caller, host, mount, records } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import {
-  ERROR_SCREEN_COPY,
-  RsdCrashScreen,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
-import { displayFontSize } from '../../../experiments/native-architecture/src/rsdDrawing/displayType.ts';
-import { AppRestartRoot } from '../../../experiments/native-architecture/src/product/AppRestart.tsx';
+import { ERROR_SCREEN_COPY, RsdCrashScreen } from '../../../src/rsdDrawing/RsdErrorScreen.tsx';
+import { displayFontSize } from '../../../src/rsdDrawing/displayType.ts';
+import { AppRestartRoot } from '../../../src/product/AppRestart.tsx';
 import {
   DrawingSessionProvider,
   useDrawingHistory,
   useStartOver,
-} from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import {
-  createHistory,
-  emptyDrawing,
-} from '../../../experiments/native-architecture/src/drawing/model.ts';
+} from '../../../src/product/DrawingSession.tsx';
+import { createHistory, emptyDrawing } from '../../../src/drawing/model.ts';
 import { inkedDrawing } from './rsd-native-clear-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 
 beforeEach(() => {
   vi.spyOn(Math, 'random').mockReturnValue(0.24);

@@ -48,7 +48,7 @@ describe('the ruler provider layout', () => {
   it('marks every generated provider path linguist-generated in .gitattributes', () => {
     const probes = PROVIDERS.flatMap((provider) => [
       instructionsFile(provider),
-      join('web', 'src', instructionsFile(provider)),
+      join('src', instructionsFile(provider)),
       join(skillsDir(provider), 'layout-probe', 'SKILL.md'),
       join(notesDir(provider), 'layout-probe.md'),
     ]);

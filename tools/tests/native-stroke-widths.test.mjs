@@ -1,11 +1,11 @@
 import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { legacyDrawing, canonicalPaper, adoptedDrawing } from './native-paper-fixtures.mjs';
-import { STROKE_WIDTHS } from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
+import { STROKE_WIDTHS } from '../../src/drawing/strokeWidth.ts';
 import {
   STROKE_SIZES,
   getStrokeWidthPx,
   getEraserWidthPx,
-} from '../../web/src/lib/drawing/strokeSettings.ts';
+} from '../store-drawings/lib/strokeSettings.ts';
 import { describe, expect, it, vi } from 'vitest';
 import {
   addStrokes,
@@ -15,15 +15,12 @@ import {
   emptyDrawing,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
-import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { createContactResponder } from '../../src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../src/drawing/liveInk.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
 
 vi.mock('react-native', () => ({ findNodeHandle: (owner) => owner }));
 const point = { x: 200, y: 300 };

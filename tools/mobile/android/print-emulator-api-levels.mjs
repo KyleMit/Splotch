@@ -1,4 +1,4 @@
-import { MIN_ANDROID_API_LEVEL } from '../../../web/src/lib/components/beta/androidBeta.ts';
+import { MIN_ANDROID_API_LEVEL } from '../../../src/lib/components/beta/androidBeta.ts';
 import { isMain } from '../../lib/proc.mjs';
 import { CURRENT_ANDROID_API_LEVEL } from './lib/android-toolchain.mjs';
 

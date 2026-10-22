@@ -141,7 +141,7 @@ describe('knip production entries', () => {
   });
 
   // The prerender reaches into Expo's and React Strict DOM's own packages, which the React Native
-  // app's dependencies install (experiments/native-architecture/package.json, a workspace knip
+  // app's dependencies install (package.json, a workspace knip
   // ignores here), and the bundled Farm generator loads Prettier only to regenerate its modules,
   // never in the deploy. CI's production-install build is what proves each one installs.
   it('ignores only packages the React Native app provides or the deploy never loads', () => {

@@ -4,7 +4,7 @@ import {
   CONTROLS_LIVE_ATTRIBUTE,
   DRAWING_LIVE_ATTRIBUTE,
   PAPER_INPUT_TEST_ID,
-} from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+} from '../../src/platform/firstFrameContract.ts';
 import { expect, test } from '../fixtures.ts';
 
 // The export paints a prerendered first frame for each reference screen (ADR-0180) and then

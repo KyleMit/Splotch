@@ -1,10 +1,10 @@
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { PNG_TIMEOUT_MS } from '../../../experiments/native-architecture/src/drawing/svgCapture.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { saveFailureCopy } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { PNG_TIMEOUT_MS } from '../../../src/drawing/svgCapture.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { saveFailureCopy } from '../../../src/export/pictureSave.ts';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import {
   photos,

@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
-import releases from '../../web/src/lib/releases.json' with { type: 'json' };
+import releases from '../../src/lib/releases.json' with { type: 'json' };
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
-import { SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../src/lib/breakpoints.ts';
 import { expectWired } from '../support/group-a.ts';
 
 const PHONE = { width: 390, height: 844 };

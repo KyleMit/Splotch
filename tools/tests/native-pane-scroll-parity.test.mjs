@@ -3,12 +3,12 @@ import {
   revealNavRow,
   sectionScrollTop,
   spiedSectionAt as shippingSpiedSectionAt,
-} from '../../web/src/lib/components/settings/paneScroll.ts';
+} from '../../src/lib/components/settings/paneScroll.ts';
 import {
   navRevealOffset,
   sectionJumpOffset,
   spiedSectionAt,
-} from '../../experiments/native-architecture/src/settings/settingsPane.ts';
+} from '../../src/settings/settingsPane.ts';
 
 // Shipping reads the wide Settings pane through element rects; native reads the same geometry as
 // numbers. These stand-ins give shipping's functions a pane, its sections and the nav rows at

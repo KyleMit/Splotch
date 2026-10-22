@@ -1,9 +1,9 @@
 import { host, mount, records, root, openSettingsSection } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
-import { SettingsTextZoom } from '../../../experiments/native-architecture/src/platform/SettingsTextZoom.tsx';
+import { SettingsTextZoom } from '../../../src/platform/SettingsTextZoom.tsx';
 import { drawingScreen, storedSettings } from './rsd-native-settings-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 import { html } from 'react-strict-dom';
 const touches = (...points) => ({
   nativeEvent: {
@@ -45,8 +45,7 @@ it('claims two fingers, reflows enlarged content and releases only after every f
 
 it('counts each finished pinch for fitted text, even one that ends where it began', async () => {
   const { useContext } = await import('react');
-  const { TextZoomRevision } =
-    await import('../../../experiments/native-architecture/src/platform/textZoomRevision.ts');
+  const { TextZoomRevision } = await import('../../../src/platform/textZoomRevision.ts');
   function Pinches() {
     return createElement(
       html.span,

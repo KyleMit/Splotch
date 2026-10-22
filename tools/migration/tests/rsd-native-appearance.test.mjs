@@ -12,16 +12,16 @@ import {
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { themes } from '../../../web/src/lib/design/tokens.ts';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { HEX_DIM_KEYLINE } from '../../../experiments/native-architecture/src/rsdDrawing/hexPicker.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { RsdColoringBookPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
-import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { BUNDLED_FARM_SELECTORS } from '../../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
-import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { themes } from '../../../src/lib/design/tokens.ts';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
+import { HEX_DIM_KEYLINE } from '../../../src/rsdDrawing/hexPicker.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { RsdColoringBookPicker } from '../../../src/rsdDrawing/RsdColoringBookPicker.tsx';
+import { createOfflineLibrary } from '../../../src/offlineLibrary/controller.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { BUNDLED_FARM_SELECTORS } from '../../../src/drawing/bundledFarm/pickerImages.ts';
+import { FARM_PAGE_IDS } from '../../../src/drawing/bundledBooks.ts';
 
 async function refresh() {
   await act(async () => root.render(createElement(RsdDrawingScreen)));

@@ -20,7 +20,7 @@ import { bundleEnvironment, parseSwapFlags } from '../swap-js-bundle.mjs';
 const scratch = mkdtempSync(join(tmpdir(), 'js-bundle-test-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const repo = join(APP_DIR, '..', '..');
+const repo = APP_DIR;
 const read = (path) => readFileSync(join(repo, path), 'utf8');
 const KOTLIN =
   'node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react';
@@ -29,10 +29,10 @@ const native = {
   hermesTask: read(`${KOTLIN}/tasks/BundleHermesCTask.kt`),
   extension: read(`${KOTLIN}/ReactExtension.kt`),
   configuration: read(`${KOTLIN}/TaskConfiguration.kt`),
-  appGradle: read('experiments/native-architecture/android/app/build.gradle'),
-  gradleProperties: read('experiments/native-architecture/android/gradle.properties'),
-  xcodeProject: read('experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj'),
-  infoPlist: read('experiments/native-architecture/ios/Splotch/Info.plist'),
+  appGradle: read('android/app/build.gradle'),
+  gradleProperties: read('android/gradle.properties'),
+  xcodeProject: read('ios/Splotch.xcodeproj/project.pbxproj'),
+  infoPlist: read('ios/Splotch/Info.plist'),
   expoEmbedOptions: read('node_modules/@expo/cli/build/src/export/embed/resolveOptions.js'),
 };
 const PATH = '<path>';

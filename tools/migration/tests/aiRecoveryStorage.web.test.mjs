@@ -3,9 +3,9 @@ import { createHash } from 'node:crypto';
 import { beforeEach, expect, it } from 'vitest';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import { disk, model, png, journal, resetAiDisk } from './aiStorageHarness.mjs';
-import { createAiStorage } from '../../../experiments/native-architecture/src/platform/aiStorage.web.ts';
-import { JOB_TTL_MS } from '../../../experiments/native-architecture/src/ai/contract.ts';
-import { RECOVERY_TERMINAL_STATUS } from '../../../web/src/lib/ai/generationAttempt.ts';
+import { createAiStorage } from '../../../src/platform/aiStorage.web.ts';
+import { JOB_TTL_MS } from '../../../src/ai/contract.ts';
+import { RECOVERY_TERMINAL_STATUS } from '../../../src/lib/ai/generationAttempt.ts';
 
 beforeEach(resetAiDisk);
 

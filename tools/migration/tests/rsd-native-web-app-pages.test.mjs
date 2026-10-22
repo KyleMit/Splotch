@@ -9,18 +9,15 @@ import {
   expandControls,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
-import {
-  RsdPageSheet,
-  NOT_FOUND_COPY,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
-import releases from '../../../web/src/lib/releases.json';
-import { SECTIONS } from '../../../web/src/lib/privacy/contents.ts';
-import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
-import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
-import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
-import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
+import { RsdPageSheet, NOT_FOUND_COPY } from '../../../src/rsdDrawing/RsdNotFoundPage.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { SHORT_PAGE_HEIGHT_PX } from '../../../src/lib/breakpoints.ts';
+import releases from '../../../src/lib/releases.json';
+import { SECTIONS } from '../../../src/lib/privacy/contents.ts';
+import { ProbeApp } from '../../../src/ProbeApp.tsx';
+import { openAppPage } from '../../../src/platform/appPath.ts';
+import { ABOUT_COPY } from '../../../src/rsdDrawing/RsdAboutSection.tsx';
+import { FEEDBACK_PAGE_COPY } from '../../../src/information/feedbackPageCopy.ts';
 import { GATE_MODAL } from './rsd-parent-gate-keypad.mjs';
 import { useCaller, click, settle } from './rsd-native-ai-fixture.mjs';
 
@@ -30,41 +27,38 @@ vi.mock('react-strict-dom', async (importOriginal) => {
 });
 
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/pageTypography.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/pageTypography.web.ts')
+  '../../../src/rsdDrawing/pageTypography.ts',
+  () => import('../../../src/rsdDrawing/pageTypography.web.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/notFoundFooter.tsx',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/notFoundFooter.web.tsx')
+  '../../../src/rsdDrawing/notFoundFooter.tsx',
+  () => import('../../../src/rsdDrawing/notFoundFooter.web.tsx')
 );
 
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/notFoundLink.tsx',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/notFoundLink.web.tsx')
+  '../../../src/rsdDrawing/notFoundLink.tsx',
+  () => import('../../../src/rsdDrawing/notFoundLink.web.tsx')
 );
 
-vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
+vi.mock('../../../src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
+vi.mock('../../../src/platform/appPath.ts', () => import('../../../src/platform/appPath.web.ts'));
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/appPath.ts',
-  () => import('../../../experiments/native-architecture/src/platform/appPath.web.ts')
+  '../../../src/platform/informationFragment.ts',
+  () => import('../../../src/platform/informationFragment.web.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/informationFragment.ts',
-  () => import('../../../experiments/native-architecture/src/platform/informationFragment.web.ts')
+  '../../../src/platform/BrowserBack.tsx',
+  () => import('../../../src/platform/BrowserBack.web.tsx')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/BrowserBack.tsx',
-  () => import('../../../experiments/native-architecture/src/platform/BrowserBack.web.tsx')
+  '../../../src/platform/drawingArrival.ts',
+  () => import('../../../src/platform/drawingArrival.web.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/drawingArrival.ts',
-  () => import('../../../experiments/native-architecture/src/platform/drawingArrival.web.ts')
-);
-vi.mock(
-  '../../../experiments/native-architecture/src/platform/drawingVisited.ts',
-  () => import('../../../experiments/native-architecture/src/platform/drawingVisited.web.ts')
+  '../../../src/platform/drawingVisited.ts',
+  () => import('../../../src/platform/drawingVisited.web.ts')
 );
 
 afterEach(() => {

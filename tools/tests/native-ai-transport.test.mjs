@@ -1,12 +1,9 @@
-import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { pictureExport } from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
-import { prepareAiPng } from '../../experiments/native-architecture/src/ai/prepare.ts';
+import { adoptPaper } from '../../src/drawing/paperSpace.ts';
+import { pictureExport } from '../../src/drawing/pictureExport.ts';
+import { prepareAiPng } from '../../src/ai/prepare.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  parseAiResponse,
-  readAiBytes,
-} from '../../experiments/native-architecture/src/ai/transport.ts';
+import { parseAiResponse, readAiBytes } from '../../src/ai/transport.ts';
 import {
   AI_STYLES,
   MAX_JSON_BYTES,
@@ -14,20 +11,20 @@ import {
   POLL_INTERVAL_MS,
   JOB_TTL_MS,
   FREE_LIMIT,
-} from '../../experiments/native-architecture/src/ai/contract.ts';
+} from '../../src/ai/contract.ts';
 import { readFileSync } from 'node:fs';
-import { AI_UNFINISHED_MESSAGE } from '../../web/src/lib/ai/generationFailures.ts';
+import { AI_UNFINISHED_MESSAGE } from '../../src/lib/ai/generationFailures.ts';
 
-vi.mock('$lib/ai/generationResult', async () => import('../../web/src/lib/ai/generationResult.ts'));
+vi.mock('$lib/ai/generationResult', async () => import('../../src/lib/ai/generationResult.ts'));
 const signal = () => new AbortController().signal;
 const start = { path: '/api/generate-image', method: 'POST', headers: {} };
 const poll = { ...start, path: '/api/generation-result', method: 'GET' };
 describe('strict native hosted AI contract', () => {
   it('pins the canonical style order and timeout vocabulary across the isolated candidate boundary', () => {
-    const styles = readFileSync(new URL('../../web/src/lib/ai/styles.ts', import.meta.url), 'utf8');
+    const styles = readFileSync(new URL('../../src/lib/ai/styles.ts', import.meta.url), 'utf8');
     const block = styles.split('export const STYLE_SUFFIXES = {')[1].split('} satisfies')[0];
     expect(AI_STYLES).toEqual([...block.matchAll(/^ {2}(\w+):/gm)].map((match) => match[1]));
-    const limits = readFileSync(new URL('../../web/src/lib/ai/limits.ts', import.meta.url), 'utf8');
+    const limits = readFileSync(new URL('../../src/lib/ai/limits.ts', import.meta.url), 'utf8');
     expect(limits).toContain(
       `CLIENT_REQUEST_TIMEOUT_MS = ${REQUEST_TIMEOUT_MS.toLocaleString('en-US').replaceAll(',', '_')}`
     );
@@ -125,16 +122,13 @@ it('bounds capture bytes and rejects a PNG with dimensions different from the dr
 it('pins native secure owner semantics and the namespaced app pseudonym without exposing platform identifiers', () => {
   const kotlin = readFileSync(
     new URL(
-      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt',
+      '../../android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt',
       import.meta.url
     ),
     'utf8'
   );
   const swift = readFileSync(
-    new URL(
-      '../../experiments/native-architecture/ios/Splotch/SplotchAIEnvironment.swift',
-      import.meta.url
-    ),
+    new URL('../../ios/Splotch/SplotchAIEnvironment.swift', import.meta.url),
     'utf8'
   );
   expect(kotlin).toContain('splotch-free-generation-v1:');

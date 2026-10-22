@@ -22,7 +22,7 @@ app sends — asserted byte-for-byte against the source at runtime), then persis
 side-by-side **report** you review by eye. Like the red-team suite (ADR-0023) it is **not** part of
 `npm test`, makes real paid calls, and its verdict is your review.
 
-The production model lives in the provider adapter under `web/src/lib/server/ai/`. Use this harness
+The production model lives in the provider adapter under `netlify/server/ai/`. Use this harness
 before changing it. The variant list is `VARIANTS` in `lib/model-eval.mjs`.
 
 ## How each provider is called
@@ -47,7 +47,7 @@ instead of paying for a whole image. `tool_choice` therefore stays on `auto`: fo
 would take the model's ability to decline away.
 
 Each OpenAI response is counted by production's own classifier, `classifyOpenAiResponse` in
-`web/src/lib/server/ai/openaiSafety.ts`. Its `safety` is the report's refusal and its `empty` the
+`netlify/server/ai/openaiSafety.ts`. Its `safety` is the report's refusal and its `empty` the
 report's error, so a cell is refused exactly when the app would refuse the drawing, and is an error
 exactly when the app would offer a retry. The app discards a finished picture that arrives beside a
 machine-readable decline; such a cell counts as refused, and its reason opens with
@@ -150,7 +150,7 @@ to make the old decision evidence useful. Do not archive layout-only report rebu
 | `store`            | the authored store-screenshot scenes, rasterized onto paper — full multi-subject art        |
 
 Inputs are built to match what `/api/generate-image` actually receives — a flattened canvas of the
-theme paper, real `web/static/coloring` line art, and the child's marks in the app's palette — so
+theme paper, real `assets/static/coloring` line art, and the child's marks in the app's palette — so
 the models see production-representative pixels.
 
 The `crayon` samples preserve real canvas pixels captured from the former frontend. Their grain is
@@ -235,9 +235,9 @@ embellishment, and confirm every image is child-safe. Cost and latency are aggre
 from measured usage.
 
 The latency column is scored against **Netlify's measured 26 s synchronous function ceiling**
-(ADR-0063), imported from `web/src/lib/ai/limits.ts` rather than restated: a variant whose median is
-red cannot be served by a buffered request/response handler at all, and picking it is also a
-decision to move generation to a start-then-poll flow.
+(ADR-0063), imported from `src/lib/ai/limits.ts` rather than restated: a variant whose median is red
+cannot be served by a buffered request/response handler at all, and picking it is also a decision to
+move generation to a start-then-poll flow.
 
 ## The prompt-adherence lab
 
@@ -310,16 +310,16 @@ every candidate already recorded in the run; newly selected candidates are added
 definition behind an existing variant key is rejected.
 
 The production request contract is mirrored and asserted, not imported: `lib/model-eval.mjs` copies
-`DEFAULT_PROMPT` from `web/src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from the provider
+`DEFAULT_PROMPT` from `src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from the provider
 adapter, and `assertProductionConfig()` re-reads both files at startup so drift fails the run. Keep
 that check passing when either file changes; a `candidates` entry lists more than one path only
 while an adapter is being replaced, so the check keeps working across a provider migration. The
 response half is imported rather than mirrored, so it cannot drift: `lib/image-providers.mjs`
-classifies every OpenAI response with production's `web/src/lib/server/ai/openaiSafety.ts`. The app
-modules the harness imports are `web/src/lib/design/tokens.ts` and `web/src/lib/palette.ts` (from
-`lib/model-eval.mjs`), `web/src/lib/ai/limits.ts` (`lib/model-eval-report.mjs`),
-`web/src/lib/server/ai/imageSize.ts` and `web/src/lib/server/ai/openaiSafety.ts`
-(`lib/image-providers.mjs`), and `web/src/lib/ai/prompt.ts` (`run-prompt-adherence.mjs`).
+classifies every OpenAI response with production's `netlify/server/ai/openaiSafety.ts`. The app
+modules the harness imports are `src/lib/design/tokens.ts` and `src/lib/palette.ts` (from
+`lib/model-eval.mjs`), `src/lib/ai/limits.ts` (`lib/model-eval-report.mjs`),
+`netlify/server/ai/imageSize.ts` and `netlify/server/ai/openaiSafety.ts`
+(`lib/image-providers.mjs`), and `src/lib/ai/prompt.ts` (`run-prompt-adherence.mjs`).
 
 Run focused verification with:
 

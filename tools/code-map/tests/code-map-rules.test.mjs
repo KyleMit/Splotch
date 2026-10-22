@@ -45,12 +45,12 @@ describe('code map coverage', () => {
 
 describe('exclusion classes', () => {
   it.each([
-    ['web/src/CLAUDE.md', 'Generated / provider agent delivery trees'],
+    ['src/CLAUDE.md', 'Generated / provider agent delivery trees'],
     ['.claude/skills/build/SKILL.md', 'Generated / provider agent delivery trees'],
     ['.agents/skills/build/SKILL.md', 'Generated / provider agent delivery trees'],
-    ['web/static/favicon.ico', 'Binary media / archives'],
+    ['assets/static/favicon.ico', 'Binary media / archives'],
     ['docs/scratchpad/perf/run/trace.json.gz', 'Binary media / archives'],
-    ['web/static/coloring/farm/cow.svg', 'Vector art assets / traced samples'],
+    ['assets/static/coloring/farm/cow.svg', 'Vector art assets / traced samples'],
     ['tools/model-eval/samples/gen__pizza__square.svg', 'Vector art assets / traced samples'],
     ['docs/scratchpad/perf/run/summary.json', 'Generated measurement data'],
     [
@@ -75,20 +75,19 @@ describe('exclusion classes', () => {
   it.each([
     ['.ruler/AGENTS.md', '.ruler', 'root instruction / config'],
     ['tools/.ruler/AGENTS.md', 'tools excluding asset-gen', 'instruction source'],
-    ['web/src/lib/icons/brush.svg', 'web/src', 'Design system, styleguide + icons'],
+    ['assets/icons/brush.svg', 'root', 'assets'],
     ['tools/asset-gen/package.json', 'tools/asset-gen', '(root)'],
     ['tools/store-drawings/samples/sun.svg', 'tools excluding asset-gen', 'store-drawings'],
     ['docs/scratchpad/perf/run/check.mjs', 'docs', 'scratchpad'],
     ['package.json', 'root', '(root)'],
-    ['experiments/native-architecture/src/ProbeApp.tsx', 'experiments/native-architecture', 'src'],
-    ['experiments/native-architecture/package.json', 'experiments/native-architecture', '(root)'],
+    ['src/ProbeApp.tsx', 'src', 'Routes / app shell / dev surfaces'],
     ['docs/migration/evidence/native-topology-05/README.md', 'docs', 'migration'],
   ])('measures %s in %s / %s', (path, area, bucket) => {
     expect(classifyPath(path)).toEqual({ kind: 'measured', area, bucket });
   });
 });
 
-describe('web/src domains', () => {
+describe('src domains', () => {
   it('files a co-located test and a test harness with the module they exercise', () => {
     expect(subjectOf('lib/storage.restore.integration.test.ts')).toBe('lib/storage');
     expect(subjectOf('lib/pwa/updatesTestHarness.ts')).toBe('lib/pwa/updates');

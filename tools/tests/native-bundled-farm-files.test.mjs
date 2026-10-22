@@ -12,13 +12,13 @@ import {
   bundledFarmOutlineFiles,
   imageFilePaths,
 } from '../migration/gen-bundled-farm.mjs';
-import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import { BUNDLED_FARM_IMAGES } from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
+import { FARM_PAGE_IDS } from '../../src/drawing/bundledBooks.ts';
+import { BUNDLED_FARM_IMAGES } from '../../src/drawing/bundledFarm/images.ts';
 import {
   BUNDLED_FARM_COVERS,
   BUNDLED_FARM_SELECTORS,
-} from '../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
-import { BUNDLED_FARM_OUTLINE_FILES } from '../../experiments/native-architecture/src/drawing/bundledFarm/outlineFiles.ts';
+} from '../../src/drawing/bundledFarm/pickerImages.ts';
+import { BUNDLED_FARM_OUTLINE_FILES } from '../../src/drawing/bundledFarm/outlineFiles.ts';
 
 // The native images modules resolve each import through React Native's Image, which Node cannot
 // load; Vite hands them file paths, which nativeAssetUri returns without asking Image.

@@ -14,19 +14,18 @@ the shipped icon set is the app's own `/design` styleguide, not a generated page
 
 `lib/icon-chroma.mjs` owns painted-color parsing and spot/plain classification.
 `lib/icon-chroma.d.mts` provides its TypeScript declaration, and `tests/icon-chroma.test.mjs` covers
-the parser boundaries. The shared vector vocabulary in `web/src/lib/components/iconTypes.ts` and the
-RN icon compiler consume the retained assets and classifications;
-`tools/tests/native-icons.test.mjs` checks the generated projection, and `/design` renders it for
-review.
+the parser boundaries. The shared vector vocabulary in `tools/icons/lib/iconTypes.ts` and the RN
+icon compiler consume the retained assets and classifications; `tools/tests/native-icons.test.mjs`
+checks the generated projection, and `/design` renders it for review.
 
 ## Name generation
 
-`gen-icon-names.mjs` reads every SVG under `web/src/lib/icons/` — the startup set at the top level
-and the deferred set in `deferred/` (ADR-0164) — sorts the basenames, and replaces
-`web/src/lib/components/icon-names.d.ts`. A basename present in both directories fails the run. It
-has no flags or external prerequisites beyond Node. An empty icon directory fails rather than
-replacing the union with an empty type. The native icon compiler imports this vocabulary; never
-hand-edit the generated declaration.
+`gen-icon-names.mjs` reads every SVG under `assets/icons/` — the startup set at the top level and
+the deferred set in `deferred/` (ADR-0164) — sorts the basenames, and replaces
+`tools/icons/lib/icon-names.d.ts`. A basename present in both directories fails the run. It has no
+flags or external prerequisites beyond Node. An empty icon directory fails rather than replacing the
+union with an empty type. The native icon compiler imports this vocabulary; never hand-edit the
+generated declaration.
 
 After adding, deleting, or renaming an icon, run:
 

@@ -1,20 +1,14 @@
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
 import { LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { CRAYON_BANDS } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import {
-  PALETTE_COLORS,
-  paintAppearance,
-} from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
+import { CRAYON_BANDS } from '../../src/drawing/crayon.ts';
+import { PALETTE_COLORS, paintAppearance } from '../../src/drawing/palette.ts';
+import { planInk } from '../../src/drawing/checkpoints.ts';
 
-const ownerUrl = new URL(
-  '../../experiments/native-architecture/src/drawing/crayonTiles.ts',
-  import.meta.url
-);
+const ownerUrl = new URL('../../src/drawing/crayonTiles.ts', import.meta.url);
 const source = readFileSync(ownerUrl, 'utf8');
 // Encoding counters isolate ownership cost; canonical byte equality is covered by native-crayon-grain.
 function subject(code = source) {
@@ -63,10 +57,7 @@ function enumerateUnretained(owner, drawing) {
 }
 
 function readinessSource(name) {
-  return readFileSync(
-    new URL(`../../experiments/native-architecture/src/drawing/${name}`, import.meta.url),
-    'utf8'
-  );
+  return readFileSync(new URL(`../../src/drawing/${name}`, import.meta.url), 'utf8');
 }
 function resourceArgument(code, call = 'useCrayonTileResources', index = 0) {
   const file = ts.createSourceFile(

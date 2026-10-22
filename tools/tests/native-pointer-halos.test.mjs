@@ -1,7 +1,7 @@
 import { paperInputPacket } from './native-paper-fixtures.mjs';
 
 import { describe, expect, it, vi } from 'vitest';
-import { scale } from '../../web/src/lib/design/tokens.ts';
+import { scale } from '../../src/lib/design/tokens.ts';
 import {
   EASE_GLIDE,
   ERASER_FILL_OPACITY,
@@ -23,10 +23,10 @@ import {
   haloPose,
   rainbowArcs,
   reconcileHalos,
-} from '../../experiments/native-architecture/src/drawing/haloModel.ts';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
-import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
+} from '../../src/drawing/haloModel.ts';
+import { emptyDrawing } from '../../src/drawing/model.ts';
+import { createContactResponder } from '../../src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../src/drawing/liveInk.ts';
 
 vi.mock('react-native', () => ({ findNodeHandle: (owner) => owner }));
 const PAPER_TARGET = 7;

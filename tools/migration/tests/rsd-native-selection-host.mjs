@@ -1,9 +1,9 @@
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { coloringBookHistory } from '../../../experiments/native-architecture/src/settings/coloringBook.ts';
-import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { coloringBookHistory } from '../../../src/settings/coloringBook.ts';
+import { createOfflineLibrary } from '../../../src/offlineLibrary/controller.ts';
 import { act } from 'react';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { PROTECTED_PARENT_POLICIES } from '../../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
+import { PROTECTED_PARENT_POLICIES } from '../../../src/parentCenter/parentPolicy.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { displayOrientation, Orientation, orientationCalls } from './rsd-orientation-port.mjs';
@@ -68,13 +68,13 @@ const caller = vi.hoisted(() => {
     },
   };
 });
-vi.mock('../../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
+vi.mock('../../../src/platform/useOnline.ts', () => ({
   useOnline: () => caller.online,
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+vi.mock('../../../src/platform/networkReturn.ts', () => ({
   subscribeNetworkReturn: () => () => {},
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
+vi.mock('../../../src/platform/ai.ts', () => ({
   aiTransport: caller.aiSend,
   admitAiImage: caller.aiAdmit,
   aiVault: {
@@ -98,31 +98,28 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
     pictures: async () => [],
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
+vi.mock('../../../src/platform/feedback.ts', () => ({
   feedbackTransport: caller.feedbackSend,
   feedbackDevice: () => ({ platform: 'iOS' }),
   feedbackOffline: () => false,
   feedbackPolicyStorage: { read: caller.feedbackRead, write: caller.feedbackWrite },
 }));
-vi.mock(
-  '../../../experiments/native-architecture/src/useDrawingScreen.ts',
-  async (importOriginal) => {
-    const { drawingScreenPort } = await import('./rsd-coloring-root-host.mjs');
-    return drawingScreenPort(await importOriginal(), caller, coloringBookHistory);
-  }
-);
-vi.mock('../../../experiments/native-architecture/src/offlineLibrary/runtime.ts', async () => {
+vi.mock('../../../src/useDrawingScreen.ts', async (importOriginal) => {
+  const { drawingScreenPort } = await import('./rsd-coloring-root-host.mjs');
+  return drawingScreenPort(await importOriginal(), caller, coloringBookHistory);
+});
+vi.mock('../../../src/offlineLibrary/runtime.ts', async () => {
   const { offlineRuntimePort } = await import('./rsd-coloring-root-host.mjs');
   return { offlineLibrary: offlineRuntimePort(caller) };
 });
-vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', async () => {
+vi.mock('../../../src/platform/drawingAudio.ts', async () => {
   const { drawingAudioPort } = await import('./rsd-native-animated-host.mjs');
   return drawingAudioPort(caller);
 });
-vi.mock('../../../experiments/native-architecture/src/platform/clearHaptics.ts', () => ({
+vi.mock('../../../src/platform/clearHaptics.ts', () => ({
   impactThreshold: caller.haptic,
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+vi.mock('../../../src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: async () =>
       caller.settingsStorage ? caller.settingsStorage.read() : caller.initialSettings,
@@ -130,10 +127,10 @@ vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts'
   },
 }));
 // The device lock answers what a case sets; a case that sets nothing sees no lock.
-vi.mock('../../../experiments/native-architecture/src/platform/deviceLock.ts', () => ({
+vi.mock('../../../src/platform/deviceLock.ts', () => ({
   isDeviceLocked: async () => caller.deviceLocked === true,
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.ts', () => ({
+vi.mock('../../../src/platform/pencilDoubleTap.ts', () => ({
   subscribePencilDoubleTap(listener) {
     caller.pencilDoubleTap = listener;
     return () => {
@@ -141,25 +138,21 @@ vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.t
     };
   },
 }));
-vi.mock(
-  '../../../experiments/native-architecture/src/product/useDrawingProduct.ts',
-  async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-      useDrawingProduct(screen) {
-        const product = actual.useDrawingProduct(screen);
-        caller.product = product;
-        caller.sound = product.sound;
-        return product;
-      },
-    };
-  }
-);
+vi.mock('../../../src/product/useDrawingProduct.ts', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    useDrawingProduct(screen) {
+      const product = actual.useDrawingProduct(screen);
+      caller.product = product;
+      caller.sound = product.sound;
+      return product;
+    },
+  };
+});
 
-vi.mock('../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx', async () => {
+vi.mock('../../../src/rsdDrawing/NativePaper.tsx', async () => {
   const React = await import('react');
-  const { strokeStyle } =
-    await import('../../../experiments/native-architecture/src/drawing/model.ts');
+  const { strokeStyle } = await import('../../../src/drawing/model.ts');
   const { paperPort } = await import('./rsd-coloring-root-host.mjs');
   const port = paperPort(React, strokeStyle, caller);
   return {

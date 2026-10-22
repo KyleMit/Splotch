@@ -3,9 +3,9 @@ import './rsd-native-settings-hub-mocks.mjs';
 import { drawingScreen, rerender, storedSettings } from './rsd-native-settings-fixture.mjs';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { BASE_SCRATCH_GAIN } from '../../../experiments/native-architecture/src/audio/drawingAudio.ts';
-import * as drawingPaint from '../../../experiments/native-architecture/src/product/afterDrawingPaint.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { BASE_SCRATCH_GAIN } from '../../../src/audio/drawingAudio.ts';
+import * as drawingPaint from '../../../src/product/afterDrawingPaint.ts';
 
 // The Volume and Button Size sliders mounted through the real Settings caller and settings owner:
 // a nudge made while the previous one is still writing, and the pencil heard while Volume moves.

@@ -1,34 +1,28 @@
 import { caller, host, mount, root, records } from './rsd-native-selection-host.mjs';
 import { Linking } from 'react-native';
-import { RsdInformationFooter } from '../../../experiments/native-architecture/src/rsdDrawing/RsdInformationFooter.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { mixSrgb } from '../../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
-import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import { themes, scale } from '../../../web/src/lib/design/tokens.ts';
-import releases from '../../../web/src/lib/releases.json';
-import { FEEDBACK_URL } from '../../../web/src/lib/siteUrl.ts';
+import { RsdInformationFooter } from '../../../src/rsdDrawing/RsdInformationFooter.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { mixSrgb } from '../../../src/rsdDrawing/colorMix.ts';
+import { paletteHex } from '../../../src/drawing/palette.ts';
+import { themes, scale } from '../../../src/lib/design/tokens.ts';
+import releases from '../../../src/lib/releases.json';
+import { FEEDBACK_URL } from '../../../src/lib/siteUrl.ts';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { PolicySpans } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyContent.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { PolicySpans } from '../../../src/rsdDrawing/RsdPrivacyContent.tsx';
 import { useCaller } from './rsd-native-ai-fixture.mjs';
-import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
-import {
-  MESSAGE_PROMPT_BY_KIND,
-  REPORT_FORM_COPY,
-} from '../../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
-import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
-import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
-import { RELEASE_NOTES } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import privacy from '../../../src/information/privacy.generated.json';
+import { MESSAGE_PROMPT_BY_KIND, REPORT_FORM_COPY } from '../../../src/feedback/reportFormCopy.ts';
+import { FEEDBACK_PAGE_COPY } from '../../../src/information/feedbackPageCopy.ts';
+import { openAppPage } from '../../../src/platform/appPath.ts';
+import { RELEASE_NOTES } from '../../../src/settings/whatsNew.ts';
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
-vi.mock(
-  '../../../experiments/native-architecture/src/platform/appPath.ts',
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    openAppPage: vi.fn(),
-    setDocumentTitle: vi.fn(() => 'Splotch'),
-  })
-);
+vi.mock('../../../src/platform/appPath.ts', async (importOriginal) => ({
+  ...(await importOriginal()),
+  openAppPage: vi.fn(),
+  setDocumentTitle: vi.fn(() => 'Splotch'),
+}));
 
 afterEach(() => {
   delete Linking.openURL;

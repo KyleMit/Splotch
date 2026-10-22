@@ -1,12 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import {
-  quickToggleAppearance,
-  resolveAppearance,
-} from '../../experiments/native-architecture/src/settings/appearance.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
+import { quickToggleAppearance, resolveAppearance } from '../../src/settings/appearance.ts';
 
 const parentDefaults = {
   aiEnabled: false,

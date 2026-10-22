@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Splotch tech stack, file-by-file source map of web/src/, route table, and the canonical UI element glossary. Use when navigating unfamiliar parts of the codebase, deciding where new code belongs, or needing the proper name of a UI element.
+description: Splotch tech stack, file-by-file source map of src/, route table, and the canonical UI element glossary. Use when navigating unfamiliar parts of the codebase, deciding where new code belongs, or needing the proper name of a UI element.
 ---
 
 # Splotch — Architecture
@@ -11,7 +11,7 @@ that matches the question rather than the whole file.
 | Section         | Answers                                                                                                                                      |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Tech Stack**  | What framework/library handles a concern, and which of the two build targets it applies to                                                   |
-| **Source Map**  | What a given `web/src/lib/` module owns, and where new code belongs — one row per module, with the ADR that shaped it                        |
+| **Source Map**  | What a given `src/lib/` module owns, and where new code belongs — one row per module, with the ADR that shaped it                            |
 | **Routes**      | The prerendered RN documents and the Netlify API paths                                                                                       |
 | **UI Elements** | The canonical name of a UI element, and the **Layout notes** that open the section — read those before positioning any new on-screen control |
 

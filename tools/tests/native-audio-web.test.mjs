@@ -4,11 +4,11 @@ import {
   GAIN_RAMP_S,
   STOP_DECLICK_S,
   TEARDOWN_SLACK_MS,
-} from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
-import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.web.ts';
-import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
-import { webAssetUri } from '../../experiments/native-architecture/src/platform/webAsset.ts';
-import { loadClearPageTurn } from '../../experiments/native-architecture/src/platform/clearSound.web.ts';
+} from '../../src/audio/drawingAudio.ts';
+import { loadDrawingLoop } from '../../src/platform/drawingAudio.web.ts';
+import { PENCIL_SOUNDS } from '../../src/audio/pencilSounds.ts';
+import { webAssetUri } from '../../src/platform/webAsset.ts';
+import { loadClearPageTurn } from '../../src/platform/clearSound.web.ts';
 
 const TAKE_SECONDS = 2;
 

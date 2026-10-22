@@ -12,7 +12,6 @@ import {
 import { homedir } from 'node:os';
 import { dirname, join, parse } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { CANDIDATE_DIRECTORY } from './native-candidate.mjs';
 
 const MAX_AMBIENT_CONFIG_BYTES = 4096;
 const NETLIFY_CACHE_ROOT = '/opt/build/cache';
@@ -241,10 +240,7 @@ export function qualifyAmbientPnpmConfig(path, root, env, record) {
     form: config.store.form,
     record,
   };
-  const cleaningRoots = [
-    join(root, 'node_modules'),
-    join(root, CANDIDATE_DIRECTORY, 'node_modules'),
-  ];
+  const cleaningRoots = [join(root, 'node_modules')];
   const disjoint = cleaningRoots.every(
     (cleaningRoot) =>
       physicalStore !== cleaningRoot &&

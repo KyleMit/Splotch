@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 
 it.each([

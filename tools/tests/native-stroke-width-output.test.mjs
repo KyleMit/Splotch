@@ -1,7 +1,7 @@
 import { adoptedDrawing, canonicalPaper } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -11,18 +11,15 @@ import {
   emptyDrawing,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 
 const { Svg } = await import('react-native-svg');
-const { InkScene } = await import('../../experiments/native-architecture/src/drawing/InkScene.tsx');
+const { InkScene } = await import('../../src/drawing/InkScene.tsx');
 
 async function pixels(strokes) {
   const svg = renderToStaticMarkup(

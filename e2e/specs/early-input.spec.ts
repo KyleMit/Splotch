@@ -3,7 +3,7 @@ import {
   CONTROLS_LIVE_ATTRIBUTE,
   DRAWING_LIVE_ATTRIBUTE,
   PAPER_INPUT_TEST_ID,
-} from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+} from '../../src/platform/firstFrameContract.ts';
 import { expect, test } from '../fixtures.ts';
 import { waitForDrawingScreen } from '../support/app.ts';
 import { inkedPixelsSince, openDrawer, regionBetween, regionPixels } from '../support/group-a.ts';

@@ -53,7 +53,7 @@ Non-`keep` rows first.
 
 * **Version:** `^5.2.10` declared · 5.2.10 locked · prod
 * **Used for:** Self-hosted Quicksand variable font (the app's UI typeface), imported in
-  `experiments/native-architecture/src/platform/shippingFont.web.tsx`.
+  `src/platform/shippingFont.web.tsx`.
 * **Source:** npm · [github.com/fontsource/font-files](https://github.com/fontsource/font-files) ·
   published by the Fontsource project
 * **License:** OFL-1.1 (the font); packaging MIT
@@ -86,7 +86,7 @@ Non-`keep` rows first.
 
 * **Version:** `^10.7.9` declared · 10.7.9 locked · prod
 * **Used for:** Netlify Blobs persistence for access tokens and usage counters (server routes). Used
-  in `web/src/lib/server/tokens.ts`, `usage.ts` (+ tests).
+  in `netlify/server/tokens.ts`, `usage.ts` (+ tests).
 * **Source:** npm · [github.com/netlify/primitives](https://github.com/netlify/primitives) ·
   published by Netlify
 * **License:** MIT
@@ -294,7 +294,7 @@ Non-`keep` rows first.
 ### happy-dom
 
 * **Version:** `^20.10.6` declared · 20.10.6 locked · dev
-* **Used for:** The DOM environment for Vitest unit tests, configured in `web/vitest.config.ts`.
+* **Used for:** The DOM environment for Vitest unit tests, configured in `vitest.config.ts`.
 * **Source:** npm · [github.com/capricorn86/happy-dom](https://github.com/capricorn86/happy-dom) ·
   published by David Ortner (capricorn86)
 * **License:** MIT
@@ -598,7 +598,7 @@ verifies (and `-- --check-latest` compares against upstream).
 | Python                       | `tools/centerline-tracing/` only                   | **3.11** pinned by the capability's `.python-version`, `pyproject.toml`, and dedicated workflow; uv may download it lazily for local use                | keep — the first Python toolchain remains isolated from the app and default npm lifecycle                                                                                                                                            |
 | uv                           | centerline-tracing commands and dedicated CI       | local system CLI; CI uses SHA-pinned `astral-sh/setup-uv@v10.0.1` to install **uv 0.12.5**; `uv.lock` fixes the complete Python graph                   | keep — fast locked environments without a root requirements file or always-on virtualenv                                                                                                                                             |
 | JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                 | keep — Android build requirement, pinned                                                                                                                                                                                             |
-| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`experiments/native-architecture/android/gradlew`), invoked by `tools/release/build-native-release.mjs`               | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
+| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked by `tools/release/build-native-release.mjs`                                               | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
 | Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**current API 33 + declared API 24 floor, google_apis, x86_64**) in CI; local Android Studio SDK otherwise | keep — current and minimum-supported Android runtimes pinned in release CI                                                                                                                                                           |
 | Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                   | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                      |
 | Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed by `.github/actions/install-maestro` via `curl -fsSL https://get.maestro.mobile.dev \| bash`, pinned to `MAESTRO_VERSION=2.4.0`               | keep — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream; CI uses the installer’s documented `MAESTRO_VERSION` interface for reproducible native smoke runs. See the `testing` skill. |

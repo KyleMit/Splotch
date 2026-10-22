@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
+import { useDrawingSound } from '../../src/useDrawingSound.ts';
 
 const sound = vi.hoisted(() => ({
   read: vi.fn(),
@@ -13,13 +13,13 @@ const sound = vi.hoisted(() => ({
   remove: vi.fn(),
   subscribe: vi.fn(),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+vi.mock('../../src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: { read: sound.read, write: sound.write },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+vi.mock('../../src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: sound.load,
 }));
-vi.mock('../../experiments/native-architecture/src/platform/clearSound.ts', () => ({
+vi.mock('../../src/platform/clearSound.ts', () => ({
   loadClearPageTurn: async () => ({ play() {}, dispose() {} }),
 }));
 vi.mock('react-native', () => ({

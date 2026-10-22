@@ -17,7 +17,7 @@ import {
 import { SEMVER } from './lib/release-frontmatter.mjs';
 
 const GENERATOR_MODULE = 'web/coloringPackManifest.ts';
-const GENERATOR_INPUTS = [GENERATOR_MODULE, 'web/src/lib', 'web/static/coloring'];
+const GENERATOR_INPUTS = [GENERATOR_MODULE, 'src/lib', 'assets/static/coloring'];
 const MANIFEST_FILE = 'manifest.json';
 
 const GENERATE_SCRIPT = `

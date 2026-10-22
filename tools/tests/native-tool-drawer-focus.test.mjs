@@ -2,10 +2,10 @@
 import { act, createElement, forwardRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { RsdToolDrawerSection } from '../../experiments/native-architecture/src/rsdDrawing/RsdToolDrawerSection.tsx';
-import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
-import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from '../../experiments/native-architecture/src/settings/drawingControlPreferences.ts';
-import { TWO_COLUMN_CHIP_WIDTH_PX } from '../../experiments/native-architecture/src/settings/toolDrawerSection.ts';
+import { RsdToolDrawerSection } from '../../src/rsdDrawing/RsdToolDrawerSection.tsx';
+import { DEFAULT_BRUSH_AVAILABILITY } from '../../src/settings/brushPreferences.ts';
+import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from '../../src/settings/drawingControlPreferences.ts';
+import { TWO_COLUMN_CHIP_WIDTH_PX } from '../../src/settings/toolDrawerSection.ts';
 
 // The Drawing Tools block as the web build renders it: React Native Web, the web toggle switch and
 // the web focus carry, with React Strict DOM reduced to the plain elements its web build emits.
@@ -21,20 +21,20 @@ vi.mock('react-native', async () => {
   return { ...web, View };
 });
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+  '../../src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../src/rsdDrawing/RsdPressable.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.web.tsx')
+  '../../src/rsdDrawing/RsdToggleSwitch.tsx',
+  () => import('../../src/rsdDrawing/RsdToggleSwitch.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/focusCarry.ts',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/focusCarry.web.ts')
+  '../../src/rsdDrawing/focusCarry.ts',
+  () => import('../../src/rsdDrawing/focusCarry.web.ts')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/segmentThumb.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/segmentThumb.web.tsx')
+  '../../src/rsdDrawing/segmentThumb.tsx',
+  () => import('../../src/rsdDrawing/segmentThumb.web.tsx')
 );
 vi.mock('react-native-svg', () => ({ SvgXml: () => null }));
 vi.mock('react-strict-dom', () => {

@@ -3,13 +3,13 @@ import { caller, host, mount, records, expandControls } from './rsd-native-selec
 import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { drawingPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { pictureExport } from '../../../experiments/native-architecture/src/drawing/pictureExport.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { drawingPaper } from '../../../src/drawing/paperSpace.ts';
+import { pictureExport } from '../../../src/drawing/pictureExport.ts';
 
 const save = vi.hoisted(() => ({ outcome: 'photos', calls: [] }));
-vi.mock('../../../experiments/native-architecture/src/platform/pictureSave.ts', () => ({
+vi.mock('../../../src/platform/pictureSave.ts', () => ({
   pictureSave: {
     save: async (base64, format) => {
       save.calls.push({ base64, format });
@@ -17,7 +17,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/pictureSave.ts', 
     },
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/aiPictureBase64.ts', () => ({
+vi.mock('../../../src/platform/aiPictureBase64.ts', () => ({
   aiPictureBase64: async (picture) => `bytes-of:${picture.uri}`,
 }));
 

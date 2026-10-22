@@ -1,13 +1,10 @@
 import { act, createElement, createRef } from 'react';
 import { expect, it, vi } from 'vitest';
 import { mount } from './rsd-native-selection-host.mjs';
-import {
-  DrawingSessionProvider,
-  useDrawingHistory,
-} from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { useRendererRecovery } from '../../../experiments/native-architecture/src/useRendererRecovery.ts';
-import { addStrokes } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { adoptPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { DrawingSessionProvider, useDrawingHistory } from '../../../src/product/DrawingSession.tsx';
+import { useRendererRecovery } from '../../../src/useRendererRecovery.ts';
+import { addStrokes } from '../../../src/drawing/model.ts';
+import { adoptPaper } from '../../../src/drawing/paperSpace.ts';
 
 it('restores one lost renderer silently and preserves session ink and Undo through a persistent fault', async () => {
   let recovery, session;

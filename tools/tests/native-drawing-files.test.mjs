@@ -1,4 +1,4 @@
-import { unsavedPictureStore } from '../../experiments/native-architecture/src/platform/unsavedPictures.ts';
+import { unsavedPictureStore } from '../../src/platform/unsavedPictures.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const filesystem = vi.hoisted(() => ({

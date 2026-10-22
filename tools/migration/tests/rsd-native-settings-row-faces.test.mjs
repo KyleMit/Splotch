@@ -4,29 +4,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { html } from 'react-strict-dom';
 import * as ReactNative from 'react-native';
-import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { scale, themes } from '../../../src/lib/design/tokens.ts';
 import { ROW_HUB_ROW_KEEPS_UA_FACE, ROW_HUB_TITLE_WEIGHT } from './rsd-settings-row-contract.mjs';
-import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import { RsdHubRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdHubRow.tsx';
-import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.tsx';
+import { darkTheme } from '../../../src/rsdDrawing/tokens.css.ts';
+import { RsdHubRow } from '../../../src/rsdDrawing/RsdHubRow.tsx';
+import { RsdSidebarRow } from '../../../src/rsdDrawing/RsdSidebarRow.tsx';
 
 // The Settings rows' type and ink as Android and iOS draw them, through the released native
 // renderer with each row's native face and fade in place of the web ones.
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/hubRowFace.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/hubRowFace.native.ts')
+  '../../../src/rsdDrawing/hubRowFace.ts',
+  () => import('../../../src/rsdDrawing/hubRowFace.native.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/HubTitle.tsx',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/HubTitle.native.tsx')
+  '../../../src/rsdDrawing/HubTitle.tsx',
+  () => import('../../../src/rsdDrawing/HubTitle.native.tsx')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/HubTileFrame.tsx',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/HubTileFrame.native.tsx')
+  '../../../src/rsdDrawing/HubTileFrame.tsx',
+  () => import('../../../src/rsdDrawing/HubTileFrame.native.tsx')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.native.ts')
+  '../../../src/rsdDrawing/sidebarRowFade.ts',
+  () => import('../../../src/rsdDrawing/sidebarRowFade.native.ts')
 );
 
 let root, container, titleColumnWidth;

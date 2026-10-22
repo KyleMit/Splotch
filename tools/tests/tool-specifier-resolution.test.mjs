@@ -26,7 +26,7 @@ const SEPARATELY_CONFIGURED = /^tools\/asset-gen\//;
 // deliberately naming files that do not exist. The second row is this file's
 // own positive-control table below, which the repo scan otherwise reads as
 // broken imports. The third is the import api-handler-lint.test.mjs lints as if
-// it sat in a web/src/lib/server/api endpoint module.
+// it sat in a netlify/server/api endpoint module.
 const FIXTURE_SPECIFIERS = new Set([
   ...['./folderSaveSupport', './foo', './lazy', './x', './y'],
   ...['./x.mjs', '../lib/y.mjs', './z.mjs', './dyn.mjs', '../mocked.mjs', './asset.bin'],

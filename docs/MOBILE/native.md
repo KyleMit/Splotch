@@ -7,16 +7,15 @@ works, what runs offline vs. online, storage, the privacy/data posture stores as
 store-listing assets, and cross-platform follow-ups. For platform-specific build/test/release steps
 see **[android.md](android.md)** and **[ios.md](ios.md)**.
 
-> Both platforms are active: the React Native `android/` and `ios/` projects live in
-> `experiments/native-architecture`. Android development works on macOS or Linux; iOS builds require
-> macOS + Xcode.
+> Both platforms are active: the React Native `android/` and `ios/` projects live in `.`. Android
+> development works on macOS or Linux; iOS builds require macOS + Xcode.
 
-The store release builds the React Native app in `experiments/native-architecture`, under the
-shipping identity `art.splotch.app` (the `android:*` and `ios:*` release scripts in
-[android.md](android.md#react-native-store-build) and [ios.md](ios.md#react-native-store-build)).
-Physical-device development builds use `art.splotch.app.dev`; the deploy smoke also has an explicit
-store-identity emulator/simulator build. Its `DEVELOPMENT.md` covers development builds and how to
-check a JS-only change on a device without a native rebuild.
+The store release builds the React Native app in `.`, under the shipping identity `art.splotch.app`
+(the `android:*` and `ios:*` release scripts in [android.md](android.md#react-native-store-build)
+and [ios.md](ios.md#react-native-store-build)). Physical-device development builds use
+`art.splotch.app.dev`; the deploy smoke also has an explicit store-identity emulator/simulator
+build. Its `DEVELOPMENT.md` covers development builds and how to check a JS-only change on a device
+without a native rebuild.
 
 ## 1. How the native build works
 
@@ -29,19 +28,19 @@ SvelteKit export or runs a web server. Netlify separately builds the RN web expo
 
 Drawing, the bundled Farm book and local picture saving work without a network. AI generation,
 feedback and downloading additional books require the hosted service. The platform owners live in
-`experiments/native-architecture/src/platform/`; the drawing and offline-library modules own their
-respective state. No compatibility or data migration from the Capacitor app is provided.
+`src/platform/`; the drawing and offline-library modules own their respective state. No
+compatibility or data migration from the Capacitor app is provided.
 
 ### Storage and native modules
 
 Platform adapters own settings, picture saving, orientation and credentials. The native AI bridge is
-`SplotchAIEnvironment`: its typed adapter is `experiments/native-architecture/src/platform/ai.ts`,
-with Swift and Kotlin implementations under the app's native projects. It validates native replies
-and uses device secure storage for credentials. The web adapter owns browser storage separately.
+`SplotchAIEnvironment`: its typed adapter is `src/platform/ai.ts`, with Swift and Kotlin
+implementations under the app's native projects. It validates native replies and uses device secure
+storage for credentials. The web adapter owns browser storage separately.
 
-Read the app's `experiments/native-architecture/DEVELOPMENT.md` before changing native module
-registration or deploying a local build. Native source changes require a native rebuild. Physical
-device builds use `art.splotch.app.dev`; store identity is opt-in through the release scripts.
+Read the app's `DEVELOPMENT.md` before changing native module registration or deploying a local
+build. Native source changes require a native rebuild. Physical device builds use
+`art.splotch.app.dev`; store identity is opt-in through the release scripts.
 
 ### Data & privacy posture (important for store forms)
 
@@ -72,16 +71,15 @@ the platform checklists.
 * Photos are saved **locally**: iOS uses add-only photo access; Android 10+ writes shared
   `Pictures/Splotch` through MediaStore. Android 7–9 uses public Pictures when legacy storage is
   permitted, otherwise an app-specific media directory. The latter is removed on uninstall; do not
-  promise uninstall survival for that fallback. The RN save owner is
-  `experiments/native-architecture/src/platform/photoLibrary.ts`.
+  promise uninstall survival for that fallback. The RN save owner is `src/platform/photoLibrary.ts`.
 
 ## 2. Native projects
 
 The Capacitor sync pipeline (`build:cap`, `cap:sync`) is gone with the Capacitor projects; the React
-Native app in `experiments/native-architecture` builds its own native projects (see
-[android.md](android.md) and [ios.md](ios.md)). Its launcher, splash, and launch-screen files are
-committed under its `android/` and `ios/` projects, and the themed Android launcher artwork is the
-108dp VectorDrawable `assets/icon-monochrome.xml` traced from the smiling S in `assets/icon.png`.
+Native app in `.` builds its own native projects (see [android.md](android.md) and
+[ios.md](ios.md)). Its launcher, splash, and launch-screen files are committed under its `android/`
+and `ios/` projects, and the themed Android launcher artwork is the 108dp VectorDrawable
+`assets/icon-monochrome.xml` traced from the smiling S in `assets/icon.png`.
 
 ## 3. Store listing assets & copywriting (both stores)
 
@@ -126,8 +124,8 @@ The shared baseline both depend on:
 ### Legal / privacy artifacts (required by both stores)
 
 * [x] **Privacy Policy** page — created at `/privacy` (the RN privacy content and its source
-      metadata in `web/src/lib/privacy/contents.ts`), live at `https://splotch.art/privacy` and
-      bundled into both native apps. ← required by both stores. Contact is through Splotch's private
+      metadata in `src/lib/privacy/contents.ts`), live at `https://splotch.art/privacy` and bundled
+      into both native apps. ← required by both stores. Contact is through Splotch's private
       feedback form. RN opens `/feedback` inside the app and submits through the hosted API;
       destinations that leave the app use the external-link gate. The native privacy copy excludes
       the web-only conditional email fallback. The policy must state: no background drawing
@@ -136,9 +134,8 @@ The shared baseline both depend on:
       confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
-      `NSPhotoLibraryAddUsageDescription` is set in
-      `experiments/native-architecture/ios/Splotch/Info.plist` and guarded by the privacy-permission
-      inventory; the Android runtime prompt is system-worded.
+      `NSPhotoLibraryAddUsageDescription` is set in `ios/Splotch/Info.plist` and guarded by the
+      privacy-permission inventory; the Android runtime prompt is system-worded.
 
 ## 5. Known follow-ups / nice-to-haves (cross-platform)
 

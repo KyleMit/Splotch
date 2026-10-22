@@ -35,7 +35,7 @@ export default {
     '**/.svelte-kit/**',
     '**/build/**',
     '**/.netlify/**',
-    // Worktree-isolated agent checkouts hold a second copy of web/src, which
+    // Worktree-isolated agent checkouts hold a second copy of src, which
     // the path-anchored entries above do not match at its nested location —
     // the same reason .prettierignore excludes this tree.
     '.claude/worktrees/**',
@@ -50,7 +50,7 @@ export default {
     'ios/DerivedData/**',
     'android/app/src/main/assets/public/**',
     // The React Native web export (`npm run native:web:build`): gitignored Expo output.
-    'experiments/native-architecture/dist/**',
+    'dist/**',
   ],
   rules: {
     // Constructs the CSS parser keeps and the browser then ignores. A

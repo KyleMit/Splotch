@@ -1,13 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { photos } from './native-photo-library-port.mjs';
-import {
-  ANDROID_ALBUM_NAME,
-  photoLibrary,
-} from '../../experiments/native-architecture/src/platform/photoLibrary.ts';
-import { pictureSave as nativePictureSave } from '../../experiments/native-architecture/src/platform/pictureSave.ts';
-import { saveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
-import { createSaveFailure } from '../../experiments/native-architecture/src/export/saveFailure.ts';
+import { ANDROID_ALBUM_NAME, photoLibrary } from '../../src/platform/photoLibrary.ts';
+import { pictureSave as nativePictureSave } from '../../src/platform/pictureSave.ts';
+import { saveFailureCopy } from '../../src/export/pictureSave.ts';
+import { createSaveFailure } from '../../src/export/saveFailure.ts';
 
 vi.mock('expo-media-library', () =>
   import('./native-photo-library-port.mjs').then((port) => port.mediaLibraryModule)
@@ -133,13 +130,11 @@ describe('native photo library save', () => {
 
 describe('shipping parity', () => {
   it('names the album the Android gallery writer saves into', () => {
-    const native = read(
-      'experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchPhotoLibrary.kt'
-    );
+    const native = read('android/app/src/main/java/art/splotch/app/SplotchPhotoLibrary.kt');
     expect(native.match(/const val ALBUM_NAME = "([^"]+)"/)?.[1]).toBe(ANDROID_ALBUM_NAME);
-    const stagedDirectory = read(
-      'experiments/native-architecture/src/platform/photoLibrary.ts'
-    ).match(/const STAGING_DIRECTORY = '([^']+)'/)?.[1];
+    const stagedDirectory = read('src/platform/photoLibrary.ts').match(
+      /const STAGING_DIRECTORY = '([^']+)'/
+    )?.[1];
     expect(native.match(/const val STAGING_DIRECTORY = "([^"]+)"/)?.[1]).toBe(stagedDirectory);
     expect(native).toContain('Environment.DIRECTORY_PICTURES + File.separator + ALBUM_NAME');
     expect(native).toContain('Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q');
@@ -152,7 +147,7 @@ describe('shipping parity', () => {
   it('asks iOS for add-only access and never for read access', () => {
     const usage = (plist) =>
       plist.match(/<key>NSPhotoLibraryAddUsageDescription<\/key>\s*<string>([^<]*)<\/string>/)?.[1];
-    const candidate = read('experiments/native-architecture/ios/Splotch/Info.plist');
+    const candidate = read('ios/Splotch/Info.plist');
     expect(usage(candidate)).toBeDefined();
     expect(candidate).not.toContain('NSPhotoLibraryUsageDescription');
   });

@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 import {
   IMAGE_REPORT_RETENTION_DAYS,
   IMAGE_REPORT_REVIEW_HOURS,
-} from '../../../web/src/lib/imageReport.ts';
-import { USAGE_RECORD_RETENTION_DAYS } from '../../../web/src/lib/usageRecord.ts';
-import { NATIVE_API_ORIGIN } from '../../../web/securityPolicy.ts';
+} from '../../../src/lib/imageReport.ts';
+import { USAGE_RECORD_RETENTION_DAYS } from '../../../src/lib/usageRecord.ts';
+import { NATIVE_API_ORIGIN } from '../../../netlify/securityPolicy.ts';
 
 const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
 const compact = (value) => value.replace(/\s+/g, ' ');
@@ -161,8 +161,8 @@ describe('privacy disclosure consistency', () => {
     );
     const github = privacyInventory.outboundHosts.find(({ id }) => id === 'github-api');
     const openai = privacyInventory.outboundHosts.find(({ id }) => id === 'openai-api');
-    const githubSource = read('web/src/lib/server/github.ts');
-    const openaiSource = read('web/src/lib/server/ai/openai.ts');
+    const githubSource = read('netlify/server/github.ts');
+    const openaiSource = read('netlify/server/ai/openai.ts');
 
     expect(firstParty.hostPolicy).toBe('same-origin-web-and-worker-fixed-production-native');
     expect(firstParty.productionHosts).toEqual([new URL(NATIVE_API_ORIGIN).host]);

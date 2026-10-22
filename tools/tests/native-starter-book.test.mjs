@@ -8,13 +8,8 @@ import {
   FARM_PAGE_IDS,
   STARTER_BOOK_ID,
   isFarmPageId,
-} from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import {
-  COLORING_PAGES,
-  PAGE_IDS,
-  SAMPLE_PAGE_IDS,
-  isPageId,
-} from '../../experiments/native-architecture/src/drawing/pages.ts';
+} from '../../src/drawing/bundledBooks.ts';
+import { COLORING_PAGES, PAGE_IDS, SAMPLE_PAGE_IDS, isPageId } from '../../src/drawing/pages.ts';
 import {
   addStrokes,
   changePage,
@@ -23,14 +18,14 @@ import {
   emptyDrawing,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import { BUNDLED_FARM_IMAGES } from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createPngCapture } from '../../src/drawing/interactions.ts';
+import { BUNDLED_FARM_IMAGES } from '../../src/drawing/bundledFarm/images.ts';
 import {
   BUNDLED_FARM_COVERS,
   BUNDLED_FARM_SELECTORS,
-} from '../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
+} from '../../src/drawing/bundledFarm/pickerImages.ts';
 
 // The native images modules resolve each import through React Native's Image, which Node cannot
 // load; Vite hands them file paths, which nativeAssetUri returns without asking Image.
@@ -473,7 +468,7 @@ describe('bundled art preserves shipped Farm provenance', () => {
       expect(art.ink).toBe(theme === 'dark' ? '#fff' : '#000');
       const shipped = readFileSync(
         new URL(
-          `../../web/static/coloring/farm/${pageId.split('/')[1]}-${slug}.${fill}.webp`,
+          `../../assets/static/coloring/farm/${pageId.split('/')[1]}-${slug}.${fill}.webp`,
           import.meta.url
         )
       );

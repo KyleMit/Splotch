@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createLibraryPlatform as createWebLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
-import { createDeferredLibrary } from '../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { createLibraryPlatform as createWebLibraryPlatform } from '../../src/platform/offlineLibrary.web.ts';
+import { createDeferredLibrary } from '../../src/offlineLibrary/deferredLibrary.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
 import {
   initialLibrarySnapshot,
   LIBRARY_UNAVAILABLE_MESSAGE,
-} from '../../experiments/native-architecture/src/offlineLibrary/snapshot.ts';
-import { encodeLibraryText } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
-import { OFFLINE_BOOKS } from '../../experiments/native-architecture/src/offlineLibrary/books.generated.ts';
-import { afterDrawingPaint } from '../../experiments/native-architecture/src/product/afterDrawingPaint.ts';
-import { drawingPaint } from '../../experiments/native-architecture/src/product/drawingPaint.ts';
+} from '../../src/offlineLibrary/snapshot.ts';
+import { encodeLibraryText } from '../../src/offlineLibrary/contract.ts';
+import { OFFLINE_BOOKS } from '../../src/offlineLibrary/books.generated.ts';
+import { afterDrawingPaint } from '../../src/product/afterDrawingPaint.ts';
+import { drawingPaint } from '../../src/product/drawingPaint.ts';
 
 const OFFLINE_PAGE = `offline:${OFFLINE_BOOKS[0].id}:${OFFLINE_BOOKS[0].pages[0].slug}:${'a'.repeat(64)}`;
 

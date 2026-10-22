@@ -4,11 +4,9 @@ import { describe, expect, it } from 'vitest';
 const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
 
 const candidate = {
-  activity: read(
-    'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainActivity.kt'
-  ),
-  manifest: read('experiments/native-architecture/android/app/src/main/AndroidManifest.xml'),
-  gradle: read('experiments/native-architecture/android/gradle.properties'),
+  activity: read('android/app/src/main/java/art/splotch/app/MainActivity.kt'),
+  manifest: read('android/app/src/main/AndroidManifest.xml'),
+  gradle: read('android/gradle.properties'),
 };
 
 // The body of the named method: from its declaration to the next member at the same indent.

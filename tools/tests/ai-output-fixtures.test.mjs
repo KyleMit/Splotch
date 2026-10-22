@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
 import { AI_OUTPUT_FIXTURES, aiOutputFor } from '../../e2e/fixtures/ai-output-fixtures.ts';
-import { IMAGE_SIZES } from '../../web/src/lib/server/ai/imageSize.ts';
+import { IMAGE_SIZES } from '../../netlify/server/ai/imageSize.ts';
 import { PAGE_INVENTORY_VIEWPORTS } from '../page-inventory/lib/page-inventory-report.mjs';
 
 // The mocks that stand in for /api/generate-image answer with a committed

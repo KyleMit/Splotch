@@ -1,21 +1,14 @@
-import {
-  paperProjection,
-  drawingPaper,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, drawingPaper } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, Profiler, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { createHaloFeed } from '../../experiments/native-architecture/src/drawing/haloFeed.ts';
-import {
-  HALO_IN_MS,
-  HALO_OUT_MS,
-  haloPose,
-} from '../../experiments/native-architecture/src/drawing/haloModel.ts';
-import { HELD_CLOCK_MS } from '../../experiments/native-architecture/src/drawing/PointerHalos.tsx';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { emptyDrawing } from '../../src/drawing/model.ts';
+import { createHaloFeed } from '../../src/drawing/haloFeed.ts';
+import { HALO_IN_MS, HALO_OUT_MS, haloPose } from '../../src/drawing/haloModel.ts';
+import { HELD_CLOCK_MS } from '../../src/drawing/PointerHalos.tsx';
 
 const native = vi.hoisted(() => ({
   input: null,
@@ -116,15 +109,15 @@ vi.mock('@shopify/react-native-skia', () => ({
   },
 }));
 
-vi.mock('../../experiments/native-architecture/src/drawing/skiaHaloPainter.ts', () => ({
+vi.mock('../../src/drawing/skiaHaloPainter.ts', () => ({
   paintHalos(_canvas, shown, now, reduced) {
     native.painted = { shown, now, reduced };
   },
 }));
 
 // Mounted drawing tests see the web halos (tools/vitest.config.mjs); this file mounts native's.
-vi.mock('../../experiments/native-architecture/src/drawing/PointerHalos.web.tsx', () =>
-  vi.importActual('../../experiments/native-architecture/src/drawing/PointerHalos.tsx')
+vi.mock('../../src/drawing/PointerHalos.web.tsx', () =>
+  vi.importActual('../../src/drawing/PointerHalos.tsx')
 );
 
 const PAPER_TARGET = 101;
@@ -312,9 +305,7 @@ describe('native Skia Pointer Halos', () => {
   // Positive control for the render probe: the web halos animate through React state, and the
   // same frames that leave the native halos alone commit them once per frame.
   it('sees the web halos render on every animation frame', async () => {
-    const { PointerHalos } = await vi.importActual(
-      '../../experiments/native-architecture/src/drawing/PointerHalos.web.tsx'
-    );
+    const { PointerHalos } = await vi.importActual('../../src/drawing/PointerHalos.web.tsx');
     const feed = createHaloFeed();
     await mount(createElement(PointerHalos, { feed }));
     act(() => feed.publish([{ id: 1, kind: 'ring', x: 10, y: 20, size: 8 }]));

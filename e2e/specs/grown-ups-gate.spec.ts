@@ -3,7 +3,7 @@ import {
   GATE_LOCKOUT_BASE_MS,
   GATE_WRONG_ANSWERS_BEFORE_LOCKOUT,
   gateLockoutMessage,
-} from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
+} from '../../src/feedback/gateLockout.ts';
 import { expect, test } from '../fixtures.ts';
 import { waitForDrawingScreen } from '../support/app.ts';
 import {

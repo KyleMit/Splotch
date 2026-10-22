@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SOUND_SOURCE_SETTINGS } from '../../experiments/native-architecture/src/settings/soundSettingsCodec.ts';
+import { DEFAULT_SOUND_SOURCE_SETTINGS } from '../../src/settings/soundSettingsCodec.ts';
 import {
   SOUND_VOLUME_DEFAULT,
   SOUND_VOLUME_MAX,
@@ -7,12 +7,9 @@ import {
   isSoundVolume,
   legacySoundLevelVolume,
   soundVolumeGain,
-} from '../../experiments/native-architecture/src/settings/soundVolume.ts';
+} from '../../src/settings/soundVolume.ts';
 
-import {
-  deleteSoundPlays,
-  drawingSoundPlays,
-} from '../../experiments/native-architecture/src/audio/soundGates.ts';
+import { deleteSoundPlays, drawingSoundPlays } from '../../src/audio/soundGates.ts';
 
 describe('Sound and Button style settings', () => {
   it('keeps the shipping Volume range and scales every sound by volume over the default', () => {

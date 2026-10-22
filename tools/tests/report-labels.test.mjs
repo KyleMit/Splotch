@@ -3,14 +3,14 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-// An in-app report files a GitHub issue with the labels web/src/lib/server/report.ts
+// An in-app report files a GitHub issue with the labels netlify/server/report.ts
 // writes, and GitHub silently auto-creates any label the repo lacks. A label
 // renamed in .github/labels.yml would leave reports under a stray label nobody
 // triages, so this reads both sides as written and fails on a mismatch. The
 // source side is read through the TypeScript AST, which carries no comments, so
 // a commented-out declaration can neither satisfy nor shadow the live one.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const reportPath = join(repoRoot, 'web', 'src', 'lib', 'server', 'report.ts');
+const reportPath = join(repoRoot, 'netlify', 'server', 'report.ts');
 const report = ts.createSourceFile(
   reportPath,
   readFileSync(reportPath, 'utf8'),

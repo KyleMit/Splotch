@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { themes } from '../../../web/src/lib/design/tokens.ts';
+import { themes } from '../../../src/lib/design/tokens.ts';
 
 // The red-team fixtures are hand-drawn PNGs with a transparent background, and a
 // provider is free to composite that onto whatever it likes. OpenAI picks black,
@@ -10,7 +10,7 @@ import { themes } from '../../../web/src/lib/design/tokens.ts';
 //
 // Flattening onto the app's light paper also makes the fixture match what
 // /api/generate-image actually receives: the canvas export always paints an
-// opaque paper fill beneath the strokes (web/src/lib/drawing/exportCompositor.ts),
+// opaque paper fill beneath the strokes (src/lib/drawing/exportCompositor.ts),
 // so production never sends transparency at all. See ADR-0023.
 //
 // Light paper is the only one on offer, and that is a property of the corpus

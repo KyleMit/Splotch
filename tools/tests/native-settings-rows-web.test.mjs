@@ -3,23 +3,23 @@ import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { brand, scale, themes } from '../../web/src/lib/design/tokens.ts';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import { LineClampBox } from '../../experiments/native-architecture/src/rsdDrawing/lineClampBox.web.tsx';
-import { RsdHubRow } from '../../experiments/native-architecture/src/rsdDrawing/RsdHubRow.tsx';
-import { RsdToggleRow } from '../../experiments/native-architecture/src/rsdDrawing/RsdToggleRow.tsx';
-import { RsdToggleSwitch } from '../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.web.tsx';
+import { brand, scale, themes } from '../../src/lib/design/tokens.ts';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
+import { LineClampBox } from '../../src/rsdDrawing/lineClampBox.web.tsx';
+import { RsdHubRow } from '../../src/rsdDrawing/RsdHubRow.tsx';
+import { RsdToggleRow } from '../../src/rsdDrawing/RsdToggleRow.tsx';
+import { RsdToggleSwitch } from '../../src/rsdDrawing/RsdToggleSwitch.web.tsx';
 
 // The web build compiles React Strict DOM to real elements and class names; this stand-in renders
 // the same elements with each one's merged style as data, so the props a browser receives can be
 // read. Rows import each platform module by its bare path, which Metro resolves to the .web file.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.web.tsx')
+  '../../src/rsdDrawing/RsdToggleSwitch.tsx',
+  () => import('../../src/rsdDrawing/RsdToggleSwitch.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/lineClampBox.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/lineClampBox.web.tsx')
+  '../../src/rsdDrawing/lineClampBox.tsx',
+  () => import('../../src/rsdDrawing/lineClampBox.web.tsx')
 );
 vi.mock('react-strict-dom', async () => {
   const React = await import('react');

@@ -3,7 +3,7 @@ import {
   createSoundSettings,
   MAX_SETTINGS_BYTES,
   parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+} from '../../src/settings/soundSettings.ts';
 
 function pending() {
   let resolve;

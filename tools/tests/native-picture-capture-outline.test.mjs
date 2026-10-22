@@ -3,12 +3,9 @@ import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
-import {
-  drawingPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { createPngCapture } from '../../src/drawing/interactions.ts';
+import { PictureCapture } from '../../src/drawing/PictureCapture.tsx';
+import { drawingPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
 
 // The web export loads a Farm page's line art on first use (bundledOutlines.web.ts), so picture
 // output must wait for it rather than capture paper and ink without the outline.
@@ -22,10 +19,10 @@ vi.mock('react-native-svg', () => ({
   Image: ({ onLoad }) => createElement('button', { 'data-ink-image': '', onClick: onLoad }),
   Rect: () => null,
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/CaptureSvg.tsx', () => ({
+vi.mock('../../src/drawing/CaptureSvg.tsx', () => ({
   CaptureSvg: ({ children }) => createElement('div', null, children),
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx', async () => {
+vi.mock('../../src/drawing/FixedInkCapture.tsx', async () => {
   const { useEffect } = await import('react');
   return {
     FixedInkCapture: ({ onReady }) => {
@@ -34,7 +31,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx',
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/drawing/svgCapture.ts', () => ({
+vi.mock('../../src/drawing/svgCapture.ts', () => ({
   PNG_TIMEOUT_MS: 10_000,
   createSvgCapture: () => ({
     capture() {
@@ -44,7 +41,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/svgCapture.ts', () =>
     dispose() {},
   }),
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', async () => {
+vi.mock('../../src/drawing/PageOutline.tsx', async () => {
   const { useSyncExternalStore } = await import('react');
   const subscribe = (listener) => {
     state.listeners.add(listener);

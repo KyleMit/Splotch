@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { CANONICAL_PAPER_SIZE } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { CANONICAL_PAPER_SIZE } from '../../src/drawing/paperSpace.ts';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFile } from 'node:fs/promises';
@@ -7,16 +7,11 @@ import { URL, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { OfflineArtworkScope } from '../../experiments/native-architecture/src/offlineLibrary/artworkContext.ts';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import {
-  PAPER_WIDTH,
-  PAPER_HEIGHT,
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { OfflineArtworkScope } from '../../src/offlineLibrary/artworkContext.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { offlinePageId } from '../../src/offlineLibrary/identity.ts';
+import { PAPER_WIDTH, PAPER_HEIGHT, emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock(
@@ -27,19 +22,14 @@ vi.mock('react-native-svg', async () => ({
   ...(await import('react-native-svg/lib/module/elements.web.js')),
   SvgXml: (await import('react-native-svg/lib/module/xml.js')).SvgXml,
 }));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg, Rect } = await import('react-native-svg');
-const { PageOutline } =
-  await import('../../experiments/native-architecture/src/drawing/PageOutline.tsx');
-const { InkScene } = await import('../../experiments/native-architecture/src/drawing/InkScene.tsx');
-const { OfflineMagicFill } =
-  await import('../../experiments/native-architecture/src/offlineLibrary/artwork.tsx');
+const { PageOutline } = await import('../../src/drawing/PageOutline.tsx');
+const { InkScene } = await import('../../src/drawing/InkScene.tsx');
+const { OfflineMagicFill } = await import('../../src/offlineLibrary/artwork.tsx');
 const pack = catalogPack('dinosaur', 'full');
 const pageId = offlinePageId(pack, 'trex');
-const staticRoot = pathToFileURL(`${resolve(process.cwd(), 'web/static/coloring/dinosaur')}/`);
+const staticRoot = pathToFileURL(`${resolve(process.cwd(), 'assets/static/coloring/dinosaur')}/`);
 async function artwork() {
   const variant = async (slug, dark) => ({
     outline: await readFile(

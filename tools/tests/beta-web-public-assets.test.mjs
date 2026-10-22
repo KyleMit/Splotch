@@ -4,12 +4,10 @@ import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { approvedAssetUrl } from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
+import { approvedAssetUrl } from '../../src/offlineLibrary/manifest.ts';
 
 const require = createRequire(import.meta.url);
-const {
-  createColoringAssetsMiddleware,
-} = require('../../experiments/native-architecture/scripts/serve-coloring-assets.cjs');
+const { createColoringAssetsMiddleware } = require('../migration/serve-coloring-assets.cjs');
 const fixtures = [];
 afterEach(async () => {
   await Promise.all(fixtures.splice(0).map((root) => rm(root, { recursive: true, force: true })));
@@ -127,10 +125,7 @@ describe('beta web public coloring assets', () => {
   it.each([true, false])(
     'composes Metro middleware with default enhancer present: %s',
     async (hasEnhancer) => {
-      const source = await readFile(
-        new URL('../../experiments/native-architecture/metro.config.cjs', import.meta.url),
-        'utf8'
-      );
+      const source = await readFile(new URL('../../metro.config.cjs', import.meta.url), 'utf8');
       const fallback = vi.fn();
       const defaultEnhancer = vi.fn(() => fallback);
       const serveAssets = vi.fn((_request, _response, next) => next());
@@ -138,7 +133,7 @@ describe('beta web public coloring assets', () => {
       const module = { exports: {} };
       runInNewContext(source, {
         module,
-        __dirname: '/repository/experiments/native-architecture',
+        __dirname: '/repository/.',
         require: (specifier) => {
           if (specifier === 'expo/metro-config')
             return {
@@ -147,10 +142,10 @@ describe('beta web public coloring assets', () => {
                 server: hasEnhancer ? { enhanceMiddleware: defaultEnhancer } : {},
               }),
             };
-          if (specifier === './scripts/serve-coloring-assets.cjs')
+          if (specifier === './tools/migration/serve-coloring-assets.cjs')
             return { createColoringAssetsMiddleware: createMiddleware };
-          if (specifier === './scripts/page-document-resolution.cjs')
-            return require('../../experiments/native-architecture/scripts/page-document-resolution.cjs');
+          if (specifier === './tools/migration/page-document-resolution.cjs')
+            return require('../migration/page-document-resolution.cjs');
           return require(specifier);
         },
       });
@@ -162,7 +157,7 @@ describe('beta web public coloring assets', () => {
       const next = vi.fn();
       await enhanced(req, res, next);
       expect(defaultEnhancer.mock.calls).toEqual(hasEnhancer ? [[middleware, metroServer]] : []);
-      expect(createMiddleware).toHaveBeenCalledWith('/repository/web/static/coloring');
+      expect(createMiddleware).toHaveBeenCalledWith('/repository/assets/static/coloring');
       expect(serveAssets).toHaveBeenCalledOnce();
       expect((hasEnhancer ? fallback : middleware).mock.calls).toEqual([[req, res, next]]);
       expect(module.exports.resolver.assetExts).toEqual(['png', 'woff2']);

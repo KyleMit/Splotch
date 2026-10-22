@@ -1,11 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createParentGate } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { PARENT_PLATFORM } from '../../experiments/native-architecture/src/platform/parentPlatform.ts';
+import { createParentGate } from '../../src/parentCenter/parentGate.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
+import { PARENT_PLATFORM } from '../../src/platform/parentPlatform.ts';
 
 // Node resolves the base platform module, which is the iOS build's: Apple's Kids Category keeps
 // links that leave the app behind a grown-up check, so Never is unavailable for external links.

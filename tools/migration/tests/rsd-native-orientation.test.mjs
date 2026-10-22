@@ -9,8 +9,8 @@ import {
 import { orientationCalls } from './rsd-orientation-port.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
 
 // expo-screen-orientation's OrientationLock values and Android's
 // ActivityInfo.SCREEN_ORIENTATION_SENSOR, spelled out so a remapped lock fails here.

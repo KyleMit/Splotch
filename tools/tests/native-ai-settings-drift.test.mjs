@@ -1,22 +1,22 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { classifyCredential } from '../../experiments/native-architecture/src/ai/credentialKind.ts';
-import { maskSecret } from '../../experiments/native-architecture/src/ai/credentials.ts';
-import { FREE_LIMIT } from '../../experiments/native-architecture/src/ai/contract.ts';
-import { valuePropClaims } from '../../experiments/native-architecture/src/settings/aiSettingsCopy.ts';
+import { classifyCredential } from '../../src/ai/credentialKind.ts';
+import { maskSecret } from '../../src/ai/credentials.ts';
+import { FREE_LIMIT } from '../../src/ai/contract.ts';
+import { valuePropClaims } from '../../src/settings/aiSettingsCopy.ts';
 
-import { FREE_GENERATION_LIMIT } from '../../web/src/lib/freeGenerations.ts';
+import { FREE_GENERATION_LIMIT } from '../../src/lib/freeGenerations.ts';
 
 // Settings › AI Art read back from shipping: copy, defaults, geometry and illustrations. The owner,
 // schema and switch behaviour are native-ai-settings.test.mjs.
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const NATIVE = {
-  manager: read('experiments/native-architecture/src/rsdDrawing/RsdAiKeyManager.tsx'),
-  valueProp: read('experiments/native-architecture/src/rsdDrawing/RsdAiValueProp.tsx'),
-  howTo: read('experiments/native-architecture/src/rsdDrawing/RsdOpenAiKeyHowTo.tsx'),
-  geometry: read('experiments/native-architecture/src/rsdDrawing/modalGeometry.ts'),
-  strictCss: read('experiments/native-architecture/src/strict.css'),
-  hostedPages: read('experiments/native-architecture/src/settings/hostedPages.ts'),
+  manager: read('src/rsdDrawing/RsdAiKeyManager.tsx'),
+  valueProp: read('src/rsdDrawing/RsdAiValueProp.tsx'),
+  howTo: read('src/rsdDrawing/RsdOpenAiKeyHowTo.tsx'),
+  geometry: read('src/rsdDrawing/modalGeometry.ts'),
+  strictCss: read('src/strict.css'),
+  hostedPages: read('src/settings/hostedPages.ts'),
 };
 // A module-scope literal of a native port, as the StyleX compile needs it written.
 function literal(source, name) {
@@ -58,13 +58,10 @@ describe('Settings › AI Art against shipping', () => {
       for (const theme of ['light', 'dark']) {
         const name = `step-${step}.${theme}.webp`;
         const bundled = readFileSync(
-          new URL(
-            `../../experiments/native-architecture/assets/ai-value-prop/${name}`,
-            import.meta.url
-          )
+          new URL(`../../assets/ai-value-prop/${name}`, import.meta.url)
         );
         const original = readFileSync(
-          new URL(`../../web/static/ai-value-prop/${name}`, import.meta.url)
+          new URL(`../../assets/static/ai-value-prop/${name}`, import.meta.url)
         );
         expect(bundled.equals(original), name).toBe(true);
       }

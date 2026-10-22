@@ -1,15 +1,11 @@
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import {
-  addStrokes,
-  createHistory,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { MAX_CRAYON_SEED } from '../../experiments/native-architecture/src/drawing/brushes.ts';
-import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { addStrokes, createHistory, undoDrawing } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { MAX_CRAYON_SEED } from '../../src/drawing/brushes.ts';
+import { planInk } from '../../src/drawing/checkpoints.ts';
 
 const point = { x: 40, y: 60 };
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [point] };

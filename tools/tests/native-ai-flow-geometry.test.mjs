@@ -1,20 +1,14 @@
 import { expect, it, vi } from 'vitest';
-import { scale } from '../../web/src/lib/design/tokens.ts';
+import { scale } from '../../src/lib/design/tokens.ts';
 
-import {
-  aiPromptColumns,
-  aiPromptStep,
-} from '../../experiments/native-architecture/src/rsdDrawing/aiPromptGeometry.ts';
-import {
-  AI_RESULT_METRICS,
-  aiResultFrame,
-} from '../../experiments/native-architecture/src/ai/aiResultGeometry.ts';
+import { aiPromptColumns, aiPromptStep } from '../../src/rsdDrawing/aiPromptGeometry.ts';
+import { AI_RESULT_METRICS, aiResultFrame } from '../../src/ai/aiResultGeometry.ts';
 
-import * as prompt from '../../experiments/native-architecture/src/rsdDrawing/RsdAiStylePrompt.tsx';
-import * as stage from '../../experiments/native-architecture/src/rsdDrawing/RsdAiResultStage.tsx';
-import * as parts from '../../experiments/native-architecture/src/rsdDrawing/RsdAiResultParts.tsx';
+import * as prompt from '../../src/rsdDrawing/RsdAiStylePrompt.tsx';
+import * as stage from '../../src/rsdDrawing/RsdAiResultStage.tsx';
+import * as parts from '../../src/rsdDrawing/RsdAiResultParts.tsx';
 
-import * as report from '../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
+import * as report from '../../src/rsdDrawing/RsdAiImageReport.tsx';
 
 vi.mock('react-native', () => ({
   AccessibilityInfo: {},
@@ -32,7 +26,7 @@ vi.mock('react-native', () => ({
   useColorScheme: () => 'light',
   useWindowDimensions: () => ({ width: 390, height: 844 }),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', () => ({
+vi.mock('../../src/platform/animated.ts', () => ({
   Animated: { createAnimatedComponent: (component) => component, View: () => null },
   Easing: new Proxy({}, { get: () => () => () => 0 }),
 }));

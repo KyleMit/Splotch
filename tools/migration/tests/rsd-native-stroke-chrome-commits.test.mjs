@@ -1,11 +1,11 @@
 import { act, createElement, Profiler } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { strokeStyle } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { strokeStyle } from '../../../src/drawing/model.ts';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
-import { UNDO_SPIN_MS } from '../../../experiments/native-architecture/src/rsdDrawing/undoKeyframes.ts';
+import { Animated } from '../../../src/platform/animated.ts';
+import { UNDO_SPIN_MS } from '../../../src/rsdDrawing/undoKeyframes.ts';
 
 // A stroke keeps the chrome as it was (PR 2890): the screen owner's stroke flag gates the chrome's
 // commands, but it must never reach a chrome control's props, or every control is updated, faded

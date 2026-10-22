@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { GITHUB_REPO_URL } from '../../web/src/lib/githubRepo.ts';
-import { HOSTED_PAGES } from '../../experiments/native-architecture/src/settings/hostedPages.ts';
+import { GITHUB_REPO_URL } from '../../src/lib/githubRepo.ts';
+import { HOSTED_PAGES } from '../../src/settings/hostedPages.ts';
 
 vi.mock('react-native', () => ({ Linking: {} }));
 
@@ -9,7 +9,7 @@ vi.mock('react-native', () => ({ Linking: {} }));
 // Svelte; the native sections keep each as a local literal for the StyleX web compile, so both
 // sides are read from source here.
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
-const native = (path) => read(`experiments/native-architecture/src/${path}`);
+const native = (path) => read(`src/${path}`);
 const NATIVE = {
   install: native('rsdDrawing/RsdInstallGuide.tsx'),
   // The form and the device opt-in it shares with the AI problem report.

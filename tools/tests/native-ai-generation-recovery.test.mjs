@@ -1,11 +1,8 @@
-import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
+import { withCredentialLeases } from '../../src/ai/credentialLease.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-import {
-  POLL_INTERVAL_MS,
-  POLL_TIMEOUT_MS,
-} from '../../experiments/native-architecture/src/ai/contract.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
+import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from '../../src/ai/contract.ts';
 const INSTALLATION = 'a'.repeat(64),
   JOB = 'b'.repeat(64);
 const image = () => new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } });

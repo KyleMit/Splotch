@@ -1,0 +1,123 @@
+// @vitest-environment node
+import { readFileSync } from 'node:fs';
+
+import { describe, expect, it } from 'vitest';
+import { API_RESPONSE_HEADERS, SECURITY_HEADERS, securityHeadersFor } from './securityHeaders';
+
+// The security headers live in two places that must agree: this module (stamped
+// onto SSR responses by hooks.server.ts) and the root netlify.toml
+// `[[headers]] for = "/*"` block (stamped onto CDN/static responses by
+// Netlify). netlify.toml has to stay literal TOML for Netlify to read it at
+// deploy time, so it can't import the module — this is the drift guard ADR-0073
+// asked for: parse the block and assert every header matches, both ways.
+
+// The unit runner (`node tools/run-web-tool.mjs vitest run`) runs with cwd = web/, so
+// the deploy config is one level up at the repo root.
+const netlifyToml = readFileSync(new URL('../../netlify.toml', import.meta.url), 'utf8');
+
+// Line continuations in the TOML multi-line CSP string (a trailing `\` swallows
+// the newline + next line's indentation) collapse to single spaces, so the
+// value compares equal to the module's single-line canonical form.
+function normalize(value: string): string {
+  return value.replace(/\\\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Slice out the `for = "/*"` header block (from its marker to the next
+// `[[headers]]` table) so header names in later cache-control blocks or in the
+// redirect rules above can't be mistaken for wildcard headers.
+function wildcardBlock(toml: string): string {
+  const start = toml.indexOf('for = "/*"');
+  expect(start, 'netlify.toml has a `for = "/*"` header block').toBeGreaterThan(-1);
+  const rest = toml.slice(start + 'for = "/*"'.length);
+  const next = rest.indexOf('[[headers]]');
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
+// Header values come in three TOML string forms: `Name = """..."""` (the
+// multi-line CSP), `Name = "..."` (basic), and `Name = '...'` (literal — used
+// for Reporting-Endpoints, whose value itself contains double quotes). Comment
+// lines (`#`) and the `[headers.values]` subtable header never match `Name =
+// <quote>`, so they're skipped.
+function parseHeaders(block: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const patterns = [
+    /^[ \t]*([\w-]+)\s*=\s*"""([\s\S]*?)"""/gm,
+    /^[ \t]*([\w-]+)\s*=\s*"([^"\n]*)"/gm,
+    /^[ \t]*([\w-]+)\s*=\s*'([^'\n]*)'/gm,
+  ];
+  for (const pattern of patterns) {
+    for (const match of block.matchAll(pattern)) {
+      // First match wins so the multi-line `"""` capture isn't clobbered by the
+      // basic-string pattern (whose opening `"""` also starts with `"`).
+      if (!(match[1] in headers)) headers[match[1]] = normalize(match[2]);
+    }
+  }
+  return headers;
+}
+
+describe('SECURITY_HEADERS mirrors the netlify.toml `for = "/*"` block', () => {
+  const tomlHeaders = parseHeaders(wildcardBlock(netlifyToml));
+
+  it('sets the same header names as netlify.toml (no header protects only static responses)', () => {
+    expect(Object.keys(tomlHeaders).sort()).toEqual(Object.keys(SECURITY_HEADERS).sort());
+  });
+
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    it(`${name} matches netlify.toml`, () => {
+      expect(tomlHeaders[name]).toBe(normalize(value));
+    });
+  }
+
+  // Both copies could weaken together and still mirror each other, so the
+  // opener policy is also pinned to its value: `same-origin` is the one setting
+  // that severs every cross-origin window.opener link; a same-origin popup that
+  // sends the same policy keeps its opener, which rel="noopener" covers (issue
+  // #1957).
+  it('severs cross-origin opener relationships on every document', () => {
+    expect(tomlHeaders['Cross-Origin-Opener-Policy']).toBe('same-origin');
+  });
+
+  it('keeps the platform CSP complementary to SvelteKit script enforcement', () => {
+    const policy = tomlHeaders['Content-Security-Policy'];
+    expect(policy).toContain("frame-ancestors 'none'");
+    expect(policy).toContain('report-uri /api/csp-report');
+    expect(policy).not.toContain('default-src');
+    expect(policy).not.toContain('script-src');
+    expect(policy).not.toContain('unsafe-inline');
+  });
+});
+
+// The one per-route override. It exists because /feedback is the only page that
+// posts a form without JavaScript, and `no-referrer` opaques the Origin header
+// that SvelteKit's CSRF guard checks — verified end to end by
+// tests/feedback.spec.ts's no-JS submit, which 403s without this.
+describe('securityHeadersFor', () => {
+  it('relaxes only the referrer policy, and only on /feedback', () => {
+    const feedback = securityHeadersFor('/feedback');
+    expect(feedback['Referrer-Policy']).toBe('same-origin');
+    expect({ ...feedback, 'Referrer-Policy': SECURITY_HEADERS['Referrer-Policy'] }).toEqual(
+      SECURITY_HEADERS
+    );
+  });
+
+  it.each(['/', '/admin', '/privacy', '/beta', '/feedback/', '/feedback/extra'])(
+    'leaves %s on the site-wide no-referrer',
+    (pathname) => {
+      expect(securityHeadersFor(pathname)).toEqual(SECURITY_HEADERS);
+    }
+  );
+});
+
+describe('API_RESPONSE_HEADERS', () => {
+  it('carries nosniff, the one header that means anything on a non-document response', () => {
+    expect(Object.keys(API_RESPONSE_HEADERS)).toEqual(['X-Content-Type-Options']);
+  });
+
+  // Derived, never restated: an API response must not claim a different value
+  // for a header the rest of the site already defines.
+  it('takes every value from the site-wide set', () => {
+    for (const [name, value] of Object.entries(API_RESPONSE_HEADERS)) {
+      expect(value).toBe(SECURITY_HEADERS[name]);
+    }
+  });
+});

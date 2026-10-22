@@ -3,21 +3,21 @@ import { ESLint } from 'eslint';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// The server-only package ban is a second web/src no-restricted-imports block, and flat config
+// The server-only package ban is a second src no-restricted-imports block, and flat config
 // REPLACES the rule's earlier entry wherever a later block configures it. This control seeds each
-// server-only package into client and server file shapes, and each pre-existing web/src
+// server-only package into client and server file shapes, and each pre-existing src
 // restriction into a client path, so a block that drops an entry fails here instead of shipping
 // an unenforced invariant.
 const repoRoot = join(import.meta.dirname, '..', '..');
-// The type-aware no-floating-promises block runs a TS project service over web/src/**/*.ts, which
+// The type-aware no-floating-promises block runs a TS project service over src/**/*.ts, which
 // fatals on a virtual path instead of running any rules. It is orthogonal to what this control
 // pins, so the override switches that one layer off for the probe paths.
 const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['web/src/**/*.ts'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],
@@ -37,8 +37,8 @@ const serverOnlyViolations = async (fixture, source) =>
     message.message.includes(SERVER_ONLY_MESSAGE)
   );
 
-const CLIENT_FILES = ['web/src/lib/ai/probe.ts'];
-const SERVER_FILES = ['web/src/lib/server/probe.ts', 'web/src/lib/probe.test.ts'];
+const CLIENT_FILES = ['src/lib/ai/probe.ts'];
+const SERVER_FILES = ['netlify/server/probe.ts', 'src/lib/probe.test.ts'];
 
 const SERVER_ONLY_IMPORTS = [
   "import sharp from 'sharp';",
@@ -48,7 +48,7 @@ const SERVER_ONLY_IMPORTS = [
   "export * from '@netlify/blobs';",
 ];
 
-describe('server-only packages stay behind the web/src server boundary', () => {
+describe('server-only packages stay behind the src server boundary', () => {
   describe.each(CLIENT_FILES)('outside the server paths (%s)', (fixture) => {
     it.each(SERVER_ONLY_IMPORTS)('rejects %s', async (source) => {
       expect(await serverOnlyViolations(fixture, source)).toHaveLength(1);
@@ -63,10 +63,7 @@ describe('server-only packages stay behind the web/src server boundary', () => {
 
   it('leaves a local module path that contains a package name alone', async () => {
     expect(
-      await serverOnlyViolations(
-        'web/src/lib/ai/probe.ts',
-        "import { x } from '$lib/openai/models';"
-      )
+      await serverOnlyViolations('src/lib/ai/probe.ts', "import { x } from '$lib/openai/models';")
     ).toHaveLength(0);
   });
 });
@@ -76,8 +73,8 @@ const EXISTING_WEB_SRC_RESTRICTIONS = [
   "import { readFileSync } from 'fs';",
 ];
 
-describe('the web/src import restrictions still fire beside the server-only ban', () => {
-  describe.each([...CLIENT_FILES, 'web/src/lib/server/probe.ts'])('in %s', (fixture) => {
+describe('the src import restrictions still fire beside the server-only ban', () => {
+  describe.each([...CLIENT_FILES, 'netlify/server/probe.ts'])('in %s', (fixture) => {
     it.each(EXISTING_WEB_SRC_RESTRICTIONS)('rejects %s', async (source) => {
       expect(await restrictedImports(fixture, source)).toHaveLength(1);
     });

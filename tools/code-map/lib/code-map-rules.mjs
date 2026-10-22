@@ -1,8 +1,6 @@
-import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
-
 // The counting rules behind docs/CODE-MAP.md. Every tracked path resolves to
 // exactly one exclusion class or exactly one measured area; within a measured
-// area it resolves to one sub-bucket, and within web/src to one functional
+// area it resolves to one sub-bucket, and within src to one functional
 // domain. See tools/code-map/README.md for how these tables are maintained.
 
 const BINARY_EXTENSIONS = new Set([
@@ -37,16 +35,16 @@ const EVIDENCE_ROOTS = [
 ];
 const REPORT_HTML_ROOTS = ['scrapbook/', 'tools/asset-gen/'];
 // Coloring outlines, traced corpora, and vectorizer output: drawings stored as
-// SVG, not source. Hand-authored icons under web/src stay measured.
+// SVG, not source. Hand-authored icons under src stay measured.
 const VECTOR_ART_ROOTS = [
   'tools/centerline-tracing/',
   'tools/model-eval/samples/',
   'tools/vectorize/pilot/',
-  'web/static/coloring/',
+  'assets/static/coloring/',
 ];
 
 export const CODE_MAP_PATH = 'docs/CODE-MAP.md';
-export const WEB_SRC_PREFIX = 'web/src/';
+export const WEB_SRC_PREFIX = 'src/';
 
 // Ruler writes a CLAUDE.md and AGENTS.md beside every `.ruler/AGENTS.md` source;
 // the source itself is measured.
@@ -124,21 +122,15 @@ const subtreeBucket =
 // Areas that span several roots split by the root first.
 const rootBucket = (path) => (path.includes('/') ? path.slice(0, path.indexOf('/')) : '(root)');
 
-const NATIVE_ROOTS = ['android/', 'ios/', 'fastlane/', '.maestro/'];
+const NATIVE_ROOTS = ['android/', 'ios/', 'fastlane/', '.maestro/', 'perf/'];
 
 // Areas are disjoint by construction; `areasFor` returns every match so the
 // coverage test can prove it rather than trust rule order.
 export const AREAS = [
   {
-    label: `**${CANDIDATE_DIRECTORY}** — isolated native candidate`,
-    key: CANDIDATE_DIRECTORY,
-    matches: (path) => path.startsWith(`${CANDIDATE_DIRECTORY}/`),
-    bucket: subtreeBucket(`${CANDIDATE_DIRECTORY}/`),
-  },
-  {
-    label: '**web/src** — the app',
-    key: 'web/src',
-    matches: (path) => path.startsWith('web/src/'),
+    label: '**src** — the app',
+    key: 'src',
+    matches: (path) => path.startsWith('src/'),
     bucket: (path) => webSrcDomainRuleOf(path.slice(WEB_SRC_PREFIX.length)).domain,
   },
   {
@@ -209,7 +201,7 @@ export const AREAS = [
     label: 'web/\\* — build/test config and static text',
     key: 'web config',
     matches: (path) =>
-      path.startsWith('web/') && !path.startsWith('web/src/') && !path.startsWith('web/tests/'),
+      path.startsWith('web/') && !path.startsWith('src/') && !path.startsWith('web/tests/'),
     bucket: subtreeBucket('web/'),
   },
   {
@@ -273,7 +265,7 @@ export function classifyPath(path) {
 
 // A co-located test and a test harness follow the module they exercise:
 // `lib/storage.restore.integration.test.ts` classifies as `lib/storage`. Route
-// files and the files at the web/src root keep their full names, where the stem
+// files and the files at the src root keep their full names, where the stem
 // alone would be ambiguous (`app.css` versus `app.html`).
 export function subjectOf(webSrcPath) {
   const slash = webSrcPath.lastIndexOf('/');
@@ -407,7 +399,7 @@ export const WEB_SRC_DOMAIN_RULES = [
   [D.shell, /^/],
 ];
 
-// The last rule matches every path, so each web/src file resolves to a domain.
+// The last rule matches every path, so each src file resolves to a domain.
 export function webSrcDomainRuleOf(webSrcPath) {
   const subject = subjectOf(webSrcPath);
   const ruleIndex = WEB_SRC_DOMAIN_RULES.findIndex(([, pattern]) => pattern.test(subject));

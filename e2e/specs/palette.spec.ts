@@ -1,4 +1,4 @@
-import { COLOR_CHANGE_DEBOUNCE_MS } from '../../web/src/lib/drawing/strokeMath.ts';
+import { COLOR_CHANGE_DEBOUNCE_MS } from '../../src/lib/drawing/strokeMath.ts';
 import { expect, test } from '../fixtures.ts';
 import {
   BLACK_INK,

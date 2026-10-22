@@ -2,9 +2,9 @@ import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html } from 'react-strict-dom';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
+import { darkTheme } from '../../../src/rsdDrawing/tokens.css.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../../src/drawing/useReduceMotion.ts';
 
 // The released RSD native renderer over a React Native stand-in that records every host's
 // props. Animated timings land on their target at once and record their config, so a test reads

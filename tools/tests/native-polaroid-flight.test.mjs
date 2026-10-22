@@ -10,14 +10,11 @@ import {
   POLAROID_FRAME,
   POLAROID_Z_INDEX,
   POLAROID_SHOW_KEYFRAMES,
-} from '../../experiments/native-architecture/src/rsdDrawing/polaroidFlight.ts';
-import {
-  keyframeTimeline,
-  keyframeValue,
-} from '../../experiments/native-architecture/src/rsdDrawing/keyframeMotion.ts';
-import { POLAROID_FLIGHT_MS } from '../../web/src/lib/drawing/screenshotTiming.ts';
-import { polaroidCssSize } from '../../web/src/lib/drawing/polaroidGeometry.ts';
-import { scale, zIndex } from '../../web/src/lib/design/tokens.ts';
+} from '../../src/rsdDrawing/polaroidFlight.ts';
+import { keyframeTimeline, keyframeValue } from '../../src/rsdDrawing/keyframeMotion.ts';
+import { POLAROID_FLIGHT_MS } from '../../src/lib/drawing/screenshotTiming.ts';
+import { polaroidCssSize } from '../../src/lib/drawing/polaroidGeometry.ts';
+import { scale, zIndex } from '../../src/lib/design/tokens.ts';
 
 // A recording Animated: a timing is returned as data for the test to read, and each curve squares
 // its input and remembers the control points it was built from.
@@ -35,7 +32,7 @@ vi.mock('react-native', () => ({
 const MS_PER_SECOND = 1000;
 const seconds = (token) => Number.parseFloat(token) * MS_PER_SECOND;
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
-const native = read('experiments/native-architecture/src/rsdDrawing/RsdPolaroidFlight.tsx');
+const native = read('src/rsdDrawing/RsdPolaroidFlight.tsx');
 
 function bezier(value) {
   if (value === 'linear') return [0, 0, 1, 1];
@@ -158,20 +155,20 @@ describe('the keyframe timeline', () => {
   });
 });
 it('keeps drawer tools in fixed cascade slots', () => {
-  const panel = read('experiments/native-architecture/src/rsdDrawing/RsdDrawerTools.tsx');
+  const panel = read('src/rsdDrawing/RsdDrawerTools.tsx');
   for (const [key, index] of Object.entries({ brush: 0, stroke: 1, camera: 3, ai: 4, undo: 5 }))
     expect(panel).toMatch(new RegExp(key + ': ' + index + '(?:[, }])'));
 });
 
 it("keeps the landscape-phone flyout entrance on shipping's horizontal axis", () => {
-  const panel = read('experiments/native-architecture/src/rsdDrawing/RsdActionsPanel.tsx');
+  const panel = read('src/rsdDrawing/RsdActionsPanel.tsx');
   expect(panel).toContain("portrait: layout.mode !== 'row'");
   expect(panel).toContain("originX: layout.mode === 'row' ? layout.size / 2 : 0");
 });
 
 it('resumes the camera keyframe clock at its elapsed phase without replaying the beginning', async () => {
   const { CAMERA_CAPTURE_MS, CAMERA_CAPTURE_KEYFRAMES } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+    await import('../../src/rsdDrawing/cameraKeyframes.ts');
   const value = { setValue: vi.fn() };
   const full = keyframeTimeline({}, CAMERA_CAPTURE_KEYFRAMES, CAMERA_CAPTURE_MS);
   const elapsed = CAMERA_CAPTURE_MS / 2;
@@ -191,7 +188,7 @@ it("fades the removed ink through shipping's scale, drift, duration and curve", 
     UNDO_GHOST_SCALE,
     UNDO_GHOST_DRIFT_FRACTION,
     UNDO_GHOST_EASE,
-  } = await import('../../experiments/native-architecture/src/drawing/undoGhostGeometry.ts');
+  } = await import('../../src/drawing/undoGhostGeometry.ts');
   expect({
     pad: UNDO_GHOST_AA_PAD_PX,
     ms: UNDO_GHOST_MS,
@@ -202,7 +199,7 @@ it("fades the removed ink through shipping's scale, drift, duration and curve", 
 });
 
 it('pins page art arrivals and retirement release to shipping DrawingCanvas', async () => {
-  const art = await import('../../experiments/native-architecture/src/drawing/pageArtKeyframes.ts');
+  const art = await import('../../src/drawing/pageArtKeyframes.ts');
   expect(art.PAGE_ART_ENTER_MS).toBe(seconds(scale.durationSlow));
   expect(art.PAGE_ART_CALM_MS).toBe(seconds(scale.durationBase));
   expect(art.PAGE_ART_CALM_EASE).toEqual(bezier('ease'));
@@ -241,7 +238,7 @@ it('fades the Reduce Motion polaroid-fade keyframes between the frame resting st
 });
 it("uses shipping's complete transform and opacity keyframe tracks", async () => {
   const { FLYOUT_ENTER_MS, FLYOUT_ENTER_POSE_KEYFRAMES, FLYOUT_ENTER_FADE_KEYFRAMES } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/flyoutKeyframes.ts');
+    await import('../../src/rsdDrawing/flyoutKeyframes.ts');
   expect(FLYOUT_ENTER_MS).toBe(300);
   expect(FLYOUT_ENTER_POSE_KEYFRAMES.map((frame) => [frame.at, frame.scale, frame.easing])).toEqual(
     [
@@ -265,7 +262,7 @@ it("deals flyout options on shipping's offsets, curve and stagger", async () => 
     FLYOUT_OPTION_ENTER_MS,
     FLYOUT_OPTION_DELAY_MS,
     FLYOUT_OPTION_STAGGER_MS,
-  } = await import('../../experiments/native-architecture/src/rsdDrawing/flyoutKeyframes.ts');
+  } = await import('../../src/rsdDrawing/flyoutKeyframes.ts');
   expect([FLYOUT_OPTION_ENTER_MS, FLYOUT_OPTION_DELAY_MS, FLYOUT_OPTION_STAGGER_MS]).toEqual([
     260, 40, 25,
   ]);
@@ -286,7 +283,7 @@ it("deals flyout options on shipping's offsets, curve and stagger", async () => 
 });
 it("squashes the camera through shipping's exact capture keyframes", async () => {
   const { CAMERA_CAPTURE_MS, CAMERA_CAPTURE_KEYFRAMES } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+    await import('../../src/rsdDrawing/cameraKeyframes.ts');
   expect(CAMERA_CAPTURE_MS).toBe(460);
   expect(
     CAMERA_CAPTURE_KEYFRAMES.map((frame) => [frame.at, frame.scale, frame.rotate, frame.easing])
@@ -299,8 +296,7 @@ it("squashes the camera through shipping's exact capture keyframes", async () =>
   ]);
 });
 it("blooms paint rings on shipping's independent scale and opacity clocks", async () => {
-  const motion =
-    await import('../../experiments/native-architecture/src/rsdDrawing/swatchKeyframes.ts');
+  const motion = await import('../../src/rsdDrawing/swatchKeyframes.ts');
   expect([
     motion.SWATCH_BLOOM_MS,
     motion.SWATCH_BLOOM_TRAIL_MS,
@@ -336,7 +332,7 @@ it("blooms paint rings on shipping's independent scale and opacity clocks", asyn
 });
 it("winds Undo through shipping's exact anticipation, turns, curves and duration", async () => {
   const { UNDO_SPIN_MS, UNDO_SPIN_KEYFRAMES } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/undoKeyframes.ts');
+    await import('../../src/rsdDrawing/undoKeyframes.ts');
   expect(UNDO_SPIN_MS).toBe(470);
   expect(UNDO_SPIN_KEYFRAMES.map((frame) => [frame.at, frame.rotate, frame.easing])).toEqual([
     [0, 0, [0.3, 0.8, 0.4, 1]],

@@ -1,7 +1,7 @@
 // Generates a small grid thumbnail for every coloring-book cover under
-// web/static/coloring/. Page tiles reuse their transparent SVG presentation overlays.
+// assets/static/coloring/. Page tiles reuse their transparent SVG presentation overlays.
 //
-// The catalog (web/src/lib/state/books.ts) derives both cover paths and lists them through
+// The catalog (src/lib/state/books.ts) derives both cover paths and lists them through
 // `bookAssetPaths()`, so check:coloring-assets validates the files and native asset stripping
 // follows the same inventory.
 //

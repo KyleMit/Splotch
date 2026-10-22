@@ -1,5 +1,5 @@
 // Stand-ins for expo-media-library and the expo-file-system staging calls behind
-// experiments/native-architecture/src/platform/photoLibrary.ts. A test mocks each module id
+// src/platform/photoLibrary.ts. A test mocks each module id
 // to the matching export and reads what the save did from `photos`.
 export const photos = {
   os: 'ios',

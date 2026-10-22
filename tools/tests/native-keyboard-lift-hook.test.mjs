@@ -50,14 +50,12 @@ vi.mock('react-native', () => {
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/drawing/Text.tsx', () => ({
+vi.mock('../../src/drawing/Text.tsx', () => ({
   focusedTextInput: () => host.focused,
 }));
 
-const { useKeyboardLift } =
-  await import('../../experiments/native-architecture/src/platform/keyboardLift.ts');
-const { KEYBOARD_CLEARANCE_PX } =
-  await import('../../experiments/native-architecture/src/rsdDrawing/keyboardLiftTarget.ts');
+const { useKeyboardLift } = await import('../../src/platform/keyboardLift.ts');
+const { KEYBOARD_CLEARANCE_PX } = await import('../../src/rsdDrawing/keyboardLiftTarget.ts');
 
 const FIELD_HEIGHT = 40;
 let lift;

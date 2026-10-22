@@ -14,7 +14,7 @@ import {
   shellAssetReferences,
 } from '../migration/check-native-web-precache.mjs';
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
-import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
+import { appShellPrecacheUrl } from '../../src/lib/pwa/appShellRoute.ts';
 
 // generateSW bundles and minifies the Workbox runtime for each fixture build.
 const GENERATE_TIMEOUT_MS = 60_000;

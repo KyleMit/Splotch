@@ -1,5 +1,5 @@
 // Generates a flat-color "answer key" for each black-and-white coloring page in
-// web/static/coloring/ by asking Gemini to color inside the existing lines.
+// assets/static/coloring/ by asking Gemini to color inside the existing lines.
 // The colored version keeps the page's exact black outlines and only fills the
 // white regions with solid flat color, so the magic brush can pair each page
 // with its colored fill and reveal the prefilled colors as a child paints.
@@ -7,7 +7,7 @@
 // Shipping is two files per fill: the raw (lined) result is committed to
 // tools/asset-gen/fill-src/ as the source of truth — the drift audit scores it —
 // and its fills-only punch (outlines masked out with the line art, so the app's
-// overlay is the single source of line work) is what lands in web/static/coloring/
+// overlay is the single source of line work) is what lands in assets/static/coloring/
 // as the shipped .light.webp (lib/punch-fill.mjs; ADR-0043 "reveal fills only").
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:

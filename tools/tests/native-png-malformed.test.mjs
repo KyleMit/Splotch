@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { inflateSync } from 'node:zlib';
-import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
+import { createPngAlphaDecoder } from '../../src/drawing/pngAlpha.ts';
 import {
   bitWriter,
   fixedSymbol,

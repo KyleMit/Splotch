@@ -59,8 +59,8 @@ export function coloringOverlayJob(source, root = ROOT, theme = 'light') {
     theme: normalizedTheme,
     source: sourceRelative,
     sourcePath,
-    output: `web/static/coloring/${book}/${stem}.${config.outputSuffix}.svg`,
-    outputPath: resolve(root, `web/static/coloring/${book}/${stem}.${config.outputSuffix}.svg`),
+    output: `assets/static/coloring/${book}/${stem}.${config.outputSuffix}.svg`,
+    outputPath: resolve(root, `assets/static/coloring/${book}/${stem}.${config.outputSuffix}.svg`),
     raw: `vectorized/${config.rawDirectory}/${book}/${stem}.raw.svg`,
     rawPath: resolve(root, `vectorized/${config.rawDirectory}/${book}/${stem}.raw.svg`),
     fill: config.fill,
@@ -78,7 +78,7 @@ export function coloringOverlayJobs(root = ROOT, theme = 'light') {
 export function canonicalOverlayPaths(root = ROOT, theme = 'light') {
   const normalizedTheme = overlayTheme(theme);
   const suffix = OVERLAY_THEMES[normalizedTheme].outputSuffix;
-  return globSync(`web/static/coloring/**/*.${suffix}.svg`, { cwd: root })
+  return globSync(`assets/static/coloring/**/*.${suffix}.svg`, { cwd: root })
     .filter((path) => normalizedTheme === 'dark' || !path.endsWith('.dark.overlay.svg'))
     .sort();
 }

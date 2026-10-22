@@ -9,7 +9,7 @@ import {
   coloringDerivativeAssets,
   coverThumbImageSource,
   pageSelectorImageSource,
-} from '../../../web/src/lib/state/books.ts';
+} from '../../../src/lib/state/books.ts';
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import {
   RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,

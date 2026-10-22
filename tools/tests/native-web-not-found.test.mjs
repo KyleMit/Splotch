@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { isAppShellNavigation } from '../../web/src/lib/pwa/appShellRoute.ts';
-import {
-  DRAWING_PATHS,
-  isDrawingPath,
-  currentAppPage,
-} from '../../experiments/native-architecture/src/platform/appPath.web.ts';
-import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import { isAppShellNavigation } from '../../src/lib/pwa/appShellRoute.ts';
+import { DRAWING_PATHS, isDrawingPath, currentAppPage } from '../../src/platform/appPath.web.ts';
+import { APP_PAGE_PATHS } from '../../src/information/appPages.ts';
 import {
   isNativeAppNavigation,
   isOtherNativeNavigation,
@@ -14,7 +10,7 @@ import {
   NOT_FOUND_FILE,
 } from '../migration/build-native-web.mjs';
 import { nativeWebPrecacheProblems } from '../migration/check-native-web-precache.mjs';
-import { reloadApp } from '../../experiments/native-architecture/src/platform/appRestart.web.ts';
+import { reloadApp } from '../../src/platform/appRestart.web.ts';
 
 const PATHS = ['/', '/index.html', '/does-not-exist', '/changelog', '/index.htm', '/a/'];
 

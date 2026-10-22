@@ -14,7 +14,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { installNetlifyProductionDependencies } from '../../netlify-production-install.mjs';
 import { ROOT } from '../../lib/proc.mjs';
-import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 export const CHILD_TIMEOUT_MS = 30_000;
 const roots = [];
 export const metadata = {
@@ -44,20 +43,11 @@ export function tempRoot() {
 export function fixture() {
   const root = tempRoot();
   put(root, 'package.json', { packageManager: 'pnpm@11.22.0', engines: { node: '>=22.13' } });
-  put(root, `${CANDIDATE_DIRECTORY}/package.json`, {
-    name: '@splotch/native-architecture',
-    private: true,
-  });
-  put(
-    root,
-    'pnpm-workspace.yaml',
-    'packages:\n  - experiments/native-architecture\nnodeLinker: hoisted\n'
-  );
+  put(root, 'pnpm-workspace.yaml', 'nodeLinker: hoisted\n');
   put(root, 'pnpm-lock.yaml', 'lockfileVersion: 9.0\n');
   put(root, 'netlify.toml', 'NODE_VERSION = "22"\nPNPM_FLAGS = "--prod"\n');
   const settings = {
     'node-linker': 'hoisted',
-    packages: [CANDIDATE_DIRECTORY],
     allowBuilds: {
       '@google/genai': false,
       esbuild: false,
@@ -137,7 +127,6 @@ export function cliFixture(context) {
     'tools/lib/proc.mjs',
     'tools/lib/netlify-runtime.mjs',
     'tools/lib/netlify-cache-config.mjs',
-    'tools/lib/native-candidate.mjs',
   ]) {
     mkdirSync(dirname(join(context.root, path)), { recursive: true });
     copyFileSync(join(ROOT, path), join(context.root, path));

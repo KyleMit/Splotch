@@ -1,16 +1,13 @@
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../src/parentCenter/parentGate.ts';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
-import {
-  aiButtonFace,
-  aiResultPhase,
-} from '../../experiments/native-architecture/src/ai/uiState.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
+import { JOB_TTL_MS } from '../../src/ai/contract.ts';
+import { aiButtonFace, aiResultPhase } from '../../src/ai/uiState.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
-import { FREE_DAILY_LIMIT_EXHAUSTED_CODE } from '../../web/src/lib/ai/generationResult.ts';
-import { AI_FAILURE_RETRY_LIMIT } from '../../experiments/native-architecture/src/ai/uiState.ts';
+import { FREE_DAILY_LIMIT_EXHAUSTED_CODE } from '../../src/lib/ai/generationResult.ts';
+import { AI_FAILURE_RETRY_LIMIT } from '../../src/ai/uiState.ts';
 
 const cleanups = [];
 afterEach(() => {

@@ -29,7 +29,7 @@ vi.mock('@shopify/react-native-skia', async () => {
   }
   return { ...skia, SkiaPictureView };
 });
-import { DepartingInkView } from '../../experiments/native-architecture/src/rsdDrawing/DepartingInkView.tsx';
+import { DepartingInkView } from '../../src/rsdDrawing/DepartingInkView.tsx';
 
 beforeEach(() => {
   globalThis.SkiaViewApi = {

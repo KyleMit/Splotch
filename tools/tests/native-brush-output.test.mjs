@@ -1,13 +1,13 @@
 import { legacyDrawing } from './native-paper-fixtures.mjs';
-import { CANONICAL_PAPER_SIZE } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { CANONICAL_PAPER_SIZE } from '../../src/drawing/paperSpace.ts';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
-import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { strokeWidthPx } from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { PageOutline } from '../../src/drawing/PageOutline.tsx';
+import { PAPER_THEMES } from '../../src/drawing/theme.ts';
+import { paletteHex } from '../../src/drawing/palette.ts';
+import { strokeWidthPx } from '../../src/drawing/strokeWidth.ts';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import {
@@ -16,19 +16,15 @@ import {
   changePage,
   createHistory,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 
 const { Svg, Rect } = await import('react-native-svg');
-const { Ink, InkArtwork } =
-  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } = await import('../../src/drawing/Ink.tsx');
 
 const RAINBOW_FIXTURE_VALUES = [0.125, 0.95, 0.25, 0.75, 0.45, 0.55, 0.15, 0.85, 0.35, 0.65, 0.1];
 

@@ -1,25 +1,19 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { pictureSave } from '../../experiments/native-architecture/src/platform/pictureSave.web.ts';
-import {
-  AI_IMAGE_BASENAME,
-  DRAWING_BASENAME,
-} from '../../experiments/native-architecture/src/export/pictureFilename.ts';
-import { keepAiPicture } from '../../experiments/native-architecture/src/ai/keepAiPicture.ts';
-import {
-  capturePicture,
-  savePicture,
-} from '../../experiments/native-architecture/src/keepPicture.ts';
-import { saveFailureCopy as nativeSaveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
+import { pictureSave } from '../../src/platform/pictureSave.web.ts';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '../../src/export/pictureFilename.ts';
+import { keepAiPicture } from '../../src/ai/keepAiPicture.ts';
+import { capturePicture, savePicture } from '../../src/keepPicture.ts';
+import { saveFailureCopy as nativeSaveFailureCopy } from '../../src/export/pictureSave.ts';
 import {
   AI_IMAGE_BASENAME as SHIPPING_AI_BASENAME,
   DRAWING_BASENAME as SHIPPING_BASENAME,
-} from '../../web/src/lib/saveNaming.ts';
-import { folderSave } from '../../experiments/native-architecture/src/platform/folderSave.web.ts';
-import { browserFolderSave } from '../../experiments/native-architecture/src/platform/browserFolderSaveLoader.ts';
+} from '../../src/lib/saveNaming.ts';
+import { folderSave } from '../../src/platform/folderSave.web.ts';
+import { browserFolderSave } from '../../src/platform/browserFolderSaveLoader.ts';
 
 const folderRecords = vi.hoisted(() => new Map());
-vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
+vi.mock('../../src/lib/idbDatabase.ts', () => ({
   openDatabase: async () => ({
     get: async (_store, key) => folderRecords.get(key),
     put: async (_store, value, key) => {
@@ -34,13 +28,10 @@ vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
 
 vi.mock('react-native', () => ({ Platform: { OS: 'web' } }));
 // The web export resolves platform/pictureSave to its .web sibling.
+vi.mock('../../src/platform/pictureSave.ts', () => import('../../src/platform/pictureSave.web.ts'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/pictureSave.ts',
-  () => import('../../experiments/native-architecture/src/platform/pictureSave.web.ts')
-);
-vi.mock(
-  '../../experiments/native-architecture/src/platform/aiPictureBase64.ts',
-  () => import('../../experiments/native-architecture/src/platform/aiPictureBase64.web.ts')
+  '../../src/platform/aiPictureBase64.ts',
+  () => import('../../src/platform/aiPictureBase64.web.ts')
 );
 
 const PNG_BYTES = [137, 80, 78, 71, 13, 10, 26, 10];

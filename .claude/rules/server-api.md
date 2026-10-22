@@ -1,23 +1,23 @@
 ---
 paths:
-  - "web/src/lib/server/api/**"
+  - "netlify/server/api/**"
   - "netlify/functions/**"
-  - "web/src/routes/admin/**"
-  - "web/src/lib/server/**"
-  - "web/src/hooks.server.ts"
+  - "src/routes/admin/**"
+  - "netlify/server/**"
+  - "src/hooks.server.ts"
 ---
 
 # Server & API rules
 
 * Server code is web-only: it never ships in the native bundle. The apps call the hosted endpoints
-  through `experiments/native-architecture/src/platform/ai.ts` and its web counterpart. Never import
-  `web/src/lib/server/*` from client code.
+  through `src/platform/ai.ts` and its web counterpart. Never import `netlify/server/*` from client
+  code.
 * `/api/*` sends `Access-Control-Allow-Origin: *` (ADR-0007). That wildcard is only safe because
   every endpoint is either gated by a credential the caller already holds or (the telemetry
   receivers `report`/`csp-report`) rate-limited and side-effect-bounded to log lines, and nothing
   under `/api` uses cookies — never add a cookie-authenticated `/api` endpoint.
 * Every client-facing JSON error across `/api/*` is the one canonical `{ ok: false, error }` body,
-  built by `fail(status, error, headers?)` in `src/lib/server/http.ts`. Wrap every `/api/*` handler
+  built by `fail(status, error, headers?)` in `netlify/server/http.ts`. Wrap every `/api/*` handler
   export in its `apiHandler(...)` (lint-enforced by `API_HANDLER_WRAPPED` in `eslint.config.js`),
   which converts every thrown failure into the same shape at the boundary — an `HttpError` keeps its
   status and message; an unexpected non-HttpError becomes `fail(500, GENERIC_ERROR_MESSAGE)` with
@@ -25,12 +25,12 @@ paths:
   different error body reach a client. `csp-report` is the one exemption (deliberately bodyless
   responses; browsers ignore them) and stays unwrapped.
 * Any unauthenticated oracle (login, code/key verification) must be rate-limited per IP via
-  `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from
-  `src/lib/server/http.ts` — the standard JSON `429` with `Retry-After` — and JSON bodies are parsed
+  `netlify/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from
+  `netlify/server/http.ts` — the standard JSON `429` with `Retry-After` — and JSON bodies are parsed
   with its `readJsonBody(request)` (uniform `400` on malformed input). Form and multipart bodies,
   form actions included, go through its `readFormBody(request, maxBytes)`; never call
   `request.formData()`, which buffers whatever the client sends. Don't hand-roll either.
-* Every `/api/*` endpoint is a module in `src/lib/server/api/`, served by the one
+* Every `/api/*` endpoint is a module in `netlify/server/api/`, served by the one
   `netlify/functions/api.ts` function: a new endpoint is a key in its `apiFunction({ ... })` table
   and a literal entry in its `config.path` list (the staging and the local host read the list from
   source). Keep it one function: the endpoints share rate-limit buckets by key (ADR-0014's shared
@@ -42,9 +42,9 @@ paths:
   `tools/api-smoke/tests/wire-diff.test.mjs` green, since installed native builds call the same
   wire.
 * A failure on the generation-job or free-grant path is logged through `loggableError` in
-  `src/lib/server/logRedaction.ts`, never as `err.message` or the raw error: a Blobs error can quote
+  `netlify/server/logRedaction.ts`, never as `err.message` or the raw error: a Blobs error can quote
   the key it failed on, and job ids and installation ids are both blob keys and capabilities.
-  Rate-limit bucket keys come only from `src/lib/server/rateLimitKeys.ts` (lint-enforced —
+  Rate-limit bucket keys come only from `netlify/server/rateLimitKeys.ts` (lint-enforced —
   ADR-0014's shared-bucket contract).
 * The dedicated `verify-access-code` and `verify-key` oracle endpoints deliberately return HTTP
   `200` with `{ ok: false, error }` for ordinary failed verification so validity is not disclosed
@@ -57,12 +57,12 @@ paths:
   them instead of re-declaring guards or parsing into `any`.
 * Admin auth: the raw `ADMIN_ACCESS_TOKEN` is exchanged once for a derived HMAC session token; all
   secret comparisons must be constant-time (`timingSafeEqual`). The web `/admin` console and the
-  JSON `/api/admin/*` endpoints share one core (`src/lib/server/admin.ts` + `tokens.ts`) — the
+  JSON `/api/admin/*` endpoints share one core (`netlify/server/admin.ts` + `tokens.ts`) — the
   console never loops through the API.
 * `/api/admin/tokens` mutations return the full snapshot shape (`tokens` + `invites`) so clients
   never need a follow-up fetch — preserve this for new admin endpoints.
-* The model-vendor SDK (`openai`) is imported only inside `src/lib/server/ai/` (ADR-0047). Routes
-  and other server modules go through the `AiImageProvider` seam (`src/lib/server/ai/provider.ts`) —
+* The model-vendor SDK (`openai`) is imported only inside `netlify/server/ai/` (ADR-0047). Routes
+  and other server modules go through the `AiImageProvider` seam (`netlify/server/ai/provider.ts`) —
   never import the SDK or vendor types outside that directory. (The dev-time asset scripts in
   `tools/` are the one sanctioned exception.)
 * When adding or changing an endpoint, update the API reference in `docs/API.md` as part of the same

@@ -21,14 +21,14 @@ Your checks, in order:
 One finding shape is reliably wrong about its premise: a "duplication kept in sync by prose" whose
 comment is actually documenting a **deliberate boundary**. When the code beside the duplication
 states a constraint — "inlined so this module never pulls X's chunk", a named enforcing spec — the
-comment is the evidence, not the defect. A new static import edge between `web/src` modules can
+comment is the evidence, not the defect. A new static import edge between `src` modules can
 re-partition the bundle however dependency-light the imported module is; the edge itself is the
 problem, not the payload (a six-line predicate hoist once pulled the whole save pipeline onto the
 startup critical path and broke the `startup-bundle` spec, from a fix its finding believed respected
 that exact constraint). Judge such a finding INVALID unless the proposed fix demonstrably preserves
-the constraint. The driver no longer gates a fix that adds a static import under `web/src` on a
-bundle spec (the `startup-bundle` spec retired with the SvelteKit suite, ADR-0182), so your verdict
-is what keeps a doomed finding from burning a full implement/review cycle.
+the constraint. The driver no longer gates a fix that adds a static import under `src` on a bundle
+spec (the `startup-bundle` spec retired with the SvelteKit suite, ADR-0182), so your verdict is what
+keeps a doomed finding from burning a full implement/review cycle.
 
 If INVALID because the problem no longer exists at HEAD, your reason must say which of two things
 happened, not just that it's stale: either the finding was **never accurate** (check it against the
@@ -56,9 +56,9 @@ finish a command you named will decline to commit, so a criterion it has no time
 away a finished, fully-green fix** and the finding is re-paid on a later run.
 
 Then decide the finding's **runtime surface**. If the fix could change what the app renders, how it
-handles input, or any user-visible flow (essentially any change under `web/src/` that isn't a
-comment, a type-only edit, or dead-code removal), find the Playwright E2E spec(s) that exercise it —
-grep `e2e/specs/` for the component, route, or behaviour — and:
+handles input, or any user-visible flow (essentially any change under `src/` that isn't a comment, a
+type-only edit, or dead-code removal), find the Playwright E2E spec(s) that exercise it — grep
+`e2e/specs/` for the component, route, or behaviour — and:
 
 * list them in the structured result's `e2e_specs`, as paths relative to `web/`, e.g.
   `tests/<name>.spec.ts` (the driver runs exactly these as a per-finding gate before the fix

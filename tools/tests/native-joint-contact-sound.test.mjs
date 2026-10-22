@@ -1,15 +1,10 @@
 import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createDrawingAudio } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
-import { createContactSound } from '../../experiments/native-architecture/src/audio/contactSound.ts';
-import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
-import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { createDrawingAudio } from '../../src/audio/drawingAudio.ts';
+import { createContactSound } from '../../src/audio/contactSound.ts';
+import { createContactResponder } from '../../src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../src/drawing/liveInk.ts';
+import { addStrokes, createHistory, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
 
 vi.mock('react-native', () => ({ findNodeHandle: (owner) => owner }));
 const TARGET = {};

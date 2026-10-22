@@ -8,10 +8,9 @@ Android lives in **[android.md](android.md)**.
 
 > iOS can only be built on macOS — Xcode and the simulators are macOS-only. The React Native iOS
 > project resolves its native modules through CocoaPods (ADR-0182 amends ADR-0020). Minimum
-> supported OS: **iOS 16.4** (`IPHONEOS_DEPLOYMENT_TARGET` in
-> `experiments/native-architecture/ios/Splotch.xcodeproj`). The RN native OS floor is independent of
-> the web export's Safari floor; this app does not load that export in a WebView. See
-> [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
+> supported OS: **iOS 16.4** (`IPHONEOS_DEPLOYMENT_TARGET` in `ios/Splotch.xcodeproj`). The RN
+> native OS floor is independent of the web export's Safari floor; this app does not load that
+> export in a WebView. See [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
 
 ## 1. Toolchain setup (macOS-only)
 
@@ -32,20 +31,17 @@ Android lives in **[android.md](android.md)**.
    autolinking in its `Podfile`). The `ios:*` build scripts run `pod install` for you; `Pods/` is
    ignored and `Podfile.lock` pins every pod.
 
-3. **Open and run**: after `pod install`, open
-   `experiments/native-architecture/ios/Splotch.xcworkspace` in Xcode, pick a simulator and **Run
-   ▶** the `Splotch` scheme. Or skip Xcode entirely: `npm run ios:simulator` builds the Release
-   simulator app and `npm run test:ios -- --skip-build` installs and smokes it.
+3. **Open and run**: after `pod install`, open `ios/Splotch.xcworkspace` in Xcode, pick a simulator
+   and **Run ▶** the `Splotch` scheme. Or skip Xcode entirely: `npm run ios:simulator` builds the
+   Release simulator app and `npm run test:ios -- --skip-build` installs and smokes it.
 
 4. **Real device**: requires a (free or paid) Apple Developer account signed into Xcode and a
-   signing Team. The team is supplied via the untracked
-   `experiments/native-architecture/ios/local.xcconfig` (see §4 — `DEVELOPMENT_TEAM` is kept out of
-   git), so it never needs editing in the pbxproj. A free account can run on your own device;
-   distributing needs the paid program.
+   signing Team. The team is supplied via the untracked `ios/local.xcconfig` (see §4 —
+   `DEVELOPMENT_TEAM` is kept out of git), so it never needs editing in the pbxproj. A free account
+   can run on your own device; distributing needs the paid program.
 
-5. **Debug the native app** with the Xcode console and the app's
-   `experiments/native-architecture/DEVELOPMENT.md`. Safari Web Inspector is for a Safari tab
-   running the web export; RN has no web layer to inspect.
+5. **Debug the native app** with the Xcode console and the app's `DEVELOPMENT.md`. Safari Web
+   Inspector is for a Safari tab running the web export; RN has no web layer to inspect.
 
 ## 1a. On-device debugging (physical iPhone/iPad)
 
@@ -63,9 +59,9 @@ device:
 
 Then run it:
 
-* Open `experiments/native-architecture/ios/Splotch.xcworkspace`, pick the device in Xcode's target
-  dropdown, **Run ▶** the `Splotch` scheme (it installs `art.splotch.app.dev`). Native logs stream
-  to the Xcode console (or Console.app).
+* Open `ios/Splotch.xcworkspace`, pick the device in Xcode's target dropdown, **Run ▶** the
+  `Splotch` scheme (it installs `art.splotch.app.dev`). Native logs stream to the Xcode console (or
+  Console.app).
 * **Inspect the web export separately** in a Safari tab through Safari's Develop menu. Native app
   logs and Release-probe measurements follow the development/profiling guides.
 * **Wireless debugging**: after the first wired run, tick **"Connect via network"** on the device
@@ -77,39 +73,38 @@ macOS-only; each script runs `pod install` first and builds the React Native app
 
 ### React Native store build
 
-The store release builds the React Native app in `experiments/native-architecture/ios`
-(`Splotch.xcworkspace`, scheme `Splotch`). Each script runs `pod install` first; `Pods/` is ignored
-and `Podfile.lock` pins it.
+The store release builds the React Native app in `ios` (`Splotch.xcworkspace`, scheme `Splotch`).
+Each script runs `pod install` first; `Pods/` is ignored and `Podfile.lock` pins it.
 
 ```bash
-npm run ios:archive # store archive -> experiments/native-architecture/ios/build/Splotch.xcarchive
-npm run ios:ipa     # ios:archive + export -> experiments/native-architecture/ios/build/ipa/Splotch.ipa
+npm run ios:archive # store archive -> ios/build/Splotch.xcarchive
+npm run ios:ipa     # ios:archive + export -> ios/build/ipa/Splotch.ipa
 ```
 
 Store identity is opt-in (ADR-0182). Debug is `art.splotch.app.dev`, and Release is
 `art.splotch.app$(SPLOTCH_APP_ID_SUFFIX)` with the suffix `.dev` set on the target, so a plain
 Release build, including one installed for testing or device performance, installs beside the store
 copy. Only the two scripts pass `-xcconfig Store.xcconfig`, which clears the suffix. The team comes
-from `experiments/native-architecture/ios/local.xcconfig` (gitignored; template
-`local.xcconfig.example` beside it), which the project's base configuration `Splotch.xcconfig` and
-`Store.xcconfig` both include: it must be the shipping app's team, so the archive updates the store
-app in place. The export settings live in `experiments/native-architecture/ios/ExportOptions.plist`
-(App Store Connect method, automatic signing). `npm run release:publish -- --only=ios --dry-run`
-checks the exported `.ipa`'s bundle ID and version.
+from `ios/local.xcconfig` (gitignored; template `local.xcconfig.example` beside it), which the
+project's base configuration `Splotch.xcconfig` and `Store.xcconfig` both include: it must be the
+shipping app's team, so the archive updates the store app in place. The export settings live in
+`ios/ExportOptions.plist` (App Store Connect method, automatic signing).
+`npm run release:publish -- --only=ios --dry-run` checks the exported `.ipa`'s bundle ID and
+version.
 
 An unsigned simulator build of the store configuration needs no team. It is what the
 `Native compile` workflow builds on pull requests and what the iOS deploy smoke installs:
 
 ```bash
-npm run ios:simulator # -> experiments/native-architecture/ios/build/simulator/Build/Products/Release-iphonesimulator/Splotch.app
+npm run ios:simulator # -> ios/build/simulator/Build/Products/Release-iphonesimulator/Splotch.app
 ```
 
 It runs `pod install`, then a Release `xcodebuild` for the generic iOS Simulator destination with
 `-xcconfig Store.xcconfig` and `CODE_SIGNING_ALLOWED=NO`, for this Mac's architecture only. The
 result is `art.splotch.app`, but the Simulator SDK binary installs on no device.
 
-The launcher icons and splash live in `experiments/native-architecture/ios/Splotch/Images.xcassets`;
-replace them in place when the artwork in `assets/` changes.
+The launcher icons and splash live in `ios/Splotch/Images.xcassets`; replace them in place when the
+artwork in `assets/` changes.
 
 ## 3. Testing
 
@@ -174,10 +169,10 @@ The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver di
    The Universal Simulator download is about 6.2 GB. A physical iOS 16.4 device does not need this
    download.
 2. On a simulator, run `npm run ios:simulator`, boot an iPhone simulator on iOS 16.4, then
-   `xcrun simctl install <udid> experiments/native-architecture/ios/build/simulator/Build/Products/Release-iphonesimulator/Splotch.app`
+   `xcrun simctl install <udid> ios/build/simulator/Build/Products/Release-iphonesimulator/Splotch.app`
    and `xcrun simctl launch <udid> art.splotch.app`. On a physical iOS 16.4 device, open
-   `experiments/native-architecture/ios/Splotch.xcworkspace` and **Run ▶** the `Splotch` scheme,
-   which installs `art.splotch.app.dev`. Verify that the drawing screen's `Settings` button paints.
+   `ios/Splotch.xcworkspace` and **Run ▶** the `Splotch` scheme, which installs
+   `art.splotch.app.dev`. Verify that the drawing screen's `Settings` button paints.
 3. Record the tested OS version, simulator/device, and pass result in the tag's GitHub Release notes
    before publishing its signed artifacts.
 
@@ -187,10 +182,9 @@ The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver di
 
 ### App configuration (done — verify on first device run)
 
-* [x] **`experiments/native-architecture/ios` project committed** (Expo / React Native); its native
-      modules resolve through CocoaPods and `Podfile.lock` pins them (ADR-0182).
-* [x] Bundle ID `art.splotch.app`, display name **Splotch**
-      (`experiments/native-architecture/ios/Splotch.xcodeproj`, `Info.plist`).
+* [x] **`ios` project committed** (Expo / React Native); its native modules resolve through
+      CocoaPods and `Podfile.lock` pins them (ADR-0182).
+* [x] Bundle ID `art.splotch.app`, display name **Splotch** (`ios/Splotch.xcodeproj`, `Info.plist`).
 * [x] Version `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in the React Native
       `Splotch.xcodeproj` match Android's `versionName`/`versionCode` —
       `tools/release/cut-release.mjs` bumps both via `tools/release/lib/native-version.mjs`; never
@@ -211,8 +205,7 @@ The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver di
       completed packs remain, re-enable it and confirm the next whole book appears, save-to-photos
       (add-only permission prompt wording), Guided Access tips in Settings read correctly for iOS —
       and with Guided Access **on**, the lock section shows a green ✓ + the exit steps (via the
-      native device-lock module,
-      `experiments/native-architecture/ios/Splotch/SplotchDeviceLock.swift`).
+      native device-lock module, `ios/Splotch/SplotchDeviceLock.swift`).
 
 ### Apple Developer account (one-time)
 
@@ -222,8 +215,8 @@ The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver di
    DUNS-registered organization. Identity verification can take a few days.
 3. Sign into Xcode (**Settings → Accounts → +**) with that account. Signing is *Automatic*; the Team
    is **not** set in the pbxproj (that would churn for anyone else and bake a personal ID into git).
-   Instead create an untracked **`experiments/native-architecture/ios/local.xcconfig`** (gitignored;
-   template `local.xcconfig.example` beside it) with your Team ID:
+   Instead create an untracked **`ios/local.xcconfig`** (gitignored; template
+   `local.xcconfig.example` beside it) with your Team ID:
 
    ```
    DEVELOPMENT_TEAM = XXXXXXXXXX
@@ -243,9 +236,8 @@ The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver di
 
 ### Build & upload
 
-* [ ] `npm run ios:ipa` → `experiments/native-architecture/ios/build/ipa/Splotch.ipa` (archives with
-      `-allowProvisioningUpdates`, exports per
-      `experiments/native-architecture/ios/ExportOptions.plist`).
+* [ ] `npm run ios:ipa` → `ios/build/ipa/Splotch.ipa` (archives with `-allowProvisioningUpdates`,
+      exports per `ios/ExportOptions.plist`).
 * [ ] Upload: drag the `.ipa` into Apple's **Transporter** app (Mac App Store), or use Xcode →
       Window → Organizer → Distribute App. (CLI alternative: `xcrun altool`/`notarytool` are
       deprecated for apps — use `xcodebuild -exportArchive` + Transporter.)
@@ -324,9 +316,8 @@ policy). The Apple Kids Category adds:
       fallback.
 * [ ] Confirm on a **native build** that every Parent Center policy starts at Every time. The
       defaults split by platform (ADR-0094): native defaults arm them, and the web build ships with
-      all five off. The platform defaults in
-      `experiments/native-architecture/src/platform/parentDefaults.ts` and its web counterpart
-      choose the target policy. Verify the actual native build.
+      all five off. The platform defaults in `src/platform/parentDefaults.ts` and its web
+      counterpart choose the target policy. Verify the actual native build.
 
 ## 5. Known follow-ups
 

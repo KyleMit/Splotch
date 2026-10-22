@@ -1,22 +1,22 @@
 // @vitest-environment happy-dom
 
-import { scale } from '../../web/src/lib/design/tokens.ts';
-import { PRIVACY_LAYOUT } from '../../experiments/native-architecture/src/information/privacyLayout.ts';
+import { scale } from '../../src/lib/design/tokens.ts';
+import { PRIVACY_LAYOUT } from '../../src/information/privacyLayout.ts';
 import {
   copyPrivacySection,
   privacySectionAtLaunch,
   replacePrivacyFragment,
-} from '../../experiments/native-architecture/src/platform/privacySectionLink.web.ts';
+} from '../../src/platform/privacySectionLink.web.ts';
 import {
   informationFragmentAtLaunch,
   visitInformationFragment,
-} from '../../experiments/native-architecture/src/platform/informationFragment.web.ts';
-import { sectionUrl } from '../../web/src/lib/privacy/sectionLink.ts';
+} from '../../src/platform/informationFragment.web.ts';
+import { sectionUrl } from '../../src/lib/privacy/sectionLink.ts';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createBrowserAppPages } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
-import { retainFocus } from '../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts';
-import { createAppPages } from '../../experiments/native-architecture/src/information/appPages.ts';
-import releases from '../../web/src/lib/releases.json';
+import { createBrowserAppPages } from '../../src/platform/appPath.web.ts';
+import { retainFocus } from '../../src/rsdDrawing/landFocus.web.ts';
+import { createAppPages } from '../../src/information/appPages.ts';
+import releases from '../../src/lib/releases.json';
 afterEach(() => vi.unstubAllGlobals());
 
 it('navigates web information pages without reloading the drawing session and follows browser Back', () => {

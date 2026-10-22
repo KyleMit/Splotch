@@ -9,21 +9,21 @@ import {
   ADMIN_SESSION_ATTRIBUTE,
   ADMIN_SESSION_KEY,
   ADMIN_VARIANT_ATTRIBUTE,
-} from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
+} from '../../src/pageDocument/admin/adminContract.ts';
 import {
   ADMIN_LOGIN_PATH,
   ADMIN_STATS_PATH,
   ADMIN_TOKENS_PATH,
   createAdminApi,
-} from '../../experiments/native-architecture/src/pageDocument/admin/adminApi.ts';
-import { createAdminSessionStore } from '../../experiments/native-architecture/src/pageDocument/admin/adminSession.ts';
+} from '../../src/pageDocument/admin/adminApi.ts';
+import { createAdminSessionStore } from '../../src/pageDocument/admin/adminSession.ts';
 import {
   SESSION_ENDED,
   removalQuestion,
   useAdminConsole,
-} from '../../experiments/native-architecture/src/pageDocument/admin/useAdminConsole.ts';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+} from '../../src/pageDocument/admin/useAdminConsole.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../src/information/unlinkedDocuments.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
 import {
   ADMIN_DOCUMENT_FILE,
   ADMIN_ROBOTS_META,
@@ -32,7 +32,7 @@ import {
 import { pageOnlyChunks, writtenPageDocuments } from '../migration/prerender-native-web-pages.mjs';
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
 import { isNativeAppNavigation, isOtherNativeNavigation } from '../migration/build-native-web.mjs';
-import { ADMIN_DOCUMENT_SOURCES } from '../../experiments/native-architecture/scripts/admin-document-styles.mjs';
+import { ADMIN_DOCUMENT_SOURCES } from '../migration/admin-document-styles.mjs';
 import { GRANTS, RECORDED_STATS, STATS, USED } from './native-admin-stats-fixture.mjs';
 
 vi.mock('react-strict-dom/postcss-plugin', () => ({ default: (options) => ({ options }) }));
@@ -498,8 +498,7 @@ describe("the worker's view of the admin document", () => {
 // The export's strict.css is inlined into the drawing screen's first paint, so the console's rules
 // must stay out of it.
 it("leaves the console's style sources out of the export's strict.css", async () => {
-  const { default: config } =
-    await import('../../experiments/native-architecture/postcss.config.mjs');
+  const { default: config } = await import('../../postcss.config.mjs');
   const [{ options }] = config.plugins;
   expect(options.exclude).toContain(ADMIN_DOCUMENT_SOURCES);
 });

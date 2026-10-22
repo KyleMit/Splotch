@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
 
 const CURRENT = {
   version: 7,

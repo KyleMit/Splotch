@@ -5,7 +5,7 @@ import {
   COMPACT_SHELL,
   NOTE_PINNED_MAX_FONT_SCALE,
   RsdSettingsCompact,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsCompact.tsx';
+} from '../../../src/rsdDrawing/RsdSettingsCompact.tsx';
 
 // React Native's font scale at iOS's largest accessibility text size (AX5).
 const AX5_FONT_SCALE = 3.571;

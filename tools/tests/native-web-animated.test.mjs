@@ -11,10 +11,9 @@ import { ROOT } from '../lib/proc.mjs';
 vi.mock('react-native', async () => ({
   Easing: (await import('react-native-web/dist/exports/Easing/index.js')).default,
 }));
-const { Animated, Easing } =
-  await import('../../experiments/native-architecture/src/platform/animated.web.ts');
+const { Animated, Easing } = await import('../../src/platform/animated.web.ts');
 
-const SRC = join(ROOT, 'experiments/native-architecture/src');
+const SRC = join(ROOT, 'src');
 const PLATFORM_ANIMATED = ['platform/animated.ts', 'platform/animated.web.ts'];
 const REACT_NATIVE_WEB_ANIMATED = join(
   ROOT,

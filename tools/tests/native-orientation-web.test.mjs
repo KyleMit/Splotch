@@ -6,7 +6,7 @@ import {
   autoOverridesSystemLock,
   useDeviceOrientation,
   useOrientationLockApplies,
-} from '../../experiments/native-architecture/src/platform/deviceOrientation.web.ts';
+} from '../../src/platform/deviceOrientation.web.ts';
 
 let root, host, fullscreenElement, coarse, applies;
 const orientation = { lock: vi.fn(async () => {}), unlock: vi.fn() };

@@ -70,7 +70,7 @@ export function readConfig(env = process.env) {
     TEST_CMD: env.TEST_CMD ?? 'npm run test:unit', // fast-test gate, every finding
     E2E_CMD: env.E2E_CMD ?? 'npm run test:e2e -- --retries=1', // targeted E2E (retry past transient flakes), UI-touching findings only
     // Joins the targeted E2E gate whenever the fix's range adds a static import
-    // edge under web/src (see withBundleGate). Playwright's web server builds
+    // edge under src (see withBundleGate). Playwright's web server builds
     // first, so this pays a production build per import-adding finding — set it
     // empty to fall back to CI-only detection of bundle re-partitioning.
     BUNDLE_SPEC: env.BUNDLE_SPEC ?? '',

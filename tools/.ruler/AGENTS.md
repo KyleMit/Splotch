@@ -116,8 +116,8 @@ entry script.
   inside their exported run function, never at module scope. An exported function takes argv from
   its caller, never through a flag read in a parameter default, since another CLI may call it in
   process (`tools/tests/tool-entry-flags.test.mjs`).
-* `max-lines` caps `tools/**/*.{mjs,js,ts}` at the same default as `web/src` (`eslint.config.js`).
-  The files already past it are frozen at their size in `TOOLS_GRANDFATHERED_MAX_LINES`: growing one
+* `max-lines` caps `tools/**/*.{mjs,js,ts}` at the same default as `src` (`eslint.config.js`). The
+  files already past it are frozen at their size in `TOOLS_GRANDFATHERED_MAX_LINES`: growing one
   means cutting lines elsewhere in it, splitting it, or raising its number there, in the diff. A PR
   that shrinks a listed file lowers its number to the new size.
 * `no-undef` is on across `tools/` because no TypeScript program checks these files; a dropped

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deflateSync, constants } from 'node:zlib';
-import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
-import { inflatePng } from '../../experiments/native-architecture/src/drawing/pngInflate.ts';
-import { createPngWork } from '../../experiments/native-architecture/src/drawing/pngWork.ts';
+import { createPngAlphaDecoder } from '../../src/drawing/pngAlpha.ts';
+import { inflatePng } from '../../src/drawing/pngInflate.ts';
+import { createPngWork } from '../../src/drawing/pngWork.ts';
 
 const grid = { width: 2, height: 2 };
 function crc(bytes) {

@@ -12,10 +12,10 @@ import { describe, expect, it } from 'vitest';
 // the API at all. A reader who followed one landed somewhere the API does not
 // appear and could not tell whether the row was stale or the guard was dropped.
 //
-// So the column now cites `path` → `marker`: a file under web/src/ plus a
+// So the column now cites `path` → `marker`: a file under src/ plus a
 // literal string that must appear in it — a symbol, selector, or call site that
 // survives a refactor. This is the mechanical guard on that agreement, in the
-// spirit of web/src/app.html.test.ts: delete the guard, rename the symbol, or
+// spirit of src/app.html.test.ts: delete the guard, rename the symbol, or
 // move the API to another module and this fails, naming the row.
 //
 // It cannot police what the column chooses to cite, which is why the column
@@ -33,7 +33,7 @@ const HEADING = '## API risk register';
 // marker there would have nothing to be checked against.
 const WHERE_COLUMN = 1;
 
-// A code span naming a file this repo ships: a path into web/src/ (or one of
+// A code span naming a file this repo ships: a path into src/ (or one of
 // the two roots that sit directly in it). Anchored end to end so a marker that
 // merely mentions a filename can't be mistaken for a path.
 const SOURCE_PATH = /^[A-Za-z0-9_.+\-/]+\.(?:ts|tsx|css|html|mjs)$/;
@@ -315,10 +315,10 @@ describe('COMPATIBILITY.md API risk register', () => {
       for (const anchor of anchorsIn(where)) {
         const text = sourceText(anchor.path);
 
-        expect(text, `web/src/${anchor.path} does not exist`).not.toBeNull();
+        expect(text, `src/${anchor.path} does not exist`).not.toBeNull();
         expect(
           unmetMarkers(text, anchor),
-          `web/src/${anchor.path} no longer satisfies this anchor` +
+          `src/${anchor.path} no longer satisfies this anchor` +
             (anchor.ordered ? ' (markers must appear in the order written)' : '')
         ).toEqual([]);
       }

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { acceptRadius } from '../../experiments/native-architecture/src/clear/dragToClear.ts';
+import { acceptRadius } from '../../src/clear/dragToClear.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDrawingScreen } from '../support/drawing.ts';
 import { openSettings } from '../support/group-c.ts';

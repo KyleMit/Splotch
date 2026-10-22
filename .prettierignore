@@ -1,23 +1,19 @@
 android/
 ios/
-!experiments/native-architecture/android/
-!experiments/native-architecture/android/**
-!experiments/native-architecture/ios/
-!experiments/native-architecture/ios/**
 # In-tree pod install and Gradle builds write generated output inside those re-included trees.
-experiments/native-architecture/ios/Pods/
-experiments/native-architecture/android/.gradle/
-experiments/native-architecture/android/app/.cxx/
+ios/Pods/
+android/.gradle/
+android/app/.cxx/
 # Byte-identical copies of the shipping branding, written by tools/migration/gen-native-branding.mjs
 # and held to the shipping files by tools/tests/native-branding.test.mjs.
-experiments/native-architecture/ios/Splotch/Images.xcassets/AppIcon.appiconset/Contents.json
-experiments/native-architecture/ios/Splotch/Images.xcassets/Splash.imageset/Contents.json
+ios/Splotch/Images.xcassets/AppIcon.appiconset/Contents.json
+ios/Splotch/Images.xcassets/Splash.imageset/Contents.json
 **/.svelte-kit/
 **/build/
 **/.netlify/
 **/node_modules/
 # Worktree-isolated agent checkouts. A nested copy under .claude/worktrees/agent-*/ does not
-# match the path-anchored rules below (web/src/tokens.css, the ideas-review.html dashboard),
+# match the path-anchored rules below (src/tokens.css, the ideas-review.html dashboard),
 # so `prettier --check .` fails on files that are correctly ignored at their real location.
 # Stated here rather than left to Prettier's .gitignore fallback, which is a CLI default.
 .claude/worktrees/
@@ -35,10 +31,10 @@ docs/scratchpad/triage/
 docs/scratchpad/icon-toolbar-alignment/
 docs/scratchpad/2026-10-18-device-parity/results/web/*-observations.json
 pnpm-lock.yaml
-web/src/lib/components/icon-names.d.ts
-web/src/lib/releases.json
-web/src/lib/releaseHues.ts
-experiments/native-architecture/src/information/releaseNotes.generated.json
+tools/icons/lib/icon-names.d.ts
+src/lib/releases.json
+src/lib/releaseHues.ts
+src/information/releaseNotes.generated.json
 tools/store-drawings/generated/store-drawings.mjs
 web/tests/**/*-snapshots/
 *.svg
@@ -63,7 +59,7 @@ perf-profiles/evidence/**/*.json
 
 # Replay traces are written one packet per line by tools/migration/gen-replay-traces.mjs, which
 # native-replay-traces.test.mjs holds them to byte for byte; Prettier would put every field on a line.
-experiments/native-architecture/perf/replay/*.json
+perf/replay/*.json
 
 # Frozen migration archive and lock receipts retain their producing serializers; recorded byte digests bind their evidence.
 docs/migration/evidence/rsd-drawing-graph-20261010/archive-reuse.json

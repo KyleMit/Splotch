@@ -16,8 +16,8 @@ afterEach(() => {
   act(() => root.unmount());
   host.remove();
   vi.restoreAllMocks();
-  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
-  vi.doUnmock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts');
+  vi.doUnmock('../../src/lazyExport.ts');
+  vi.doUnmock('../../src/drawing/pageArtChunk.web.ts');
 });
 async function settle() {
   await act(async () => {
@@ -27,12 +27,12 @@ async function settle() {
 
 async function webPictureCapture(load, exportName = 'PictureCapture') {
   vi.resetModules();
-  vi.doMock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts', () => ({
+  vi.doMock('../../src/drawing/pageArtChunk.web.ts', () => ({
     PictureCapture: ({ packet }) => createElement('div', { 'data-capture-id': packet.id }),
     FixedInkCapture: ({ plan, onReady }) =>
       createElement('button', { 'data-fixed-id': plan.id, onClick: () => onReady(plan) }),
   }));
-  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
+  vi.doMock('../../src/lazyExport.ts', async (importOriginal) => {
     const actual = await importOriginal();
     return {
       ...actual,
@@ -40,14 +40,11 @@ async function webPictureCapture(load, exportName = 'PictureCapture') {
         actual.createLazyExport(() => load().then(importCapture)),
     };
   });
-  return (
-    await import('../../experiments/native-architecture/src/drawing/pictureCaptureSurface.web.ts')
-  )[exportName];
+  return (await import('../../src/drawing/pictureCaptureSurface.web.ts'))[exportName];
 }
 
 it('loads capture only for a real packet, cancels a failed load and retries the next request', async () => {
-  const { createPngCapture } =
-    await import('../../experiments/native-architecture/src/drawing/interactions.ts');
+  const { createPngCapture } = await import('../../src/drawing/interactions.ts');
   const load = vi.fn().mockRejectedValueOnce(CHUNK_FAILURE).mockResolvedValue(undefined);
   const Capture = await webPictureCapture(load);
   await settle();
@@ -80,8 +77,7 @@ it('loads capture only for a real packet, cancels a failed load and retries the 
 it.each(['unmount', 'resize'])(
   'refuses a late capture chunk after %s cancels its packet',
   async (reason) => {
-    const { createPngCapture } =
-      await import('../../experiments/native-architecture/src/drawing/interactions.ts');
+    const { createPngCapture } = await import('../../src/drawing/interactions.ts');
     let finish;
     const load = vi.fn(
       () =>

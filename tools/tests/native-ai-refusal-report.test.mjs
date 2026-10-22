@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { createAiReportOwner } from '../../experiments/native-architecture/src/ai/reportOwner.ts';
-import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
-import { AI_REPORT_KINDS } from '../../web/src/lib/imageReport.ts';
-import { MAX_AI_REPORT_TOKEN_CHARACTERS } from '../../experiments/native-architecture/src/ai/reportContract.ts';
+import { createAiReportOwner } from '../../src/ai/reportOwner.ts';
+import { parseAiResponse } from '../../src/ai/transport.ts';
+import { AI_REPORT_KINDS } from '../../src/lib/imageReport.ts';
+import { MAX_AI_REPORT_TOKEN_CHARACTERS } from '../../src/ai/reportContract.ts';
 
 const ID = 17;
 const INPUT = Uint8Array.from([137, 80, 78, 71]);

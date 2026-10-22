@@ -3,12 +3,12 @@ import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
-import { createDrawingProduct } from '../../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { RsdParentCenterSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentCenterSection.tsx';
-import { soundSettingsActions } from '../../../experiments/native-architecture/src/rsdDrawing/soundSettingsActions.ts';
+import { createDrawingProduct } from '../../../src/product/createDrawingProduct.ts';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { NativeSoundSettingsDialog } from '../../../src/rsdDrawing/RsdSettingsDialog.tsx';
+import { RsdParentCenterSection } from '../../../src/rsdDrawing/RsdParentCenterSection.tsx';
+import { soundSettingsActions } from '../../../src/rsdDrawing/soundSettingsActions.ts';
 
 // A record a newer build wrote stays unread however often it is read again or saved over, so
 // Settings and Parent Center show its update guidance alone; a store that did not answer keeps its

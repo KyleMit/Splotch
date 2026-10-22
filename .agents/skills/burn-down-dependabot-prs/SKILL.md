@@ -99,9 +99,9 @@ rebuild."
 
 **This repo's own code — the blast radius.** For every behavior change, grep for whether the repo is
 actually exposed. A change is only a risk if something here touches it. Check the config, not the
-abstraction: a CSRF change matters against the function's request guard in
-`web/src/lib/server/csrf.ts` and its callers; a Metro resolution change matters against the app's
-actual resolver configuration; a removed export matters only if it is imported.
+abstraction: a CSRF change matters against the function's request guard in `netlify/server/csrf.ts`
+and its callers; a Metro resolution change matters against the app's actual resolver configuration;
+a removed export matters only if it is imported.
 
 ### Run `pnpm audit` before and after
 

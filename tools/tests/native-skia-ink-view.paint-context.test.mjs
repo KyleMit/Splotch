@@ -3,17 +3,14 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import * as tileOwner from '../../experiments/native-architecture/src/drawing/useCrayonTileReadiness.tsx';
-import { CRAYON_BANDS } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { SkiaInk } from '../../experiments/native-architecture/src/drawing/SkiaInk.tsx';
-import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
-import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import * as tileOwner from '../../src/drawing/useCrayonTileReadiness.tsx';
+import { CRAYON_BANDS } from '../../src/drawing/crayon.ts';
+import { SkiaInk } from '../../src/drawing/SkiaInk.tsx';
+import { createLiveInkFeed } from '../../src/drawing/liveInk.ts';
+import { InkPaperScope } from '../../src/drawing/InkPaper.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
+import { emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
 
 const PLANE = { width: 400, height: 300 };
 const skia = vi.hoisted(() => ({ surfaces: 0 }));
@@ -29,7 +26,7 @@ vi.mock('react-native-svg', async () => {
   const { svgInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
   return svgInkViewSdk((onLoad) => onLoad?.());
 });
-vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
+vi.mock('../../src/drawing/skiaUndoGhostImage.ts', () => ({
   makeSkiaUndoGhost: () => null,
 }));
 vi.mock('@shopify/react-native-skia', async () => {

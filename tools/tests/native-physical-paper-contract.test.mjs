@@ -12,22 +12,19 @@ import {
   samePaper,
   CANONICAL_PAPER_SIZE,
   MAX_PAPER_CSS_PX,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+} from '../../src/drawing/paperSpace.ts';
 import {
   addStrokes,
   clearDrawing,
   createHistory,
   emptyDrawing,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import {
-  STROKE_WIDTHS,
-  strokeWidthPx,
-} from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
-import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
-import { crayonPasses } from '../../experiments/native-architecture/src/drawing/crayon.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { STROKE_WIDTHS, strokeWidthPx } from '../../src/drawing/strokeWidth.ts';
+import { planInk } from '../../src/drawing/checkpoints.ts';
+import { crayonPasses } from '../../src/drawing/crayon.ts';
 
 const PHONE_WIDTH = 342;
 const PHONE_HEIGHT = 256.5;

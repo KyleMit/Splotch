@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { returnFocusToAiLauncher } from '../../experiments/native-architecture/src/platform/aiLauncherFocus.web.ts';
-import { drawerToolId } from '../../experiments/native-architecture/src/rsdDrawing/drawerToolId.ts';
+import { returnFocusToAiLauncher } from '../../src/platform/aiLauncherFocus.web.ts';
+import { drawerToolId } from '../../src/rsdDrawing/drawerToolId.ts';
 
 // Shipping's returnFocusToLauncher (AiImageResult.svelte), as RN web runs it once the AI result
 // card has left the page (#3018).

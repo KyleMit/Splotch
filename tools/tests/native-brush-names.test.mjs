@@ -1,15 +1,8 @@
 import { legacyDrawing, adoptedDrawing } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
-import {
-  BRUSHES,
-  BRUSH_ORDER,
-  DEFAULT_BRUSH,
-} from '../../experiments/native-architecture/src/drawing/brushes.ts';
-import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+import { BRUSHES, BRUSH_ORDER, DEFAULT_BRUSH } from '../../src/drawing/brushes.ts';
+import { emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
 
 const point = { x: 512, y: 384 };
 

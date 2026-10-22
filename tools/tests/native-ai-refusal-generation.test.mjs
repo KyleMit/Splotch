@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
 
 const INPUT = Uint8Array.from([137, 80, 78, 71]);
 const INSTALLATION = 'a'.repeat(64);

@@ -4,22 +4,12 @@ import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  catalogPack,
-  parsePack,
-  approvedAssetUrl,
-} from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import {
-  offlinePageId,
-  isOfflinePageId,
-} from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import {
-  createLibraryStore,
-  packDirectory,
-} from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
-import { createLibrary } from '../../experiments/native-architecture/src/offlineLibrary/createLibrary.ts';
-import { LibraryFault } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
+import { catalogPack, parsePack, approvedAssetUrl } from '../../src/offlineLibrary/catalog.ts';
+import { offlinePageId, isOfflinePageId } from '../../src/offlineLibrary/identity.ts';
+import { createLibraryStore, packDirectory } from '../../src/offlineLibrary/store.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
+import { createLibrary } from '../../src/offlineLibrary/createLibrary.ts';
+import { LibraryFault } from '../../src/offlineLibrary/contract.ts';
 
 function createEnabledOfflineLibrary(...args) {
   const owner = createOfflineLibrary(...args);
@@ -33,11 +23,11 @@ async function readyLibrary(owner = createEnabledOfflineLibrary(scratch.platform
 }
 
 const nativeFactory = vi.hoisted(() => ({ platform: null, screen: null }));
-vi.mock('../../experiments/native-architecture/src/platform/offlineLibrary.ts', () => ({
+vi.mock('../../src/platform/offlineLibrary.ts', () => ({
   createLibraryPlatform: () => nativeFactory.platform,
 }));
 vi.mock('react-native', () => ({ Dimensions: { get: () => nativeFactory.screen } }));
-const staticRoot = new URL('../../web/static/', import.meta.url);
+const staticRoot = new URL('../../assets/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let scratch;
 const roots = [];

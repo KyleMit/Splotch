@@ -2,26 +2,20 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { InkScene } from '../../experiments/native-architecture/src/drawing/InkScene.tsx';
-import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { InkScene } from '../../src/drawing/InkScene.tsx';
+import { InkPaperScope } from '../../src/drawing/InkPaper.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import {
   adoptPaper,
   LEGACY_PAPER,
   semanticWidth,
   textureScale,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  CRAYON_BANDS,
-  CRAYON_TILE_PX,
-} from '../../experiments/native-architecture/src/drawing/crayon.ts';
+} from '../../src/drawing/paperSpace.ts';
+import { CRAYON_BANDS, CRAYON_TILE_PX } from '../../src/drawing/crayon.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg } = await import('react-native-svg');
 const pen = {
   brush: 'pen',

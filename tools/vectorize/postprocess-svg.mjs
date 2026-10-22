@@ -6,7 +6,7 @@ import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 const COMMITTED_VECTOR_SVG_PATTERNS = [
   'tools/vectorize/pilot/*.optimized.svg',
-  'web/static/coloring/**/*.svg',
+  'assets/static/coloring/**/*.svg',
 ];
 
 const SVGO_CONFIG = {

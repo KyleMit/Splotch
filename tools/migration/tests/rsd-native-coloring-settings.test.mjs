@@ -1,25 +1,22 @@
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, host, mount, openSettingsSection } from './rsd-native-selection-host.mjs';
-import { RsdColoringSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringSection.tsx';
-import { LibraryProvider } from '../../../experiments/native-architecture/src/offlineLibrary/LibraryScope.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { catalogPack } from '../../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { OFFLINE_BOOKS } from '../../../experiments/native-architecture/src/offlineLibrary/books.generated.ts';
-import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import {
-  DrawingSessionProvider,
-  useDrawingHistory,
-} from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { RsdColoringSection } from '../../../src/rsdDrawing/RsdColoringSection.tsx';
+import { LibraryProvider } from '../../../src/offlineLibrary/LibraryScope.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { catalogPack } from '../../../src/offlineLibrary/catalog.ts';
+import { OFFLINE_BOOKS } from '../../../src/offlineLibrary/books.generated.ts';
+import { createOfflineLibrary } from '../../../src/offlineLibrary/controller.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { DrawingSessionProvider, useDrawingHistory } from '../../../src/product/DrawingSession.tsx';
 import {
   addStrokes,
   changePage,
   createHistory,
   emptyDrawing,
   strokeStyle,
-} from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { offlinePageId } from '../../../experiments/native-architecture/src/offlineLibrary/identity.ts';
+} from '../../../src/drawing/model.ts';
+import { offlinePageId } from '../../../src/offlineLibrary/identity.ts';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 
 // Settings › Coloring, where the downloaded books are managed; the picker carries no such controls

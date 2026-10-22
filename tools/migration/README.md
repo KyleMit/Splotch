@@ -1,38 +1,37 @@
 # Migration tools
 
-Tooling for the React Native app in `experiments/native-architecture` while it migrates toward
-replacing the Capacitor shell (epic 2690). It changes no shipping web or Capacitor build. Building
-the native app itself is covered in `experiments/native-architecture/DEVELOPMENT.md`.
+Tooling for the React Native app in `.` while it migrates toward replacing the Capacitor shell (epic
+2690). It changes no shipping web or Capacitor build. Building the native app itself is covered in
+`DEVELOPMENT.md`.
 
 ## Entry points
 
 * `gen-offline-catalog.mjs` generates the native offline coloring-book catalog
-  (`experiments/native-architecture/src/offlineLibrary/books.generated.ts`).
+  (`src/offlineLibrary/books.generated.ts`).
 * `gen-bundled-farm.mjs` generates the bundled starter book's art modules
-  (`experiments/native-architecture/src/drawing/bundledFarm/`) from the shipping Farm overlays, the
-  compact-tier fills, the wide selectors and the covers in `web/static/coloring`. Every module
-  imports the shipped files as Metro assets, so no image or line art rides in the native JavaScript
-  bundle, which the apps store uncompressed: `images.ts` and `pickerImages.ts` resolve the WebP
-  files to native asset URIs, `images.web.ts` and `pickerImages.web.ts` to hashed web URLs, and
-  `outlineFiles.ts` names each page's overlay SVGs, which the native apps read and parse on first
-  use (`bundledOutlines.ts`). The web export instead loads one generated line-art module per page
-  (`bundledOutlines.web.ts`). Both targets parse the overlays with
-  `experiments/native-architecture/src/drawing/overlayOutline.ts`. `--check` verifies the modules
+  (`src/drawing/bundledFarm/`) from the shipping Farm overlays, the compact-tier fills, the wide
+  selectors and the covers in `assets/static/coloring`. Every module imports the shipped files as
+  Metro assets, so no image or line art rides in the native JavaScript bundle, which the apps store
+  uncompressed: `images.ts` and `pickerImages.ts` resolve the WebP files to native asset URIs,
+  `images.web.ts` and `pickerImages.web.ts` to hashed web URLs, and `outlineFiles.ts` names each
+  page's overlay SVGs, which the native apps read and parse on first use (`bundledOutlines.ts`). The
+  web export instead loads one generated line-art module per page (`bundledOutlines.web.ts`). Both
+  targets parse the overlays with `src/drawing/overlayOutline.ts`. `--check` verifies the modules
   and `tools/tests/native-starter-book.test.mjs` runs that check.
 * `gen-native-icons.mjs` generates the native icon registry from every shipping SVG in
-  `web/src/lib/icons` and its `deferred/` subdirectory, resolving themed parts and page tokens per
-  theme and re-inking through `currentColor` exactly the icons outside the shipping `COLOR_ICONS`.
+  `assets/icons` and its `deferred/` subdirectory, resolving themed parts and page tokens per theme
+  and re-inking through `currentColor` exactly the icons outside the shipping `COLOR_ICONS`.
   `NATIVE_STARTUP_ICONS` (the icons the drawing screen mounts with) go in
-  `experiments/native-architecture/src/rsdDrawing/icons.generated.ts`; every other icon goes in
-  `icons.deferred.generated.ts` and Splotchy in `splotchy.generated.ts`, both lazily imported by
-  `iconRegistry.ts`. `--check` verifies all three and `tools/tests/native-icons.test.mjs` runs that
-  check, so adding, renaming or changing a shipping icon fails until you rerun
-  `node tools/migration/gen-native-icons.mjs`. Move a name into `NATIVE_STARTUP_ICONS` only when the
-  drawing screen renders it as it mounts; the web export prewarms the deferred module after first
-  paint, and a lazy sheet opens only once it has arrived (ADR-0179).
+  `src/rsdDrawing/icons.generated.ts`; every other icon goes in `icons.deferred.generated.ts` and
+  Splotchy in `splotchy.generated.ts`, both lazily imported by `iconRegistry.ts`. `--check` verifies
+  all three and `tools/tests/native-icons.test.mjs` runs that check, so adding, renaming or changing
+  a shipping icon fails until you rerun `node tools/migration/gen-native-icons.mjs`. Move a name
+  into `NATIVE_STARTUP_ICONS` only when the drawing screen renders it as it mounts; the web export
+  prewarms the deferred module after first paint, and a lazy sheet opens only once it has arrived
+  (ADR-0179).
 * `check:migration:rsd-drawing-tokens` checks the react-strict-dom drawing screen's token projection
   against the shared design owner. `gen-rsd-drawing-tokens.mjs` rewrites that projection
-  (`experiments/native-architecture/src/rsdDrawing/tokens.css.ts`) after a shipping token changes:
+  (`src/rsdDrawing/tokens.css.ts`) after a shipping token changes:
   `node --experimental-strip-types tools/migration/gen-rsd-drawing-tokens.mjs`.
   `tools/migration/tests/rsd-drawing-tokens.test.mjs` holds every shipping token, light and dark, to
   its projected value, and `tools/migration/tests/rsd-native-token-specimen.test.mjs` renders the
@@ -64,32 +63,31 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   those templates.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
   After the prerender it writes a Content-Security-Policy meta tag at the top of `index.html` and
-  `404.html` (`lib/native-web-csp.mjs`): shipping's native meta policy from `web/securityPolicy.ts`,
-  whose `connect-src` admits the hosted API origin from any serving origin, with `script-src`
-  holding `'self'` and the hash of each inline script the document carries, never `'unsafe-inline'`.
-  Its post hook runs `check-native-web-precache.mjs`, which verifies the service worker and that
-  both documents' policies hash every inline script, then `check-native-web-startup.mjs`, which
-  holds the startup path to two caps (ADR-0180) and rejects an image inlined into it.
-  `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the scripts, stylesheets and
-  preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds every script and
-  stylesheet the controls wait for, including the bundle the boot script loads after first paint.
-  Both are set from the measured export, and the check reports them against the shipping
-  `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor. The constants' comments carry
-  the numbers. A surface the drawing screen shows only on request loads through
+  `404.html` (`lib/native-web-csp.mjs`): shipping's native meta policy from
+  `netlify/securityPolicy.ts`, whose `connect-src` admits the hosted API origin from any serving
+  origin, with `script-src` holding `'self'` and the hash of each inline script the document
+  carries, never `'unsafe-inline'`. Its post hook runs `check-native-web-precache.mjs`, which
+  verifies the service worker and that both documents' policies hash every inline script, then
+  `check-native-web-startup.mjs`, which holds the startup path to two caps (ADR-0180) and rejects an
+  image inlined into it. `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the
+  scripts, stylesheets and preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds
+  every script and stylesheet the controls wait for, including the bundle the boot script loads
+  after first paint. Both are set from the measured export, and the check reports them against the
+  shipping `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor. The constants'
+  comments carry the numbers. A surface the drawing screen shows only on request loads through
   `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
   failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
   drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
   load only leaves the banner out.
 * `prerender-native-web.mjs` runs inside `native:web:build` (ADR-0180). It bundles
-  `experiments/native-architecture/src/prerenderFirstFrame.tsx` for Node through Expo's own bundle
-  request, renders the drawing screen's first frame for each size class, orientation and theme, and
-  writes them into `index.html` as `<template>`s with a boot script that clones the fitting one into
-  the root, sets Expo's hydration flag and loads the bundle after that frame's first contentful
-  paint. It also inlines the exported style sheet, which would otherwise hold first paint for a
-  round trip. `tools/tests/native-web-first-frame.test.mjs` runs the boot script against the
-  generated shell. A module the drawing screen's first frame reads must render in Node (no `window`
-  at import or during render, a server snapshot on every `useSyncExternalStore`), or this step fails
-  the build.
+  `src/prerenderFirstFrame.tsx` for Node through Expo's own bundle request, renders the drawing
+  screen's first frame for each size class, orientation and theme, and writes them into `index.html`
+  as `<template>`s with a boot script that clones the fitting one into the root, sets Expo's
+  hydration flag and loads the bundle after that frame's first contentful paint. It also inlines the
+  exported style sheet, which would otherwise hold first paint for a round trip.
+  `tools/tests/native-web-first-frame.test.mjs` runs the boot script against the generated shell. A
+  module the drawing screen's first frame reads must render in Node (no `window` at import or during
+  render, a server snapshot on every `useSyncExternalStore`), or this step fails the build.
 * `build-native-web.mjs` then replaces Expo's bare "enable JavaScript" `<noscript>` line in
   `index.html` with a note that links the pages that read without a script. It carries inline style
   attributes, never a `<style>`, so the drawing screen's first-paint bytes do not move.
@@ -105,7 +103,7 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   * Every style sheet inline, and the page entry (`src/pageDocument/pageApp.ts`) held until the page
     has painted. The entry is its own bundle, chunked as `expo export` chunks the drawing screen's,
     never a branch of the drawing screen's entry. Its bundles resolve the lazy facades listed in
-    `experiments/native-architecture/scripts/page-document-resolution.cjs` to the modules they wrap.
+    `tools/migration/page-document-resolution.cjs` to the modules they wrap.
   * A page's own head tags (`/beta`'s `noindex` and the boot script that stamps its `?os=` tab
     before first paint) come from `pageDocumentHead` in `src/pageDocument/prerender.tsx`. `/beta`
     lives under `src/pageDocument/` and outside `APP_PAGE_PATHS`, so its store links reach neither
@@ -134,16 +132,14 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
 * `prerender-native-web-admin.mjs` then writes `admin.html`, the admin console at `/admin`
   (`UNLINKED_DOCUMENT_PATHS` in `src/information/unlinkedDocuments.ts`; ADR-0101: no page links to
   it):
-  * Its own entry, `experiments/native-architecture/src/pageDocument/admin/adminApp.tsx`, hydrates
-    with React DOM and React Strict DOM's `html.*` alone, so it loads no React Native Web. It signs
-    in through `POST /api/admin/login` and keeps the bearer session in `localStorage` (issue 3007's
-    owner decision), managing codes through `/api/admin/tokens`.
-  * Its markup is rendered in Node from
-    `experiments/native-architecture/src/pageDocument/admin/prerender.tsx`, once per theme. Its CSS
-    is the console's own rules, compiled by the RSD PostCSS plugin over its sources
-    (`experiments/native-architecture/scripts/admin-document-styles.mjs`), which
-    `postcss.config.mjs` leaves out of the export's `strict.css`, so the drawing screen's inline
-    first paint carries none of them.
+  * Its own entry, `src/pageDocument/admin/adminApp.tsx`, hydrates with React DOM and React Strict
+    DOM's `html.*` alone, so it loads no React Native Web. It signs in through
+    `POST /api/admin/login` and keeps the bearer session in `localStorage` (issue 3007's owner
+    decision), managing codes through `/api/admin/tokens`.
+  * Its markup is rendered in Node from `src/pageDocument/admin/prerender.tsx`, once per theme. Its
+    CSS is the console's own rules, compiled by the RSD PostCSS plugin over its sources
+    (`tools/migration/admin-document-styles.mjs`), which `postcss.config.mjs` leaves out of the
+    export's `strict.css`, so the drawing screen's inline first paint carries none of them.
   * Its head carries `noindex`; the worker never precaches it or its chunks and leaves `/admin` to
     the network. The `Cache-Control: no-store` the SvelteKit console sends belongs in `netlify.toml`
     once it publishes the export.

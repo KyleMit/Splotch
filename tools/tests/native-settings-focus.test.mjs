@@ -2,49 +2,43 @@
 import { act, createElement, forwardRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NativeSoundSettingsDialog } from '../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { createSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
+import { NativeSoundSettingsDialog } from '../../src/rsdDrawing/RsdSettingsDialog.tsx';
+import { createSoundSettings } from '../../src/settings/soundSettings.ts';
+import { DEFAULT_BRUSH_AVAILABILITY } from '../../src/settings/brushPreferences.ts';
 
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
 // only React Strict DOM is reduced to the plain elements its web build emits. Each platform split
 // the web build resolves to its .web file resolves to it here too.
 vi.mock('react-native', async () => import('react-native-web'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
-  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+  '../../src/platform/KeyboardScope.tsx',
+  () => import('../../src/platform/KeyboardScope.web.tsx')
 );
+vi.mock('../../src/platform/flyoutFocus.ts', () => import('../../src/platform/flyoutFocus.web.ts'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
-  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
-);
-vi.mock(
-  '../../experiments/native-architecture/src/platform/sectionsSeen.ts',
-  () => import('../../experiments/native-architecture/src/platform/sectionsSeen.web.ts')
+  '../../src/platform/sectionsSeen.ts',
+  () => import('../../src/platform/sectionsSeen.web.ts')
 );
 
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+  '../../src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../src/rsdDrawing/ModalScrim.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+  '../../src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../src/rsdDrawing/RsdPressable.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.web.tsx')
+  '../../src/rsdDrawing/RsdToggleSwitch.tsx',
+  () => import('../../src/rsdDrawing/RsdToggleSwitch.web.tsx')
 );
+vi.mock('../../src/rsdDrawing/landFocus.ts', () => import('../../src/rsdDrawing/landFocus.web.ts'));
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
+  '../../src/rsdDrawing/segmentThumb.tsx',
+  () => import('../../src/rsdDrawing/segmentThumb.web.tsx')
 );
-vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/segmentThumb.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/segmentThumb.web.tsx')
-);
-vi.mock('../../experiments/native-architecture/src/platform/settingsSessions.ts', () => ({
+vi.mock('../../src/platform/settingsSessions.ts', () => ({
   settingsSessions: { current: () => 0, subscribe: () => () => {}, load: async () => 0 },
 }));
 vi.mock('expo-screen-orientation', () => import('../migration/tests/rsd-orientation-port.mjs'));

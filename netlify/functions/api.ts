@@ -1,16 +1,16 @@
-import * as adminLogin from '../../web/src/lib/server/api/adminLogin';
-import * as adminStats from '../../web/src/lib/server/api/adminStats';
-import * as adminTokens from '../../web/src/lib/server/api/adminTokens';
-import { apiFunction } from '../../web/src/lib/server/api/apiFunction';
-import * as cspReport from '../../web/src/lib/server/api/cspReport';
-import * as freeGenerationGrant from '../../web/src/lib/server/api/freeGenerationGrant';
-import * as generateImage from '../../web/src/lib/server/api/generateImage';
-import * as generationAttempt from '../../web/src/lib/server/api/generationAttempt';
-import * as generationResult from '../../web/src/lib/server/api/generationResult';
-import * as report from '../../web/src/lib/server/api/report';
-import * as reportImage from '../../web/src/lib/server/api/reportImage';
-import * as verifyAccessCode from '../../web/src/lib/server/api/verifyAccessCode';
-import * as verifyKey from '../../web/src/lib/server/api/verifyKey';
+import * as adminLogin from '../server/api/adminLogin';
+import * as adminStats from '../server/api/adminStats';
+import * as adminTokens from '../server/api/adminTokens';
+import { apiFunction } from '../server/api/apiFunction';
+import * as cspReport from '../server/api/cspReport';
+import * as freeGenerationGrant from '../server/api/freeGenerationGrant';
+import * as generateImage from '../server/api/generateImage';
+import * as generationAttempt from '../server/api/generationAttempt';
+import * as generationResult from '../server/api/generationResult';
+import * as report from '../server/api/report';
+import * as reportImage from '../server/api/reportImage';
+import * as verifyAccessCode from '../server/api/verifyAccessCode';
+import * as verifyKey from '../server/api/verifyKey';
 
 // Every /api endpoint, in one function so they share one instance's rate-limit
 // buckets as they did inside SvelteKit's (apiFunction.ts says why). Netlify reads

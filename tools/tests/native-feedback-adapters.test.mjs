@@ -1,4 +1,4 @@
-import { NETWORK_ERROR_MESSAGE } from '../../web/src/lib/latestRequest.ts';
+import { NETWORK_ERROR_MESSAGE } from '../../src/lib/latestRequest.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const host = vi.hoisted(() => ({
   send: vi.fn(),
@@ -48,20 +48,17 @@ import {
   feedbackTransport,
   feedbackDevice,
   feedbackPolicyStorage,
-} from '../../experiments/native-architecture/src/platform/feedback.ts';
+} from '../../src/platform/feedback.ts';
 import {
   feedbackTransport as webTransport,
   feedbackPolicyStorage as webPolicy,
   feedbackDevice as webDevice,
-} from '../../experiments/native-architecture/src/platform/feedback.web.ts';
-import {
-  FEEDBACK_POLICY_FILE,
-  FEEDBACK_POLICY_KEY,
-} from '../../experiments/native-architecture/src/feedback/feedbackPolicy.ts';
-import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
-import { sendFeedback } from '../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
-import { describeDeviceInfo } from '../../experiments/native-architecture/src/feedback/deviceReport.ts';
-import { describeDeviceInfo as shippingDeviceRows } from '../../web/src/lib/platform/deviceReport.ts';
+} from '../../src/platform/feedback.web.ts';
+import { FEEDBACK_POLICY_FILE, FEEDBACK_POLICY_KEY } from '../../src/feedback/feedbackPolicy.ts';
+import { FEEDBACK_APP_VERSION } from '../../src/feedback/feedbackCopy.ts';
+import { sendFeedback } from '../../src/feedback/feedbackTransport.ts';
+import { describeDeviceInfo } from '../../src/feedback/deviceReport.ts';
+import { describeDeviceInfo as shippingDeviceRows } from '../../src/lib/platform/deviceReport.ts';
 const body = { kind: 'bug', message: 'Actual adapter fixture', hp: '' };
 beforeEach(() => {
   host.files.clear();

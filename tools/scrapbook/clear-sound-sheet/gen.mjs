@@ -5,7 +5,7 @@
 // generator re-emits the page from whatever clips are sitting there, so running
 // it twice is a no-op. That includes baseline-clear-pop.mp3, which the app no
 // longer ships — the sheet is the record of a comparison, so its copy of the
-// sound that lost stays put rather than tracking web/static/. `--from <dir>` imports freshly generated clips (see
+// sound that lost stays put rather than tracking assets/static/. `--from <dir>` imports freshly generated clips (see
 // sounds.json for every prompt), and `--inline <file>` writes a second,
 // fully self-contained copy with the audio embedded as data: URIs for sharing
 // somewhere that cannot serve the assets folder.

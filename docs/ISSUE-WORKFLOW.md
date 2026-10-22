@@ -15,7 +15,7 @@ Keep issues scoped and hand-off-ready — a good issue says **what** to build, *
 * **Body** — what / why / where / done-when. The `.github/ISSUE_TEMPLATE/` forms (`feature_request`,
   `bug_report`, `task`) scaffold this; blank issues are allowed for quick notes. A verification
   command must run as written from the repo root (a single Vitest file runs as
-  `node tools/run-web-tool.mjs vitest run src/...`, never `npx vitest run web/src/...`; see
+  `node tools/run-web-tool.mjs vitest run src/...`, never `npx vitest run src/...`; see
   `docs/TESTING.md`), and a done-when check such as a grep is scoped to exactly the sites the issue
   enumerates.
 * **Labels** — exactly one `type:*`, one or more `area:*`, and optionally a `priority:*` and any

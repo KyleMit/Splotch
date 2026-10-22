@@ -1,4 +1,4 @@
-import { BOOKS, coloringDerivativeAssets } from '../../../web/src/lib/state/books.ts';
+import { BOOKS, coloringDerivativeAssets } from '../../../src/lib/state/books.ts';
 import { fail } from '../lib/asset-cli.mjs';
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import { generateResponsiveColoringAssets } from '../lib/responsive-coloring.mjs';

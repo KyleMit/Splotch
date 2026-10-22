@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { GateKeyboard } from '../../experiments/native-architecture/src/platform/gateKeyboard.web.ts';
+import { GateKeyboard } from '../../src/platform/gateKeyboard.web.ts';
 
 let container;
 let root;
@@ -69,11 +69,7 @@ it('removes the hardware listener when the challenge leaves', async () => {
 });
 
 it('binds both native receivers to the same key event contract', () => {
-  const read = (path) =>
-    readFileSync(
-      resolve(import.meta.dirname, '../../experiments/native-architecture', path),
-      'utf8'
-    );
+  const read = (path) => readFileSync(resolve(import.meta.dirname, '../..', path), 'utf8');
   const android = read('android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt');
   const ios = read('ios/Splotch/SplotchGateKeyboard.swift');
   const bridge = read('ios/Splotch/SplotchGateKeyboard.m');
@@ -90,11 +86,7 @@ it('binds both native receivers to the same key event contract', () => {
 });
 
 it('binds drawing and modal shortcut receivers to the same native view and event contract', () => {
-  const read = (path) =>
-    readFileSync(
-      resolve(import.meta.dirname, '../../experiments/native-architecture', path),
-      'utf8'
-    );
+  const read = (path) => readFileSync(resolve(import.meta.dirname, '../..', path), 'utf8');
   const android = read('android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt');
   const ios = read('ios/Splotch/SplotchGateKeyboard.swift');
   const bridge = read('ios/Splotch/SplotchGateKeyboard.m');
@@ -134,7 +126,7 @@ it("keeps shortcut capture visually transparent like shipping's window listener"
   const android = readFileSync(
     resolve(
       import.meta.dirname,
-      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt'
+      '../../android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt'
     ),
     'utf8'
   );
@@ -154,7 +146,7 @@ it('restores Android shortcut capture when a modal window returns', () => {
   const android = readFileSync(
     resolve(
       import.meta.dirname,
-      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt'
+      '../../android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt'
     ),
     'utf8'
   );
@@ -180,7 +172,7 @@ it('leaves the hardware keys with an open grown-up check on every layout', () =>
   const android = readFileSync(
     resolve(
       import.meta.dirname,
-      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt'
+      '../../android/app/src/main/java/art/splotch/app/SplotchGateKeyboard.kt'
     ),
     'utf8'
   );

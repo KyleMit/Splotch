@@ -1,8 +1,8 @@
 import { act } from 'react';
 import { expect, vi } from 'vitest';
 import { host, records } from './rsd-native-selection-host.mjs';
-import { PARENT_GATE_METRICS } from '../../../experiments/native-architecture/src/parentCenter/parentGateMetrics.ts';
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { PARENT_GATE_METRICS } from '../../../src/parentCenter/parentGateMetrics.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../src/parentCenter/parentGate.ts';
 
 export const GATE_MODAL = '[data-native-modal="Grown-Ups Only"]';
 

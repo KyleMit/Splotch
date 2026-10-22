@@ -1,20 +1,20 @@
 import { act, createElement } from 'react';
-import { saveFailureCopy } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
+import { saveFailureCopy } from '../../../src/export/pictureSave.ts';
 const REANNOUNCE_WAIT_MS = 2000;
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 
 import {
   POLAROID_FADE_KEYFRAMES,
   POLAROID_SHOW_KEYFRAMES,
-} from '../../../experiments/native-architecture/src/rsdDrawing/polaroidFlight.ts';
+} from '../../../src/rsdDrawing/polaroidFlight.ts';
 import {
   BANNER_ENTER_MS,
   BANNER_EXIT_MS,
   BANNER_FLY_PX,
-} from '../../../web/src/lib/components/bannerMotion.ts';
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+} from '../../../src/lib/components/bannerMotion.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../src/parentCenter/parentGate.ts';
 import {
   drag,
   lift,
@@ -28,7 +28,7 @@ import {
 // The photo library's answer to each save, in order, and the PNGs it was handed. A pending answer
 // holds that save until the test settles it.
 const library = vi.hoisted(() => ({ outcomes: [], saves: [], pending: null }));
-vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
+vi.mock('../../../src/platform/photoLibrary.ts', () => ({
   photoLibrary: {
     save: async (png) => {
       library.saves.push(png);
@@ -40,7 +40,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts',
 
 // The store whose rules bound the Parent Center policies, switched per test.
 const storePlatform = vi.hoisted(() => ({ os: 'ios' }));
-vi.mock('../../../experiments/native-architecture/src/platform/parentPlatform.ts', () => ({
+vi.mock('../../../src/platform/parentPlatform.ts', () => ({
   get PARENT_PLATFORM() {
     return storePlatform.os;
   },

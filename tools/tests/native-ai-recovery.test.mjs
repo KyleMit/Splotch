@@ -7,12 +7,8 @@ import {
   RECOVERY_DIGEST_HEADER,
   originalRecoveryExpiry,
   parseRecoveryJson,
-} from '../../experiments/native-architecture/src/ai/recoveryContract.ts';
-import {
-  aiUrl,
-  parseAiResponse,
-  requestAi,
-} from '../../experiments/native-architecture/src/ai/transport.ts';
+} from '../../src/ai/recoveryContract.ts';
+import { aiUrl, parseAiResponse, requestAi } from '../../src/ai/transport.ts';
 const CREATED = 1700000000000;
 const ID = 'a'.repeat(64);
 const read = { kind: 'collect', id: ID, createdAt: CREATED, expiry: { kind: 'unknown' } };

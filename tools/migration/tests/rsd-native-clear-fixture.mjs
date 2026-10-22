@@ -3,12 +3,9 @@ import { createRequire } from 'node:module';
 import { act, createElement } from 'react';
 import { vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { acceptRadius } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing, strokeStyle } from '../../../src/drawing/model.ts';
+import { acceptRadius } from '../../../src/clear/dragToClear.ts';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 
 const runtimeRequire = createRequire(import.meta.url);

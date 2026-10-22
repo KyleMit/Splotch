@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
-import { createSectionsSeen } from '../../experiments/native-architecture/src/settings/sectionsSeen.ts';
-import { NATIVE_SETTINGS_SECTIONS } from '../../experiments/native-architecture/src/settings/settingsSections.ts';
+import { createSectionsSeen } from '../../src/settings/sectionsSeen.ts';
+import { NATIVE_SETTINGS_SECTIONS } from '../../src/settings/settingsSections.ts';
 
 it('tracks every shipping section stamp independently and persists only visited sections', async () => {
   let saved = null;

@@ -175,7 +175,7 @@ npm run vectorize:postprocess -- vectorized/page.svg --fill '#fff' --out vectori
 The pass runs pinned SVGO `preset-default` to its byte-stable fixed point, then restores `width` and
 `height` from the optimized `viewBox`. Without those attributes, Chromium and WebKit report the
 Vectorizer output at its 100×150 default intrinsic size. No-input mode normalizes the committed
-`tools/vectorize/pilot/*.optimized.svg` and `web/static/coloring/**/*.svg` inventory in place;
+`tools/vectorize/pilot/*.optimized.svg` and `assets/static/coloring/**/*.svg` inventory in place;
 `npm run vectorize:postprocess:check` is the read-only drift guard. The repo-script unit suite also
 checks every committed result so a new runtime SVG cannot bypass the invariant. `--fill` bakes a
 root ink color into a themed derivative; use `#fff` for a dark overlay so runtime presentation stays
@@ -392,8 +392,8 @@ sources, or when the output must use exact brand hexes rather than sampled appro
 
 ## Choosing parameters for Splotch-shaped work
 
-The repo's natural input is coloring-page line art (`web/static/coloring/**`) — black ink on white,
-1024×1536, WebP. Settings that matter for that shape:
+The repo's natural input is coloring-page line art (`assets/static/coloring/**`) — black ink on
+white, 1024×1536, WebP. Settings that matter for that shape:
 
 * `processing.max_colors=2` — two colors is the whole image. Without it the tracer will find
   anti-aliasing grays and emit a much larger file.

@@ -191,9 +191,9 @@ step warned, call `$ANDROID_SDK_ROOT/platform-tools/adb` by its full path instea
 
 ```bash
 export ANDROID_SDK_ROOT=/opt/android-sdk   # adb is already on PATH via /usr/local/bin
-echo "sdk.dir=$ANDROID_SDK_ROOT" > experiments/native-architecture/android/local.properties
+echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
 npm run android:apk                     # Release APK as art.splotch.app.dev
-adb -s emulator-5554 install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+adb -s emulator-5554 install -r android/app/build/outputs/apk/release/app-release.apk
 adb -s emulator-5554 shell am start -n art.splotch.app.dev/art.splotch.app.MainActivity
 adb -s emulator-5554 exec-out screencap -p > /tmp/shot.png
 ```

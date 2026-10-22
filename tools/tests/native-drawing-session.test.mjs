@@ -1,15 +1,8 @@
 import { expect, it } from 'vitest';
-import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
-import {
-  addStroke,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  INITIAL_PAPER_PRESENTATION,
-  presentPaper,
-} from '../../experiments/native-architecture/src/drawing/paperPresentation.ts';
+import { createDrawingSession } from '../../src/product/createDrawingSession.ts';
+import { addStroke, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
+import { INITIAL_PAPER_PRESENTATION, presentPaper } from '../../src/drawing/paperPresentation.ts';
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 
 const STROKE = {

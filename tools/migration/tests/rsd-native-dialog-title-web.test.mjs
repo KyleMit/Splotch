@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { host, resetHost } from './rsd-native-control-host.mjs';
 import * as ReactNative from 'react-native';
-import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import { DialogHeader } from '../../../src/rsdDrawing/DialogHeader.tsx';
 
-vi.mock('../../../experiments/native-architecture/src/platform/svg.ts', async () => {
+vi.mock('../../../src/platform/svg.ts', async () => {
   const { createElement } = await import('react');
   return {
     Svg: ({ children, width, height }) => createElement('svg', { width, height }, children),

@@ -4,18 +4,14 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import {
-  CRAYON_BANDS,
-  CRAYON_TILE_PX,
-  crayonPhase,
-} from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { crayonTilePixels } from '../../experiments/native-architecture/src/drawing/crayonGrain.ts';
-import { crayonTilePng } from '../../experiments/native-architecture/src/drawing/crayonTilePng.ts';
-import { PALETTE_COLORS } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { CRAYON_BANDS, CRAYON_TILE_PX, crayonPhase } from '../../src/drawing/crayon.ts';
+import { crayonTilePixels } from '../../src/drawing/crayonGrain.ts';
+import { crayonTilePng } from '../../src/drawing/crayonTilePng.ts';
+import { PALETTE_COLORS } from '../../src/drawing/palette.ts';
 import referenceBytes from './native-crayon-grain.test.fixture.json';
 
 const grainSource = readFileSync(
-  new URL('../../experiments/native-architecture/src/drawing/crayonGrain.ts', import.meta.url),
+  new URL('../../src/drawing/crayonGrain.ts', import.meta.url),
   'utf8'
 );
 const digest = (pixels) => createHash('sha256').update(pixels).digest('hex');

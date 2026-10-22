@@ -141,7 +141,7 @@ export const globPatterns = (source) =>
 // other aliases return null and are covered by the package.json convention
 // source instead. Vite reads a leading `/` from the web project root.
 export function resolveSpecifier(specifier, importerPath) {
-  if (specifier.startsWith('$lib/')) return `web/src/lib/${specifier.slice('$lib/'.length)}`;
+  if (specifier.startsWith('$lib/')) return `src/lib/${specifier.slice('$lib/'.length)}`;
   if (specifier.startsWith('/')) return posix.normalize(`web${specifier}`);
   if (specifier.startsWith('.')) {
     return posix.normalize(posix.join(posix.dirname(importerPath), specifier));
@@ -318,9 +318,9 @@ function reexportersOn(ref) {
   const patterns = REEXPORT_LINE_PATTERNS.flatMap((pattern) => ['-e', pattern]);
   let listed = [];
   try {
-    listed = lines(
-      git('grep', '-l', '-E', ...patterns, ref, '--', 'web/src', 'tools', 'netlify')
-    ).map((line) => line.slice(ref.length + 1));
+    listed = lines(git('grep', '-l', '-E', ...patterns, ref, '--', 'src', 'tools', 'netlify')).map(
+      (line) => line.slice(ref.length + 1)
+    );
   } catch {
     // git grep exits 1 when nothing matches.
   }
@@ -342,9 +342,7 @@ function directImportsOn(ref, localSources) {
         .map(moduleKey)
     )
   );
-  const onRef = lines(
-    git('ls-tree', '-r', '--name-only', ref, '--', 'web/src', 'tools', 'netlify')
-  );
+  const onRef = lines(git('ls-tree', '-r', '--name-only', ref, '--', 'src', 'tools', 'netlify'));
   return readManyAt(
     ref,
     onRef.filter((path) => CODE_FILE.test(path) && directKeys.has(moduleKey(path)))

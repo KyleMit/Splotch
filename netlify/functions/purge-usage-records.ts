@@ -1,4 +1,4 @@
-import { purgeExpiredUsageRecords } from '../../web/src/lib/server/usageRecordStorage';
+import { purgeExpiredUsageRecords } from '../server/usageRecordStorage';
 
 export default async () => {
   const result = await purgeExpiredUsageRecords();

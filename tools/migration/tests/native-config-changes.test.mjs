@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
 
-const nativeManifest = read(
-  'experiments/native-architecture/android/app/src/main/AndroidManifest.xml'
-);
+const nativeManifest = read('android/app/src/main/AndroidManifest.xml');
 
 // The drawing and its Undo history live in the activity's React tree, so every configuration
 // change Android handles by recreating MainActivity erases them (issue 3135).

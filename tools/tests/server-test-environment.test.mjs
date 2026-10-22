@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 // everything under lib/server is server-only by construction. A file here that genuinely needs a
 // DOM API would be the surprising thing, and would say so by failing this.
 const OPT_OUT = '// @vitest-environment node';
-const SERVER_TESTS = join('web', 'src', 'lib', 'server');
+const SERVER_TESTS = join('netlify', 'server');
 
 function serverTestFiles(repoRoot) {
   return readdirSync(join(repoRoot, SERVER_TESTS), { withFileTypes: true, recursive: true })

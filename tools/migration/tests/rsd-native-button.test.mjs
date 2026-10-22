@@ -1,6 +1,6 @@
 import { expect, describe, it, vi } from 'vitest';
 import { act, createElement as h } from 'react';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { brand, scale, themes } from '../../../src/lib/design/tokens.ts';
 import {
   control,
   host,
@@ -13,7 +13,7 @@ import {
   px,
   view,
 } from './rsd-native-button-host.mjs';
-import { RsdButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
+import { RsdButton } from '../../../src/rsdDrawing/RsdButton.tsx';
 
 describe('RsdButton', () => {
   const VARIANT_FILL = {

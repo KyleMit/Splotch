@@ -60,18 +60,16 @@ ships none.
 
 **Decisions.** ADR-0094 established operation-boundary gates — never a gate on Settings as a whole —
 with per-feature `always`/`session`/`never` policies. Native defaults arm every gate to `always` at
-the native defaults in `experiments/native-architecture/src/platform/parentDefaults.ts`; the web
-defaults leave them off (commit d0fc837e9db15db3379ed1785cce685211f54fdb). Native iOS keeps `never`
-visible but unavailable for external links precisely because of this guideline
-(`isParentModeAvailable`, `experiments/native-architecture/src/parentCenter/parentPolicy.ts`). The
-original native privacy-link fix used Svelte's parental-link action (landed in
-4bc0073426317c83d7805fffb8d0e551dda114cd); that action retired. RN link handoff requests
-`externalLinks` from the product gate in
-`experiments/native-architecture/src/rsdDrawing/RsdSettingsRoute.tsx` and
-`experiments/native-architecture/src/rsdDrawing/RsdInformationPage.tsx`, checks the returned proof,
-and opens an external URL inside the solving tap. Privacy and feedback navigation remain internal.
-Issue 844 (open) finishes the job: putting the AI, feedback, and about *areas* — not just their
-links — behind the gate, which makes the BYOK panel the "designated area" this guideline names.
+the native defaults in `src/platform/parentDefaults.ts`; the web defaults leave them off (commit
+d0fc837e9db15db3379ed1785cce685211f54fdb). Native iOS keeps `never` visible but unavailable for
+external links precisely because of this guideline (`isParentModeAvailable`,
+`src/parentCenter/parentPolicy.ts`). The original native privacy-link fix used Svelte's
+parental-link action (landed in 4bc0073426317c83d7805fffb8d0e551dda114cd); that action retired. RN
+link handoff requests `externalLinks` from the product gate in `src/rsdDrawing/RsdSettingsRoute.tsx`
+and `src/rsdDrawing/RsdInformationPage.tsx`, checks the returned proof, and opens an external URL
+inside the solving tap. Privacy and feedback navigation remain internal. Issue 844 (open) finishes
+the job: putting the AI, feedback, and about *areas* — not just their links — behind the gate, which
+makes the BYOK panel the "designated area" this guideline names.
 
 ### 1.2 Safety — User-Generated Content
 
@@ -113,9 +111,8 @@ digital content without in-app purchase, and asked for Splotch's business model 
 submission c730ff1d-1a03-40cf-831d-2804513a1830 (reviewed 2026-09-12, version 1.6.0 build 8).
 Splotch configures no in-app purchase items at all, so nothing under the literal guideline applies;
 what draws the question is the BYOK panel, which states that a key is billed to the parent's own
-OpenAI account (`experiments/native-architecture/src/rsdDrawing/RsdAiKeyManager.tsx`) and that
-OpenAI requires billing set up on that account (its how-to,
-`experiments/native-architecture/src/rsdDrawing/RsdAiKeyManager.tsx`).
+OpenAI account (`src/rsdDrawing/RsdAiKeyManager.tsx`) and that OpenAI requires billing set up on
+that account (its how-to, `src/rsdDrawing/RsdAiKeyManager.tsx`).
 
 **Decisions.** Answer from the shape 3.1.1 already established rather than change the app. Splotch
 sells nothing through any channel and takes no revenue or affiliate share; the drawing app is free
@@ -138,11 +135,10 @@ this shape, inside a children's app.
 **Decisions.** ADR-0101: the admin console is web-only and unlinked. The old reveal gesture,
 persisted flag and native admin page were removed. The former Capacitor route-exclusion list and
 whole-bundle sentinel scan enforced that static export; both retired with that build. RN's admin is
-a separate browser document/entry under `experiments/native-architecture/src/pageDocument/admin/`,
-declared by `experiments/native-architecture/src/information/unlinkedDocuments.ts`. The
-drawing/native route owner does not route to it. `tools/tests/native-web-admin-document.test.mjs`
-checks the web artifact, session and worker contracts; it is not the retired native whole-bundle
-string scan.
+a separate browser document/entry under `src/pageDocument/admin/`, declared by
+`src/information/unlinkedDocuments.ts`. The drawing/native route owner does not route to it.
+`tools/tests/native-web-admin-document.test.mjs` checks the web artifact, session and worker
+contracts; it is not the retired native whole-bundle string scan.
 
 ### 2.3.8 Metadata age-appropriateness
 
@@ -163,10 +159,10 @@ when its HTML was excluded. That historical leak explains the build-boundary dec
 
 **Decisions.** The former Capacitor route-exclusion list stubbed route modules and its whole-bundle
 scan rejected forbidden hosts. Both retired. In RN, `/beta` is a document-only web page declared in
-`experiments/native-architecture/src/information/appPages.ts`; the native/drawing route table never
-opens it. `tools/tests/native-web-page-documents.beta-not-found.test.mjs` checks that split. This
-route/import boundary is current enforcement, not a claim that the old host-string scanner still
-inspects the native binary. ADR-0112 records the tabbed `/beta` consolidation
+`src/information/appPages.ts`; the native/drawing route table never opens it.
+`tools/tests/native-web-page-documents.beta-not-found.test.mjs` checks that split. This route/import
+boundary is current enforcement, not a claim that the old host-string scanner still inspects the
+native binary. ADR-0112 records the tabbed `/beta` consolidation
 (ed186a02dbdb69b0804ffc6f8882c89791abfa1d).
 
 ### 3.1.1 In-App Purchase
@@ -245,12 +241,11 @@ being sent (ADR-0104). The gate protects action boundaries and is not itself leg
 
 **Stored AI credentials stay on the device, on every platform.** A saved access code or OpenAI key
 is an iOS Keychain item written `whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, as
-declared by `experiments/native-architecture/ios/Splotch/SplotchAIEnvironment.swift`, so no sync or
-backup carries it to another device. That matches Android, where `android:allowBackup="false"` keeps
-it out of cloud backup. The user chose this on 2026-09-28 so one plain sentence in `/privacy` holds
-everywhere; iCloud Keychain sync and backup-portable storage were considered and not adopted.
-Current iOS may keep a Keychain item after the app is deleted, which Apple does not guarantee, so no
-copy promises deletion.
+declared by `ios/Splotch/SplotchAIEnvironment.swift`, so no sync or backup carries it to another
+device. That matches Android, where `android:allowBackup="false"` keeps it out of cloud backup. The
+user chose this on 2026-09-28 so one plain sentence in `/privacy` holds everywhere; iCloud Keychain
+sync and backup-portable storage were considered and not adopted. Current iOS may keep a Keychain
+item after the app is deleted, which Apple does not guarantee, so no copy promises deletion.
 
 ### 5.1.4 Kids
 
@@ -280,7 +275,7 @@ against that shipped practice before submission.
 > "Don't use protected third-party material such as trademarks, copyrighted works, or patented ideas
 > in your app without permission."
 
-**Impact / decisions.** `web/static/coloring/COLORING-BOOK.md` shipped inside both native bundles
+**Impact / decisions.** `assets/static/coloring/COLORING-BOOK.md` shipped inside both native bundles
 naming Frozen, Bluey, Paw Patrol and others under an "IP" heading; no branded artwork ever shipped,
 but the list and the stale store-assets claim were removed (issue 851, "already fixed" set).
 
@@ -354,8 +349,8 @@ form.
 **Impact / decisions.** No ads or analytics SDKs ship at all, which satisfies the self-certified
 list vacuously. No AI SDK ships in the APK either: the OpenAI call happens server-side behind the
 `AiImageProvider` seam (ADR-0047, ADR-0113) — the client talks only to Splotch's own API, on BYOK
-runs included (the transport in `experiments/native-architecture/src/ai/transport.ts` sends the key
-to `/api/generate-image`; the server uses it for that one request and never stores it).
+runs included (the transport in `src/ai/transport.ts` sends the key to `/api/generate-image`; the
+server uses it for that one request and never stores it).
 
 ### Payments policy
 

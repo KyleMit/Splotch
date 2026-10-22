@@ -1,16 +1,12 @@
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-import {
-  POLL_INTERVAL_MS,
-  POLL_TIMEOUT_MS,
-  REQUEST_TIMEOUT_MS,
-} from '../../experiments/native-architecture/src/ai/contract.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
+import { POLL_INTERVAL_MS, POLL_TIMEOUT_MS, REQUEST_TIMEOUT_MS } from '../../src/ai/contract.ts';
 import {
   AI_POLL_TIMEOUT_MESSAGE,
   AI_POLL_TIMEOUT_STATUS,
   AI_TIMEOUT_MESSAGE,
-} from '../../web/src/lib/ai/generationFailures.ts';
+} from '../../src/lib/ai/generationFailures.ts';
 const INSTALLATION = 'a'.repeat(64),
   JOB = 'b'.repeat(64);
 const image = () =>

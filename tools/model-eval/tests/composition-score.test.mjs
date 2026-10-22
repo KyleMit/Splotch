@@ -13,7 +13,7 @@ import {
 
 const PAPER = '#FCFBF7';
 
-// Palette hexes from web/src/lib/palette.ts, which inputElements matches against.
+// Palette hexes from src/lib/palette.ts, which inputElements matches against.
 const RED = '#EC534E';
 const YELLOW = '#F9D24F';
 

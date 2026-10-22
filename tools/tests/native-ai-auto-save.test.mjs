@@ -1,9 +1,9 @@
 import { expect, it, vi } from 'vitest';
-import { createAiAutoSave } from '../../experiments/native-architecture/src/ai/aiAutoSave.ts';
-import { createAutoSaveRunner } from '../../experiments/native-architecture/src/product/useAiAutoSave.ts';
+import { createAiAutoSave } from '../../src/ai/aiAutoSave.ts';
+import { createAutoSaveRunner } from '../../src/product/useAiAutoSave.ts';
 
 vi.mock('react-native', () => ({}));
-vi.mock('../../experiments/native-architecture/src/keepPicture.ts', () => ({
+vi.mock('../../src/keepPicture.ts', () => ({
   savePicture: async () => 'photos',
 }));
 

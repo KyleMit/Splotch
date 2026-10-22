@@ -1,36 +1,21 @@
-import {
-  paperRasterSize,
-  paperRasterBounds,
-} from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
-import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import {
-  adoptPaper,
-  paperBounds,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperRasterSize, paperRasterBounds } from '../../src/drawing/pictureExport.ts';
+import { InkPaperScope } from '../../src/drawing/InkPaper.tsx';
+import { adoptPaper, paperBounds, paperProjection } from '../../src/drawing/paperSpace.ts';
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { InkScene } from '../../experiments/native-architecture/src/drawing/InkScene.tsx';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { InkScene } from '../../src/drawing/InkScene.tsx';
+import { addStrokes, createHistory, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { paletteHex } from '../../src/drawing/palette.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg } = await import('react-native-svg');
 
 async function output(strokes) {

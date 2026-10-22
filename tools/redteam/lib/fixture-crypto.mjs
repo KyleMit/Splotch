@@ -15,10 +15,10 @@ const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const ENC_SUFFIX = '.enc';
 
-// Both red-team keys live in the app's env file: the one web/.env.example
+// Both red-team keys live in the app's env file: the one .env.example
 // documents and the one .worktreeinclude carries into an agent worktree.
-export const REDTEAM_ENV_FILE = join(ROOT, 'web', '.env');
-export const REDTEAM_ENV_HINT = 'set it in web/.env (see web/.env.example) or export it';
+export const REDTEAM_ENV_FILE = join(ROOT, '.env');
+export const REDTEAM_ENV_HINT = 'set it in .env (see .env.example) or export it';
 
 // Each entry script calls this before reading a key. A variable already exported
 // in the shell wins over the file.

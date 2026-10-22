@@ -3,7 +3,7 @@ import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The test tiers split by extension and home: `.test.ts` is a Vitest unit test
-// colocated with its subject under web/src (plus the build-time modules at the
+// colocated with its subject under src (plus the build-time modules at the
 // web root), `.spec.ts` is a Playwright spec in e2e/specs (the React Native web suite). ESLint enforces the vocabulary half
 // (it()/describe() vs test()) by glob, so a file in the wrong home silently gets
 // the wrong ruleset — and Vitest and Playwright each discover by their own glob,
@@ -18,8 +18,8 @@ function filesUnder(dir, suffix) {
 }
 
 describe('test file placement', () => {
-  it('keeps Playwright .spec.ts files out of web/src', () => {
-    expect(filesUnder(join(repoRoot, 'web', 'src'), '.spec.ts')).toEqual([]);
+  it('keeps Playwright .spec.ts files out of src', () => {
+    expect(filesUnder(join(repoRoot, 'src'), '.spec.ts')).toEqual([]);
   });
 
   // e2e/playwright.config.ts discovers specs under e2e/specs alone, so one beside it never runs.

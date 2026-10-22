@@ -1,14 +1,11 @@
 import { deflateSync, inflateSync } from 'node:zlib';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
-import { createPngWork } from '../../experiments/native-architecture/src/drawing/pngWork.ts';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { createPngAlphaDecoder } from '../../src/drawing/pngAlpha.ts';
+import { createPngWork } from '../../src/drawing/pngWork.ts';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 import { pngChunk, pngFromZlib } from './native-png-fixtures.mjs';
 
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/pngTask.ts',
-  async () => import('../../experiments/native-architecture/src/drawing/pngTask.web.ts')
-);
+vi.mock('../../src/drawing/pngTask.ts', async () => import('../../src/drawing/pngTask.web.ts'));
 
 const GRID = { width: 1024, height: 768 };
 const CHANNELS = 4;
@@ -20,7 +17,7 @@ const SYNC_WORK_LIMIT = 8192;
 // A full grid outlasts several bounded stretches of decoder work, even under a frozen clock.
 const MIN_FULL_GRID_PAUSES = 8;
 const TIMEOUT_NOTICE = 'Picture observation did not finish. Your drawing is still here.';
-const PNG_TASK = '../../experiments/native-architecture/src/drawing/pngTask.ts';
+const PNG_TASK = '../../src/drawing/pngTask.ts';
 
 function browserTasks({ registrationFailure, deliveryFailure, starveMessages = false } = {}) {
   let now = 0;
@@ -327,12 +324,10 @@ describe('web PNG validation through browser message tasks', () => {
     'finishes the full PNG through native continuations even when browser idle work is starved and nested timers clamp',
     async () => {
       vi.resetModules();
-      vi.doMock(PNG_TASK, () =>
-        vi.importActual('../../experiments/native-architecture/src/drawing/pngTask.ts')
-      );
+      vi.doMock(PNG_TASK, () => vi.importActual('../../src/drawing/pngTask.ts'));
       try {
         const { createPngAlphaDecoder: nativeContinuationDecoder } =
-          await import('../../experiments/native-architecture/src/drawing/pngAlpha.ts');
+          await import('../../src/drawing/pngAlpha.ts');
         const png = fullPng();
         const model = browserTasks();
         const result = await model.run(

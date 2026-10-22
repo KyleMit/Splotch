@@ -17,7 +17,7 @@ import {
   DRAWING_LIVE_ATTRIBUTE,
   EARLY_POINTERS_GLOBAL,
   PAPER_INPUT_TEST_ID,
-} from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+} from '../../src/platform/firstFrameContract.ts';
 
 vi.mock('react-native', () => ({
   View: forwardRef(function View({ children, testID }, ref) {
@@ -25,8 +25,7 @@ vi.mock('react-native', () => ({
   }),
 }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
-const { PaperInputView } =
-  await import('../../experiments/native-architecture/src/drawing/PaperInputView.web.tsx');
+const { PaperInputView } = await import('../../src/drawing/PaperInputView.web.tsx');
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const STYLESHEET = '/_expo/static/css/strict-1.css';

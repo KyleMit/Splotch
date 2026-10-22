@@ -19,18 +19,15 @@ import {
   readDrawingPaper,
   semanticWidth,
   textureScale,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { validateAiOriginalModel } from '../../experiments/native-architecture/src/platform/aiOriginalModel.ts';
-import {
-  addStrokes,
-  createHistory,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
-import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
-import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+} from '../../src/drawing/paperSpace.ts';
+import { validateAiOriginalModel } from '../../src/platform/aiOriginalModel.ts';
+import { addStrokes, createHistory } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { fittedPaper } from '../../src/drawing/paperGeometry.ts';
+import { createContactResponder } from '../../src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../src/drawing/liveInk.ts';
+import { PageOutline } from '../../src/drawing/PageOutline.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import { loadNativePageOutlines } from './native-bundled-outlines-fixture.mjs';
 
 vi.mock('react-native', () => ({ findNodeHandle: (target) => target }));

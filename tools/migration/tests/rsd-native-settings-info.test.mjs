@@ -2,34 +2,28 @@ import { caller, host, mount, openSettingsSection, records } from './rsd-native-
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
-import { EXTERNAL_MARK_LABEL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdExternalMark.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { ABOUT_COPY } from '../../../src/rsdDrawing/RsdAboutSection.tsx';
+import { EXTERNAL_MARK_LABEL } from '../../../src/rsdDrawing/RsdExternalMark.tsx';
 import {
   INSTALL_GUIDE_COPY,
   exitGuideSteps,
   lockGuideSteps,
-} from '../../../experiments/native-architecture/src/install/installGuideCopy.ts';
-import {
-  RELEASE_NOTES,
-  WHATS_NEW_COPY,
-} from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
-import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
-import { openHostedPage } from '../../../experiments/native-architecture/src/settings/hostedPages.ts';
+} from '../../../src/install/installGuideCopy.ts';
+import { RELEASE_NOTES, WHATS_NEW_COPY } from '../../../src/settings/whatsNew.ts';
+import { openAppPage } from '../../../src/platform/appPath.ts';
+import { openHostedPage } from '../../../src/settings/hostedPages.ts';
 
-vi.mock('../../../experiments/native-architecture/src/settings/hostedPages.ts', async (actual) => ({
+vi.mock('../../../src/settings/hostedPages.ts', async (actual) => ({
   ...(await actual()),
   openHostedPage: vi.fn(),
 }));
 
-vi.mock(
-  '../../../experiments/native-architecture/src/platform/appPath.ts',
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    openAppPage: vi.fn(),
-  })
-);
+vi.mock('../../../src/platform/appPath.ts', async (importOriginal) => ({
+  ...(await importOriginal()),
+  openAppPage: vi.fn(),
+}));
 
 const POLICIES = {
   ai: 'always',

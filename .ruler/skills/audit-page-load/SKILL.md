@@ -46,8 +46,8 @@ localStorage for the audited origin into the Chrome profile before that device's
 (`seed-storage.mjs`, through a page whose every request is answered locally, so the HTTP cache stays
 cold). Lighthouse 12 resets only file systems, shader cache, service workers, Cache Storage and the
 HTTP cache between runs, so the seed survives into a first visit. Keys are the `STORAGE_KEYS` values
-in `web/src/lib/storageKeys.ts`; confirm the seed took by decoding the report's `final-screenshot`
-(a dark run averages well under 100 per channel). Example:
+in `src/lib/storageKeys.ts`; confirm the seed took by decoding the report's `final-screenshot` (a
+dark run averages well under 100 per channel). Example:
 
 ```bash
 node .claude/skills/audit-page-load/run-audit.mjs --device phone --visits first \

@@ -6,8 +6,8 @@ import { expect, it, vi } from 'vitest';
 import {
   scrollSettingsPaneToSection,
   spiedSettingsSection,
-} from '../../experiments/native-architecture/src/platform/settingsPane.web.ts';
-import { SettingsTextZoom } from '../../experiments/native-architecture/src/platform/SettingsTextZoom.web.tsx';
+} from '../../src/platform/settingsPane.web.ts';
+import { SettingsTextZoom } from '../../src/platform/SettingsTextZoom.web.tsx';
 
 it('wires the shipping pinch owner, blocks its trailing tap and resets when Settings closes', async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;

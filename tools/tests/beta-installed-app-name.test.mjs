@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const candidate = new URL('../../experiments/native-architecture/', import.meta.url);
+const candidate = new URL('../../', import.meta.url);
 const config = JSON.parse(readFileSync(new URL('app.json', candidate), 'utf8'));
 
 function installedNames(android, ios) {

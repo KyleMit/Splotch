@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../src/parentCenter/parentGate.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
 

@@ -47,8 +47,8 @@ preview against 1.8–1.9 s before). The remaining findings below are what the P
 
 ### [Performance] Hydration of the drawing route is ~240 ms of the ~400 ms throttled boot task
 
-**File(s):** `web/src/routes/+page.svelte`, `web/src/lib/components/ActionsPanel.svelte`,
-`web/src/lib/components/ColorPalette.svelte`, `web/src/lib/components/DrawingCanvas.svelte`
+**File(s):** `src/routes/+page.svelte`, `src/lib/components/ActionsPanel.svelte`,
+`src/lib/components/ColorPalette.svelte`, `src/lib/components/DrawingCanvas.svelte`
 
 #### Problem
 
@@ -96,7 +96,7 @@ phone-first cell against a `feature/*` preview: TBT is the only sub-95 weighted 
 
 ### [Performance] Palette bottom padding is prerendered as 8 px and recomputed at hydration
 
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (`paletteBottom`, lines 4–8, 125)
+**File(s):** `src/lib/components/ColorPalette.svelte` (`paletteBottom`, lines 4–8, 125)
 
 #### Problem
 
@@ -131,7 +131,7 @@ regression check.
 ### [Performance] SvelteKit fetches the error route's chunks and stylesheet on every load
 
 **File(s):** `node_modules/@sveltejs/kit/src/runtime/client/client.js` (`default_error_loader`, line
-369), `web/src/routes/+error.svelte`
+369), `src/routes/+error.svelte`
 
 #### Problem
 
@@ -157,7 +157,7 @@ after navigation start.
 ### [Docs] Record that the `-webkit-backdrop-filter` twin is load-bearing at the floor
 
 **File(s):** `docs/COMPATIBILITY.md` ("Polyfills & workarounds", the `backdrop-filter` register
-row); `web/src/app.css` (`.modal-dialog::backdrop`)
+row); `src/app.css` (`.modal-dialog::backdrop`)
 
 #### Problem
 
@@ -218,7 +218,7 @@ change.
 
 **File(s):** `docs/COMPATIBILITY.md` ("Supported browsers & devices" table, "How the floor is
 enforced" table's web row); `docs/MOBILE/ios.md` (the web `build.target` note);
-`web/src/browserFloor.test.ts`
+`src/browserFloor.test.ts`
 
 #### Problem
 
@@ -228,13 +228,13 @@ this document, the `mobile` skill and the `/beta` constants. The web floor has n
 browsers table ("Chrome / Edge 111+", "Firefox 114+", "Safari 16.4+", "iOS / iPadOS Safari 16.4+")
 and the enforcement table's value cell (`chrome111, edge111, firefox114, safari16.4, ios16.4`) are
 maintained by hand. `browserFloor.test.ts` checks only that the WebKit entries in `BROWSER_TARGETS`
-stay at or below `IPHONEOS_DEPLOYMENT_TARGET`. A floor raise that edits `web/browserTargets.ts` and
-forgets the doc passes CI, and the document every future floor decision starts from then states the
-old floor.
+stay at or below `IPHONEOS_DEPLOYMENT_TARGET`. A floor raise that edits
+`tools/lib/browserTargets.ts` and forgets the doc passes CI, and the document every future floor
+decision starts from then states the old floor.
 
 #### Proposed solution
 
-Extend `web/src/browserFloor.test.ts` (it already imports `BROWSER_TARGETS`) to read
+Extend `src/browserFloor.test.ts` (it already imports `BROWSER_TARGETS`) to read
 `docs/COMPATIBILITY.md` and assert that the enforcement table's web value cell equals
 `BROWSER_TARGETS.join(', ')`, and that each supported-browsers row states the version its engine has
 in `BROWSER_TARGETS`. Follow the context-anchored matching `android-config.test.mjs` uses for the
@@ -242,15 +242,15 @@ Android row, so an edit elsewhere in the table cannot satisfy it by accident.
 
 #### Verification
 
-Temporarily change `firefox114` to `firefox115` in `web/browserTargets.ts`: today
-`npx vitest run web/src/browserFloor.test.ts` still passes; after the fix it fails naming the doc.
+Temporarily change `firefox114` to `firefox115` in `tools/lib/browserTargets.ts`: today
+`npx vitest run src/browserFloor.test.ts` still passes; after the fix it fails naming the doc.
 
 ### [Cleanup] Remove or justify three guards on APIs every supported engine has
 
-**File(s):** `web/src/lib/drawing/magicBrush.ts` (`typeof DOMMatrix !== 'undefined'`, in the Magic
-sheet pattern transform); `web/src/lib/drawing/tiledRendererReadback.ts`
+**File(s):** `src/lib/drawing/magicBrush.ts` (`typeof DOMMatrix !== 'undefined'`, in the Magic sheet
+pattern transform); `src/lib/drawing/tiledRendererReadback.ts`
 (`typeof createImageBitmap !== 'function'`, in `captureTiledCanvasReadback`);
-`web/src/lib/drawing/pngEncoder.ts` (the `typeof createImageBitmap === 'function'` clause of
+`src/lib/drawing/pngEncoder.ts` (the `typeof createImageBitmap === 'function'` clause of
 `pngWorkerSupported`)
 
 #### Problem
@@ -281,14 +281,14 @@ instead.
 
 #### Verification
 
-`git grep -n "stubGlobal('createImageBitmap'\|stubGlobal('DOMMatrix'" web/src` finds no test that
+`git grep -n "stubGlobal('createImageBitmap'\|stubGlobal('DOMMatrix'" src` finds no test that
 removes either global for these modules (the existing `stubGlobal('createImageBitmap', …)` calls
 replace it with a mock, which keeps the guard true). Delete the conditions and run
-`npx vitest run web/src/lib/drawing` plus `npm run check`; both stay green.
+`npx vitest run src/lib/drawing` plus `npm run check`; both stay green.
 
 ### [Docs] Add the Cache Storage guard to the risk register
 
-**File(s):** `web/src/lib/boot/coloringPacks.ts` (`webPackStorageExists`, `typeof caches`);
+**File(s):** `src/lib/boot/coloringPacks.ts` (`webPackStorageExists`, `typeof caches`);
 `docs/COMPATIBILITY.md` (API risk register)
 
 #### Problem

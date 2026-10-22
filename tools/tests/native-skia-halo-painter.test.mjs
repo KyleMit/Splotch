@@ -1,10 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { paintHalos } from '../../experiments/native-architecture/src/drawing/skiaHaloPainter.ts';
-import {
-  HALO_IN_MS,
-  HALO_OUT_MS,
-  haloPose,
-} from '../../experiments/native-architecture/src/drawing/haloModel.ts';
+import { paintHalos } from '../../src/drawing/skiaHaloPainter.ts';
+import { HALO_IN_MS, HALO_OUT_MS, haloPose } from '../../src/drawing/haloModel.ts';
 
 // Awaited so this import settles before the static imports start: a concurrent import can take
 // Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.

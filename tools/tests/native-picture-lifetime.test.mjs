@@ -2,16 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  adoptPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { addStrokes, createHistory, emptyDrawing } from '../../src/drawing/model.ts';
+import { adoptPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
 
 // The ink view releases each picture as soon as the native view holds the next one
 // (skiaViewPicture.ts). That is safe only because the native view orders its picture's replacement
@@ -84,8 +77,7 @@ vi.mock('@shopify/react-native-skia', () => ({
   },
 }));
 
-const { createInkScene } =
-  await import('../../experiments/native-architecture/src/drawing/skiaInkScene.ts');
+const { createInkScene } = await import('../../src/drawing/skiaInkScene.ts');
 
 beforeAll(async () => {
   const CanvasKitInit = runtime.require('canvaskit-wasm');

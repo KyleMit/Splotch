@@ -1,31 +1,28 @@
 import { createElement as h } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
-import { BARE_MENU_GAP_PX } from '../../../web/src/lib/glassPaneGeometry.ts';
+import { scale, themes } from '../../../src/lib/design/tokens.ts';
+import { BARE_MENU_GAP_PX } from '../../../src/lib/glassPaneGeometry.ts';
 import { control, host, markup, mount, view } from './rsd-native-button-host.mjs';
 import {
   BARE_OPTION_OUTLINE_PX,
   BARE_TILE_PADDING_SHARE,
   RsdIconButton,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { BARE_FLYOUT_MENU_GAP_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFlyoutMenu.tsx';
-import { ToolbarSkin } from '../../../experiments/native-architecture/src/rsdDrawing/toolbarSkin.ts';
+} from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { BARE_FLYOUT_MENU_GAP_PX } from '../../../src/rsdDrawing/RsdFlyoutMenu.tsx';
+import { ToolbarSkin } from '../../../src/rsdDrawing/toolbarSkin.ts';
 
-import {
-  BARE_GLASS_THEMES,
-  GLASS_FROST,
-} from '../../../experiments/native-architecture/src/rsdDrawing/bareGlassTheme.ts';
-import { glassPaneLayout } from '../../../experiments/native-architecture/src/rsdDrawing/bareGlassSpace.ts';
+import { BARE_GLASS_THEMES, GLASS_FROST } from '../../../src/rsdDrawing/bareGlassTheme.ts';
+import { glassPaneLayout } from '../../../src/rsdDrawing/bareGlassSpace.ts';
 import {
   COLOR_MENU_GAP_PX,
   COLOR_MENU_LABELS,
   COLOR_MENU_PADDING_PX,
   COLOR_MENU_SWATCH_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/colorMenuLayout.ts';
-import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { RsdOptionOutline } from '../../../experiments/native-architecture/src/rsdDrawing/optionOutline.tsx';
-import { filteredMarkup } from '../../../experiments/native-architecture/src/rsdDrawing/greyed.ts';
+} from '../../../src/rsdDrawing/colorMenuLayout.ts';
+import { NATIVE_ICONS } from '../../../src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../src/rsdDrawing/icons.deferred.generated.ts';
+import { RsdOptionOutline } from '../../../src/rsdDrawing/optionOutline.tsx';
+import { filteredMarkup } from '../../../src/rsdDrawing/greyed.ts';
 
 describe('shipping flat toolbar drift', () => {
   it('holds every flat chrome value to its shipping declaration', () => {

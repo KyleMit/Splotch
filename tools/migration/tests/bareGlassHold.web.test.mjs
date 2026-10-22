@@ -4,13 +4,10 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 // The glass chunk's request never settles: a stalled network before the service worker has it.
-vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/RsdBareGlass.web.tsx',
-  () => new Promise(() => {})
-);
+vi.mock('../../../src/rsdDrawing/RsdBareGlass.web.tsx', () => new Promise(() => {}));
 
 const { BARE_GLASS_HOLD_MS, useBareGlassReady } =
-  await import('../../../experiments/native-architecture/src/rsdDrawing/bareGlass.web.ts');
+  await import('../../../src/rsdDrawing/bareGlass.web.ts');
 
 let root;
 let host;

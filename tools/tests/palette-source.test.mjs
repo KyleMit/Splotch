@@ -3,11 +3,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Single-source guard for the brand palette (web/src/lib/palette.ts): a copy
+// Single-source guard for the brand palette (src/lib/palette.ts): a copy
 // of a palette hex anywhere else silently drifts when the palette changes.
 // Scripts can't import TS, so the extraction is a regex over the file text.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const paletteSource = readFileSync(join(repoRoot, 'web/src/lib/palette.ts'), 'utf8');
+const paletteSource = readFileSync(join(repoRoot, 'src/lib/palette.ts'), 'utf8');
 const paletteHexes = [
   ...new Set([...paletteSource.matchAll(/'#([0-9a-fA-F]{3,8})'/g)].map((m) => m[1].toLowerCase())),
 ];
@@ -21,10 +21,10 @@ const hexRegex = new RegExp(`#(?:${paletteHexes.join('|')})(?:[0-9a-fA-F]{2})?\\
 const ALLOWED = new Map(
   Object.entries({
     // BRAND_HEX seeds the design-token derivations beside the palette.
-    'web/src/lib/design/tokens.ts': 1,
+    'src/lib/design/tokens.ts': 1,
     // Static SVG icon depicting the palette swatches themselves; SVG fills
     // can't reference tokens.
-    'web/src/lib/icons/more-colors.svg': 7,
+    'assets/icons/more-colors.svg': 7,
     // Scrapbook report chrome renders palette swatches; plain node can't
     // import TS.
     'tools/scrapbook/lib/scrapbook-chrome.mjs': 7,
@@ -33,7 +33,7 @@ const ALLOWED = new Map(
   })
 );
 
-const SCAN_ROOTS = ['web/src', 'tools'];
+const SCAN_ROOTS = ['src/lib', 'netlify/server', 'assets/icons', 'tools'];
 const SCAN_EXTENSIONS = /\.(ts|js|mjs|cjs|svelte|css|html|svg|json|md|ya?ml)$/;
 const EXCLUDED_DIRS = /(^|\/)(node_modules|legacy|ideas-exploration)(\/|$)/;
 
@@ -56,7 +56,7 @@ function scannedFiles() {
         SCAN_EXTENSIONS.test(rel) &&
         !EXCLUDED_DIRS.test(rel) &&
         !/\.test\./.test(rel) &&
-        rel !== 'web/src/lib/palette.ts'
+        rel !== 'src/lib/palette.ts'
     );
 }
 
@@ -88,7 +88,7 @@ describe('brand palette single source', () => {
       seen.add(rel);
       if (count > allowed) {
         problems.push(
-          `${rel}: ${count} palette hex(es) (allowed ${allowed}) — import from web/src/lib/palette.ts instead, or document a new entry here.`
+          `${rel}: ${count} palette hex(es) (allowed ${allowed}) — import from src/lib/palette.ts instead, or document a new entry here.`
         );
       } else if (count < allowed) {
         problems.push(

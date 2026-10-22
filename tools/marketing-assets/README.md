@@ -6,16 +6,16 @@ from memory. Installed dependencies and Playwright Chromium are required; an app
 server are unnecessary.
 
 The frame design data—copy, layout geometry, doodle marks, AI showcase, and frame tokens—lives in
-`web/src/lib/storeFrames/`. `lib/store-frame-document.mjs` lays out the store compositions;
-`lib/share-card-document.mjs` lays out the link-preview cards.
+`tools/marketing-assets/lib/storeFrames/`. `lib/store-frame-document.mjs` lays out the store
+compositions; `lib/share-card-document.mjs` lays out the link-preview cards.
 
 ## Entry points
 
-| Entry point                          | Public command                    | Output                                            |
-| ------------------------------------ | --------------------------------- | ------------------------------------------------- |
-| `gen-share-cards.mjs`                | `npm run gen:share-cards`         | `web/static/share/*.png` and hash/provenance JSON |
-| `gen-store-assets.mjs`               | `npm run gen:store-assets`        | Store screenshot frames and feature graphic       |
-| `gen-store-assets.mjs --frames-only` | `npm run gen:store-assets:frames` | The same frame rendering from committed captures  |
+| Entry point                          | Public command                    | Output                                               |
+| ------------------------------------ | --------------------------------- | ---------------------------------------------------- |
+| `gen-share-cards.mjs`                | `npm run gen:share-cards`         | `assets/static/share/*.png` and hash/provenance JSON |
+| `gen-store-assets.mjs`               | `npm run gen:store-assets`        | Store screenshot frames and feature graphic          |
+| `gen-store-assets.mjs --frames-only` | `npm run gen:store-assets:frames` | The same frame rendering from committed captures     |
 
 The promotional-image and README-hero live generators retired with SvelteKit. Their committed art
 remains available, but these commands do not recreate it. The source SVG under `assets/` remains
@@ -64,9 +64,10 @@ refresh. The independent home promotional image remains a committed asset.
 ## Maintenance
 
 Keep composition layout and static-document loading here, frame design data in
-`web/src/lib/storeFrames/`, and offline drawing conversion in `tools/store-drawings/`. Capture
-changes must include reviewed image files whose dimensions match `frameGeometry`; changing frame
-copy or rerunning the renderer cannot repair a missing or stale application capture.
+`tools/marketing-assets/lib/storeFrames/`, and offline drawing conversion in
+`tools/store-drawings/`. Capture changes must include reviewed image files whose dimensions match
+`frameGeometry`; changing frame copy or rerunning the renderer cannot repair a missing or stale
+application capture.
 
 Focused checks cover required captures, output dimensions, and documents' file maps:
 

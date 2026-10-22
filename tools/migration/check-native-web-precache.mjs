@@ -14,10 +14,10 @@ import {
 } from '../lib/pwa-precache-source.mjs';
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
 import { filesRecursively } from '../lib/filesystem.mjs';
-import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { FARM_PAGE_IDS } from '../../src/drawing/bundledBooks.ts';
 import { BUNDLED_FARM_DIR, bundledFarmImageFiles, imageFilePaths } from './gen-bundled-farm.mjs';
-import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../src/rsdDrawing/splotchy.generated.ts';
 import {
   APP_SHELL_FALLBACK_ROUTES,
   APP_SHELL_FILE,
@@ -32,7 +32,7 @@ import {
   webVersionHeadTag,
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
-import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
+import { VERSION_JSON_FILENAME } from '../../src/lib/pwa/versionEndpoint.ts';
 import { startupScriptList } from './prerender-native-web.mjs';
 import { documentPolicyProblems } from './lib/native-web-csp.mjs';
 import { pageOnlyChunks, writtenPageDocuments } from './prerender-native-web-pages.mjs';
@@ -65,7 +65,7 @@ const PATH_DATA = / d="([^"]+)"/;
 // Shorter path data (a lone circle or square) could recur in a startup icon by coincidence.
 const MIN_LAZY_ICON_SAMPLE_CHARS = 40;
 const RELEASE_NOTES_JSON = new URL(
-  '../../experiments/native-architecture/src/information/releaseNotes.generated.json',
+  '../../src/information/releaseNotes.generated.json',
   import.meta.url
 );
 // Text a minifier copies into a string literal unescaped, long enough not to recur by chance.

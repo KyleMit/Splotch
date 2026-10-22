@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "types": ["node", "vite/client"],
+    "paths": {
+      "$lib/*": ["./src/lib/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["src/lib/**"]
+}

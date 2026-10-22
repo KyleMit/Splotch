@@ -2,8 +2,8 @@ import { host, records } from './rsd-native-selection-host.mjs';
 
 import { act } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { CLEAR_SHEET_DURATION_MS } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import { CLEAR_SHEET_DURATION_MS } from '../../../src/clear/dragToClear.ts';
+import { Animated } from '../../../src/platform/animated.ts';
 import {
   commitClear,
   inkedDrawing,

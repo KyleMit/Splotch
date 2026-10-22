@@ -4,7 +4,7 @@ import stylelint from 'stylelint';
 import { describe, expect, it } from 'vitest';
 
 // stylelint.config.js is a lint fence with the failure mode of every lint fence: a rule deleted
-// from it, an ignoreFiles entry widened over web/src, or a lost postcss-html override reports
+// from it, an ignoreFiles entry widened over src, or a lost postcss-html override reports
 // nothing, and a lint run that reports nothing looks the same as a clean repo. So each case seeds
 // one defect and lints it through the config stylelint discovers for the path, the same lookup
 // `npm run lint:css` makes, rather than through a config built for the test.
@@ -13,7 +13,7 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 // Neither path exists on disk. Stylelint reads a path only to find its config, apply ignoreFiles,
 // and pick the syntax: a plain stylesheet, and a component whose <style> block postcss-html
 // extracts.
-const STYLESHEET = 'web/src/lib/seeded-defect.css';
+const STYLESHEET = 'src/lib/seeded-defect.css';
 
 const rulesReportedFor = async (path, css) => {
   const code = css;

@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Splotch",
+    "slug": "splotch-native-architecture",
+    "platforms": ["android", "ios", "web"],
+    "experiments": {
+      "chunking": {
+        "mode": "granular"
+      }
+    },
+    "updates": {
+      "enabled": false
+    }
+  }
+}

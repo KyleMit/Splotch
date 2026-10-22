@@ -1,8 +1,8 @@
 # Device rotation and landscape
 
 Read this before changing the Orientation picker or device rotation. ADR-0172 records the gating
-rationale; ADR-0182 replaces its Svelte/Capacitor implementation with the RN app in
-`experiments/native-architecture/`. Browser API risks live in `docs/COMPATIBILITY.md`.
+rationale; ADR-0182 replaces its Svelte/Capacitor implementation with the RN app in ``. Browser API
+risks live in `docs/COMPATIBILITY.md`.
 
 ## The two questions
 
@@ -14,9 +14,8 @@ rationale; ADR-0182 replaces its Svelte/Capacitor implementation with the RN app
 ## Current implementation
 
 The choice is `portrait`, `landscape` or `auto`, persisted as `orientation` by
-`experiments/native-architecture/src/settings/orientation.ts`. The native owner is
-`experiments/native-architecture/src/platform/deviceOrientation.ts`; Metro resolves its `.web.ts`
-counterpart for browsers.
+`src/settings/orientation.ts`. The native owner is `src/platform/deviceOrientation.ts`; Metro
+resolves its `.web.ts` counterpart for browsers.
 
 * **Native Portrait / Landscape** request Expo's `PORTRAIT_UP` / `LANDSCAPE_RIGHT` locks.
 * **Native Auto** requests Android's `SCREEN_ORIENTATION_SENSOR` through `lockPlatformAsync`, so
@@ -105,8 +104,8 @@ the picker.
 | iPadOS 26                 | windowed apps ignore in-app locks (Apple TN3192)                   |
 | Android 16, target SDK 36 | `setRequestedOrientation()` ignored at smallest width ≥ 600dp      |
 
-Splotch targets SDK 36 (`experiments/native-architecture/android/gradle.properties`), so the last
-row applies today on tablets and unfolded foldables.
+Splotch targets SDK 36 (`android/gradle.properties`), so the last row applies today on tablets and
+unfolded foldables.
 
 ## Detection limits retained from the investigation
 

@@ -18,7 +18,7 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const scriptPath = join(repoRoot, 'tools', 'bootstrap-worktree.mjs');
-const SESSION_CWD = '/worktree/web/src';
+const SESSION_CWD = '/worktree/src';
 const WORKTREE_ROOT = '/worktree';
 const INITIAL_HEAD = '1111111111111111111111111111111111111111';
 const FETCHED_HEAD = '2222222222222222222222222222222222222222';

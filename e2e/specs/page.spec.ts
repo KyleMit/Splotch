@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { NARROW_PHONE_MIN_WIDTH_PX } from '../../web/src/lib/breakpoints.ts';
+import { NARROW_PHONE_MIN_WIDTH_PX } from '../../src/lib/breakpoints.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
 import { openSettings } from '../support/group-c.ts';

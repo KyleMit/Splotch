@@ -3,15 +3,15 @@ import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
 const repoRoot = join(import.meta.dirname, '../..');
-const filename = join(repoRoot, 'experiments/native-architecture/src/LintControl.tsx');
+const filename = join(repoRoot, 'src/LintControl.tsx');
 const eslint = new ESLint({
   cwd: repoRoot,
   // The probe paths do not exist, so the type-aware floating-promise block (which needs each file
   // in the candidate's TS program) is switched off here, as the web lint tests switch off theirs.
   overrideConfig: [
     {
-      files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.{ts,tsx}'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],

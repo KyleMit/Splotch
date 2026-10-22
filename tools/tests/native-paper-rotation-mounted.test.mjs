@@ -13,18 +13,12 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import {
-  drawingPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  INITIAL_PAPER_PRESENTATION,
-  presentPaper,
-} from '../../experiments/native-architecture/src/drawing/paperPresentation.ts';
-import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
-import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
-import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
+import { fittedPaper } from '../../src/drawing/paperGeometry.ts';
+import { drawingPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
+import { INITIAL_PAPER_PRESENTATION, presentPaper } from '../../src/drawing/paperPresentation.ts';
+import { NativePaper } from '../../src/rsdDrawing/NativePaper.tsx';
+import { useDrawingScreen } from '../../src/useDrawingScreen.ts';
+import { useDrawingSound } from '../../src/useDrawingSound.ts';
 import { View } from 'react-native';
 
 // The paper area beside the swatch bar on a 390x844 phone, upright and then turned to landscape.
@@ -44,7 +38,7 @@ const sdk = vi.hoisted(() => ({
   sized: [],
 }));
 let owner, root, host;
-vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (original) => {
+vi.mock('../../src/useDrawingScreen.ts', async (original) => {
   const actual = await original();
   return {
     ...actual,
@@ -54,10 +48,10 @@ vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+vi.mock('../../src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: () => new Promise(() => {}),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+vi.mock('../../src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: async () => '{"version":1,"soundEnabled":false}',
     write: async () => {},
@@ -67,7 +61,7 @@ vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')
 );
-vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+vi.mock('../../src/platform/ai.ts', async () =>
   (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );
 vi.mock('react-native', () => {

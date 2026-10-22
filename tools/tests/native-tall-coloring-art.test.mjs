@@ -13,23 +13,17 @@ import {
   paperSize,
   presentedPaperSize,
   UNADOPTED_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { bookFillPlacement } from '../../experiments/native-architecture/src/drawing/bookFill.ts';
-import {
-  bundledFill,
-  bundledOutline,
-} from '../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
-import { BUNDLED_FARM_IMAGES } from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
-import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import { OfflineArtworkScope } from '../../experiments/native-architecture/src/offlineLibrary/artworkContext.ts';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+} from '../../src/drawing/paperSpace.ts';
+import { bookFillPlacement } from '../../src/drawing/bookFill.ts';
+import { bundledFill, bundledOutline } from '../../src/drawing/bundledBookAssets.ts';
+import { BUNDLED_FARM_IMAGES } from '../../src/drawing/bundledFarm/images.ts';
+import { FARM_PAGE_IDS } from '../../src/drawing/bundledBooks.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { InkPaperScope } from '../../src/drawing/InkPaper.tsx';
+import { OfflineArtworkScope } from '../../src/offlineLibrary/artworkContext.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { offlinePageId } from '../../src/offlineLibrary/identity.ts';
+import { emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock(
@@ -40,18 +34,12 @@ vi.mock('react-native-svg', async () => ({
   ...(await import('react-native-svg/lib/module/elements.web.js')),
   SvgXml: (await import('react-native-svg/lib/module/xml.js')).SvgXml,
 }));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg, Rect } = await import('react-native-svg');
-const { PageOutline } =
-  await import('../../experiments/native-architecture/src/drawing/PageOutline.tsx');
-const { InkScene } = await import('../../experiments/native-architecture/src/drawing/InkScene.tsx');
-const { BundledMagicFill } =
-  await import('../../experiments/native-architecture/src/drawing/BundledBookArtwork.tsx');
-const { OfflineMagicFill } =
-  await import('../../experiments/native-architecture/src/offlineLibrary/artwork.tsx');
+const { PageOutline } = await import('../../src/drawing/PageOutline.tsx');
+const { InkScene } = await import('../../src/drawing/InkScene.tsx');
+const { BundledMagicFill } = await import('../../src/drawing/BundledBookArtwork.tsx');
+const { OfflineMagicFill } = await import('../../src/offlineLibrary/artwork.tsx');
 const { loadNativePageOutlines } = await import('./native-bundled-outlines-fixture.mjs');
 // The native line art loads on first use; the static renders below draw it once loaded.
 const BUNDLED_BOOK_OUTLINES = await loadNativePageOutlines(FARM_PAGE_IDS);
@@ -80,7 +68,7 @@ const SMALL_PRESENTATIONS = [
 
 const pack = catalogPack('dinosaur', 'full');
 const trex = offlinePageId(pack, 'trex');
-const staticRoot = pathToFileURL(`${resolve(process.cwd(), 'web/static/coloring/dinosaur')}/`);
+const staticRoot = pathToFileURL(`${resolve(process.cwd(), 'assets/static/coloring/dinosaur')}/`);
 const sources = new Map();
 async function source(name) {
   if (!sources.has(name)) sources.set(name, await readFile(new URL(name, staticRoot)));
@@ -221,7 +209,7 @@ describe('coloring art follows the paper orientation (ADR-0050 native amendment)
       )
     );
     const canonical = await readFile(
-      resolve(process.cwd(), 'web/static/coloring/farm/dog-tall.dark.overlay.svg')
+      resolve(process.cwd(), 'assets/static/coloring/farm/dog-tall.dark.overlay.svg')
     );
     const expected = await pixels(canonical);
     expect(actual.info).toEqual(expected.info);

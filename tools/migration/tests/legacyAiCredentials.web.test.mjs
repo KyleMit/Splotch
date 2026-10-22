@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, expect, it, vi } from 'vitest';
-import { removeLegacyAiCredentials } from '../../../experiments/native-architecture/src/platform/legacyAiCredentials.web.ts';
+import { removeLegacyAiCredentials } from '../../../src/platform/legacyAiCredentials.web.ts';
 
-// The keys older shipping web builds wrote (web/src/lib/storageKeys.ts), spelled out so a rename
+// The keys older shipping web builds wrote (src/lib/storageKeys.ts), spelled out so a rename
 // on either side fails here.
 const LEGACY_API_KEY = 'splotch-ai-user-api-key';
 const LEGACY_ACCESS_CODE = 'splotch-ai-access-token';

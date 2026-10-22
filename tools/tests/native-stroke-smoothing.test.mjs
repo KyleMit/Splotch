@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import goldenPaths from './native-stroke-paths.fixture.json';
 
-import { strokePath } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { crayonPasses } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { paintStroke } from '../../experiments/native-architecture/src/drawing/skiaInkPainter.ts';
-import { createCrayonTileResources } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
-import { LEGACY_PAPER } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { strokePath } from '../../src/drawing/model.ts';
+import { crayonPasses } from '../../src/drawing/crayon.ts';
+import { paintStroke } from '../../src/drawing/skiaInkPainter.ts';
+import { createCrayonTileResources } from '../../src/drawing/crayonTiles.ts';
+import { LEGACY_PAPER } from '../../src/drawing/paperSpace.ts';
 
 // SVG and Skia paths share the canonical quadratic grid and meet at each crayon pass boundary.
 

@@ -4,17 +4,17 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { createInstallPrompt } from '../../experiments/native-architecture/src/install/installPolicy.ts';
+import { createInstallPrompt } from '../../src/install/installPolicy.ts';
 import { ROOT } from '../lib/proc.mjs';
 
 const loaded = vi.hoisted(() => ({ count: 0, props: [] }));
 const install = vi.hoisted(() => ({ owner: null }));
-vi.mock('../../experiments/native-architecture/src/platform/installPrompt.ts', () => ({
+vi.mock('../../src/platform/installPrompt.ts', () => ({
   get installPrompt() {
     return install.owner;
   },
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/RsdInstallBanner.tsx', () => {
+vi.mock('../../src/rsdDrawing/RsdInstallBanner.tsx', () => {
   loaded.count += 1;
   return {
     RsdInstallBanner: (props) => {
@@ -24,11 +24,9 @@ vi.mock('../../experiments/native-architecture/src/rsdDrawing/RsdInstallBanner.t
   };
 });
 
-const { RsdInstallBanner } =
-  await import('../../experiments/native-architecture/src/rsdDrawing/installBannerSurface.web.ts');
+const { RsdInstallBanner } = await import('../../src/rsdDrawing/installBannerSurface.web.ts');
 
-const read = (path) =>
-  readFileSync(join(ROOT, 'experiments/native-architecture/src', path), 'utf8');
+const read = (path) => readFileSync(join(ROOT, 'src', path), 'utf8');
 const DESKTOP_CHROME =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 const PROPS = { strokes: 0, hidden: false };

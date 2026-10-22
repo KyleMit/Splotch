@@ -4,21 +4,15 @@ import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixt
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
-import { useDrawingUndoShortcut } from '../../experiments/native-architecture/src/product/useDrawingUndoShortcut.ts';
-import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
-import {
-  drawingPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  DrawingSessionProvider,
-  useDrawingHistory,
-} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { useDrawingScreen } from '../../src/useDrawingScreen.ts';
+import { useDrawingUndoShortcut } from '../../src/product/useDrawingUndoShortcut.ts';
+import { useDrawingSound } from '../../src/useDrawingSound.ts';
+import { drawingPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
+import { createHistory } from '../../src/drawing/model.ts';
+import { DrawingSessionProvider, useDrawingHistory } from '../../src/product/DrawingSession.tsx';
 
-vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+vi.mock('../../src/platform/networkReturn.ts', () => ({
   subscribeNetworkReturn: () => () => {},
 }));
 
@@ -43,19 +37,16 @@ const sdk = vi.hoisted(() => ({
   pageArt: null,
   extent: null,
 }));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/pageArtResource.ts',
-  async (original) => {
-    const { pageArt } = await original();
-    return {
-      pageArt: () => ({
-        current: () => (sdk.pageArt ? sdk.pageArt.current() : pageArt().current()),
-        load: () => (sdk.pageArt ? sdk.pageArt.load() : pageArt().load()),
-      }),
-    };
-  }
-);
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+vi.mock('../../src/drawing/pageArtResource.ts', async (original) => {
+  const { pageArt } = await original();
+  return {
+    pageArt: () => ({
+      current: () => (sdk.pageArt ? sdk.pageArt.current() : pageArt().current()),
+      load: () => (sdk.pageArt ? sdk.pageArt.load() : pageArt().load()),
+    }),
+  };
+});
+vi.mock('../../src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(async () => ({
     start: sdk.soundStart,
     stop: sdk.soundStop,
@@ -63,10 +54,10 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', ()
     dispose: sdk.soundDispose,
   })),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
+vi.mock('../../src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+vi.mock('../../src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":true}'),
     write: vi.fn(),
@@ -114,7 +105,7 @@ vi.mock('react-native', () => {
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+vi.mock('../../src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const { View } = await import('react-native');
@@ -123,7 +114,7 @@ vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async 
 
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
-vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
+vi.mock('../../src/drawing/pictureCompose.ts', () => ({
   composePicture: async (layers) => layers.at(-1),
 }));
 vi.mock('react-native-svg', () => {
@@ -160,7 +151,7 @@ vi.mock('react-native-svg', () => {
 });
 
 // The live photo-library save and retry behavior is covered by rsd-native-save-to-photos.test.mjs.
-vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
+vi.mock('../../src/platform/photoLibrary.ts', () => ({
   photoLibrary: { save: sdk.save },
 }));
 

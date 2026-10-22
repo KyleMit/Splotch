@@ -13,17 +13,11 @@ import {
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.ts';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import {
-  createLibraryStore,
-  packDirectory,
-} from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
-import {
-  MAX_PACK_FILE_BYTES,
-  PACK_ORIGIN,
-} from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
-import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
+import { createLibraryPlatform } from '../../src/platform/offlineLibrary.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { createLibraryStore, packDirectory } from '../../src/offlineLibrary/store.ts';
+import { MAX_PACK_FILE_BYTES, PACK_ORIGIN } from '../../src/offlineLibrary/manifest.ts';
+import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../src/offlineLibrary/contract.ts';
 
 const fixture = vi.hoisted(() => ({
   root: '',
@@ -226,7 +220,7 @@ describe('actual native library adapter with whole-book transfer ownership', () 
     const missing = pack.files.at(-1);
     const assetPath = (file) => `${directory}/files/${file.path.split('/').at(-1)}`;
     const assetBytes = (file) =>
-      readFile(new URL(`../../web/static${file.downloadPath}`, import.meta.url));
+      readFile(new URL(`../../assets/static${file.downloadPath}`, import.meta.url));
     for (const file of pack.files.slice(0, -1))
       await platform.write(assetPath(file), await assetBytes(file));
     await platform.write(
@@ -293,7 +287,7 @@ describe('actual native library adapter with whole-book transfer ownership', () 
   });
 });
 
-const candidate = new URL('../../experiments/native-architecture/', import.meta.url);
+const candidate = new URL('../../', import.meta.url);
 describe('native bridge registration and private storage contract', () => {
   it('registers both platform modules and pins their bounded hash limit to the manifest owner', async () => {
     const android = await readFile(

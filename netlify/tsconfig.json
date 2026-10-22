@@ -4,10 +4,10 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "target": "ES2022",
+    "target": "ES2024",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2024", "DOM"],
     "types": ["node", "vite/client"]
   },
   "include": ["functions/**/*.ts"]

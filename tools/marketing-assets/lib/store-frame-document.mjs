@@ -1,12 +1,12 @@
 // The store-screenshot compositions as self-contained documents: one marketing page framed for one
 // store slot at its exact pixel size, or the Play feature graphic. The geometry, copy, marks and
-// frame tokens are web/src/lib/storeFrames/; this module only lays them out, with the same
+// frame tokens are tools/marketing-assets/lib/storeFrames/; this module only lays them out, with the same
 // per-value Math.round(v * k) scaling the committed sets were rendered under (ADR-0122).
 // gen-store-assets.mjs screenshots each document.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
-import { paletteHex } from '../../../web/src/lib/palette.ts';
+import { scale } from '../../../src/lib/design/tokens.ts';
+import { paletteHex } from '../../../src/lib/palette.ts';
 import {
   CHIP_SPEC,
   DARK_BG,
@@ -18,16 +18,12 @@ import {
   INK_ON_DARK,
   LIGHT_BG,
   TYPE_SPEC,
-} from '../../../web/src/lib/storeFrames/frameStyle.ts';
-import { L_BASE_H, P_BASE_W, frameGeometry } from '../../../web/src/lib/storeFrames/geometry.ts';
-import { MARKS, MARK_BASE_W, marksFor } from '../../../web/src/lib/storeFrames/marks.ts';
-import { STORE_PAGES, pageHasCapture } from '../../../web/src/lib/storeFrames/pages.ts';
-import {
-  P_SHOWCASE_DESIGN_H,
-  SHOWCASE_CARD_SPEC,
-  SHOWCASE_SPEC,
-} from '../../../web/src/lib/storeFrames/showcase.ts';
-import { FEATURE_GRAPHIC, STORE_TARGETS } from '../../../web/src/lib/storeFrames/targets.ts';
+} from './storeFrames/frameStyle.ts';
+import { L_BASE_H, P_BASE_W, frameGeometry } from './storeFrames/geometry.ts';
+import { MARKS, MARK_BASE_W, marksFor } from './storeFrames/marks.ts';
+import { STORE_PAGES, pageHasCapture } from './storeFrames/pages.ts';
+import { P_SHOWCASE_DESIGN_H, SHOWCASE_CARD_SPEC, SHOWCASE_SPEC } from './storeFrames/showcase.ts';
+import { FEATURE_GRAPHIC, STORE_TARGETS } from './storeFrames/targets.ts';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   DOCUMENT_RESET_CSS,
@@ -56,7 +52,7 @@ const MODEL_EVAL_ASSETS = join(ROOT, 'scrapbook', 'model-eval', 'prompt-adherenc
 export function storeFrameFiles() {
   const files = {
     ...quicksandFiles(),
-    [LOGO_PATH]: join(ROOT, 'web', 'static', 'web-app-manifest-192x192.png'),
+    [LOGO_PATH]: join(ROOT, 'assets', 'static', 'web-app-manifest-192x192.png'),
     [AI_BEFORE_PATH]: join(MODEL_EVAL_ASSETS, 'in__line__house-sun__wide.jpg'),
     [AI_AFTER_PATH]: join(MODEL_EVAL_ASSETS, 'line__house-sun__wide__overlay-rich__1.jpg'),
     [PLAY_ICON_PATH]: join(ROOT, 'store-assets', 'icon-512.png'),
@@ -67,7 +63,7 @@ export function storeFrameFiles() {
   return files;
 }
 
-const WAND_SVG = readFileSync(join(ROOT, 'web', 'src', 'lib', 'icons', 'wand-stars.svg'), 'utf8');
+const WAND_SVG = readFileSync(join(ROOT, 'assets', 'icons', 'wand-stars.svg'), 'utf8');
 
 const ROOT_TOKENS = [
   `--font-family:${scale.fontFamily}`,

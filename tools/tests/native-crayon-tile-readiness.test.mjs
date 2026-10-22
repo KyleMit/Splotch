@@ -2,7 +2,7 @@
 import { act, createElement, Profiler } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useCrayonTileReadiness } from '../../experiments/native-architecture/src/drawing/useCrayonTileReadiness.tsx';
+import { useCrayonTileReadiness } from '../../src/drawing/useCrayonTileReadiness.tsx';
 const state = vi.hoisted(() => ({
   platform: { OS: 'ios' },
   nativeImages: [],
@@ -12,8 +12,7 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('react-native', async () => {
   const { nativeRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
-  const { CRAYON_TILE_PX } =
-    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  const { CRAYON_TILE_PX } = await import('../../src/drawing/crayon.ts');
   return nativeRasterSdk(state, CRAYON_TILE_PX);
 });
 vi.mock('react-native-svg', async () => {

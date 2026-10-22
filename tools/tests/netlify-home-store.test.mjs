@@ -418,7 +418,7 @@ describe('Exact Netlify image home store', () => {
       const home =
         project === 'root'
           ? join(value.context.root, 'node_modules')
-          : join(value.context.root, 'experiments/native-architecture/node_modules');
+          : join(value.context.root, 'node_modules');
       mkdirSync(home, { recursive: true });
       replaceOwned(
         value.helper,

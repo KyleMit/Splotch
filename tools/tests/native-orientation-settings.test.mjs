@@ -1,11 +1,8 @@
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { ORIENTATION_CHOICES } from '../../experiments/native-architecture/src/settings/orientation.ts';
-import { defaultOrientation as webDefaultOrientation } from '../../experiments/native-architecture/src/platform/orientationDefault.web.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
+import { ORIENTATION_CHOICES } from '../../src/settings/orientation.ts';
+import { defaultOrientation as webDefaultOrientation } from '../../src/platform/orientationDefault.web.ts';
 join(import.meta.dirname, '../..');
 const VERSION_7 = {
   version: 7,

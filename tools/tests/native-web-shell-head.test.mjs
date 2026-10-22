@@ -11,15 +11,15 @@ import {
   bootThemeHeadTags,
   withShippingTitle,
 } from '../migration/build-native-web.mjs';
-import { bootAppearance } from '../../experiments/native-architecture/src/platform/bootAppearance.web.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
-import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
-import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { HOME_CARD } from '../../web/src/lib/components/page/socialCard.ts';
-import { installAppSurface } from '../../experiments/native-architecture/src/platform/appSurface.web.ts';
-import { APP_SURFACE_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
-import { installAppSurface as installNativeAppSurface } from '../../experiments/native-architecture/src/platform/appSurface.ts';
-import { AppSurfaceRoot } from '../../experiments/native-architecture/src/platform/AppSurfaceRoot.tsx';
+import { bootAppearance } from '../../src/platform/bootAppearance.web.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
+import { SOUND_SETTINGS_KEY } from '../../src/platform/soundSettings.web.ts';
+import { DRAWING_THEMES } from '../../src/drawing/theme.ts';
+import { HOME_CARD } from '../marketing-assets/lib/page/socialCard.ts';
+import { installAppSurface } from '../../src/platform/appSurface.web.ts';
+import { APP_SURFACE_ATTRIBUTE } from '../../src/platform/appSurfacePolicy.ts';
+import { installAppSurface as installNativeAppSurface } from '../../src/platform/appSurface.ts';
+import { AppSurfaceRoot } from '../../src/platform/AppSurfaceRoot.tsx';
 
 vi.mock('react-native', () => ({
   StyleSheet: { create: (styles) => styles },
@@ -235,10 +235,7 @@ describe("the web shell's title", () => {
 });
 
 it('scopes touch, selection and callout locks to the app surface', () => {
-  const stylesheet = readFileSync(
-    join(import.meta.dirname, '../../experiments/native-architecture/src/strict.css'),
-    'utf8'
-  );
+  const stylesheet = readFileSync(join(import.meta.dirname, '../../src/strict.css'), 'utf8');
   const selector = `:root[${APP_SURFACE_ATTRIBUTE}] body`;
   const body = stylesheet
     .slice(stylesheet.indexOf(selector) + selector.length)

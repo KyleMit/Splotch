@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest';
 import { owner, touch, event, send, settle } from './native-contacts-mounted-harness.mjs';
 
 const renderer = vi.hoisted(() => ({ fault: null }));
-vi.mock('../../experiments/native-architecture/src/drawing/InkLayer.web.tsx', () => ({
+vi.mock('../../src/drawing/InkLayer.web.tsx', () => ({
   InkLayer: forwardRef(({ onError, onBusy }, ref) => {
     renderer.fault = onError;
     useImperativeHandle(ref, () => ({ canStart: () => true }));

@@ -1,14 +1,11 @@
-import {
-  paperProjection,
-  LEGACY_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, LEGACY_PAPER } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { act, createElement, useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FixedInkCapture } from '../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx';
-import { BundledFillLoadScope } from '../../experiments/native-architecture/src/drawing/BundledBookArtwork.tsx';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { FixedInkCapture } from '../../src/drawing/FixedInkCapture.tsx';
+import { BundledFillLoadScope } from '../../src/drawing/BundledBookArtwork.tsx';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 
 const capture = vi.hoisted(() => ({
   pageId: 'farm/cat',
@@ -34,20 +31,20 @@ vi.mock('react-native-svg', () => ({
   default: ({ children }) => createElement('div', null, children),
   Image: () => null,
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/InkAppearance.tsx', () => ({
+vi.mock('../../src/drawing/InkAppearance.tsx', () => ({
   useInkAppearance: () => capture,
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/BundledBookArtwork.tsx', async () => {
+vi.mock('../../src/drawing/BundledBookArtwork.tsx', async () => {
   const { createContext } = await import('react');
   return { BundledFillLoadScope: createContext(null) };
 });
-vi.mock('../../experiments/native-architecture/src/drawing/CaptureSvg.tsx', () => ({
+vi.mock('../../src/drawing/CaptureSvg.tsx', () => ({
   CaptureSvg: ({ children }) => createElement('div', null, children),
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/DecodedPng.tsx', () => ({
+vi.mock('../../src/drawing/DecodedPng.tsx', () => ({
   DecodedPng: () => null,
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
+vi.mock('../../src/drawing/InkScene.tsx', () => ({
   InkScene: () => {
     capture.svg = useContext(BundledFillLoadScope);
     return null;

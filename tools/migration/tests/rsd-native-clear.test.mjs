@@ -1,7 +1,7 @@
 import { caller, records, root, host } from './rsd-native-selection-host.mjs';
 
 import { act, createElement, useSyncExternalStore } from 'react';
-import { clearLadderFrequency } from '../../../web/src/lib/audio/clearSoundNotes.ts';
+import { clearLadderFrequency } from '../../../src/lib/audio/clearSoundNotes.ts';
 import { afterEach, expect, it, vi } from 'vitest';
 
 // The web export loads the clear underlay from its own chunk (clearSurfaces.web.ts). This gate
@@ -21,32 +21,29 @@ const underlayChunk = vi.hoisted(() => {
   };
   return chunk;
 });
-vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/clearSurfaces.ts',
-  async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-      ...actual,
-      RsdClearUnderlay(props) {
-        const loaded = useSyncExternalStore(underlayChunk.subscribe, () => underlayChunk.loaded);
-        return loaded ? createElement(actual.RsdClearUnderlay, props) : null;
-      },
-    };
-  }
-);
-import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { drawingPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+vi.mock('../../../src/rsdDrawing/clearSurfaces.ts', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    RsdClearUnderlay(props) {
+      const loaded = useSyncExternalStore(underlayChunk.subscribe, () => underlayChunk.loaded);
+      return loaded ? createElement(actual.RsdClearUnderlay, props) : null;
+    },
+  };
+});
+import { fittedPaper } from '../../../src/drawing/paperGeometry.ts';
+import { drawingPaper } from '../../../src/drawing/paperSpace.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
 import {
   clearSheetOrigin,
   CLEAR_SHEET_DURATION_MS,
   COACHMARK_AUTO_DISMISS_MS,
   HOLD_DURATION_MS,
   MOVEMENT_THRESHOLD_PX,
-} from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
-import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+} from '../../../src/clear/dragToClear.ts';
+import { Animated } from '../../../src/platform/animated.ts';
+import { NATIVE_ICONS } from '../../../src/rsdDrawing/icons.generated.ts';
 import {
   HOME,
   CLEAR_FINGER,

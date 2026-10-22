@@ -8,8 +8,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { themes } from '../../../web/src/lib/design/tokens.ts';
-import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
+import { themes } from '../../../src/lib/design/tokens.ts';
+import { PALETTE_COLORS } from '../../../src/lib/palette.ts';
 import { parseNumberFlag, ROOT } from '../../lib/proc.mjs';
 
 export { ROOT };
@@ -186,12 +186,12 @@ export function countFromEnv(name, { fallback, min }, env = process.env) {
   }
 }
 
-// These tools read process.env and never load web/.env, and Node refuses --env-file inside
+// These tools read process.env and never load .env, and Node refuses --env-file inside
 // NODE_OPTIONS, so `npm run` cannot pass the file either. The hint names the two routes
-// web/.env.example documents.
+// .env.example documents.
 const PROVIDER_KEY_ENV = { gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY' };
 const PROVIDER_KEY_HINT =
-  'export it, or invoke this entry point with node --env-file=web/.env from the repo root';
+  'export it, or invoke this entry point with node --env-file=.env from the repo root';
 
 // The `apiKeys` callVariant reads: one key for each provider the variants call, throwing on the
 // first one missing. `env` is a test seam; the entries read process.env.
@@ -254,8 +254,8 @@ export const PAPER = {
 };
 
 // --- Production request config -------------------------------------------------
-// The base prompt lives in web/src/lib/ai/prompt.ts and the system instruction in
-// the provider adapter under web/src/lib/server/ai/. We copy them here and assert
+// The base prompt lives in src/lib/ai/prompt.ts and the system instruction in
+// the provider adapter under netlify/server/ai/. We copy them here and assert
 // at runtime that they still match the app source, so this harness measures what
 // production actually sends and can't silently drift from it.
 
@@ -282,30 +282,30 @@ When you must refuse, respond with a single short sentence declining, e.g. "I ca
 const PRODUCTION_SOURCES = [
   {
     name: 'ORCHESTRATOR_MODEL',
-    candidates: ['web/src/lib/server/ai/openai.ts'],
+    candidates: ['netlify/server/ai/openai.ts'],
     value: `const ORCHESTRATOR_MODEL = '${ORCHESTRATOR_MODEL}';`,
   },
   {
     name: 'ORCHESTRATOR_REASONING_EFFORT',
-    candidates: ['web/src/lib/server/ai/openai.ts'],
+    candidates: ['netlify/server/ai/openai.ts'],
     value: `const ORCHESTRATOR_REASONING_EFFORT = '${ORCHESTRATOR_REASONING_EFFORT}';`,
   },
   {
     name: 'SAFETY_SYSTEM_INSTRUCTION',
-    candidates: ['web/src/lib/server/ai/openai.ts'],
+    candidates: ['netlify/server/ai/openai.ts'],
     value: SAFETY_SYSTEM_INSTRUCTION,
   },
   {
     name: 'IMAGE_MODEL',
-    candidates: ['web/src/lib/server/ai/openai.ts'],
+    candidates: ['netlify/server/ai/openai.ts'],
     value: `const IMAGE_MODEL = '${IMAGE_MODEL}';`,
   },
   {
     name: 'IMAGE_QUALITY',
-    candidates: ['web/src/lib/server/ai/openai.ts'],
+    candidates: ['netlify/server/ai/openai.ts'],
     value: `const IMAGE_QUALITY = '${IMAGE_QUALITY}';`,
   },
-  { name: 'DEFAULT_PROMPT', candidates: ['web/src/lib/ai/prompt.ts'], value: DEFAULT_PROMPT },
+  { name: 'DEFAULT_PROMPT', candidates: ['src/lib/ai/prompt.ts'], value: DEFAULT_PROMPT },
 ];
 
 const normalizeEol = (s) => s.replace(/\r\n/g, '\n');

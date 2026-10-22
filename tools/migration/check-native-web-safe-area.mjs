@@ -1,5 +1,5 @@
 // The safe-area matrix on the React Native web export: the drawing screen at every device profile
-// and orientation in web/src/lib/safeAreaMatrix/ (docs/SAFE-AREA.md), under that device's real
+// and orientation in tools/migration/lib/safeAreaMatrix/ (docs/SAFE-AREA.md), under that device's real
 // insets through CDP's Emulation.setSafeAreaInsetsOverride and its rotation through the screen
 // orientation the OS would report. Chromium has the only such seam, and DevTools' device presets
 // report every inset as zero, so this is the one place the app is laid out as anything but a
@@ -18,19 +18,16 @@ import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { isPhoneLandscape } from '../../web/src/lib/breakpoints.ts';
-import {
-  sizeClassOf,
-  supportedOrientations,
-} from '../../web/src/lib/safeAreaMatrix/deviceProfile.ts';
-import { DEVICE_PROFILES } from '../../web/src/lib/safeAreaMatrix/devices.ts';
-import { appliedInsets, diagnose } from '../../web/src/lib/safeAreaMatrix/diagnostics.ts';
+import { isPhoneLandscape } from '../../src/lib/breakpoints.ts';
+import { sizeClassOf, supportedOrientations } from './lib/safeAreaMatrix/deviceProfile.ts';
+import { DEVICE_PROFILES } from './lib/safeAreaMatrix/devices.ts';
+import { appliedInsets, diagnose } from './lib/safeAreaMatrix/diagnostics.ts';
 import {
   ORIENTATION_ANGLES,
   ORIENTATION_LABELS,
   isLandscape,
-} from '../../web/src/lib/safeAreaMatrix/orientations.ts';
-import { CONTROLS_LIVE_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+} from './lib/safeAreaMatrix/orientations.ts';
+import { CONTROLS_LIVE_ATTRIBUTE } from '../../src/platform/firstFrameContract.ts';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 import { NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
@@ -348,7 +345,7 @@ export function galleryIndex(scenarios) {
 <html lang="en">
 <head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Safe-area matrix · React Native web</title>
 <style>body{margin:24px;font:14px/1.5 system-ui,sans-serif;max-width:1400px}section{border-top:1px solid #ccc;padding:16px 0}h2{margin:0;font-size:18px}small{font-weight:normal;color:#666}.tiles{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end}figure{margin:0}.tile{position:relative;outline:1px solid #999}.tile img{width:100%;height:100%;display:block}.safe{position:absolute;outline:2px dashed rgb(0 160 220 / 80%);pointer-events:none}figcaption{font-size:12px;color:#444;max-width:${GALLERY_TILE_PX}px}</style></head>
-<body><h1>Safe-area matrix</h1><p>The React Native drawing screen at every device profile and orientation in <code>web/src/lib/safeAreaMatrix/</code>, under each device's insets. The dashed outline is the claimable region; the band names the edges the Notch Band should paint.</p>${sections.join('')}</body>
+<body><h1>Safe-area matrix</h1><p>The React Native drawing screen at every device profile and orientation in <code>tools/migration/lib/safeAreaMatrix/</code>, under each device's insets. The dashed outline is the claimable region; the band names the edges the Notch Band should paint.</p>${sections.join('')}</body>
 </html>
 `;
 }

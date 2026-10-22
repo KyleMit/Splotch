@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import { act } from 'react';
 import { caller, host, records } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
 import {
   save,
   labelled,

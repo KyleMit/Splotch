@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { observeReduceMotion } from '../../experiments/native-architecture/src/drawing/reduceMotion.ts';
+import { observeReduceMotion } from '../../src/drawing/reduceMotion.ts';
 function pending() {
   let resolve, reject;
   const promise = new Promise((yes, no) => {

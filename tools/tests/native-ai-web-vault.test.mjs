@@ -1,13 +1,13 @@
 import { webcrypto } from 'node:crypto';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { createWebAiVault } from '../../experiments/native-architecture/src/platform/aiVault.web.ts';
-import { SECRET_SLOTS } from '../../experiments/native-architecture/src/ai/contract.ts';
+import { createWebAiVault } from '../../src/platform/aiVault.web.ts';
+import { SECRET_SLOTS } from '../../src/ai/contract.ts';
 import {
   INSTALLATION_SEED_ROW,
   MASTER_KEY_ROW,
   VAULT_DATABASE,
   VAULT_STORE,
-} from '../../experiments/native-architecture/src/platform/aiVaultRecords.web.ts';
+} from '../../src/platform/aiVaultRecords.web.ts';
 
 const disk = vi.hoisted(() => ({
   rows: new Map(),
@@ -18,7 +18,7 @@ const disk = vi.hoisted(() => ({
   beforeCommit: null,
 }));
 
-vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
+vi.mock('../../src/lib/idbDatabase.ts', () => ({
   openDatabase: async (name, store) => {
     disk.databases.push([name, store]);
     let closed = false;

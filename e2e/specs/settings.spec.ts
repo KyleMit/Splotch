@@ -1,5 +1,5 @@
 import type { Locator } from '@playwright/test';
-import { TABLET_MIN_SIDE_PX } from '../../web/src/lib/breakpoints.ts';
+import { TABLET_MIN_SIDE_PX } from '../../src/lib/breakpoints.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDrawingScreen } from '../support/drawing.ts';
 import {

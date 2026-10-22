@@ -5,8 +5,8 @@ import {
   manualInstallMode,
   SETTLED_IN_STROKES,
   STROKES_BEFORE_AUTO_CLEAR,
-} from '../../experiments/native-architecture/src/install/installPolicy.ts';
-import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
+} from '../../src/install/installPolicy.ts';
+import { STORAGE_KEYS } from '../../src/lib/storageKeys.ts';
 
 const ANDROID_CHROME =
   'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';

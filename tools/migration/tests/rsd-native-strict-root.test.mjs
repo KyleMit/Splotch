@@ -1,9 +1,9 @@
 import { act, createElement, StrictMode } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { caller, records, host, mount, root } from './rsd-native-selection-host.mjs';
-import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
+import { ProbeApp } from '../../../src/ProbeApp.tsx';
 // StrictMode repeats mount effects; both launches must retain one session owner and release listeners.
-vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
+vi.mock('../../../src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
 

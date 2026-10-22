@@ -31,7 +31,7 @@ import { ROOT } from './lib/proc.mjs';
 // `id="a"`, and `url(#a)`/`href="#a"` then resolve to whichever came first).
 // Icons that need a stable id opt out by prefixing it `icon-`; every other id
 // still gets minified, so no existing icon is rewritten by the override.
-// Uniqueness across the surviving ids is enforced by web/src/lib/icons/iconIds.test.ts.
+// Uniqueness across the surviving ids is enforced by tools/icons/tests/iconIds.test.ts.
 const SVGO_CONFIG = {
   multipass: true,
   plugins: [

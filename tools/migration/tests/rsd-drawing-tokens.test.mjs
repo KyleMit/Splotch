@@ -1,4 +1,4 @@
-import { LAYOUT_METRICS } from '../../../web/src/lib/design/layoutMetrics.ts';
+import { LAYOUT_METRICS } from '../../../src/lib/design/layoutMetrics.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -6,8 +6,8 @@ import { join, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
 import { Window } from 'happy-dom';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
-import * as rsdTokens from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
+import { brand, scale, themes } from '../../../src/lib/design/tokens.ts';
+import * as rsdTokens from '../../../src/rsdDrawing/tokens.css.ts';
 import {
   assertRsdTokenProjection,
   RSD_DRAWING_TOKENS_URL,
@@ -260,7 +260,7 @@ it.each([
 });
 
 const root = resolve(import.meta.dirname, '../../..');
-const candidate = join(root, 'experiments/native-architecture');
+const candidate = join(root, '.');
 const WEB_COMPILE_TIMEOUT_MS = 20_000;
 const WEB_TEST_TIMEOUT_MS = 30_000;
 const WEB_MAX_BUFFER_BYTES = 1024 * 1024;

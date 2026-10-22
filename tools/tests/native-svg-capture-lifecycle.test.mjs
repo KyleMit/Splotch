@@ -1,10 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createSvgCapture,
-  PNG_TIMEOUT_MS,
-} from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { createSvgCapture, PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 const SIZE = { width: 1024, height: 768 };
 let nextFrame = 0;
 const pendingFrames = new Map();

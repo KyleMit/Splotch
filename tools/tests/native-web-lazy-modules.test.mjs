@@ -4,16 +4,15 @@ import { dirname, join, posix } from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useBundledPageOutlines } from '../../experiments/native-architecture/src/drawing/bundledOutlines.web.ts';
+import { useBundledPageOutlines } from '../../src/drawing/bundledOutlines.web.ts';
 import { loadNativePageOutlines } from './native-bundled-outlines-fixture.mjs';
-import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { FARM_PAGE_IDS } from '../../src/drawing/bundledBooks.ts';
 import { ROOT } from '../lib/proc.mjs';
 
 // A page chunk's first import transforms its module, which can outlast a single tick.
 const CHUNK_LOAD_TIMEOUT_MS = 5000;
 const CHUNK_POLL_MS = 5;
-const read = (path) =>
-  readFileSync(join(ROOT, 'experiments/native-architecture/src', path), 'utf8');
+const read = (path) => readFileSync(join(ROOT, 'src', path), 'utf8');
 const NATIVE_REEXPORT = /^export \{ (\w+) \} from '([^']+)';$/gm;
 const WEB_LAZY_EXPORT =
   /export const (\w+) = lazySurface\(\(\) =>\s+import\('([^']+)'\)\.then\(\(module\) => module\.(\w+)\)\s+\);/g;

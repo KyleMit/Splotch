@@ -160,7 +160,7 @@ describe('the inlined-image exceptions', () => {
 
   it('names each exception with its reason', () => {
     expect(INLINED_IMAGE_EXCEPTIONS.map(({ asset }) => asset)).toEqual([
-      'experiments/native-architecture/assets/paper/handmade-paper.webp',
+      'assets/paper/handmade-paper.webp',
     ]);
     expect(INLINED_IMAGE_EXCEPTIONS.every(({ reason }) => reason.includes('ADR-0180'))).toBe(true);
   });

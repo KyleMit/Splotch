@@ -187,16 +187,15 @@ its own local worktrees.
 
 What is listed and why:
 
-| Path                                                       | Why a worktree needs it                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------- |
-| `web/.env`                                                 | API keys the dev server and `/api/*` functions read       |
-| `experiments/native-architecture/android/local.properties` | `sdk.dir` — every Gradle invocation fails without it      |
-| `experiments/native-architecture/ios/local.xcconfig`       | `DEVELOPMENT_TEAM` for automatic signing on device builds |
+| Path                       | Why a worktree needs it                                   |
+| -------------------------- | --------------------------------------------------------- |
+| `web/.env`                 | API keys the dev server and `/api/*` functions read       |
+| `android/local.properties` | `sdk.dir` — every Gradle invocation fails without it      |
+| `ios/local.xcconfig`       | `DEVELOPMENT_TEAM` for automatic signing on device builds |
 
-Release signing material (`experiments/native-architecture/android/keystore.properties`,
-`android/upload-keystore.jks`) is deliberately **not** copied. Store builds are host-exclusive and
-run from the main checkout, so spreading the upload key across every throwaway worktree buys
-nothing.
+Release signing material (`android/keystore.properties`, `android/upload-keystore.jks`) is
+deliberately **not** copied. Store builds are host-exclusive and run from the main checkout, so
+spreading the upload key across every throwaway worktree buys nothing.
 
 `.claude/settings.local.json` needs no entry: Claude Code saves worktree permission approvals to the
 main checkout's copy and reads them from there in every worktree of the repository.

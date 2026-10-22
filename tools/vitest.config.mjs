@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 import { RSD_NATIVE_RENDERER_TESTS } from './migration/lib/rsd-drawing-checks.mjs';
 
 // Node-environment unit tests for the repo tooling. Separate from the web
-// suite (web/vitest.config.ts, happy-dom): these are plain Node helpers with no
+// suite (vitest.config.ts, happy-dom): these are plain Node helpers with no
 // DOM. Rooted at this folder so both the central `tests/**` drift guards and
 // each capability's own `<capability>/tests/**` resolve their relative imports
 // from here — same pattern as tools/asset-gen/vitest.config.mjs.
@@ -33,10 +33,7 @@ export default defineConfig({
             {
               find: /^\.\/InkLayer$/,
               replacement: fileURLToPath(
-                new URL(
-                  '../experiments/native-architecture/src/drawing/InkLayer.web.tsx',
-                  import.meta.url
-                )
+                new URL('../src/drawing/InkLayer.web.tsx', import.meta.url)
               ),
             },
             // Native halos draw through the same Skia module and Reanimated's UI runtime;
@@ -44,10 +41,7 @@ export default defineConfig({
             {
               find: /^\.\/PointerHalos$/,
               replacement: fileURLToPath(
-                new URL(
-                  '../experiments/native-architecture/src/drawing/PointerHalos.web.tsx',
-                  import.meta.url
-                )
+                new URL('../src/drawing/PointerHalos.web.tsx', import.meta.url)
               ),
             },
             // The iOS Pencil emitter is a bridge module mounted screens never reach in Node;
@@ -55,10 +49,7 @@ export default defineConfig({
             {
               find: /^\.\.\/platform\/pencilDoubleTap$/,
               replacement: fileURLToPath(
-                new URL(
-                  '../experiments/native-architecture/src/platform/pencilDoubleTap.web.ts',
-                  import.meta.url
-                )
+                new URL('../src/platform/pencilDoubleTap.web.ts', import.meta.url)
               ),
             },
             // react-native-svg's web elements resolve image hrefs through a .web.js module that

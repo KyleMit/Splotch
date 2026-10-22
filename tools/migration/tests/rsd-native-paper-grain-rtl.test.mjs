@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import { records, mount } from './rsd-native-selection-host.mjs';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
 import { yogaChainLayout } from './rsd-yoga-host.mjs';
-import { PaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.tsx';
+import { PaperTexture } from '../../../src/drawing/PaperTexture.tsx';
 
 // The first Yoga case compiles React Native's Yoga sources before it lays anything out.
 const YOGA_COMPILE_TIMEOUT_MS = 180_000;

@@ -230,12 +230,9 @@ describe('renderReleaseFile', () => {
 
 describe('findStrayReleasePaths', () => {
   it('refuses a changed file beside the version files, such as Info.plist', () => {
-    expect(
-      findStrayReleasePaths(
-        listing(' M experiments/native-architecture/ios/Splotch/Info.plist'),
-        RELEASE_SET
-      )
-    ).toEqual(['experiments/native-architecture/ios/Splotch/Info.plist']);
+    expect(findStrayReleasePaths(listing(' M ios/Splotch/Info.plist'), RELEASE_SET)).toEqual([
+      'ios/Splotch/Info.plist',
+    ]);
   });
 
   // The generator reads every releases/*.md, so a draft of the next release would
@@ -401,7 +398,7 @@ describe('the pnpm version bump', () => {
 // ROOT is two folders above tools/lib/proc.mjs, so the copies run the real cut
 // against the scratch checkout, end to end.
 const RELEASE_SCRIPTS = [
-  'web/src/lib/releaseHistoryPolicy.json',
+  'src/lib/releaseHistoryPolicy.json',
   'tools/lib/html.mjs',
   'tools/lib/proc.mjs',
   'tools/release/cut-release.mjs',
@@ -429,8 +426,7 @@ describe('a release cut in a scratch checkout', () => {
         RELEASE_SCRIPTS.map((path) => [path, readFileSync(join(repoRoot, path), 'utf8')])
       ),
       ...HEAD_VERSION_FILES,
-      'experiments/native-architecture/ios/Splotch/Info.plist':
-        '<plist version="1.0"><dict/></plist>\n',
+      'ios/Splotch/Info.plist': '<plist version="1.0"><dict/></plist>\n',
       'releases/1.6.0.md': releaseDocument('1.6.0', 8),
     });
     execFileSync('node', ['tools/release/gen-release-notes.mjs'], { cwd: root });
@@ -455,15 +451,14 @@ describe('a release cut in a scratch checkout', () => {
   it('refuses a stray change before writing anything', { timeout: SCRATCH_CUT_TIMEOUT_MS }, () => {
     const { root, git, cut, contents } = scratchCheckout();
     writeFiles(root, {
-      'experiments/native-architecture/ios/Splotch/Info.plist':
-        '<plist version="1.0"><dict/><!-- x --></plist>\n',
+      'ios/Splotch/Info.plist': '<plist version="1.0"><dict/><!-- x --></plist>\n',
     });
     const before = contents();
 
     const result = cut('--no-publish');
 
     expect(result.stderr).toContain(
-      'Working tree has changes outside the release set:\n  experiments/native-architecture/ios/Splotch/Info.plist\n'
+      'Working tree has changes outside the release set:\n  ios/Splotch/Info.plist\n'
     );
     expect(result.status).toBe(1);
     expect(contents()).toEqual(before);

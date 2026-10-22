@@ -132,7 +132,7 @@ describe('the release build targets', () => {
 const STORE_APP_ID_MENTIONS = [
   [
     'the /beta page Play Store links',
-    'web/src/lib/components/beta/androidBeta.ts',
+    'src/lib/components/beta/androidBeta.ts',
     /^export const PLAY_STORE_APP_ID = ['"]([^'"]+)['"];\s*$/m,
   ],
   ['the Maestro smoke flow', '.maestro/smoke.yaml', /^appId:\s*([^\s#]+)\s*$/m],
@@ -146,7 +146,7 @@ const STORE_APP_ID_MENTIONS = [
   [
     'the documented physical-device development identity',
     'docs/MOBILE/native.md',
-    /Physical-device development builds use `([^`]+)`/,
+    /Physical-device\s+development builds use\s+`([^`]+)`/,
     DEV_APP_ID,
   ],
   [

@@ -1,44 +1,41 @@
 import { act, createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { records, host, root, mount } from './rsd-native-selection-host.mjs';
-import { RsdColoringBookPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
-import {
-  TAP_ZONE_DURATION_MS,
-  TAP_ZONE_RADIUS_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
+import { RsdColoringBookPicker } from '../../../src/rsdDrawing/RsdColoringBookPicker.tsx';
+import { TAP_ZONE_DURATION_MS, TAP_ZONE_RADIUS_PX } from '../../../src/rsdDrawing/tapZone.ts';
 
-import { LibraryProvider } from '../../../experiments/native-architecture/src/offlineLibrary/LibraryScope.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { catalogPack } from '../../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { OFFLINE_BOOKS } from '../../../experiments/native-architecture/src/offlineLibrary/books.generated.ts';
-import { offlinePageId } from '../../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { LibraryProvider } from '../../../src/offlineLibrary/LibraryScope.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { catalogPack } from '../../../src/offlineLibrary/catalog.ts';
+import { OFFLINE_BOOKS } from '../../../src/offlineLibrary/books.generated.ts';
+import { offlinePageId } from '../../../src/offlineLibrary/identity.ts';
+import { createOfflineLibrary } from '../../../src/offlineLibrary/controller.ts';
 import {
   BUNDLED_FARM_COVERS,
   BUNDLED_FARM_SELECTORS,
-} from '../../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
-import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import { COLORING_PAGES } from '../../../experiments/native-architecture/src/drawing/pages.ts';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
-import { trailingRowCutHeight } from '../../../web/src/lib/actions/scrollCue.ts';
+} from '../../../src/drawing/bundledFarm/pickerImages.ts';
+import { FARM_PAGE_IDS } from '../../../src/drawing/bundledBooks.ts';
+import { COLORING_PAGES } from '../../../src/drawing/pages.ts';
+import { scale } from '../../../src/lib/design/tokens.ts';
+import { trailingRowCutHeight } from '../../../src/lib/actions/scrollCue.ts';
 import {
   CARD_HEIGHT_CAP_FRACTION,
   COLORING_HEADER_GAP_PX,
   COLORING_PADDING_PX,
   MODAL_CONTROL_SIZE_PX,
   MODAL_SCRIM_PLAIN,
-} from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+} from '../../../src/rsdDrawing/modalGeometry.ts';
 import {
   BOOK_GRID_FOLD_SLACK_PX,
   BOOK_GRID_TALL_PORTRAIT_MAX_ASPECT,
   COLORING_GRID_GAP_PX,
   PAGE_GRID_COLUMNS,
   PAGE_TILE_ASPECT,
-} from '../../../experiments/native-architecture/src/rsdDrawing/coloringGrid.ts';
-import { TILE_HOVER_SHADOW } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringTile.tsx';
+} from '../../../src/rsdDrawing/coloringGrid.ts';
+import { TILE_HOVER_SHADOW } from '../../../src/rsdDrawing/RsdColoringTile.tsx';
 
-import { rgba } from '../../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
-import { DRAWING_BRAND } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { rgba } from '../../../src/rsdDrawing/colorMix.ts';
+import { DRAWING_BRAND } from '../../../src/drawing/theme.ts';
 
 const dinosaurs = catalogPack('dinosaur', 'full');
 const space = catalogPack('space', 'full');

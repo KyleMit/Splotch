@@ -6,7 +6,7 @@ import {
   MAX_AI_MODEL_BYTES,
   AI_ORIGINAL_CURRENT_VERSIONS,
   AI_ORIGINAL_IMPORT_VERSIONS,
-} from '../../experiments/native-architecture/src/platform/aiOriginalModel.ts';
+} from '../../src/platform/aiOriginalModel.ts';
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
@@ -14,18 +14,13 @@ import {
   MAX_PAPER_CSS_PX,
   MIN_PAPER_CSS_PX,
   MIN_BACKING_SCALE,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { MAGIC_RAINBOW_COUNT } from '../../experiments/native-architecture/src/drawing/brushes.ts';
+} from '../../src/drawing/paperSpace.ts';
+import { MAGIC_RAINBOW_COUNT } from '../../src/drawing/brushes.ts';
 const ROOT = join(import.meta.dirname, '../..');
 const ANDROID = 'android/app/src/main/java/art/splotch/app/SplotchAIJournal.kt';
 const APPLE = 'ios/Splotch/SplotchAIJournal.swift';
 function nativeFiles() {
-  return new Map(
-    [ANDROID, APPLE].map((path) => [
-      path,
-      readFileSync(join(ROOT, 'experiments/native-architecture', path)),
-    ])
-  );
+  return new Map([ANDROID, APPLE].map((path) => [path, readFileSync(join(ROOT, '.', path))]));
 }
 const IMPORTS = [
   { version: 1, strokes: [] },

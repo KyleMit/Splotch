@@ -123,8 +123,8 @@ failed run. Local snapshots and opt-in report inputs contain child-created conte
 gitignored. The retention prune is a backstop, not a substitute for removing them once the review is
 complete.
 
-Keep its store name imported from `web/src/lib/server/imageReportStoreName.ts`, update the npm entry
-and `scripts-info` description together, and verify changes with:
+Keep its store name imported from `netlify/server/imageReportStoreName.ts`, update the npm entry and
+`scripts-info` description together, and verify changes with:
 
 ```sh
 npm run test:tools -- tests/fetch-image-reports.test.mjs

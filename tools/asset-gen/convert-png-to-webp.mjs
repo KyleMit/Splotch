@@ -1,4 +1,4 @@
-// Convert all PNGs under web/static/ to WebP, written alongside the original.
+// Convert all PNGs under assets/static/ to WebP, written alongside the original.
 // Usage: node tools/asset-gen/convert-png-to-webp.mjs [--quality <number>] [--lossless]
 // Defaults to lossy quality 80. For compatibility, QUALITY and LOSSLESS=1 are
 // fallbacks when the corresponding flag is omitted.
@@ -15,7 +15,7 @@ const { quality, lossless } = parsePngToWebpOptions();
 // directory and stays cross-platform (ADR-0017).
 const files = globSync('**/*.png', { cwd: WEB_STATIC }).map((f) => join(WEB_STATIC, f));
 if (files.length === 0) {
-  console.log('No PNGs found under web/static/');
+  console.log('No PNGs found under assets/static/');
   process.exit(0);
 }
 

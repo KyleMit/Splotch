@@ -4,14 +4,11 @@
 import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { RsdFeedbackPageContent } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFeedbackPageContent.tsx';
-import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
-import {
-  MESSAGE_PROMPT_BY_KIND,
-  REPORT_FORM_COPY,
-} from '../../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
-import { createNativeFeedback } from '../../../experiments/native-architecture/src/feedback/feedback.ts';
-import { supportEmail } from '../../../web/src/lib/supportEmail.ts';
+import { RsdFeedbackPageContent } from '../../../src/rsdDrawing/RsdFeedbackPageContent.tsx';
+import { FEEDBACK_PAGE_COPY } from '../../../src/information/feedbackPageCopy.ts';
+import { MESSAGE_PROMPT_BY_KIND, REPORT_FORM_COPY } from '../../../src/feedback/reportFormCopy.ts';
+import { createNativeFeedback } from '../../../src/feedback/feedback.ts';
+import { supportEmail } from '../../../src/lib/supportEmail.ts';
 
 vi.mock('react-strict-dom', async (importOriginal) => {
   const actual = await importOriginal();

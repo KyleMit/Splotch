@@ -5,7 +5,7 @@ import { event, owner, send, settle, touch } from './native-contacts-mounted-har
 const renders = vi.hoisted(() => ({ surface: 0 }));
 
 // DrawingSurface runs its commit probe once per render.
-vi.mock('../../experiments/native-architecture/src/drawing/perfProbe.ts', async (original) => ({
+vi.mock('../../src/drawing/perfProbe.ts', async (original) => ({
   ...(await original()),
   useSurfaceCommitProbe: () => {
     renders.surface += 1;

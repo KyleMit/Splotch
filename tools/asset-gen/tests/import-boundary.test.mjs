@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { ASSET_GEN_DIR, REPO_ROOT, toPosix } from '../lib/asset-paths.mjs';
 
 // The shipping pipeline stays extractable (docs/architecture.md): every module it
-// loads is its own, an installed package, or a web/src module listed in README.md's
+// loads is its own, an installed package, or a src module listed in README.md's
 // coupling table. That table is the allowlist this suite enforces in both
 // directions, so it cannot drift from the code the way it once did.
 //
@@ -71,7 +71,7 @@ function boundaryViolations(files, documented) {
     for (const spec of found.filter((s) => s !== null && PATH_SPECIFIER.test(s))) {
       const target = toPosix(relative(REPO_ROOT, join(ASSET_GEN_DIR, dirname(path), spec)));
       if (target.startsWith('tools/asset-gen/')) continue;
-      if (target.startsWith('web/src/')) {
+      if (target.startsWith('src/') || target.startsWith('netlify/server/')) {
         if (!imported.has(target)) imported.set(target, new Set());
         imported.get(target).add(path);
         continue;
@@ -113,7 +113,7 @@ function liveFiles() {
 const importing = (spec) => `import { value } from '${spec}';`;
 
 describe('asset-gen import boundary', () => {
-  it('imports only its own modules, packages, and the documented web/src modules', () => {
+  it('imports only its own modules, packages, and the documented src modules', () => {
     const documented = documentedCoupling(readFileSync(README_PATH, 'utf8'));
 
     expect(documented.size).toBeGreaterThan(0);
@@ -153,8 +153,8 @@ describe('asset-gen import boundary', () => {
     ]);
   });
 
-  it('rejects an undocumented web/src import and a stale table row', () => {
-    const module = 'web/src/lib/state/books.ts';
+  it('rejects an undocumented src import and a stale table row', () => {
+    const module = 'src/lib/state/books.ts';
     const files = [{ path: 'coloring/new-tool.mjs', source: importing(`../../../${module}`) }];
     const documented = new Map([[module, new Set(['coloring/old-tool.mjs'])]]);
 

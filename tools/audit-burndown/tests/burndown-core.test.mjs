@@ -46,7 +46,7 @@ const FIXTURE_LINES = [
   '',
   '### [P1][complexity] First finding',
   '',
-  '**File(s):** `web/src/a.ts` — pinned at SHA abc1234',
+  '**File(s):** `src/a.ts` — pinned at SHA abc1234',
   '',
   '#### Problem',
   '',
@@ -252,7 +252,7 @@ describe('findingPriority', () => {
     const body = [
       '### [Maintainability] Single-source the toolState push',
       '',
-      '**File(s):** `web/src/lib/drawing/earlyBoot.ts` @ 9ae62ff1',
+      '**File(s):** `src/lib/drawing/earlyBoot.ts` @ 9ae62ff1',
       '',
       '**Priority:** P4',
     ].join('\n');
@@ -310,7 +310,7 @@ describe('Codex driver-owned commits', () => {
   it('blocks model edits to driver-owned audit state while allowing source changes', () => {
     expect(
       protectedImplementationPaths([
-        'web/src/lib/example.ts',
+        'src/lib/example.ts',
         'docs/AUDIT.md',
         'docs/AUDIT-DEFERRED.md',
         'docs/audit-deferred/rejected.patch',
@@ -319,11 +319,11 @@ describe('Codex driver-owned commits', () => {
   });
 
   it('regenerates agent outputs only when a Ruler source changed', () => {
-    expect(needsRulerApply(['web/src/app.css', '.ruler/skills/design/SKILL.md'])).toBe(true);
+    expect(needsRulerApply(['src/app.css', '.ruler/skills/design/SKILL.md'])).toBe(true);
     expect(needsRulerApply(['.ruler'])).toBe(true);
     expect(needsRulerApply(['tools/asset-gen/.ruler/AGENTS.md'])).toBe(true);
-    expect(needsRulerApply(['web/src/lib/not-ruler.ts'])).toBe(false);
-    expect(needsRulerApply(['.agents/skills/design/SKILL.md', 'web/src/app.css'])).toBe(false);
+    expect(needsRulerApply(['src/lib/not-ruler.ts'])).toBe(false);
+    expect(needsRulerApply(['.agents/skills/design/SKILL.md', 'src/app.css'])).toBe(false);
   });
 });
 
@@ -331,14 +331,14 @@ describe('lint gate file selection', () => {
   const present = (kept) => (path) => kept.includes(path);
 
   it('keeps lintable source files that still exist', () => {
-    const paths = ['web/src/a.ts', 'web/src/B.svelte', 'tools/c.mjs', 'tools/d.cjs', 'e.js'];
+    const paths = ['src/a.ts', 'src/B.svelte', 'tools/c.mjs', 'tools/d.cjs', 'e.js'];
     expect(lintablePaths(paths, present(paths))).toEqual(paths);
   });
 
   it('drops non-lintable extensions', () => {
     expect(
-      lintablePaths(['docs/AUDIT.md', 'a/b.json', 'a/c.webp', 'web/src/d.ts'], () => true)
-    ).toEqual(['web/src/d.ts']);
+      lintablePaths(['docs/AUDIT.md', 'a/b.json', 'a/c.webp', 'src/d.ts'], () => true)
+    ).toEqual(['src/d.ts']);
   });
 
   // A rename reports both sides; only the destination is on disk. Passing the
@@ -362,16 +362,11 @@ describe('failed implementation cleanup', () => {
     const removed = [];
     const added = removeNewUntrackedPaths(
       ['notes/local.txt', 'scratch/existing.txt'],
-      [
-        'notes/local.txt',
-        'scratch/existing.txt',
-        'web/src/new-helper.ts',
-        'web/src/new-helper.test.ts',
-      ],
+      ['notes/local.txt', 'scratch/existing.txt', 'src/new-helper.ts', 'src/new-helper.test.ts'],
       (path) => removed.push(path)
     );
 
-    expect(added).toEqual(['web/src/new-helper.ts', 'web/src/new-helper.test.ts']);
+    expect(added).toEqual(['src/new-helper.ts', 'src/new-helper.test.ts']);
     expect(removed).toEqual(added);
   });
 });
@@ -472,7 +467,7 @@ describe('incomplete audit commit recovery', () => {
   });
 });
 
-// The bundle gate's trigger: a new static import edge under web/src
+// The bundle gate's trigger: a new static import edge under src
 // re-partitions Rollup's chunks however small the imported module (PR #771 —
 // a six-line predicate hoist pulled the save pipeline onto the startup
 // critical path, and only CI could see it). These pin what counts as an edge.
@@ -490,7 +485,7 @@ describe('diffAddsClientStaticImport', () => {
   it('flags an added static import in a client module', () => {
     expect(
       diffAddsClientStaticImport(
-        diffFor('web/src/lib/state/saveFolder.svelte.ts', [
+        diffFor('src/lib/state/saveFolder.svelte.ts', [
           "import { folderSaveSupported } from '$lib/drawing/folderSaveSupport';",
         ])
       )
@@ -500,7 +495,7 @@ describe('diffAddsClientStaticImport', () => {
   it('flags an added re-export, which is the same bundler edge', () => {
     expect(
       diffAddsClientStaticImport(
-        diffFor('web/src/lib/drawing/folderSave.ts', [
+        diffFor('src/lib/drawing/folderSave.ts', [
           "export { folderSaveSupported } from './folderSaveSupport';",
         ])
       )
@@ -510,7 +505,7 @@ describe('diffAddsClientStaticImport', () => {
   it('ignores type-only imports and re-exports — no runtime edge', () => {
     expect(
       diffAddsClientStaticImport(
-        diffFor('web/src/lib/a.ts', [
+        diffFor('src/lib/a.ts', [
           "import type { Foo } from './foo';",
           "export type { Foo } from './foo';",
         ])
@@ -520,16 +515,16 @@ describe('diffAddsClientStaticImport', () => {
 
   it('ignores dynamic import() — the lazy edge is the safe kind', () => {
     expect(
-      diffAddsClientStaticImport(diffFor('web/src/lib/a.ts', ["import('./lazy').then(run);"]))
+      diffAddsClientStaticImport(diffFor('src/lib/a.ts', ["import('./lazy').then(run);"]))
     ).toBe(false);
   });
 
   it('ignores server-only modules and tests, which never enter the client bundle', () => {
     for (const path of [
-      'web/src/lib/server/github.ts',
-      'web/src/routes/api/report/+server.ts',
-      'web/src/routes/admin/+page.server.ts',
-      'web/src/lib/a.test.ts',
+      'netlify/server/github.ts',
+      'src/routes/api/report/+server.ts',
+      'src/routes/admin/+page.server.ts',
+      'src/lib/a.test.ts',
       'web/tests/flows.spec.ts',
       'tools/audit-burndown/lib/burndown-core.mjs',
     ]) {
@@ -539,9 +534,9 @@ describe('diffAddsClientStaticImport', () => {
 
   it('ignores an import that is merely diff context, not an added line', () => {
     const diff = [
-      'diff --git a/web/src/lib/a.ts b/web/src/lib/a.ts',
-      '--- a/web/src/lib/a.ts',
-      '+++ b/web/src/lib/a.ts',
+      'diff --git a/src/lib/a.ts b/src/lib/a.ts',
+      '--- a/src/lib/a.ts',
+      '+++ b/src/lib/a.ts',
       '@@ -1,2 +1,2 @@',
       " import { x } from './x';",
       '-const a = 1;',
@@ -552,8 +547,8 @@ describe('diffAddsClientStaticImport', () => {
 
   it('tracks the current file across a multi-file diff', () => {
     const diff = [
-      diffFor('web/src/lib/a.test.ts', ["import { y } from './y';"]),
-      diffFor('web/src/lib/a.ts', ["import { y } from './y';"]),
+      diffFor('src/lib/a.test.ts', ["import { y } from './y';"]),
+      diffFor('src/lib/a.ts', ["import { y } from './y';"]),
     ].join('\n');
     expect(diffAddsClientStaticImport(diff)).toBe(true);
   });

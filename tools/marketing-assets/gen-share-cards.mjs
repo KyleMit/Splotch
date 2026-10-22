@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { PAGE_SHARE_CARDS, SHARE_CARD_SIZE } from '../../web/src/lib/components/page/socialCard.ts';
+import { PAGE_SHARE_CARDS, SHARE_CARD_SIZE } from './lib/page/socialCard.ts';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
@@ -18,9 +18,9 @@ import { openStaticDocument, settleStaticDocument } from './lib/static-document.
 
 const MAX_CARD_BYTES = 300_000;
 const HASH_LENGTH = 8;
-const OUTPUT_DIR = join(ROOT, 'web/static/share');
-const HASH_FILE = join(ROOT, 'web/src/lib/components/page/shareCards.json');
-const INPUT_HASH_FILE = join(ROOT, 'web/src/lib/components/page/shareCardInputs.json');
+const OUTPUT_DIR = join(ROOT, 'assets/static/share');
+const HASH_FILE = join(ROOT, 'tools/marketing-assets/lib/page/shareCards.json');
+const INPUT_HASH_FILE = join(ROOT, 'tools/marketing-assets/lib/page/shareCardInputs.json');
 const inputSha256 = shareCardInputHash();
 
 const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });

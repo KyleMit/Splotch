@@ -14,7 +14,7 @@
 //   npm run gen:coloring-outlines:fresh -- farm/dog-tall --scene "A happy puppy…"
 //   … --eyes            gate: the drawing must contain detectable nested eye cores
 //   … --max-attempts 8  keep-best-of-N ladder (default 5)
-//   … --apply           ship the best PASSING candidate to web/static/coloring/
+//   … --apply           ship the best PASSING candidate to assets/static/coloring/
 //
 // Candidates land in .coloring-samples/fresh/ with per-gate scores; nothing is
 // shipped without --apply. After applying, regenerate the page's whole suite —
