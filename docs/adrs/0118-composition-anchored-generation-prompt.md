@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The composition-preserving prompt lives in `src/lib/ai/prompt.ts`;
+`tools/model-eval/run-prompt-adherence.mjs` remains its measured evaluation entry point. RN
+transport reaches the same hosted provider boundary. The dated model comparisons remain evidence for
+that prompt, not fresh RN measurements. The historical design below retains its original context.
+
 ## Context
 
 `gpt-image-2 · low` (ADR-0113's pick) has a strong prior toward poster composition: under the

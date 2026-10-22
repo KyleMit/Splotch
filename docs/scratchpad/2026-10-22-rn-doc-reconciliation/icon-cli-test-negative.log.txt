@@ -1,0 +1,58 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+node:internal/fs/promises:876
+      await PromisePrototypeThen(
+      ^
+
+Error: ENOENT: no such file or directory, scandir '/Users/kylemit/.codex/worktrees/0714/Splotch/src/lib/icons'
+    at async readdirRecursive (node:internal/fs/promises:876:7)
+    at async rebaseIconViewboxes (file:///Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs:446:21)
+    at async file:///Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs:475:3 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/Users/kylemit/.codex/worktrees/0714/Splotch/src/lib/icons'
+}
+
+Node.js v24.16.0
+ ❯ |repo-tools| icons/tests/rebase-icon-viewbox.test.mjs (7 tests | 1 failed) 61ms
+   ❯ rebase-icon-viewbox geometry coverage (7)
+     × resolves the committed icon catalog when run as a CLI 40ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| icons/tests/rebase-icon-viewbox.test.mjs > rebase-icon-viewbox geometry coverage > resolves the committed icon catalog when run as a CLI
+Error: Command failed: /Users/kylemit/.nvm/versions/node/v24.16.0/bin/node /Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs splotchy
+node:internal/fs/promises:876
+      await PromisePrototypeThen(
+      ^
+
+Error: ENOENT: no such file or directory, scandir '/Users/kylemit/.codex/worktrees/0714/Splotch/src/lib/icons'
+    at async readdirRecursive (node:internal/fs/promises:876:7)
+    at async rebaseIconViewboxes (file:///Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs:446:21)
+    at async file:///Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs:475:3 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/Users/kylemit/.codex/worktrees/0714/Splotch/src/lib/icons'
+}
+
+Node.js v24.16.0
+
+ ❯ rebaseIconViewboxes icons/rebase-icon-viewbox.mjs:446:21
+    444|
+    445| export async function rebaseIconViewboxes(names) {
+    446|   const allFiles = (await readdir(ICON_DIR, { recursive: true }))
+       |                     ^
+    447|     .filter((f) => f.endsWith('.svg'))
+    448|     .sort();
+ ❯ icons/tests/rebase-icon-viewbox.test.mjs:34:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+   Start at  00:59:57
+   Duration  199ms (tests 61%, import 20%, transform 17%, worker 1%)

@@ -4,15 +4,14 @@ Each release is one Markdown file in this folder, named for its semver version (
 files are the single source of truth** for the version number and the release notes. Everything else
 is generated from them:
 
-| Target                                 | Generated artifact                                                                                           |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| In-app Settings ("What's New")         | `web/src/lib/releases.json` + generated current-note component                                               |
-| Web/native changelog                   | generated full-history component at `/changelog`                                                             |
-| React Native app Settings (What's New) | `experiments/native-architecture/src/information/releaseNotes.generated.json` (plain-text notes per version) |
-| Google Play "What's new"               | `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`                                               |
-| App Store "What's New in This Version" | `fastlane/metadata/en-US/release_notes.txt`                                                                  |
-| GitHub Release                         | the file body, via `gh release create`                                                                       |
-| App version                            | `package.json`, Android `build.gradle`, iOS `project.pbxproj`                                                |
+| Target                                 | Generated artifact                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| In-app Settings and release history    | `src/lib/releases.json` metadata and `src/information/releaseNotes.generated.json`, rendered by the RSD release surfaces |
+| Web changelog                          | the RN export's `/changelog` document and shared release-history surface                                                 |
+| Google Play "What's new"               | `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`                                                           |
+| App Store "What's New in This Version" | `fastlane/metadata/en-US/release_notes.txt`                                                                              |
+| GitHub Release                         | the file body, via `gh release create`                                                                                   |
+| App version                            | `package.json`, Android `build.gradle`, iOS `project.pbxproj`                                                            |
 
 ## File format
 

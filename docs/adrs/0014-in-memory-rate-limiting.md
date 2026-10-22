@@ -3,6 +3,13 @@
 **Status:** Active\
 **Date:** 2025
 
+## Current scope after the RN cutover (2026-10)
+
+The process-local sliding-window limiter remains in `netlify/server/rateLimit.ts`, called by the
+framework-free endpoint owners. Durable free-generation budgets and privacy-preserving IP keys are
+separate policies under ADR-0105 and ADR-0150. The former source location and Gemini examples below
+are historical. The historical design below retains its original context.
+
 ## Context
 
 The `/api/generate-image` endpoint consumes the project's Gemini API quota. A leaked or abused

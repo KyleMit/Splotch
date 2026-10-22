@@ -24,6 +24,14 @@
 > image digest, so editing stated design intent makes the reviews taken under the old wording stale
 > instead of leaving them silently current. See the amendment at the end.
 
+## Current scope after the RN cutover (2026-10)
+
+Hash-bound image/description reviews remain available for the recorded inventory through
+`tools/page-inventory/run-inventory-critiques.mjs` and
+`tools/page-inventory/finalize-page-critique.mjs`. The Svelte capture/report attachment commands
+were removed. Existing captures retain their recorded dates and renderer; reviewing them does not
+generate or qualify a fresh RN inventory. The historical design below retains its original context.
+
 ## Context
 
 The committed page inventory is both a responsive UI record and the evidence behind its design

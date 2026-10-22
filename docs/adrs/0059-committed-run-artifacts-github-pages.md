@@ -35,6 +35,13 @@
 > own `/design` styleguide renders the shipped icon set live, so a generated copy could only go
 > stale. `docs/scratchpad/README.md` carries the split.
 
+## Current scope after the RN cutover (2026-10)
+
+Keeper outputs live in `scrapbook/`, promoted by `tools/scrapbook/publish-scrapbook.mjs` and
+published by the Pages workflow. `tools/scrapbook/README.md` owns the current entry points and
+layout. The former artifacts directory and command names below describe the original implementation.
+The historical design below retains its original context.
+
 ## Context
 
 Several Splotch generators produce **reviewable run outputs** worth keeping between sessions:

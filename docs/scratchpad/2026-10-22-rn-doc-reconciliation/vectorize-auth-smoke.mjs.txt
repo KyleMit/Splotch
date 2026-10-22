@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+const fixture = mkdtempSync(join(tmpdir(), 'splotch-vectorize-env-fixture-'));
+const preload = join(fixture, 'offline-fetch.mjs');
+writeFileSync(preload, `import assert from 'node:assert/strict';\nglobalThis.fetch = async (url, options) => {\nassert.equal(String(url), 'https://api.vectorizer.ai/api/v1/account');\nassert.equal(options.method, 'GET');\nassert.equal(options.headers.Authorization, process.env.SPLOTCH_TEST_EXPECTED_AUTH);\nreturn new Response(JSON.stringify({credits: 12345, offlineFixture: true}), {status: 200});\n};\n`);
+writeFileSync(join(fixture, '.env'), 'VECTORIZER_ID="fixture-file-id"\nVECTORIZER_SECRET="fixture-file-secret"\n');
+const cases = [
+  ['file pair', {}, `Basic ${Buffer.from('fixture-file-id:fixture-file-secret').toString('base64')}`],
+  ['shell pair', {VECTORIZER_ID:'fixture-shell-id',VECTORIZER_SECRET:'fixture-shell-secret'}, `Basic ${Buffer.from('fixture-shell-id:fixture-shell-secret').toString('base64')}`],
+  ['shell header', {VECTORIZER_AUTHORIZATION:'Basic fixture-shell-header'}, 'Basic fixture-shell-header'],
+];
+try {
+  for (const [name, vars, expected] of cases) {
+    const output = execFileSync(process.execPath, ['--import',preload,'/Users/kylemit/.codex/worktrees/0714/Splotch/tools/vectorize/vectorize-image.mjs','--account'], {cwd:fixture, encoding:'utf8',env:{...process.env,VECTORIZER_ID:'',VECTORIZER_SECRET:'',VECTORIZER_AUTHORIZATION:'',...vars,SPLOTCH_TEST_EXPECTED_AUTH:expected}});
+    assert.deepEqual(JSON.parse(output), {credits:12345,offlineFixture:true});
+    console.log(`${name}: PASS (offline fetch stub; fixture credentials)`);
+  }
+} finally { rmSync(fixture,{recursive:true,force:true}); }

@@ -19,12 +19,11 @@ import sharp from 'sharp';
 import { ROOT, isMain } from '../lib/proc.mjs';
 import { roundCoordinate, transformPathData } from './lib/svg-path-transform.mjs';
 
-const ICON_DIR = join(ROOT, 'src/lib/icons');
+const ICON_DIR = join(ROOT, 'assets', 'icons');
 const CANONICAL_SIDE = 1000;
 const CANONICAL_VIEWBOX = `0 0 ${CANONICAL_SIDE} ${CANONICAL_SIDE}`;
 
-// The mascot is not an <Icon> asset (NON_RENDERABLE_ICONS): it renders via a
-// Vite URL import where the file's own frame is the source of truth.
+// The mascot keeps its artwork frame outside the canonical UI glyph grid.
 const REBASE_EXEMPT = new Set(['splotchy.svg']);
 
 const DIFF_SIZE = 512;

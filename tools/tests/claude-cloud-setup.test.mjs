@@ -38,13 +38,10 @@ function runSetup(failures, { cwd = repoRoot, projectDir, codex } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-claude-setup-'));
   roots.push(root);
   const bin = join(root, 'bin');
-  const chisel = join(root, 'chisel');
   const npmCalls = join(root, 'npm-calls.log');
   mkdirSync(bin);
 
-  const original = readFileSync(setupPath, 'utf8');
-  const setup = original.replaceAll('/usr/local/bin/chisel', chisel);
-  expect(setup).not.toBe(original);
+  const setup = readFileSync(setupPath, 'utf8');
   const fixtureSetupPath = join(root, 'setup.sh');
   writeFileSync(fixtureSetupPath, setup);
 
@@ -73,17 +70,9 @@ exit 1`
 fi
 exit 1`
   );
-  writeExecutable(
-    join(bin, 'curl'),
-    `if [[ "\${FAIL_CHISEL:-0}" != 0 ]]; then
-  exit "$FAIL_CHISEL"
-fi
-printf 'stub chisel'`
-  );
-  writeExecutable(join(bin, 'gunzip'), `/bin/cat`);
   // The only npm call the script may make is the pinned global Codex install, recorded so a test
   // can count it; a success "installs" a codex stub that reports the pin, or a broken one on request.
-  // The real chmod, because the stub PATH's own chmod is a no-op.
+  // Use the absolute chmod path so the fixture controls every executable on PATH.
   writeExecutable(
     join(bin, 'npm'),
     `printf '%s\\n' "$*" >> "$NPM_CALLS"
@@ -103,7 +92,6 @@ printf '#!/bin/bash\\n%s\\n' "$body" > "$STUB_BIN/codex"
 /bin/chmod +x "$STUB_BIN/codex"`
   );
   if (codex) writeExecutable(join(bin, 'codex'), CODEX_EXECUTABLES[codex]);
-  writeExecutable(join(bin, 'chmod'), `exit 0`);
 
   const result = spawnSync('/bin/bash', [fixtureSetupPath], {
     cwd,
@@ -119,7 +107,6 @@ printf '#!/bin/bash\\n%s\\n' "$body" > "$STUB_BIN/codex"
       FAIL_PLAYWRIGHT: String(failures.playwright ?? 0),
       FAIL_PLAYWRIGHT_VERSION: String(failures.playwrightVersionDerivation ?? 0),
       PLAYWRIGHT_VERSION: failures.playwrightVersion ?? '1.61.1',
-      FAIL_CHISEL: String(failures.chisel ?? 0),
       FAIL_CODEX: String(failures.codex ?? 0),
     },
   });
@@ -146,14 +133,14 @@ describe('Claude cloud setup warnings', () => {
   });
 
   it('keeps multiple failures non-fatal and includes each one in the final summary', () => {
-    const result = runSetup({ playwright: 1, chisel: 1 });
+    const result = runSetup({ corepack: 1, playwright: 1 });
 
     expect(result.status).toBe(0);
     expect(result.stderr.match(/CLAUDE SETUP WARNING/g)).toHaveLength(2);
     expect(result.stderr.slice(result.stderr.indexOf('==> Claude setup finished'))).toBe(
       `==> Claude setup finished with 2 warning(s):
+    - pnpm setup skipped — the SessionStart hook's install will fail until corepack can provision pnpm
     - playwright browser install skipped — allowlist cdn.playwright.dev?
-    - chisel install skipped — check github release-asset egress
 ==> The environment is up but may be incomplete; address the warnings above.
 `
     );

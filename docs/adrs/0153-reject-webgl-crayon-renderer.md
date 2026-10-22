@@ -1,6 +1,14 @@
 # ADR-0153: Reject a WebGL crayon renderer — measured as additive complexity, not a deletion
 
-**Status:** Active **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The measured CPU Canvas 2D crayon pipeline and rejected WebGL alternatives
+belong to the removed renderer. RN native uses Skia (ADR-0178), while RN web uses SVG/raster ink.
+The old measurements do not choose a backend for either RN renderer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-08
 
 ## Context
 

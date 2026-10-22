@@ -2,6 +2,14 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Distance-driven clear notes and the commit sound remain in RN audio owners.
+`src/lib/audio/clearSoundNotes.ts` owns the procedural note definition; platform clear-sound
+adapters play it through browser synthesis or generated native note assets. The retired drag action
+and Web Audio-only integration below are historical. The historical design below retains its
+original context.
+
 ## Context
 
 Drag-to-clear can finish almost immediately or continue for an arbitrary distance while the child

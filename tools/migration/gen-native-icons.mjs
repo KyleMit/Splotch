@@ -12,7 +12,7 @@ const NATIVE_ICON_DIR = `${ROOT}/src/rsdDrawing/`;
 export const NATIVE_ICONS_TARGET = `${NATIVE_ICON_DIR}icons.generated.ts`;
 export const NATIVE_DEFERRED_ICONS_TARGET = `${NATIVE_ICON_DIR}icons.deferred.generated.ts`;
 export const NATIVE_SPLOTCHY_TARGET = `${NATIVE_ICON_DIR}splotchy.generated.ts`;
-// SectionIcon.svelte routes this one non-renderable icon to SplotchyIcon.svelte.
+// The structural mascot renders separately from the ordinary icon table.
 const SPLOTCHY = 'splotchy';
 const DEFERRED_SPECIFIER = `./${basename(NATIVE_DEFERRED_ICONS_TARGET, '.ts')}`;
 
@@ -176,7 +176,7 @@ export function nativeIconModules({
   assertNativeMarkup(SPLOTCHY, splotchy);
   return {
     [NATIVE_ICONS_TARGET]: [
-      header('src/lib/icons'),
+      header('assets/icons'),
       '',
       `import type { NATIVE_DEFERRED_ICONS } from '${DEFERRED_SPECIFIER}';`,
       '',
@@ -193,7 +193,7 @@ export function nativeIconModules({
       '',
     ].join('\n'),
     [NATIVE_DEFERRED_ICONS_TARGET]: [
-      header('src/lib/icons'),
+      header('assets/icons'),
       '',
       ...lazy.declarations,
       '',

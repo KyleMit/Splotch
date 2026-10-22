@@ -1,93 +1,102 @@
 {
   "base": "109b5c38b4010e4c93a5ce166b3d424ba4d7f0a8",
+  "checked": 24,
   "files": [
     {
       "path": "netlify/functions/generate-image-background.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/securityPolicy.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/server/apiCors.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/server/csrf.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/server/generationJobs.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/server/http.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/server/privateEnv.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "netlify/server/securityHeaders.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/clear/clearDock.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/clear/dragToClear.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/clear/useClearGesture.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lazyExport.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/actions/pinchTextZoomGesture.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/actions/pinchZoom.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/design/tokens.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/errorLog.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/hexPickerLayout.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/pwa/updates.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/lib/saveNaming.ts",
-      "identicalEmittedJs": true
+      "identical": true
+    },
+    {
+      "path": "src/rsdDrawing/icons.deferred.generated.ts",
+      "identical": true
+    },
+    {
+      "path": "src/rsdDrawing/icons.generated.ts",
+      "identical": true
     },
     {
       "path": "src/settings/savingSection.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "src/settings/toolDrawerSection.ts",
-      "identicalEmittedJs": true
+      "identical": true
     },
     {
       "path": "tools/release/lib/buildVersion.ts",
-      "identicalEmittedJs": true
+      "identical": true
     }
   ]
 }

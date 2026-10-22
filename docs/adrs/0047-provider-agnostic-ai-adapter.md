@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The provider seam remains in `netlify/server/ai/provider.ts`; the OpenAI adapter owns the vendor SDK
+under ADR-0113. Framework-free generation and verification handlers consume it. The Gemini adapter
+and Svelte route locations below are historical. The historical design below retains its original
+context.
+
 ## Context
 
 The AI features ride on Gemini's image model, and `@google/genai` was imported directly wherever it

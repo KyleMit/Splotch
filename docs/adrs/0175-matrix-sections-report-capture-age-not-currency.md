@@ -1,14 +1,17 @@
 # ADR-0175: Matrix Sections Report Their Capture Age, Not a Currency Verdict
 
-**Status:** Active — supersedes [ADR-0159](0159-matrix-staleness-reported-not-enforced.md); amends
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The performance matrix capture/fold commands, age checker and sources
+inventory retired with the old harness. Historical capture dates keep their recorded scope; no
+retained age-reporting tool or RN performance qualification is claimed.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — supersedes
+[ADR-0159](0159-matrix-staleness-reported-not-enforced.md); amends
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md); amended 2026-09 for the
 release-gate age limit (see the amendment at the end) **Date:** 2026-09
-
-## Current scope after the RN cutover (2026-10)
-
-The retained matrix-staleness tool reports ages of historical captures. The campaign capture/fold
-commands below retired with the old harness; the retained matrix is not a measurement or release
-gate for the RN renderer. The historical design below retains its original context.
 
 ## Context
 

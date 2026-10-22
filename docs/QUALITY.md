@@ -94,8 +94,8 @@ byte budget.
 `docs/PROFILING.md` measure RN drawing. `tools/migration/check-native-web-startup.mjs` enforces
 first-paint, core-control and per-document byte caps; `check-native-web-precache.mjs` checks the
 service-worker inventory. The RN-export Lighthouse gate measures page load (ADR-0149/0182).
-Historical matrix capture ages remain reportable through `check:matrix-staleness`; they are not
-measurements of the RN renderer.
+Historical performance records remain evidence for their recorded renderer. The old matrix age
+checker retired with that harness.
 
 ## Resilience
 
@@ -222,9 +222,8 @@ change that invalidates it.
 
 **Backed by.** `ruler:check` reruns the generation pipeline and fails if output changed;
 `check:skill-refs` catches the wrong invocation sigil for the tree it appears in; `check:adrs`
-guards record integrity; `check:matrix-staleness` reports how old each performance claim is;
-`scrapbook:check` guards the published index. Skills: `skills-guide` for the catalog,
-`create-handoff` and `resume-handoff` for session-to-session transfer.
+guards record integrity; `scrapbook:check` guards the published index. Skills: `skills-guide` for
+the catalog, `create-handoff` and `resume-handoff` for session-to-session transfer.
 
 ## Developer Experience
 

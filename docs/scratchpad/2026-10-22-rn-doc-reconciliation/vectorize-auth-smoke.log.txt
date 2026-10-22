@@ -1,0 +1,3 @@
+file pair: PASS (offline fetch stub; fixture credentials)
+shell pair: PASS (offline fetch stub; fixture credentials)
+shell header: PASS (offline fetch stub; fixture credentials)

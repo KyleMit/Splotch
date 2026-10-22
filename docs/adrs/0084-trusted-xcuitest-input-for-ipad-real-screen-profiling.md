@@ -1,7 +1,15 @@
 # ADR-0084: Trusted XCUITest Input for Physical-iPad Real-Screen Profiling
 
-**Status:** Active — amended by [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md).
-**Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The XCUITest-to-MobileSafari capture driver and its real-screen scorer
+retired with the old performance harness. Its trusted-input measurements remain historical evidence,
+not an RN capture command or qualification result.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amended by
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:** 2026-07
 
 > **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
 > trusted-input screen-capture contract remains in force, while its command is now

@@ -3,6 +3,8 @@
 // never left on the old grid to slip under the pixel gate — and sources whose
 // preserveAspectRatio the verifier cannot model are refused outright.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { ROOT } from '../../lib/proc.mjs';
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,6 +27,19 @@ async function writeIcon(name, svg) {
 const attr = (svg, name) => svg.match(new RegExp(`${name}="([^"]*)"`))?.[1];
 
 describe('rebase-icon-viewbox geometry coverage', () => {
+  it('resolves the committed icon catalog when run as a CLI', async () => {
+    // The exempt mascot exercises catalog discovery without rewriting committed art.
+    const file = join(ROOT, 'assets', 'icons', 'splotchy.svg');
+    const before = await readFile(file);
+    const output = execFileSync(
+      process.execPath,
+      [join(ROOT, 'tools', 'icons', 'rebase-icon-viewbox.mjs'), 'splotchy'],
+      { cwd: ROOT, encoding: 'utf8' }
+    );
+    expect(output).toContain('splotchy.svg: exempt (mascot keeps its own frame)');
+    expect(await readFile(file)).toEqual(before);
+  });
+
   it('transforms <polygon> points onto the canonical grid (the silent-triangle repro)', async () => {
     const file = await writeIcon(
       'triangle',

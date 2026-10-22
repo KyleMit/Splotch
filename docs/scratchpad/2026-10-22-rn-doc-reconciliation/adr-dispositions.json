@@ -20,6 +20,11 @@
     "The localStorage/IndexedDB dual-write store was removed. Platform-specific RN stores own settings, credentials and offline books."
   ],
   [
+    "0006",
+    "amended",
+    "The server-only provider boundary remains in `netlify/server/ai/` and the framework-free API handlers. OpenAI under ADR-0113 and the background job flow under ADR-0115 replace the original Gemini synchronous call. Current credential and free-grant contracts are documented in `docs/API.md`."
+  ],
+  [
     "0007",
     "amended",
     "The framework-free wrapper `netlify/server/api/apiFunction.ts` applies the cross-site form guard from `netlify/server/csrf.ts` and CORS from `apiCors.ts`. The recorded trusted origins and wire responses remain unchanged; there is no Svelte configuration or hook. RN native transport calls the hosted API and RN web calls it same-origin."
@@ -50,6 +55,11 @@
     "Capacitor global detection was removed. Metro resolves `.web` and native adapters at build time (ADR-0179)."
   ],
   [
+    "0014",
+    "amended",
+    "The process-local sliding-window limiter remains in `netlify/server/rateLimit.ts`, called by the framework-free endpoint owners. Durable free-generation budgets and privacy-preserving IP keys are separate policies under ADR-0105 and ADR-0150. The former source location and Gemini examples below are historical."
+  ],
+  [
     "0015",
     "amended",
     "The bounded paper backing scale remains in `src/drawing/paperSpace.ts` as MAX_BACKING_SCALE. Export quality is owned separately by `src/drawing/pictureExport.ts`; native Skia surface density follows its own renderer contract (ADR-0178). The Svelte engine propagation and undo details below were removed."
@@ -63,6 +73,11 @@
     "0020",
     "amended",
     "The root `ios/Splotch.xcodeproj` resolves Expo/RN modules through CocoaPods, with the committed `Gemfile`, `Podfile` and lockfile. Plain `xcodebuild` archive/export and manual store upload remain the release path. SPM/no-CocoaPods below describes the removed Capacitor project; it is not setup advice. See `docs/MOBILE/ios.md`."
+  ],
+  [
+    "0021",
+    "superseded",
+    "The Vite development-server reverse tunnel and its chisel setup retired with the Svelte app. RN cloud inspection uses the production export; public phone preview uses a verified Netlify deployment. This record preserves the measured proxy constraints, not a current tunnel setup requirement."
   ],
   [
     "0022",
@@ -92,7 +107,7 @@
   [
     "0028",
     "amended",
-    "The product gesture survives through `src/platform/pencilEraser.ts` and its web adapter, with native module support in the root iOS project. The Capacitor plugin implementation below was removed; RN subscriptions own the lifecycle."
+    "The product gesture survives through `src/platform/pencilDoubleTap.ts` and its web adapter, with native module support in the root iOS project. The Capacitor plugin implementation below was removed; RN subscriptions own the lifecycle."
   ],
   [
     "0030",
@@ -110,14 +125,19 @@
     "The SvelteKit/Capacitor capture harness was retired. RN drawing uses the in-app probe and replay traces described in `docs/PROFILING.md`."
   ],
   [
+    "0034",
+    "superseded",
+    "The virtual-canvas, baseline/log and repaintAll resize pipeline was removed. RN paper geometry and retained ink use their own presentation and replay owners under src/drawing; this record does not specify their resize implementation."
+  ],
+  [
     "0037",
     "amended",
     "The save-target product contract survives through `src/export/` and the platform `pictureSave` adapters. RN native export uses its native drawing capture; web uses browser download/folder APIs. Capacitor Media calls and Svelte bridges below are historical."
   ],
   [
     "0038",
-    "amended",
-    "Input rejection is owned by the RN drawing input path and platform stylus adapters. The Svelte event listeners below were removed; current mounted contact tests and RN E2E pen/multitouch specs define enforcement."
+    "superseded",
+    "The Safari stylus Touch-event cancellation action and its Svelte control integration were removed. RN input uses platform paper/contact owners; this record preserves the old Scribble investigation without claiming that the removed mechanism is enforced by the RN app."
   ],
   [
     "0039",
@@ -130,6 +150,16 @@
     "The SvelteKit per-route render modes were removed. The RN export prerenders documents and the drawing first frame under ADR-0180."
   ],
   [
+    "0042",
+    "amended",
+    "Stable hosted media paths and revision-based Workbox invalidation remain. `netlify.toml` owns HTTP caching; `tools/migration/build-native-web.mjs` emits the RN export precache directly through workbox-build. The retired Vite plugin and WebView manifest wiring below are not current build instructions."
+  ],
+  [
+    "0043",
+    "amended",
+    "Magic still reveals registered coloring fill through ordinary brush strokes. RN web uses SVG patterns in `src/drawing/Ink.tsx`; native uses the shader path in `src/drawing/skiaInkPainter.ts`. The CanvasPattern, tiled-worker and snapshot-undo implementation below was removed."
+  ],
+  [
     "0044",
     "amended",
     "The re-runnable SVG contract survives as `tools/optimize-svg-assets.mjs`, `optimize:svg-assets` and `check:svg-assets` (ADR-0111). The shipped assets live under `assets/static/`; the old scripts/web roots and img:audit aliases below are historical."
@@ -137,7 +167,12 @@
   [
     "0045",
     "amended",
-    "The RN offline library and artwork owners replace Svelte picker prefetch. `src/offlineLibrary/` owns complete-book visibility; `src/platform/coloringAssets.web.ts` owns browser URLs. Historical decode/prefetch mechanism details below do not describe RN component lifecycle."
+    "The RN offline library and artwork owners replace Svelte picker prefetch. `src/offlineLibrary/` owns complete-book visibility; `src/offlineLibrary/artwork.tsx` owns artwork URLs. Historical decode/prefetch mechanism details below do not describe RN component lifecycle."
+  ],
+  [
+    "0047",
+    "amended",
+    "The provider seam remains in `netlify/server/ai/provider.ts`; the OpenAI adapter owns the vendor SDK under ADR-0113. Framework-free generation and verification handlers consume it. The Gemini adapter and Svelte route locations below are historical."
   ],
   [
     "0048",
@@ -152,12 +187,17 @@
   [
     "0050",
     "amended",
-    "The locked-paper product decision remains in `src/drawing/` and shared `src/lib/drawing/paperView.ts`. RN native and web renderers own presentation; none of the removed Svelte engine callbacks below are active APIs."
+    "The locked-paper product decision remains in `src/drawing/paperSpace.ts` and `src/drawing/paperGeometry.ts`. RN native and web renderers own contain-fit presentation; the removed Svelte engine callbacks below are not active APIs."
   ],
   [
     "0052",
     "amended",
     "Theme choice and tokens are owned by RN settings, the RSD token source and platform theme adapters. The Svelte root attribute and generated-CSS mechanism below is historical. RN web prerendering stamps the initial document theme."
+  ],
+  [
+    "0059",
+    "amended",
+    "Keeper outputs live in `scrapbook/`, promoted by `tools/scrapbook/publish-scrapbook.mjs` and published by the Pages workflow. `tools/scrapbook/README.md` owns the current entry points and layout. The former artifacts directory and command names below describe the original implementation."
   ],
   [
     "0060",
@@ -245,6 +285,11 @@
     "The WebKit screen-probe capture command was retired. The retained measurements do not describe the RN renderer."
   ],
   [
+    "0084",
+    "superseded",
+    "The XCUITest-to-MobileSafari capture driver and its real-screen scorer retired with the old performance harness. Its trusted-input measurements remain historical evidence, not an RN capture command or qualification result."
+  ],
+  [
     "0085",
     "superseded",
     "The tiled Svelte renderer was removed. RN rendering and native Skia ownership replace its surface model (ADR-0178)."
@@ -295,11 +340,6 @@
     "Settings remains freely openable; sensitive operations own their parent challenge. `src/settings/`, `src/parentCenter/` and the RSD settings shells implement that rule. The Svelte identifier vocabulary and boot-hidden overlay mechanism below were removed; opening Settings still proves no adult identity."
   ],
   [
-    "0095",
-    "amended",
-    "The locked-paper containment policy remains in shared geometry and RN drawing presentation. The retired tiled engine names below are historical."
-  ],
-  [
     "0096",
     "amended",
     "The public `/design` document is generated from the RN web page-document owners under `src/pageDocument/design/` and current design sources. It remains a public styleguide; its Svelte route/partials and icon registry below were removed."
@@ -312,7 +352,7 @@
   [
     "0099",
     "amended",
-    "RN drawing paper geometry owns resize, rotation and viewport presentation, using shared `src/lib/drawing/paperView.ts` where appropriate. The Svelte resizeCanvas/tiled renderer below was removed; its exact browser measurements remain historical evidence rather than a separate RN implementation."
+    "`src/drawing/paperPresentation.ts` and the RN paper geometry owners retain the viewport/paper distinction. The Svelte resizeCanvas/tiled renderer below was removed; its browser measurements remain historical evidence rather than a separate RN implementation."
   ],
   [
     "0100",
@@ -340,9 +380,19 @@
     "The authoritative free-grant API remains in `netlify/server/`. RN client pseudonyms come from platform installation identity and shared hashing, not Capacitor Device or a rune store. The wire contract and privacy purpose remain unchanged."
   ],
   [
+    "0106",
+    "amended",
+    "Hash-bound image/description reviews remain available for the recorded inventory through `tools/page-inventory/run-inventory-critiques.mjs` and `tools/page-inventory/finalize-page-critique.mjs`. The Svelte capture/report attachment commands were removed. Existing captures retain their recorded dates and renderer; reviewing them does not generate or qualify a fresh RN inventory."
+  ],
+  [
     "0109",
     "superseded",
     "The Svelte development invoke-handle seam was removed. RN E2E and mounted tests exercise current owners."
+  ],
+  [
+    "0110",
+    "superseded",
+    "The disposable Canvas 2D worker brokers, context-recovery wrapper and worker replay paths were removed. RN native Skia and the RN web SVG/raster renderer have different surface owners; this record does not establish a recovery policy for them."
   ],
   [
     "0112",
@@ -360,6 +410,11 @@
     "The waiting polaroid remains in `src/ai/AiWaitingPolaroid.tsx` and RN AI state. The Svelte component and rune-store names below are historical; RN async owners handle cancellation and late settlement."
   ],
   [
+    "0118",
+    "amended",
+    "The composition-preserving prompt lives in `src/lib/ai/prompt.ts`; `tools/model-eval/run-prompt-adherence.mjs` remains its measured evaluation entry point. RN transport reaches the same hosted provider boundary. The dated model comparisons remain evidence for that prompt, not fresh RN measurements."
+  ],
+  [
     "0119",
     "amended",
     "One root package and lockfile own the app, hosted API and tools; there is no private experiments workspace member. Hoisted resolution remains for the root native projects and existing native-module patches. SDK/template alignment, script provenance, pnpm installs and npm script invocation remain mandatory."
@@ -368,6 +423,11 @@
     "0120",
     "amended",
     "The flow still only launches, waits for Settings and captures the painted screen. Its literal Settings owner is `src/rsdDrawing/RsdEdgeControls.tsx`, guarded by `tools/tests/native-smoke-flow.test.mjs`. Tag/dispatch deploy workflows boot root RN Release builds; CI compilation is separate. No UI navigation was added to the smoke."
+  ],
+  [
+    "0121",
+    "amended",
+    "Current coloring appearance reaches retained Magic ink through `src/drawing/DrawingAppearance.tsx`, the web patterns in `src/drawing/Ink.tsx`, and native scene synchronization in `src/drawing/SkiaInk.tsx`. The old tiled raster tail, worker sheet and engine callbacks below were removed."
   ],
   [
     "0122",
@@ -380,6 +440,11 @@
     "The Svelte storeCapture runtime flag and live capture entry were removed. Retained historical captures keep their original provenance."
   ],
   [
+    "0124",
+    "amended",
+    "Tag/manual deploy workflows build the root RN Release configurations and run the boot-only smoke. Android uses disposable CI signing; iOS uses a simulator build without store signing. PR native compilation remains separate. The production web sync and Debug simulator steps below describe the removed Capacitor pipeline; ADR-0120 still bounds the smoke to launch-and-paint."
+  ],
+  [
     "0125",
     "amended",
     "The canonical icon grid and rebase tool remain. Current generated RSD icon assets and `tools/icons/README.md` replace the Svelte Icon unit and path rule below; no Svelte rule file is part of the live workflow."
@@ -390,9 +455,19 @@
     "AI remains an explicit persisted opt-in in RN settings. Its defaults and validated codec live in `src/settings/`; the Svelte dual-layer store below was removed. No legacy settings import is promised by the cutover."
   ],
   [
+    "0128",
+    "amended",
+    "The explicit-action persistence rule remains in the RN credential session and web save-folder adapter: `src/ai/session.ts`, `src/platform/persistentStorage.web.ts` and `src/platform/folderSave.web.ts`. Automatic offline-library installation does not request persistence. The former Svelte store call sites below were removed."
+  ],
+  [
     "0129",
     "amended",
     "Invariant SVG overlays remain canonical line art. The current RN integrity catalog under `src/offlineLibrary/` replaces the former WebView manifest generator; platform asset owners resolve the catalog. The old manifest format/storage wiring below retains its historical scope."
+  ],
+  [
+    "0131",
+    "amended",
+    "Distance-driven clear notes and the commit sound remain in RN audio owners. `src/lib/audio/clearSoundNotes.ts` owns the procedural note definition; platform clear-sound adapters play it through browser synthesis or generated native note assets. The retired drag action and Web Audio-only integration below are historical."
   ],
   [
     "0132",
@@ -415,9 +490,19 @@
     "The split physical capture harness was retired. Trusted-input requirements remain relevant when designing a new instrument, but this implementation no longer runs."
   ],
   [
+    "0136",
+    "superseded",
+    "The late-frame lostFrameTimeShare scorer and its calibrated performance gate retired with the old capture harness. The examples and metric reasoning remain historical evidence, not an RN acceptance gate."
+  ],
+  [
     "0137",
     "superseded",
     "The lost-frame exception ledger belonged to the retired renderer and performance gates. Its numeric allowances are historical evidence."
+  ],
+  [
+    "0138",
+    "superseded",
+    "The perf-profiles corpus promotion, rescore commands and per-campaign raw-capture selection workflow retired with the old performance harness. Retained evidence remains attributable to its recorded renderer; the current RN probe/replay workflow is documented in docs/PROFILING.md."
   ],
   [
     "0139",
@@ -446,6 +531,11 @@
     "The coalescing classification belonged to the retired input-fidelity scorer."
   ],
   [
+    "0145",
+    "superseded",
+    "The moves-per-frame cadence scorer and the capture transport gates it calibrated retired with the old performance harness. Its controls and measured bounds remain historical, not RN input qualification."
+  ],
+  [
     "0146",
     "superseded",
     "The `CAPACITOR` crayon op-granularity branches were removed with the old renderer."
@@ -461,6 +551,11 @@
     "The Capacitor native crayon glaze pipeline was removed. Native ink renders through Skia (ADR-0178)."
   ],
   [
+    "0149",
+    "amended",
+    "This page-load gate remains active, independently of the retired drawing-performance harness. `tools/page-load/` and the Page-load performance CI job measure the RN production export; `tools/page-load/baseline.json` owns the unchanged thresholds. Source-digest refreshes do not alter those thresholds."
+  ],
+  [
     "0150",
     "amended",
     "The truncate-then-HMAC durable-IP rule remains in the framework-free Netlify server modules. Current request boundaries live under `netlify/server/`; client framework removal changes neither the pseudonym contract nor the recorded privacy constraints."
@@ -472,9 +567,19 @@
     "The responsive selector asset tiers and canonical SVG line art remain. RN library/artwork owners replace the Capacitor srcset branch and Svelte picker below; native and web adapters select their own presentation sources under the shared integrity catalog."
   ],
   [
+    "0153",
+    "superseded",
+    "The measured CPU Canvas 2D crayon pipeline and rejected WebGL alternatives belong to the removed renderer. RN native uses Skia (ADR-0178), while RN web uses SVG/raster ink. The old measurements do not choose a backend for either RN renderer."
+  ],
+  [
     "0156",
     "superseded",
     "The four physical capture rows and their release gate belonged to the retired harness. They are not RN release evidence."
+  ],
+  [
+    "0157",
+    "amended",
+    "The backdrop policy remains in `src/rsdDrawing/ModalScrim.web.tsx` and its native counterpart. The coloring picker requests a plain touch backdrop; web also honors reduced transparency. The old dialog CSS and tiled-renderer measurements below are historical, not RN timing proof."
   ],
   [
     "0158",
@@ -529,8 +634,8 @@
   ],
   [
     "0171",
-    "amended",
-    "RN settings and theme-cover adapters own the theme transition. The Svelte view-transition wiring below was removed; no browser View Transition API is required by the native app."
+    "superseded",
+    "The document.startViewTransition call and CSS root-pseudo-element crossfade were removed with the Svelte theme pipeline. RN theme settings and appearance owners do not implement that recorded transition mechanism; this supersession makes no new theme-animation decision."
   ],
   [
     "0172",
@@ -549,12 +654,17 @@
   ],
   [
     "0175",
-    "amended",
-    "The retained matrix-staleness tool reports ages of historical captures. The campaign capture/fold commands below retired with the old harness; the retained matrix is not a measurement or release gate for the RN renderer."
+    "superseded",
+    "The performance matrix capture/fold commands, age checker and sources inventory retired with the old harness. Historical capture dates keep their recorded scope; no retained age-reporting tool or RN performance qualification is claimed."
   ],
   [
     "0176",
     "superseded",
     "The Svelte render-blocking expectation link was removed. RN first-frame prerendering is governed by ADR-0180."
+  ],
+  [
+    "0177",
+    "amended",
+    "This decision governs the installed web app: `assets/static/site.webmanifest` and its maskable icons keep the brand launch background. RN export tooling publishes those web assets. Native launch resources belong to the committed Android/iOS projects and are not qualified by these browser measurements. The former web directory paths below are historical."
   ]
 ]

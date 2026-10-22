@@ -21,8 +21,8 @@ The constraint that matters here is **networking**:
   access (a Custom allowlist naming that host would answer the same), so the allowlist notes below
   may not apply to it. Check the dialog before assuming either.
 * **No inbound port forwarding.** There is no built-in way to expose a local port to a public URL.
-  The container shares no network with your phone or laptop, so the LAN (`dev:host`) and USB
-  (`adb:reverse`) flows in the mobile guide do **not** apply in a cloud session.
+  The container shares no network with your phone or laptop, so local LAN and USB port-forwarding
+  flows do **not** apply in a cloud session.
 
 ## Session lifecycle and what persists
 
@@ -208,9 +208,8 @@ beforehand, so real in-session lockfile edits survive a resume.
 
 ### Recommended setup script (environment config)
 
-The hook covers deps, but the Playwright **E2E** tier needs a browser binary the hook can't fetch,
-and the phone-preview tunnel wants its client binary cached. Both are heavy, cacheable,
-repo-independent installs — the job of the environment's **Setup script** field (env settings
+The hook covers dependencies, but the Playwright **E2E** tier needs a browser binary the hook cannot
+fetch. Browser installation belongs in the environment's **Setup script** field (env settings
 dialog), which is snapshotted so later sessions skip it.
 
 That field can't be version-controlled, so keep it a one-line bootstrap and commit the real logic in
@@ -220,10 +219,10 @@ That field can't be version-controlled, so keep it a one-line bootstrap and comm
 bash .claude/cloud/setup.sh
 ```
 
-The script installs the chromium E2E browser and caches the chisel tunnel client (so the per-session
-`curl` the tunnel steps below would otherwise need is skipped). Keep it under ~5 min so the cache
-builds. **Skip the Android/iOS native toolchains on this environment** — there's no Xcode and no USB
-device in a cloud container, so the `ios:*` and on-device `test:android` scripts can't run here.
+The script installs the Chromium E2E browser and the configured rival CLI. Keep it under ~5 min so
+the cache builds. **Skip the Android/iOS native toolchains on this environment** — there's no Xcode
+and no USB device in a cloud container, so the `ios:*` and on-device `test:android` scripts can't
+run here.
 
 An **Android emulator is the one exception**, and it belongs on its own environment rather than this
 one. It does run — headless, under software emulation, since the container has no `/dev/kvm` — but

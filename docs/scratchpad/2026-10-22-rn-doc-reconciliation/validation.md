@@ -1,10 +1,10 @@
 # Local validation and expected CI
 
-All commands below completed with exit code zero on the staged source/config candidate. Quality and
-browserless ran serially in the final passes. The initial overlapping run's ENOENT is an execution
-overlap, not product evidence: Ruler temporarily replaces/restores direct provider packages while
-doc guards read them. Its raw log remains in the unit scratch directory for the parent's separate
-self-heal unit.
+The initial composed validation below completed with exit code zero. Final repair checks are
+recorded separately after the table. Quality and browserless ran serially in the final passes. The
+initial overlapping run's ENOENT is an execution overlap, not product evidence: Ruler temporarily
+replaces/restores direct provider packages while doc guards read them. Its raw log remains in the
+unit scratch directory for the parent's separate self-heal unit.
 
 | Command / proof                                             | Result                                                                                                                                                   |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -18,10 +18,18 @@ self-heal unit.
 | npm run check:adrs                                          | 177 uniquely numbered/indexed records, valid ADR links.                                                                                                  |
 | npm run ruler:check                                         | Generated provider output matches the authoritative sources; direct packages preserved.                                                                  |
 | bash -n on Claude SessionStart and both Codex cloud scripts | Shell syntax passes. No cloud provisioning or credential setup was executed.                                                                             |
-| Runtime source proof                                        | All 22 changed app/Netlify/buildVersion TypeScript files emit identical JavaScript with comments removed.                                                |
+| Runtime source proof                                        | All 24 changed app/Netlify/buildVersion TypeScript files emit identical JavaScript with comments removed.                                                |
 | Native/assets/dependency invariant proof                    | Native projects, assets, locks and dependency declarations are unchanged. Startup-cap source is byte-identical; Lighthouse differs only in sourceDigest. |
 | Share cards                                                 | Existing generator rerun after token comments; all four PNGs byte-identical to the migration base. Only input provenance changes.                        |
 | TSX regression control                                      | Existing lint-file test fails with the old filter and passes with the TSX fix: 79/80 then 80/80.                                                         |
+
+The final repair candidate passes all 12 Quality checks and the complete tools tier: **497 files,
+8,149 tests**. The count increases by exactly one real icon-CLI regression; no existing case is
+removed. All 15 cloud setup cases remain. The repaired export and Chromium post-build gates also
+pass with the same sizes shown above. Raw receipts are `quality-repair-with-icons.log.txt`,
+`tools-repair-with-icons.log.txt`, `build-site-repair-final.log.txt` and
+`post-web-build-repair-final.log.txt` in the unit scratch directory. The committed icon control logs
+show 6 pass / 1 fail before the fix and 7 pass afterward.
 
 The code-map snapshot is the committed rules revision 604943098c34039aa638d5bd8d5bb5e9615fa516, not
 a claim that its totals count later documentation edits. It has no unassigned paths or unused domain

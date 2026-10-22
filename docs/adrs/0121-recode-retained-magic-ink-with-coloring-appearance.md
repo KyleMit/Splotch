@@ -7,6 +7,13 @@
 [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md); amended 2026-09-29 so the page restore
 on Undo follows the Coloring Book setting (see the amendment below) **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Current coloring appearance reaches retained Magic ink through `src/drawing/DrawingAppearance.tsx`,
+the web patterns in `src/drawing/Ink.tsx`, and native scene synchronization in
+`src/drawing/SkiaInk.tsx`. The old tiled raster tail, worker sheet and engine callbacks below were
+removed. The historical design below retains its original context.
+
 ## Context
 
 Magic operations captured an immutable color-sheet snapshot when first painted. That made a settled

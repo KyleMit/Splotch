@@ -8,6 +8,13 @@ pending fold, and a permanent margin crop. See the amendment at the end. Also am
 (2026-07): the magic brush is selected from the Brush Menu (one `brush` axis) rather than a
 top-level toggle button; the rendering design is untouched. **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+Magic still reveals registered coloring fill through ordinary brush strokes. RN web uses SVG
+patterns in `src/drawing/Ink.tsx`; native uses the shader path in `src/drawing/skiaInkPainter.ts`.
+The CanvasPattern, tiled-worker and snapshot-undo implementation below was removed. The historical
+design below retains its original context.
+
 ## Context
 
 Every coloring page ships two aligned assets: the black-and-white line art

@@ -4,6 +4,13 @@
 exception and 2026-08-08 by [ADR-0103](0103-progressive-coloring-book-packs.md) for verified
 coloring-pack caches. **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+Stable hosted media paths and revision-based Workbox invalidation remain. `netlify.toml` owns HTTP
+caching; `tools/migration/build-native-web.mjs` emits the RN export precache directly through
+workbox-build. The retired Vite plugin and WebView manifest wiring below are not current build
+instructions. The historical design below retains its original context.
+
 ## Context
 
 Splotch serves a set of static media with **stable, non-content-hashed filenames** —

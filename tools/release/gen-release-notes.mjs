@@ -32,9 +32,6 @@ const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Sto
 // beside it on /changelog.
 // Longest form first, so a dash closed on both sides reports both neighbours.
 const CLOSED_EM_DASH = /\S—\S|\S—|—\S/;
-// The section vocabulary is owned by src/lib/releaseSections.ts, which this
-// plain-node script cannot import ($lib alias, deferred-icon registration);
-// src/lib/releaseSections.test.ts fails when the two diverge.
 export const RELEASE_SECTION_TITLES = new Set(['New', 'Improved', 'Fixed']);
 
 function parseRelease(filename) {

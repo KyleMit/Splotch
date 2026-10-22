@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+This page-load gate remains active, independently of the retired drawing-performance harness.
+`tools/page-load/` and the Page-load performance CI job measure the RN production export;
+`tools/page-load/baseline.json` owns the unchanged thresholds. Source-digest refreshes do not alter
+those thresholds. The historical design below retains its original context.
+
 ## Context
 
 Splotch gated interaction performance and production bundle bytes, but neither catches a newly

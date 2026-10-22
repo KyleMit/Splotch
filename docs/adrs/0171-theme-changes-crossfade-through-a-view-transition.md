@@ -1,13 +1,16 @@
 # ADR-0171: Theme Changes Crossfade Through a View Transition
 
-**Status:** Active (amended 2026-09-26: a veil on the card replaces the view transition) **Date:**
-2026-09
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
 
-## Current scope after the RN cutover (2026-10)
+**RN cutover (2026-10):** The document.startViewTransition call and CSS root-pseudo-element
+crossfade were removed with the Svelte theme pipeline. RN theme settings and appearance owners do
+not implement that recorded transition mechanism; this supersession makes no new theme-animation
+decision.
 
-RN settings and theme-cover adapters own the theme transition. The Svelte view-transition wiring
-below was removed; no browser View Transition API is required by the native app. The historical
-design below retains its original context.
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active (amended 2026-09-26: a veil on the card replaces the view
+transition) **Date:** 2026-09
 
 ## Context
 

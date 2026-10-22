@@ -4,6 +4,13 @@
 asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The asset-authoring pipeline remains a root tool capability with dependencies in the root manifest.
+There is no web subdirectory watcher. Marketing renderers live in `tools/marketing-assets/`: store
+assets use committed captures and share cards use standalone documents, rather than a live app. The
+extraction history and former command names below retain their original scope.
+
 ## Context
 
 The AI (`@google/genai`) + image-processing (`sharp`) scripts that **produce** Splotch's committed

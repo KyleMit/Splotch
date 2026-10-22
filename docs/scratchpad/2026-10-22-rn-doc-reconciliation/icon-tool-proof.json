@@ -1,0 +1,24 @@
+{
+  "base": "109b5c38b4010e4c93a5ce166b3d424ba4d7f0a8",
+  "oldCliExit": 1,
+  "oldCliFailure": "ENOENT src/lib/icons",
+  "newCliExit": 0,
+  "cameraSha256": "bbd27222c90a28356bd00774bb8e65026ab4e0d9ef594ef913d5a15083f8abb5",
+  "artAndNativeDiff": [],
+  "iconNameDeclarationsUnchanged": true,
+  "generatedRuntimeModulesHeaderOnly": [
+    "src/rsdDrawing/icons.generated.ts",
+    "src/rsdDrawing/icons.deferred.generated.ts"
+  ],
+  "runtimeEmitIdentical": 24,
+  "lighthouseSourceDigest": "677f16506e01036f38061372f87d87149886258619e1621904bdee9703b22c69",
+  "lighthouseParametersUnchanged": true,
+  "regressionBefore": {
+    "passed": 6,
+    "failed": 1
+  },
+  "regressionAfter": {
+    "passed": 7,
+    "failed": 0
+  }
+}

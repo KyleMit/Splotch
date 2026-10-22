@@ -9,10 +9,10 @@ shrink windows the paper instead of re-adopting it. See the amendments at the en
 
 ## Current scope after the RN cutover (2026-10)
 
-The locked-paper product decision remains in `src/drawing/` and shared
-`src/lib/drawing/paperView.ts`. RN native and web renderers own presentation; none of the removed
-Svelte engine callbacks below are active APIs. The historical design below retains its original
-context.
+The locked-paper product decision remains in `src/drawing/paperSpace.ts` and
+`src/drawing/paperGeometry.ts`. RN native and web renderers own contain-fit presentation; the
+removed Svelte engine callbacks below are not active APIs. The historical design below retains its
+original context.
 
 ## Context
 

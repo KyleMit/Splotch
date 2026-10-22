@@ -4,10 +4,10 @@
 
 ## Current scope after the RN cutover (2026-10)
 
-RN drawing paper geometry owns resize, rotation and viewport presentation, using shared
-`src/lib/drawing/paperView.ts` where appropriate. The Svelte resizeCanvas/tiled renderer below was
-removed; its exact browser measurements remain historical evidence rather than a separate RN
-implementation. The historical design below retains its original context.
+`src/drawing/paperPresentation.ts` and the RN paper geometry owners retain the viewport/paper
+distinction. The Svelte resizeCanvas/tiled renderer below was removed; its browser measurements
+remain historical evidence rather than a separate RN implementation. The historical design below
+retains its original context.
 
 ## Context
 

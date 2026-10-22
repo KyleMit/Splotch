@@ -79,9 +79,8 @@ the emulator is genuinely working. It is specifically Chromium that will not sur
 **Scope of the recorded result:** this environment supported the former Android toolchain. Building,
 signing, installing, `adb` inspection, manifest and permission checks, and native-shell behaviour
 that does not depend on WebView paint are all in reach. That build did not paint its drawing canvas.
-For RN web use the
-[phone preview tunnel](../../docs/CLOUD/Claude-Code.md#previewing-the-dev-server-on-a-phone), which
-serves the real app to a real browser and costs none of this.
+For RN web, inspect the export in the cloud browser or use a verified Netlify deployment for a
+public phone preview; see [previewing the app](../../docs/CLOUD/Claude-Code.md#previewing-the-app).
 
 ### Expect "isn't responding" dialogs
 
@@ -118,7 +117,7 @@ covers why these files are the reviewable copy of a cloud object that has no as-
 Three choices here are worth stating, because each had a plausible alternative:
 
 * **A profile var, not a second setup script.** A separate `setup-android.sh` would have to repeat
-  the shared steps (pnpm, Playwright, chisel), and those two copies drift. Dispatching on
+  the shared steps (pnpm and Playwright), and those two copies drift. Dispatching on
   `SPLOTCH_CLOUD_PROFILE` keeps one entry point and makes the extras additive — a future use case
   adds a profile rather than another script.
 * **Deltas, not a full second config file.** `environment.android.example` records only what differs
