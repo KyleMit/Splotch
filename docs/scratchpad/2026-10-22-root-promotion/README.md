@@ -43,3 +43,22 @@ share-card regeneration also reproduces the four committed PNGs byte-for-byte; o
 provenance changes. The lockfile folds its importers and aligns stylelint's PostCSS peer to the
 application's existing 8.5.28 pin, removing the duplicate 8.5.26 resolution; it introduces no new
 package version.
+
+## Tool-test callback reconciliation
+
+Runtime collection (`vitest list --no-static-parse`) at the exact base and promoted head confirms
+494 tool test files on both sides. Of those, 490 retain their per-file counts (7,972 cases).
+`tool-test-dispositions.json` records the four changed files and every removed callback/dynamic
+surface row. The 8,101 → 8,091 delta is:
+
+| File                           | Before | After | Disposition                                                                                                                                                          |
+| ------------------------------ | -----: | ----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Netlify production installer   |     52 |    49 | Four obsolete second-root guards collapse to retained root equivalents; one new guard rejects workspace packages.                                                    |
+| Build-module collection guards |      3 |     5 | Each Vitest/TypeScript inclusion check expands to the two moved build/hosting owners; parser negative control retained.                                              |
+| Code-map classification        |     45 |    44 | The folded app manifest uses the existing root `package.json` classification case.                                                                                   |
+| Lighthouse measured surface    |     29 |    21 | Twenty-three measured-root rows fold to fifteen, following merged source/assets and a whole migration-tools scope; all six behavioral/negative-control cases remain. |
+
+This count change removes no runtime contract test. The installer still refuses every lifecycle
+stage before child execution and protects the only module tree it cleans. The Lighthouse import
+closure still verifies every tracked export dependency, with a negative control that removes `src`;
+the folded root manifest follows the existing lockfile-owned dependency fingerprint policy.
