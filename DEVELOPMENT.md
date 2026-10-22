@@ -118,6 +118,11 @@ After the PR is merged, the maintainer:
    keys. Removing the origin variable returns builds to production.
 
 No workflow syncs either branch to `test`. The maintainer controls when a reviewed revision deploys.
+Netlify does not automatically schedule branch-deploy purges. Test provider/key-check and feedback
+activity performs expiry sweeps; after production cutover, the published deploy also sweeps test
+stores hourly. Before that cutover, idle data waits for another provider request or a manual
+dashboard invocation of `purge-test-data`. When retiring the test deploy, invoke that function after
+its retention windows expire. Recorded feedback and image reports use the same 30-day window.
 
 ## Checking a JS-only change on a device
 

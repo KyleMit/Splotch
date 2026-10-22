@@ -117,10 +117,7 @@ The decisions that shape the current app, in rough order of importance. All are 
 | [0104](0104-retain-reported-ai-images-for-thirty-days.md)     | Retain Reported AI Images for Thirty Days                                           | Active                                                                                                                                                                                               |
 | [0105](0105-server-authoritative-free-ai-grants.md)           | Server-Authoritative Free AI Grants per Installation Pseudonym                      | Active (amends [0006](0006-server-side-ai-generation.md), [0007](0007-cors-csrf-for-native-api-calls.md), [0014](0014-in-memory-rate-limiting.md), and [0025](0025-netlify-blobs-server-storage.md)) |
 | [0150](0150-truncate-then-hmac-durable-ip-rate-limit-keys.md) | Truncate, Then HMAC, Durable IP Rate-Limit Keys                                     | Active (constrains issue #1097; complements [0014](0014-in-memory-rate-limiting.md) and [0025](0025-netlify-blobs-server-storage.md))                                                                |
-
-| [0183](0183-test-api-deploy-build-time-selection.md) | A Test API Deploy with Build-Time
-Implementations and Native Origin | Active (extends [0047](0047-provider-agnostic-ai-adapter.md) and
-[0182](0182-splotch-is-one-react-native-app.md)) |
+| [0183](0183-test-api-deploy-build-time-selection.md)          | A Test API Deploy with Build-Time Implementations and Native Origin                 | Active (extends [0047](0047-provider-agnostic-ai-adapter.md) and [0182](0182-splotch-is-one-react-native-app.md))                                                                                    |
 
 ## Web platform & PWA
 

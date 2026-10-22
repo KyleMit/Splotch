@@ -16,8 +16,18 @@ Configuration is separate so storage/purge functions do not import a model. It a
 The test selector imports only the fake model, recording GitHub sink and test storage/project key.
 The production selector imports only the production implementations. No runtime environment flag
 selects server behavior. `netlify/server/blobs.ts` prefixes all test store names, including stores
-used by scheduled purges. The recording sink writes issue titles, bodies, labels and timestamps to
+used by purges. The recording sink writes issue titles, bodies, labels and timestamps to
 `test-github-issues`; it files nothing. Test image evidence stays in `test-ai-image-reports`.
+
+Netlify runs schedules only for published deploys. Fake provider/key-check and recording-sink
+activity therefore triggers test-data cleanup, coalesced to once per hour per warm instance; a
+failed sweep retries on the next activity. The published deploy's hourly `purge-test-data` adds a
+backstop after this revision reaches production. Both paths use the same retention owners with an
+explicit test namespace and cannot touch unprefixed stores. Recorded feedback uses the same 30-day
+window as image reports. Before cutover, idle branch data waits for activity or a manual dashboard
+invocation. When retiring the test deploy, invoke `purge-test-data` after its retention windows
+expire. The local-emulator regression test invokes both schedules and real test-provider traffic,
+deletes expired fixtures and asserts every production sentinel survives.
 
 ## Fake keys
 
@@ -69,5 +79,7 @@ Native build commands and the maintainer's deploy checklist are in `DEVELOPMENT.
 
 The native release builder also inspects the complete embedded JavaScript/Hermes bundle in the
 produced APK, AAB, app archive, IPA or simulator app. Store configuration rejects the test hostname
-and any non-production first-party origin; the configured origin must be present. This check runs on
-actual compiled artifacts in native CI, in addition to the focused Expo inlining guards.
+and any non-production first-party origin; the configured origin must be present. Production-pointed
+development builds enforce the same exclusion, and Gradle tracks the origin as a bundle input. This
+check runs on actual compiled artifacts in native CI, in addition to the focused Expo inlining
+guards.

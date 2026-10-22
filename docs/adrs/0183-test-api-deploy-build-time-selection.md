@@ -33,9 +33,15 @@ HTTP implementation. HTTP handlers and their error mapping stay shared.
 
 All live server Blobs access goes through `netlify/server/blobs.ts`. The selected scope leaves
 production names unchanged and prefixes every test store with `test-`, including token lists, free
-grants, usage, jobs, attempts, image reports and the fake GitHub sink. Scheduled purge functions use
-the same storage owners, so they cannot cross the deploy boundary. Netlify site-wide stores are
-shared between deploys; a separate hostname alone does not isolate them.
+grants, usage, jobs, attempts, image reports and the fake GitHub sink. Netlify site-wide stores are
+shared between deploys; a separate hostname alone does not isolate them. Branch deploys do not run
+scheduled functions automatically. Fake provider/key-check and recording-sink activity therefore
+sweeps expired test data at most once per hour per warm instance, retrying failed sweeps. The
+published deploy's hourly `purge-test-data` supplies an additional backstop after this revision
+reaches production. It explicitly opens only test namespaces through the same storage owners.
+Recorded feedback expires under the image-report retention window. Before the production cutover, an
+idle branch waits for its next provider activity or a manual dashboard invocation; the maintainer
+must invoke cleanup after retention windows expire when retiring the test deploy.
 
 Only `[context.test.environment]` enables test mode. Test builds emit a universal noindex edge
 function into `.netlify/api-mode-edge`; production rebuilds empty that directory. The edge function
@@ -62,8 +68,10 @@ writes so free-grant compare-and-swap logic runs without weakening the server's 
 
 The native release builder also inspects the complete embedded JavaScript/Hermes bundle in the
 produced APK, AAB, app archive, IPA or simulator app. Store configuration rejects the test hostname
-and any non-production first-party origin; the configured origin must be present. This check runs on
-actual compiled artifacts in native CI, in addition to the focused Expo inlining guards.
+and any non-production first-party origin; the configured origin must be present. Production-pointed
+development builds enforce the same origin exclusion. Gradle tracks the origin environment variable
+as a bundle-task input so switching origins invalidates cached bundles. This check runs on actual
+compiled artifacts in native CI, in addition to the focused Expo inlining guards.
 
 ## Consequences
 
