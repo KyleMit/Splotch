@@ -490,12 +490,14 @@ unrelated open provenance/automation ideas **#1098, #222, #241, #248** are not m
 features for this campaign: manual artifact/source verification and manual store submission can
 satisfy release mechanics without implementing those proposals. #3011's optional tiered hydration
 remains deferred. The separate infrastructure ideas **#3084** (explicitly backlog, outside
-migration) and **#3091** (compute/device investigation) are not release prerequisites. **#2841,
-#2868 and #2880** describe shipping-only defects, with the RN behavior already improved, so their
-original fixes do not block this frozen RN release. **#2696** is the conditional
-dependency-mitigation review described above, not an instruction to remove a still-needed security
-patch before cutover. Owner-parked web gaps in #3148's final comment remain recorded decisions, not
-silently reopened work.
+migration) and **#3091** (compute/device investigation) are not release prerequisites. **#2868 and
+#2880** describe shipping-only defects with RN improved. **#2841** is deliberately reproduced on RN
+native: `hubRowFace.native.ts` uses `system-ui` to match shipping, while RN web's `hubRowFace.ts`
+keeps Quicksand. It remains shared cosmetic debt rather than a new native release regression; this
+report does not claim native RN fixes it. **#2696** is the conditional dependency-mitigation review
+described above, not an instruction to remove a still-needed security patch before cutover.
+Owner-parked web gaps in #3148's final comment remain recorded decisions, not silently reopened
+work.
 
 Release mechanics are concrete. v1.6.0's verified published artifact inventory already establishes
 **Android code 8 / version 1.6.0** and **iOS build 8 / marketing 1.6.0**; this report reuses
