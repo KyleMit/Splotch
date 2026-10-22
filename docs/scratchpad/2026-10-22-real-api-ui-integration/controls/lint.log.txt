@@ -1,0 +1,15 @@
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/Users/kylemit/.codex/worktrees/00f5/Splotch/docs/scratchpad/2026-10-21-rn-config-sweep/repro/analyze.mjs
+  2:39  warning  'existsSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/kylemit/.codex/worktrees/00f5/Splotch/docs/scratchpad/2026-10-21-rn-config-sweep/repro/contact-sheet.mjs
+  2:23  warning  'writeFileSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/kylemit/.codex/worktrees/00f5/Splotch/src/ai/generationController.ts
+  10:26  warning  'AiResult' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)

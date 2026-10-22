@@ -1,0 +1,11 @@
+Failing CI job: https://github.com/KyleMit/Splotch/actions/runs/39794420196/job/119879670941
+Reviewed head: 42443a21927934e44e352872371481a09e98f0ea
+Trace artifact: 12433880036 (playwright-real-api)
+The UI snapshot still says Making your picture at failure.
+Image assertion begins: 2026-10-22T14:22:32.777567+00:00
+Default image assertion budget: 5000 ms
+2026-10-22T14:22:30.717Z GET http://127.0.0.1:5300/api/free-generation-grant -> 200 (53.512 ms)
+2026-10-22T14:22:35.257Z POST http://127.0.0.1:5300/api/generate-image?style=Magical -> 202 (62.916 ms)
+No generation-result request occurs before test teardown.
+The ordinary client schedules its first result poll no earlier than POLL_INTERVAL_MS (3000 ms) after ticket delivery.
+Fix: await the actual 200 result response within REQUEST_TIMEOUT_MS before the unchanged rendered-image assertion. No route interception, retry or global timeout increase.

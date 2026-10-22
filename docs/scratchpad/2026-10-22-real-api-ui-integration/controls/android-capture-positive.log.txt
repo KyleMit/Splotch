@@ -1,0 +1,12 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-capture-svg-android.test.mjs tools/tests/native-capture-svg.test.mjs tools/tests/native-picture-capture.test.mjs tools/tests/native-picture-capture.projection.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+
+ Test Files  4 passed (4)
+      Tests  53 passed (53)
+   Start at  09:31:58
+   Duration  912ms (tests 35%, environment 33%, transform 23%, import 8%, worker 1%)

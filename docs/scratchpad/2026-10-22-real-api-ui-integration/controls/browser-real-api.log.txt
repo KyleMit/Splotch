@@ -1,0 +1,155 @@
+
+> splotch@1.6.0 test:e2e:api
+> playwright test --config e2e/playwright.api.config.ts --workers=1
+
+
+Running 6 tests using 1 worker
+
+(node:13031) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/specs/api-integration.spec.ts:6:1 › the lane refuses page and context request interception (1.1s)
+[purge-test-data] [
+  { inspected: 0, deleted: 0, retained: 0, unavailable: 0 },
+  {
+    attemptedJobs: 1,
+    purgedJobs: 0,
+    failedJobs: 0,
+    retainedJobs: 1,
+    deletedBlobs: 0,
+    failedBlobDeletes: 0
+  },
+  {
+    attemptedBlobs: 0,
+    deletedBlobs: 0,
+    expiredReports: 0,
+    failedBlobs: 0,
+    retainedBlobs: 0
+  },
+  { deleted: 0 },
+  {
+    attemptedRecords: 0,
+    deletedExpiredRecords: 0,
+    deletedLegacyRecords: 0,
+    deletedMalformedRecords: 0,
+    failedRecords: 0,
+    retainedRecords: 0
+  }
+]
+  ✓  2 e2e/specs/api-integration.spec.ts:29:1 › a fresh installation generates through the worker and polls, then reports its picture (11.8s)
+[purge-test-data] [
+  { inspected: 0, deleted: 0, retained: 0, unavailable: 0 },
+  {
+    attemptedJobs: 0,
+    purgedJobs: 0,
+    failedJobs: 0,
+    retainedJobs: 0,
+    deletedBlobs: 0,
+    failedBlobDeletes: 0
+  },
+  {
+    attemptedBlobs: 0,
+    deletedBlobs: 0,
+    expiredReports: 0,
+    failedBlobs: 0,
+    retainedBlobs: 0
+  },
+  { deleted: 0 },
+  {
+    attemptedRecords: 0,
+    deletedExpiredRecords: 0,
+    deletedLegacyRecords: 0,
+    deletedMalformedRecords: 0,
+    failedRecords: 0,
+    retainedRecords: 0
+  }
+]
+  ✓  3 e2e/specs/api-integration.spec.ts:64:1 › feedback reaches the recording sink through the real form handler (366ms)
+[purge-test-data] [
+  { inspected: 0, deleted: 0, retained: 0, unavailable: 0 },
+  {
+    attemptedJobs: 0,
+    purgedJobs: 0,
+    failedJobs: 0,
+    retainedJobs: 0,
+    deletedBlobs: 0,
+    failedBlobDeletes: 0
+  },
+  {
+    attemptedBlobs: 0,
+    deletedBlobs: 0,
+    expiredReports: 0,
+    failedBlobs: 0,
+    retainedBlobs: 0
+  },
+  { deleted: 0 },
+  {
+    attemptedRecords: 0,
+    deletedExpiredRecords: 0,
+    deletedLegacyRecords: 0,
+    deletedMalformedRecords: 0,
+    failedRecords: 0,
+    retainedRecords: 0
+  }
+]
+[verify-key] rejected: 401 Incorrect API key provided
+  ✓  4 e2e/specs/api-integration.spec.ts:81:1 › the real key oracle rejects an invalid key without storing it (2.3s)
+[purge-test-data] [
+  { inspected: 0, deleted: 0, retained: 0, unavailable: 0 },
+  {
+    attemptedJobs: 0,
+    purgedJobs: 0,
+    failedJobs: 0,
+    retainedJobs: 0,
+    deletedBlobs: 0,
+    failedBlobDeletes: 0
+  },
+  {
+    attemptedBlobs: 0,
+    deletedBlobs: 0,
+    expiredReports: 0,
+    failedBlobs: 0,
+    retainedBlobs: 0
+  },
+  { deleted: 0 },
+  {
+    attemptedRecords: 0,
+    deletedExpiredRecords: 0,
+    deletedLegacyRecords: 0,
+    deletedMalformedRecords: 0,
+    failedRecords: 0,
+    retainedRecords: 0
+  }
+]
+[ai-usage] credential=byok style=Magical outcome=accepted at=2026-10-22T14:15:30.699Z
+  ✓  5 e2e/specs/api-integration.spec.ts:99:1 › a content refusal travels through polling and can be reported with its real proof (10.1s)
+[purge-test-data] [
+  { inspected: 0, deleted: 0, retained: 0, unavailable: 0 },
+  {
+    attemptedJobs: 0,
+    purgedJobs: 0,
+    failedJobs: 0,
+    retainedJobs: 0,
+    deletedBlobs: 0,
+    failedBlobDeletes: 0
+  },
+  {
+    attemptedBlobs: 0,
+    deletedBlobs: 0,
+    expiredReports: 0,
+    failedBlobs: 0,
+    retainedBlobs: 0
+  },
+  { deleted: 0 },
+  {
+    attemptedRecords: 0,
+    deletedExpiredRecords: 0,
+    deletedLegacyRecords: 0,
+    deletedMalformedRecords: 0,
+    failedRecords: 0,
+    retainedRecords: 0
+  }
+]
+[ai-usage] credential=byok style=Magical outcome=accepted at=2026-10-22T14:15:40.734Z
+  ✓  6 e2e/specs/api-integration.spec.ts:127:1 › a fake provider failure reaches the UI through the background result handler (8.7s)
+
+  6 passed (34.9s)

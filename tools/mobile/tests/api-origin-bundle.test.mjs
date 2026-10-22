@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { assertNativeApiOrigin } from '../verify-api-origin.mjs';
+import apiOrigin from '../api-origin.cjs';
 
 it.each(['utf8', 'utf16le'])(
   'guards the complete embedded %s native bundle and rejects a seeded test hostname',
@@ -9,9 +10,11 @@ it.each(['utf8', 'utf16le'])(
       encoding
     );
     expect(() => assertNativeApiOrigin(store, 'https://splotch.art', true)).not.toThrow();
-    const wrong = Buffer.concat([store, Buffer.from('https://test.splotch.art', encoding)]);
-    expect(() => assertNativeApiOrigin(wrong, 'https://splotch.art', true)).toThrow('test host');
-    expect(() => assertNativeApiOrigin(wrong, 'https://splotch.art', false)).toThrow('test host');
+    for (const origin of apiOrigin.TEST_API_ORIGINS) {
+      const wrong = Buffer.concat([store, Buffer.from(origin, encoding)]);
+      expect(() => assertNativeApiOrigin(wrong, 'https://splotch.art', true)).toThrow('test host');
+      expect(() => assertNativeApiOrigin(wrong, 'https://splotch.art', false)).toThrow('test host');
+    }
   }
 );
 

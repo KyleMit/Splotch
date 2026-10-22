@@ -17,6 +17,7 @@ import {
   writeResponse,
 } from '../../tools/lib/netlify-function-host.mjs';
 import { headersFor, readNetlifyConfig, redirectFor } from './netlifyConfig.ts';
+import { readApiMode } from '../../tools/lib/api-mode.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 const NETLIFY_TOML = join(REPO_ROOT, 'netlify.toml');
@@ -79,8 +80,8 @@ export type NetlifySite = { origin: string; close: () => Promise<void> };
 
 /**
  * The published directory and every function on one origin. `env` lands on process.env before the
- * functions load, where Netlify hands a function the site's environment. The functions run as
- * deployed: no Netlify Blobs, and the CSRF guard on.
+ * functions load, where Netlify hands a function the site's environment. The caller supplies any
+ * local Blobs context; the CSRF guard stays on.
  */
 export async function startNetlifySite({
   port,
@@ -94,14 +95,18 @@ export async function startNetlifySite({
   if (!existsSync(join(root, NOT_FOUND_DOCUMENT)))
     throw new Error(`Nothing is published at ${root}: build it with npm run build:site`);
   Object.assign(process.env, env);
-  const functions = await loadNetlifyFunctions('production');
+  const functions = await loadNetlifyFunctions('production', readApiMode(env));
   const findFile = fileFinder(root);
   const notFound = join(root, NOT_FOUND_DOCUMENT);
 
   const answer = async (request: IncomingMessage, response: ServerResponse) => {
     const { pathname, search } = new URL(request.url ?? '/', `http://${LOOPBACK}`);
     const handler = functions.functionFor(pathname);
-    if (handler) return writeResponse(response, await invokeFunction(handler, request));
+    if (handler)
+      return writeResponse(
+        response,
+        functions.decorateResponse(await invokeFunction(handler, request))
+      );
     const headers = headersFor(config.headers, pathname);
     const file = findFile(pathname);
     const redirect = redirectFor(config.redirects, pathname);

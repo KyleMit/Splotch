@@ -124,6 +124,82 @@ stores hourly. Before that cutover, idle data waits for another provider request
 dashboard invocation of `purge-test-data`. When retiring the test deploy, invoke that function after
 its retention windows expire. Recorded feedback and image reports use the same 30-day window.
 
+## Hosted test API UI journeys on virtual devices
+
+`npm run test:native:api -- --platform android|ios --device ID` is a separate generation UI journey,
+not the boot-only deployment smoke. It builds a Release `art.splotch.app.dev`, fixes its API origin
+to `https://test.splotch.art` at build time, checks the compiled artifact, installs onto the named
+virtual target and runs `.maestro/api-generation.yaml`. It builds only the named Android emulator’s
+ABI while retaining Release optimization. It enables AI Art, checks ten fresh free creations, draws,
+solves the rendered grown-up check through its keypad, picks Magical and waits for the displayed
+result. No admin credential or managed code is needed. The remote preflight requires the test
+deploy's noindex marker. Failures stop the run; they never select production or substitute endpoint
+stubs.
+
+The existing build-time `EXPO_PUBLIC_SPLOTCH_API_ORIGIN` may select either configured test alias:
+`https://test.splotch.art` (default) or `https://test--splotchy.netlify.app`. Other origins,
+including production, are refused by this journey runner before installation. If the custom domain
+has a stale local negative DNS cache, recheck it and use the existing Netlify alias in a new build:
+
+```sh
+EXPO_PUBLIC_SPLOTCH_API_ORIGIN=https://test--splotchy.netlify.app \
+  npm run test:native:api -- --platform ios --device SIMULATOR_UUID
+```
+
+The origin is compiled into the artifact, never passed to the installed app. Do not change DNS
+records or pin IPs to run a test. Production artifact guards reject both test hostnames.
+
+Use a dedicated fresh target. Android's installation ID derives from its system Android ID, so
+clearing app storage on an old AVD does not establish a fresh grant identity. Create a new AVD in a
+temporary `ANDROID_AVD_HOME`, using an installed system image matching the host architecture. For
+example, on Apple Silicon with the API 33 Play image installed, after choosing a free console/ADB
+port pair:
+
+```sh
+journey_avd_home="$(mktemp -d)"
+ANDROID_AVD_HOME="$journey_avd_home" avdmanager create avd \
+  --name Splotch_API_Journey --device pixel_7_pro \
+  --package 'system-images;android-33;google_apis_playstore;arm64-v8a'
+ANDROID_AVD_HOME="$journey_avd_home" emulator -avd Splotch_API_Journey \
+  -port 5556 -no-snapshot-save
+```
+
+In another terminal, wait for `adb -s emulator-5556 shell getprop sys.boot_completed` to print `1`,
+then run `npm run test:native:api -- --platform android --device emulator-5556`. Finish with
+`adb -s emulator-5556 emu kill` for the emulator you started. The runner confirms the fresh
+emulator’s full-screen education prompt before the flow. The flow clears only the development app;
+the runner checks both the explicit emulator serial and its emulator system property before
+installation. Never select an attached physical serial or reuse an old AVD for a fresh-grant claim.
+
+On iOS, create a fresh simulator so no retained Keychain installation seed or grants survive from an
+earlier run. List installed runtimes/types and substitute them below; retain the returned UUID and
+use it on every operation:
+
+```sh
+xcrun simctl list runtimes
+xcrun simctl list devicetypes
+xcrun simctl create Splotch-API-Journey DEVICE_TYPE_ID RUNTIME_ID
+xcrun simctl boot SIMULATOR_UUID
+npm run test:native:api -- --platform ios --device SIMULATOR_UUID
+xcrun simctl shutdown SIMULATOR_UUID
+xcrun simctl delete SIMULATOR_UUID
+```
+
+The runner never operates a physical device or the store identity. It leaves virtual-target
+lifecycle with the caller; stop only the emulator/simulator you started.
+`npm run ios:simulator:development` also exposes the separate development Release build directly.
+That simulator target signs ad hoc so Keychain reads work without store signing; the unsigned
+boot-only target cannot establish secure-credential UI coverage. The existing `ios:simulator` store
+path and its production-origin refusal remain intact. Neither command provides a runtime origin
+switch. Hosted availability, real rate limits and persistent test grants can fail a run: preserve
+the failure and retry with a fresh installation after any server throttle expires. Do not change
+rate limits or assume local fixture credentials exist on the hosted deployment.
+
+The per-PR local counterpart is `SPLOTCH_E2E_PORT=5300 npm run test:e2e:api -- --workers=1` with an
+unused port. It uses the shared real function host and isolated local Blobs rather than the hosted
+deployment, so its report/feedback records and rate buckets belong to one test. It needs no remote
+credentials and blocks outside services. No deployment is pushed by either journey command.
+
 ## Checking a JS-only change on a device
 
 A change to TS or TSX alone needs no native rebuild. Build the Release app once per device as above,

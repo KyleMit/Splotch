@@ -181,7 +181,10 @@
     "gen:native-replay-traces": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/gen-replay-traces.mjs",
     "android:accessibility:build": "node tools/mobile/android/build-accessibility-probe.mjs",
     "prebuild:site": "node tools/api-mode/selection.mjs",
-    "test:api:smoke:test": "SPLOTCH_API_MODE=test npm run test:api:smoke"
+    "test:api:smoke:test": "SPLOTCH_API_MODE=test npm run test:api:smoke",
+    "test:e2e:api": "playwright test --config e2e/playwright.api.config.ts",
+    "ios:simulator:development": "node tools/release/build-native-release.mjs development-simulator",
+    "test:native:api": "node tools/mobile/run-hosted-api-journey.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -347,7 +350,10 @@
     "gen:native-replay-traces": "Write the touch traces the RN perf probe build replays into the paper (perf/replay): the generated ones from a fixed seed, and, with -- --recordings=<dir>, the two finger sessions converted from the web input recordings session1.json and session2.json in that folder",
     "android:accessibility:build": "Build the self-targeted RN accessibility-action diagnostic, signed with the local debug key; no install or device input",
     "prebuild:site": "Select production or test API implementations and test-only noindex edge output before Netlify bundles functions",
-    "test:api:smoke:test": "Exercise the real API host, worker, polling, fake model and recording sinks against isolated local Blobs, without outside services"
+    "test:api:smoke:test": "Exercise the real API host, worker, polling, fake model and recording sinks against isolated local Blobs, without outside services",
+    "test:e2e:api": "Drive UI generation, polling, reporting and fake failures through real handlers with isolated local Blobs (requires SPLOTCH_E2E_PORT)",
+    "ios:simulator:development": "Build a development-identity Release iOS simulator app, permitting a build-time test API origin",
+    "test:native:api": "Build and drive generation against the hosted test API on an explicit virtual target (--platform android|ios --device ID), separate from boot smoke"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

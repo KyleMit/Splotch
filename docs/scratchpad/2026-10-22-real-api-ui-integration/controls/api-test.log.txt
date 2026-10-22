@@ -1,0 +1,46 @@
+
+> splotch@1.6.0 test:api:smoke:test
+> SPLOTCH_API_MODE=test npm run test:api:smoke
+
+
+> splotch@1.6.0 test:api:smoke
+> node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/run-contract.mjs
+
+[purge-test-data] [
+  { inspected: 0, deleted: 0, retained: 0, unavailable: 0 },
+  {
+    attemptedJobs: 1,
+    purgedJobs: 0,
+    failedJobs: 0,
+    retainedJobs: 1,
+    deletedBlobs: 0,
+    failedBlobDeletes: 0
+  },
+  {
+    attemptedBlobs: 0,
+    deletedBlobs: 0,
+    expiredReports: 0,
+    failedBlobs: 0,
+    retainedBlobs: 0
+  },
+  { deleted: 0 },
+  {
+    attemptedRecords: 0,
+    deletedExpiredRecords: 0,
+    deletedLegacyRecords: 0,
+    deletedMalformedRecords: 0,
+    failedRecords: 0,
+    retainedRecords: 0
+  }
+]
+PASS free grant → generate → pending poll → image → report, without an OpenAI key
+[verify-key] rejected: 401 Incorrect API key provided
+[verify-key] unreachable: The key check ran out of time
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:33:34.490Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:33:35.993Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:33:37.496Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:33:38.999Z
+[ai-usage] credential=byok style=none outcome=refused at=2026-10-22T14:33:40.502Z
+[ai-usage] credential=managed style=Sticker outcome=succeeded at=2026-10-22T14:33:42.033Z
+PASS fake key checks, invalid key, provider rate limit/error/timeout, refusal and managed Sticker success
+PASS feedback/image-report sink records and exclusively test- scoped stores
