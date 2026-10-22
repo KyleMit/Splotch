@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 // treats the positional arg as a path pattern). That was issue #785: one spec
 // split stranded citations across the testing and run-splotch skills.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const testsDirs = [join(repoRoot, 'e2e', 'specs'), join(repoRoot, 'web', 'tests')];
+const testsDirs = [join(repoRoot, 'e2e', 'specs')];
 
 // The live instruction surface — what an agent is told is true *now*. `tools`
 // is here for the audit-burndown role prompts, which an agent reads and greps
