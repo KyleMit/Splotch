@@ -11,13 +11,7 @@ import { readHostedTestApiOrigin, requireVirtualTarget } from './lib/hosted-api-
 const HOSTED_PREFLIGHT_TIMEOUT_MS = 15_000;
 const ANDROID_ABIS = new Set(['arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64']);
 
-export async function runHostedApiJourney(args) {
-  const origin = readHostedTestApiOrigin(process.env);
-  const { values } = parseArgs({
-    args,
-    options: { platform: { type: 'string' }, device: { type: 'string' } },
-  });
-  const { platform, device } = values;
+function requireLiveVirtualTarget(platform, device) {
   const simulators =
     platform === 'ios'
       ? JSON.parse(
@@ -34,6 +28,16 @@ export async function runHostedApiJourney(args) {
     }).trim() !== '1'
   )
     throw new Error('The explicit Android target is not an emulator');
+}
+
+export async function runHostedApiJourney(args) {
+  const origin = readHostedTestApiOrigin(process.env);
+  const { values } = parseArgs({
+    args,
+    options: { platform: { type: 'string' }, device: { type: 'string' } },
+  });
+  const { platform, device } = values;
+  requireLiveVirtualTarget(platform, device);
   const response = await fetch(`${origin}/api/generate-image`, {
     method: 'OPTIONS',
     redirect: 'error',
@@ -57,7 +61,7 @@ export async function runHostedApiJourney(args) {
     ],
     { cwd: ROOT, env }
   );
-  requireVirtualTarget(platform, device, simulators);
+  requireLiveVirtualTarget(platform, device);
   if (platform === 'android') {
     run(ADB, [
       '-s',
