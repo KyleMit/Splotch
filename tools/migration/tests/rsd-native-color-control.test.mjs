@@ -10,24 +10,21 @@ import {
   COLOR_MENU_PADDING_PX,
   COLOR_MENU_SWATCH_PX,
   colorMenuLabels,
-} from '../../../experiments/native-architecture/src/rsdDrawing/colorMenuLayout.ts';
-import { FOLD_TAP_TRAVEL_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorButton.tsx';
+} from '../../../src/rsdDrawing/colorMenuLayout.ts';
+import { FOLD_TAP_TRAVEL_PX } from '../../../src/rsdDrawing/RsdColorButton.tsx';
 
 import {
   EDGE_INSET_PX,
   PHONE_TOOLBAR_BUTTON_PX,
   PHONE_TOOLBAR_GAP_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { PALETTE_COLORS } from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import {
-  COLOR_MENU_GEOMETRY,
-  colorMenuTrimSteps,
-} from '../../../web/src/lib/design/trimGeometry.ts';
+} from '../../../src/rsdDrawing/edgeLayout.ts';
+import { PALETTE_COLORS } from '../../../src/drawing/palette.ts';
+import { COLOR_MENU_GEOMETRY, colorMenuTrimSteps } from '../../../src/lib/design/trimGeometry.ts';
 import {
   LANDSCAPE_COLORS,
   LANDSCAPE_FIRST_TRIM_RANK,
   landscapeTrimRank,
-} from '../../../web/src/lib/landscapeToolbar.ts';
+} from '../../../src/lib/landscapeToolbar.ts';
 // A phone held sideways, short of the tablet floor, and the portrait phone.
 const LANDSCAPE_PHONE = { width: 740, height: 360 };
 const PORTRAIT_PHONE = { width: 390, height: 844 };

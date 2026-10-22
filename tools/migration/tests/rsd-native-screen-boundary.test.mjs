@@ -1,9 +1,9 @@
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { caller, host, mount } from './rsd-native-selection-host.mjs';
-import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
-import { ERROR_SCREEN_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
-import { ERROR_LOG_PREFIX } from '../../../web/src/lib/errorLog.ts';
+import { ProbeApp } from '../../../src/ProbeApp.tsx';
+import { ERROR_SCREEN_COPY } from '../../../src/rsdDrawing/RsdErrorScreen.tsx';
+import { ERROR_LOG_PREFIX } from '../../../src/lib/errorLog.ts';
 
 // Shipping's root render boundary shows the Error Screen for a render error and its Start over
 // renders the page again, and the drawing engine keeps its picture across that. The canonical
@@ -11,12 +11,12 @@ import { ERROR_LOG_PREFIX } from '../../../web/src/lib/errorLog.ts';
 // back on the session's own history, Undo included, rather than a fresh launch. Negative controls:
 // the boundary above DrawingSessionProvider comes back on an empty session; an Error Screen that
 // keeps its tab title past Start over fails the title check.
-vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
+vi.mock('../../../src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
 // The web export's tab title, which the Error Screen names itself in while it shows.
 const tab = vi.hoisted(() => ({ title: 'Splotch' }));
-vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
+vi.mock('../../../src/platform/appPath.ts', () => ({
   currentAppPage: () => 'drawing',
   prerenderedAppPage: () => 'drawing',
   subscribeAppPage: () => () => {},
@@ -28,19 +28,16 @@ vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () =
 }));
 
 const fallback = vi.hoisted(() => ({ fails: false }));
-vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/drawingSheets.ts',
-  async (load) => {
-    const sheets = await load();
-    return {
-      ...sheets,
-      RsdCrashScreen: (props) => {
-        if (fallback.fails) throw new Error('The crash-screen chunk did not load.');
-        return createElement(sheets.RsdCrashScreen, props);
-      },
-    };
-  }
-);
+vi.mock('../../../src/rsdDrawing/drawingSheets.ts', async (load) => {
+  const sheets = await load();
+  return {
+    ...sheets,
+    RsdCrashScreen: (props) => {
+      if (fallback.fails) throw new Error('The crash-screen chunk did not load.');
+      return createElement(sheets.RsdCrashScreen, props);
+    },
+  };
+});
 
 const RENDER_FAULT = new Error('A drawing screen render failed.');
 const STROKES_BEFORE_FAULT = 2;

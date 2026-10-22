@@ -6,7 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const motion = vi.hoisted(() => ({ reduced: false }));
 
 vi.mock('react-native', async () => import('react-native-web'));
-vi.mock('../../experiments/native-architecture/src/drawing/useReduceMotion.ts', () => ({
+vi.mock('../../src/drawing/useReduceMotion.ts', () => ({
   useReduceMotion: () => motion.reduced,
 }));
 // React Strict DOM reduced to plain elements that carry their merged style, so the transition the
@@ -31,10 +31,8 @@ vi.mock('react-strict-dom', () => {
   };
 });
 
-const { SegmentThumb } =
-  await import('../../experiments/native-architecture/src/rsdDrawing/segmentThumb.web.tsx');
-const { THUMB_TRAVEL_MS } =
-  await import('../../experiments/native-architecture/src/rsdDrawing/segmentThumbFace.ts');
+const { SegmentThumb } = await import('../../src/rsdDrawing/segmentThumb.web.tsx');
+const { THUMB_TRAVEL_MS } = await import('../../src/rsdDrawing/segmentThumbFace.ts');
 
 const CELLS = [
   { x: 4, width: 80 },

@@ -4,9 +4,9 @@ import { join, relative } from 'node:path';
 import { createElement, createRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { NATIVE_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
+import { NATIVE_ICONS } from '../../src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../src/rsdDrawing/splotchy.generated.ts';
 import { ROOT } from '../lib/proc.mjs';
 
 // Metro resolves react-native to React Native Web for the web export, and react-native-svg's
@@ -20,13 +20,13 @@ const released = {
   ...(await import('react-native-svg/lib/module/elements.web.js')),
   SvgXml: (await import('react-native-svg/lib/module/xml.js')).SvgXml,
 };
-const web = await import('../../experiments/native-architecture/src/platform/svg.web.ts');
+const web = await import('../../src/platform/svg.web.ts');
 
-const SRC = join(ROOT, 'experiments/native-architecture/src');
+const SRC = join(ROOT, 'src');
 const PLATFORM_SVG = 'platform/svg.ts';
 const SVG_IMPORT = /from\s*'react-native-svg'/;
 const EXPORT_LIST = /export \{([^}]*)\} from 'react-native-svg';/;
-const COLORING = join(ROOT, 'web/static/coloring');
+const COLORING = join(ROOT, 'assets/static/coloring');
 // The released SvgXml copies its markup onto the <svg> as an xml attribute; nothing reads it.
 const RELEASED_ONLY_ATTRIBUTES = new Set(['xml']);
 

@@ -1,10 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
-const NATIVE_PROBE = new URL(
-  '../../experiments/native-architecture/android/app/src/main/java/art/splotch/app/',
-  import.meta.url
-);
+const NATIVE_PROBE = new URL('../../android/app/src/main/java/art/splotch/app/', import.meta.url);
 const NATIVE_WORKER = new URL('SplotchLibraryWorker.kt', NATIVE_PROBE);
 const NATIVE_DOWNLOADS = new URL('SplotchLibraryDownloads.kt', NATIVE_PROBE);
 

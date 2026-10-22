@@ -17,8 +17,8 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 The release builds (`android:apk`, `android:apk:store`, `android:bundle`) are
 `tools/release/build-native-release.mjs`, which runs the React Native project's Gradle wrapper
-directly. They write under `experiments/native-architecture/android/app/build/outputs/`, and
-`verify-release-bundle.mjs` checks the AAB there by default.
+directly. They write under `android/app/build/outputs/`, and `verify-release-bundle.mjs` checks the
+AAB there by default.
 
 The toolchain requires Node 22+, a full JDK 21, and an Android SDK. Emulator setup additionally
 requires `sdkmanager`, `avdmanager`, `emulator`, and `adb`; the smoke test requires Maestro. Release

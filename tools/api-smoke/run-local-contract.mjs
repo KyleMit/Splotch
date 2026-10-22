@@ -23,12 +23,9 @@ import { checkGenerationRecoveryContract } from './lib/recovery-contract.mjs';
 // API_RESPONSE_HEADERS and must not carry the rest, which is checked by
 // subtraction — a new security header is covered the moment it's added to that
 // module, whichever side of the split it lands on.
-import {
-  API_RESPONSE_HEADERS,
-  SECURITY_HEADERS,
-} from '../../web/src/lib/server/securityHeaders.ts';
-import { MAX_IMAGE_BYTES } from '../../web/src/lib/server/generateImagePolicy.ts';
-import { REPORT_HONEYPOT_FIELD } from '../../web/src/lib/report.ts';
+import { API_RESPONSE_HEADERS, SECURITY_HEADERS } from '../../netlify/server/securityHeaders.ts';
+import { MAX_IMAGE_BYTES } from '../../netlify/server/generateImagePolicy.ts';
+import { REPORT_HONEYPOT_FIELD } from '../../src/lib/report.ts';
 import { tinyPngBuffer } from './lib/tiny-png.mjs';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
@@ -349,7 +346,7 @@ async function checkReport(base) {
   // report has its own tighter per-IP bucket (5/min); burst past it. Every burst
   // payload fills the honeypot, so it cannot open an issue on any server under any
   // env — the endpoint charges the bucket before the honeypot short-circuit
-  // (pinned by web/src/routes/api/report/server.test.ts), so the 429 still trips.
+  // (pinned by src/routes/api/report/server.test.ts), so the 429 still trips.
   // A value distinct from the contract case above keeps the two apart in a log.
   let reportLimited = null;
   for (let i = 0; i < 8 && !reportLimited; i++) {

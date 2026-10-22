@@ -6,30 +6,24 @@ import {
   DEFAULT_BUTTON_SCALE,
   controlSize,
   isButtonScale,
-} from '../../experiments/native-architecture/src/settings/buttonSize.ts';
-import {
-  reduceMotionChoice,
-  resolveReducedMotion,
-} from '../../experiments/native-architecture/src/settings/reduceMotion.ts';
+} from '../../src/settings/buttonSize.ts';
+import { reduceMotionChoice, resolveReducedMotion } from '../../src/settings/reduceMotion.ts';
 import {
   NATIVE_SETTINGS_SECTIONS,
   SECTION_SUBTITLES,
   sectionHeading,
   sectionSubtitle,
-} from '../../experiments/native-architecture/src/settings/settingsSections.ts';
+} from '../../src/settings/settingsSections.ts';
 import {
   SETTINGS_ACTIVITY_DOTS_START_SESSION,
   activityDotsShown,
   createSettingsSessions,
-} from '../../experiments/native-architecture/src/settings/settingsSessions.ts';
-import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
-import { RELEASE_NOTES } from '../../experiments/native-architecture/src/settings/whatsNew.ts';
-import { WHATS_NEW_STAMP } from '../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { TOUCH_TARGET } from '../../experiments/native-architecture/src/drawing/theme.ts';
+} from '../../src/settings/settingsSessions.ts';
+import { DEFAULT_BRUSH_AVAILABILITY } from '../../src/settings/brushPreferences.ts';
+import { RELEASE_NOTES } from '../../src/settings/whatsNew.ts';
+import { WHATS_NEW_STAMP } from '../../src/settings/whatsNewStamp.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
+import { TOUCH_TARGET } from '../../src/drawing/theme.ts';
 import {
   NATIVE_RELEASE_NOTES_PATH,
   readReleases,
@@ -231,7 +225,7 @@ describe('Settings activity dots', () => {
 
 describe("What's New", () => {
   it('lists every shipping release with notes generated from its own document', () => {
-    const releases = JSON.parse(source('web/src/lib/releases.json'));
+    const releases = JSON.parse(source('src/lib/releases.json'));
     expect(RELEASE_NOTES.map(({ version, dateLabel }) => ({ version, dateLabel }))).toEqual(
       releases.map(({ version, dateLabel }) => ({ version, dateLabel }))
     );

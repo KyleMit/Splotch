@@ -28,15 +28,90 @@ importers:
 
   .:
     dependencies:
+      '@babel/core':
+        specifier: 7.29.7
+        version: 7.29.7(supports-color@10.2.2)
+      '@expo-google-fonts/quicksand':
+        specifier: 0.4.1
+        version: 0.4.1
+      '@fontsource-variable/quicksand':
+        specifier: 5.3.0
+        version: 5.3.0
       '@netlify/blobs':
         specifier: ^11.1.1
         version: 11.1.1(supports-color@10.2.2)
+      '@shopify/react-native-skia':
+        specifier: 2.14.0
+        version: 2.14.0(c06eaecdb0bac5c227d271c1d878afbf)
+      babel-preset-expo:
+        specifier: 58.0.17
+        version: 58.0.17(@babel/core@7.29.7(supports-color@10.2.2))(@babel/runtime@7.29.7)(expo@58.0.14)(react-refresh@0.14.2)(supports-color@10.2.2)
+      expo:
+        specifier: 58.0.14
+        version: 58.0.14(e65aa1325c8771b22a5f48abdbfe29d4)
+      expo-asset:
+        specifier: 58.0.16
+        version: 58.0.16(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3)
+      expo-audio:
+        specifier: 58.0.9
+        version: 58.0.9(patch_hash=da6533f2cc7624f787fd4fd791a3243f3e085976483f3a5f14ff80110530ed28)(expo-asset@58.0.16(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3))(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+      expo-file-system:
+        specifier: 58.0.9
+        version: 58.0.9(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
+      expo-font:
+        specifier: 58.0.8
+        version: 58.0.8(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+      expo-haptics:
+        specifier: 58.0.7
+        version: 58.0.7(expo@58.0.14)
+      expo-keep-awake:
+        specifier: 58.0.3
+        version: 58.0.3(expo@58.0.14)(react@19.3.0)
+      expo-media-library:
+        specifier: 58.0.10
+        version: 58.0.10(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
+      expo-network:
+        specifier: 58.0.3
+        version: 58.0.3(expo@58.0.14)(react@19.3.0)
+      expo-screen-orientation:
+        specifier: 58.0.3
+        version: 58.0.3(patch_hash=98ac5337958e0fc1424220b65b439170677e61f618982c097a8fc436352fdf8d)(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
       happy-dom:
         specifier: ^20.14.5
         version: 20.14.5
       openai:
         specifier: ^7.23.0
         version: 7.23.0(ws@8.21.3)(zod@4.6.5)
+      postcss:
+        specifier: 8.5.28
+        version: 8.5.28
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+      react-native:
+        specifier: 0.88.0
+        version: 0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2)
+      react-native-reanimated:
+        specifier: 4.7.1
+        version: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+      react-native-safe-area-context:
+        specifier: 5.10.1
+        version: 5.10.1(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+      react-native-svg:
+        specifier: 15.16.0
+        version: 15.16.0(patch_hash=894b760c9bffc35eca0fcdd8161a3778c8d983c54a0011f40a405db618fbeb82)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+      react-native-web:
+        specifier: 0.21.4
+        version: 0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react-native-worklets:
+        specifier: 0.13.0
+        version: 0.13.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)
+      react-strict-dom:
+        specifier: 0.0.54
+        version: 0.0.54(patch_hash=1b7e6a2b956efd1a0cda6d15828b5b7ee155f20c5e26fc7a654b8c72d492fa7f)(postcss@8.5.28)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@22.20.4)
@@ -62,9 +137,6 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
-      '@fontsource-variable/quicksand':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@google/genai':
         specifier: ^2.24.0
         version: 2.24.0(supports-color@10.2.2)
@@ -80,6 +152,9 @@ importers:
       '@types/node':
         specifier: ^22.20.4
         version: 22.20.4
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
       '@vitest/coverage-v8':
         specifier: ^5.0.2
         version: 5.0.2(vitest@5.0.2)
@@ -104,6 +179,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^7.1.1
         version: 7.1.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      expo-sharing:
+        specifier: 58.0.19
+        version: 58.0.19(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3)
       fit-curve:
         specifier: ^0.2.0
         version: 0.2.0
@@ -143,91 +221,6 @@ importers:
       yaml:
         specifier: 2.9.1
         version: 2.9.1
-
-  experiments/native-architecture:
-    dependencies:
-      '@babel/core':
-        specifier: 7.29.7
-        version: 7.29.7(supports-color@10.2.2)
-      '@expo-google-fonts/quicksand':
-        specifier: 0.4.1
-        version: 0.4.1
-      '@fontsource-variable/quicksand':
-        specifier: 5.3.0
-        version: 5.3.0
-      '@shopify/react-native-skia':
-        specifier: 2.14.0
-        version: 2.14.0(c06eaecdb0bac5c227d271c1d878afbf)
-      babel-preset-expo:
-        specifier: 58.0.17
-        version: 58.0.17(@babel/core@7.29.7(supports-color@10.2.2))(@babel/runtime@7.29.7)(expo@58.0.14)(react-refresh@0.14.2)(supports-color@10.2.2)
-      expo:
-        specifier: 58.0.14
-        version: 58.0.14(e65aa1325c8771b22a5f48abdbfe29d4)
-      expo-asset:
-        specifier: 58.0.16
-        version: 58.0.16(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3)
-      expo-audio:
-        specifier: 58.0.9
-        version: 58.0.9(patch_hash=da6533f2cc7624f787fd4fd791a3243f3e085976483f3a5f14ff80110530ed28)(expo-asset@58.0.16(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3))(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
-      expo-file-system:
-        specifier: 58.0.9
-        version: 58.0.9(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
-      expo-font:
-        specifier: 58.0.8
-        version: 58.0.8(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
-      expo-haptics:
-        specifier: 58.0.7
-        version: 58.0.7(expo@58.0.14)
-      expo-keep-awake:
-        specifier: 58.0.3
-        version: 58.0.3(expo@58.0.14)(react@19.3.0)
-      expo-media-library:
-        specifier: 58.0.10
-        version: 58.0.10(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
-      expo-network:
-        specifier: 58.0.3
-        version: 58.0.3(expo@58.0.14)(react@19.3.0)
-      expo-screen-orientation:
-        specifier: 58.0.3
-        version: 58.0.3(patch_hash=98ac5337958e0fc1424220b65b439170677e61f618982c097a8fc436352fdf8d)(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
-      expo-sharing:
-        specifier: 58.0.19
-        version: 58.0.19(expo@58.0.14)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3)
-      postcss:
-        specifier: 8.5.28
-        version: 8.5.28
-      react:
-        specifier: 19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: 19.3.0
-        version: 19.3.0(react@19.3.0)
-      react-native:
-        specifier: 0.88.0
-        version: 0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2)
-      react-native-reanimated:
-        specifier: 4.7.1
-        version: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
-      react-native-safe-area-context:
-        specifier: 5.10.1
-        version: 5.10.1(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
-      react-native-svg:
-        specifier: 15.16.0
-        version: 15.16.0(patch_hash=894b760c9bffc35eca0fcdd8161a3778c8d983c54a0011f40a405db618fbeb82)(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
-      react-native-web:
-        specifier: 0.21.4
-        version: 0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      react-native-worklets:
-        specifier: 0.13.0
-        version: 0.13.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)
-      react-strict-dom:
-        specifier: 0.0.54
-        version: 0.0.54(patch_hash=1b7e6a2b956efd1a0cda6d15828b5b7ee155f20c5e26fc7a654b8c72d492fa7f)(postcss@8.5.28)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.0(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)
-    devDependencies:
-      '@types/react':
-        specifier: 19.3.0
-        version: 19.3.0
 
 packages:
 
@@ -4825,10 +4818,6 @@ packages:
 
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
-
-  postcss@8.5.26:
-    resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
-    engines: {node: ^10 || ^12 || >=14}
 
   postcss@8.5.28:
     resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
@@ -10867,9 +10856,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  postcss-safe-parser@7.0.1(postcss@8.5.26):
+  postcss-safe-parser@7.0.1(postcss@8.5.28):
     dependencies:
-      postcss: 8.5.26
+      postcss: 8.5.28
 
   postcss-selector-parser@7.1.5:
     dependencies:
@@ -10877,12 +10866,6 @@ snapshots:
       util-deprecate: 1.0.2
 
   postcss-value-parser@4.2.0: {}
-
-  postcss@8.5.26:
-    dependencies:
-      nanoid: 3.3.18
-      picocolors: 1.1.1
-      source-map-js: 1.2.2
 
   postcss@8.5.28:
     dependencies:
@@ -11591,8 +11574,8 @@ snapshots:
       micromatch: 4.0.8
       normalize-path: 3.0.0
       picocolors: 1.1.1
-      postcss: 8.5.26
-      postcss-safe-parser: 7.0.1(postcss@8.5.26)
+      postcss: 8.5.28
+      postcss-safe-parser: 7.0.1(postcss@8.5.28)
       postcss-selector-parser: 7.1.5
       postcss-value-parser: 4.2.0
       string-width: 8.2.2

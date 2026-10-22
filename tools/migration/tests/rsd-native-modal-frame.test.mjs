@@ -3,27 +3,24 @@ import { records, root, host, mount, openSettingsSection } from './rsd-native-se
 import { act, createElement } from 'react';
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
-import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
-import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
-import {
-  TAP_ZONE_DURATION_MS,
-  TAP_ZONE_RADIUS_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
-import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
-import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { RsdLeaveConfirm } from '../../../experiments/native-architecture/src/rsdDrawing/RsdLeaveConfirm.tsx';
-import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
-import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { blobPath } from '../../../experiments/native-architecture/src/rsdDrawing/blob.ts';
-import { MODAL_SCRIM_FROSTED } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { BrowserBackProvider } from '../../../experiments/native-architecture/src/platform/BrowserBack.tsx';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { LEAVE_CONFIRM_COPY } from '../../../experiments/native-architecture/src/product/systemBack.ts';
+import { ModalShell } from '../../../src/rsdDrawing/ModalShell.tsx';
+import { DialogHeader } from '../../../src/rsdDrawing/DialogHeader.tsx';
+import { TAP_ZONE_DURATION_MS, TAP_ZONE_RADIUS_PX } from '../../../src/rsdDrawing/tapZone.ts';
+import { ModalOriginProvider } from '../../../src/rsdDrawing/modalOrigin.tsx';
+import { NativeFrame } from '../../../src/rsdDrawing/NativeFrame.tsx';
+import { NativeSoundSettingsDialog } from '../../../src/rsdDrawing/RsdSettingsDialog.tsx';
+import { RsdLeaveConfirm } from '../../../src/rsdDrawing/RsdLeaveConfirm.tsx';
+import { RsdParentGateSheet } from '../../../src/rsdDrawing/RsdParentGateSheet.tsx';
+import { RsdAction } from '../../../src/rsdDrawing/controls.tsx';
+import { blobPath } from '../../../src/rsdDrawing/blob.ts';
+import { MODAL_SCRIM_FROSTED } from '../../../src/rsdDrawing/modalGeometry.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../../src/drawing/useReduceMotion.ts';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { BrowserBackProvider } from '../../../src/platform/BrowserBack.tsx';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
+import { LEAVE_CONFIRM_COPY } from '../../../src/product/systemBack.ts';
 
 const TITLE = 'Drawing tools';
 const RETIRED_FOOTER_LABELS = [

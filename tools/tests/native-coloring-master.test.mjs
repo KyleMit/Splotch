@@ -1,22 +1,15 @@
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { OFFLINE_BOOKS } from '../../experiments/native-architecture/src/offlineLibrary/books.generated.ts';
-import { packDirectory } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { OFFLINE_BOOKS } from '../../src/offlineLibrary/books.generated.ts';
+import { packDirectory } from '../../src/offlineLibrary/store.ts';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { coloringBookHistory } from '../../experiments/native-architecture/src/settings/coloringBook.ts';
-import {
-  createHistory,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
+import { coloringBookHistory } from '../../src/settings/coloringBook.ts';
+import { createHistory, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
 
 const widths = { soundEnabled: false, strokeWidth: 'medium', eraserWidth: 'medium' };
 const colors = { selectedColor: 'Purple', customColors: [] };
@@ -217,7 +210,7 @@ it('exposes all verified retained packs again without downloading or rewriting t
     files.set(`${directory}/identity.json`, encode(pack.files));
     for (const file of pack.files) {
       const content = await readFile(
-        new URL(`../../web/static${file.downloadPath}`, import.meta.url)
+        new URL(`../../assets/static${file.downloadPath}`, import.meta.url)
       );
       files.set(`${directory}/files/${file.path.split('/').at(-1)}`, content);
     }

@@ -2,13 +2,9 @@
 // Splotchy mark and wordmark, and the page name over the handmade paper, in the light theme's
 // tokens whatever the rendering browser prefers. gen-share-cards.mjs screenshots it.
 import { join } from 'node:path';
-import {
-  PAGE_SHARE_CARDS,
-  SHARE_CARD_SIZE,
-  isPageShareCardPath,
-} from '../../../web/src/lib/components/page/socialCard.ts';
-import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
-import { paletteHex } from '../../../web/src/lib/palette.ts';
+import { PAGE_SHARE_CARDS, SHARE_CARD_SIZE, isPageShareCardPath } from './page/socialCard.ts';
+import { scale, themes } from '../../../src/lib/design/tokens.ts';
+import { paletteHex } from '../../../src/lib/palette.ts';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   DOCUMENT_RESET_CSS,
@@ -42,8 +38,8 @@ const MARK_PATH = '/assets/splotchy.svg';
 
 export const SHARE_CARD_FILES = {
   ...quicksandFiles(),
-  [PAPER_PATH]: join(ROOT, 'experiments/native-architecture/assets/paper/handmade-paper.webp'),
-  [MARK_PATH]: join(ROOT, 'web/src/lib/icons/splotchy.svg'),
+  [PAPER_PATH]: join(ROOT, 'assets/paper/handmade-paper.webp'),
+  [MARK_PATH]: join(ROOT, 'assets/icons/splotchy.svg'),
 };
 
 const STYLES = `${DOCUMENT_RESET_CSS}

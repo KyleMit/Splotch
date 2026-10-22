@@ -3,18 +3,15 @@ import {
   createParentGate,
   PARENT_GATE_SHAKE_MS,
   PARENT_GATE_SUCCESS_HOLD_MS,
-} from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { createNativeFeedback } from '../../experiments/native-architecture/src/feedback/feedback.ts';
+} from '../../src/parentCenter/parentGate.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
+import { createNativeFeedback } from '../../src/feedback/feedback.ts';
 import {
   GATE_LOCKOUT_BASE_MS,
   GATE_LOCKOUT_MAX_MS,
   GATE_ESCALATION_QUIET_MS,
-} from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
+} from '../../src/feedback/gateLockout.ts';
 
 const ALWAYS = {
   ai: 'always',

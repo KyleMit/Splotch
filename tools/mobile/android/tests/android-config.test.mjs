@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MIN_ANDROID_API_LEVEL,
   MIN_ANDROID_RELEASE,
-} from '../../../../web/src/lib/components/beta/androidBeta.ts';
+} from '../../../../src/lib/components/beta/androidBeta.ts';
 import { jobBlock, runScriptIn, stepBlock } from '../../../ci-mirror/tests/workflow-job-steps.mjs';
 import { ANDROID_PROJECT_DIR } from '../../../release/lib/native-app.mjs';
 import { CURRENT_ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
@@ -213,7 +213,7 @@ const SUPPORT_FLOOR_CLAIMS = [
   [
     'enforcement table value',
     'docs/COMPATIBILITY.md',
-    /\|\s+Native Android min SDK\s+\|\s+`experiments\/native-architecture\/android\/gradle\.properties` → `android\.minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
+    /\|\s+Native Android min SDK\s+\|\s+`android\/gradle\.properties` → `android\.minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
   ],
   [
     'floor-validation CI claim',

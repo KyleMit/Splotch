@@ -5,8 +5,8 @@ import {
   APP_PAGE_PATHS,
   DOCUMENT_ONLY_PAGE_PATHS,
   appPageAt,
-} from '../../experiments/native-architecture/src/information/appPages.ts';
-import { crossDocumentNavigation } from '../../experiments/native-architecture/src/pageDocument/appDocument.ts';
+} from '../../src/information/appPages.ts';
+import { crossDocumentNavigation } from '../../src/pageDocument/appDocument.ts';
 import {
   NATIVE_APP_DOCUMENT_PATHS,
   isNativeAppNavigation,

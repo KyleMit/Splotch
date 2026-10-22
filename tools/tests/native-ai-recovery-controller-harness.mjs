@@ -1,22 +1,22 @@
 import { expect, vi } from 'vitest';
-import { AiRecoverySession } from '../../experiments/native-architecture/src/ai/recoverySession.ts';
-import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
-import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
+import { AiRecoverySession } from '../../src/ai/recoverySession.ts';
+import { withCredentialLeases } from '../../src/ai/credentialLease.ts';
+import { recoveryDigest } from '../../src/ai/recoveryDigest.ts';
 import {
   recoveryRequestId,
   checkedRecoveryAdmission,
   checkedRecoveryDelivery,
   checkedRecoveryAck,
   checkedRecoveryTerminal,
-} from '../../experiments/native-architecture/src/ai/recoveryRequest.ts';
-import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
+} from '../../src/ai/recoveryRequest.ts';
+import { parseAiResponse } from '../../src/ai/transport.ts';
 import {
   RECOVERY_PROTOCOL,
   RECOVERY_EXPIRES_HEADER,
   RECOVERY_DIGEST_HEADER,
   RECOVERY_RECEIPT_HEADER,
   RECOVERY_VERSION_HEADER,
-} from '../../experiments/native-architecture/src/ai/recoveryContract.ts';
+} from '../../src/ai/recoveryContract.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 
 export const CREATED = 1700000000000;
@@ -88,7 +88,7 @@ export function fixture({ guarded = false, source = held() } = {}) {
     records.set(latest.journal.id, latest);
     return latest;
   };
-  /** @type {import('../../experiments/native-architecture/src/parentCenter/parentPolicy.ts').ParentOperationPort} */
+  /** @type {import('../../src/parentCenter/parentPolicy.ts').ParentOperationPort} */
   const parent = {
     consent: () => ({ enabled, epoch }),
     request: vi.fn((feature, action) => {
@@ -107,7 +107,7 @@ export function fixture({ guarded = false, source = held() } = {}) {
     readReferenced: vi.fn(async () => ({ kind: 'free', installationId: 'a'.repeat(64) })),
   };
   const vault = withCredentialLeases(rawVault);
-  /** @type {import('../../experiments/native-architecture/src/ai/journal.ts').AiStorage} */
+  /** @type {import('../../src/ai/journal.ts').AiStorage} */
   const storage = {
     read: vi.fn(async () => (latest ? { kind: latest.kind, receipt: latest } : null)),
     readRecoveryAttempt: vi.fn(async (id) => records.get(id) ?? null),
@@ -232,7 +232,7 @@ export function fixture({ guarded = false, source = held() } = {}) {
     pictures: vi.fn(async () => []),
   };
   const transport = vi.fn();
-  /** @type {typeof import('../../experiments/native-architecture/src/ai/transport.ts').requestAi} */
+  /** @type {typeof import('../../src/ai/transport.ts').requestAi} */
   const dispatch = vi.fn(async (_, request) => {
     const current = latest;
     const expiresAt = current.journal.createdAt + 1200000;

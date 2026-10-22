@@ -1,13 +1,10 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PAPER_COLORS } from '../../web/src/lib/theme.ts';
-import {
-  adoptPaper,
-  LEGACY_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { pictureExport } from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
-import { composePicture as composeWebPicture } from '../../experiments/native-architecture/src/drawing/pictureCompose.web.ts';
+import { PAPER_COLORS } from '../../src/lib/theme.ts';
+import { adoptPaper, LEGACY_PAPER } from '../../src/drawing/paperSpace.ts';
+import { pictureExport } from '../../src/drawing/pictureExport.ts';
+import { composePicture as composeWebPicture } from '../../src/drawing/pictureCompose.web.ts';
 
 const skia = vi.hoisted(() => ({ log: [], grainFails: false }));
 // Metro hands the web export the grain as { uri, width, height }, which it reads as is
@@ -15,7 +12,7 @@ const skia = vi.hoisted(() => ({ log: [], grainFails: false }));
 const { GRAIN } = vi.hoisted(() => ({
   GRAIN: { uri: '/assets/paper/handmade-paper.webp', width: 148, height: 148 },
 }));
-vi.mock('../../experiments/native-architecture/assets/paper/handmade-paper.webp', () => ({
+vi.mock('../../assets/paper/handmade-paper.webp', () => ({
   default: GRAIN,
 }));
 vi.mock('react-native', () => ({
@@ -275,8 +272,7 @@ describe('composing the saved picture on Android and iOS', () => {
   });
 
   it('paints the paper, the grain at the export scale, then the picture onto the exact grid', async () => {
-    const { composePicture } =
-      await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
+    const { composePicture } = await import('../../src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(402, 787 + 2 / 3, 3), 'dark', 3);
     await expect(composePicture(['ios-layer'], picture)).resolves.toBe('native-composed');
     const { width, height } = picture.size;
@@ -310,8 +306,7 @@ describe('composing the saved picture on Android and iOS', () => {
 
   it('keeps the plain paper color when the grain will not load, and retries it next time', async () => {
     vi.resetModules();
-    const { composePicture } =
-      await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
+    const { composePicture } = await import('../../src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
     skia.grainFails = true;
     await expect(composePicture(['layer'], picture)).resolves.toBe('native-composed');
@@ -324,8 +319,7 @@ describe('composing the saved picture on Android and iOS', () => {
   });
 
   it('stretches each layer onto the grid in order, the ink beneath the line art', async () => {
-    const { composePicture } =
-      await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
+    const { composePicture } = await import('../../src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
     await expect(composePicture(['ink', 'outline'], picture)).resolves.toBe('native-composed');
     const drawn = skia.log.filter(([key]) => key === 'drawImageRectCubic');
@@ -337,8 +331,7 @@ describe('composing the saved picture on Android and iOS', () => {
 
   it('omits paper grain from an AI upload while keeping the export pixel grid', async () => {
     vi.resetModules();
-    const { composePicture } =
-      await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
+    const { composePicture } = await import('../../src/drawing/pictureCompose.ts');
     const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
     await expect(composePicture(['layer'], picture, false)).resolves.toBe('native-composed');
     expect(skia.log).toContainEqual(['surface', 780, 1538]);

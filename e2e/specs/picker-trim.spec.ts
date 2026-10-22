@@ -3,7 +3,7 @@ import {
   HEX_GRID_GEOMETRY,
   hexGridColumnLadderPx,
   hexGridRowLadderPx,
-} from '../../web/src/lib/design/trimGeometry.ts';
+} from '../../src/lib/design/trimGeometry.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDrawingScreen } from '../support/drawing.ts';
 

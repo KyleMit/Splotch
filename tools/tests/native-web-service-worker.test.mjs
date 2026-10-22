@@ -4,13 +4,10 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import {
-  createPWAServiceWorker,
-  usePWAUpdates,
-} from '../../experiments/native-architecture/src/platform/serviceWorker.web.ts';
-import { installPrompt as nativeInstallPrompt } from '../../experiments/native-architecture/src/platform/installPrompt.ts';
-import { SERVICE_WORKER_PATH, VERSION_JSON_PATH } from '../../web/src/lib/pwa/versionEndpoint.ts';
-import { WEB_VERSION_META_SELECTOR } from '../../experiments/native-architecture/src/platform/webVersion.ts';
+import { createPWAServiceWorker, usePWAUpdates } from '../../src/platform/serviceWorker.web.ts';
+import { installPrompt as nativeInstallPrompt } from '../../src/platform/installPrompt.ts';
+import { SERVICE_WORKER_PATH, VERSION_JSON_PATH } from '../../src/lib/pwa/versionEndpoint.ts';
+import { WEB_VERSION_META_SELECTOR } from '../../src/platform/webVersion.ts';
 import { NATIVE_WEB_SERVICE_WORKER, webVersionHeadTag } from '../migration/build-native-web.mjs';
 import {
   makeRegistration,
@@ -21,10 +18,10 @@ import {
   restoreDocumentVisibility,
   controllerChangeListeners,
   stubReloadableLocation,
-} from '../../web/src/lib/pwa/updatesTestHarness.ts';
+} from '../../src/lib/pwa/updatesTestHarness.ts';
 
 const scheduler = vi.hoisted(() => ({ painted: false, waiters: [], quiet: [], idle: [] }));
-vi.mock('../../experiments/native-architecture/src/product/drawingPaint.ts', () => ({
+vi.mock('../../src/product/drawingPaint.ts', () => ({
   drawingPaint: {
     painted: () =>
       scheduler.painted
@@ -32,7 +29,7 @@ vi.mock('../../experiments/native-architecture/src/product/drawingPaint.ts', () 
         : new Promise((resolve) => scheduler.waiters.push(resolve)),
   },
 }));
-vi.mock('../../web/src/lib/idle.ts', () => {
+vi.mock('../../src/lib/idle.ts', () => {
   const enqueue = (queue, run) => {
     const entry = { active: true, run };
     queue.push(entry);
@@ -45,11 +42,7 @@ vi.mock('../../web/src/lib/idle.ts', () => {
     scheduleIdle: (run) => enqueue(scheduler.idle, run),
   };
 });
-const nativeSource = (path) =>
-  readFileSync(
-    join(import.meta.dirname, '../../experiments/native-architecture/src', path),
-    'utf8'
-  );
+const nativeSource = (path) => readFileSync(join(import.meta.dirname, '../../src', path), 'utf8');
 const originalFetch = globalThis.fetch;
 const originalLocation = window.location;
 const BUILT_WEB_VERSION = '1.6.1234';
@@ -222,8 +215,7 @@ it('offers no browser update or install lifecycle in the native apps', () => {
 
 it('listens for the browser install events from the moment the web module loads', async () => {
   localStorage.clear();
-  const { installPrompt } =
-    await import('../../experiments/native-architecture/src/platform/installPrompt.web.ts');
+  const { installPrompt } = await import('../../src/platform/installPrompt.web.ts');
   expect(installPrompt.snapshot().mode).toBe('none');
   window.dispatchEvent(new Event('beforeinstallprompt'));
   expect(installPrompt.snapshot().mode).toBe('none');

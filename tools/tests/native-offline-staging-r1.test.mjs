@@ -10,17 +10,14 @@ import {
   createHistory,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+} from '../../src/drawing/model.ts';
 import { join, dirname } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import {
-  createLibraryStore,
-  packDirectory,
-} from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
-import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { offlinePageId } from '../../src/offlineLibrary/identity.ts';
+import { createLibraryStore, packDirectory } from '../../src/offlineLibrary/store.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
+import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../src/offlineLibrary/contract.ts';
 
 function createEnabledOfflineLibrary(...args) {
   const owner = createOfflineLibrary(...args);
@@ -28,7 +25,7 @@ function createEnabledOfflineLibrary(...args) {
   return owner;
 }
 
-const staticRoot = new URL('../../web/static/', import.meta.url);
+const staticRoot = new URL('../../assets/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let scratch;
 const roots = [];

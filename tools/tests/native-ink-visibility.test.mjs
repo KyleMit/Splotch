@@ -3,18 +3,9 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  EMPTY_SCAN_IDLE_MS,
-  inkVerdict,
-  useVisibleInk,
-} from '../../experiments/native-architecture/src/drawing/inkVisibility.ts';
-import {
-  emptyDrawing,
-  createHistory,
-  clearDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { EMPTY_SCAN_IDLE_MS, inkVerdict, useVisibleInk } from '../../src/drawing/inkVisibility.ts';
+import { emptyDrawing, createHistory, clearDrawing, undoDrawing } from '../../src/drawing/model.ts';
+import { adoptPaper } from '../../src/drawing/paperSpace.ts';
 
 const point = { x: 10, y: 10 };
 const pen = { brush: 'pen', width: 8, color: 'Purple', points: [point] };

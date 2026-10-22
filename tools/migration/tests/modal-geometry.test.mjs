@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
+import { scale } from '../../../src/lib/design/tokens.ts';
 import {
   CSS_EASE,
   CSS_EASE_REVERSED,
@@ -8,8 +8,8 @@ import {
   MODAL_FADE_MS,
   MODAL_GUTTER_MIN_PX,
   modalFrame,
-} from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
-import { blobPath } from '../../../experiments/native-architecture/src/rsdDrawing/blob.ts';
+} from '../../../src/rsdDrawing/modalGeometry.ts';
+import { blobPath } from '../../../src/rsdDrawing/blob.ts';
 
 vi.mock('react-strict-dom', () => ({
   css: { defineVars: (vars) => vars, createTheme: (_vars, overrides) => overrides },

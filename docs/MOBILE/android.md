@@ -7,22 +7,21 @@ Google Play release checklist. For the general build model and shared assets see
 **[native.md](native.md)**; iOS lives in **[ios.md](ios.md)**.
 
 > Minimum supported OS: **Android 7.0 / API 24** (`android.minSdkVersion` in
-> `experiments/native-architecture/android/gradle.properties`). This governs the RN runtime and
-> native modules independently of the web browser floor — see
-> [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
+> `android/gradle.properties`). This governs the RN runtime and native modules independently of the
+> web browser floor — see [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
 
 ## 1. Toolchain setup
 
 The React Native project's wrapper and SDK values live in
-`experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.properties` and
-`experiments/native-architecture/android/gradle.properties`. Expo/React Native's Gradle plugins
-resolve AGP and Kotlin; review the aligned SDK/native scripts before installing an upgrade.
+`android/gradle/wrapper/gradle-wrapper.properties` and `android/gradle.properties`. Expo/React
+Native's Gradle plugins resolve AGP and Kotlin; review the aligned SDK/native scripts before
+installing an upgrade.
 
 Use a full JDK 21 for the repository's Android workflow. The project explicitly opts out of AGP's
 built-in Kotlin and new DSL defaults because Expo's SDK template applies the Kotlin Android plugin
 and old DSL. Those opt-outs are in its Gradle properties; the former Java-only Capacitor advice to
 remove them is obsolete. Release enables R8 minification and resource shrinking in
-`experiments/native-architecture/android/app/build.gradle`.
+`android/app/build.gradle`.
 
 ### macOS
 
@@ -84,10 +83,10 @@ remove them is obsolete. Release enables R8 minification and resource shrinking 
 
 ## 2. Build / sign / run commands
 
-The scripts build the React Native app in `experiments/native-architecture`:
+The scripts build the React Native app in `.`:
 
 ```bash
-npm run android:apk       # art.splotch.app.dev Release APK -> experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
+npm run android:apk       # art.splotch.app.dev Release APK -> android/app/build/outputs/apk/release/app-release.apk
 npm run android:apk:store # store-identity Release APK for the deploy smoke; never install it on a device
 npm run android:bundle    # SIGNED store AAB (see §4 Signing for the prerequisite)
 npm run android:verify    # jarsigner check of that AAB
@@ -98,8 +97,8 @@ npm run android:verify    # jarsigner check of that AAB
 > 1. **Node ≥ 22** active.
 > 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it (set it in your shell profile
 >    per §1; reopen a terminal that was open before you set it).
-> 3. For `android:bundle`, `experiments/native-architecture/android/keystore.properties` must exist
->    (see §4). Without it the build fails at configuration rather than writing an unsigned bundle.
+> 3. For `android:bundle`, `android/keystore.properties` must exist (see §4). Without it the build
+>    fails at configuration rather than writing an unsigned bundle.
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate Signed Bundle/APK** to
 produce a release `.aab`.
@@ -107,24 +106,22 @@ produce a release `.aab`.
 Before attaching a bundle, `npm run release:publish -- --only=android --dry-run` checks its embedded
 release version and requires an embedded R8 mapping with compiler metadata and class mappings. A
 mapping proves R8 processed the bundle; it does not independently prove every optimization setting
-or a runtime performance gain. Inspect
-`experiments/native-architecture/android/app/build/outputs/mapping/release/` for the effective
-configuration and mapping, and install/smoke the optimized Release APK when changing AGP or keep
-rules. Google Play recommendation clearance can only be checked after Play analyzes the next
+or a runtime performance gain. Inspect `android/app/build/outputs/mapping/release/` for the
+effective configuration and mapping, and install/smoke the optimized Release APK when changing AGP
+or keep rules. Google Play recommendation clearance can only be checked after Play analyzes the next
 uploaded bundle.
 
 ### React Native store build
 
-The store release builds the React Native app in `experiments/native-architecture`; its store AAB is
-`experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`.
+The store release builds the React Native app in `.`; its store AAB is
+`android/app/build/outputs/bundle/release/app-release.aab`.
 
 Store identity is opt-in (ADR-0182). A Gradle build of that project is `art.splotch.app.dev`, signed
 with the local debug key, unless its command line carries `-Psplotch.store=true`, and the explicit
 `android:bundle` / `android:apk:store` scripts pass it; a `splotch.store` in `gradle.properties` or
 the environment fails the build instead. So a Debug build, `android:apk`, and any Release build
 installed for testing or device performance install beside the store copy, never over it. The store
-build signs with the upload key named in
-`experiments/native-architecture/android/keystore.properties` (git-ignored; template
+build signs with the upload key named in `android/keystore.properties` (git-ignored; template
 `keystore.properties.example` beside it), whose `storeFile` points at the shipping
 `android/upload-keystore.jks`: Play accepts the update only under that key. Without the file the
 build fails at configuration rather than writing an unsigned bundle. The script then runs the
@@ -133,10 +130,10 @@ checks the bundle's embedded app ID, version, signature block and R8 mapping.
 
 ### Running on a real device
 
-Use the RN app's `experiments/native-architecture/DEVELOPMENT.md` for development builds and Metro
-iteration. Build a `.dev` APK with `npm run android:apk` and verify its app ID before installing on
-the explicitly selected device. Never replace or clear the store-installed app and its drawings. The
-local web verification host uses isolated test credentials and is not a LAN or public preview.
+Use the RN app's `DEVELOPMENT.md` for development builds and Metro iteration. Build a `.dev` APK
+with `npm run android:apk` and verify its app ID before installing on the explicitly selected
+device. Never replace or clear the store-installed app and its drawings. The local web verification
+host uses isolated test credentials and is not a LAN or public preview.
 
 ## 3. Testing
 
@@ -165,26 +162,24 @@ measures the web export; it does not measure native drawing.
 
 ### App configuration (mostly done — verify)
 
-* [x] App ID `art.splotch.app`, name **Splotch**
-      (`experiments/native-architecture/android/app/build.gradle`, `strings.xml`).
+* [x] App ID `art.splotch.app`, name **Splotch** (`android/app/build.gradle`, `strings.xml`).
 * [x] Permissions declared: `INTERNET`, `ACCESS_NETWORK_STATE`, `WRITE_EXTERNAL_STORAGE` (maxSdk 28
       only) — `AndroidManifest.xml`.
 * [x] Placeholder launcher icons + splash generated from the logo.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then regenerate the launcher icons and splash under
-      `experiments/native-architecture/android/app/src/main/res`.
+      `android/app/src/main/res`.
 * [ ] Confirm `npm run release` bumped `versionCode` / `versionName` —
       `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into the
-      React Native `experiments/native-architecture/android/app/build.gradle`, which is the source
-      of truth. Only a hand-built release needs them set manually.
+      React Native `android/app/build.gradle`, which is the source of truth. Only a hand-built
+      release needs them set manually.
 * [ ] Confirm both Android rows in the shared
       [native support matrix](native.md#6-native-support-matrix) passed for this tag before
       publishing signed artifacts.
-* [x] `targetSdkVersion` meets the current Play requirement:
-      `experiments/native-architecture/android/gradle.properties` sets **36** (Android 16), which
-      satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck each August against
-      the
+* [x] `targetSdkVersion` meets the current Play requirement: `android/gradle.properties` sets **36**
+      (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
+      each August against the
       [target API level policy](https://support.google.com/googleplay/android-developer/answer/11926878).
 * [ ] Test the AI flow on a real device: enter an access code in Settings, verify the image
       round-trips against `https://splotch.art`.
@@ -201,8 +196,8 @@ measures the web export; it does not measure native drawing.
       uninstall removes.
 * [ ] Test App Pinning: pin Splotch, reopen Settings → the lock section shows a green ✓ + the unpin
       steps (via the native device-lock module,
-      `experiments/native-architecture/android/app/src/main/java/art/splotch/app/SplotchDeviceLock.kt`,
-      registered in `MainApplication`).
+      `android/app/src/main/java/art/splotch/app/SplotchDeviceLock.kt`, registered in
+      `MainApplication`).
 * [ ] Test system Back, by button and by edge gesture (ADR-0165): it closes Settings, the coloring
       picker, the color picker, the AI cards, and the Grown-Ups Only check (without unlocking
       anything, and without ending a lockout); on an empty canvas it leaves Splotch; on a drawing it
@@ -212,12 +207,10 @@ measures the web export; it does not measure native drawing.
 
 ### Signing & bundling
 
-* [x] **Signing is wired up:** the React Native
-      `experiments/native-architecture/android/app/build.gradle` signs a store build
-      (`-Psplotch.store=true`) with the upload key named in
-      `experiments/native-architecture/android/keystore.properties` (git-ignored; template beside
-      it), and refuses to configure one without that file. Every other build is
-      `art.splotch.app.dev`, signed with the local debug key.
+* [x] **Signing is wired up:** the React Native `android/app/build.gradle` signs a store build
+      (`-Psplotch.store=true`) with the upload key named in `android/keystore.properties`
+      (git-ignored; template beside it), and refuses to configure one without that file. Every other
+      build is `art.splotch.app.dev`, signed with the local debug key.
 * [x] **Upload keystore created** at `android/upload-keystore.jks` (alias `upload`, RSA 2048, ~valid
       to 2053), and `android/keystore.properties` is filled in. Both are git-ignored. **Store the
       `.jks` + passwords in a password manager — losing them means you can't update the app.**
@@ -226,18 +219,17 @@ measures the web export; it does not measure native drawing.
     keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
       -keyalg RSA -keysize 2048 -validity 10000
     ```
-    then `cp keystore.properties.example keystore.properties` in
-    `experiments/native-architecture/android/` and fill it in; its `storeFile` names this same
-    keystore by its path relative to that folder.
+    then `cp keystore.properties.example keystore.properties` in `android/` and fill it in; its
+    `storeFile` names this same keystore by its path relative to that folder.
   * ⚠️ In `keystore.properties`, do **not** wrap values in quotes — Java `.properties` treats quotes
     as literal characters, so a quoted password fails with *"keystore password was incorrect"*.
 * [x] Enroll in **Play App Signing** (recommended) when creating the app. Done: Play makes it
       mandatory for apps created after August 2021 that upload an AAB, so the key Play registered
       for developer verification is the Play-held app signing key, not the upload key.
 * [ ] **Produce the signed release `.aab`:** `npm run android:bundle` →
-      `experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`
-      (Play requires AAB). The script ends with the `jarsigner` check (expect `jar verified`; the
-      self-signed / no-timestamp warnings are normal for an upload key).
+      `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB). The script
+      ends with the `jarsigner` check (expect `jar verified`; the self-signed / no-timestamp
+      warnings are normal for an upload key).
 
 ### Google Play Console setup
 
@@ -315,24 +307,24 @@ re-verify if that flow changes:
   confirmation of “Report this picture” or “Report this refusal” retains evidence in the private
   report store. Both retain the input, server-resolved prompt, style, and timestamp; a refusal
   report also retains the provider's signed refusal reason, and a picture report retains the output.
-  A daily purge deletes the bundle after its 30-day retention date. `lib/server/usage.ts` separately
-  stores a 30-day, HMAC-keyed access-code tally containing timestamps plus closed style/outcome
-  categories, never the instruction or raw code. Its deadline does not extend with later use; a
-  daily purge removes expired records, and revocation requests immediate deletion. Allowance records
-  retain the installation pseudonym and attempt/success/failure accounting defined by ADR-0105.
+  A daily purge deletes the bundle after its 30-day retention date. `netlify/server/usage.ts`
+  separately stores a 30-day, HMAC-keyed access-code tally containing timestamps plus closed
+  style/outcome categories, never the instruction or raw code. Its deadline does not extend with
+  later use; a daily purge removes expired records, and revocation requests immediate deletion.
+  Allowance records retain the installation pseudonym and attempt/success/failure accounting defined
+  by ADR-0105.
 * **Disclosure** — `/privacy` names OpenAI, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing
-  still passes through `/api/generate-image` with the parent's key —
-  `experiments/native-architecture/src/ai/transport.ts`), and the two halves of OpenAI's data
-  posture are not the same claim — API content is **not** used to train its models, and it **is**
-  retained for abuse monitoring. Say both. The retention half is a window, not a deletion promise:
-  the ordinary one is 30 days, but OpenAI's policy allows longer where the law requires it or where
-  it is needed to prevent harm, and an image its classifier flags as potential CSAM is held for
-  manual review regardless of the account's data controls. Write "normally deleted after 30 days",
-  never "deleted after 30 days" — the difference matters most for exactly this app, whose inputs are
-  children's drawings. The exact Data safety and AI-content answers live in
-  `store-assets/STORE-LISTING-ANDROID.md`.
+  still passes through `/api/generate-image` with the parent's key — `src/ai/transport.ts`), and the
+  two halves of OpenAI's data posture are not the same claim — API content is **not** used to train
+  its models, and it **is** retained for abuse monitoring. Say both. The retention half is a window,
+  not a deletion promise: the ordinary one is 30 days, but OpenAI's policy allows longer where the
+  law requires it or where it is needed to prevent harm, and an image its classifier flags as
+  potential CSAM is held for manual review regardless of the account's data controls. Write
+  "normally deleted after 30 days", never "deleted after 30 days" — the difference matters most for
+  exactly this app, whose inputs are children's drawings. The exact Data safety and AI-content
+  answers live in `store-assets/STORE-LISTING-ANDROID.md`.
 * **Under-18 processing** — OpenAI's under-18 API guidance asks developers serving minors for
   age-appropriate content filters, disclosures, and reporting/escalation paths, which the safety
   instruction (ADR-0023), `/privacy`, and the in-app report flow cover. It also says personal data

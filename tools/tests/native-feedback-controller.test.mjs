@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createNativeFeedback } from '../../experiments/native-architecture/src/feedback/feedback.ts';
-import { MAX_REPORT_MESSAGE_LENGTH } from '../../experiments/native-architecture/src/feedback/report.ts';
+import { createNativeFeedback } from '../../src/feedback/feedback.ts';
+import { MAX_REPORT_MESSAGE_LENGTH } from '../../src/feedback/report.ts';
 const SLOW_REPORT_MS = 60000;
-import {
-  GATE_LOCKOUT_BASE_MS,
-  GATE_ESCALATION_QUIET_MS,
-} from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
+import { GATE_LOCKOUT_BASE_MS, GATE_ESCALATION_QUIET_MS } from '../../src/feedback/gateLockout.ts';
 
 function pending() {
   let resolve;

@@ -9,12 +9,12 @@ import {
 } from '../lib/code-map-report.mjs';
 
 const LINES = new Map([
-  ['web/src/lib/drawing/engine.ts', 400],
-  ['web/src/lib/drawing/engine.test.ts', 200],
-  ['web/src/lib/audio/drawingSound.ts', 90],
+  ['src/lib/drawing/engine.ts', 400],
+  ['src/lib/drawing/engine.test.ts', 200],
+  ['src/lib/audio/drawingSound.ts', 90],
   ['docs/adrs/0001-one-codebase.md', 50],
 ]);
-const PATHS = [...LINES.keys(), 'web/static/favicon.ico', 'web/src/CLAUDE.md'];
+const PATHS = [...LINES.keys(), 'assets/static/favicon.ico', 'src/CLAUDE.md'];
 const COMMIT = { sha: 'a'.repeat(40), date: '2026-09-25' };
 
 describe('summarize', () => {
@@ -33,9 +33,9 @@ describe('summarize', () => {
     });
   });
 
-  it('orders areas and web/src domains by lines, largest first', () => {
+  it('orders areas and src domains by lines, largest first', () => {
     expect(summary.areas.map((area) => [area.key, area.loc])).toEqual([
-      ['web/src', 690],
+      ['src', 690],
       ['docs', 50],
     ]);
     expect(summary.areas[0].buckets.map((bucket) => bucket.label)).toEqual([
@@ -79,12 +79,12 @@ describe('spliceBlocks', () => {
 });
 
 describe('renderAssignmentsTsv', () => {
-  it('lists each path with its placement and the web/src rule that chose it', () => {
+  it('lists each path with its placement and the src rule that chose it', () => {
     const rows = renderAssignmentsTsv(assignFiles(PATHS), LINES).split('\n');
-    expect(rows[0]).toBe('path\tarea\tbucket\tsubdomain\tlines\tweb/src rule');
-    expect(rows).toContain('web/static/favicon.ico\texcluded\tBinary media / archives\t\t\t');
-    expect(rows.find((row) => row.startsWith('web/src/lib/drawing/engine.ts\t'))).toBe(
-      'web/src/lib/drawing/engine.ts\tweb/src\tDrawing / canvas engine\t' +
+    expect(rows[0]).toBe('path\tarea\tbucket\tsubdomain\tlines\tsrc rule');
+    expect(rows).toContain('assets/static/favicon.ico\texcluded\tBinary media / archives\t\t\t');
+    expect(rows.find((row) => row.startsWith('src/lib/drawing/engine.ts\t'))).toBe(
+      'src/lib/drawing/engine.ts\tsrc\tDrawing / canvas engine\t' +
         'Engine orchestration & canvas integration\t400\t/^lib\\/drawing\\//'
     );
   });

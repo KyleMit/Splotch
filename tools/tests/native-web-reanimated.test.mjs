@@ -7,7 +7,7 @@ import { ROOT } from '../lib/proc.mjs';
 // that slides on the UI thread natively carries a .web variant that animates with CSS instead.
 // This walks the app's module graph from its entry the way Metro resolves it for each platform,
 // following static and dynamic imports alike, since a lazy chunk is still precached.
-const APP = join(ROOT, 'experiments/native-architecture');
+const APP = join(ROOT, '.');
 const ENTRY = join(APP, 'src/index.ts');
 const REANIMATED = /^react-native-(?:reanimated|worklets)(?:\/|$)/;
 const IMPORT =

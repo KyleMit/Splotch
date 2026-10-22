@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { setImmediate, clearImmediate } from 'node:timers';
 import { deflateSync } from 'node:zlib';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { createPngAlphaDecoder } from '../../src/drawing/pngAlpha.ts';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 
 const HOST_FIXTURE_SETUP_MS = 5000;
 const actual = readFileSync(new URL('./fixtures/ios-clear-rgba.png', import.meta.url));

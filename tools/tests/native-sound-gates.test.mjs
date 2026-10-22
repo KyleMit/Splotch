@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDrawingAudio } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
-import { createContactSound } from '../../experiments/native-architecture/src/audio/contactSound.ts';
-import { createClearSound } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
-import { applySoundChoices } from '../../experiments/native-architecture/src/audio/soundGates.ts';
+import { createDrawingAudio } from '../../src/audio/drawingAudio.ts';
+import { createContactSound } from '../../src/audio/contactSound.ts';
+import { createClearSound } from '../../src/audio/pageTurnSound.ts';
+import { applySoundChoices } from '../../src/audio/soundGates.ts';
 
 const ORIGIN = { x: 10, y: 20 };
 

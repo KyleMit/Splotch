@@ -7,8 +7,8 @@ import {
   sectionJumpOffset,
   spiedSectionAt,
   stackedOffsets,
-} from '../../experiments/native-architecture/src/settings/settingsPane.ts';
-import { SECTION_JUMP_INSET_PX } from '../../web/src/lib/components/settings/paneScroll.ts';
+} from '../../src/settings/settingsPane.ts';
+import { SECTION_JUMP_INSET_PX } from '../../src/lib/components/settings/paneScroll.ts';
 
 describe('the pane scroll geometry', () => {
   const ids = ['a', 'b', 'c', 'd'];

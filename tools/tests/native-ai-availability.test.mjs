@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useAiAvailability } from '../../experiments/native-architecture/src/product/useAiAvailability.ts';
+import { useAiAvailability } from '../../src/product/useAiAvailability.ts';
 
 const appState = vi.hoisted(() => ({ listeners: new Set() }));
 vi.mock('react-native', () => ({

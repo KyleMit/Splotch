@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { createSoundSettings } from '../../src/settings/soundSettings.ts';
 const memory = vi.hoisted(() => ({
   files: new Map(),
   moveGate: null,
@@ -64,8 +64,8 @@ vi.mock('expo-file-system', () => {
   }
   return { Directory, File, Paths: { document: 'documents' } };
 });
-import { soundSettingsStorage } from '../../experiments/native-architecture/src/platform/soundSettings.ts';
-import { bootAppearance } from '../../experiments/native-architecture/src/platform/bootAppearance.ts';
+import { soundSettingsStorage } from '../../src/platform/soundSettings.ts';
+import { bootAppearance } from '../../src/platform/bootAppearance.ts';
 const on = '{"version":1,"soundEnabled":true}';
 const off = '{"version":1,"soundEnabled":false}';
 function pending() {

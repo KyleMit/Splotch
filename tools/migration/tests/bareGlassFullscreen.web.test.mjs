@@ -3,21 +3,20 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-vi.mock('../../../experiments/native-architecture/assets/paper/handmade-paper.webp', () => ({
+vi.mock('../../../assets/paper/handmade-paper.webp', () => ({
   default: '/paper.webp',
 }));
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
-vi.mock('../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx', () => ({
+vi.mock('../../../src/drawing/DrawingAppearance.tsx', () => ({
   useDrawingAppearance: () => 'light',
 }));
-vi.mock('../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx', () => ({
+vi.mock('../../../src/rsdDrawing/RsdIconButton.tsx', () => ({
   CORNER_BUTTON_SIZE_PX: 48,
 }));
 
-const { RsdGlassPanes } =
-  await import('../../../experiments/native-architecture/src/rsdDrawing/RsdBareGlass.web.tsx');
+const { RsdGlassPanes } = await import('../../../src/rsdDrawing/RsdBareGlass.web.tsx');
 
 let root;
 let host;

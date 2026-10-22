@@ -1,4 +1,4 @@
-import { purgeExpiredImageReports } from '../../web/src/lib/server/imageReportStore';
+import { purgeExpiredImageReports } from '../server/imageReportStore';
 
 export default async () => {
   const result = await purgeExpiredImageReports();

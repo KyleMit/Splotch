@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
-import { PAPER_INPUT_TEST_ID } from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
-import { COLOR_CHANGE_DEBOUNCE_MS } from '../../web/src/lib/drawing/strokeMath.ts';
+import { PAPER_INPUT_TEST_ID } from '../../src/platform/firstFrameContract.ts';
+import { COLOR_CHANGE_DEBOUNCE_MS } from '../../src/lib/drawing/strokeMath.ts';
 import { openDocument, waitForDrawingScreen } from './app.ts';
 
 /** A point on the paper as fractions of its width and height, so a stroke fits any viewport. */

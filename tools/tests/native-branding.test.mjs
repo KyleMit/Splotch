@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../lib/proc.mjs';
 
-const NATIVE_RES = 'experiments/native-architecture/android/app/src/main/res';
-const NATIVE_IOS = 'experiments/native-architecture/ios';
+const NATIVE_RES = 'android/app/src/main/res';
+const NATIVE_IOS = 'ios';
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 
 describe('native launcher icon and splash', () => {
@@ -12,9 +12,7 @@ describe('native launcher icon and splash', () => {
     expect(read(`${NATIVE_RES}/values/styles.xml`)).toMatch(
       /<style name="Theme\.App\.SplashScreen"[^>]*>\s*<item name="android:windowBackground">@drawable\/splash<\/item>/
     );
-    const manifest = read(
-      'experiments/native-architecture/android/app/src/main/AndroidManifest.xml'
-    );
+    const manifest = read('android/app/src/main/AndroidManifest.xml');
     expect(manifest).toContain('android:icon="@mipmap/ic_launcher"');
     expect(manifest).toContain('android:roundIcon="@mipmap/ic_launcher_round"');
     expect(manifest).toContain('android:theme="@style/Theme.App.SplashScreen"');

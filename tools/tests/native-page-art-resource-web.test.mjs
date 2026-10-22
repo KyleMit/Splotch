@@ -1,29 +1,29 @@
 import { expect, it, vi } from 'vitest';
 
 const fixture = vi.hoisted(() => ({ beforeImport: vi.fn() }));
-vi.mock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
+vi.mock('../../src/lazyExport.ts', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
     createLazyExport: (load) => actual.createLazyExport(() => fixture.beforeImport().then(load)),
   };
 });
-vi.mock('../../experiments/native-architecture/src/drawing/PageArtMotion.tsx', () => ({
+vi.mock('../../src/drawing/PageArtMotion.tsx', () => ({
   PageArtMotion: () => null,
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/pageArtSelection.ts', () => ({
+vi.mock('../../src/drawing/pageArtSelection.ts', () => ({
   prepareColoringPage: async () => {},
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/PictureCapture.tsx', () => ({
+vi.mock('../../src/drawing/PictureCapture.tsx', () => ({
   PictureCapture: () => null,
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/RsdClearUnderlay.tsx', () => ({
+vi.mock('../../src/rsdDrawing/RsdClearUnderlay.tsx', () => ({
   RsdClearUnderlay: () => null,
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx', () => ({
+vi.mock('../../src/drawing/FixedInkCapture.tsx', () => ({
   FixedInkCapture: () => null,
 }));
-import { pageArt } from '../../experiments/native-architecture/src/drawing/pageArtResource.web.ts';
+import { pageArt } from '../../src/drawing/pageArtResource.web.ts';
 
 it('shares the web Page Art resource and retries its real chunk wiring after rejection', async () => {
   const failed = new Error('Page Art chunk unavailable.');

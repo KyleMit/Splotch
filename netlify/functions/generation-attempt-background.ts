@@ -1,7 +1,7 @@
-import { aiProvider } from '../../web/src/lib/server/ai/provider';
-import { openGenerationAttempts } from '../../web/src/lib/server/generationAttempts';
-import { createRecoveryWorker } from '../../web/src/lib/server/generationAttemptWorker';
-import { recoveryServiceEnabled } from '../../web/src/lib/server/generationAttemptPolicy';
+import { aiProvider } from '../server/ai/provider';
+import { openGenerationAttempts } from '../server/generationAttempts';
+import { createRecoveryWorker } from '../server/generationAttemptWorker';
+import { recoveryServiceEnabled } from '../server/generationAttemptPolicy';
 export default createRecoveryWorker({
   enabled: () => recoveryServiceEnabled(process.env.AI_RECOVERY_V1_ENABLED),
   secret: () => process.env.REPORT_TOKEN_SECRET,

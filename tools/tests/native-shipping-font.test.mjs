@@ -5,20 +5,20 @@ import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { scale } from '../../web/src/lib/design/tokens.ts';
+import { scale } from '../../src/lib/design/tokens.ts';
 import {
   SHIPPING_FONT_DISPLAY,
   SHIPPING_FONT_FAMILY,
   SHIPPING_FONT_SUBSETS,
   SHIPPING_FONT_WEIGHT_RANGE,
-} from '../../experiments/native-architecture/src/platform/shippingFontFaces.ts';
+} from '../../src/platform/shippingFontFaces.ts';
 import {
   NATIVE_FONT_FAMILIES,
   NATIVE_RSD_FONTS,
   nativeFontFace,
-} from '../../experiments/native-architecture/src/platform/nativeFontFamilies.ts';
-import { Text } from '../../experiments/native-architecture/src/drawing/Text.tsx';
-import { ShippingFontGate } from '../../experiments/native-architecture/src/platform/shippingFont.tsx';
+} from '../../src/platform/nativeFontFamilies.ts';
+import { Text } from '../../src/drawing/Text.tsx';
+import { ShippingFontGate } from '../../src/platform/shippingFont.tsx';
 
 const fontLoad = vi.hoisted(() => ({ useFonts: vi.fn() }));
 vi.mock('expo-font', () => ({ useFonts: fontLoad.useFonts }));
@@ -36,7 +36,7 @@ vi.mock('react-native', async () => {
 
 const WEB_FONT_PACKAGE = '@fontsource-variable/quicksand';
 const NATIVE_FONT_PACKAGE = '@expo-google-fonts/quicksand';
-const app = new URL('../../experiments/native-architecture/', import.meta.url);
+const app = new URL('../../', import.meta.url);
 const source = fileURLToPath(new URL('src/', app));
 const read = (path) => readFileSync(new URL(path, app), 'utf8');
 const packageFile = (path) => readFileSync(fileURLToPath(import.meta.resolve(path)), 'utf8');

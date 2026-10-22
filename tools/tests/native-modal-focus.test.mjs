@@ -3,72 +3,60 @@
 import { act, createElement, createRef, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ModalShell } from '../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
-import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
-import { RsdConfirmCard } from '../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
-import { RsdButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
-import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
-import { useConfirmFocus } from '../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.web.ts';
-import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
+import { ModalShell } from '../../src/rsdDrawing/ModalShell.tsx';
+import { DialogHeader } from '../../src/rsdDrawing/DialogHeader.tsx';
+import { RsdConfirmCard } from '../../src/rsdDrawing/RsdConfirmCard.tsx';
+import { RsdButton } from '../../src/rsdDrawing/RsdButton.tsx';
+import { lazySurface } from '../../src/rsdDrawing/lazySurface.ts';
+import { useConfirmFocus } from '../../src/rsdDrawing/useConfirmFocus.web.ts';
+import { RsdPageSheet } from '../../src/rsdDrawing/RsdNotFoundPage.tsx';
 
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
 // only React Strict DOM is reduced to the plain elements its web build emits.
 vi.mock('react-native', async () => import('react-native-web'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
-  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+  '../../src/platform/KeyboardScope.tsx',
+  () => import('../../src/platform/KeyboardScope.web.tsx')
 );
+vi.mock('../../src/platform/flyoutFocus.ts', () => import('../../src/platform/flyoutFocus.web.ts'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
-  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
-);
-vi.mock(
-  '../../experiments/native-architecture/src/platform/bootAppearance.ts',
-  () => import('../../experiments/native-architecture/src/platform/bootAppearance.web.ts')
+  '../../src/platform/bootAppearance.ts',
+  () => import('../../src/platform/bootAppearance.web.ts')
 );
 const scrollChunk = vi.hoisted(() => ({ release: null }));
-vi.mock(
-  '../../experiments/native-architecture/src/platform/ScrollView.ts',
-  () => import('../../experiments/native-architecture/src/platform/ScrollView.web.ts')
-);
-vi.mock('../../experiments/native-architecture/src/platform/ScrollViewContent.web.ts', async () => {
+vi.mock('../../src/platform/ScrollView.ts', () => import('../../src/platform/ScrollView.web.ts'));
+vi.mock('../../src/platform/ScrollViewContent.web.ts', async () => {
   await new Promise((resolve) => {
     scrollChunk.release = resolve;
   });
   return { ScrollView: (await import('react-native-web')).ScrollView };
 });
 const deviceChunk = vi.hoisted(() => ({ release: null }));
+vi.mock('../../src/rsdDrawing/RsdDeviceOptInContent.tsx', async (importOriginal) => {
+  await new Promise((resolve) => {
+    deviceChunk.release = resolve;
+  });
+  return importOriginal();
+});
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptInContent.tsx',
-  async (importOriginal) => {
-    await new Promise((resolve) => {
-      deviceChunk.release = resolve;
-    });
-    return importOriginal();
-  }
+  '../../src/rsdDrawing/RsdDeviceOptIn.tsx',
+  () => import('../../src/rsdDrawing/RsdDeviceOptIn.web.tsx')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.web.tsx')
+  '../../src/rsdDrawing/useConfirmFocus.ts',
+  () => import('../../src/rsdDrawing/useConfirmFocus.web.ts')
 );
-vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.ts',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.web.ts')
-);
-vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
-);
+vi.mock('../../src/rsdDrawing/landFocus.ts', () => import('../../src/rsdDrawing/landFocus.web.ts'));
 
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+  '../../src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../src/rsdDrawing/ModalScrim.web.tsx')
 );
 // The web build resolves RsdPressable to its web file; Vitest resolves the native one.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+  '../../src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../src/rsdDrawing/RsdPressable.web.tsx')
 );
 vi.mock('react-native-safe-area-context', () => ({
   initialWindowMetrics: null,
@@ -309,7 +297,7 @@ it('loads the actual problem confirmation with its device opt-in before landing 
   await emptyConfirmation();
   await act(async () => root.render(null));
   const ProblemConfirmation = lazySurface(() =>
-    import('../../experiments/native-architecture/src/rsdDrawing/RsdAiProblemReport.tsx').then(
+    import('../../src/rsdDrawing/RsdAiProblemReport.tsx').then(
       (module) => module.RsdAiProblemConfirm
     )
   );

@@ -138,10 +138,10 @@ palette padding CLS on inset devices, and SvelteKit's eager error-node fetch.
 Drained the 30 staged code-audit findings into GitHub issues #1789–#1818, filed in priority order
 with `type:audit` plus area and priority labels, and deleted `docs/AUDIT.md`. The top-ranked
 security and correctness claims were re-verified against the cited lines before filing — the rate
-limiter's cross-endpoint bucket sweep (`web/src/lib/server/rateLimit.ts:33-38`) and the two
-divergent dark-ink predicates (`needsInkOutline` at 0.14 WCAG luminance vs `isDarkInk` at 0.15
-perceived brightness) both reproduce as described. Nothing was dropped in vetting; the cut from 80
-to 30 happened during synthesis.
+limiter's cross-endpoint bucket sweep (`netlify/server/rateLimit.ts:33-38`) and the two divergent
+dark-ink predicates (`needsInkOutline` at 0.14 WCAG luminance vs `isDarkInk` at 0.15 perceived
+brightness) both reproduce as described. Nothing was dropped in vetting; the cut from 80 to 30
+happened during synthesis.
 
 ## 2026-09-10 · vet-audits
 
@@ -230,8 +230,8 @@ reports. The evidence said neither, quite. The value *had* been extracted: two `
 had already drained the severity head into issues #774–#785 and successive burndowns had fixed
 roughly 300, so what remained was by construction the tail — **zero P1, and 183 of 346 (53%) sitting
 in P4/P5.** The composition had also shifted away from the product: only ~108 of the 346 were in
-shipped `web/src/` code, against ~238 in tooling, tests, config, and docs. Continuing uniformly
-meant paying full verify → implement → review cost to rename constants in the asset-gen pipeline.
+shipped `src/` code, against ~238 in tooling, tests, config, and docs. Continuing uniformly meant
+paying full verify → implement → review cost to rename constants in the asset-gen pipeline.
 
 But "wait for bug reports" was wrong for one specific class, and that class became the first keep
 criterion. A meaningful share of the remaining Correctness findings are **instruments that lie**:
@@ -247,7 +247,7 @@ The five criteria, in the order they are grouped in `docs/AUDIT.md`:
 | Group                               | Kept | What earns a place                                                             |
 | ----------------------------------- | ---- | ------------------------------------------------------------------------------ |
 | Silent wrong output                 | 26   | Produces a confident wrong answer, or lets a failure pass as success           |
-| App correctness reaching users      | 16   | Behaviour defects in shipped `web/src/` and native-shell code                  |
+| App correctness reaching users      | 16   | Behaviour defects in shipped `src/` and native-shell code                      |
 | Safety, resource, ships-to-prod     | 10   | Unbounded work, unvalidated input reaching a shell, unpinned remote code       |
 | Cross-file agreement held by prose  | 14   | Two sides that can diverge *silently* and ship — one already has               |
 | Documentation that misdirects       | 8    | Read as instruction by an agent or contributor, and sends them somewhere wrong |
@@ -273,8 +273,8 @@ different name.
 
 **The intake is the actual defect.** 649 raw findings came from a single comprehensive per-section
 sweep with no scope boundary — it audited the workshop as thoroughly as the product. Scope the next
-`code-audit` to shipped `web/src/` plus surfaces that changed since the last run, so the backlog
-never again reaches a size that needs a pass like this one.
+`code-audit` to shipped `src/` plus surfaces that changed since the last run, so the backlog never
+again reaches a size that needs a pass like this one.
 
 ## 2026-08-07 · burn-down-audits (run 1)
 
@@ -366,9 +366,9 @@ section and a P2 in the drawing section are not comparable.
 From the P1 set: the Blobs-degraded token mutation that reports success while a revocation
 evaporates (#774), the unguarded Clear Button under ADR-0038's Scribble contract (#775), picker taps
 dropped in the very hexagon gaps the snap machinery exists to catch (#777), the internal
-COLORING-BOOK planning doc served publicly from `web/static/` with third-party IP character rosters
-(#781), the burndown.mjs step-extraction refactor (#782), CONTRIBUTING.md's three wrong server
-env-var names (#783), run-splotch's driver committing the orphaned-vite anti-pattern its own
+COLORING-BOOK planning doc served publicly from `assets/static/` with third-party IP character
+rosters (#781), the burndown.mjs step-extraction refactor (#782), CONTRIBUTING.md's three wrong
+server env-var names (#783), run-splotch's driver committing the orphaned-vite anti-pattern its own
 SKILL.md forbids (#784), and the testing/run-splotch skills citing spec files deleted in the spec
 split (#785).
 
@@ -378,8 +378,8 @@ real release (#780), pinchTextZoom's phantom-pointer leak that deadens every sub
 and the api-smoke burst that can still create real GitHub issues (#779).
 
 Three findings were re-checked against the tree at 0feabf0a8ce7e8e2ca73750ff0ded2ff977f6129 and
-confirmed still live — `web/static/coloring/COLORING-BOOK.md` present, `parseReleaseArgs` still on
-`args.includes`, `checkVersionMismatch` still unguarded. The rest carry the 2026-07-28
+confirmed still live — `assets/static/coloring/COLORING-BOOK.md` present, `parseReleaseArgs` still
+on `args.includes`, `checkVersionMismatch` still unguarded. The rest carry the 2026-07-28
 adversarial-verification blockquote or were filed as written. Nothing was dropped: this pass filed
 only, and the remaining 424 findings still await a full `vet-audits`.
 
@@ -588,7 +588,7 @@ launched — the session was wrapped after the canary.
 ## 2026-07-28 · code-audit
 
 Comprehensive per-section quality pass over the whole codebase: 31 parallel section auditors, one
-per `docs/CODE-MAP.md` area (using the subcategory splits for the drawing engine, the other web/src
+per `docs/CODE-MAP.md` area (using the subcategory splits for the drawing engine, the other src
 domains, asset-gen, and scripts), each applying the performance / readability / maintainability /
 architecture lenses plus the repo conventions, deduping against the 163 open issues. **642
 findings** (649 raw, less six merged by a dedup sweep and one refuted on verification) staged into
@@ -621,10 +621,10 @@ Eleven P1s, five spot-verified against the code: a `perf:mount` crash (`join` us
 imported — invisible because the `no-undef` lint carve-out covers `tools/asset-gen` but not
 `scripts/**`), two Active ADRs both numbered 0077 (`create-adr`'s count-based numbering rule is
 broken), an internal coloring-book planning doc listing trademarked characters publicly served from
-`web/static/`, a missing `onerror` in `magicBrush.ts` that wedges the magic sheet forever, and token
-mutations reporting success into the per-request memory fallback during transient Blobs failures —
-including revocations that never persist. Also notable: `FullscreenToggle`/`ClearButton` violate
-ADR-0038's scribbleGuard rule, and dark mode never reached the native layer (Android theme
+`assets/static/`, a missing `onerror` in `magicBrush.ts` that wedges the magic sheet forever, and
+token mutations reporting success into the per-request memory fallback during transient Blobs
+failures — including revocations that never persist. Also notable: `FullscreenToggle`/`ClearButton`
+violate ADR-0038's scribbleGuard rule, and dark mode never reached the native layer (Android theme
 hard-coded Light, both platforms pinning a white WebView background).
 
 ## 2026-07-28 · burn-down-audits (run 1)

@@ -5,7 +5,7 @@ import { ROOT } from '../lib/proc.mjs';
 
 // Loading the function's module graph transforms every server module it reaches.
 const GRAPH_LOAD_TIMEOUT_MS = 60_000;
-const RUNTIME_MODE_MODULE = join(ROOT, 'web/src/lib/server/runtimeMode.ts');
+const RUNTIME_MODE_MODULE = join(ROOT, 'netlify/server/runtimeMode.ts');
 const HOST_ADMIN_SECRET = 'function-host-test-secret';
 
 afterEach(() => {

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // GET /api/admin/stats answers for the admin console's suites, in the shape the endpoint sends
-// (web/src/lib/server/api/adminStats.ts, AdminStatsSnapshot): one code with a tally from two days
+// (netlify/server/api/adminStats.ts, AdminStatsSnapshot): one code with a tally from two days
 // ago, one never used, and one sampled grant.
 
 const DAY_MS = 86_400_000;

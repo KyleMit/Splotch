@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { format } from 'prettier';
-import { themes, scale, brand, isColorToken } from '../../../web/src/lib/design/tokens.ts';
-import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { AI_RESULT_HEIGHT_PX } from '../../../experiments/native-architecture/src/ai/uiState.ts';
-import { BLACK_INK } from '../../../web/src/lib/palette.ts';
+import { themes, scale, brand, isColorToken } from '../../../src/lib/design/tokens.ts';
+import { TOUCH_TARGET } from '../../../src/drawing/theme.ts';
+import { AI_RESULT_HEIGHT_PX } from '../../../src/ai/uiState.ts';
+import { BLACK_INK } from '../../../src/lib/palette.ts';
 
-import { LAYOUT_METRICS } from '../../../web/src/lib/design/layoutMetrics.ts';
+import { LAYOUT_METRICS } from '../../../src/lib/design/layoutMetrics.ts';
 
 // Shipping tokens with no RSD projection, each with the reason. Every other key of
 // themes, scale and brand is projected, so a new shipping token lands in the
@@ -250,7 +250,7 @@ function tokenSource() {
 }
 
 export const RSD_DRAWING_TOKENS_URL = new URL(
-  '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts',
+  '../../../src/rsdDrawing/tokens.css.ts',
   import.meta.url
 );
 

@@ -2,19 +2,16 @@
 import { act, createElement, useMemo } from 'react';
 import { expect, it, vi } from 'vitest';
 import { root, settle } from './native-contacts-mounted-harness.mjs';
-import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
-import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
-import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import {
-  drawingPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { NativePaper } from '../../src/rsdDrawing/NativePaper.tsx';
+import { useDrawingScreen } from '../../src/useDrawingScreen.ts';
+import { useDrawingSound } from '../../src/useDrawingSound.ts';
+import { DrawingSessionProvider } from '../../src/product/DrawingSession.tsx';
+import { drawingPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
 
 const renders = vi.hoisted(() => ({ surface: 0 }));
 
 // DrawingSurface runs its commit probe once per render: the native boundary's own counter.
-vi.mock('../../experiments/native-architecture/src/drawing/perfProbe.ts', async (original) => ({
+vi.mock('../../src/drawing/perfProbe.ts', async (original) => ({
   ...(await original()),
   useSurfaceCommitProbe: () => {
     renders.surface += 1;

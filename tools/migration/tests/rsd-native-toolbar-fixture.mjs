@@ -1,11 +1,11 @@
 import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { actionPanelLayout } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { actionPanelLayout } from '../../../src/rsdDrawing/edgeLayout.ts';
+import { BRUSH_MENU_OPTIONS } from '../../../src/rsdDrawing/brushMenuOptions.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../src/rsdDrawing/icons.deferred.generated.ts';
 
 // The edge-control screen the toolbar and Button Size suites mount.
 export function toolbarScreen(overrides = {}) {

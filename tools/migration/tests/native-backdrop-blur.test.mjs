@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
 
-const APP = join(import.meta.dirname, '../../../experiments/native-architecture');
+const APP = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(APP, path), 'utf8');
 const JS = read('src/platform/backdropBlur.tsx');
 const SWIFT = read('ios/Splotch/SplotchBackdropBlur.swift');

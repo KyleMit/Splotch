@@ -17,7 +17,7 @@ const ENTRY_POINT = 'tools/vectorize/vectorize-image.mjs';
 const load = (path) => import(pathToFileURL(join(repoRoot, path)).href);
 
 // A real repo file, so attachInput's existence and extension checks pass.
-const INPUT = join(repoRoot, 'web/static/icons/handmade-paper.webp');
+const INPUT = join(repoRoot, 'assets/static/icons/handmade-paper.webp');
 
 describe('vectorize image entry point', () => {
   const path = ENTRY_POINT;

@@ -1,4 +1,4 @@
-import { purgeExpiredGenerationAttempts } from '../../web/src/lib/server/generationAttemptSweep';
+import { purgeExpiredGenerationAttempts } from '../server/generationAttemptSweep';
 export default async () => {
   try {
     console.log('[purge-generation-attempts]', await purgeExpiredGenerationAttempts());

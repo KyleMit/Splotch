@@ -3,8 +3,8 @@ import './rsd-native-settings-hub-mocks.mjs';
 import { drawingScreen, storedSettings } from './rsd-native-settings-fixture.mjs';
 import { createElement } from 'react';
 import { expect, it } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { modalFrame } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { modalFrame } from '../../../src/rsdDrawing/modalGeometry.ts';
 
 // A Settings card of fixed height scrolls only if every view between the card and its scroller
 // can give up height: a view that cannot shrink keeps a taller layout than the card leaves it, the

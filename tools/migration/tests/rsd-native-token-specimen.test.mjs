@@ -1,7 +1,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { scale, themes } from '../../../src/lib/design/tokens.ts';
 import { resolvedStyles, TokenSpecimen } from './rsd-token-specimen.mjs';
 
 let root, host;

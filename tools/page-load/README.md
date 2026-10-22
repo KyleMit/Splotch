@@ -71,7 +71,7 @@ and revalidation). It does not move with the entry bundle's size, which the star
 chunk by 400 KB left every cell within a few milliseconds of its baseline.
 
 The service worker is not part of either visit. It registers once the child has drawn a few strokes
-(`web/src/lib/pwa/updates.ts`), which no Lighthouse load does, and no `sw.js` request appears in any
+(`src/lib/pwa/updates.ts`), which no Lighthouse load does, and no `sw.js` request appears in any
 report. The repeat cell is therefore a returning visitor who has not drawn yet, served by the HTTP
 cache and a 304 for the document; a visitor whose worker is installed loads faster than it shows.
 

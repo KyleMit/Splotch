@@ -64,7 +64,7 @@ const INLINED_IMAGE = new RegExp(
 // shell's inline CSS only: never in a script, and never twice. Every other inlined image fails.
 export const INLINED_IMAGE_EXCEPTIONS = [
   {
-    asset: 'experiments/native-architecture/assets/paper/handmade-paper.webp',
+    asset: 'assets/paper/handmade-paper.webp',
     reason:
       "The paper texture, the prerendered first frame's largest paint, carried once by the shell's CSS so it paints without a request (ADR-0180).",
   },

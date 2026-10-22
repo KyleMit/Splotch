@@ -62,10 +62,11 @@ carve-out):
   shipping pipeline, not where its output lands** — `coloring/` writes review scratch to
   `SAMPLES_DIR` and is bound; `legacy/` reads `COLORING_DIR` and is not live pipeline.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
-  `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
-  are their fills-only punch (`coloring/punch-fill-outlines.mjs`, root:
-  `npm run gen:coloring-punched-fills` — offline, deterministic). Never hand-edit a shipped fill,
-  and after changing any raw, re-punch it. The drift audit scores the raws.
+  `fill-src/` (committed, never shipped); the shipped
+  `assets/static/coloring/**/*.{light,night}.webp` are their fills-only punch
+  (`coloring/punch-fill-outlines.mjs`, root: `npm run gen:coloring-punched-fills` — offline,
+  deterministic). Never hand-edit a shipped fill, and after changing any raw, re-punch it. The drift
+  audit scores the raws.
 * **Line work is forked per theme (the pen/chalk split — see `docs/pipeline.md`).** Canonical page
   and cover line art is `{stem}.overlay.svg` for the PEN and `{stem}.dark.overlay.svg` for the
   CHALK. Pipeline consumers rasterize either SVG alpha to black ink on white; runtime uses the baked
@@ -73,8 +74,8 @@ carve-out):
   reviewed fresh/normalized/chalk candidate stages an uncommitted `.source.webp` under `vectorized/`
   and must be traced before it becomes canonical. After changing a page chalk, regenerate its night
   fill and re-punch; covers stop after their picker thumbnails.
-* **The only sanctioned imports from `web/src`** are the modules in `README.md`'s "The one coupling
-  to the app" table — the app's single source of truth for prompts/catalog/theme/backdrop keying.
+* **The only sanctioned imports from `src`** are the modules in `README.md`'s "The one coupling to
+  the app" table — the app's single source of truth for prompts/catalog/theme/backdrop keying.
   `tests/import-boundary.test.mjs` fails an import missing from that table, a stale row, and any
   import resolving outside this folder (the repo-root `tools/lib/` included), so a new import lands
   with its row. Gemini response classification lives in `lib/gemini-response.ts`, because the app no
@@ -101,8 +102,8 @@ carve-out):
   carry no raster alpha, and the fill punch still inpaints instead of cutting holes
   (`docs/inpainted-fill-punch.md`).
 * **Outputs are committed artifacts**, reviewed by a human before shipping. The generators write
-  shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
-  commit the scratch dirs.
+  shipped art into `assets/static/` and review scratch into the gitignored `.coloring-samples*/`.
+  Never commit the scratch dirs.
 * **`golden/` holds the committed regression fixtures — keep them in sync with the assets.** After
   any pipeline or asset change, run `npm run check:coloring-golden-scores` (offline, ~1 min; exit
   1 = a page regressed) and, when the change is intentional, adopt it with

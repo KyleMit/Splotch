@@ -66,12 +66,12 @@ Producing the inputs:
   (`gh release download <tag> -p app-release.aab`).
 * Shipping iOS: an `App.xcarchive` built from a release tag on `main`; the Capacitor project is no
   longer in this tree.
-* RN Android: `./gradlew bundleRelease` from `experiments/native-architecture/android`, which signs
-  the `art.splotch.app.dev` bundle with the local debug key; size does not depend on the identity or
-  key. Leave the perf-probe variables unset.
+* RN Android: `./gradlew bundleRelease` from `android`, which signs the `art.splotch.app.dev` bundle
+  with the local debug key; size does not depend on the identity or key. Leave the perf-probe
+  variables unset.
 * RN iOS: after `pod install`,
   `xcodebuild -workspace Splotch.xcworkspace -scheme Splotch -configuration Release -destination generic/platform=iOS -archivePath <out>.xcarchive archive`
-  from `experiments/native-architecture/ios`, with the team in its untracked `local.xcconfig`.
+  from `ios`, with the team in its untracked `local.xcconfig`.
 
 `tools/mobile/tests/app-size.test.mjs` pins the bundletool and thinning-report parsers and the flag
 handling.

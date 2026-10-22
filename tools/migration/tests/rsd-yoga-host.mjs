@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 const require = createRequire(import.meta.url);
 const reactNative = dirname(
   require.resolve('react-native/package.json', {
-    paths: [join(import.meta.dirname, '../../../experiments/native-architecture')],
+    paths: [join(import.meta.dirname, '../../..')],
   })
 );
 const YOGA_ROOT = join(reactNative, 'ReactCommon/yoga');

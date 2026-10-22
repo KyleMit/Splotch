@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createNativeFeedback } from '../../experiments/native-architecture/src/feedback/feedback.ts';
+import { createNativeFeedback } from '../../src/feedback/feedback.ts';
 
 // The Settings Feedback section drives the owner through submit, reset and deviceRows: one
 // Send report behind the shared grown-up check, a fresh draft per visit, and the device rows its

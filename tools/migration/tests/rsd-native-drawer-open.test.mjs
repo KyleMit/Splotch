@@ -9,7 +9,7 @@ import {
   caller,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import { Animated } from '../../../src/platform/animated.ts';
 import './rsd-native-settings-hub-mocks.mjs';
 import { drawerStore } from './rsd-native-launch-stores.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';

@@ -1,7 +1,4 @@
-import {
-  paperProjection,
-  drawingPaper,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, drawingPaper } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createPaperInputView } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
@@ -9,18 +6,12 @@ import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  emptyDrawing,
-  createHistory,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
+import { emptyDrawing, createHistory } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { useDrawingScreen } from '../../src/useDrawingScreen.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
-import {
-  DrawingSessionProvider,
-  useDrawingHistory,
-} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { DrawingSessionProvider, useDrawingHistory } from '../../src/product/DrawingSession.tsx';
 
 const sdk = vi.hoisted(() => ({
   captures: [],
@@ -36,13 +27,13 @@ const sdk = vi.hoisted(() => ({
   inputs: [],
 }));
 
-vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
+vi.mock('../../src/platform/photoLibrary.ts', () => ({
   photoLibrary: null,
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+vi.mock('../../src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+vi.mock('../../src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
     write: vi.fn(),
@@ -105,7 +96,7 @@ vi.mock('react-native', () => {
         : View,
   };
 });
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+vi.mock('../../src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const { View } = await import('react-native');
@@ -114,7 +105,7 @@ vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async 
 
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
-vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
+vi.mock('../../src/drawing/pictureCompose.ts', () => ({
   composePicture: async (layers) => layers.at(-1),
 }));
 vi.mock('react-native-svg', () => {
@@ -482,6 +473,6 @@ vi.mock(
   () => import('../lib/native-appearance-frame-fixture.mjs')
 );
 
-vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+vi.mock('../../src/platform/ai.ts', async () =>
   (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

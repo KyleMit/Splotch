@@ -31,7 +31,7 @@ it('loads release generation and direct release owners without TypeScript stripp
 
 it('generates every release datetime from its validated source date', () => {
   const metadata = JSON.parse(
-    readFileSync(new URL('../../../web/src/lib/releases.json', import.meta.url), 'utf8')
+    readFileSync(new URL('../../../src/lib/releases.json', import.meta.url), 'utf8')
   );
   expect(metadata.length).toBeGreaterThan(0);
   for (const release of metadata) {
@@ -143,10 +143,7 @@ describe('validateEmDashSpacing', () => {
 });
 
 it('keeps the generated runtime hue vocabulary owned by the generator', () => {
-  const module = readFileSync(
-    new URL('../../../web/src/lib/releaseHues.ts', import.meta.url),
-    'utf8'
-  );
+  const module = readFileSync(new URL('../../../src/lib/releaseHues.ts', import.meta.url), 'utf8');
   expect(module).toBe(renderReleaseHueModule());
 });
 

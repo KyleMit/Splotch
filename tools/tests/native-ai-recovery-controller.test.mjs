@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
-import { recoveryRequestId } from '../../experiments/native-architecture/src/ai/recoveryRequest.ts';
+import { recoveryDigest } from '../../src/ai/recoveryDigest.ts';
+import { recoveryRequestId } from '../../src/ai/recoveryRequest.ts';
 import {
   fixture,
   block,

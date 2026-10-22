@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "target": "ES2024",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "paths": {
+      "$lib/*": ["./src/lib/*"]
+    }
+  },
+  "include": [
+    "vitest.config.ts",
+    "src/lib/**/*.ts",
+    "netlify/**/*.ts",
+    "tools/migration/lib/safeAreaMatrix/**/*.ts",
+    "tools/marketing-assets/lib/storeFrames/**/*.ts",
+    "tools/marketing-assets/lib/page/**/*.ts",
+    "tools/icons/lib/**/*.ts",
+    "tools/store-drawings/lib/strokeSettings.ts",
+    "tools/icons/tests/*.test.ts",
+    "tools/release/lib/buildVersion*.ts",
+    "tools/lib/browserTargets.ts"
+  ]
+}

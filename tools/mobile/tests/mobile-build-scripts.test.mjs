@@ -43,7 +43,7 @@ vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../web/src/lib/state/books.ts', () => ({
+vi.mock('../../../src/lib/state/books.ts', () => ({
   BOOKS: state.books,
   RESPONSIVE_COLORING_TIER_DIRECTORIES: ['/coloring/max-1152px', '/coloring/max-240px'],
   booksForPlatform: () => state.mobileEligibleBooks,

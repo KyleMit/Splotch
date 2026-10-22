@@ -3,36 +3,33 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import * as ReactNative from 'react-native';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import {
-  PICKER_METRICS,
-  RsdSegmentedPicker,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
-import { RsdColoringTile } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringTile.tsx';
-import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.tsx';
-import { RsdToggleRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToggleRow.tsx';
-import { RsdSliderRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
-import { TextZoomRevision } from '../../../experiments/native-architecture/src/platform/textZoomRevision.ts';
-import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../../src/drawing/useReduceMotion.ts';
+import { PICKER_METRICS, RsdSegmentedPicker } from '../../../src/rsdDrawing/RsdSegmentedPicker.tsx';
+import { RsdColoringTile } from '../../../src/rsdDrawing/RsdColoringTile.tsx';
+import { RsdSidebarRow } from '../../../src/rsdDrawing/RsdSidebarRow.tsx';
+import { RsdToggleRow } from '../../../src/rsdDrawing/RsdToggleRow.tsx';
+import { RsdSliderRow } from '../../../src/rsdDrawing/RsdSlider.tsx';
+import { TextZoomRevision } from '../../../src/platform/textZoomRevision.ts';
+import { scale, themes } from '../../../src/lib/design/tokens.ts';
 import {
   COVER_CAPTION_HEIGHT_PX,
   TILE_ART_INSET_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/coloringGrid.ts';
+} from '../../../src/rsdDrawing/coloringGrid.ts';
 
 // Labels and captions as Android and iOS lay them out at a large OS font: the native text adapter
 // reports a word its layout broke, and the test plays the native layout's part.
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/WholeWordText.tsx',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/WholeWordText.native.tsx')
+  '../../../src/rsdDrawing/WholeWordText.tsx',
+  () => import('../../../src/rsdDrawing/WholeWordText.native.tsx')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.native.ts')
+  '../../../src/rsdDrawing/sidebarRowFade.ts',
+  () => import('../../../src/rsdDrawing/sidebarRowFade.native.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.native.ts')
+  '../../../src/rsdDrawing/pickerPlatform.ts',
+  () => import('../../../src/rsdDrawing/pickerPlatform.native.ts')
 );
 
 const INSET_PX = Number.parseFloat(scale.space1);

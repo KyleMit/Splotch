@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '../../web/src/lib/saveNaming.ts';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '../../src/lib/saveNaming.ts';
 import {
   AI_IMAGE_BASENAME as NATIVE_AI_IMAGE_BASENAME,
   DRAWING_BASENAME as NATIVE_DRAWING_BASENAME,
   DRAWING_PICTURE,
   pictureFilename,
-} from '../../experiments/native-architecture/src/export/pictureFilename.ts';
+} from '../../src/export/pictureFilename.ts';
 
 describe('native picture file names', () => {
   it('keeps the shipping base names and saves a drawing as PNG', () => {

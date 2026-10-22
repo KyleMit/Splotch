@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { STORE_TARGETS } from '../../../web/src/lib/storeFrames/targets.ts';
-import { frameGeometry } from '../../../web/src/lib/storeFrames/geometry.ts';
-import { STORE_PAGES, pageHasCapture } from '../../../web/src/lib/storeFrames/pages.ts';
+import { STORE_TARGETS } from '../lib/storeFrames/targets.ts';
+import { frameGeometry } from '../lib/storeFrames/geometry.ts';
+import { STORE_PAGES, pageHasCapture } from '../lib/storeFrames/pages.ts';
 import { storeCaptureFile } from '../lib/store-frame-document.mjs';
 
 // The committed capture set must cover the full target × capture-page matrix

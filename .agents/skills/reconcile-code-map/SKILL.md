@@ -43,19 +43,19 @@ awk -F'\t' 'NR==FNR{added[$1]=1;next} added[$1]' /tmp/code-map-new.txt /tmp/code
 
 Read the new rows, not the whole inventory. What drifts between runs:
 
-* **`web/src` files caught by a fallback rule.** The TSV's last column is the rule that placed the
-  file. The four directory-wide fallbacks (`lib/components/*` → Core UI controls, `lib/state/*` →
-  App state, `lib/*` → Focused utilities, and the `^/` catch-all → Routes / app shell) are
-  deliberately broad. A file whose feature owns it — a new AI component, a coloring-book state
-  module — gets a precise rule above the fallback. A generic control or state module where the
-  fallback is right needs no rule.
+* **`src` files caught by a fallback rule.** The TSV's last column is the rule that placed the file.
+  The four directory-wide fallbacks (`lib/components/*` → Core UI controls, `lib/state/*` → App
+  state, `lib/*` → Focused utilities, and the `^/` catch-all → Routes / app shell) are deliberately
+  broad. A file whose feature owns it — a new AI component, a coloring-book state module — gets a
+  precise rule above the fallback. A generic control or state module where the fallback is right
+  needs no rule.
 * **Large measured files that are data.** Sort the new rows by the `lines` column. A measured file
   of thousands of lines is usually captured output, a traced SVG, or a recorded fixture that an
   exclusion should cover. Hand-written code and specs of that size are real and stay.
 * **New sub-buckets.** A new `tools/` or `docs/` subtree appears on its own; it needs a label only
   when the directory name alone would mislead.
-* **Dead rules.** The generator warns about any `web/src` domain rule that matched no file. Delete
-  or retarget it — a rename usually means the pattern needs the new name.
+* **Dead rules.** The generator warns about any `src` domain rule that matched no file. Delete or
+  retarget it — a rename usually means the pattern needs the new name.
 
 Leave alone: a co-located test follows its subject automatically; the `.ruler/` instruction source
 nested in an area is counted there on purpose; and moving an existing file between domains because

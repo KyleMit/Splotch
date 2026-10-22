@@ -3,15 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { caller, host, records } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { themes } from '../../../web/src/lib/design/tokens.ts';
-import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import {
-  BUTTON_SCALE_MAX,
-  DEFAULT_BUTTON_SCALE,
-} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
-import { MARGIN_RULE_INKS } from '../../../experiments/native-architecture/src/rsdDrawing/marginRuleInk.ts';
+import { themes } from '../../../src/lib/design/tokens.ts';
+import { EDGE_INSET_PX } from '../../../src/rsdDrawing/edgeLayout.ts';
+import { PALETTE_FLOWS } from '../../../src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { BUTTON_SCALE_MAX, DEFAULT_BUTTON_SCALE } from '../../../src/settings/buttonSize.ts';
+import { MARGIN_RULE_INKS } from '../../../src/rsdDrawing/marginRuleInk.ts';
 
 // React Native's Fabric paint order over the recorded hosts, as sliceChildShadowNodeViewPairs.cpp
 // and ViewShadowNode.cpp compute it: a static child mounts before every positioned sibling, a
@@ -235,7 +232,7 @@ describe('the pre-blended margin rule ink', () => {
 });
 
 const fullscreen = vi.hoisted(() => ({ supported: false, active: false, toggle: vi.fn() }));
-vi.mock('../../../experiments/native-architecture/src/platform/useFullscreen.ts', () => ({
+vi.mock('../../../src/platform/useFullscreen.ts', () => ({
   useFullscreen: () => ({
     ...fullscreen,
     pending: false,

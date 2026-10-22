@@ -1,10 +1,7 @@
 // Optimize every shipped SVG in the web app with SVGO, in place.
 //
-// The logo and icon set are inlined into the DOM via {@html} in Icon.svelte, so
-// every vector node is a real mount-time element and every byte is shipped. A
-// one-off SVGO pass drifts the moment a new icon lands un-optimized (that's how
-// splotchy.svg was handled originally — ADR-0044). This audit re-establishes the
-// invariant on demand and in CI instead.
+// Canonical SVGs keep shipped bytes and vector nodes bounded. This check catches a new or
+// hand-edited asset that missed the canonical SVGO pass (ADR-0044).
 //
 // Idempotent by construction: SVGO's output for a given input + config is stable
 // (verified across the whole icon set — a second pass is byte-for-byte identical),
@@ -18,7 +15,7 @@
 //
 // Config note: we run SVGO's default (visually-lossless) preset. In SVGO 4
 // `removeViewBox` is NOT part of preset-default, so the `viewBox` every icon
-// relies on for CSS scaling (Icon.svelte sizes the <svg> at 100%) is preserved.
+// relies on for scaling is preserved.
 
 import { readFileSync, writeFileSync, globSync } from 'node:fs';
 import { relative } from 'node:path';
@@ -31,7 +28,7 @@ import { ROOT } from './lib/proc.mjs';
 // `id="a"`, and `url(#a)`/`href="#a"` then resolve to whichever came first).
 // Icons that need a stable id opt out by prefixing it `icon-`; every other id
 // still gets minified, so no existing icon is rewritten by the override.
-// Uniqueness across the surviving ids is enforced by web/src/lib/icons/iconIds.test.ts.
+// Uniqueness across the surviving ids is enforced by tools/icons/tests/iconIds.test.ts.
 const SVGO_CONFIG = {
   multipass: true,
   plugins: [
@@ -46,7 +43,7 @@ const {
   values: { check },
 } = parseArgs({ options: { check: { type: 'boolean' } } });
 
-const files = globSync('web/**/*.svg', { cwd: ROOT })
+const files = globSync('assets/**/*.svg', { cwd: ROOT })
   .map((p) => `${ROOT}/${p}`)
   .filter((p) => {
     const rel = relative(ROOT, p);
@@ -60,8 +57,8 @@ const files = globSync('web/**/*.svg', { cwd: ROOT })
   .sort();
 
 if (files.length === 0) {
-  console.log('[optimize-svg-assets] No SVGs found under web/.');
-  process.exit(0);
+  console.error('[optimize-svg-assets] No SVGs found under assets/.');
+  process.exit(check ? 1 : 0);
 }
 
 let changedCount = 0;

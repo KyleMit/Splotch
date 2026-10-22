@@ -1,23 +1,18 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { appendSmoothSegments } from '../../web/src/lib/drawing/strokeMath.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-  undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { appendSmoothSegments } from '../../src/lib/drawing/strokeMath.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { addStrokes, createHistory, emptyDrawing, undoDrawing } from '../../src/drawing/model.ts';
 import {
   adoptPaper,
   LEGACY_PAPER,
   paperProjection,
   paperProjectionView,
   semanticWidth,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+} from '../../src/drawing/paperSpace.ts';
 import { legacyDrawing } from './native-paper-fixtures.mjs';
-import { paintAppearance } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { CRAYON_COLOR_MIX } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { orderedOps } from '../../experiments/native-architecture/src/drawing/inkOps.ts';
+import { paintAppearance } from '../../src/drawing/palette.ts';
+import { CRAYON_COLOR_MIX } from '../../src/drawing/crayon.ts';
+import { orderedOps } from '../../src/drawing/inkOps.ts';
 
 // The incremental live-ink contract (ADR-0178): live ink painted frame by frame, the committed
 // layer the cohort leaves, a replay of the saved drawing, and a capture of it are the same pixels.
@@ -38,10 +33,8 @@ vi.mock('@shopify/react-native-skia', () => ({
 }));
 
 const { PaintStyle, StrokeCap, StrokeJoin } = await import('@shopify/react-native-skia');
-const { createInkScene } =
-  await import('../../experiments/native-architecture/src/drawing/skiaInkScene.ts');
-const { createInkLayer } =
-  await import('../../experiments/native-architecture/src/drawing/skiaInkLayer.ts');
+const { createInkScene } = await import('../../src/drawing/skiaInkScene.ts');
+const { createInkLayer } = await import('../../src/drawing/skiaInkLayer.ts');
 
 let skia;
 beforeAll(async () => {

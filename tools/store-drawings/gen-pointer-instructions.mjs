@@ -3,9 +3,9 @@
 import { parseArgs } from 'node:util';
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
-import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
-import { STROKE_SIZES, getStrokeWidthPx } from '../../web/src/lib/drawing/strokeSettings.ts';
-import { COLOR_FAMILIES } from '../../web/src/lib/hexPickerLayout.ts';
+import { PALETTE_COLORS } from '../../src/lib/palette.ts';
+import { STROKE_SIZES, getStrokeWidthPx } from './lib/strokeSettings.ts';
+import { COLOR_FAMILIES } from '../../src/lib/hexPickerLayout.ts';
 import { isMain, ROOT } from '../lib/proc.mjs';
 
 const DEFAULT_INPUT = join(ROOT, 'tools/store-drawings/samples');

@@ -7,7 +7,7 @@ description: React Native Android/iOS guide for toolchain setup, builds, signing
 
 Splotch ships one Expo / React Native / React Strict DOM app (ADR-0182). Metro resolves platform
 modules by file extension; Android ink uses Skia, and the web target is a separate static export.
-The app and native projects live in `experiments/native-architecture` until root promotion.
+The app and its `android/` and `ios/` projects live at the repository root.
 
 Read the relevant guide:
 
@@ -19,8 +19,8 @@ Read the relevant guide:
   builds, archive/export signing and App Store checklist.
 * [`docs/MOBILE/compliance.md`](../../../docs/MOBILE/compliance.md): recorded policy text and
   implementation decisions. Verify policy sources before making a new compliance decision.
-* [`experiments/native-architecture/DEVELOPMENT.md`](../../../experiments/native-architecture/DEVELOPMENT.md):
-  development builds, native module changes and device iteration.
+* [`DEVELOPMENT.md`](../../../DEVELOPMENT.md): development builds, native module changes and device
+  iteration.
 
 Use the existing `android:*` and `ios:*` scripts. Ordinary local builds use `art.splotch.app.dev`;
 only explicit store targets use `art.splotch.app`. Never install over or clear a store copy with

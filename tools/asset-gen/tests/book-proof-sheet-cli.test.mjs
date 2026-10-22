@@ -1,5 +1,5 @@
-import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -23,12 +23,49 @@ afterEach(() => {
   rmSync(outDir, { recursive: true, force: true });
 });
 
-function buildSheetData(sourceArgs) {
+function legacyGitEnvironment() {
+  const root = join(outDir, 'legacy');
+  const coloring = join(root, 'web/static/coloring/nature');
+  mkdirSync(coloring, { recursive: true });
+  for (const suffix of ['night.webp', 'light.webp', 'overlay.svg', 'dark.overlay.svg']) {
+    const name = `ant-wide.${suffix}`;
+    copyFileSync(
+      join(import.meta.dirname, '../../../assets/static/coloring/nature', name),
+      join(coloring, name)
+    );
+  }
+  const git = (args) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+  git(['init', '-q']);
+  git(['add', '.']);
+  git([
+    '-c',
+    'user.name=Fixture',
+    '-c',
+    'user.email=fixture@example.test',
+    '-c',
+    'commit.gpgsign=false',
+    '-c',
+    'core.hooksPath=/dev/null',
+    'commit',
+    '-qm',
+    'Historical asset layout',
+  ]);
+  return { GIT_DIR: join(root, '.git'), GIT_WORK_TREE: root };
+}
+
+function buildSheetData(sourceArgs, legacyLayout) {
   const out = join(outDir, 'sheet.html');
   const result = spawnSync(
     process.execPath,
     ['--experimental-strip-types', GENERATOR, 'nature/ant-wide', ...sourceArgs, '--out', out],
-    { encoding: 'utf8', env: { ...process.env, NODE_NO_WARNINGS: '1' } }
+    {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        NODE_NO_WARNINGS: '1',
+        ...(legacyLayout ? legacyGitEnvironment() : {}),
+      },
+    }
   );
   expect(result.stderr).toBe('');
   expect(result.status).toBe(0);
@@ -55,9 +92,10 @@ function declaredType(uri) {
 describe.each([
   ['the working tree', [], 1],
   ['git:HEAD beside the working tree', ['--source', 'git:HEAD'], 2],
-])('the book proof sheet built from %s', (_, sourceArgs, cellCount) => {
+  ['a historical static root beside the working tree', ['--source', 'git:HEAD'], 2, true],
+])('the book proof sheet built from %s', (_, sourceArgs, cellCount, legacyLayout = false) => {
   it('embeds canonical SVG line art and labels every payload by its real format', () => {
-    const { cells } = buildSheetData(sourceArgs);
+    const { cells } = buildSheetData(sourceArgs, legacyLayout);
 
     expect(cells).toHaveLength(cellCount);
     for (const cell of cells) {

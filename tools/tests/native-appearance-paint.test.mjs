@@ -3,27 +3,18 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import {
-  paintAppearance,
-  paintHex,
-  paintId,
-} from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { paintAppearance, paintHex, paintId } from '../../src/drawing/palette.ts';
+import { PAPER_THEMES } from '../../src/drawing/theme.ts';
+import { strokeStyle } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg, Rect } = await import('react-native-svg');
-const { InkScene } = await import('../../experiments/native-architecture/src/drawing/InkScene.tsx');
-const { CrayonGlaze: NativeGlaze } = await vi.importActual(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx'
-);
+const { InkScene } = await import('../../src/drawing/InkScene.tsx');
+const { CrayonGlaze: NativeGlaze } = await vi.importActual('../../src/drawing/CrayonGlaze.tsx');
 const WIDTH = 1024,
   HEIGHT = 768;
 const SAMPLE = { x: 480, y: 378, width: 64, height: 12 };

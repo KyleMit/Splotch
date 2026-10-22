@@ -1,12 +1,12 @@
-import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
+import { withCredentialLeases } from '../../src/ai/credentialLease.ts';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../src/parentCenter/parentGate.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 const wire = vi.hoisted(() => ({ request: vi.fn() }));
 // This controller-only seam reaches status persistence while production recovery transport stays held.
-vi.mock('../../experiments/native-architecture/src/ai/transport.ts', async (original) => ({
+vi.mock('../../src/ai/transport.ts', async (original) => ({
   ...(await original()),
   requestAi: (...args) => wire.request(...args),
 }));

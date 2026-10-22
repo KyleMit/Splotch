@@ -3,7 +3,7 @@
 // that spec.
 import { expect, type Download, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
-import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
+import { ADMIN_SESSION_KEY } from '../../src/pageDocument/admin/adminContract.ts';
 import { test as base } from '../fixtures.ts';
 import { ADMIN_ACCESS_TOKEN, MANAGED_ACCESS_CODE } from '../server/serverEnv.ts';
 import { waitForDrawingScreen } from './app.ts';

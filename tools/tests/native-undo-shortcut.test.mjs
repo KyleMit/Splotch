@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useUndoShortcut } from '../../experiments/native-architecture/src/platform/useUndoShortcut.web.ts';
+import { useUndoShortcut } from '../../src/platform/useUndoShortcut.web.ts';
 
 function key(target = window, options = {}) {
   const event = new KeyboardEvent('keydown', {

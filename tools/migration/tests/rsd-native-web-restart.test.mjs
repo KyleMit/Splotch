@@ -2,22 +2,18 @@ import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { act, createElement, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mount, root } from './rsd-native-selection-host.mjs';
-import { AppRestartRoot } from '../../../experiments/native-architecture/src/product/AppRestart.tsx';
+import { AppRestartRoot } from '../../../src/product/AppRestart.tsx';
 import {
   DrawingSessionProvider,
   useDrawingHistory,
   useStartOver,
-} from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import {
-  createHistory,
-  addStroke,
-  emptyDrawing,
-} from '../../../experiments/native-architecture/src/drawing/model.ts';
+} from '../../../src/product/DrawingSession.tsx';
+import { createHistory, addStroke, emptyDrawing } from '../../../src/drawing/model.ts';
 
 // The web export's restart, which reloads the page rather than remounting the tree.
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/appRestart.ts',
-  () => import('../../../experiments/native-architecture/src/platform/appRestart.web.ts')
+  '../../../src/platform/appRestart.ts',
+  () => import('../../../src/platform/appRestart.web.ts')
 );
 
 // A picture in progress, told from a fresh page by its rainbow brush's position.

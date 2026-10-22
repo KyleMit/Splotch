@@ -1,5 +1,5 @@
 // Re-encodes the stereo pencil masters into the mono clips the app ships.
-// Always encodes from the masters, never from web/static, so a re-run is one
+// Always encodes from the masters, never from assets/static, so a re-run is one
 // lossy generation away from the source rather than one more each time.
 
 import {
@@ -18,7 +18,7 @@ import { capture, fail, hasCommand, isMain, ROOT, runMain, tryCapture } from '..
 import { describeMp3 } from './lib/mp3-stream.mjs';
 
 export const MASTERS_DIR = join(import.meta.dirname, 'masters');
-export const OUTPUT_DIR = join(ROOT, 'web/static/sounds');
+export const OUTPUT_DIR = join(ROOT, 'assets/static/sounds');
 export const PENCIL_CLIP_PATTERN = /^pencil-\d+\.mp3$/;
 
 // VBR quality 1 (about 125 kbps mono on these clips). The clips are broadband
@@ -128,7 +128,7 @@ export async function generatePencilSounds() {
   console.log(capture('lame', ['--version']).split('\n')[0]);
 
   // Every clip is encoded and verified before any shipped file is touched, and the
-  // publish step rolls back, so a failed run leaves web/static/sounds as it was.
+  // publish step rolls back, so a failed run leaves assets/static/sounds as it was.
   const stagingDir = mkdtempSync(join(tmpdir(), 'pencil-sounds-'));
   try {
     const encoded = pencilClipNames().map((name) => encodeToStaging(name, stagingDir));

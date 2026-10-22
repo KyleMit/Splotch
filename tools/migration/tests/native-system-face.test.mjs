@@ -3,10 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
 
-const hubRowFace = read('experiments/native-architecture/src/rsdDrawing/hubRowFace.native.ts');
-const application = read(
-  'experiments/native-architecture/android/app/src/main/java/art/splotch/app/MainApplication.kt'
-);
+const hubRowFace = read('src/rsdDrawing/hubRowFace.native.ts');
+const application = read('android/app/src/main/java/art/splotch/app/MainApplication.kt');
 
 // The family the hub rows name natively, and the one Android registers as the system typeface.
 const namedFamily = (source) => source.match(/fontFamily: '([^']+)'/)?.[1] ?? null;

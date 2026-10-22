@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AI_REPORT_KINDS, IMAGE_REPORT_RETENTION_DAYS } from '../../web/src/lib/imageReport.ts';
+import { AI_REPORT_KINDS, IMAGE_REPORT_RETENTION_DAYS } from '../../src/lib/imageReport.ts';
 import {
   fetchImageReports,
   isReportExpired,
@@ -25,7 +25,7 @@ import {
 const store = vi.hoisted(() => ({ set: vi.fn(), setJSON: vi.fn(), delete: vi.fn() }));
 vi.mock('@netlify/blobs', () => ({ getStore: () => store }));
 
-const { saveImageReport } = await import('../../web/src/lib/server/imageReportStore.ts');
+const { saveImageReport } = await import('../../netlify/server/imageReportStore.ts');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.parse('2026-08-20T00:00:00.000Z');

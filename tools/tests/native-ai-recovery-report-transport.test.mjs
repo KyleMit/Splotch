@@ -1,8 +1,8 @@
-import { REPORT_TOKEN_HEADER as HOSTED_REPORT_TOKEN_HEADER } from '../../web/src/lib/apiHeaders.ts';
-import { RECOVERY_POLL_AFTER_MS } from '../../web/src/lib/ai/generationAttempt.ts';
-import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
+import { REPORT_TOKEN_HEADER as HOSTED_REPORT_TOKEN_HEADER } from '../../src/lib/apiHeaders.ts';
+import { RECOVERY_POLL_AFTER_MS } from '../../src/lib/ai/generationAttempt.ts';
+import { JOB_TTL_MS } from '../../src/ai/contract.ts';
 import { expect, it } from 'vitest';
-import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
+import { parseAiResponse } from '../../src/ai/transport.ts';
 import {
   RECOVERY_PATH,
   RECOVERY_PROTOCOL,
@@ -12,12 +12,12 @@ import {
   RECOVERY_RECEIPT_HEADER,
   RECOVERY_TERMINAL_HEADER,
   RECOVERY_TERMINAL_VALUE,
-} from '../../experiments/native-architecture/src/ai/recoveryContract.ts';
-import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
+} from '../../src/ai/recoveryContract.ts';
+import { recoveryDigest } from '../../src/ai/recoveryDigest.ts';
 import {
   MAX_AI_REPORT_TOKEN_CHARACTERS,
   REPORT_TOKEN_HEADER,
-} from '../../experiments/native-architecture/src/ai/reportContract.ts';
+} from '../../src/ai/reportContract.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 const CREATED = 1700000000000;
 const EXPIRES = CREATED + JOB_TTL_MS;

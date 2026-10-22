@@ -3,18 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { html } from 'react-strict-dom';
-import { brand, themes } from '../../../web/src/lib/design/tokens.ts';
-import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import {
-  KEY_STEP,
-  PAGE_STEP,
-  SNAP_BAND_FRACTION,
-} from '../../../experiments/native-architecture/src/rsdDrawing/sliderModel.ts';
-import {
-  RsdSliderRow,
-  SLIDER_METRICS,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
+import { brand, themes } from '../../../src/lib/design/tokens.ts';
+import { darkTheme } from '../../../src/rsdDrawing/tokens.css.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { KEY_STEP, PAGE_STEP, SNAP_BAND_FRACTION } from '../../../src/rsdDrawing/sliderModel.ts';
+import { RsdSliderRow, SLIDER_METRICS } from '../../../src/rsdDrawing/RsdSlider.tsx';
 const TRACK_WIDTH_PX = 400;
 const MIN = 40;
 const MAX = 100;

@@ -1,7 +1,7 @@
 # Code map
 
 Generates the tables in `docs/CODE-MAP.md`: lines of code per area of the repository, per sub-bucket
-within each large area, and per functional domain within `web/src`. The prose around the tables is
+within each large area, and per functional domain within `src`. The prose around the tables is
 maintained by hand through the `reconcile-code-map` skill.
 
 ## Entry point
@@ -13,13 +13,13 @@ npm run gen:code-map
 `tools/code-map/gen-code-map.mjs` counts one commit's tree and rewrites the generated blocks of the
 map in place, then formats the file with dprint.
 
-| Flag            | Default | Meaning                                                                                                                     |
-| --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--ref <rev>`   | `HEAD`  | Commit whose tree is counted                                                                                                |
-| `--assignments` | off     | Print every tracked path with its area, bucket, subdomain, line count, and `web/src` rule as TSV instead of writing the map |
+| Flag            | Default | Meaning                                                                                                                 |
+| --------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `--ref <rev>`   | `HEAD`  | Commit whose tree is counted                                                                                            |
+| `--assignments` | off     | Print every tracked path with its area, bucket, subdomain, line count, and `src` rule as TSV instead of writing the map |
 
-The generator also warns about any `web/src` domain rule that matched no file, which is how a rename
-or deletion shows up.
+The generator also warns about any `src` domain rule that matched no file, which is how a rename or
+deletion shows up.
 
 ## Inputs and outputs
 

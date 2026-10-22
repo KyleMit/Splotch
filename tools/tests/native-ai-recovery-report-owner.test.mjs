@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { MAX_AI_REPORT_BYTES } from '../../experiments/native-architecture/src/ai/reportContract.ts';
+import { MAX_AI_REPORT_BYTES } from '../../src/ai/reportContract.ts';
 import {
   fixture,
   disposeRecoveryReportOwners,

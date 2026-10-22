@@ -106,7 +106,7 @@ export const ALLOWED_REFERENCES = [
   },
   {
     doc: 'docs/MOBILE/compliance.md',
-    ref: 'web/static/coloring/COLORING-BOOK.md',
+    ref: 'assets/static/coloring/COLORING-BOOK.md',
     why: 'the compliance ledger records a file that shipped and was removed',
   },
   {
@@ -116,7 +116,7 @@ export const ALLOWED_REFERENCES = [
   },
   {
     doc: '.ruler/skills/audit-compatibility/SKILL.md',
-    ref: 'web/src/zz-probe.test.ts',
+    ref: 'src/zz-probe.test.ts',
     why: 'a throwaway file the procedure tells the agent to create and delete',
   },
   {
@@ -147,12 +147,12 @@ export const ALLOWED_REFERENCES = [
   {
     doc: 'tools/asset-gen/README.md',
     ref: './design/tokens.ts',
-    why: 'an import specifier quoted relative to web/src/lib/theme.ts',
+    why: 'an import specifier quoted relative to src/lib/theme.ts',
   },
   {
     doc: 'tools/asset-gen/README.md',
     ref: '../fonts.ts',
-    why: 'an import specifier quoted relative to web/src/lib/design/tokens.ts',
+    why: 'an import specifier quoted relative to src/lib/design/tokens.ts',
   },
   {
     doc: 'tools/vectorize/pilot/README.md',
@@ -328,7 +328,7 @@ export function createIndex({
   const topLevelNames = new Set();
   // Every in-tree tail of two or more segments, mapped to the one path it
   // ends, so a doc may name a file by the end of its path
-  // (`lib/drawing/engine.ts`, written from a doc about web/src) the way the
+  // (`lib/drawing/engine.ts`, written from a doc about src) the way the
   // prose around it does. A tail two paths share (`docs/pipeline.md`) names
   // neither, since either could vanish while the reference kept passing.
   const tails = new Map();

@@ -4,7 +4,7 @@ import {
   BASE_SCRATCH_GAIN,
   createDrawingAudio,
   FULL_VOLUME_BACKING_PX_PER_MS,
-} from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
+} from '../../src/audio/drawingAudio.ts';
 
 function pending() {
   let resolve;
@@ -25,10 +25,7 @@ function fixture() {
   return { ready, loop, load, failure, recovered, audio };
 }
 const first = { x: 10, y: 20 };
-import {
-  calculateStrokeSpeed,
-  STROKE_SPEED_WINDOW_MS,
-} from '../../web/src/lib/drawing/strokeMath.ts';
+import { calculateStrokeSpeed, STROKE_SPEED_WINDOW_MS } from '../../src/lib/drawing/strokeMath.ts';
 async function ready(f) {
   f.ready.resolve(f.loop);
   await Promise.resolve();

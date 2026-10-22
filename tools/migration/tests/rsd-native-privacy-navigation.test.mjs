@@ -1,26 +1,26 @@
-import '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.props.test.ts';
+import '../../../src/rsdDrawing/RsdSidebarRow.props.test.ts';
 
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { PAGE_CONTENTS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPageContents.tsx';
-import { PRIVACY_LINK_GEOMETRY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyHeading.tsx';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { RsdPrivacyContent } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyContent.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
-import { SECTIONS } from '../../../web/src/lib/privacy/contents.ts';
-import { COPIED_DURATION_MS } from '../../../web/src/lib/privacy/sectionLink.ts';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { PAGE_CONTENTS } from '../../../src/rsdDrawing/RsdPageContents.tsx';
+import { PRIVACY_LINK_GEOMETRY } from '../../../src/rsdDrawing/RsdPrivacyHeading.tsx';
+import { scale } from '../../../src/lib/design/tokens.ts';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
+import { RsdPrivacyContent } from '../../../src/rsdDrawing/RsdPrivacyContent.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import privacy from '../../../src/information/privacy.generated.json';
+import { SECTIONS } from '../../../src/lib/privacy/contents.ts';
+import { COPIED_DURATION_MS } from '../../../src/lib/privacy/sectionLink.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 import { useCaller } from './rsd-native-ai-fixture.mjs';
-import { PRIVACY_LAYOUT } from '../../../experiments/native-architecture/src/information/privacyLayout.ts';
+import { PRIVACY_LAYOUT } from '../../../src/information/privacyLayout.ts';
 const clipboard = vi.hoisted(() => ({
   copy: vi.fn(async () => true),
   replace: vi.fn(),
   launch: null,
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/privacySectionLink.ts', () => ({
+vi.mock('../../../src/platform/privacySectionLink.ts', () => ({
   copyPrivacySection: clipboard.copy,
   replacePrivacyFragment: clipboard.replace,
   privacySectionAtLaunch: () => clipboard.launch,

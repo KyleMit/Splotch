@@ -5,8 +5,8 @@ import { act, createElement, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import { addStroke, strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
+import { addStroke, strokeStyle } from '../../src/drawing/model.ts';
+import { useUndoAction } from '../../src/useUndoAction.ts';
 import {
   UNAVAILABLE_FLASH_KEYFRAMES,
   UNAVAILABLE_FLASH_MS,
@@ -15,28 +15,24 @@ import {
   UNAVAILABLE_GLOW_SPREAD_PX,
   UNAVAILABLE_SHAKE_KEYFRAMES,
   UNAVAILABLE_SHAKE_MS,
-} from '../../experiments/native-architecture/src/rsdDrawing/unavailableKeyframes.ts';
+} from '../../src/rsdDrawing/unavailableKeyframes.ts';
 
 vi.mock('react-native', async () => await import('react-native-web'));
-vi.mock('../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx', () => ({
+vi.mock('../../src/drawing/DrawingAppearance.tsx', () => ({
   useDrawingTheme: () => ({ brandWash: '#ede7f6' }),
 }));
 const timelines = vi.hoisted(() => []);
-vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/keyframeMotion.ts',
-  async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-      ...actual,
-      keyframeTimeline(progress, keyframes, durationMs, delayMs, elapsedMs) {
-        timelines.push({ durationMs, elapsedMs });
-        return actual.keyframeTimeline(progress, keyframes, durationMs, delayMs, elapsedMs);
-      },
-    };
-  }
-);
-const { RsdUnavailableCue } =
-  await import('../../experiments/native-architecture/src/rsdDrawing/RsdUnavailableCue.tsx');
+vi.mock('../../src/rsdDrawing/keyframeMotion.ts', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    keyframeTimeline(progress, keyframes, durationMs, delayMs, elapsedMs) {
+      timelines.push({ durationMs, elapsedMs });
+      return actual.keyframeTimeline(progress, keyframes, durationMs, delayMs, elapsedMs);
+    },
+  };
+});
+const { RsdUnavailableCue } = await import('../../src/rsdDrawing/RsdUnavailableCue.tsx');
 const EASE_IN_OUT = [0.42, 0, 0.58, 1];
 
 describe("the native unavailable cue against app.css's .action-unavailable", () => {
@@ -184,7 +180,7 @@ describe('RsdUnavailableCue', () => {
   // The web loads the motion with the other Undo cues. Negative control: a wrapper that renders
   // the bare tile until the chunk lands, then wraps it, remounts the button and drops its focus.
   it('keeps the tile mounted and focused when the web chunk with its motion arrives late', async () => {
-    const SRC = join(import.meta.dirname, '../../experiments/native-architecture/src/rsdDrawing/');
+    const SRC = join(import.meta.dirname, '../../src/rsdDrawing/');
     let release;
     const held = new Promise((resolve) => (release = resolve));
     vi.resetModules();

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import sharp from 'sharp';
-import { PAPER_INPUT_TEST_ID } from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+import { PAPER_INPUT_TEST_ID } from '../../src/platform/firstFrameContract.ts';
 
 // Helpers the group B specs share. The suite's common helpers (fixtures.ts, support/app.ts,
 // support/drawing.ts) belong to no one lane, so a helper two or more of these specs use lives here.

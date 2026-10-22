@@ -62,16 +62,16 @@ Decide each listed identifier by reading the sentence around it, not by the name
 * **Illustrative — leave it.** Examples of a shape (`getErrorMessage`, `initX()`), and names cited
   as the thing *not* to build (`waitForStable`).
 * **Stale repo symbol — fix it.** The sentence describes this repo's code, and the name is gone.
-  Find what replaced it (`git log -S '<name>' --oneline -- web/src tools` shows the commit that
-  removed it; read that diff), and rewrite the reference to the current name. If the concept is
-  gone, rewrite or delete the sentence.
+  Find what replaced it (`git log -S '<name>' --oneline -- src tools` shows the commit that removed
+  it; read that diff), and rewrite the reference to the current name. If the concept is gone,
+  rewrite or delete the sentence.
 
 ## 4. Hunt prose about renamed and deleted things
 
 List what disappeared in the window, then search the living docs for the old names:
 
 ```bash
-git diff --name-status --diff-filter=DR <base> origin/main -- web/src tools android ios netlify
+git diff --name-status --diff-filter=DR <base> origin/main -- src tools android ios netlify
 ```
 
 For each deleted or renamed source file, search for its basename without extension (`geminiSafety` —

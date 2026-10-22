@@ -16,9 +16,7 @@ import {
 // command is held to the job that runs it and each script to what it must invoke.
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
-const nativeTsconfig = JSON.parse(
-  readFileSync(join(repoRoot, 'experiments/native-architecture/tsconfig.json'), 'utf8')
-);
+const nativeTsconfig = JSON.parse(readFileSync(join(repoRoot, 'tsconfig.json'), 'utf8'));
 
 const NATIVE_CI_STEPS = [
   { job: 'quality', command: 'npm run check' },
@@ -107,9 +105,7 @@ describe('the native candidate check scripts', () => {
   });
 
   it("type-checks the candidate's own TypeScript project over all of its source", () => {
-    expect(scripts['check:migration:types']).toBe(
-      'tsc --noEmit -p experiments/native-architecture/tsconfig.json'
-    );
+    expect(scripts['check:migration:types']).toBe('tsc --noEmit -p tsconfig.json');
     expect(nativeTsconfig.include).toEqual(['src/**/*.ts', 'src/**/*.tsx']);
   });
 

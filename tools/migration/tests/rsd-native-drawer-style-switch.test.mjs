@@ -9,8 +9,8 @@ import {
   root,
 } from './rsd-native-selection-host.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { ACTION_TILE_DISABLED_OPACITY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { ACTION_TILE_DISABLED_OPACITY } from '../../../src/rsdDrawing/RsdIconButton.tsx';
 
 const STYLE_LABELS = { buttons: 'Raised', bare: 'Flat' };
 

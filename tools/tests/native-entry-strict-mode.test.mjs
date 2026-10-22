@@ -4,10 +4,7 @@ import ts from 'typescript';
 import { createElement, StrictMode } from 'react';
 import { expect, it, vi } from 'vitest';
 
-const source = readFileSync(
-  new URL('../../experiments/native-architecture/src/index.ts', import.meta.url),
-  'utf8'
-);
+const source = readFileSync(new URL('../../src/index.ts', import.meta.url), 'utf8');
 const { outputText: code } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 });

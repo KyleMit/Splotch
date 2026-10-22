@@ -8,13 +8,10 @@ import {
   emptyDrawing,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import {
-  COLORING_PAGES,
-  PAGE_IDS,
-} from '../../experiments/native-architecture/src/drawing/pages.ts';
-import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { COLORING_PAGES, PAGE_IDS } from '../../src/drawing/pages.ts';
+import { createPngCapture } from '../../src/drawing/interactions.ts';
 
 function legacyStroke() {
   return { color: 'Green', brush: 'marker', points: [{ x: 512, y: 384 }] };

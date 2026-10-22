@@ -9,23 +9,23 @@ import {
   NOT_FOUND_COPY,
   RsdNotFoundPage,
   RsdPageSheet,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
+} from '../../../src/rsdDrawing/RsdNotFoundPage.tsx';
 
 import {
   BREAKPOINT_EPSILON_PX,
   NARROW_PHONE_MIN_WIDTH_PX,
   PHONE_MAX_WIDTH_PX,
   SHORT_PAGE_HEIGHT_PX,
-} from '../../../web/src/lib/breakpoints.ts';
-import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+} from '../../../src/lib/breakpoints.ts';
+import { scale, themes } from '../../../src/lib/design/tokens.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8').replace(/\s+/g, ' ');
 
 describe("the web export's not-found page", () => {
   it('keeps the copy and literals NotFoundPage and PageShell declare', () => {
-    expect(read('web/src/lib/components/page/backLabel.ts')).toContain(
+    expect(read('src/lib/components/page/backLabel.ts')).toContain(
       `COLD_VISIT_LABEL: BackLabel = '${NOT_FOUND_COPY.startDrawing}';`
     );
   });

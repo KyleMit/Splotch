@@ -3,21 +3,18 @@ import {
   DECODED_IMAGE_LIMIT,
   decodeDataUriImage,
   paintStroke,
-} from '../../experiments/native-architecture/src/drawing/skiaInkPainter.ts';
+} from '../../src/drawing/skiaInkPainter.ts';
 import {
   adoptPaper,
   paperSize,
   paperProjection,
   LEGACY_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { COLORING_FILLS } from '../../experiments/native-architecture/src/drawing/pages.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { createCrayonTileResources } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
-import { makeSkiaUndoGhost } from '../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts';
-import {
-  undoGhostBounds,
-  undoGhostStrokes,
-} from '../../experiments/native-architecture/src/drawing/undoGhostGeometry.ts';
+} from '../../src/drawing/paperSpace.ts';
+import { COLORING_FILLS } from '../../src/drawing/pages.ts';
+import { paletteHex } from '../../src/drawing/palette.ts';
+import { createCrayonTileResources } from '../../src/drawing/crayonTiles.ts';
+import { makeSkiaUndoGhost } from '../../src/drawing/skiaUndoGhostImage.ts';
+import { undoGhostBounds, undoGhostStrokes } from '../../src/drawing/undoGhostGeometry.ts';
 
 // Awaited so this import settles before the static imports start: a concurrent import can take
 // Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.

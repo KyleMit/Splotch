@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { TAP_ZONE_DURATION_MS } from '../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
+import { TAP_ZONE_DURATION_MS } from '../../src/rsdDrawing/tapZone.ts';
 import { expect, test } from '../fixtures.ts';
 import {
   blackInkInCentralBand,

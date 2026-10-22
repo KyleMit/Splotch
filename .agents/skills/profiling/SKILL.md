@@ -20,8 +20,8 @@ change is the A/B.
 | **Device traps that still apply** | Guided Access, overnight updates, sleep, host load, a full disk, device identifiers    |
 
 The probe's build commands, its log fields and the replay launch commands live in
-[`experiments/native-architecture/DEVELOPMENT.md`](../../../experiments/native-architecture/DEVELOPMENT.md)
-("Performance probe" and "Replay"). Read them before building a probe Release.
+[`DEVELOPMENT.md`](../../../DEVELOPMENT.md) ("Performance probe" and "Replay"). Read them before
+building a probe Release.
 
 Two things to check before drawing a conclusion:
 

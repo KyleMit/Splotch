@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { DecodedPng } from '../../experiments/native-architecture/src/drawing/DecodedPng.tsx';
+import { DecodedPng } from '../../src/drawing/DecodedPng.tsx';
 
 const sdk = vi.hoisted(() => ({ image: null, platform: { OS: 'android' } }));
 vi.mock('react-native', () => ({

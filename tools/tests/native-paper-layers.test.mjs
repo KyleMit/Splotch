@@ -1,7 +1,4 @@
-import {
-  paperProjection,
-  drawingPaper,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, drawingPaper } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import {
   act,
@@ -15,16 +12,13 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { adoptedDrawing, createPaperInputView } from './native-paper-fixtures.mjs';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { PageArtMotion } from '../../experiments/native-architecture/src/drawing/PageArtMotion.tsx';
-import {
-  InkAppearanceScope,
-  useInkAppearance,
-} from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import { Animated } from '../../experiments/native-architecture/src/platform/animated.ts';
-import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { DrawingAppearanceProvider } from '../../src/drawing/DrawingAppearance.tsx';
+import { PageArtMotion } from '../../src/drawing/PageArtMotion.tsx';
+import { InkAppearanceScope, useInkAppearance } from '../../src/drawing/InkAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
+import { Animated } from '../../src/platform/animated.ts';
+import { PAPER_THEMES } from '../../src/drawing/theme.ts';
 
 // Android draws every layer of the view tree on every frame, occluded or not, so each full-paper
 // layer under the strokes costs GPU time for as long as a stroke is drawn.
@@ -64,21 +58,18 @@ vi.mock('react-native', () => {
   };
 });
 
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+vi.mock('../../src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const { View } = await import('react-native');
   return { Animated: animatedPort(View, View), Easing: easingPort };
 });
 
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 
 // The outline itself is PageOutline's to draw; this file only asks whether the surface mounts a
 // react-native-svg view for it.
-vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', async (actual) => ({
+vi.mock('../../src/drawing/PageOutline.tsx', async (actual) => ({
   ...(await actual()),
   usePageOutlineReady: () =>
     useSyncExternalStore(

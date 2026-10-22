@@ -12,8 +12,8 @@ import {
   settle,
   Consumer,
 } from './native-contacts-mounted-harness.mjs';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { DrawingSessionProvider } from '../../src/product/DrawingSession.tsx';
+import { createHistory } from '../../src/drawing/model.ts';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
 
 // The real drawing surface and screen owner under React StrictMode, which runs every effect's
@@ -27,7 +27,7 @@ const MOVES = 4;
 // Every live ink feed a surface creates, so a stroke's live samples can be read where the ink
 // layer reads them. StrictMode builds the surface's responder twice and keeps one.
 const ink = vi.hoisted(() => ({ feeds: [] }));
-vi.mock('../../experiments/native-architecture/src/drawing/liveInk.ts', async (original) => {
+vi.mock('../../src/drawing/liveInk.ts', async (original) => {
   const module = await original();
   return {
     ...module,

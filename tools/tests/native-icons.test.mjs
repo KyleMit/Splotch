@@ -1,4 +1,4 @@
-import { COLOR_ICONS } from '../../web/src/lib/components/iconTypes.ts';
+import { COLOR_ICONS } from '../icons/lib/iconTypes.ts';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,17 +10,14 @@ import {
   themedIcon,
   NATIVE_STARTUP_ICONS,
 } from '../migration/gen-native-icons.mjs';
-import {
-  NATIVE_ICONS,
-  SPLOTCHY_ICON_NAME,
-} from '../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
-import { iconTokenEntries } from '../../web/src/lib/design/iconTokens.ts';
-import { brand, themes } from '../../web/src/lib/design/tokens.ts';
-import { NON_RENDERABLE_ICONS } from '../../web/src/lib/components/iconTypes.ts';
+import { NATIVE_ICONS, SPLOTCHY_ICON_NAME } from '../../src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../src/rsdDrawing/splotchy.generated.ts';
+import { iconTokenEntries } from '../icons/lib/iconTokens.ts';
+import { brand, themes } from '../../src/lib/design/tokens.ts';
+import { NON_RENDERABLE_ICONS } from '../icons/lib/iconTypes.ts';
 
-const ICON_DIR = new URL('../../web/src/lib/icons/', import.meta.url);
+const ICON_DIR = new URL('../../assets/icons/', import.meta.url);
 const SVG_ROOT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">';
 const allNativeIcons = { ...NATIVE_ICONS, ...NATIVE_DEFERRED_ICONS };
 const iconPart = (cssVar) => iconTokenEntries().find((entry) => entry.cssVar === cssVar);

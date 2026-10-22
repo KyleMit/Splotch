@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { themes } from '../../web/src/lib/design/tokens.ts';
+import { themes } from '../../src/lib/design/tokens.ts';
 
 // The coloring-book proof sheets restate colours from two owners they cannot
 // import, so this guard reads each copy and its owner as source text. It reads
@@ -14,7 +14,7 @@ import { themes } from '../../web/src/lib/design/tokens.ts';
 // ships on, so both browser runtimes restate the app's per-theme paper colour and
 // line-art blend. They load as plain <script> assets, so each runtime's top-level
 // `PAPER` and `BLEND` declarations are held to `themes` in
-// web/src/lib/design/tokens.ts.
+// src/lib/design/tokens.ts.
 //
 // The category sheet's page CSS restates the scrapbook chrome's light palette and
 // crayon hues, because tools/asset-gen may not import the chrome. The chrome keeps

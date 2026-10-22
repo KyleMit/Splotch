@@ -1,5 +1,5 @@
 import { WEB_INSTALL_HEAD_TAGS, WEB_VIEWPORT_META } from './lib/native-web-head.mjs';
-// Production web export of the React Native app (experiments/native-architecture),
+// Production web export of the React Native app (.),
 // made installable and offline-capable the way the shipping PWA is (ADR-0022): the
 // shipping manifest, icons and install head tags, plus a Workbox service worker
 // whose first precache entry is this build's own document, and whose every entry is
@@ -11,29 +11,22 @@ import { generateSW } from 'workbox-build';
 import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
-} from '../../web/src/lib/pwa/appShellRoute.ts';
+} from '../../src/lib/pwa/appShellRoute.ts';
 import {
   CACHE_BUST_VERSION_PARAM,
   VERSION_JSON_FILENAME,
   SERVICE_WORKER_PATH,
-} from '../../web/src/lib/pwa/versionEndpoint.ts';
-import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
-import {
-  HOME_CARD,
-  PAGE_CARDS,
-  shareImageFor,
-} from '../../web/src/lib/components/page/socialCard.ts';
-import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
-import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
-import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
-import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
-import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import {
-  APP_SURFACE_ATTRIBUTE,
-  DRAWING_PATHS,
-} from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
+} from '../../src/lib/pwa/versionEndpoint.ts';
+import { buildMetadataOncePerProcess } from '../release/lib/buildVersion.ts';
+import { HOME_CARD, PAGE_CARDS, shareImageFor } from '../marketing-assets/lib/page/socialCard.ts';
+import { SITE_ORIGIN } from '../../src/lib/siteUrl.ts';
+import { APP_PAGE_PATHS } from '../../src/information/appPages.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../src/information/unlinkedDocuments.ts';
+import { WEB_VERSION_META_NAME } from '../../src/platform/webVersion.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
+import { SOUND_SETTINGS_KEY } from '../../src/platform/soundSettings.web.ts';
+import { DRAWING_THEMES } from '../../src/drawing/theme.ts';
+import { APP_SURFACE_ATTRIBUTE, DRAWING_PATHS } from '../../src/platform/appSurfacePolicy.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 import { prerenderNativeWeb } from './prerender-native-web.mjs';
 import {
@@ -46,10 +39,10 @@ import {
 import { prerenderNativeWebAdmin } from './prerender-native-web-admin.mjs';
 import { withContentSecurityPolicy } from './lib/native-web-csp.mjs';
 
-export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
+export const NATIVE_APP_DIR = join(ROOT, '.');
 export const NATIVE_WEB_EXPORT_DIR = join(NATIVE_APP_DIR, 'dist/web');
 export const NATIVE_WEB_SERVICE_WORKER = SERVICE_WORKER_PATH.slice(1);
-const WEB_STATIC_DIR = join(ROOT, 'web/static');
+const WEB_STATIC_DIR = join(ROOT, 'assets/static');
 
 export const WEB_MANIFEST_FILE = 'site.webmanifest';
 
@@ -182,7 +175,7 @@ function exportWebBundle(outputDir) {
   );
 }
 
-// Shipping's drawing route titles its tab from the home card (web/src/routes/+page.svelte); Expo
+// Shipping's drawing route titles its tab from the home card (src/routes/+page.svelte); Expo
 // titles the document with the app's name.
 export function withShippingTitle(indexHtml) {
   const title = /<title>[^<]*<\/title>/;

@@ -38,7 +38,7 @@ const SVG_VIEWBOX = /viewBox="0(?:\.0+)? 0(?:\.0+)? ([\d.]+) ([\d.]+)"/;
 // the source canvas size, so that is what the corpus gets.
 const SVG_SUPERSAMPLE = 4;
 const SVG_BASE_DENSITY_DPI = 72;
-const COLORING = join(ROOT, 'web/static/coloring');
+const COLORING = join(ROOT, 'assets/static/coloring');
 
 // --- deterministic RNG + stroke geometry (node side, seeded per fixture) ---
 function makeRng(seed) {

@@ -7,13 +7,10 @@ import { GATE_MODAL, gateKey, gateProblem, tapGateKeys } from './rsd-parent-gate
 import {
   PARENT_GATE_KEYPAD_METRICS,
   PARENT_GATE_METRICS,
-} from '../../../experiments/native-architecture/src/parentCenter/parentGateMetrics.ts';
-import { PARENT_GATE_KEYPAD_KEYS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { GATE_EQUATION_ONE_ROW_MAX_FONT_SCALE } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
-import {
-  gateSizeClass,
-  modalFrame,
-} from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+} from '../../../src/parentCenter/parentGateMetrics.ts';
+import { PARENT_GATE_KEYPAD_KEYS } from '../../../src/parentCenter/parentGate.ts';
+import { GATE_EQUATION_ONE_ROW_MAX_FONT_SCALE } from '../../../src/rsdDrawing/RsdParentGateSheet.tsx';
+import { gateSizeClass, modalFrame } from '../../../src/rsdDrawing/modalGeometry.ts';
 
 // React Native's font scale at iOS's accessibility sizes, and Android 14's largest font size.
 const AX1_FONT_SCALE = 1.786;

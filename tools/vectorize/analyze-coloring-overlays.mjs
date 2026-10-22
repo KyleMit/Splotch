@@ -58,7 +58,7 @@ export function analysisPaths(svg, theme) {
   const config = OVERLAY_THEMES[theme];
   const vectorSuffix = `.${config.outputSuffix}.svg`;
   const rasterSuffix = `.${config.outputSuffix}.webp`;
-  const prefix = 'web/static/coloring/';
+  const prefix = 'assets/static/coloring/';
   if (!svg.startsWith(prefix) || !svg.endsWith(vectorSuffix)) {
     throw new Error(`Not a ${theme} coloring overlay SVG: ${svg}`);
   }
@@ -69,7 +69,7 @@ export function analysisPaths(svg, theme) {
   const stem = relative.slice(separator + 1);
   const source = `vectorized/${config.rawDirectory}/${book}/${stem}.source.webp`;
   const full = svg.replace(vectorSuffix, rasterSuffix);
-  const compact = full.replace('web/static/coloring/', 'web/static/coloring/max-1152px/');
+  const compact = full.replace('assets/static/coloring/', 'assets/static/coloring/max-1152px/');
   return { source, full, compact };
 }
 
@@ -127,8 +127,8 @@ export async function analyzeColoringOverlays(argv = process.argv.slice(2)) {
   const theme = overlayTheme(values.theme);
   const suffix = `${OVERLAY_THEMES[theme].outputSuffix}.svg`;
   const pattern = values.book
-    ? `web/static/coloring/${values.book}/*.${suffix}`
-    : `web/static/coloring/**/*.${suffix}`;
+    ? `assets/static/coloring/${values.book}/*.${suffix}`
+    : `assets/static/coloring/**/*.${suffix}`;
   const svgs = globSync(pattern, { cwd: ROOT })
     .filter((path) => theme === 'dark' || !path.endsWith('.dark.overlay.svg'))
     .filter((path) => !values.match || path.includes(values.match))

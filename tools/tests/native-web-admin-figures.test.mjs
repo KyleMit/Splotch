@@ -2,13 +2,10 @@
 import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ADMIN_SESSION_KEY } from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
-import {
-  ADMIN_STATS_PATH,
-  createAdminApi,
-} from '../../experiments/native-architecture/src/pageDocument/admin/adminApi.ts';
-import { createAdminSessionStore } from '../../experiments/native-architecture/src/pageDocument/admin/adminSession.ts';
-import { AdminConsole } from '../../experiments/native-architecture/src/pageDocument/admin/AdminConsole.tsx';
+import { ADMIN_SESSION_KEY } from '../../src/pageDocument/admin/adminContract.ts';
+import { ADMIN_STATS_PATH, createAdminApi } from '../../src/pageDocument/admin/adminApi.ts';
+import { createAdminSessionStore } from '../../src/pageDocument/admin/adminSession.ts';
+import { AdminConsole } from '../../src/pageDocument/admin/AdminConsole.tsx';
 import { GRANTS, STATS } from './native-admin-stats-fixture.mjs';
 
 // The admin console as it renders GET /api/admin/stats beside the code list: each code's

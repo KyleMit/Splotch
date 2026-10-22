@@ -1,16 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { scale, themes } from '../../web/src/lib/design/tokens.ts';
-import { featherAlpha, glassPaneShapes, paneBox } from '../../web/src/lib/glassPaneGeometry.ts';
+import { scale, themes } from '../../src/lib/design/tokens.ts';
+import { featherAlpha, glassPaneShapes, paneBox } from '../../src/lib/glassPaneGeometry.ts';
 import {
   GLASS_PANE_INKS,
   PAPER_GRAIN_COVERAGE,
   PAPER_GRAIN_RGB,
-} from '../../experiments/native-architecture/src/rsdDrawing/glassPaneInk.ts';
-import { glassPanePng } from '../../experiments/native-architecture/src/rsdDrawing/glassPanePng.ts';
-import { glassPaneRaster } from '../../experiments/native-architecture/src/rsdDrawing/glassPaneRaster.ts';
-import { glassPaneImage } from '../../experiments/native-architecture/src/rsdDrawing/glassPaneImage.ts';
+} from '../../src/rsdDrawing/glassPaneInk.ts';
+import { glassPanePng } from '../../src/rsdDrawing/glassPanePng.ts';
+import { glassPaneRaster } from '../../src/rsdDrawing/glassPaneRaster.ts';
+import { glassPaneImage } from '../../src/rsdDrawing/glassPaneImage.ts';
 
 const runtime = await vi.hoisted(async () => {
   const { createRequire } = await import('node:module');
@@ -22,15 +22,12 @@ vi.mock('@shopify/react-native-skia', () => ({
     return runtime.skia;
   },
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/paperGrain.ts', () => ({
+vi.mock('../../src/drawing/paperGrain.ts', () => ({
   PAPER_GRAIN_CUBIC: [1 / 3, 1 / 3],
   loadPaperGrain: async () => runtime.texture,
 }));
 
-const GRAIN = new URL(
-  '../../experiments/native-architecture/assets/paper/handmade-paper.webp',
-  import.meta.url
-);
+const GRAIN = new URL('../../assets/paper/handmade-paper.webp', import.meta.url);
 let grainPixels;
 beforeAll(async () => {
   const CanvasKitInit = runtime.require('canvaskit-wasm');

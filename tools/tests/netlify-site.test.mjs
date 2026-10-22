@@ -8,7 +8,7 @@ import {
   WEB_MANIFEST_FILE,
 } from '../migration/build-native-web.mjs';
 import { writtenPageDocuments } from '../migration/prerender-native-web-pages.mjs';
-import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
+import { VERSION_JSON_FILENAME } from '../../src/lib/pwa/versionEndpoint.ts';
 
 // A header rule whose `for` names a path nothing serves applies to nothing and fails silently,
 // which is how the manifest once shipped as application/octet-stream. Netlify reads netlify.toml as
@@ -43,7 +43,7 @@ function served(path) {
   const hosted = HOSTED_STATIC_ENTRIES.some(
     (entry) => path === `/${entry}` || path.startsWith(`/${entry}/`)
   );
-  return hosted && existsSync(new URL(`../../web/static${path}`, import.meta.url));
+  return hosted && existsSync(new URL(`../../assets/static${path}`, import.meta.url));
 }
 
 const rules = headerRules(netlifyToml);

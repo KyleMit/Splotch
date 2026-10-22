@@ -9,21 +9,18 @@ import {
 import { act, createElement } from 'react';
 import { html } from 'react-strict-dom';
 import { expect, it, vi } from 'vitest';
-import { REPORT_KINDS } from '../../../web/src/lib/report.ts';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
-import { SETTINGS_WIDE_MIN_WIDTH_PX } from '../../../web/src/lib/breakpoints.ts';
+import { REPORT_KINDS } from '../../../src/lib/report.ts';
+import { scale } from '../../../src/lib/design/tokens.ts';
+import { SETTINGS_WIDE_MIN_WIDTH_PX } from '../../../src/lib/breakpoints.ts';
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { RsdFeedbackSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFeedbackSection.tsx';
-import { createNativeFeedback } from '../../../experiments/native-architecture/src/feedback/feedback.ts';
-import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
-import { fontTheme as nativeFontTheme } from '../../../experiments/native-architecture/src/rsdDrawing/fontTheme.native.ts';
-import { nativeFontStyle } from '../../../experiments/native-architecture/src/platform/nativeFontFamilies.ts';
-import {
-  MESSAGE_PROMPT_BY_KIND,
-  REPORT_FORM_COPY,
-} from '../../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { RsdFeedbackSection } from '../../../src/rsdDrawing/RsdFeedbackSection.tsx';
+import { createNativeFeedback } from '../../../src/feedback/feedback.ts';
+import { FEEDBACK_PAGE_COPY } from '../../../src/information/feedbackPageCopy.ts';
+import { fontTheme as nativeFontTheme } from '../../../src/rsdDrawing/fontTheme.native.ts';
+import { nativeFontStyle } from '../../../src/platform/nativeFontFamilies.ts';
+import { MESSAGE_PROMPT_BY_KIND, REPORT_FORM_COPY } from '../../../src/feedback/reportFormCopy.ts';
 
 const TIGHT_FEEDBACK_WIDTH_PX = 400;
 const CHECKBOX = `${REPORT_FORM_COPY.includeDevice} ${REPORT_FORM_COPY.includeDeviceWhy}`;

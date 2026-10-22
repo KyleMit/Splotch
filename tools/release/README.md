@@ -57,19 +57,18 @@ version must be committed before a correctly versioned binary can be built.
 
 ## Build native artifacts
 
-The stores ship the React Native app in `experiments/native-architecture`;
-`tools/release/lib/native-app.mjs` names its identity, projects, and artifact paths.
-`build-native-release.mjs` deletes a target's previous output, then runs Gradle or `pod install` and
-`xcodebuild` in the app's project. Store identity is opt-in: Gradle's `splotch.store` property and
-`experiments/native-architecture/ios/Store.xcconfig` are the only switches from
+The stores ship the React Native app in `.`; `tools/release/lib/native-app.mjs` names its identity,
+projects, and artifact paths. `build-native-release.mjs` deletes a target's previous output, then
+runs Gradle or `pod install` and `xcodebuild` in the app's project. Store identity is opt-in:
+Gradle's `splotch.store` property and `ios/Store.xcconfig` are the only switches from
 `art.splotch.app.dev` to `art.splotch.app`, and the `bundle`, `archive`, and `ipa` targets are their
 only callers. The `apk` target is the Release-optimized `.dev` app for installing beside the store
 copy. `tools/release/tests/native-app.test.mjs` fails when the native projects stop declaring that
 identity or another package script reaches the opt-in.
 
 ```sh
-npm run android:bundle   # needs experiments/native-architecture/android/keystore.properties
-npm run ios:ipa          # needs experiments/native-architecture/ios/local.xcconfig
+npm run android:bundle   # needs android/keystore.properties
+npm run ios:ipa          # needs ios/local.xcconfig
 ```
 
 ## Publish native artifacts
@@ -107,9 +106,9 @@ temporary directory with `git archive`, runs that generator for the `mobile` pla
 `coloring-pack-snapshots/<version>.json` (download path → digest per book). Run it once after each
 release is tagged, add `'<version>': 0` to `RELEASED_PACK_BROKEN_FILES` in
 `lib/coloring-pack-retention.mjs`, and commit both. `check-coloring-pack-retention.mjs` hashes the
-current `web/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the same
-check in the CI tools tier and, where tags are present locally, fails on a pack-shipping tag with no
-snapshot.
+current `assets/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the
+same check in the CI tools tier and, where tags are present locally, fails on a pack-shipping tag
+with no snapshot.
 
 `RELEASED_PACK_BROKEN_FILES` is the committed release inventory. The check fails when a listed
 release has no snapshot or a snapshot has no entry, so a lost snapshot fails CI even though CI's
@@ -118,7 +117,7 @@ release. A release already broken on the live origin keeps its nonzero count, so
 deletion and a partial restore fail until the pin is updated. A nonzero pin is an open defect, not
 an exemption. Retiring or regenerating an addressed asset needs the old bytes to stay reachable at
 the old path; `check:coloring-assets` separately rejects unreferenced files under
-`web/static/coloring`, so that retention cannot be done by leaving stale files beside the current
+`assets/static/coloring`, so that retention cannot be done by leaving stale files beside the current
 catalog.
 
 ## Libraries and failure behavior

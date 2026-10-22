@@ -1,4 +1,4 @@
-// Rebases every icon in web/src/lib/icons/ onto the canonical square
+// Rebases every icon in assets/icons/ onto the canonical square
 // `viewBox="0 0 1000 1000"` (iconViewBox.test.ts enforces it) by baking the
 // uniform scale + translate into the coordinate data itself — path commands,
 // circle/ellipse/rect geometry, <use> stamp offsets, userSpaceOnUse gradient
@@ -19,7 +19,7 @@ import sharp from 'sharp';
 import { ROOT, isMain } from '../lib/proc.mjs';
 import { roundCoordinate, transformPathData } from './lib/svg-path-transform.mjs';
 
-const ICON_DIR = join(ROOT, 'web/src/lib/icons');
+const ICON_DIR = join(ROOT, 'src/lib/icons');
 const CANONICAL_SIDE = 1000;
 const CANONICAL_VIEWBOX = `0 0 ${CANONICAL_SIDE} ${CANONICAL_SIDE}`;
 

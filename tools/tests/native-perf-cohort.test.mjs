@@ -4,11 +4,8 @@ import {
   createPerfCohorts,
   PERF_LINE_VERSION,
   PERF_LOG_TAG,
-} from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
-import {
-  appendPoint,
-  sampleOutcome,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+} from '../../src/drawing/perfCohort.ts';
+import { appendPoint, sampleOutcome } from '../../src/drawing/model.ts';
 
 const CLOCK_JOIN = { clock: 'mach_absolute_time', errorMs: 0 };
 

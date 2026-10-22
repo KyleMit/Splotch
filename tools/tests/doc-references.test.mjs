@@ -19,8 +19,8 @@ const FILES = [
   'tools/perf/ios/capture-webkit-frames.mjs',
   'tools/asset-gen/package.json',
   'tools/asset-gen/README.md',
-  'web/src/lib/drawing/engine.ts',
-  'web/static/coloring/creatures/owl-tall.light.webp',
+  'src/lib/drawing/engine.ts',
+  'assets/static/coloring/creatures/owl-tall.light.webp',
 ];
 const PACKAGES = new Map([
   ['', new Set(['check', 'test:tools'])],
@@ -70,7 +70,7 @@ describe('what reads as a repo path', () => {
 
   it.each([
     'docs/TESTING.md',
-    'web/src/lib/drawing/engine.ts',
+    'src/lib/drawing/engine.ts',
     'src/lib/drawing/engine.ts',
     '../ios/capture.mjs',
     'drawing/engine.ts',
@@ -79,8 +79,8 @@ describe('what reads as a repo path', () => {
   });
 
   it('strips a line suffix and a trailing slash', () => {
-    expect(pathCandidate('web/src/lib/drawing/engine.ts:12-30', names)).toBe(
-      'web/src/lib/drawing/engine.ts'
+    expect(pathCandidate('src/lib/drawing/engine.ts:12-30', names)).toBe(
+      'src/lib/drawing/engine.ts'
     );
     expect(pathCandidate('tools/perf/', names)).toBe('tools/perf');
   });
@@ -92,7 +92,7 @@ describe('what reads as a repo path', () => {
     ['a template', 'docs/adrs/<NNNN>-title.md'],
     ['a numbered placeholder', 'docs/adrs/NNNN-kebab-case-title.md'],
     ['a dated placeholder', 'docs/review-YYYY-MM-DD.md'],
-    ['a counted placeholder', 'web/static/sounds/pencil-N.mp3'],
+    ['a counted placeholder', 'assets/static/sounds/pencil-N.mp3'],
     ['a URL', 'https://example.com/a/b'],
     ['a GitHub action', 'actions/checkout'],
     ['a coloring page id', 'creatures/owl-tall'],
@@ -195,10 +195,10 @@ describe('resolution', () => {
   it('reports the source line even below a fenced block', () => {
     const [finding] = findUnresolved({
       docs: ['docs/TESTING.md'],
-      read: () => 'a\n```\nb\n```\nsee `web/gone.ts`\n',
+      read: () => 'a\n```\nb\n```\nsee `src/gone.ts`\n',
       index: index(),
     });
-    expect(finding).toMatchObject({ line: 5, ref: 'web/gone.ts' });
+    expect(finding).toMatchObject({ line: 5, ref: 'src/gone.ts' });
   });
 });
 

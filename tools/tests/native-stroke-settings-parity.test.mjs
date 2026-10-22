@@ -5,13 +5,13 @@ import {
   STROKE_SIZES,
   getEraserWidthPx,
   getStrokeWidthPx,
-} from '../../web/src/lib/drawing/strokeSettings.ts';
+} from '../store-drawings/lib/strokeSettings.ts';
 import {
   DEFAULT_STROKE_WIDTH,
   STROKE_WIDTHS,
   strokeWidthPx,
-} from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
-import { BRUSHES } from '../../experiments/native-architecture/src/drawing/brushes.ts';
+} from '../../src/drawing/strokeWidth.ts';
+import { BRUSHES } from '../../src/drawing/brushes.ts';
 
 // Native names shipping's five numbered stroke levels; the width at index i is level i + 1.
 const level = (width) => STROKE_SIZES[STROKE_WIDTHS.indexOf(width)];

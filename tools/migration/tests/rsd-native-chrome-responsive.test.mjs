@@ -2,7 +2,7 @@ import { act } from 'react';
 import { expect, it, vi } from 'vitest';
 import { caller, host, expandControls } from './rsd-native-selection-host.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { STROKE_WIDTHS } from '../../../experiments/native-architecture/src/drawing/strokeWidth.ts';
+import { STROKE_WIDTHS } from '../../../src/drawing/strokeWidth.ts';
 
 // Shipping's toolbar has no disabled state for routine work: its settings are written
 // synchronously, so nothing greys while a choice saves.

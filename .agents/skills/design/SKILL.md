@@ -5,9 +5,9 @@ description: Design-system reference — the token vocabulary (color, spacing, r
 
 # Splotch design system
 
-The source of truth is **`web/src/lib/design/tokens.ts`**. React Strict DOM consumes the generated
-projection in `experiments/native-architecture/src/rsdDrawing/tokens.css.ts`. Read the token's usage
-rule in `web/src/lib/design/tokenUsage.ts` before choosing one.
+The source of truth is **`src/lib/design/tokens.ts`**. React Strict DOM consumes the generated
+projection in `src/rsdDrawing/tokens.css.ts`. Read the token's usage rule in
+`src/lib/design/tokenUsage.ts` before choosing one.
 
 ## Hard rules
 
@@ -48,7 +48,7 @@ privacy — is plain, professional, and direct ("We never keep a copy of your ke
 
 ## Token vocabulary
 
-Every token carries a one-line "reach for it when…" rule in **`web/src/lib/design/tokenUsage.ts`**,
+Every token carries a one-line "reach for it when…" rule in **`src/lib/design/tokenUsage.ts`**,
 rendered beside its specimen on `/design` (ADR-0097). The table below is the shape of the
 vocabulary; the usage rules are the law — start from the defaults callout at the top of `/design`'s
 Foundations and only reach past a default when a rule says so.
@@ -161,27 +161,27 @@ rather than taste.
 | Celebration    | own timing, ≤2 s          | `linear` + per-keyframe curves                        | 0.7 s fade, or hidden   |
 | Ambient loop   | 0.8–2.8 s                 | `linear` / `ease-in-out`                              | slow, or hold one frame |
 
-Undo feedback lives with `experiments/native-architecture/src/drawing/UndoInkMotion.tsx` and its
-platform-specific painters. Measure native drawing through the app's probe; measurements of the
-retired Svelte tiled renderer do not establish an RN budget.
+Undo feedback lives with `src/drawing/UndoInkMotion.tsx` and its platform-specific painters. Measure
+native drawing through the app's probe; measurements of the retired Svelte tiled renderer do not
+establish an RN budget.
 
 ## Primitives
 
-The React Strict DOM primitives live in `experiments/native-architecture/src/rsdDrawing/`. Reuse
-`RsdButton`, `RsdTextLink`, `RsdSegmentedPicker`, `RsdToggleRow`, `RsdSlider`, `ModalShell`,
-`RsdScrollCue` and `RsdVisuallyHidden` before adding a bespoke equivalent. Consult each component's
-props and its mounted tests under `tools/migration/tests` instead of assuming a DOM-only attribute
-works on native.
+The React Strict DOM primitives live in `src/rsdDrawing/`. Reuse `RsdButton`, `RsdTextLink`,
+`RsdSegmentedPicker`, `RsdToggleRow`, `RsdSlider`, `ModalShell`, `RsdScrollCue` and
+`RsdVisuallyHidden` before adding a bespoke equivalent. Consult each component's props and its
+mounted tests under `tools/migration/tests` instead of assuming a DOM-only attribute works on
+native.
 
 Controls need visible keyboard focus, adequate contrast in both themes, and an accessible name.
 Extract a new primitive after the third duplicate, and add it to the RN `/design` specimens.
 
 ## Page chrome — standalone pages
 
-Web documents are implemented in `experiments/native-architecture/src/pageDocument/` and share RSD
-primitives with `experiments/native-architecture/src/rsdDrawing/`. The route inventory and
-prerendering are owned by `tools/migration/prerender-native-web-pages.mjs`. Use the page typography,
-frame and footer owners instead of copying a document's layout into another route.
+Web documents are implemented in `src/pageDocument/` and share RSD primitives with
+`src/rsdDrawing/`. The route inventory and prerendering are owned by
+`tools/migration/prerender-native-web-pages.mjs`. Use the page typography, frame and footer owners
+instead of copying a document's layout into another route.
 
 Every parent-facing page follows light and dark appearance. A content accent must remain legible on
 each ground. Check the rendered page in both schemes and preserve keyboard navigation and heading
@@ -189,15 +189,15 @@ order; the browser axe scan is in `e2e/specs/a11y.spec.ts`.
 
 ## Brand & iconography
 
-* **Mascot & marks.** Splotchy's canonical SVG is `web/src/lib/icons/splotchy.svg`;
-  `RsdSplotchyIcon` renders its generated platform representation. The wordmark uses Quicksand.
-  Dottie's first-party spot icons provide the friendly error and empty-state expressions.
+* **Mascot & marks.** Splotchy's canonical SVG is `assets/icons/splotchy.svg`; `RsdSplotchyIcon`
+  renders its generated platform representation. The wordmark uses Quicksand. Dottie's first-party
+  spot icons provide the friendly error and empty-state expressions.
 * **Icons are first-party SVG.** `RsdIcon` renders the generated icon registry. Monochrome glyphs
   follow the ink token; full-color spot icons retain their palette. The classification contract is
-  `web/src/lib/components/iconTypes.ts`.
+  `tools/icons/lib/iconTypes.ts`.
 * **Generate icons from their source assets.** Themed parts belong in
-  `web/src/lib/design/iconTokens.ts`. Regenerate through `tools/migration/gen-native-icons.mjs`
-  after changing the SVG or token inputs, and run `npm run optimize:svg-assets` and the relevant
+  `tools/icons/lib/iconTokens.ts`. Regenerate through `tools/migration/gen-native-icons.mjs` after
+  changing the SVG or token inputs, and run `npm run optimize:svg-assets` and the relevant
   icon-generation tests. Preserve the startup/deferred split in the generated registry.
 * **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
   (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
@@ -212,10 +212,9 @@ order; the browser axe scan is in `e2e/specs/a11y.spec.ts`.
 
 ## The living styleguide
 
-The public `/design` document is built from
-`experiments/native-architecture/src/pageDocument/design/`. It renders the RSD token module and
-primitives, with usage guidance from the shared token sources. Add each new reusable token or
-primitive there so the vocabulary remains discoverable.
+The public `/design` document is built from `src/pageDocument/design/`. It renders the RSD token
+module and primitives, with usage guidance from the shared token sources. Add each new reusable
+token or primitive there so the vocabulary remains discoverable.
 
 Review a token or primitive change in both themes, capture its states for the PR through the
 `pr-screenshots` skill, and inspect the current styleguide before introducing a new value.

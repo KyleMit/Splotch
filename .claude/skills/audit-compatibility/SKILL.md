@@ -1,15 +1,15 @@
 ---
 name: audit-compatibility
-description: Review the supported browser and OS floor against current usage and Baseline data, check the API risk register in docs/COMPATIBILITY.md against the code, and classify every runtime feature probe in shipped web/src, then file what drifted as findings in docs/AUDIT.md. Use when asked to audit browser compatibility, revisit or raise the browser/OS floor, check the compatibility risk register, or find fallbacks and feature checks a floor makes unnecessary. Changes no code; a floor raise becomes a finding for the vet/fix cycle.
+description: Review the supported browser and OS floor against current usage and Baseline data, check the API risk register in docs/COMPATIBILITY.md against the code, and classify every runtime feature probe in shipped src, then file what drifted as findings in docs/AUDIT.md. Use when asked to audit browser compatibility, revisit or raise the browser/OS floor, check the compatibility risk register, or find fallbacks and feature checks a floor makes unnecessary. Changes no code; a floor raise becomes a finding for the vet/fix cycle.
 ---
 
 # Audit compatibility
 
 Checks three things that drift apart between runs: the **floor** (is it still the right one?), the
 **API risk register** in `docs/COMPATIBILITY.md` (does it still describe the code and the engines?),
-and the **runtime feature probes** in shipped `web/src` (is each one still needed, and recorded?).
-It writes findings and changes nothing else. Read `docs/COMPATIBILITY.md` first; it is the subject
-of the audit.
+and the **runtime feature probes** in shipped `src` (is each one still needed, and recorded?). It
+writes findings and changes nothing else. Read `docs/COMPATIBILITY.md` first; it is the subject of
+the audit.
 
 ## 1. Collect the evidence
 
@@ -26,9 +26,9 @@ The report (`tools/report-browser-floor.mjs`, read-only) prints:
   a raise is plausible and don't invent a proxy. Note the caniuse-lite version in the header. If it
   is months old, say so in the log entry; don't bump it in this run.
 * **Runtime feature probes.** Every `typeof X`, `'x' in navigator`, platform optional chain, and
-  optional call to a known platform method in shipped `web/src` (tests, `lib/server` and
-  `routes/dev` excluded), with whether the register cites the file. Guards that name only SSR/test
-  globals are counted, not listed.
+  optional call to a known platform method in shipped `src` (tests, `lib/server` and `routes/dev`
+  excluded), with whether the register cites the file. Guards that name only SSR/test globals are
+  counted, not listed.
 
 Look up any feature's Baseline status against the floor with
 `npm run report:browser-floor -- --feature <id>` (repeatable). Ids are web-features slugs, not
@@ -36,8 +36,8 @@ interface names; a miss prints the ids whose compat keys mention the term (`DOMM
 `dom-geometry`).
 
 Then find what changed since the last run. The previous run's `docs/AUDIT-LOG.md` entry names its
-commit; `git diff <that-sha>..HEAD --stat -- web/src` narrows the rest of this audit to the files
-that moved.
+commit; `git diff <that-sha>..HEAD --stat -- src` narrows the rest of this audit to the files that
+moved.
 
 ## 2. Decide keep or raise
 
@@ -47,7 +47,7 @@ raise would retire, and the enhancements it would unlock. Find the yield by:
 * the register's Baseline column: rows marked above floor, and rows whose Behavior cell names the
   floor that retires them;
 * version citations in code comments, which mark code a raise could simplify:
-  `git grep -n -E "(Chrome|Safari|iOS|Firefox) [0-9]{2,3}" -- web/src`.
+  `git grep -n -E "(Chrome|Safari|iOS|Firefox) [0-9]{2,3}" -- src`.
 
 Two constraints decide most cases:
 
@@ -77,9 +77,9 @@ themselves.
 
 Two checks settle most of these:
 
-* **What does happy-dom have?** Don't assume. Drop a throwaway `web/src/zz-probe.test.ts` that
-  writes `typeof X` for each candidate to a temp file, run it with `npx vitest run` from `web/`,
-  then delete it. Write to a file, because the test reporter swallows `console.log`.
+* **What does happy-dom have?** Don't assume. Drop a throwaway `src/zz-probe.test.ts` that writes
+  `typeof X` for each candidate to a temp file, run it with `npx vitest run` from `web/`, then
+  delete it. Write to a file, because the test reporter swallows `console.log`.
 * **Which engine versions support it?** Use `--feature`. **web-features scores the whole feature**,
   every option included, so its version can be later than the one the code needs:
   `createimagebitmap` reads Safari 17.2 while the bare call has worked since Safari 15. When the
@@ -100,7 +100,7 @@ code. It cannot check the other columns, so this step does:
   step 1, with `--feature`. Adjacent rows in the same property family are where copied cells hide (a
   `text-wrap: pretty` cell once carried `balance`'s Safari version).
 * **Prefixed CSS twins.** For each `-webkit-` declaration
-  (`git grep -n -E "\-webkit-[a-z-]+\s*:" -- web/src`), look up the *unprefixed* feature against the
+  (`git grep -n -E "\-webkit-[a-z-]+\s*:" -- src`), look up the *unprefixed* feature against the
   **Safari** floor. The prefix is load-bearing until the Safari/iOS floor reaches the unprefixed
   version, and Chromium CI never exercises it, so docs that call a twin optional are a real finding.
 * **New modern APIs and CSS.** In the files the diff touched, look for platform APIs or CSS features
@@ -111,14 +111,14 @@ code. It cannot check the other columns, so this step does:
 
 ## 5. Check every place that states the floor
 
-| Statement                                                                                                                     | Drift guard                                                   |
-| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `web/browserTargets.ts` (`BROWSER_TARGETS` → `build.target`)                                                                  | the source of truth                                           |
-| `experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` (every config)         | native project configuration; separate from the browser floor |
-| `MIN_IOS_RELEASE` (`/beta`) and `docs/MOBILE/native.md`                                                                       | `web/src/lib/components/beta/iosBeta.test.ts`                 |
-| `experiments/native-architecture/android/gradle.properties` → `android.minSdkVersion`, `/beta` Android constants, the doc row | `tools/mobile/android/tests/android-config.test.mjs`          |
-| `docs/COMPATIBILITY.md` web tables, `docs/MOBILE/ios.md` web note                                                             | check by eye unless a guard has since been added              |
-| Version citations in code comments                                                                                            | none; the grep in step 2                                      |
+| Statement                                                                                     | Drift guard                                                   |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `tools/lib/browserTargets.ts` (`BROWSER_TARGETS` → `build.target`)                            | the source of truth                                           |
+| `ios/Splotch.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` (every config)         | native project configuration; separate from the browser floor |
+| `MIN_IOS_RELEASE` (`/beta`) and `docs/MOBILE/native.md`                                       | `src/lib/components/beta/iosBeta.test.ts`                     |
+| `android/gradle.properties` → `android.minSdkVersion`, `/beta` Android constants, the doc row | `tools/mobile/android/tests/android-config.test.mjs`          |
+| `docs/COMPATIBILITY.md` web tables, `docs/MOBILE/ios.md` web note                             | check by eye unless a guard has since been added              |
+| Version citations in code comments                                                            | none; the grep in step 2                                      |
 
 A statement with no guard that disagrees with `BROWSER_TARGETS` is a finding. So is a new floor
 statement that appeared without one.

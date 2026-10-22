@@ -3,8 +3,8 @@ import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import Svg from 'react-native-svg';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CaptureSvg } from '../../experiments/native-architecture/src/drawing/CaptureSvg.web.tsx';
-import { CaptureSvg as NativeCaptureSvg } from '../../experiments/native-architecture/src/drawing/CaptureSvg.tsx';
+import { CaptureSvg } from '../../src/drawing/CaptureSvg.web.tsx';
+import { CaptureSvg as NativeCaptureSvg } from '../../src/drawing/CaptureSvg.tsx';
 import { patchSnapshotMethod } from '../migration/probes/native-eraser/checkpoint-observation.mjs';
 
 vi.mock('react-native-svg', async () => {

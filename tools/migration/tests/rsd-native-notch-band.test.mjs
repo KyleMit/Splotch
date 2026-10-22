@@ -4,9 +4,9 @@ import { caller, records, host } from './rsd-native-selection-host.mjs';
 import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import { THEME_COLOR_META_SELECTOR } from '../../../experiments/native-architecture/src/platform/notchBandPlatform.web.ts';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
+import { paletteHex } from '../../../src/drawing/palette.ts';
+import { THEME_COLOR_META_SELECTOR } from '../../../src/platform/notchBandPlatform.web.ts';
 
 const PURPLE = paletteHex('Purple');
 // An iPhone's Dynamic Island inset, and a bezel iPad's plain status bar.

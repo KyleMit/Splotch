@@ -11,12 +11,12 @@ import {
   APP_PAGE_PATHS,
   DOCUMENT_ONLY_PAGE_PATHS,
   appPageAt,
-} from '../../experiments/native-architecture/src/information/appPages.ts';
-import { crossDocumentNavigation } from '../../experiments/native-architecture/src/pageDocument/appDocument.ts';
-import { APP_DOCUMENT_ATTRIBUTE } from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
-import { FIRST_FRAME_VIEWPORT_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
-import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
+} from '../../src/information/appPages.ts';
+import { crossDocumentNavigation } from '../../src/pageDocument/appDocument.ts';
+import { APP_DOCUMENT_ATTRIBUTE } from '../../src/pageDocument/appDocumentContract.ts';
+import { FIRST_FRAME_VIEWPORT_ATTRIBUTE } from '../../src/platform/firstFrameViewport.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
+import { HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE } from '../../src/rsdDrawing/pageFrame.ts';
 import {
   NOT_FOUND_FILE,
   NOT_FOUND_PROBE_PATH,
@@ -50,15 +50,15 @@ import {
   NATIVE_APP_DOCUMENT_PATHS,
   isNativeAppNavigation,
 } from '../migration/build-native-web.mjs';
-import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../../experiments/native-architecture/scripts/design-document-styles.mjs';
+import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../migration/design-document-styles.mjs';
 import {
   PAGE_DOCUMENT_EAGER_MODULES,
   PAGE_DOCUMENT_RESOLVER_OPTION,
   withPageDocumentResolution,
-} from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
+} from '../migration/page-document-resolution.cjs';
 import { ROOT } from '../lib/proc.mjs';
 
-const APP_DIR = join(ROOT, 'experiments/native-architecture');
+const APP_DIR = join(ROOT, '.');
 
 const STYLESHEET = '/_expo/static/css/strict-1.css';
 const EXPORTED_DOCUMENT = [

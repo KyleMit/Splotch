@@ -1,4 +1,4 @@
-import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { UNADOPTED_PAPER } from '../../../src/drawing/paperSpace.ts';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
 import {
   act,
@@ -11,17 +11,17 @@ import {
 } from 'react';
 import { Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
-import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
-import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
-import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { ModalOriginProvider } from '../../../src/rsdDrawing/modalOrigin.tsx';
+import { NativeFrame } from '../../../src/rsdDrawing/NativeFrame.tsx';
+import { NativeDrawingLayout } from '../../../src/rsdDrawing/NativeScrollAreas.tsx';
+import { RsdIconButton } from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { NativeSoundSettingsDialog } from '../../../src/rsdDrawing/RsdSettingsDialog.tsx';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
-import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
-import { useProductModalRoute } from '../../../experiments/native-architecture/src/product/useProductModalRoute.ts';
-import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { ModalShell } from '../../../src/rsdDrawing/ModalShell.tsx';
+import { useProductModalRoute } from '../../../src/product/useProductModalRoute.ts';
+import { DialogHeader } from '../../../src/rsdDrawing/DialogHeader.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
 import {
   CSS_EASE,
   CSS_EASE_REVERSED,
@@ -30,7 +30,7 @@ import {
   MODAL_SCRIM_BLUR_PX,
   MODAL_SCRIM_FROSTED,
   MODAL_SCRIM_PLAIN,
-} from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+} from '../../../src/rsdDrawing/modalGeometry.ts';
 
 afterEach(() => vi.restoreAllMocks());
 

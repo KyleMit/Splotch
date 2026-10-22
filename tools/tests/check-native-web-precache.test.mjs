@@ -18,10 +18,10 @@ import {
 import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
 import { writtenPageDocuments } from '../migration/prerender-native-web-pages.mjs';
 import { withContentSecurityPolicy } from '../migration/lib/native-web-csp.mjs';
-import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
-import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
+import { FARM_PAGE_IDS } from '../../src/drawing/bundledBooks.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../src/rsdDrawing/splotchy.generated.ts';
+import { appShellPrecacheUrl } from '../../src/lib/pwa/appShellRoute.ts';
 import {
   HOSTED_STATIC_ENTRIES,
   contentAddressedShell,
@@ -30,15 +30,12 @@ import {
   subresourceIntegrity,
   webVersionHeadTag,
 } from '../migration/build-native-web.mjs';
-import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
+import { VERSION_JSON_FILENAME } from '../../src/lib/pwa/versionEndpoint.ts';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const RELEASE_NOTES_BY_VERSION = JSON.parse(
   readFileSync(
-    new URL(
-      '../../experiments/native-architecture/src/information/releaseNotes.generated.json',
-      import.meta.url
-    ),
+    new URL('../../src/information/releaseNotes.generated.json', import.meta.url),
     'utf8'
   )
 );
@@ -55,9 +52,9 @@ const ENTRY = '_expo/static/js/web/index-0123456789abcdef0123456789abcdef.js';
 const CAT = '_expo/static/js/web/cat-0123456789abcdef0123456789abcdef.js';
 const COW = '_expo/static/js/web/cow-0123456789abcdef0123456789abcdef.js';
 const CAT_IMAGE =
-  'assets/__web/static/coloring/farm/cat-wide.selector.0123456789abcdef0123456789abcdef.webp';
+  'assets/__assets/static/coloring/farm/cat-wide.selector.0123456789abcdef0123456789abcdef.webp';
 const COW_IMAGE =
-  'assets/__web/static/coloring/farm/cow-wide.selector.0123456789abcdef0123456789abcdef.webp';
+  'assets/__assets/static/coloring/farm/cow-wide.selector.0123456789abcdef0123456789abcdef.webp';
 const CSS = '_expo/static/css/strict-0123456789abcdef0123456789abcdef.css';
 const BUILT_VERSION = '1.6.1234';
 const BOOT_SCRIPT = '<script>document.documentElement.dataset.boot="1"</script>';
@@ -422,7 +419,7 @@ it('neither requires nor allows a hosted static file in the precache', () => {
 
 it('copies every hosted static entry from the files shipping served', () => {
   for (const entry of HOSTED_STATIC_ENTRIES)
-    expect(existsSync(new URL(`../../web/static/${entry}`, import.meta.url)), entry).toBe(true);
+    expect(existsSync(new URL(`../../assets/static/${entry}`, import.meta.url)), entry).toBe(true);
 });
 
 // netlify.toml caches both directories immutable, which only a content-hashed name may be.

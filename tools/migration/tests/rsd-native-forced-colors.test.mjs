@@ -1,14 +1,14 @@
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
-import { RsdPageSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
-import { RsdReleaseRule } from '../../../experiments/native-architecture/src/rsdDrawing/RsdReleaseArticle.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { RsdPageSheet } from '../../../src/rsdDrawing/RsdNotFoundPage.tsx';
+import { RsdReleaseRule } from '../../../src/rsdDrawing/RsdReleaseArticle.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
 
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/forcedColors.ts',
-  () => import('../../../experiments/native-architecture/src/platform/forcedColors.web.ts')
+  '../../../src/platform/forcedColors.ts',
+  () => import('../../../src/platform/forcedColors.web.ts')
 );
 
 const FORCED_COLORS = '(forced-colors: active)';

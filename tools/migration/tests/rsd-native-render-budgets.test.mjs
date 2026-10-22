@@ -11,8 +11,8 @@ import {
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { DrawingSessionProvider } from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { DrawingSessionProvider } from '../../../src/product/DrawingSession.tsx';
 
 // Which components each chrome interaction renders, counted per component by the census
 // (rsd-render-census.mjs) and, for the paper, by the selection host's NativePaper port, which

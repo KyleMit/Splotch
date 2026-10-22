@@ -9,9 +9,9 @@
 import { globSync, writeFileSync } from 'node:fs';
 import { fail } from '../lib/proc.mjs';
 
-const OUT = 'web/src/lib/components/icon-names.d.ts';
+const OUT = 'tools/icons/lib/icon-names.d.ts';
 
-const names = globSync('web/src/lib/icons/**/*.svg')
+const names = globSync('assets/icons/**/*.svg')
   .map((path) =>
     path
       .split('/')
@@ -21,12 +21,12 @@ const names = globSync('web/src/lib/icons/**/*.svg')
   .sort();
 
 if (names.length === 0)
-  fail('No SVGs found under web/src/lib/icons/ — refusing to write an empty union.');
+  fail('No SVGs found under assets/icons/ — refusing to write an empty union.');
 
 const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
 if (duplicates.length)
   fail(
-    `Icon basenames must be unique across web/src/lib/icons/ and deferred/: ${duplicates.join(', ')}`
+    `Icon basenames must be unique across assets/icons/ and deferred/: ${duplicates.join(', ')}`
   );
 
 const union = names.map((name) => `  | '${name}'`).join('\n');

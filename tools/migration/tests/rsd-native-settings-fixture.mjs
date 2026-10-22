@@ -2,9 +2,9 @@ import { sectionVisits } from './rsd-native-settings-hub-mocks.mjs';
 import { caller, records, root, host } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { WHATS_NEW_STAMP } from '../../../src/settings/whatsNewStamp.ts';
 
 // The stored settings, drawing screen and Settings queries the RSD Settings suites share.
 const CURRENT_SETTINGS = {

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The native candidate's hooks fence: two rules from eslint-plugin-react-hooks, scoped by glob to
-// experiments/native-architecture/src. Each case lints a seeded violation through the real config
+// src. Each case lints a seeded violation through the real config
 // at a plain and a platform-suffixed path, in .ts and .tsx, so a glob that narrows or a rule that
 // stops firing fails here instead of reading as a clean tree.
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -14,8 +14,8 @@ const eslint = new ESLint({
   // in the candidate's TS program) is switched off here, as the web lint tests switch off theirs.
   overrideConfig: [
     {
-      files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.{ts,tsx}'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],
@@ -26,12 +26,12 @@ const HOOKS_RULES = ['react-hooks/exhaustive-deps', 'react-hooks/rules-of-hooks'
 
 // None of these paths exist on disk; ESLint reads a path only to pick the config blocks for it.
 const PROBE_PATHS = [
-  'experiments/native-architecture/src/probe/useLintProbe.ts',
-  'experiments/native-architecture/src/probe/LintProbe.tsx',
-  'experiments/native-architecture/src/probe/useLintProbe.native.ts',
-  'experiments/native-architecture/src/probe/useLintProbe.android.ts',
-  'experiments/native-architecture/src/probe/LintProbe.web.tsx',
-  'experiments/native-architecture/src/probe/LintProbe.ios.tsx',
+  'src/probe/useLintProbe.ts',
+  'src/probe/LintProbe.tsx',
+  'src/probe/useLintProbe.native.ts',
+  'src/probe/useLintProbe.android.ts',
+  'src/probe/LintProbe.web.tsx',
+  'src/probe/LintProbe.ios.tsx',
 ];
 
 const CONDITIONAL_HOOK = `import { useState } from 'react';

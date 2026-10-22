@@ -10,7 +10,7 @@ import {
   fonts,
   motion,
   shadows,
-} from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
+} from '../../../src/rsdDrawing/tokens.css.ts';
 
 // The released RSD native renderer over a React Native stand-in that paints each host
 // view as a DOM node wearing its resolved style, so a specimen can be read or captured.

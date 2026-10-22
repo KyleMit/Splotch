@@ -31,7 +31,7 @@ import {
 } from './lib/sound-effects-client.mjs';
 
 const API_KEY_ENV_NAME = 'ELEVENLABS_API_KEY';
-const ENV_FILE_PATHS = ['.env.local', '.env', 'web/.env'];
+const ENV_FILE_PATHS = ['.env.local', '.env'];
 const PRIVATE_TEMP_FILE_MODE = 0o600;
 const DEFAULT_OUTPUT_FILE_MODE = 0o666;
 
@@ -369,7 +369,7 @@ async function resolveApiKey(effects) {
     }
   }
   throw new Error(
-    `Missing ${API_KEY_ENV_NAME}. Set it in the environment or a gitignored .env.local, .env, or web/.env file.`
+    `Missing ${API_KEY_ENV_NAME}. Set it in the environment or a gitignored .env.local or .env file.`
   );
 }
 

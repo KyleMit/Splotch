@@ -1,9 +1,9 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { encodeAiUpload } from '../../experiments/native-architecture/src/platform/aiUpload.ts';
-import { encodeAiUpload as encodeWebUpload } from '../../experiments/native-architecture/src/platform/aiUpload.web.ts';
-import { UPLOAD_WEBP_QUALITY } from '../../web/src/lib/drawing/aiUploadEncoding.ts';
+import { encodeAiUpload } from '../../src/platform/aiUpload.ts';
+import { encodeAiUpload as encodeWebUpload } from '../../src/platform/aiUpload.web.ts';
+import { UPLOAD_WEBP_QUALITY } from '../../src/lib/drawing/aiUploadEncoding.ts';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 
 const encoder = vi.hoisted(() => ({ encode: vi.fn(), dispose: vi.fn(), web: vi.fn() }));
@@ -16,7 +16,7 @@ vi.mock('@shopify/react-native-skia', () => ({
     },
   },
 }));
-vi.mock('../../web/src/lib/drawing/aiUploadEncoding.ts', async (original) => ({
+vi.mock('../../src/lib/drawing/aiUploadEncoding.ts', async (original) => ({
   ...(await original()),
   encodeWebpUpload: encoder.web,
 }));

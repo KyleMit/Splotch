@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { NATIVE_WEB_EXPORT_ENV } from '../migration/build-native-web.mjs';
 import { ROOT } from '../lib/proc.mjs';
 
-const APP_DIR = join(ROOT, 'experiments/native-architecture');
+const APP_DIR = join(ROOT, '.');
 const SERIALIZERS = join(
   ROOT,
   'node_modules/@expo/metro-config/build/serializer/withExpoSerializers.js'

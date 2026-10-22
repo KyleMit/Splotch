@@ -21,30 +21,27 @@ import {
   documentPages,
 } from './prerender-native-web-pages.mjs';
 import { VARIANT_FRAGMENT_SEPARATOR } from './page-fragments.mjs';
-import releases from '../../web/src/lib/releases.json' with { type: 'json' };
+import releases from '../../src/lib/releases.json' with { type: 'json' };
 import {
   BETA_OPT_IN_URL,
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
-} from '../../web/src/lib/components/beta/androidBeta.ts';
+} from '../../src/lib/components/beta/androidBeta.ts';
 import {
   TESTFLIGHT_APP_URL,
   TESTFLIGHT_INVITE_URL,
-} from '../../web/src/lib/components/beta/iosBeta.ts';
-import { BETA_COPY } from '../../experiments/native-architecture/src/pageDocument/betaCopy.ts';
+} from '../../src/lib/components/beta/iosBeta.ts';
+import { BETA_COPY } from '../../src/pageDocument/betaCopy.ts';
 import {
   DESIGN_COPY,
   DESIGN_PARTS,
   DESIGN_SECTIONS,
-} from '../../experiments/native-architecture/src/pageDocument/design/designSections.ts';
-import { FEEDBACK_PAGE_COPY } from '../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
-import { REPORT_FORM_COPY } from '../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
-import { REPORT_KINDS } from '../../experiments/native-architecture/src/feedback/report.ts';
+} from '../../src/pageDocument/design/designSections.ts';
+import { FEEDBACK_PAGE_COPY } from '../../src/information/feedbackPageCopy.ts';
+import { REPORT_FORM_COPY } from '../../src/feedback/reportFormCopy.ts';
+import { REPORT_KINDS } from '../../src/feedback/report.ts';
 
-const PRIVACY_POLICY = join(
-  ROOT,
-  'experiments/native-architecture/src/information/privacy.generated.json'
-);
+const PRIVACY_POLICY = join(ROOT, 'src/information/privacy.generated.json');
 const OUTSIDE_LINK = /^https?:\/\//;
 // A followed target scrolled to the top of its scroller can sit a fraction of a pixel above it.
 const SUBPIXEL_PX = 1;

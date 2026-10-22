@@ -2,28 +2,22 @@
 import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FixedInkCapture } from '../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx';
-import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
-import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import {
-  assertPngGrid,
-  MAX_PNG_PIXELS,
-} from '../../experiments/native-architecture/src/drawing/pngLimits.ts';
-import { createInkObservation } from '../../experiments/native-architecture/src/drawing/inkCoverage.ts';
+import { FixedInkCapture } from '../../src/drawing/FixedInkCapture.tsx';
+import { PictureCapture } from '../../src/drawing/PictureCapture.tsx';
+import { createPngCapture } from '../../src/drawing/interactions.ts';
+import { assertPngGrid, MAX_PNG_PIXELS } from '../../src/drawing/pngLimits.ts';
+import { createInkObservation } from '../../src/drawing/inkCoverage.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
-import {
-  InkPaperScope,
-  useInkPaper,
-} from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { emptyDrawing } from '../../src/drawing/model.ts';
+import { RasterInk } from '../../src/drawing/RasterInk.tsx';
+import { InkPaperScope, useInkPaper } from '../../src/drawing/InkPaper.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import {
   adoptPaper,
   paperBounds,
   paperKey,
   paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+} from '../../src/drawing/paperSpace.ts';
 const state = vi.hoisted(() => ({
   captures: [],
   nativeImages: [],
@@ -42,13 +36,13 @@ vi.mock('react-native-svg', async () => {
   const { svgRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
   return svgRasterSdk(state);
 });
-vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
+vi.mock('../../src/drawing/pictureCompose.ts', () => ({
   composePicture: async (layers, picture, includePaperTexture) => {
     state.composed.push({ layers, picture, includePaperTexture });
     return `composed:${layers.join('+')}`;
   },
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
+vi.mock('../../src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes }) =>
     createElement('div', {
       'data-paper-reference': paperKey(useInkPaper()),

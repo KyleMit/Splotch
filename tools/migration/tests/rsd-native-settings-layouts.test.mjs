@@ -1,4 +1,4 @@
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
 import { caller, records, host, mount, checkedSwitch } from './rsd-native-selection-host.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { hubSessions, sectionVisits } from './rsd-native-settings-hub-mocks.mjs';
@@ -6,35 +6,32 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
-import {
-  DRAWING_BRAND,
-  DRAWING_SCALE,
-} from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { WHATS_NEW_STAMP } from '../../../src/settings/whatsNewStamp.ts';
+import { DRAWING_BRAND, DRAWING_SCALE } from '../../../src/drawing/theme.ts';
 import {
   MODAL_GUTTER_MIN_PX,
   modalFrame,
   settingsShell,
-} from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
-import { WIDE_SHELL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsWide.tsx';
+} from '../../../src/rsdDrawing/modalGeometry.ts';
+import { WIDE_SHELL } from '../../../src/rsdDrawing/RsdSettingsWide.tsx';
 
-import { ORIENTATION_COLUMN_MAX_WIDTH_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdOrientationPicker.tsx';
-import { COMPACT_SHELL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsCompact.tsx';
+import { ORIENTATION_COLUMN_MAX_WIDTH_PX } from '../../../src/rsdDrawing/RsdOrientationPicker.tsx';
+import { COMPACT_SHELL } from '../../../src/rsdDrawing/RsdSettingsCompact.tsx';
 import {
   NAV_ROW_CLEARANCE_PX,
   SCROLL_END_EPSILON_PX,
   SCROLLSPY_LINE_INSET_PX,
-} from '../../../experiments/native-architecture/src/settings/settingsPane.ts';
+} from '../../../src/settings/settingsPane.ts';
 import {
   NATIVE_SETTINGS_SECTIONS,
   sectionHeading,
-} from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
-import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
-import { SECTION_JUMP_INSET_PX } from '../../../web/src/lib/components/settings/paneScroll.ts';
+} from '../../../src/settings/settingsSections.ts';
+import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../src/settings/settingsSessions.ts';
+import { SECTION_JUMP_INSET_PX } from '../../../src/lib/components/settings/paneScroll.ts';
 
 const shipping = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', path), 'utf8');
+  readFileSync(join(import.meta.dirname, '../../../src/lib/components', path), 'utf8');
 const PANE = shipping('settings/paneScroll.ts');
 
 const TABLET = { width: 1366, height: 1024, scale: 2, fontScale: 1 };
@@ -46,7 +43,7 @@ describe("the shipping shells' geometry", () => {
   it('picks the phone, wide and compact shells where SettingsModal does', () => {
     const wideFloor = Number(
       /SETTINGS_WIDE_MIN_WIDTH_PX = (\d+);/.exec(
-        readFileSync(join(import.meta.dirname, '../../../web/src/lib/breakpoints.ts'), 'utf8')
+        readFileSync(join(import.meta.dirname, '../../../src/lib/breakpoints.ts'), 'utf8')
       )[1]
     );
     expect(settingsShell(PHONE)).toBe('phone');

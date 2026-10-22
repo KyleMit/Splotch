@@ -4,7 +4,7 @@ The AI (`@google/genai`) and image-processing (`sharp`) tooling that **produces*
 committed art: AI style covers, the light/dark coloring-page fills, picker cover thumbnails, and
 format/line-art utilities. It lives in its own folder so you can iterate on it in a small footprint
 — the app never runs any of this at build time; it just reads the committed outputs from
-`web/static/`.
+`assets/static/`.
 
 Architecture and the "why a folder, not a workspace/repo" decision:
 **[`architecture.md`](docs/architecture.md)**.
@@ -33,7 +33,7 @@ is exempt from both — see `CLAUDE.md` for the exemption and the test it turns 
 
 `fill-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this folder, never shipped)
 holds the colored fills **with their outlines intact** — the raw model output. The shipped
-`web/static/coloring/**/*.{light,night}.webp` are the fills-only **punch** of those raws:
+`assets/static/coloring/**/*.{light,night}.webp` are the fills-only **punch** of those raws:
 `coloring/punch-fill-outlines.mjs` masks each raw's own outline pixels out using the page's line
 art, because the app's overlay `<img>` already draws the line art on top and revealing the fill's
 copy would double every line (ADR-0043 "reveal fills only"). The punch is deterministic, offline
@@ -44,15 +44,15 @@ the raws. Edit or regenerate a raw, then re-punch; never hand-edit a shipped fil
 
 The generators reuse the app's single source of truth rather than duplicating
 prompts/catalog/theme/backdrop keying. This table is the **entire** sanctioned import surface from
-`web/src`, listing every file under `tools/asset-gen/` that imports each module:
+`src`, listing every file under `tools/asset-gen/` that imports each module:
 
-| Import                                         | Imported by                                                                                                     |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `web/src/lib/ai/styles.ts`                     | `style-covers/gen-style-covers.mjs`                                                                             |
-| `web/src/lib/ai/prompt.ts`                     | `style-covers/gen-style-covers.mjs`                                                                             |
-| `web/src/lib/theme.ts`                         | `style-covers/gen-style-covers.mjs`                                                                             |
-| `web/src/lib/state/books.ts`                   | `coloring/gen-book-proof-sheet.mjs`, `coloring/gen-responsive-assets.mjs`, `tests/responsive-coloring.test.mjs` |
-| `web/src/lib/server/ai/flatBackgroundPunch.ts` | `lib/flat-background-punch.mjs`                                                                                 |
+| Import                                     | Imported by                                                                                                     |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `src/lib/ai/styles.ts`                     | `style-covers/gen-style-covers.mjs`                                                                             |
+| `src/lib/ai/prompt.ts`                     | `style-covers/gen-style-covers.mjs`                                                                             |
+| `src/lib/theme.ts`                         | `style-covers/gen-style-covers.mjs`                                                                             |
+| `src/lib/state/books.ts`                   | `coloring/gen-book-proof-sheet.mjs`, `coloring/gen-responsive-assets.mjs`, `tests/responsive-coloring.test.mjs` |
+| `netlify/server/ai/flatBackgroundPunch.ts` | `lib/flat-background-punch.mjs`                                                                                 |
 
 `lib/flat-background-punch.mjs` re-exports the backdrop key that live Sticker generations use, so
 the style-cover generator cuts its covers with the same code. `tests/import-boundary.test.mjs` holds
@@ -71,7 +71,7 @@ type-only, which strips away entirely.
 From the **repo root** (the discoverable entry points — ADR-0019):
 
 ```bash
-npm run gen:style-covers        # AI style thumbnails, both themes -> web/static/styles/{style}.{light,dark}.webp
+npm run gen:style-covers        # AI style thumbnails, both themes -> assets/static/styles/{style}.{light,dark}.webp
                                 #   --theme dark / --style Crayon / --temperature 1.4 to narrow or re-roll
 npm run gen:coloring-chalk      # page/cover chalk candidates -> uncommitted dark SVG trace source
 npm run gen:coloring-outlines:fresh # brand-new pen candidate -> uncommitted light SVG trace source
@@ -84,8 +84,8 @@ npm run check:coloring-fill-drift # drift-check the raw fills in fill-src/ (no k
 npm run check:coloring-invented-shapes # invented colored shapes on the open background of the raws (no key/network)
 npm run check:coloring-night-halo # audit shipped night fills against the candidate halo bar + crop-review signal (no key/network)
 npm run gen:coloring-punched-fills      # re-punch the shipped fills from fill-src/ raws (no key/network)
-npm run gen:coloring-thumbs     # light/dark cover thumbnails -> web/static/coloring/**/cover*.thumb.webp
-npm run gen:coloring-responsive # web srcset tiers from canonical fills/cover thumbs -> web/static/coloring/max-*px/
+npm run gen:coloring-thumbs     # light/dark cover thumbnails -> assets/static/coloring/**/cover*.thumb.webp
+npm run gen:coloring-responsive # web srcset tiers from canonical fills/cover thumbs -> assets/static/coloring/max-*px/
 npm run check:coloring-golden-scores # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run update:coloring-golden-scores # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
@@ -120,7 +120,7 @@ npm run vectorize:coloring:check
 npm run vectorize:postprocess:check
 ```
 
-The optimized SVG under `web/static/coloring/` is the canonical line art. A pen SVG change then
+The optimized SVG under `assets/static/coloring/` is the canonical line art. A pen SVG change then
 invalidates its chalk, light/night fills, and punch; a chalk SVG change invalidates its night fill
 and punch. Cover SVGs stop after regenerating their picker thumbnails and responsive derivative.
 `npm run build:site` emits the incremental coloring-pack manifest from `bookPackAssetPaths()`—page
@@ -211,10 +211,10 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
   `*.overlay.svg` / `*.dark.overlay.svg` line art.
 * **Committed outputs:** canonical page SVG line art, `*.light.webp` / `*.night.webp` fills, cover
   `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails, canonical cover SVG masters used only by the
-  pipeline, and `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
-  `web/static/coloring/max-{edge}px/`; the Capacitor build stripped those directories so native kept
-  one canonical runtime width. Page or cover regeneration stages uncommitted `.source.webp` inputs
-  under `vectorized/coloring-{,dark-}overlays/` for the paid vector workflow.
+  pipeline, and `assets/static/styles/*.webp` covers. Web-only responsive derivatives live under
+  `assets/static/coloring/max-{edge}px/`; the Capacitor build stripped those directories so native
+  kept one canonical runtime width. Page or cover regeneration stages uncommitted `.source.webp`
+  inputs under `vectorized/coloring-{,dark-}overlays/` for the paid vector workflow.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/asset-paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`.
   (The gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the

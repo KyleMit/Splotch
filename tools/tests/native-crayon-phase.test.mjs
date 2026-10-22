@@ -20,14 +20,10 @@ vi.mock('react-native-svg', async () => {
     },
   };
 });
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 
 const { Svg, Rect, Defs, Path, Pattern } = await import('react-native-svg');
-const { Ink, InkArtwork } =
-  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } = await import('../../src/drawing/Ink.tsx');
 const PAPER_WIDTH = 1024;
 const PAPER_HEIGHT = 768;
 const CORE_HALF_HEIGHT = 7;

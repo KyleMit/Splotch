@@ -4,15 +4,15 @@ import { host, mount, records, root, checkedSwitch } from './rsd-native-selectio
 import {
   AI_SAVE_RETRY,
   RsdAiSettingsSection,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiSettingsSection.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+} from '../../../src/rsdDrawing/RsdAiSettingsSection.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
 import {
   AI_AUTO_SAVE_HELP,
   AI_SETTINGS_COPY,
   KEY_MESSAGES,
   KEY_STORAGE_NOTE,
   valuePropClaims,
-} from '../../../experiments/native-architecture/src/settings/aiSettingsCopy.ts';
+} from '../../../src/settings/aiSettingsCopy.ts';
 
 // Settings › AI Art through the released native renderer: the master switch over the explainer or
 // the key manager and feature switches, as shipping's AiKeyManager.svelte lays them out.

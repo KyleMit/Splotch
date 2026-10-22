@@ -1,9 +1,0 @@
-{
-  "extends": "expo/tsconfig.base.json",
-  "compilerOptions": {
-    "allowJs": false,
-    "allowImportingTsExtensions": true,
-    "strict": true
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
-}

@@ -7,13 +7,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   PALETTE_COLORS as shippingPalette,
   TRIM_ORDER as shippingTrimOrder,
-} from '../../web/src/lib/palette.ts';
-import { brand, scale, themes } from '../../web/src/lib/design/tokens.ts';
-import {
-  PALETTE_COLORS,
-  PALETTE_TRIM_ORDER,
-  paletteHex,
-} from '../../experiments/native-architecture/src/drawing/palette.ts';
+} from '../../src/lib/palette.ts';
+import { brand, scale, themes } from '../../src/lib/design/tokens.ts';
+import { PALETTE_COLORS, PALETTE_TRIM_ORDER, paletteHex } from '../../src/drawing/palette.ts';
 import {
   DRAWING_BRAND,
   DRAWING_EASE_POP,
@@ -24,12 +20,9 @@ import {
   DRAWING_THEME,
   DRAWING_THEMES,
   PAPER_THEMES,
-} from '../../experiments/native-architecture/src/drawing/theme.ts';
+} from '../../src/drawing/theme.ts';
 
-const sourceDirectory = join(
-  import.meta.dirname,
-  '../../experiments/native-architecture/src/drawing'
-);
+const sourceDirectory = join(import.meta.dirname, '../../src/drawing');
 const fixtures = [];
 
 async function fixtureModule(name, from, to) {

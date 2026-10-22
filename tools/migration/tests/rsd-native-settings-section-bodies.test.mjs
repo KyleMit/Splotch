@@ -22,16 +22,16 @@ import { drawerTileSize as tileSize } from './rsd-native-toolbar-fixture.mjs';
 
 import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { PALETTE_FLOWS } from '../../../src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../src/rsdDrawing/RsdIconButton.tsx';
 
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   BUTTON_SIZE_HELP,
-} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
-import { SECTION_SUBTITLES } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
+} from '../../../src/settings/buttonSize.ts';
+import { SECTION_SUBTITLES } from '../../../src/settings/settingsSections.ts';
 
 // The Appearance, Sound and Accessibility section bodies (AppearanceSection.svelte,
 // SoundSection.svelte, AccessibilitySection.svelte) mounted through the real Settings caller.

@@ -104,7 +104,7 @@ describe('parseExpected', () => {
 describe('inspectArtifact on an Android bundle', () => {
   const unsigned =
     'unsigned: no META-INF/*.RSA, *.DSA or *.EC signature block; ' +
-    'rebuild it with experiments/native-architecture/android/keystore.properties in place';
+    'rebuild it with android/keystore.properties in place';
   let dir;
 
   beforeAll(() => {

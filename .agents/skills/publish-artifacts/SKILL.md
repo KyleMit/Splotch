@@ -3,9 +3,9 @@ name: publish-artifacts
 description: Attach the built .aab/.ipa to the GitHub Release for a version, verifying each artifact's embedded app ID and version first. Use after the cut-release and build skills, or whenever a GitHub Release is missing its binaries or has the wrong ones attached.
 ---
 
-You are attaching Splotch's **built store artifacts** — the React Native app's, from
-`experiments/native-architecture`, under the store identity ADR-0182 gives it — to an existing
-GitHub Release. This is the third and last phase of shipping:
+You are attaching Splotch's **built store artifacts** — the React Native app's, from `.`, under the
+store identity ADR-0182 gives it — to an existing GitHub Release. This is the third and last phase
+of shipping:
 
 | Phase      | Skill               | Produces                                                |
 | ---------- | ------------------- | ------------------------------------------------------- |
@@ -33,10 +33,8 @@ which is the one `cut-release` last bumped to.
    and version out of each artifact's own bytes (the `.aab`'s protobuf `AndroidManifest.xml`, the
    `.ipa`'s `Info.plist`), compares the app ID against the store's `art.splotch.app` and both
    versionName and versionCode against `releases/<version>.md`, and requires the `.aab`'s signature
-   block and R8 mapping. It reads
-   `experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab` and
-   `experiments/native-architecture/ios/build/ipa/Splotch.ipa`. Report exactly what it found before
-   doing anything else.
+   block and R8 mapping. It reads `android/app/build/outputs/bundle/release/app-release.aab` and
+   `ios/build/ipa/Splotch.ipa`. Report exactly what it found before doing anything else.
 
 3. **Handle the outcomes.** Do not work around a refusal — every one of them means the upload would
    have been wrong:

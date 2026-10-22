@@ -1,12 +1,12 @@
 import { expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
+import { withCredentialLeases } from '../../src/ai/credentialLease.ts';
 function fixture() {
   let reject;
   const pending = new Promise((_, fail) => {
     reject = fail;
   });
-  /** @type {import('../../experiments/native-architecture/src/ai/credentials.ts').AiVault & Omit<import('../../experiments/native-architecture/src/ai/credentials.ts').AiReferencedVault, 'lease' | 'pinLeased'>} */
+  /** @type {import('../../src/ai/credentials.ts').AiVault & Omit<import('../../src/ai/credentials.ts').AiReferencedVault, 'lease' | 'pinLeased'>} */
   const native = {
     installationId: vi.fn(async () => 'a'.repeat(64)),
     read: vi.fn(async () => null),
@@ -41,14 +41,8 @@ it('leaves a lease valid across read-only reference resolution', async () => {
   expect(lease.valid()).toBe(true);
 });
 it('routes both actual platform vault exports through the lease owner', () => {
-  const native = readFileSync(
-    new URL('../../experiments/native-architecture/src/platform/ai.ts', import.meta.url),
-    'utf8'
-  );
-  const web = readFileSync(
-    new URL('../../experiments/native-architecture/src/platform/aiVault.web.ts', import.meta.url),
-    'utf8'
-  );
+  const native = readFileSync(new URL('../../src/platform/ai.ts', import.meta.url), 'utf8');
+  const web = readFileSync(new URL('../../src/platform/aiVault.web.ts', import.meta.url), 'utf8');
   expect(native).toContain('export const aiVault = withCredentialLeases(nativeVault)');
   expect(web).toContain('return withCredentialLeases({');
 });

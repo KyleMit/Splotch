@@ -15,31 +15,28 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative, sep } from 'node:path';
-import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
-import {
-  APP_PAGE_DOCUMENTS,
-  documentPagePath,
-} from '../../experiments/native-architecture/src/information/appPages.ts';
+import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../src/lib/breakpoints.ts';
+import { APP_PAGE_DOCUMENTS, documentPagePath } from '../../src/information/appPages.ts';
 import {
   UNLINKED_DOCUMENT_PATHS,
   WEB_DOCUMENT_PATHS,
-} from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
+} from '../../src/information/unlinkedDocuments.ts';
 import {
   APP_DOCUMENT_ATTRIBUTE,
   NOT_FOUND_DOCUMENT,
-} from '../../experiments/native-architecture/src/pageDocument/appDocumentContract.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+} from '../../src/pageDocument/appDocumentContract.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
 import {
   FIRST_FRAME_VIEWPORT_ATTRIBUTE,
   formatFirstFrameViewport,
-} from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
+} from '../../src/platform/firstFrameViewport.ts';
 import {
   HIDDEN_WITHOUT_SCRIPT_ATTRIBUTE,
   PAGE_FRAMED_MAX_WIDTH_PX,
   SHOWN_WITHOUT_SCRIPT_ATTRIBUTE,
-} from '../../experiments/native-architecture/src/rsdDrawing/pageFrame.ts';
-import { PAGE_DOCUMENT_RESOLVER_OPTION } from '../../experiments/native-architecture/scripts/page-document-resolution.cjs';
-import { DESIGN_DOCUMENT_STYLE_SOURCES } from '../../experiments/native-architecture/scripts/design-document-styles.mjs';
+} from '../../src/rsdDrawing/pageFrame.ts';
+import { PAGE_DOCUMENT_RESOLVER_OPTION } from './page-document-resolution.cjs';
+import { DESIGN_DOCUMENT_STYLE_SOURCES } from './design-document-styles.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
   VARIANT_FRAGMENT_SEPARATOR,
@@ -64,7 +61,7 @@ import {
 } from './prerender-native-web.mjs';
 
 const require = createRequire(import.meta.url);
-const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
+const NATIVE_APP_DIR = join(ROOT, '.');
 export const PAGE_DOCUMENT_DIR = 'src/pageDocument';
 // The drawing screen's entry, which `expo export` bundles (the app's package.json main).
 const DRAWING_ENTRY = 'src/index.ts';

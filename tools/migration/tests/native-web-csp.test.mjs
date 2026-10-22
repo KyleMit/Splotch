@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { AI_ORIGIN } from '../../../experiments/native-architecture/src/ai/contract.ts';
-import { FEEDBACK_URL } from '../../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
-import { PACK_ORIGIN } from '../../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
+import { AI_ORIGIN } from '../../../src/ai/contract.ts';
+import { FEEDBACK_URL } from '../../../src/feedback/feedbackTransport.ts';
+import { PACK_ORIGIN } from '../../../src/offlineLibrary/manifest.ts';
 import { documentPolicyProblems, withContentSecurityPolicy } from '../lib/native-web-csp.mjs';
 
 const BOOT = "document.documentElement.setAttribute('data-boot','')";

@@ -25,9 +25,9 @@ change them. Every tracked file lands in exactly one measured area or one explic
   instruction source counts in the area it describes. The isolated native candidate has its own
   measured area; it is separate from the shipped web app and native shells.
 * **Binary media / archives:** images, audio, fonts, JARs, and gzip/zip archives.
-* **Vector art assets / traced samples:** coloring-page outlines under `web/static/coloring/`, and
-  the traced SVG corpora of `model-eval`, `centerline-tracing`, and the `vectorize` pilot.
-  Hand-authored icons in `web/src` stay measured.
+* **Vector art assets / traced samples:** coloring-page outlines under `assets/static/coloring/`,
+  and the traced SVG corpora of `model-eval`, `centerline-tracing`, and the `vectorize` pilot.
+  Hand-authored icons in `src` stay measured.
 * **Generated measurement data:** JSON, JSONL, TSV, CSV, and `.out` files under the evidence roots
   (`perf-profiles/`, `scrapbook/`, `docs/scratchpad/`, `docs/investigations/`,
   `docs/migration/evidence/`, `tools/asset-gen/`, and the `centerline-tracing` benchmark), plus
@@ -42,9 +42,9 @@ change them. Every tracked file lands in exactly one measured area or one explic
 
 Grouping is one file → one area and, where shown, one sub-bucket. Cross-cutting files sit in a
 single bucket by convention; co-located tests and test harnesses follow the module they exercise.
-`web/src` domains are an ordered first-match rule list whose directory-wide fallbacks place a new
-file somewhere plausible until a reconcile pass gives it a precise rule, so a few functional
-boundaries are judgment calls even though every total is exact.
+`src` domains are an ordered first-match rule list whose directory-wide fallbacks place a new file
+somewhere plausible until a reconcile pass gives it a precise rule, so a few functional boundaries
+are judgment calls even though every total is exact.
 
 ### Coverage check
 
@@ -142,7 +142,7 @@ boundaries are judgment calls even though every total is exact.
 | sounds             |    478 |     4 |
 | instruction source |    203 |     1 |
 
-### web/src (121,613) — functional domains
+### src (121,613) — functional domains
 
 | Domain                                 |    LOC | Files |
 | -------------------------------------- | -----: | ----: |
@@ -268,8 +268,8 @@ These notes compare the tables with the published snapshot of 9afa78cf0da1 (2026
 comparison includes the Method change that excludes captured migration data while counting its
 authored prose and the isolated candidate's source.
 
-* Measured LOC increased from about 415k to 471k. Repository automation and `web/src` account for
-  most of the difference; co-located tests count with their owning domain.
+* Measured LOC increased from about 415k to 471k. Repository automation and `src` account for most
+  of the difference; co-located tests count with their owning domain.
 * `tools/perf` remains the largest tools subtree. The Magic observation unit is counted with its app
   and performance-tool owners; its presence does not demonstrate native performance.
 * The private native candidate has its own measured area. Its entry and configuration are structural

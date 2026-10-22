@@ -10,16 +10,16 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { UNLINKED_DOCUMENT_PATHS } from '../../experiments/native-architecture/src/information/unlinkedDocuments.ts';
+import { UNLINKED_DOCUMENT_PATHS } from '../../src/information/unlinkedDocuments.ts';
 import {
   ADMIN_RESTORING_ATTRIBUTE,
   ADMIN_SESSION_ATTRIBUTE,
   ADMIN_SESSION_KEY,
   ADMIN_THEMES,
   ADMIN_VARIANT_ATTRIBUTE,
-} from '../../experiments/native-architecture/src/pageDocument/admin/adminContract.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
-import { ADMIN_STYLE_INCLUDE } from '../../experiments/native-architecture/scripts/admin-document-styles.mjs';
+} from '../../src/pageDocument/admin/adminContract.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
+import { ADMIN_STYLE_INCLUDE } from './admin-document-styles.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import {
   EXPO_SCRIPT,
@@ -38,7 +38,7 @@ import {
   writtenPageDocuments,
 } from './prerender-native-web-pages.mjs';
 
-const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
+const NATIVE_APP_DIR = join(ROOT, '.');
 const nativeRequire = createRequire(join(NATIVE_APP_DIR, 'package.json'));
 export const ADMIN_DOCUMENT_FILE = writtenPageDocuments().find(
   ({ path }) => path === UNLINKED_DOCUMENT_PATHS.admin

@@ -1,34 +1,34 @@
 // @vitest-environment happy-dom
 import { act, createElement, StrictMode, useEffect, useRef, useState } from 'react';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
-import { addStroke, strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { useUndoAction } from '../../src/useUndoAction.ts';
+import { addStroke, strokeStyle } from '../../src/drawing/model.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { STEP_NUMBER_SIZE_PX } from '../../experiments/native-architecture/src/rsdDrawing/stepNumberSize.ts';
-import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
-import { deferredLayer } from '../../experiments/native-architecture/src/rsdDrawing/clearSurfaces.web.ts';
+import { STEP_NUMBER_SIZE_PX } from '../../src/rsdDrawing/stepNumberSize.ts';
+import { lazySurface } from '../../src/rsdDrawing/lazySurface.ts';
+import { deferredLayer } from '../../src/rsdDrawing/clearSurfaces.web.ts';
 import {
   RsdSurfaceBoundary,
   SURFACE_FAILURE_LABEL,
   SURFACE_FAILURE_MESSAGE,
-} from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceBoundary.tsx';
-import { RsdSurfaceFailure as WebSurfaceFailure } from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceFailure.web.tsx';
+} from '../../src/rsdDrawing/RsdSurfaceBoundary.tsx';
+import { RsdSurfaceFailure as WebSurfaceFailure } from '../../src/rsdDrawing/RsdSurfaceFailure.web.tsx';
 
 vi.mock('react-native', async () => ({
   ...(await import('react-native-web')),
   useWindowDimensions: () => ({ width: 390, height: 844 }),
 }));
-vi.mock('../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx', () => ({
+vi.mock('../../src/drawing/DrawingAppearance.tsx', () => ({
   useDrawingAppearance: () => 'light',
 }));
-vi.mock('../../experiments/native-architecture/src/platform/BrowserBack.tsx', () => ({
+vi.mock('../../src/platform/BrowserBack.tsx', () => ({
   useDialogBack: () => {},
 }));
-vi.mock('../../experiments/native-architecture/src/platform/reducedTransparency.web.ts', () => ({
+vi.mock('../../src/platform/reducedTransparency.web.ts', () => ({
   useReducedTransparency: () => false,
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts', () => ({
+vi.mock('../../src/rsdDrawing/tokens.css.ts', () => ({
   colors: {},
   darkTheme: {},
   dimensions: {},
@@ -37,7 +37,7 @@ vi.mock('../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts', ()
 }));
 
 const background = vi.hoisted(() => ({ painted: false, waiters: [], idle: [] }));
-vi.mock('../../experiments/native-architecture/src/product/drawingPaint.ts', () => ({
+vi.mock('../../src/product/drawingPaint.ts', () => ({
   drawingPaint: {
     painted: () =>
       background.painted
@@ -45,7 +45,7 @@ vi.mock('../../experiments/native-architecture/src/product/drawingPaint.ts', () 
         : new Promise((resolve) => background.waiters.push(resolve)),
   },
 }));
-vi.mock('../../web/src/lib/idle.ts', () => ({
+vi.mock('../../src/lib/idle.ts', () => ({
   scheduleInteractionIdle: (run) => {
     background.idle.push(run);
     return () => {};
@@ -67,13 +67,13 @@ vi.mock('react-strict-dom', () => ({
     ])
   ),
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/controls.tsx', () => ({
+vi.mock('../../src/rsdDrawing/controls.tsx', () => ({
   styles: {},
   RsdAction: ({ label, onClick }) =>
     createElement('button', { 'aria-label': label, onClick }, label),
 }));
 // The frame as the boundary drives it: shown while visible, reporting its dismissal once hidden.
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx', () => ({
+vi.mock('../../src/rsdDrawing/ModalShell.tsx', () => ({
   ModalShell: function ModalShell({ visible, label, header, children, onDismiss }) {
     useEffect(() => {
       if (!visible) onDismiss?.();
@@ -83,7 +83,7 @@ vi.mock('../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx', (
       : null;
   },
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx', () => ({
+vi.mock('../../src/rsdDrawing/DialogHeader.tsx', () => ({
   DialogHeader: ({ title, onClose }) =>
     createElement(
       'header',
@@ -112,8 +112,8 @@ afterEach(() => {
   host.remove();
   vi.restoreAllMocks();
   vi.useRealTimers();
-  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
-  vi.doUnmock('../../experiments/native-architecture/src/rsdDrawing/undoFeedbackChunk.web.ts');
+  vi.doUnmock('../../src/lazyExport.ts');
+  vi.doUnmock('../../src/rsdDrawing/undoFeedbackChunk.web.ts');
 });
 
 function Settings({ notice }) {
@@ -290,10 +290,8 @@ it('keeps a camera glyph and its focused button through a decorative chunk failu
 
 it('plays the remaining first shutter cue when its real web component mounts from a delayed chunk', async () => {
   const { Animated } = await import('react-native');
-  const { RsdCameraFeedback } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/RsdCameraFeedback.tsx');
-  const { CAMERA_CAPTURE_MS } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+  const { RsdCameraFeedback } = await import('../../src/rsdDrawing/RsdCameraFeedback.tsx');
+  const { CAMERA_CAPTURE_MS } = await import('../../src/rsdDrawing/cameraKeyframes.ts');
   const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
   const timing = vi.spyOn(Animated, 'timing').mockReturnValue({ start() {}, stop() {} });
   let finish;
@@ -325,13 +323,10 @@ it('plays the remaining first shutter cue when its real web component mounts fro
 
 async function webStepNumber(load) {
   vi.resetModules();
-  vi.doMock(
-    '../../experiments/native-architecture/src/rsdDrawing/RsdStepNumberContent.tsx',
-    () => ({
-      RsdStepNumber: () => createElement('span', { 'data-loaded-badge': true }, '1'),
-    })
-  );
-  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
+  vi.doMock('../../src/rsdDrawing/RsdStepNumberContent.tsx', () => ({
+    RsdStepNumber: () => createElement('span', { 'data-loaded-badge': true }, '1'),
+  }));
+  vi.doMock('../../src/lazyExport.ts', async (importOriginal) => {
     const actual = await importOriginal();
     return {
       ...actual,
@@ -339,9 +334,7 @@ async function webStepNumber(load) {
         actual.createLazyExport(() => load().then(importContent)),
     };
   });
-  return (
-    await import('../../experiments/native-architecture/src/rsdDrawing/RsdStepNumber.web.tsx')
-  ).RsdStepNumber;
+  return (await import('../../src/rsdDrawing/RsdStepNumber.web.tsx')).RsdStepNumber;
 }
 
 function stepRows(Badge) {
@@ -397,33 +390,28 @@ it('keeps instructions and Close mounted after a badge failure, then retries on 
     Object.keys(STEP_NUMBER_SIZE_PX).length
   );
   expect(host.querySelector('[aria-label="Close instructions"]')).not.toBeNull();
-  vi.doUnmock('../../experiments/native-architecture/src/rsdDrawing/RsdStepNumberContent.tsx');
-  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
+  vi.doUnmock('../../src/rsdDrawing/RsdStepNumberContent.tsx');
+  vi.doUnmock('../../src/lazyExport.ts');
 });
 
 async function webUndoGhost(load) {
   vi.resetModules();
-  vi.doMock(
-    '../../experiments/native-architecture/src/rsdDrawing/undoFeedbackChunk.web.ts',
-    () => ({
-      RsdUndoFeedback: ({ children }) => children,
-      SvgUndoGhostLayer: ({ feedback, checkpoint }) =>
-        createElement('div', {
-          'data-ghost-id': feedback.id,
-          'data-checkpoint-id': checkpoint.id,
-        }),
-    })
-  );
-  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
+  vi.doMock('../../src/rsdDrawing/undoFeedbackChunk.web.ts', () => ({
+    RsdUndoFeedback: ({ children }) => children,
+    SvgUndoGhostLayer: ({ feedback, checkpoint }) =>
+      createElement('div', {
+        'data-ghost-id': feedback.id,
+        'data-checkpoint-id': checkpoint.id,
+      }),
+  }));
+  vi.doMock('../../src/lazyExport.ts', async (importOriginal) => {
     const actual = await importOriginal();
     return {
       ...actual,
       createLazyExport: (importCue) => actual.createLazyExport(() => load().then(importCue)),
     };
   });
-  return (
-    await import('../../experiments/native-architecture/src/rsdDrawing/undoFeedbackSurface.web.ts')
-  ).SvgUndoGhostLayer;
+  return (await import('../../src/rsdDrawing/undoFeedbackSurface.web.ts')).SvgUndoGhostLayer;
 }
 
 function undoOwner(Ghost, expose) {

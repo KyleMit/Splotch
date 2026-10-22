@@ -10,16 +10,13 @@ import {
 } from '../lib/native-picture-capture-sdk-fixture.mjs';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
-import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
-import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import {
-  InkAppearanceScope,
-  useInkAppearance,
-} from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { RasterInk } from '../../src/drawing/RasterInk.tsx';
+import { DrawingAppearanceProvider } from '../../src/drawing/DrawingAppearance.tsx';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { PictureCapture } from '../../src/drawing/PictureCapture.tsx';
+import { createPngCapture } from '../../src/drawing/interactions.ts';
+import { InkAppearanceScope, useInkAppearance } from '../../src/drawing/InkAppearance.tsx';
+import { PNG_TIMEOUT_MS } from '../../src/drawing/svgCapture.ts';
 
 const state = vi.hoisted(() => ({
   scheme: 'light',
@@ -36,17 +33,15 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('react-native', async () => {
   const { nativeCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
-  const { CRAYON_TILE_PX } =
-    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  const { CRAYON_TILE_PX } = await import('../../src/drawing/crayon.ts');
   return nativeCaptureSdk(state, CRAYON_TILE_PX);
 });
 vi.mock('react-native-svg', async () => {
   const { svgCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
-  const { CRAYON_TILE_PX } =
-    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  const { CRAYON_TILE_PX } = await import('../../src/drawing/crayon.ts');
   return svgCaptureSdk(state, CRAYON_TILE_PX);
 });
-vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
+vi.mock('../../src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes, onImageLoad }) => {
     const appearance = useInkAppearance();
     if (checkpoint) state.imageLoads.push({ checkpoint, onImageLoad });
@@ -65,21 +60,18 @@ vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => 
   },
 }));
 
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/PictureCapture.tsx',
-  async (loadOriginal) => {
-    const actual = await loadOriginal();
-    return {
-      ...actual,
-      PictureCapture: (props) => {
-        state.packets.push(props.packet);
-        return createElement(actual.PictureCapture, props);
-      },
-    };
-  }
-);
+vi.mock('../../src/drawing/PictureCapture.tsx', async (loadOriginal) => {
+  const actual = await loadOriginal();
+  return {
+    ...actual,
+    PictureCapture: (props) => {
+      state.packets.push(props.packet);
+      return createElement(actual.PictureCapture, props);
+    },
+  };
+});
 
-vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', () => ({
+vi.mock('../../src/drawing/PageOutline.tsx', () => ({
   pageHasOutline: () => true,
   PageOutline: ({ pageId }) => createElement('div', { 'data-page': pageId }),
   usePageOutlineReady: () => true,

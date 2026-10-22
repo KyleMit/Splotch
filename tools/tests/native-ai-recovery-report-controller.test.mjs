@@ -1,15 +1,15 @@
-import { RECOVERY_POLL_AFTER_MS } from '../../web/src/lib/ai/generationAttempt.ts';
-import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
+import { RECOVERY_POLL_AFTER_MS } from '../../src/lib/ai/generationAttempt.ts';
+import { JOB_TTL_MS } from '../../src/ai/contract.ts';
 import { afterEach, expect, it, vi } from 'vitest';
-import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
-import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
+import { parseAiResponse } from '../../src/ai/transport.ts';
+import { recoveryDigest } from '../../src/ai/recoveryDigest.ts';
 import {
   RECOVERY_PROTOCOL,
   RECOVERY_VERSION_HEADER,
   RECOVERY_EXPIRES_HEADER,
   RECOVERY_DIGEST_HEADER,
   RECOVERY_RECEIPT_HEADER,
-} from '../../experiments/native-architecture/src/ai/recoveryContract.ts';
+} from '../../src/ai/recoveryContract.ts';
 import {
   fixture,
   block,

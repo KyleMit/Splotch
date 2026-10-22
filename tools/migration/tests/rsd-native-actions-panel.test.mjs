@@ -15,19 +15,19 @@ import {
   TABLET_MIN_SIDE_PX,
   actionPanelLayout,
   flyoutPlacement,
-} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+} from '../../../src/rsdDrawing/edgeLayout.ts';
 import {
   CORNER_BUTTON_SIZE_PX,
   FLYOUT_OPEN_TILE_FILTER,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+} from '../../../src/rsdDrawing/RsdIconButton.tsx';
 
 import {
   DARK_INK_RELATIVE_LUMINANCE_MAX,
   WHITE_INK_HEX,
   inkKeyline,
-} from '../../../experiments/native-architecture/src/rsdDrawing/inkKeyline.ts';
-import { colorLuminance } from '../../../web/src/lib/design/colorContrast.ts';
-import { PALETTE_COLORS } from '../../../experiments/native-architecture/src/drawing/palette.ts';
+} from '../../../src/rsdDrawing/inkKeyline.ts';
+import { colorLuminance } from '../../../src/lib/design/colorContrast.ts';
+import { PALETTE_COLORS } from '../../../src/drawing/palette.ts';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
@@ -258,7 +258,7 @@ describe('Actions Panel geometry', () => {
 
 describe('shipping parity', () => {
   it('reads the panel geometry from actionButtonLayout.ts, breakpoints.ts and app.css', () => {
-    const breakpoints = read('web/src/lib/breakpoints.ts');
+    const breakpoints = read('src/lib/breakpoints.ts');
     expect(TABLET_MIN_SIDE_PX).toBe(constant(breakpoints, 'TABLET_MIN_SIDE_PX'));
     expect(LARGE_TABLET_MIN_SIDE_PX).toBe(constant(breakpoints, 'LARGE_TABLET_MIN_SIDE_PX'));
   });

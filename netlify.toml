@@ -1,19 +1,16 @@
 # Production deploy config. The Netlify site builds from the repo ROOT (base directory = root, the
 # default), because package.json + the lockfile live here so the install works.
 #
-# The site is the React Native web export (experiments/native-architecture, ADR-0180) and one
+# The site is the React Native web export (., ADR-0180) and one
 # Netlify Function for every /api path (netlify/functions/api.ts). Netlify answers a request with,
 # in order: a [[redirects]] rule below; a published file, by pretty URL (/privacy -> privacy.html,
 # / -> index.html); a function whose config.path matches; then the export's 404.html, the React
 # Native not-found page (docs/scratchpad/2026-10-20-rn-web-single-app/README.md, Hosting on
 # Netlify).
 #
-# Local development reads web/netlify.toml instead (`npm run dev:netlify` runs
-# `netlify dev --cwd web`), which configures only the dev server and which the deploy never reads.
-# The two files share no settings, so everything the deployed site needs lives here.
 [build]
   # `git fetch --tags` first: Netlify's blobless clone has the full commit graph
-  # but does NOT fetch tags, so `git describe` in web/buildVersion.ts can't see the
+  # but does NOT fetch tags, so `git describe` in tools/release/lib/buildVersion.ts can't see the
   # release tag and the web version would fall back to major.minor.0+<sha>
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.
@@ -42,10 +39,10 @@
   # does not follow other import forms (side-effect or dynamic imports).
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify experiments/native-architecture ':(exclude)experiments/native-architecture/android' ':(exclude)experiments/native-architecture/ios' ':(glob)tools/*.mjs' tools/lib tools/migration tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml patches netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- src assets netlify app.json babel.config.cjs metro.config.cjs postcss.config.mjs tsconfig.json ':(glob)tools/*.mjs' tools/lib tools/migration tools/icons tools/marketing-assets tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml patches netlify.toml"
   # The export, with the files the host serves beside it (build-native-web.mjs's
   # HOSTED_STATIC_ENTRIES: the coloring books, robots.txt, the deny page, ...).
-  publish = "experiments/native-architecture/dist/web"
+  publish = "dist/web"
 
 [build.environment]
   # dependencies == what this Netlify build needs; devDependencies == local/CI-only
@@ -82,7 +79,7 @@
 # Deprecated tester links (ADR-0112). /android-beta and /ios-beta were single
 # pages before /beta's two tabs replaced them, and both were handed out on their
 # own, so they redirect rather than 404. betaPlatform.test.ts fails if these and
-# the /beta page's tabs (web/src/lib/components/beta/betaPlatform.ts) disagree.
+# the /beta page's tabs (src/lib/components/beta/betaPlatform.ts) disagree.
 [[redirects]]
   from = "/android-beta"
   to = "/beta?os=android"
@@ -126,7 +123,7 @@
     Reporting-Endpoints = 'csp="/api/csp-report"'
     # The directives a document's meta policy cannot carry. Each exported
     # document's own meta policy (tools/migration/lib/native-web-csp.mjs) holds
-    # the rest, with its inline scripts hashed; web/securityPolicy.ts owns both.
+    # the rest, with its inline scripts hashed; netlify/securityPolicy.ts owns both.
     Content-Security-Policy = """\
       frame-ancestors 'none'; \
       report-uri /api/csp-report\

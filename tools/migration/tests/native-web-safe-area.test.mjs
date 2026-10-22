@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { supportedOrientations } from '../../../web/src/lib/safeAreaMatrix/deviceProfile.ts';
-import { DEVICE_PROFILES } from '../../../web/src/lib/safeAreaMatrix/devices.ts';
-import { appliedInsets, diagnose } from '../../../web/src/lib/safeAreaMatrix/diagnostics.ts';
+import { supportedOrientations } from '../lib/safeAreaMatrix/deviceProfile.ts';
+import { DEVICE_PROFILES } from '../lib/safeAreaMatrix/devices.ts';
+import { appliedInsets, diagnose } from '../lib/safeAreaMatrix/diagnostics.ts';
 import {
   dialogProblems,
   galleryIndex,

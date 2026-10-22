@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createParentGate,
   PARENT_GATE_SUCCESS_HOLD_MS,
-} from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+} from '../../src/parentCenter/parentGate.ts';
 
 const ALWAYS = {
   ai: 'always',

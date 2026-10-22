@@ -1,11 +1,11 @@
 import { canonicalPaper, legacyDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MAX_UNDO_DEPTH } from '../../web/src/lib/drawing/undoHistory.ts';
-import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
+import { MAX_UNDO_DEPTH } from '../../src/lib/drawing/undoHistory.ts';
+import { createDrawingSession } from '../../src/product/createDrawingSession.ts';
 import {
   createRainbowGradient,
   MAGIC_GRADIENT_COUNT,
-} from '../../web/src/lib/drawing/magicSheetGradient.ts';
+} from '../../src/lib/drawing/magicSheetGradient.ts';
 import {
   addStroke,
   addStrokes,
@@ -17,8 +17,8 @@ import {
   strokeStyle,
   paperPoint,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
 
 const firstStroke = {
   color: 'Purple',
@@ -40,8 +40,7 @@ describe('native development drawing model', () => {
     };
     const random = vi.spyOn(Math, 'random').mockImplementation(sequence());
     vi.resetModules();
-    const { rainbow, MAGIC_RAINBOW_COUNT } =
-      await import('../../experiments/native-architecture/src/drawing/brushes.ts');
+    const { rainbow, MAGIC_RAINBOW_COUNT } = await import('../../src/drawing/brushes.ts');
     expect(random).not.toHaveBeenCalled();
     expect(MAGIC_RAINBOW_COUNT).toBe(MAGIC_GRADIENT_COUNT);
     const shippingRandom = vi.fn(sequence());

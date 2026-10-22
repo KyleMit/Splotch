@@ -2,17 +2,10 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  addStrokes,
-  createHistory,
-  emptyDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import {
-  adoptPaper,
-  LEGACY_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
+import { addStrokes, createHistory, emptyDrawing } from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { adoptPaper, LEGACY_PAPER } from '../../src/drawing/paperSpace.ts';
+import { useRendererRecovery } from '../../src/useRendererRecovery.ts';
 
 const fixture = parseDrawing({
   version: 3,

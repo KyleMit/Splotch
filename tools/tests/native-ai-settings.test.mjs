@@ -1,15 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-import { FREE_LIMIT } from '../../experiments/native-architecture/src/ai/contract.ts';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createNativeAi } from '../../src/ai/generation.ts';
+import { FREE_LIMIT } from '../../src/ai/contract.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
 
 const storage = vi.hoisted(() => ({ requestPersistentStorage: vi.fn(async () => true) }));
-vi.mock('../../experiments/native-architecture/src/platform/persistentStorage.ts', () => storage);
+vi.mock('../../src/platform/persistentStorage.ts', () => storage);
 
 // Settings › AI Art's owners: schema 15, the master switch and the credential read, save and
 // forget, none of which asks for a grown-up check, as in shipping. The copy and geometry checks

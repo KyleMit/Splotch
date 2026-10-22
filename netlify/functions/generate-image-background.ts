@@ -1,4 +1,4 @@
-import { aiProvider } from '../../web/src/lib/server/ai/provider';
+import { aiProvider } from '../server/ai/provider';
 import {
   claimJob,
   completeJob,
@@ -7,8 +7,8 @@ import {
   verifyWorkTicket,
   WORK_TICKET_HEADER,
   type GenerationJobOutcome,
-} from '../../web/src/lib/server/generationJobs';
-import { loggableError } from '../../web/src/lib/server/logRedaction';
+} from '../server/generationJobs';
+import { loggableError } from '../server/logRedaction';
 
 // The long half of image generation (ADR-0115). A background function gets 15
 // minutes where the request that started this one had to answer in under 26.

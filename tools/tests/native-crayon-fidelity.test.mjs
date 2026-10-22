@@ -1,12 +1,9 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { paintStroke } from '../../experiments/native-architecture/src/drawing/skiaInkPainter.ts';
-import { createCrayonTileResources } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
-import {
-  CRAYON_BANDS,
-  CRAYON_COLOR_MIX,
-} from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { paintAppearance } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { LEGACY_PAPER } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paintStroke } from '../../src/drawing/skiaInkPainter.ts';
+import { createCrayonTileResources } from '../../src/drawing/crayonTiles.ts';
+import { CRAYON_BANDS, CRAYON_COLOR_MIX } from '../../src/drawing/crayon.ts';
+import { paintAppearance } from '../../src/drawing/palette.ts';
+import { LEGACY_PAPER } from '../../src/drawing/paperSpace.ts';
 
 // Native Crayon against the crayon ADRs (0065, 0067), measured on Skia's own pixels. The
 // thresholds come from the issue-2759 comparison against the shipping web crayon at a matched

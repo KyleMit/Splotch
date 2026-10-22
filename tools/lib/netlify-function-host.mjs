@@ -18,9 +18,9 @@ import { ROOT } from './proc.mjs';
 
 const FUNCTIONS_DIR = join(ROOT, 'netlify', 'functions');
 // The functions' own TypeScript project, for every module they reach. Without it the transform
-// takes web/tsconfig.json, which extends a file only `svelte-kit sync` writes.
+// takes tsconfig.shared.json, which extends a file only `svelte-kit sync` writes.
 const FUNCTIONS_TSCONFIG = join(ROOT, 'netlify', 'tsconfig.json');
-const RUNTIME_MODE_MODULE = join(ROOT, 'web', 'src', 'lib', 'server', 'runtimeMode.ts');
+const RUNTIME_MODE_MODULE = join(ROOT, 'netlify', 'server', 'runtimeMode.ts');
 const LOOPBACK = '127.0.0.1';
 
 // Netlify matches a config.path with or without a trailing slash.

@@ -4,27 +4,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { yogaTrackLayout } from './rsd-yoga-host.mjs';
 import { html } from 'react-strict-dom';
-import { PHONE_MAX_WIDTH_PX } from '../../../web/src/lib/breakpoints.ts';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { PHONE_MAX_WIDTH_PX } from '../../../src/lib/breakpoints.ts';
+import { brand, scale, themes } from '../../../src/lib/design/tokens.ts';
 
-import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
+import { darkTheme } from '../../../src/rsdDrawing/tokens.css.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../../src/drawing/useReduceMotion.ts';
 import {
   PICKER_METRICS,
   RsdSegmentedPicker,
   thumbOrigin,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
+} from '../../../src/rsdDrawing/RsdSegmentedPicker.tsx';
 import {
   arrowDelta,
   nextEnabledIndex,
   rovingTabIndex,
-} from '../../../experiments/native-architecture/src/rsdDrawing/rovingRadio.ts';
+} from '../../../src/rsdDrawing/rovingRadio.ts';
 
-const WEB_PLATFORM = '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts';
+const WEB_PLATFORM = '../../../src/rsdDrawing/pickerPlatform.ts';
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.native.ts')
+  '../../../src/rsdDrawing/pickerPlatform.ts',
+  () => import('../../../src/rsdDrawing/pickerPlatform.native.ts')
 );
 const CELL_WIDTH_PX = 100;
 // The first Yoga case compiles React Native's Yoga sources before it lays anything out.

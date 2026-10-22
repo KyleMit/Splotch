@@ -2,12 +2,12 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { ModalScrim } from '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx';
+import { ModalScrim } from '../../src/rsdDrawing/ModalScrim.web.tsx';
 import {
   MODAL_SCRIM_BLUR_PX,
   MODAL_SCRIM_FROSTED,
   MODAL_SCRIM_PLAIN,
-} from '../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+} from '../../src/rsdDrawing/modalGeometry.ts';
 
 let root;
 let host;

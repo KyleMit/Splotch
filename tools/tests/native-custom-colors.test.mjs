@@ -1,13 +1,13 @@
 import { legacyDrawing, adoptedDrawing, canonicalPaper } from './native-paper-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_STROKE_COLOR } from '../../web/src/lib/palette.ts';
+import { DEFAULT_STROKE_COLOR } from '../../src/lib/palette.ts';
 import {
   isCustomColor,
   paintAppearance,
   paintHex,
   paintId,
   rememberColor,
-} from '../../experiments/native-architecture/src/drawing/palette.ts';
+} from '../../src/drawing/palette.ts';
 import {
   addStrokes,
   clearDrawing,
@@ -15,13 +15,10 @@ import {
   emptyDrawing,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import {
-  createSoundSettings,
-  parseSoundSettings,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { createSoundSettings, parseSoundSettings } from '../../src/settings/soundSettings.ts';
 
 const point = { x: 200.5, y: 300.25 };
 function settingsFixture() {

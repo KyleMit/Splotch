@@ -15,7 +15,7 @@ const SHORT_SHA_LENGTH = 12;
 export function assignFiles(paths) {
   return paths.map((path) => {
     const classification = classifyPath(path);
-    if (classification.kind === 'excluded' || classification.area !== 'web/src') {
+    if (classification.kind === 'excluded' || classification.area !== 'src') {
       return { path, ...classification };
     }
     const subject = path.slice(WEB_SRC_PREFIX.length);
@@ -152,7 +152,7 @@ function renderSplits(summary) {
   const sections = [`## Splits for every measured area over ${number(SPLIT_THRESHOLD_LOC)} LOC`];
   for (const area of summary.areas) {
     if (area.loc <= SPLIT_THRESHOLD_LOC || area.buckets.length < 2) continue;
-    const isWebSrc = area.key === 'web/src';
+    const isWebSrc = area.key === 'src';
     sections.push(
       `### ${area.key} (${number(area.loc)}) — ${isWebSrc ? 'functional domains' : 'by subtree'}`,
       table([isWebSrc ? 'Domain' : 'Sub-bucket', 'LOC', 'Files'], locRows(area.buckets))
@@ -212,7 +212,7 @@ export function renderAssignmentsTsv(assignments, linesByPath) {
           entry.domainRule === undefined ? '' : String(WEB_SRC_DOMAIN_RULES[entry.domainRule][1]),
         ]
   );
-  return [['path', 'area', 'bucket', 'subdomain', 'lines', 'web/src rule'], ...rows]
+  return [['path', 'area', 'bucket', 'subdomain', 'lines', 'src rule'], ...rows]
     .map((row) => row.join('\t'))
     .join('\n');
 }

@@ -1,10 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { webAssetUri } from '../../experiments/native-architecture/src/platform/webAsset.ts';
+import { webAssetUri } from '../../src/platform/webAsset.ts';
 import { ROOT } from '../lib/proc.mjs';
 
-const SRC = join(ROOT, 'experiments/native-architecture/src');
+const SRC = join(ROOT, 'src');
 const EXPO = join(ROOT, 'node_modules/expo/src');
 const ASSET_TRANSFORMER = join(
   ROOT,

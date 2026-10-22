@@ -74,6 +74,10 @@ describe('knip project enumeration', () => {
 describe('netlify deploy-skip filter', () => {
   const ignore = netlifyToml.split('\n').find((line) => line.trimStart().startsWith('ignore ='));
 
+  it('watches the TypeScript configuration Metro reads for path aliases', () => {
+    expect(ignore.split(/\s+/)).toContain('tsconfig.json');
+  });
+
   // A plain Git pathspec's '*' crosses directory separators, so an unmagicked
   // 'tools/*.mjs' silently matches every .mjs under tools/ and rebuilds on any
   // capability change — the regression this pins.
@@ -141,7 +145,7 @@ describe('knip production entries', () => {
   });
 
   // The prerender reaches into Expo's and React Strict DOM's own packages, which the React Native
-  // app's dependencies install (experiments/native-architecture/package.json, a workspace knip
+  // app's dependencies install (package.json, a workspace knip
   // ignores here), and the bundled Farm generator loads Prettier only to regenerate its modules,
   // never in the deploy. CI's production-install build is what proves each one installs.
   it('ignores only packages the React Native app provides or the deploy never loads', () => {

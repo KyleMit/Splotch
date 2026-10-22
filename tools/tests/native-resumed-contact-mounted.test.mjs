@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   POINTER_RESUME_GAP_MS,
   POINTER_RESUME_JUMP_RATIO,
-} from '../../web/src/lib/drawing/strokeMath.ts';
+} from '../../src/lib/drawing/strokeMath.ts';
 import { owner, touch, event, send } from './native-contacts-mounted-harness.mjs';
 
 // The harness paper frame is 1024x768 CSS px, so a blank picture adopts the canonical sheet and a

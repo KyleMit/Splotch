@@ -1,0 +1,123 @@
+{
+  "base": "f73ba89631eecbd4448a5e51a909335759b5bbd9",
+  "reviewedHead": "92294d8354d72fff5764c96ca8f35be762ae6cc0",
+  "method": "Vitest runtime collection: vitest list --config tools/vitest.config.mjs --no-static-parse --json=<file>; independent frozen install at each exact commit",
+  "files": 494,
+  "before": 8101,
+  "after": 8091,
+  "unchangedFileCounts": 490,
+  "unchangedFileCases": 7972,
+  "collections": [
+    {
+      "side": "base",
+      "sha256": "175a31e9ae5fc44ee84972367c4032a1618c4b629a74b3eea775355bd2cbb26c"
+    },
+    {
+      "side": "head",
+      "sha256": "2a00afc989461ff69066ade6304b0b12e72c1674d13968ca349f2e06a35f7f4c"
+    }
+  ],
+  "dispositions": [
+    {
+      "file": "tools/tests/netlify-production-install.test.mjs",
+      "before": 52,
+      "after": 49,
+      "removed": [
+        {
+          "case": "rejects linked root experiments/native-architecture/node_modules before the manager and preserves its real outside sentinel",
+          "disposition": "The folded installer only cleans root node_modules. The identical root node_modules symlink/sentinel case remains."
+        },
+        {
+          "case": "rejects linked root experiments before the manager and preserves its real outside sentinel",
+          "disposition": "The installer no longer traverses or cleans experiments. Root canonical-path, realpath containment, source-kind and module symlink guards remain."
+        },
+        {
+          "case": "refuses experiments/native-architecture/package.json preprepare before any manager child",
+          "disposition": "The application manifest is package.json; its preprepare refusal case remains."
+        },
+        {
+          "case": "refuses experiments/native-architecture/package.json postprepare before any manager child",
+          "disposition": "The application manifest is package.json; its postprepare refusal case remains."
+        }
+      ],
+      "added": ["rejects workspace packages before cleaning the single root install"],
+      "retainedContract": "Every lifecycle spelling remains refused before manager execution. Root-only config rejects a workspace packages setting, preventing reintroduction of an unqualified clean-install root."
+    },
+    {
+      "file": "tools/tests/web-root-unit-tests.test.mjs",
+      "before": 3,
+      "after": 5,
+      "disposition": "The Vitest and TypeScript inclusion callbacks each expand from one web-root glob to two exact moved owners: netlify/securityPolicy.test.ts and tools/release/lib/buildVersion.test.ts. The nested-include parser negative control remains."
+    },
+    {
+      "file": "tools/code-map/tests/code-map-rules.test.mjs",
+      "before": 45,
+      "after": 44,
+      "removed": [
+        {
+          "case": "measures experiments/native-architecture/package.json in experiments/native-architecture / (root)",
+          "disposition": "The manifest is package.json, whose existing root classification case remains. Source, icons, static media and generated-instruction rows follow their moved owners."
+        }
+      ]
+    },
+    {
+      "file": "tools/page-load/tests/measured-surface.test.mjs",
+      "before": 29,
+      "after": 21,
+      "dynamicRowsBefore": 23,
+      "dynamicRowsAfter": 15,
+      "disposition": "One holds-tracked-files case is generated per MEASURED_SURFACE entry. The import-closure, missing-folder negative control, digest/no-spec checks and four import-walk fixtures remain.",
+      "surfaceMappings": [
+        {
+          "before": ["experiments/native-architecture/src", "web/src/lib"],
+          "after": ["src", "tools/icons/lib", "tools/marketing-assets/lib/page", "tools/migration"],
+          "reason": "App/shared code joins src; exported helper dependencies follow tool owners. Server-only code is outside the exported product import closure."
+        },
+        {
+          "before": ["experiments/native-architecture/assets", "web/static"],
+          "after": ["assets"],
+          "reason": "Native and hosted assets join one root."
+        },
+        {
+          "before": [
+            "experiments/native-architecture/scripts",
+            "tools/migration/build-native-web.mjs",
+            "tools/migration/lib/native-web-csp.mjs",
+            "tools/migration/lib/native-web-head.mjs",
+            "tools/migration/page-fragments.mjs",
+            "tools/migration/prerender-native-web-admin.mjs",
+            "tools/migration/prerender-native-web-pages.mjs",
+            "tools/migration/prerender-native-web.mjs"
+          ],
+          "after": ["tools/migration"],
+          "reason": "Compiler helpers move beside the export tooling; the whole capability scope also covers every earlier explicit migration file."
+        },
+        {
+          "before": ["experiments/native-architecture/package.json"],
+          "after": ["pnpm-lock.yaml"],
+          "reason": "The folded root manifest follows the pre-existing root-manifest exclusion: dependency changes are represented by the lockfile, avoiding script-only baseline invalidation."
+        },
+        {
+          "before": [
+            "experiments/native-architecture/app.json",
+            "experiments/native-architecture/babel.config.cjs",
+            "experiments/native-architecture/metro.config.cjs",
+            "experiments/native-architecture/postcss.config.mjs"
+          ],
+          "after": ["app.json", "babel.config.cjs", "metro.config.cjs", "postcss.config.mjs"],
+          "reason": "Same configuration owners at the root."
+        },
+        {
+          "before": ["web/buildVersion.ts", "web/securityPolicy.ts"],
+          "after": ["tools/release/lib/buildVersion.ts", "netlify/securityPolicy.ts"],
+          "reason": "Build metadata and hosting policy follow their owners."
+        },
+        {
+          "before": ["tools/lib/proc.mjs", "netlify.toml", "pnpm-lock.yaml"],
+          "after": ["tools/lib/proc.mjs", "netlify.toml", "pnpm-lock.yaml"],
+          "reason": "Unchanged measured roots."
+        }
+      ]
+    }
+  ]
+}

@@ -10,14 +10,14 @@ import {
   expandControls,
 } from './rsd-native-selection-host.mjs';
 import { Linking } from 'react-native';
-import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
-import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
-import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
-import releases from '../../../web/src/lib/releases.json';
-import { PRIVACY_LAYOUT } from '../../../experiments/native-architecture/src/information/privacyLayout.ts';
-import { informationFragmentAtLaunch } from '../../../experiments/native-architecture/src/platform/informationFragment.ts';
-import { PAGE_FRAMED_MAX_WIDTH_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
-import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
+import { ProbeApp } from '../../../src/ProbeApp.tsx';
+import { openAppPage } from '../../../src/platform/appPath.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../../src/lib/breakpoints.ts';
+import releases from '../../../src/lib/releases.json';
+import { PRIVACY_LAYOUT } from '../../../src/information/privacyLayout.ts';
+import { informationFragmentAtLaunch } from '../../../src/platform/informationFragment.ts';
+import { PAGE_FRAMED_MAX_WIDTH_PX } from '../../../src/rsdDrawing/RsdNotFoundPage.tsx';
+import { ABOUT_COPY } from '../../../src/rsdDrawing/RsdAboutSection.tsx';
 import {
   useCaller,
   reply,
@@ -29,7 +29,7 @@ import {
   GATED_FLOW_TIMEOUT_MS,
 } from './rsd-native-ai-fixture.mjs';
 
-vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
+vi.mock('../../../src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
 

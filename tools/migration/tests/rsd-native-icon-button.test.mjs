@@ -1,6 +1,6 @@
 import { expect, describe, it, vi } from 'vitest';
 import { act, createElement as h } from 'react';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { brand, scale, themes } from '../../../src/lib/design/tokens.ts';
 import {
   control,
   host,
@@ -13,10 +13,10 @@ import {
   rgba,
   view,
 } from './rsd-native-button-host.mjs';
-import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { RsdFlyoutMenu } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFlyoutMenu.tsx';
-import { NATIVE_ICONS as STARTUP_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+import { RsdIconButton } from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { RsdFlyoutMenu } from '../../../src/rsdDrawing/RsdFlyoutMenu.tsx';
+import { NATIVE_ICONS as STARTUP_ICONS } from '../../../src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../src/rsdDrawing/icons.deferred.generated.ts';
 
 // The drawer's tools draw from the deferred module, which the native apps resolve at launch.
 const NATIVE_ICONS = { ...STARTUP_ICONS, ...NATIVE_DEFERRED_ICONS };

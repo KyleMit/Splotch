@@ -1,4 +1,4 @@
-// Regenerates the AI style cover thumbnails in web/static/styles/ by running
+// Regenerates the AI style cover thumbnails in assets/static/styles/ by running
 // the source drawing (tools/asset-gen/style-covers/source.svg) through Gemini once per
 // style per theme, using the same prompt assembly as /api/generate-image.
 // Requires GEMINI_API_KEY in the environment. Run via npm so the TypeScript
@@ -28,9 +28,9 @@ import {
   hasPunchedBackground,
   styleSuffixesFor,
   styleThumbPath,
-} from '../../../web/src/lib/ai/styles.ts';
-import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
-import { PAPER_COLORS, RESOLVED_THEMES } from '../../../web/src/lib/theme.ts';
+} from '../../../src/lib/ai/styles.ts';
+import { buildPromptForStyle } from '../../../src/lib/ai/prompt.ts';
+import { PAPER_COLORS, RESOLVED_THEMES } from '../../../src/lib/theme.ts';
 import { keyStickerBackground } from '../lib/flat-background-punch.mjs';
 
 const THUMB_SIZE = 448;
@@ -98,7 +98,7 @@ export async function run(argv = process.argv.slice(2)) {
   const shipped = [];
   for (const theme of themes) {
     for (const style of styles) {
-      // styleThumbPath is the app's URL for the asset; under web/static/ the
+      // styleThumbPath is the app's URL for the asset; under assets/static/ the
       // route and the file path are the same string, so the app and the
       // generator can never disagree about where a cover lives.
       const out = join(STYLES_DIR, styleThumbPath(style, theme).replace('/styles/', ''));

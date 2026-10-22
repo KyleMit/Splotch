@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import { scale } from '../../web/src/lib/design/tokens.ts';
+import { scale } from '../../src/lib/design/tokens.ts';
 
-import { blobPath } from '../../experiments/native-architecture/src/rsdDrawing/blob.ts';
-import { mixSrgb, rgba } from '../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
+import { blobPath } from '../../src/rsdDrawing/blob.ts';
+import { mixSrgb, rgba } from '../../src/rsdDrawing/colorMix.ts';
 
 vi.mock('react-native', () => ({
   AccessibilityInfo: {},

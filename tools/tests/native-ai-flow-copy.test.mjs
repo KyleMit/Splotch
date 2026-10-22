@@ -1,11 +1,8 @@
 import { expect, it, vi } from 'vitest';
 
-import { aiButtonFace } from '../../experiments/native-architecture/src/ai/uiState.ts';
-import { REPORT_RECEIVED_MESSAGE, reportFailureMessage } from '../../web/src/lib/reportReply.ts';
-import {
-  AI_PROBLEM_REPORT_COPY,
-  problemReportRows,
-} from '../../experiments/native-architecture/src/ai/problemReport.ts';
+import { aiButtonFace } from '../../src/ai/uiState.ts';
+import { REPORT_RECEIVED_MESSAGE, reportFailureMessage } from '../../src/lib/reportReply.ts';
+import { AI_PROBLEM_REPORT_COPY, problemReportRows } from '../../src/ai/problemReport.ts';
 
 vi.mock('react-native', () => ({}));
 

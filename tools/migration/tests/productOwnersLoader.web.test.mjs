@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { AI_ACCESS_TOKEN_PARAM } from '../../../web/src/lib/inviteLink.ts';
-import { INVITE_SAVE_FAILED_WARNING } from '../../../experiments/native-architecture/src/ai/inviteLink.ts';
-import { createInviteCapture } from '../../../experiments/native-architecture/src/platform/inviteLinks.web.ts';
-import { createProductOwnersLoader } from '../../../experiments/native-architecture/src/product/productOwnersLoader.web.ts';
+import { AI_ACCESS_TOKEN_PARAM } from '../../../src/lib/inviteLink.ts';
+import { INVITE_SAVE_FAILED_WARNING } from '../../../src/ai/inviteLink.ts';
+import { createInviteCapture } from '../../../src/platform/inviteLinks.web.ts';
+import { createProductOwnersLoader } from '../../../src/product/productOwnersLoader.web.ts';
 
 let warn;
 beforeEach(() => {

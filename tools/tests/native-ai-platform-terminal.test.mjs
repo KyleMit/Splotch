@@ -115,7 +115,7 @@ beforeEach(async () => {
   fixture.storage.mockImplementation(async (kind) =>
     JSON.stringify(kind === 'pictures' ? { pictures: [] } : { receipt: null })
   );
-  ({ aiStorage } = await import('../../experiments/native-architecture/src/platform/ai.ts'));
+  ({ aiStorage } = await import('../../src/platform/ai.ts'));
   await aiStorage.read();
   fixture.storage.mockClear();
 });

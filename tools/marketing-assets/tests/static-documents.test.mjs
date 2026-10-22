@@ -1,11 +1,8 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import {
-  PAGE_SHARE_CARDS,
-  SHARE_CARD_SIZE,
-} from '../../../web/src/lib/components/page/socialCard.ts';
-import { STORE_PAGES } from '../../../web/src/lib/storeFrames/pages.ts';
-import { STORE_TARGETS } from '../../../web/src/lib/storeFrames/targets.ts';
+import { PAGE_SHARE_CARDS, SHARE_CARD_SIZE } from '../lib/page/socialCard.ts';
+import { STORE_PAGES } from '../lib/storeFrames/pages.ts';
+import { STORE_TARGETS } from '../lib/storeFrames/targets.ts';
 import {
   SHARE_CARD_FILES,
   shareCardDocument,

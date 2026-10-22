@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { createHash } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createLibraryPlatform } from '../../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
-import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
-import { createDeferredLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
+import { createLibraryPlatform } from '../../../src/platform/offlineLibrary.web.ts';
+import { createOfflineLibrary } from '../../../src/offlineLibrary/controller.ts';
+import { createDeferredLibrary } from '../../../src/offlineLibrary/deferredLibrary.ts';
 
 // The connection shapes of the WEB-1 cell `coloring-connection-policy`, as navigator.connection
-// reports them. Shipping's automaticDownloadAllowed (web/src/lib/coloringPacks/manager.ts) blocks
+// reports them. Shipping's automaticDownloadAllowed (src/lib/coloringPacks/manager.ts) blocks
 // the last three and downloads on the first two.
 const CONNECTIONS = {
   'no Network Information API': { connection: undefined, metered: false },

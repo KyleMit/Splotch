@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fetch as nativeFetch } from 'expo/fetch';
 import { Platform } from 'react-native';
-import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
+import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../src/ai/imageBounds.ts';
 const fixture = vi.hoisted(() => ({
   files: new Map(),
   storage: vi.fn(),
@@ -96,12 +96,7 @@ vi.mock('expo-file-system', () => {
   }
   return { Directory, File, Paths: { document: 'file:///owned/' } };
 });
-import {
-  aiVault,
-  aiStorage,
-  admitAiImage,
-  aiTransport,
-} from '../../experiments/native-architecture/src/platform/ai.ts';
+import { aiVault, aiStorage, admitAiImage, aiTransport } from '../../src/platform/ai.ts';
 const journal = {
   version: 1,
   id: 1,
@@ -132,7 +127,10 @@ it.each([
   ['android', 'https://localhost'],
 ])('sends the shipping trusted Origin on %s AI reports', async (platform, origin) => {
   Platform.OS = platform;
-  const policy = await readFile(new URL('../../web/securityPolicy.ts', import.meta.url), 'utf8');
+  const policy = await readFile(
+    new URL('../../netlify/securityPolicy.ts', import.meta.url),
+    'utf8'
+  );
   const trusted = policy.match(/CSRF_TRUSTED_ORIGINS: readonly string\[\] = \[([^\]]+)\]/)[1];
   expect(trusted).toContain(`'${origin}'`);
   await aiTransport(
@@ -145,7 +143,7 @@ it.each([
   });
 });
 it('resolves an absent iOS secure value as null, as Android does', async () => {
-  const native = new URL('../../experiments/native-architecture/', import.meta.url);
+  const native = new URL('../../', import.meta.url);
   const swift = await readFile(new URL('ios/Splotch/SplotchAIEnvironment.swift', native), 'utf8');
   const kotlin = await readFile(
     new URL('android/app/src/main/java/art/splotch/app/SplotchAIEnvironment.kt', native),

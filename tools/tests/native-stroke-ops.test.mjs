@@ -1,27 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalPaper, legacyDrawing } from './native-paper-fixtures.mjs';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
 import {
   addStrokes,
   cohortFrame,
   createHistory,
   emptyDrawing,
   strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  parseDrawing,
-  serializeDrawing,
-} from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import {
-  orderedOps,
-  opRange,
-  rangeShape,
-} from '../../experiments/native-architecture/src/drawing/inkOps.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing, serializeDrawing } from '../../src/drawing/drawingFormat.ts';
+import { orderedOps, opRange, rangeShape } from '../../src/drawing/inkOps.ts';
 import {
   createCrayonPassTracker,
   crayonPassBreaks,
   crayonPasses,
-} from '../../experiments/native-architecture/src/drawing/crayon.ts';
+} from '../../src/drawing/crayon.ts';
 
 const PAPER = canonicalPaper();
 const at = (x, y) => ({ x, y });

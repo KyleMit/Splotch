@@ -2,32 +2,20 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import {
-  CRAYON_BANDS,
-  CRAYON_TILE_PX,
-} from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { crayonTileUri } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import {
-  PAPER_WIDTH,
-  PAPER_HEIGHT,
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { CRAYON_BANDS, CRAYON_TILE_PX } from '../../src/drawing/crayon.ts';
+import { crayonTileUri } from '../../src/drawing/crayonTiles.ts';
+import { paletteHex } from '../../src/drawing/palette.ts';
+import { PAPER_WIDTH, PAPER_HEIGHT, emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 const { Svg } = await import('react-native-svg');
-const { Ink, InkArtwork } =
-  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
-const { InkScene } = await import('../../experiments/native-architecture/src/drawing/InkScene.tsx');
+const { Ink, InkArtwork } = await import('../../src/drawing/Ink.tsx');
+const { InkScene } = await import('../../src/drawing/InkScene.tsx');
 
 function svg(children) {
   return renderToStaticMarkup(

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { supportEmail } from '../../web/src/lib/supportEmail.ts';
+import { supportEmail } from '../../src/lib/supportEmail.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
 import { waitForHydration } from '../support/group-b.ts';

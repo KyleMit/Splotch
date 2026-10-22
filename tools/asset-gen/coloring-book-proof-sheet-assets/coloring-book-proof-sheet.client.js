@@ -231,7 +231,7 @@ function buildHalf(pair, cell, theme, imgsP) {
   imgsP.then(([night, lineArt, light, chalk]) => {
     // A lined fill still carries its own outline, so the combined view punches it:
     // a `--source samples` night take, or a git-mode raw-fill fallback. Light fills
-    // always come from web/static, so a samples sheet's light half is shipped.
+    // always come from assets/static, so a samples sheet's light half is shipped.
     const linedFill = theme === 'dark' ? SOURCE === 'samples' || !!cell.nightRaw : !!cell.lightRaw;
     const imgs = { night, lineArt, light, chalk };
     const tile = {

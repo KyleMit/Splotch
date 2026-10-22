@@ -1,6 +1,6 @@
 import { useReducer, useState } from 'react';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
-import { DEFAULT_BRUSH_AVAILABILITY } from '../../../experiments/native-architecture/src/settings/brushPreferences.ts';
+import { DEFAULT_BRUSH_AVAILABILITY } from '../../../src/settings/brushPreferences.ts';
 
 export function drawingScreenPort(actual, caller, projectHistory) {
   return {

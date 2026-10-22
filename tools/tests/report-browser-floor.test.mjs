@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { features } from 'web-features';
-import { BROWSER_TARGETS } from '../../web/browserTargets.ts';
+import { BROWSER_TARGETS } from '../lib/browserTargets.ts';
 import {
   baselineWidelyAvailableFloor,
   classifyProbes,
@@ -163,7 +163,7 @@ describe('live repository', () => {
     expect(report.current).toBeLessThanOrEqual(100);
   });
 
-  it('finds feature probes in shipped web/src and none from tests or server code', () => {
+  it('finds feature probes in shipped src and none from tests or server code', () => {
     const sites = guardInventory();
     expect(sites.some((site) => site.kind === 'feature')).toBe(true);
     expect(sites.some((site) => /\.test\.ts$|^lib\/server\//.test(site.file))).toBe(false);

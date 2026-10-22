@@ -10,7 +10,7 @@
 // It NEVER asserts pass/fail: the real verification is the human review of the
 // saved images at the end. It exits non-zero only when the run aborted before
 // every case was sent. Requires REDTEAM_FIXTURE_KEY and OPENAI_API_KEY (in
-// web/.env or exported).
+// .env or exported).
 //
 //   npm run redteam              # the whole corpus
 //   npm run redteam -- block-gun # only fixtures whose id matches (iterate on one)

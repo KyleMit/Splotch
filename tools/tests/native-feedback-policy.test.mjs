@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  feedbackPolicySnapshot,
-  parseFeedbackPolicy,
-} from '../../experiments/native-architecture/src/feedback/feedbackPolicy.ts';
+import { feedbackPolicySnapshot, parseFeedbackPolicy } from '../../src/feedback/feedbackPolicy.ts';
 describe('feedback policy storage boundary', () => {
   it.each(['always', 'session', 'never'])('round trips %s', (mode) => {
     expect(parseFeedbackPolicy(feedbackPolicySnapshot(mode))).toBe(mode);

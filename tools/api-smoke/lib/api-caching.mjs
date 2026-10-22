@@ -1,5 +1,5 @@
 // Every non-OPTIONS /api/* response carries Cache-Control: no-store, the default
-// web/src/hooks.server.ts's handleApiCaching sets; a route replaces it only with a
+// src/hooks.server.ts's handleApiCaching sets; a route replaces it only with a
 // policy docs/API.md documents. Recording at the fetch boundary holds every
 // response a check receives through fetch to that, whichever check made the
 // request, so a new check is covered without asserting it again. The OPTIONS

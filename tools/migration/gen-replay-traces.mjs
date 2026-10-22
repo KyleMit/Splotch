@@ -1,5 +1,5 @@
 // Writes the touch traces the React Native probe build replays open loop into the paper
-// (experiments/native-architecture/src/drawing/perfReplay.ts). The generated traces come from a
+// (src/drawing/perfReplay.ts). The generated traces come from a
 // fixed seed, so a run reproduces the committed files byte for byte; the finger sessions are
 // converted from the owner's web input recordings, which stay out of the repository, so they are
 // rewritten only when --recordings names the folder holding them.
@@ -9,15 +9,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { argFlag, isMain, rejectUnknownFlags, runMain } from '../lib/proc.mjs';
-import {
-  REPLAY_TRACE_VERSION,
-  readReplayTrace,
-} from '../../experiments/native-architecture/src/drawing/replayTrace.ts';
+import { REPLAY_TRACE_VERSION, readReplayTrace } from '../../src/drawing/replayTrace.ts';
 
-export const REPLAY_TRACE_DIR = join(
-  import.meta.dirname,
-  '../../experiments/native-architecture/perf/replay'
-);
+export const REPLAY_TRACE_DIR = join(import.meta.dirname, '../../perf/replay');
 export const REPLAY_SEED = 2978;
 export const RECORDED_SESSIONS = {
   'finger-session-1': 'session1.json',

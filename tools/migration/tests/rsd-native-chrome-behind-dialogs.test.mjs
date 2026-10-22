@@ -9,13 +9,13 @@ import {
   expandControls,
 } from './rsd-native-selection-host.mjs';
 import { AI_BUTTON, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../src/parentCenter/parentGate.ts';
 import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { DrawingSessionProvider } from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
-import * as pickerModule from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { DrawingSessionProvider } from '../../../src/product/DrawingSession.tsx';
+import { Animated } from '../../../src/platform/animated.ts';
+import * as pickerModule from '../../../src/rsdDrawing/RsdColoringBookPicker.tsx';
 
 // Shipping's modal dialog leaves the drawing chrome behind it at full strength under the scrim's
 // dim and blur, and inert: no press reaches it until the dialog has gone. Each dialog here is

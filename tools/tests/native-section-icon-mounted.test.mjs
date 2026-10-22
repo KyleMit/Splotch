@@ -2,10 +2,10 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NATIVE_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
-import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import { NATIVE_ICONS } from '../../src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../src/rsdDrawing/splotchy.generated.ts';
+import { DRAWING_THEMES } from '../../src/drawing/theme.ts';
 
 vi.mock('react-native', () => ({ StatusBar: () => null, useColorScheme: () => 'light' }));
 vi.mock('react-native-svg', () => ({
@@ -14,7 +14,7 @@ vi.mock('react-native-svg', () => ({
 // Held unreached, so each test sees the registry load its chunks on demand; the warm-up test
 // below releases its own.
 const UNREACHED = vi.hoisted(() => () => ({ DEFERRED_ICON_WARMUP: new Promise(() => {}) }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/deferredIconWarmup.ts', UNREACHED);
+vi.mock('../../src/rsdDrawing/deferredIconWarmup.ts', UNREACHED);
 
 const SIZE_PX = 38;
 let container, root, components;
@@ -23,12 +23,9 @@ beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   // A fresh registry per test, so each one sees its chunks unloaded.
   vi.resetModules();
-  const { RsdSectionIcon } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/RsdSectionIcon.tsx');
-  const { EMPTY_ICON_MARKUP } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/RsdIcon.tsx');
-  const { DrawingAppearanceProvider } =
-    await import('../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx');
+  const { RsdSectionIcon } = await import('../../src/rsdDrawing/RsdSectionIcon.tsx');
+  const { EMPTY_ICON_MARKUP } = await import('../../src/rsdDrawing/RsdIcon.tsx');
+  const { DrawingAppearanceProvider } = await import('../../src/drawing/DrawingAppearance.tsx');
   components = { RsdSectionIcon, EMPTY_ICON_MARKUP, DrawingAppearanceProvider };
   container = document.createElement('div');
   document.body.append(container);
@@ -94,14 +91,11 @@ it('keeps a themed spot icon in its own palette for each theme', async () => {
 it('paints an icon whose chunk failed once a later icon loads it', async () => {
   const error = vi.spyOn(console, 'error').mockImplementation(() => {});
   let attempts = 0;
-  vi.doMock(
-    '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts',
-    async (importOriginal) => {
-      attempts += 1;
-      if (attempts === 1) throw new Error('Chunk offline');
-      return importOriginal();
-    }
-  );
+  vi.doMock('../../src/rsdDrawing/icons.deferred.generated.ts', async (importOriginal) => {
+    attempts += 1;
+    if (attempts === 1) throw new Error('Chunk offline');
+    return importOriginal();
+  });
   render('accessibility');
   await vi.waitFor(() => expect(error).toHaveBeenCalledOnce());
   await act(async () => {});
@@ -126,13 +120,12 @@ it('routes splotchy to the mascot artwork in both themes', async () => {
   await loaded(NATIVE_SPLOTCHY);
 });
 
-const DEFERRED = '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-const WARMUP = '../../experiments/native-architecture/src/rsdDrawing/deferredIconWarmup.ts';
+const DEFERRED = '../../src/rsdDrawing/icons.deferred.generated.ts';
+const WARMUP = '../../src/rsdDrawing/deferredIconWarmup.ts';
 
 // Each render's markup for one deferred icon, read straight from the registry.
 async function probe(seen) {
-  const { useNativeIconMarkup } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/iconRegistry.ts');
+  const { useNativeIconMarkup } = await import('../../src/rsdDrawing/iconRegistry.ts');
   return function Probe() {
     seen.push(useNativeIconMarkup('accessibility'));
     return null;
@@ -140,8 +133,7 @@ async function probe(seen) {
 }
 
 it('opens a lazy surface with its deferred icons already painted', async () => {
-  const { lazySurface } =
-    await import('../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts');
+  const { lazySurface } = await import('../../src/rsdDrawing/lazySurface.ts');
   const seen = [];
   const Probe = await probe(seen);
   const Sheet = lazySurface(async () => Probe);

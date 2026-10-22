@@ -3,20 +3,14 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  SvgUndoGhostLayer,
-  useSvgUndoGhostPlan,
-} from '../../experiments/native-architecture/src/drawing/SvgUndoGhost.tsx';
-import * as tileOwner from '../../experiments/native-architecture/src/drawing/useCrayonTileReadiness.tsx';
-import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
-import { CRAYON_BANDS } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
+import { SvgUndoGhostLayer, useSvgUndoGhostPlan } from '../../src/drawing/SvgUndoGhost.tsx';
+import * as tileOwner from '../../src/drawing/useCrayonTileReadiness.tsx';
+import { planInk } from '../../src/drawing/checkpoints.ts';
+import { CRAYON_BANDS } from '../../src/drawing/crayon.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
+import { emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
 
 // The SVG Undo ghost's crayon pigments: which tile resources each plan and the ghost layer own.
 const PLANE = { width: 400, height: 300 };

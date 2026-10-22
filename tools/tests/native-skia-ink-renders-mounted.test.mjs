@@ -7,12 +7,9 @@ import {
   createPaperInputView,
   paperInputPacket,
 } from './native-paper-fixtures.mjs';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import {
-  drawingPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { drawingPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
+import { strokeStyle } from '../../src/drawing/model.ts';
 
 const PLANE = { width: 400, height: 300 };
 
@@ -25,7 +22,7 @@ const native = vi.hoisted(() => ({
 }));
 
 // Each probe runs once per render of its component: the native boundary's own counters.
-vi.mock('../../experiments/native-architecture/src/drawing/perfProbe.ts', async (original) => ({
+vi.mock('../../src/drawing/perfProbe.ts', async (original) => ({
   ...(await original()),
   useSurfaceCommitProbe: () => {
     native.surface += 1;
@@ -37,8 +34,8 @@ vi.mock('../../experiments/native-architecture/src/drawing/perfProbe.ts', async 
 
 // The Tools tier resolves the surface's ink layer to the web renderer; this budget is about the
 // native one, so the surface gets SkiaInk under the recording Skia module.
-vi.mock('../../experiments/native-architecture/src/drawing/InkLayer.web.tsx', () =>
-  vi.importActual('../../experiments/native-architecture/src/drawing/InkLayer.tsx')
+vi.mock('../../src/drawing/InkLayer.web.tsx', () =>
+  vi.importActual('../../src/drawing/InkLayer.tsx')
 );
 vi.mock('@shopify/react-native-skia', async () => {
   const { recordingSkiaModule } = await import('./native-skia-recording-fixture.mjs');

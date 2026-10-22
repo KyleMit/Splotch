@@ -25,26 +25,17 @@ import { act, createElement } from 'react';
 
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { FLY_IN_TRANSFORM } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
-import {
-  REDUCE_MOTION_HELP,
-  REDUCE_MOTION_LABEL,
-} from '../../../experiments/native-architecture/src/settings/reduceMotion.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { FLY_IN_TRANSFORM } from '../../../src/rsdDrawing/modalGeometry.ts';
+import { REDUCE_MOTION_HELP, REDUCE_MOTION_LABEL } from '../../../src/settings/reduceMotion.ts';
 import {
   NATIVE_SETTINGS_SECTIONS,
   SECTION_SUBTITLES,
-} from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
-import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
-import {
-  RELEASE_NOTES,
-  WHATS_NEW_COPY,
-} from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
-import {
-  PENCIL_ERASER_HELP,
-  PENCIL_ERASER_LABEL,
-} from '../../../experiments/native-architecture/src/settings/pencilEraser.ts';
+} from '../../../src/settings/settingsSections.ts';
+import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../src/settings/settingsSessions.ts';
+import { RELEASE_NOTES, WHATS_NEW_COPY } from '../../../src/settings/whatsNew.ts';
+import { WHATS_NEW_STAMP } from '../../../src/settings/whatsNewStamp.ts';
+import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../../../src/settings/pencilEraser.ts';
 
 const WHATS_NEW = "What's New";
 // The Color Picker flies in through the shipping overshoot keyframe, or fades under Reduce Motion.

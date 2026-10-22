@@ -1,6 +1,6 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { useBundledPageOutlines } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
+import { useBundledPageOutlines } from '../../src/drawing/bundledOutlines.ts';
 
 const OUTLINE_LOAD_TIMEOUT_MS = 5000;
 const OUTLINE_POLL_MS = 5;

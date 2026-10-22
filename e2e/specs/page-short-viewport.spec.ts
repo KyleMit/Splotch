@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
-import { SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../src/lib/breakpoints.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDocument } from '../support/app.ts';
 

@@ -3,9 +3,9 @@ import { createHash } from 'node:crypto';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/useOfflineLibrary.ts';
-import { subscribeNetworkReturn } from '../../experiments/native-architecture/src/platform/networkReturn.web.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { useOfflineLibrary } from '../../src/offlineLibrary/useOfflineLibrary.ts';
+import { subscribeNetworkReturn } from '../../src/platform/networkReturn.web.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
 
 const host = vi.hoisted(() => ({ appState: null, networkReturn: null }));
 vi.mock('react-native', () => ({
@@ -17,7 +17,7 @@ vi.mock('react-native', () => ({
     },
   },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+vi.mock('../../src/platform/networkReturn.ts', () => ({
   subscribeNetworkReturn: (listener) => {
     host.networkReturn = listener;
     return () => (host.networkReturn = null);
@@ -35,7 +35,7 @@ const library = vi.hoisted(() => {
     retryStalled: vi.fn(),
   };
 });
-vi.mock('../../experiments/native-architecture/src/offlineLibrary/runtime.ts', () => ({
+vi.mock('../../src/offlineLibrary/runtime.ts', () => ({
   offlineLibrary: library,
 }));
 

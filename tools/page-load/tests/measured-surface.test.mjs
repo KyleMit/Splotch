@@ -17,11 +17,9 @@ const SOURCE_FILE = /\.[cm]?[jt]sx?$/;
 // The extensions Metro tries, in its order: it checks X.web.<ext>, then X.<ext>, for one extension
 // before it moves to the next, so `X.ts` wins over `X.web.tsx`. Read from the config the export is
 // built with, not copied.
-const metroSourceExtensions = createRequire(
-  join(ROOT, 'experiments/native-architecture/package.json')
-)('./metro.config.cjs').resolver.sourceExts.filter((extension) =>
-  SOURCE_FILE.test(`.${extension}`)
-);
+const metroSourceExtensions = createRequire(join(ROOT, 'package.json'))(
+  './metro.config.cjs'
+).resolver.sourceExts.filter((extension) => SOURCE_FILE.test(`.${extension}`));
 
 const importSuffixes = (extensions) => [
   '',
@@ -56,7 +54,7 @@ const covers = (surface, file) =>
   surface.some((entry) => file === entry || file.startsWith(`${entry}/`));
 
 describe('the surface a baseline names', () => {
-  const nativeApp = 'experiments/native-architecture';
+  const nativeApp = '.';
   const knip = JSON.parse(readFileSync(join(ROOT, 'knip.json'), 'utf8'));
   const { main } = JSON.parse(readFileSync(join(ROOT, nativeApp, 'package.json'), 'utf8'));
   const exportEntries = [
@@ -64,7 +62,9 @@ describe('the surface a baseline names', () => {
     `${nativeApp}/metro.config.cjs`,
     `${nativeApp}/babel.config.cjs`,
     `${nativeApp}/${main}`,
-    ...knip.workspaces[nativeApp].entry.map((entry) => `${nativeApp}/${entry}`),
+    ...knip.workspaces[nativeApp].entry
+      .filter((entry) => entry.startsWith('src/') && !entry.includes('*'))
+      .map((entry) => posix.join(nativeApp, entry)),
   ];
   const sourceOf = (file) => readFileSync(join(ROOT, file), 'utf8');
   const imported = [
@@ -81,7 +81,7 @@ describe('the surface a baseline names', () => {
   });
 
   it('misses an imported file once its folder leaves the surface', () => {
-    const withoutWebLib = MEASURED_SURFACE.filter((entry) => entry !== 'web/src/lib');
+    const withoutWebLib = MEASURED_SURFACE.filter((entry) => entry !== 'src');
 
     expect(imported.filter((file) => !covers(withoutWebLib, file))).not.toEqual([]);
   });
@@ -91,6 +91,7 @@ describe('the surface a baseline names', () => {
 
     expect(measured).toContain('netlify.toml');
     expect(measured).toContain('pnpm-lock.yaml');
+    expect(measured).toContain('tsconfig.json');
     expect(measured.some((file) => SPEC_FILE.test(file))).toBe(false);
     expect(measured.every((file) => covers(MEASURED_SURFACE, file))).toBe(true);
   });

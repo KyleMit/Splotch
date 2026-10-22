@@ -9,20 +9,17 @@ import {
 } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { describe, expect, it } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 
 import {
   DRAWING_TOOLS,
   TOOL_DRAWER_COPY,
   TWO_COLUMN_CHIP_WIDTH_PX,
-} from '../../../experiments/native-architecture/src/settings/toolDrawerSection.ts';
-import {
-  CAMERA_BUTTON_HELP,
-  CAMERA_BUTTON_LABEL,
-} from '../../../experiments/native-architecture/src/settings/savingSection.ts';
+} from '../../../src/settings/toolDrawerSection.ts';
+import { CAMERA_BUTTON_HELP, CAMERA_BUTTON_LABEL } from '../../../src/settings/savingSection.ts';
 
-import { SECTION_SUBTITLES } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
-import { PENCIL_ERASER_LABEL } from '../../../experiments/native-architecture/src/settings/pencilEraser.ts';
+import { SECTION_SUBTITLES } from '../../../src/settings/settingsSections.ts';
+import { PENCIL_ERASER_LABEL } from '../../../src/settings/pencilEraser.ts';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 

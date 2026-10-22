@@ -7,10 +7,8 @@ const root = join(import.meta.dirname, '../..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const shippingClip = readFileSync(join(root, 'web/static/sounds/clear-page-turn.mp3'));
-const nativeClip = readFileSync(
-  join(root, 'experiments/native-architecture/src/audio/clear-page-turn.mp3')
-);
+const shippingClip = readFileSync(join(root, 'assets/static/sounds/clear-page-turn.mp3'));
+const nativeClip = readFileSync(join(root, 'src/audio/clear-page-turn.mp3'));
 
 describe('native drag-to-clear projections of the shipping gesture', () => {
   it('bundles the shipping page-turn clip byte for byte', () => {
@@ -21,9 +19,9 @@ describe('native drag-to-clear projections of the shipping gesture', () => {
   });
 });
 const nativeSource = {
-  face: read('experiments/native-architecture/src/rsdDrawing/RsdClearFace.tsx'),
-  ring: read('experiments/native-architecture/src/rsdDrawing/RsdClearRing.tsx'),
-  control: read('experiments/native-architecture/src/rsdDrawing/RsdClearControl.tsx'),
+  face: read('src/rsdDrawing/RsdClearFace.tsx'),
+  ring: read('src/rsdDrawing/RsdClearRing.tsx'),
+  control: read('src/rsdDrawing/RsdClearControl.tsx'),
 };
 
 describe('native Clear Button accessible name', () => {
@@ -33,9 +31,9 @@ describe('native Clear Button accessible name', () => {
 });
 
 it("keeps Clear's ring reveal and emphasis on their shipping curves", () => {
-  const native = read('experiments/native-architecture/src/clear/useClearGesture.ts');
+  const native = read('src/clear/useClearGesture.ts');
   const [, curve] = /export const CSS_EASE: Bezier = \[([^\]]+)\]/.exec(
-    read('experiments/native-architecture/src/rsdDrawing/polaroidFlight.ts')
+    read('src/rsdDrawing/polaroidFlight.ts')
   );
   expect(native).toContain(`const CSS_EASE = Easing.bezier(${curve.trim()});`);
   expect(native).toContain('animateValue(values.ring, 1, EMPHASIS_MS, reduced.current, CSS_EASE);');

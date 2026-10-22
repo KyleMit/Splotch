@@ -1,11 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { expect, it } from 'vitest';
-import {
-  originalImageGrid,
-  resultImageGrid,
-} from '../../experiments/native-architecture/src/ai/imageAdmission.ts';
-import { MAX_AI_IMAGE_METADATA_BYTES } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
+import { originalImageGrid, resultImageGrid } from '../../src/ai/imageAdmission.ts';
+import { MAX_AI_IMAGE_METADATA_BYTES } from '../../src/ai/imageBounds.ts';
 import { pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
 
 // The drawing a browser captures with canvas.toDataURL() is the AI original, so the AI PNG

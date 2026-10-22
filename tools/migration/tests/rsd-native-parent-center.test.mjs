@@ -13,23 +13,23 @@ import {
   policyOption,
 } from './rsd-native-parent-center-fixture.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
+import { NativeSoundSettingsDialog } from '../../../src/rsdDrawing/RsdSettingsDialog.tsx';
 import {
   PARENT_GATE_ERROR_MESSAGE,
   PARENT_GATE_KEYPAD_KEYS,
   PARENT_GATE_SHAKE_MS,
-} from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
-import { PARENT_FEATURES } from '../../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
+} from '../../../src/parentCenter/parentGate.ts';
+import { PARENT_FEATURES } from '../../../src/parentCenter/parentPolicy.ts';
 import {
   PARENT_CENTER_COPY,
   PARENT_HELP,
   PARENT_LABELS,
   PARENT_MODE_LABELS,
-} from '../../../experiments/native-architecture/src/parentCenter/parentCenterCopy.ts';
-import { PARENT_GATE_COPY } from '../../../experiments/native-architecture/src/parentCenter/parentGateCopy.ts';
-import { GATE_LOCKOUT_BASE_MS } from '../../../experiments/native-architecture/src/feedback/gateLockout.ts';
-import { PARENT_GATE_KEY_LABELS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateKeypad.tsx';
+} from '../../../src/parentCenter/parentCenterCopy.ts';
+import { PARENT_GATE_COPY } from '../../../src/parentCenter/parentGateCopy.ts';
+import { GATE_LOCKOUT_BASE_MS } from '../../../src/feedback/gateLockout.ts';
+import { PARENT_GATE_KEY_LABELS } from '../../../src/rsdDrawing/RsdParentGateKeypad.tsx';
 import {
   GATE_MODAL,
   finishGateHold,
@@ -39,13 +39,13 @@ import {
   gateProblem,
   tapGateKeys,
 } from './rsd-parent-gate-keypad.mjs';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
-import { paletteHex } from '../../../web/src/lib/palette.ts';
-import { colorFamilyShade } from '../../../web/src/lib/hexPickerLayout.ts';
+import { WHATS_NEW_STAMP } from '../../../src/settings/whatsNewStamp.ts';
+import { paletteHex } from '../../../src/lib/palette.ts';
+import { colorFamilyShade } from '../../../src/lib/hexPickerLayout.ts';
 
 // The store whose rules bound the policies, switched per test.
 const storePlatform = vi.hoisted(() => ({ os: 'ios' }));
-vi.mock('../../../experiments/native-architecture/src/platform/parentPlatform.ts', () => ({
+vi.mock('../../../src/platform/parentPlatform.ts', () => ({
   get PARENT_PLATFORM() {
     return storePlatform.os;
   },

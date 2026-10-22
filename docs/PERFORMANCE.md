@@ -2,7 +2,7 @@
 
 Splotch's active performance surface is the React Native app and its web export (ADR-0182).
 `docs/PROFILING.md` owns the measurement workflow; the `profiling` skill routes to the in-app probe
-and replay instructions. The app remains in `experiments/native-architecture/` until root promotion.
+and replay instructions. The app remains in `` until root promotion.
 
 ## Active measurements and gates
 
@@ -23,16 +23,15 @@ The per-page registry owns its own caps; consuming headroom calls for a measured
 automatic increase. ADR-0179 and ADR-0180 record the cuts and why first paint and controls have
 separate waits.
 
-The probe's native implementation is
-`experiments/native-architecture/src/drawing/perfProbe.native.ts`; the plain module is a no-op for
-web and type checking. It is opt-in on a Release build. Build and launch details, field definitions
-and replay instructions live in `experiments/native-architecture/DEVELOPMENT.md`. A browser frame
-trace, a replay's delivery lateness and the time a picture was submitted answer different questions;
-none alone proves when ink reached the glass.
+The probe's native implementation is `src/drawing/perfProbe.native.ts`; the plain module is a no-op
+for web and type checking. It is opt-in on a Release build. Build and launch details, field
+definitions and replay instructions live in `DEVELOPMENT.md`. A browser frame trace, a replay's
+delivery lateness and the time a picture was submitted answer different questions; none alone proves
+when ink reached the glass.
 
 ## Active product mechanisms
 
-Paths in this section are relative to `experiments/native-architecture/src/`.
+Paths in this section are relative to `src/`.
 
 * **Keep stroke updates local.** The drawing subtree owns live contact updates. Chrome props do not
   change at contact start, move or lift merely to disable unrelated controls; commands enforce their

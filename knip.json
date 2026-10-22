@@ -3,8 +3,7 @@
   "workspaces": {
     ".": {
       "entry": [
-        "web/src/**/*.test.ts",
-        "web/*.test.ts",
+        "src/**/*.test.ts",
         "e2e/playwright.config.ts",
         "e2e/specs/**/*.spec.ts",
         "e2e/server/serve.ts",
@@ -25,34 +24,41 @@
         "tools/vectorize/pilot/*.mjs",
         "tools/asset-gen/tests/*.test.mjs",
         "e2e/playwright-flaky-reporter.ts",
-        "web/vitest.config.ts"
-      ],
-      "project": [
-        "web/src/**/*.ts",
-        "web/*.ts",
-        "e2e/**/*.ts",
-        "netlify/**/*.ts",
-        "tools/*.mjs",
-        "tools/{adrs,api-smoke,audit-burndown,centerline-tracing,ci-mirror,code-map,device-parity,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,migration,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests}/**/*.mjs",
-        "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
-        "tools/vectorize/**/*.mjs"
-      ],
-      "ignoreDependencies": [".*"],
-      "paths": {
-        "$lib/*": ["web/src/lib/*"]
-      }
-    },
-    "experiments/native-architecture": {
-      "entry": [
+        "vitest.config.ts",
+        "src/index.ts",
         "src/prerenderFirstFrame.tsx",
         "src/pageDocument/pageApp.ts",
         "src/pageDocument/prerender.tsx",
         "src/pageDocument/design/designApp.ts",
         "src/pageDocument/design/prerender.tsx",
         "src/pageDocument/admin/adminApp.tsx",
-        "src/pageDocument/admin/prerender.tsx"
+        "src/pageDocument/admin/prerender.tsx",
+        "src/lib/**/*.test.ts",
+        "netlify/server/**/*.test.ts",
+        "tools/migration/lib/safeAreaMatrix/**/*.test.ts",
+        "tools/marketing-assets/lib/storeFrames/**/*.test.ts",
+        "tools/marketing-assets/lib/page/**/*.test.ts",
+        "tools/icons/lib/**/*.test.ts",
+        "netlify/securityPolicy.test.ts",
+        "tools/release/lib/buildVersion.test.ts",
+        "tools/icons/tests/*.test.ts"
       ],
-      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.{cjs,mjs}"],
+      "project": [
+        "e2e/**/*.ts",
+        "netlify/**/*.ts",
+        "tools/*.mjs",
+        "tools/{adrs,api-smoke,audit-burndown,centerline-tracing,ci-mirror,code-map,device-parity,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,migration,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests}/**/*.mjs",
+        "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
+        "tools/vectorize/**/*.mjs",
+        "src/**/*.{ts,tsx}",
+        "*.{ts,cjs,mjs}",
+        "tools/migration/*.{cjs,mjs}",
+        "tools/{icons,lib,marketing-assets,migration,release,store-drawings}/**/*.ts"
+      ],
+      "ignoreDependencies": [".*"],
+      "paths": {
+        "$lib/*": ["src/lib/*"]
+      },
       "ignore": ["src/feedback/report.ts", "src/feedback/deviceReport.ts"]
     }
   }

@@ -28,7 +28,7 @@
 // proof sheet in BOTH themes — see tools/asset-gen/docs/pipeline.md.
 //
 //   npm run gen:coloring-outlines:normalize -- nature/ant-tall nature/ant-wide
-//   ... -- nature/ant-tall --apply             copy the passing candidate over web/static
+//   ... -- nature/ant-tall --apply             copy the passing candidate over assets/static
 //   ... -- nature/ant-tall --max-attempts 6    retry harder
 //   ... -- nature/ant-tall --notes "keep the picnic blanket check pattern as-is"
 //   ... -- nature/ant-tall --dry-run             print resolved levers per page (no API)

@@ -14,23 +14,17 @@ import {
   actionPanelLayout,
   actionButtonScaleCeiling,
   EDGE_INSET_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import {
-  PALETTE_FLOWS,
-  paletteSlots,
-} from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import {
-  CLEAR_DOCK_OVERHANG_PX,
-  clearDock,
-} from '../../../experiments/native-architecture/src/clear/clearDock.ts';
-import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
+} from '../../../src/rsdDrawing/edgeLayout.ts';
+import { PALETTE_FLOWS, paletteSlots } from '../../../src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { CLEAR_DOCK_OVERHANG_PX, clearDock } from '../../../src/clear/clearDock.ts';
+import { fittedPaper } from '../../../src/drawing/paperGeometry.ts';
+import { UNADOPTED_PAPER } from '../../../src/drawing/paperSpace.ts';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   DEFAULT_BUTTON_SCALE,
-} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
+} from '../../../src/settings/buttonSize.ts';
 
 // Button Size goes through the real settings owner, as the Settings stepper sends it.
 async function chooseButtonScale(scale) {

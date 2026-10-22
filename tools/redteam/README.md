@@ -33,7 +33,7 @@ it `safe-…`/`block-…`, drop it in `source/`, re-encrypt.
 
 ## One-time setup
 
-1. Set `REDTEAM_FIXTURE_KEY` and `OPENAI_API_KEY` in `web/.env` (see `web/.env.example`), or export
+1. Set `REDTEAM_FIXTURE_KEY` and `OPENAI_API_KEY` in `web/.env` (see `.env.example`), or export
    them; an exported value wins. Both entry points read that file from the repo, whatever directory
    you run them from, and read no other `.env`. Share `REDTEAM_FIXTURE_KEY` with teammates
    **out-of-band** — it's the key to the committed `.enc` corpus.

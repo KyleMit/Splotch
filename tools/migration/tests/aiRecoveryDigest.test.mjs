@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { recoveryDigest } from '../../../experiments/native-architecture/src/ai/recoveryDigest.ts';
-import { recoveryRequestId } from '../../../experiments/native-architecture/src/ai/recoveryRequest.ts';
+import { recoveryDigest } from '../../../src/ai/recoveryDigest.ts';
+import { recoveryRequestId } from '../../../src/ai/recoveryRequest.ts';
 
 it.each([0, 1, 55, 56, 63, 64, 65, 127, 128, 129, 65537])(
   'hashes copied native bytes at the SHA256 padding boundary %i',

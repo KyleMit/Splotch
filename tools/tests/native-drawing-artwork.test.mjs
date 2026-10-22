@@ -1,7 +1,4 @@
-import {
-  paperProjection,
-  drawingPaper,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, drawingPaper } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import {
@@ -21,20 +18,15 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
+import { PageOutline } from '../../src/drawing/PageOutline.tsx';
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
-import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import {
-  PAPER_HEIGHT,
-  PAPER_WIDTH,
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { COLORING_PAGES } from '../../experiments/native-architecture/src/drawing/pages.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { DRAWING_THEME } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import { DrawingSurface } from '../../src/drawing/DrawingSurface.tsx';
+import { DrawingAppearanceProvider } from '../../src/drawing/DrawingAppearance.tsx';
+import { PAPER_HEIGHT, PAPER_WIDTH, emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
+import { COLORING_PAGES } from '../../src/drawing/pages.ts';
+import { paletteHex } from '../../src/drawing/palette.ts';
+import { DRAWING_THEME } from '../../src/drawing/theme.ts';
 
 const responder = vi.hoisted(() => ({ current: null, scheme: 'light', busy: true, errors: [] }));
 
@@ -77,17 +69,14 @@ vi.mock('react-native', () => {
   };
 });
 
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+vi.mock('../../src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const { View } = await import('react-native');
   return { Animated: animatedPort(View, View), Easing: easingPort };
 });
 
-vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
-  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
-);
+vi.mock('../../src/drawing/CrayonGlaze.tsx', () => import('../../src/drawing/CrayonGlaze.web.tsx'));
 vi.mock('react-native-svg', () => ({
   default: forwardRef(({ children, viewBox }, ref) => {
     const svg = useRef(null);

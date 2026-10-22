@@ -15,16 +15,16 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, extname, join } from 'node:path';
-import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../../web/src/lib/breakpoints.ts';
-import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
-import { DRAWING_PATHS } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
+import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../../src/lib/breakpoints.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../src/platform/bootTheme.ts';
+import { DRAWING_PATHS } from '../../src/platform/appSurfacePolicy.ts';
 import {
   FIRST_FRAME_VIEWPORT_ATTRIBUTE,
   formatFirstFrameViewport,
-} from '../../experiments/native-architecture/src/platform/firstFrameViewport.ts';
-import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
-import { BRUSH_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/brushPreferences.web.ts';
-import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
+} from '../../src/platform/firstFrameViewport.ts';
+import { SOUND_SETTINGS_KEY } from '../../src/platform/soundSettings.web.ts';
+import { BRUSH_SETTINGS_KEY } from '../../src/platform/brushPreferences.web.ts';
+import { STORAGE_KEYS } from '../../src/lib/storageKeys.ts';
 import {
   CONTROLS_LIVE_ATTRIBUTE,
   DRAWING_LIVE_ATTRIBUTE,
@@ -32,12 +32,12 @@ import {
   EARLY_POINTERS_GLOBAL,
   PAPER_INPUT_TEST_ID,
   PAPER_TEXTURE_PROPERTY,
-} from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
-import { PALETTE_COLORS } from '../../experiments/native-architecture/src/drawing/palette.ts';
+} from '../../src/platform/firstFrameContract.ts';
+import { PALETTE_COLORS } from '../../src/drawing/palette.ts';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 const require = createRequire(import.meta.url);
-const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
+const NATIVE_APP_DIR = join(ROOT, '.');
 export const FIRST_FRAME_ENTRY = 'src/prerenderFirstFrame.tsx';
 const EMPTY_ROOT = '<div id="root"></div>';
 const FIRST_FRAME_TEMPLATE_PREFIX = 'first-frame-';

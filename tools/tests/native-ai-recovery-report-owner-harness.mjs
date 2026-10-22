@@ -1,9 +1,9 @@
-import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
+import { JOB_TTL_MS } from '../../src/ai/contract.ts';
 import { vi } from 'vitest';
-import { createAiReportOwner } from '../../experiments/native-architecture/src/ai/reportOwner.ts';
-import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
-import { recoveryRequestId } from '../../experiments/native-architecture/src/ai/recoveryRequest.ts';
-import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
+import { createAiReportOwner } from '../../src/ai/reportOwner.ts';
+import { withCredentialLeases } from '../../src/ai/credentialLease.ts';
+import { recoveryRequestId } from '../../src/ai/recoveryRequest.ts';
+import { recoveryDigest } from '../../src/ai/recoveryDigest.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 export const CREATED = 1700000000000;
 export const EXPIRES = CREATED + JOB_TTL_MS;

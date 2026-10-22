@@ -3,8 +3,8 @@ import {
   exitGuideStepParts,
   installGuideStepParts,
   lockGuideStepParts,
-} from '../../experiments/native-architecture/src/install/installGuideCopy.ts';
-import { spokenInstallText } from '../../experiments/native-architecture/src/install/installCopy.ts';
+} from '../../src/install/installGuideCopy.ts';
+import { spokenInstallText } from '../../src/install/installCopy.ts';
 import referenceSteps from './native-install-steps.fixture.json';
 const collapse = (text) =>
   text

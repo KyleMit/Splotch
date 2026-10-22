@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { ACCEPT_RADIUS_FACTOR } from '../../web/src/lib/actions/dragToClearGeometry.ts';
+import { ACCEPT_RADIUS_FACTOR } from '../../src/lib/actions/dragToClearGeometry.ts';
 import { expect, test } from '../fixtures.ts';
 import { expectPaperCleared, openDrawer } from '../support/group-a.ts';
 

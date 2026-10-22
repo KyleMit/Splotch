@@ -2,21 +2,18 @@ import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html } from 'react-strict-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
-import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { RsdStatusMessage } from '../../../experiments/native-architecture/src/rsdDrawing/RsdStatusMessage.tsx';
-import { RsdVisuallyHidden } from '../../../experiments/native-architecture/src/rsdDrawing/RsdVisuallyHidden.tsx';
-import { RsdDisclosure } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDisclosure.tsx';
-import { RsdExternalMark } from '../../../experiments/native-architecture/src/rsdDrawing/RsdExternalMark.tsx';
-import { RsdConfirmCard } from '../../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
-import { RsdStepNumber } from '../../../experiments/native-architecture/src/rsdDrawing/RsdStepNumber.tsx';
-import { RsdScrollCue } from '../../../experiments/native-architecture/src/rsdDrawing/RsdScrollCue.tsx';
-import {
-  RsdTextArea,
-  RsdTextField,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdTextField.tsx';
+import { brand, scale, themes } from '../../../src/lib/design/tokens.ts';
+import { darkTheme } from '../../../src/rsdDrawing/tokens.css.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { NATIVE_DEFERRED_ICONS } from '../../../src/rsdDrawing/icons.deferred.generated.ts';
+import { RsdStatusMessage } from '../../../src/rsdDrawing/RsdStatusMessage.tsx';
+import { RsdVisuallyHidden } from '../../../src/rsdDrawing/RsdVisuallyHidden.tsx';
+import { RsdDisclosure } from '../../../src/rsdDrawing/RsdDisclosure.tsx';
+import { RsdExternalMark } from '../../../src/rsdDrawing/RsdExternalMark.tsx';
+import { RsdConfirmCard } from '../../../src/rsdDrawing/RsdConfirmCard.tsx';
+import { RsdStepNumber } from '../../../src/rsdDrawing/RsdStepNumber.tsx';
+import { RsdScrollCue } from '../../../src/rsdDrawing/RsdScrollCue.tsx';
+import { RsdTextArea, RsdTextField } from '../../../src/rsdDrawing/RsdTextField.tsx';
 
 // The released RSD native renderer over a React Native stand-in whose host views are DOM nodes
 // carrying the accessibility props and resolved style React Native would receive. Each view-like

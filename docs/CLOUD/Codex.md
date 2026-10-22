@@ -75,7 +75,7 @@ Choose credentials by workflow:
 | ElevenLabs sound generation                 | `ELEVENLABS_API_KEY`                                                                                                                                                  |
 | Claude rival reviews                        | `CLAUDE_CODE_OAUTH_TOKEN`; setup installs the pinned CLI and trusted cloud wrappers                                                                                   |
 
-`web/.env.example` documents the loading rules for each credential. A local `web/.env` is not
+`.env.example` documents the loading rules for each credential. A local `web/.env` is not
 automatically copied to a cloud machine. API credentials also need access to their provider's
 network destinations. HMAC signing keys, access-code lists, and the red-team decryption key need
 their actual values available to the application or tool; network-proxy placeholders cannot supply

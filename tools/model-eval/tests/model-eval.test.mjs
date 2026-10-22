@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { IMAGE_SIZES, imageSizeFor } from '../../../web/src/lib/server/ai/imageSize.ts';
+import { IMAGE_SIZES, imageSizeFor } from '../../../netlify/server/ai/imageSize.ts';
 import {
   apiKeysFor,
   assertProductionConfig,
@@ -395,16 +395,16 @@ describe('apiKeysFor', () => {
     (value) => {
       expect(() => apiKeysFor([gemini, openai], { ...bothKeys, OPENAI_API_KEY: value })).toThrow(
         new Error(
-          'Missing OPENAI_API_KEY — export it, or invoke this entry point with node --env-file=web/.env from the repo root'
+          'Missing OPENAI_API_KEY — export it, or invoke this entry point with node --env-file=.env from the repo root'
         )
       );
     }
   );
 
-  // The hint sends an operator to web/.env, so every key the harness asks for must be one the
+  // The hint sends an operator to .env, so every key the harness asks for must be one the
   // file's template declares.
-  it('finds every provider key among the variables web/.env.example declares', () => {
-    const example = readFileSync(join(repoRoot, 'web', '.env.example'), 'utf8');
+  it('finds every provider key among the variables .env.example declares', () => {
+    const example = readFileSync(join(repoRoot, '.env.example'), 'utf8');
     const declared = Object.fromEntries(
       [...example.matchAll(/^(\w+)=/gm)].map(([, name]) => [name, 'declared'])
     );

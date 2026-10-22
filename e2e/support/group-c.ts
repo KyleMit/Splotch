@@ -2,7 +2,7 @@
 // install banner, browser history and the information pages. A helper only one spec uses stays in
 // that spec.
 import { expect, type Locator, type Page } from '@playwright/test';
-import { BROWSER_BACK_STATE_KEY } from '../../experiments/native-architecture/src/product/browserBack.ts';
+import { BROWSER_BACK_STATE_KEY } from '../../src/product/browserBack.ts';
 
 // The user agents the app's device detection reads (install/installPolicy.ts). A spec picks one
 // with `test.use`; the project's own desktop agent covers the third case.

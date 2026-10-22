@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, vi } from 'vitest';
-import { createSectionsSeen } from '../../../experiments/native-architecture/src/settings/sectionsSeen.ts';
-import { NATIVE_SETTINGS_SECTIONS } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
-import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
+import { createSectionsSeen } from '../../../src/settings/sectionsSeen.ts';
+import { NATIVE_SETTINGS_SECTIONS } from '../../../src/settings/settingsSections.ts';
+import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../src/settings/settingsSessions.ts';
 
 // The launch count the Settings hub's activity dots wait on, read live so a case can set its own;
 // unset, the dots are due.
@@ -9,7 +9,7 @@ export const hubSessions = { count: null };
 afterEach(() => {
   hubSessions.count = null;
 });
-vi.mock('../../../experiments/native-architecture/src/platform/settingsSessions.ts', () => {
+vi.mock('../../../src/platform/settingsSessions.ts', () => {
   const count = () => hubSessions.count ?? SETTINGS_ACTIVITY_DOTS_START_SESSION;
   return {
     settingsSessions: { current: count, subscribe: () => () => {}, load: async () => count() },
@@ -28,7 +28,7 @@ beforeEach(() => {
     write: sectionVisits.write,
   });
 });
-vi.mock('../../../experiments/native-architecture/src/platform/sectionsSeen.ts', () => ({
+vi.mock('../../../src/platform/sectionsSeen.ts', () => ({
   get sectionsSeen() {
     return sectionVisits.owner;
   },

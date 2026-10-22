@@ -1,8 +1,5 @@
 import { LEGACY_PAPER } from './native-paper-fixtures.mjs';
-import {
-  adoptPaper,
-  paperProjection,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { adoptPaper, paperProjection } from '../../src/drawing/paperSpace.ts';
 import { describe, expect, it } from 'vitest';
 import {
   checkpointMatches,
@@ -10,7 +7,7 @@ import {
   planInk,
   preparationMatches,
   preparationWitnessed,
-} from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
+} from '../../src/drawing/checkpoints.ts';
 
 function canonicalPlan(strokes, cached) {
   return planInk(strokes, cached, LEGACY_PAPER, paperProjection(LEGACY_PAPER));

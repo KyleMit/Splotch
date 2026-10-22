@@ -10,7 +10,7 @@ export const STORE_APP_ID = 'art.splotch.app';
 // Every other build, Release included, so a local install never replaces the store copy.
 export const DEV_APP_ID = `${STORE_APP_ID}.dev`;
 
-export const NATIVE_APP_DIR = join('experiments', 'native-architecture');
+export const NATIVE_APP_DIR = join('.');
 export const ANDROID_PROJECT_DIR = join(NATIVE_APP_DIR, 'android');
 export const IOS_PROJECT_DIR = join(NATIVE_APP_DIR, 'ios');
 export const IOS_PROJECT_NAME = 'Splotch';

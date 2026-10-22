@@ -2,13 +2,13 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { URL as NodeURL } from 'node:url';
-import { createAiReportOwner } from '../../experiments/native-architecture/src/ai/reportOwner.ts';
+import { createAiReportOwner } from '../../src/ai/reportOwner.ts';
 import {
   narrowReportReply,
   reportFailureMessage,
   REPORT_TIMEOUT_MESSAGE,
-} from '../../web/src/lib/reportReply.ts';
-import { NETWORK_ERROR_MESSAGE } from '../../web/src/lib/latestRequest.ts';
+} from '../../src/lib/reportReply.ts';
+import { NETWORK_ERROR_MESSAGE } from '../../src/lib/latestRequest.ts';
 import {
   reportMultipart,
   MAX_AI_REPORT_BYTES,
@@ -17,7 +17,7 @@ import {
   AI_REPORT_REVIEW_HOURS,
   AI_REPORT_RETENTION_DAYS,
   AI_REPORT_TIMEOUT_MS,
-} from '../../experiments/native-architecture/src/ai/reportContract.ts';
+} from '../../src/ai/reportContract.ts';
 
 const URI = 'file:///owned/session-result.png';
 const INPUT = Uint8Array.from([137, 80, 78, 71]);
@@ -273,7 +273,7 @@ it('releases a report deadline into the shipping timeout message and retry', asy
 
 it('pins multipart fields and private handling promises to the hosted API contract', async () => {
   const source = await readFile(
-    new NodeURL('../../web/src/lib/imageReport.ts', import.meta.url),
+    new NodeURL('../../src/lib/imageReport.ts', import.meta.url),
     'utf8'
   );
   const block = source.match(/IMAGE_REPORT_FORM_FIELDS = \{([\s\S]*?)\}/)[1];

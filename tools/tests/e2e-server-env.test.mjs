@@ -12,9 +12,8 @@ import { describe, expect, it } from 'vitest';
 // failure-path spec into six real issues in the tracker (#646), and it is also
 // how a spec can pass locally on a credential CI doesn't have.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const appDir = join(repoRoot, 'web', 'src');
-join(repoRoot, 'tools', 'api-smoke', 'run-local-contract.mjs');
-// The private env is web/src/lib/server/privateEnv.ts's `env`, imported by a
+const appDir = join(repoRoot, 'netlify', 'server');
+// The private env is netlify/server/privateEnv.ts's `env`, imported by a
 // relative path so the /api Netlify Functions can bundle its readers.
 const PRIVATE_ENV_IMPORT = /from '(?:\.\.?\/)+(?:server\/)?privateEnv'/;
 // Only the bound `env` identifier. `process.env.X` and `import.meta.env.X` are

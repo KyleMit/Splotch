@@ -2,26 +2,26 @@ import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html } from 'react-strict-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { brand, scale, themes } from '../../../src/lib/design/tokens.ts';
 import {
   ROW,
   ROW_STRONG_TRACKING,
   ROW_THUMB_FACE,
   ROW_TRACKING,
 } from './rsd-settings-row-contract.mjs';
-import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import { RsdToggleSwitch } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToggleSwitch.tsx';
-import { RsdToggleRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToggleRow.tsx';
+import { darkTheme } from '../../../src/rsdDrawing/tokens.css.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../../src/drawing/useReduceMotion.ts';
+import { RsdToggleSwitch } from '../../../src/rsdDrawing/RsdToggleSwitch.tsx';
+import { RsdToggleRow } from '../../../src/rsdDrawing/RsdToggleRow.tsx';
 import {
   RsdSettingCard,
   RsdSettingGroup,
   RsdSettingSectionBody,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingCard.tsx';
-import { RsdRuleLabel } from '../../../experiments/native-architecture/src/rsdDrawing/RsdRuleLabel.tsx';
-import { RsdHubRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdHubRow.tsx';
-import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.tsx';
+} from '../../../src/rsdDrawing/RsdSettingCard.tsx';
+import { RsdRuleLabel } from '../../../src/rsdDrawing/RsdRuleLabel.tsx';
+import { RsdHubRow } from '../../../src/rsdDrawing/RsdHubRow.tsx';
+import { RsdSidebarRow } from '../../../src/rsdDrawing/RsdSidebarRow.tsx';
 
 // The released RSD native renderer over a React Native stand-in that paints each host as a DOM
 // node carrying its resolved style and accessibility props, and a Reanimated stand-in that

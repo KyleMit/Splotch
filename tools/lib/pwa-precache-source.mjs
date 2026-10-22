@@ -1,5 +1,5 @@
 // The prerendered home page, precached under the build-unique URL
-// web/src/lib/pwa/appShellRoute.ts builds; the test drift-guards the two.
+// src/lib/pwa/appShellRoute.ts builds; the test drift-guards the two.
 export const APP_SHELL_PRECACHE_URL_PATTERN = /^\/\?app-shell-build=[^&]+$/;
 
 // The navigation route's fallback plugin compiles the shell URL into its callbacks

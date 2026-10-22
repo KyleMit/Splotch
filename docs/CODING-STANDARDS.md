@@ -78,7 +78,7 @@ with two homes eventually has two answers.
 * PR #2394: the orientation-lock rule was computed in three places, one with its own vocabulary;
   `orientationChoice()` owns it.
 * PR #2412, a real bug: "device info only with a bug report" lived in three client sites and the
-  server never applied it; `attachesDevice()` in `web/src/lib/report.ts` owns it on both sides.
+  server never applied it; `attachesDevice()` in `src/lib/report.ts` owns it on both sides.
 * PR #2400: the extra-books count carried a `- 1` at each site; the store exposes
   `downloadedBookCount`/`downloadableBookCount`.
 * PR #2415, a real bug: Settings told iPad users the Share button was "at the bottom";
@@ -89,9 +89,9 @@ with two homes eventually has two answers.
 * PR #2507: the parental gate's answer was derived as `x * y` in the store's check, in its overfill
   rule, and in the card's dab count, which is how a grown-up knows when to stop typing. The former
   Svelte store's `gateAnswer()` and its parental-problem SSR test unified and checked the answer.
-  Both retired with that UI. RN challenge ownership lives in
-  `experiments/native-architecture/src/parentCenter/parentGate.ts`; its current timing/destination
-  tests are `tools/tests/native-parent-gate-card.test.mjs`, not a replacement SSR dab-count test.
+  Both retired with that UI. RN challenge ownership lives in `src/parentCenter/parentGate.ts`; its
+  current timing/destination tests are `tools/tests/native-parent-gate-card.test.mjs`, not a
+  replacement SSR dab-count test.
 
 The 2026-09-29 evening campaign found the same failure in tooling, where the copies had already
 disagreed:
@@ -147,8 +147,8 @@ appearance effect that wrote another store's `activeColor`, and PR #2422 had Set
 
 Code that runs after an `await` is also a writer, and by then a newer call may own the value. Before
 it writes, it checks that its own call is still the current one. For a submit, that answer comes
-from `createLatestRequest()` in `web/src/lib/latestRequest.ts`. Elsewhere the check compares
-identity, never a flag that later calls share. PRs #2449 and #2458 fixed three bugs of this kind:
+from `createLatestRequest()` in `src/lib/latestRequest.ts`. Elsewhere the check compares identity,
+never a flag that later calls share. PRs #2449 and #2458 fixed three bugs of this kind:
 
 * A save into a folder that had moved forgot a folder the parent chose while the save was still
   running. `saveBlobToFolder` now forgets the folder only when `(await loadHandle()) === handle`.
@@ -197,13 +197,12 @@ never shown in the parent's preview (PR #2510).
 **Enforcement.** The types themselves, with exhaustive `Record<Union, V>` tables (a new variant
 fails to compile, as with `STROKE_FLAGS_BY_BRUSH`). A table of `[key, value]` pairs is not
 exhaustive; key it by the union, or derive the union from the table, as `DEVICE_INFO_LABELS` in
-`web/src/lib/platform/deviceReport.ts` does for `DeviceInfo` (PR #2510). A component props union is
+`src/lib/platform/deviceReport.ts` does for `DeviceInfo` (PR #2510). A component props union is
 pinned by a type test — `expectTypeOf(...).not.toExtend` over `ComponentProps<typeof X>`, which
 `npm run check` evaluates — not by `@ts-expect-error`. The original Svelte Button, SegmentedPicker
 and SidebarToc props tests retired with those components. Current RSD examples are
-`experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.props.test.ts` and
-`experiments/native-architecture/src/rsdDrawing/RsdIconButton.props.test.ts`; each pins its own
-props relationship rather than claiming to test the retired component contract.
+`src/rsdDrawing/RsdSidebarRow.props.test.ts` and `src/rsdDrawing/RsdIconButton.props.test.ts`; each
+pins its own props relationship rather than claiming to test the retired component contract.
 
 **Known limits.** A spread bypasses excess-property checks, so `{...{ href, onclick }}` still
 reaches `Button`. A `never` marker on every other attribute hit TS2590 ("expression produces a union
@@ -280,11 +279,11 @@ plausible wrong numbers.
   rejected instead of resolving `null`. Its declaration now names both failure channels.
 * PR #2425, a real bug: a key check that got no answer was reported as 403 "Invalid API key", so a
   parent's report of an inappropriate picture was lost. The GitHub call had no timeout; it now has
-  `GITHUB_REQUEST_TIMEOUT_MS`, and `web/src/lib/ai/limits.test.ts` holds the deadlines under
+  `GITHUB_REQUEST_TIMEOUT_MS`, and `src/lib/ai/limits.test.ts` holds the deadlines under
   `NETLIFY_SYNC_TIMEOUT_MS`.
 * PR #2427: `request.formData()` reads were unbounded and turned a file part into "[object File]";
-  `readFormBody` in `web/src/lib/server/http.ts` bounds them. Installation ids reached the function
-  log, which `loggableError` in `web/src/lib/server/logRedaction.ts` now masks.
+  `readFormBody` in `netlify/server/http.ts` bounds them. Installation ids reached the function log,
+  which `loggableError` in `netlify/server/logRedaction.ts` now masks.
 * PR #2430, a real bug: a failed save still wrote its dedupe record, so later AI auto-saves skipped
   the drawing, and one encode error terminated the PNG worker under concurrent exports.
 * PR #2448, data loss: Android's coloring-pack `status` read a missing `books` array as an empty
@@ -337,8 +336,8 @@ The 2026-09-29 evening campaign found failures that were loud but named the wron
   test of the coloring-asset gate asserted the exit status before stderr, so a failing gate reported
   `expected 1 to be +0` instead of the checker's own line.
 * PR #2512: `discardJob` settled its three deletes and dropped the results, so no caller could log a
-  failed delete. It now reports how many failed, and `web/src/lib/server/generationJobs.test.ts`
-  drives a rejected delete through it.
+  failed delete. It now reports how many failed, and `netlify/server/generationJobs.test.ts` drives
+  a rejected delete through it.
 
 The 2026-10-03 campaign found the same failures in tools that read their environment, other
 programs' output, and the status of their own commands:
@@ -378,8 +377,8 @@ fixtures, for example the blank-pin and missing-Gradle-code cases in
 `tools/release/tests/cut-release.test.mjs`. A failed read or write is a fixture too: the retired
 Svelte save-failure test rejected a storage read and asserted that no held picture was replaced (PR
 #2474). Current RN save-failure behavior is covered separately by
-`tools/tests/native-save-failure.test.mjs`; `web/src/lib/server/tokens.test.ts` and
-`web/src/lib/server/api/verifyAccessCode.test.ts` pin the 503 and which failures spend a guess (PR
+`tools/tests/native-save-failure.test.mjs`; `netlify/server/tokens.test.ts` and
+`netlify/server/api/verifyAccessCode.test.ts` pin the 503 and which failures spend a guess (PR
 #2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject inside
 a temporary repository (PR #2471). A failure's message is asserted, not only its status:
 `tools/mobile/tests/mobile-build-scripts.test.mjs` asserts the coloring-asset CLI's stderr ahead of
@@ -437,7 +436,7 @@ The 2026-09-29 evening campaign found more names, and one sentence, typed at sev
   query contract retired; retained frame rendering uses standalone documents.
 * One parent-facing 503 sentence was typed at four sites in three server modules, and two of the six
   503 paths pinned it. `AI_REPORTING_UNAVAILABLE_MESSAGE` in
-  `web/src/lib/server/imageReportUnavailable.ts` now serves all six, and each path's test pins the
+  `netlify/server/imageReportUnavailable.ts` now serves all six, and each path's test pins the
   sentence as rendered, not through the import (PR #2502).
 
 **Enforcement.** The both-sides test. Test stubs of a boundary function are typed from the real one
@@ -453,7 +452,7 @@ behavior. PR #2448 found that Android deleted all books for a malformed status c
 rejected it, and an iOS remove path left an install promise unsettled. That incident still explains
 two review obligations at native boundaries: settle every path and answer the same input
 consistently. The old plugin guard is not RN runtime-I/O coverage; the RN device checks in
-`experiments/native-architecture/DEVELOPMENT.md` identify what mocks cannot prove.
+`DEVELOPMENT.md` identify what mocks cannot prove.
 
 ## 6. Lint fences
 
@@ -471,7 +470,7 @@ unit tests, yet answers `{ message }` to clients that parse `{ ok, error }` and 
 (PR #2432). No test loaded the real `stylelint.config.js`, so deleting a CSS rule or widening
 `ignoreFiles` left `npm run lint:css` and every test green; and the vacuous-test control seeded its
 cases on a `tools/tests/` path only, so a later block that switched a rule off for
-`web/src/**/*.test.ts` would have passed it (PR #2481). A fence is also silent over a tree its globs
+`src/**/*.test.ts` would have passed it (PR #2481). A fence is also silent over a tree its globs
 leave out: `no-undef` covered `tools/` but not the skill-package scripts, which no TypeScript
 program reads either, so a dropped import there would throw only when an agent ran the skill (PR
 #2503). The vacuous-test lint skipped the shared E2E helpers, which hold the retrying opens every
@@ -482,8 +481,8 @@ spec leans on, and the `*TestHarness.ts` modules that define tests for their cal
 `tools/tests/server-only-imports-lint.test.mjs`), `BLOBS_CONSISTENCY_EXPLICIT`
 (`tools/tests/blobs-consistency-lint.test.mjs`), and the existing `STORAGE_SEAM_ONLY`
 (`tools/tests/boundary-string-lint.test.mjs`), and `API_HANDLER_WRAPPED`
-(`tools/tests/api-handler-lint.test.mjs`). `WEB_SRC_SYNTAX_RESTRICTIONS` composes the `web/src`
-syntax set once for every block that extends it. The native candidate's two React hooks rules have
+(`tools/tests/api-handler-lint.test.mjs`). `WEB_SRC_SYNTAX_RESTRICTIONS` composes the `src` syntax
+set once for every block that extends it. The native candidate's two React hooks rules have
 `tools/tests/native-react-hooks-lint.test.mjs`. The same pattern guards tools: `no-undef`
 (`tools/tests/tools-no-undef-lint.test.mjs`, with a case for each skill tree since PR #2503) and
 `max-lines` (`tools/tests/tools-max-lines-lint.test.mjs`). For CSS, `npm run lint:css` reads the
@@ -499,7 +498,7 @@ the first `API_HANDLER_WRAPPED` was bypassed by a destructured import until bind
 entry, so a new restriction must be recomposed into every block for that rule (ADR-0031). Some
 server boundaries are still prose or defaults rather than lint: `.claude/rules/server-api.md` asks
 for `readFormBody` over `request.formData()`. The retired Svelte hook defaulted API responses to
-`no-store` (PR #2427); `web/src/lib/server/api/apiFunction.ts` owns that response boundary for the
+`no-store` (PR #2427); `netlify/server/api/apiFunction.ts` owns that response boundary for the
 Netlify Function, which the API smoke asserts (`tools/api-smoke/lib/api-caching.mjs`, PR #2432).
 
 ## 7. The startup path is a budget
@@ -952,9 +951,9 @@ regression.
 
 ## React Native app
 
-These rules cover the shipping React Native app in `experiments/native-architecture/` pending root
-promotion (ADR-0182). Its platform vocabulary, and the adapters named here, are in
-[`RSD-VOCABULARY.md`](../experiments/native-architecture/RSD-VOCABULARY.md).
+These rules cover the shipping React Native app in `` pending root promotion (ADR-0182). Its
+platform vocabulary, and the adapters named here, are in
+[`RSD-VOCABULARY.md`](../RSD-VOCABULARY.md).
 
 ### Stroke activity stays out of the chrome's props
 
@@ -1063,7 +1062,7 @@ ledger id names a rejected finding in the ledger comment on tracking issue #2650
 | A portability rule for Claude Code hooks                        | ADR-0017 and ADR-0062 already make macOS and Linux the targets. A burndown hook that tried BSD `stat` first broke that existing rule on Linux. PR #2452 fixed it with ADR-0017's own answer, doing the work in Node, and `tools/tests/agent-hooks.test.mjs` runs the hook under GNU- and BSD-style `stat`. |
 | A separate rule for tools that delete or stop things            | Every incident is in `tools/`: the deletes in PRs #2469, #2471, and #2473, and the stops in PRs #2661, #2674, #2675, and #2682. Rule 8 already owns validating before a delete; one clause there, "act only on what the run proved its own, and prove it again as you act", covers all seven.              |
 | A separate rule for credential-bearing requests                 | Its incidents come from one PR (#2476), and the fix is one target rule both smokes share, plus redirect refusal in the shared admin client. Rule 8's validate-before-the-outward-step covers it.                                                                                                           |
-| A lint rule against an empty `.catch(() => {})`                 | 36 catch arrows in shipped `web/src` are empty or return `undefined` or `null`, most deliberately (a wake-lock release, a cancellable animation, a queue's tail). ADR-0031's bar needs a compliant codebase; the harmful form (PRs #2474, #2477) is rule 4's.                                              |
+| A lint rule against an empty `.catch(() => {})`                 | 36 catch arrows in shipped `src` are empty or return `undefined` or `null`, most deliberately (a wake-lock release, a cancellable animation, a queue's tail). ADR-0031's bar needs a compliant codebase; the harmful form (PRs #2474, #2477) is rule 4's.                                                  |
 | NUL-terminated parsing for every `tools/` parser                | Besides the parser PR #2471 replaces, five tab-split parsers remain outside tests: three read logs their own tool writes, two read `git ls-remote` and `adb devices`, whose fields hold no tab and are matched exactly. Rule 4 covers free-text fields.                                                    |
 | A YAML or TOML parser for the config guards                     | None is declared, and the guards catch a setting left by accident. PR #2468's reader refuses any spelling it cannot read, which caught every respelling the rival tried, though a YAML merge key would pass it; PR #2668's shell rule and PR #2671's TOML reader refuse merge keys and escapes.            |
 | A check that fails a `vi.mock` of a module the test never loads | Two dead doubles, found by an audit's one-off import-graph script (PR #2508). A standing check has to resolve every test's module graph through Vite's aliases, and the other `secureStorage` doubles the audit traced were live. Rule 9 names the practice; a throwing factory proves one double dead.    |

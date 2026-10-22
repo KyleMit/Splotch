@@ -10,11 +10,8 @@
 # waits on it, so it adds no wall clock to a merge, and it never starts on a PR
 # that touches no build input. No branch rule requires it, so a PR it skips is
 # not left waiting on a check that will never report. macOS minutes are the
-# scarce ones, so the filter leaves out the app's Markdown, and the shared
-# web/src/lib and web/static trees the bundle imports from: most web pull
-# requests touch them, and the Quality job type-checks the app against them on
-# every pull request. Every other module the bundle imports from outside the
-# app is listed by path.
+# scarce ones, so the filter includes the app, native projects and compiler configuration,
+# and leaves out documentation no build reads.
 name: Native compile
 
 on:
@@ -24,10 +21,22 @@ on:
   # inputs the build commands read.
   pull_request:
     paths:
-      - 'experiments/native-architecture/**'
-      - '!experiments/native-architecture/**/*.md'
-      - 'web/src/lib/privacy/contents.ts'
-      - 'web/src/lib/privacy/sectionLink.ts'
+      - 'src/**'
+      - 'perf/**'
+      - 'netlify/server/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'assets/**'
+      - 'app.json'
+      - 'babel.config.cjs'
+      - 'metro.config.cjs'
+      - 'postcss.config.mjs'
+      - 'tsconfig.json'
+      - 'tools/migration/*.cjs'
+      - 'tools/migration/*document-styles.mjs'
+      - '!**/*.md'
+      - 'src/lib/privacy/contents.ts'
+      - 'src/lib/privacy/sectionLink.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -42,10 +51,22 @@ on:
   push:
     branches: [main]
     paths:
-      - 'experiments/native-architecture/**'
-      - '!experiments/native-architecture/**/*.md'
-      - 'web/src/lib/privacy/contents.ts'
-      - 'web/src/lib/privacy/sectionLink.ts'
+      - 'src/**'
+      - 'perf/**'
+      - 'netlify/server/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'assets/**'
+      - 'app.json'
+      - 'babel.config.cjs'
+      - 'metro.config.cjs'
+      - 'postcss.config.mjs'
+      - 'tsconfig.json'
+      - 'tools/migration/*.cjs'
+      - 'tools/migration/*document-styles.mjs'
+      - '!**/*.md'
+      - 'src/lib/privacy/contents.ts'
+      - 'src/lib/privacy/sectionLink.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -84,8 +105,8 @@ jobs:
           java-version: 21
           cache: gradle
           cache-dependency-path: |
-            experiments/native-architecture/android/**/*.gradle*
-            experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.properties
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
 
       - uses: ./.github/actions/setup-pnpm
 
@@ -117,7 +138,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/CocoaPods
-          key: cocoapods-${{ runner.os }}-${{ hashFiles('experiments/native-architecture/ios/Podfile.lock') }}
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
 
       # The same store-identity, unsigned simulator build the iOS deploy smoke
       # installs, so a compile failure here is the one that smoke would hit.

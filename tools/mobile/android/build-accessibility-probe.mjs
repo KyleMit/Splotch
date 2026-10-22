@@ -18,7 +18,7 @@ import { parseArgs } from 'node:util';
 import { isMain, ROOT } from '../../lib/proc.mjs';
 
 const SOURCE_DIR = fileURLToPath(new URL('./probes/accessibility-action/', import.meta.url));
-const NATIVE_DIR = join(ROOT, 'experiments/native-architecture/android');
+const NATIVE_DIR = join(ROOT, 'android');
 const PROJECT_NAME = 'parityAccessibilityProbe';
 const PROBE_SOURCES = [
   'AndroidManifest.xml',

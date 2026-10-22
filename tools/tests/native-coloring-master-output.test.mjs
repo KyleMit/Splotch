@@ -3,15 +3,14 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { coloringBookHistory } from '../../experiments/native-architecture/src/settings/coloringBook.ts';
-import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { coloringBookHistory } from '../../src/settings/coloringBook.ts';
+import { strokeStyle } from '../../src/drawing/model.ts';
+import { PAPER_THEMES } from '../../src/drawing/theme.ts';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
 const { default: Svg, Rect } = await import('react-native-svg');
-const { Ink, InkArtwork } =
-  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } = await import('../../src/drawing/Ink.tsx');
 async function rgba(drawing, theme) {
   const svg = renderToStaticMarkup(
     createElement(

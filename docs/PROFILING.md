@@ -8,10 +8,9 @@ that build can replay a committed touch trace with no finger on the screen. The 
 same device before and after a change is the A/B. The platform's own instruments say what the device
 did around it, and the Lighthouse gate covers the web export's page load.
 
-The app lives in `experiments/native-architecture/` until the root move (#3163). Its
-[`DEVELOPMENT.md`](../experiments/native-architecture/DEVELOPMENT.md) owns the probe's build
-commands, its log fields and the replay launch commands; this page routes to them rather than
-restating them.
+The app lives in `` until the root move (#3163). Its [`DEVELOPMENT.md`](../DEVELOPMENT.md) owns the
+probe's build commands, its log fields and the replay launch commands; this page routes to them
+rather than restating them.
 
 ## Which evidence answers what
 

@@ -1,14 +1,11 @@
-import { paperRasterSize } from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
+import { paperRasterSize } from '../../src/drawing/pictureExport.ts';
 import { describe, expect, it } from 'vitest';
 import {
   paperPresentationFor,
   paperToView,
   viewForPresentation,
-} from '../../web/src/lib/drawing/paperView.ts';
-import {
-  INITIAL_PAPER_PRESENTATION,
-  presentPaper,
-} from '../../experiments/native-architecture/src/drawing/paperPresentation.ts';
+} from '../../src/lib/drawing/paperView.ts';
+import { INITIAL_PAPER_PRESENTATION, presentPaper } from '../../src/drawing/paperPresentation.ts';
 import {
   adoptPaper,
   UNADOPTED_PAPER,
@@ -18,7 +15,7 @@ import {
   paperSize,
   semanticWidth,
   textureScale,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+} from '../../src/drawing/paperSpace.ts';
 
 // iPad Pro 11 landscape, measured on shipping: the Raised palette column is 84 pt wide, and Flat
 // floats it over a canvas that runs under it.

@@ -28,7 +28,7 @@ describe('coloring overlay campaign', () => {
     expect(job).toMatchObject({
       book: 'creatures',
       stem: 'fairy-wide',
-      output: 'web/static/coloring/creatures/fairy-wide.overlay.svg',
+      output: 'assets/static/coloring/creatures/fairy-wide.overlay.svg',
       raw: 'vectorized/coloring-overlays/creatures/fairy-wide.raw.svg',
     });
   });
@@ -42,7 +42,7 @@ describe('coloring overlay campaign', () => {
 
     expect(job).toMatchObject({
       theme: 'dark',
-      output: 'web/static/coloring/creatures/fairy-wide.dark.overlay.svg',
+      output: 'assets/static/coloring/creatures/fairy-wide.dark.overlay.svg',
       raw: 'vectorized/coloring-dark-overlays/creatures/fairy-wide.raw.svg',
     });
     expect(postprocessArgs(job).slice(-2)).toEqual(['--fill', '#fff']);
@@ -126,7 +126,7 @@ describe('coloring overlay campaign', () => {
         root
       );
       mkdirSync(join(root, 'vectorized/coloring-overlays/farm'), { recursive: true });
-      mkdirSync(join(root, 'web/static/coloring/farm'), { recursive: true });
+      mkdirSync(join(root, 'assets/static/coloring/farm'), { recursive: true });
       mkdirSync(join(root, 'tools/vectorize'), { recursive: true });
       writeFileSync(job.sourcePath, 'approved trace source');
       writeFileSync(job.outputPath, '<svg/>');
@@ -163,7 +163,9 @@ describe('coloring overlay campaign', () => {
   });
 
   it('reads fidelity references from the restart-safe campaign source tree', () => {
-    expect(analysisPaths('web/static/coloring/farm/cover.dark.overlay.svg', 'dark')).toMatchObject({
+    expect(
+      analysisPaths('assets/static/coloring/farm/cover.dark.overlay.svg', 'dark')
+    ).toMatchObject({
       source: 'vectorized/coloring-dark-overlays/farm/cover.source.webp',
     });
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   KEYBOARD_CLEARANCE_PX,
   keyboardLiftTarget,
-} from '../../experiments/native-architecture/src/rsdDrawing/keyboardLiftTarget.ts';
+} from '../../src/rsdDrawing/keyboardLiftTarget.ts';
 
 // The Galaxy's API key field sat behind the on-screen keyboard (#3076): edge-to-edge Android no
 // longer resizes the window, so the dialog card lifts itself just enough to clear the field.

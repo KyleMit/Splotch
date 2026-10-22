@@ -19,12 +19,11 @@ import { renderReleaseMarkdown } from './lib/release-markdown.mjs';
 
 const RELEASE_HUE_PALETTE_MODULE = './palette';
 export const RELEASE_HUES = ['Purple', 'Blue', 'Green', 'Orange', 'Pink', 'Red'];
-import releaseHistoryPolicy from '../../web/src/lib/releaseHistoryPolicy.json' with { type: 'json' };
+import releaseHistoryPolicy from '../../src/lib/releaseHistoryPolicy.json' with { type: 'json' };
 export const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 
 const RELEASES_DIR = join(ROOT, 'releases');
-export const NATIVE_RELEASE_NOTES_PATH =
-  'experiments/native-architecture/src/information/releaseNotes.generated.json';
+export const NATIVE_RELEASE_NOTES_PATH = 'src/information/releaseNotes.generated.json';
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
 const ISO_RELEASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Store'];
@@ -33,9 +32,9 @@ const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Sto
 // beside it on /changelog.
 // Longest form first, so a dash closed on both sides reports both neighbours.
 const CLOSED_EM_DASH = /\S—\S|\S—|—\S/;
-// The section vocabulary is owned by web/src/lib/releaseSections.ts, which this
+// The section vocabulary is owned by src/lib/releaseSections.ts, which this
 // plain-node script cannot import ($lib alias, deferred-icon registration);
-// web/src/lib/releaseSections.test.ts fails when the two diverge.
+// src/lib/releaseSections.test.ts fails when the two diverge.
 export const RELEASE_SECTION_TITLES = new Set(['New', 'Improved', 'Fixed']);
 
 function parseRelease(filename) {
@@ -207,9 +206,9 @@ function storeText(body) {
 // Shared release metadata and the React Native app’s precompiled release text.
 function appOutputs(releases) {
   return [
-    { path: 'web/src/lib/releaseHues.ts', render: renderReleaseHueModule },
+    { path: 'src/lib/releaseHues.ts', render: renderReleaseHueModule },
     {
-      path: 'web/src/lib/releases.json',
+      path: 'src/lib/releases.json',
       render: () => `${JSON.stringify(renderReleaseMetadata(releases), null, 2)}\n`,
     },
     { path: NATIVE_RELEASE_NOTES_PATH, render: () => renderNativeReleaseNotes(releases) },

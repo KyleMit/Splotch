@@ -42,8 +42,8 @@ doodle→masterpiece showcase read diagonally — doodle top-left, print bottom-
 stepping-stone connector (palette dots in, growing sparkles out); page 5 is the one dark-mode frame.
 The committed captures omit the install-specific generation count. Their capture automation retired
 with SvelteKit. The design system — geometry, copy, marks, colors — is framework-free data in
-`web/src/lib/storeFrames/`, laid out as one self-contained HTML document per composition by
-`tools/marketing-assets/lib/store-frame-document.mjs`.
+`tools/marketing-assets/lib/storeFrames/`, laid out as one self-contained HTML document per
+composition by `tools/marketing-assets/lib/store-frame-document.mjs`.
 
 ## What each screenshot shows
 
@@ -107,8 +107,8 @@ pipeline.
 * **Third-party IP kept out.** Every shipped coloring book is original work — no trademarked
   characters or franchises, in the packs themselves or in any doc that reaches the bundle. Keep it
   that way: a branded pack is an IP-rejection risk on both stores, and worse in a
-  children's-audience app. Note that anything under `web/static/` is copied into the web export, so
-  a planning doc parked there ships too.
+  children's-audience app. Note that anything under `assets/static/` is copied into the web export,
+  so a planning doc parked there ships too.
 * **App icon transparency.** `icon-512.png` is a 24-bit PNG on a solid (white) background — accepted
   by Play, which applies its own shape mask. Verify the native app's icon asset catalog and release
   export separately. If you prefer a colored backdrop behind the "S", update the source and

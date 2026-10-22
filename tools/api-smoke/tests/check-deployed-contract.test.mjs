@@ -5,12 +5,12 @@ import { readFileSync } from 'node:fs';
 import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildMetadata } from '../../../web/buildVersion.ts';
+import { buildMetadata } from '../../release/lib/buildVersion.ts';
 import {
   serializeCspDirectives,
   SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
   WEB_CSP_DIRECTIVES,
-} from '../../../web/securityPolicy.ts';
+} from '../../../netlify/securityPolicy.ts';
 import { missingStaticSecurityHeaders } from '../check-deployed-contract.mjs';
 import { checkDeployedAdminContract } from '../lib/deployed-admin-contract.mjs';
 

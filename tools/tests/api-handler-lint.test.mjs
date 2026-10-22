@@ -6,14 +6,14 @@ import { describe, expect, it } from 'vitest';
 // Every /api method handler is exported as apiHandler(...) (eslint.config.js API_HANDLER_WRAPPED).
 // The guard is a no-restricted-syntax block for the /api endpoint modules, and flat config REPLACES that
 // rule's entry wherever a later block configures it, so this control seeds each unwrapped shape
-// into an endpoint path and also checks the block still carries the web/src set it recomposes.
+// into an endpoint path and also checks the block still carries the src set it recomposes.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['web/src/**/*.ts'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],
@@ -21,7 +21,7 @@ const eslint = new ESLint({
 
 // None of these paths exist on disk: ESLint reads a file path only to pick the config blocks that
 // match it.
-const ROUTE = 'web/src/lib/server/api/probe.ts';
+const ROUTE = 'netlify/server/api/probe.ts';
 
 const restrictions = async (fixture, source, messageFragment) => {
   const [result] = await eslint.lintText(source, { filePath: join(repoRoot, fixture) });
@@ -90,16 +90,16 @@ describe('the /api handler wrapping guard', () => {
 
   it('exempts csp-report, whose responses are deliberately bodyless', async () => {
     const source = 'export const POST: ApiHandler = async () => new Response(null);';
-    expect(await unwrapped('web/src/lib/server/api/cspReport.ts', source)).toHaveLength(0);
+    expect(await unwrapped('netlify/server/api/cspReport.ts', source)).toHaveLength(0);
   });
 
   it('leaves server modules outside the /api endpoints alone', async () => {
     const source = 'export const GET = async () => new Response();';
-    expect(await unwrapped('web/src/routes/probe/+server.ts', source)).toHaveLength(0);
-    expect(await unwrapped('web/src/lib/server/probe.ts', source)).toHaveLength(0);
+    expect(await unwrapped('src/routes/probe/+server.ts', source)).toHaveLength(0);
+    expect(await unwrapped('netlify/server/probe.ts', source)).toHaveLength(0);
   });
 
-  it('keeps the web/src set it recomposes', async () => {
+  it('keeps the src set it recomposes', async () => {
     expect(await restrictions(ROUTE, 'export default 1;', 'named exports only')).toHaveLength(1);
   });
 });

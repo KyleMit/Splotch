@@ -8,17 +8,17 @@ import {
 } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
 import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
-import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { ACTION_TILE_DISABLED_OPACITY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
-import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
-import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { NATIVE_ICONS as STARTUP_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+import { EDGE_INSET_PX } from '../../../src/rsdDrawing/edgeLayout.ts';
+import { ACTION_TILE_DISABLED_OPACITY } from '../../../src/rsdDrawing/RsdIconButton.tsx';
+import { NativeDrawingLayout } from '../../../src/rsdDrawing/NativeScrollAreas.tsx';
+import { UNADOPTED_PAPER } from '../../../src/drawing/paperSpace.ts';
+import { NativeFrame } from '../../../src/rsdDrawing/NativeFrame.tsx';
+import { fittedPaper } from '../../../src/drawing/paperGeometry.ts';
+import { NATIVE_ICONS as STARTUP_ICONS } from '../../../src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../src/rsdDrawing/icons.deferred.generated.ts';
 
 // The drawer's tools draw from the deferred module, which the native apps resolve at launch.
 const NATIVE_ICONS = { ...STARTUP_ICONS, ...NATIVE_DEFERRED_ICONS };
@@ -26,16 +26,13 @@ import {
   paletteSlots,
   MORE_COLORS_POP_SCALE,
   SELECTION_RING_WIDTH_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import {
-  PALETTE_TRIM_ORDER,
-  paletteHex,
-} from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import { DRAWING_THEME } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+} from '../../../src/rsdDrawing/paletteGeometry.ts';
+import { PALETTE_TRIM_ORDER, paletteHex } from '../../../src/drawing/palette.ts';
+import { DRAWING_THEME } from '../../../src/drawing/theme.ts';
 import {
   PALETTE_COLORS as SHIPPING_PALETTE,
   TRIM_ORDER as SHIPPING_TRIM_ORDER,
-} from '../../../web/src/lib/palette.ts';
+} from '../../../src/lib/palette.ts';
 import {
   AI_BUTTON,
   flat,

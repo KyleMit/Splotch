@@ -1,9 +1,6 @@
 import { expect, it, vi } from 'vitest';
 
-import {
-  INSTALL_BANNER_PARTS,
-  iosBannerStepParts,
-} from '../../experiments/native-architecture/src/install/installCopy.ts';
+import { INSTALL_BANNER_PARTS, iosBannerStepParts } from '../../src/install/installCopy.ts';
 
 vi.mock('react-native', () => {
   const curve = () => (t) => t;

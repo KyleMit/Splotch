@@ -3,11 +3,11 @@ import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename } from 'node:f
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import { createLibraryStore } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
-import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
-import { LibraryFault } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
+import { catalogPack } from '../../src/offlineLibrary/catalog.ts';
+import { offlinePageId } from '../../src/offlineLibrary/identity.ts';
+import { createLibraryStore } from '../../src/offlineLibrary/store.ts';
+import { createOfflineLibrary } from '../../src/offlineLibrary/controller.ts';
+import { LibraryFault } from '../../src/offlineLibrary/contract.ts';
 
 function createEnabledOfflineLibrary(...args) {
   const owner = createOfflineLibrary(...args);
@@ -15,7 +15,7 @@ function createEnabledOfflineLibrary(...args) {
   return owner;
 }
 
-const staticRoot = new URL('../../web/static/', import.meta.url);
+const staticRoot = new URL('../../assets/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let scratch;
 const roots = [];

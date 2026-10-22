@@ -4,10 +4,10 @@ import { readFileSync } from 'node:fs';
 import { URL as NodeURL } from 'node:url';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
-import { useOnline } from '../../experiments/native-architecture/src/platform/useOnline.ts';
-import { useOnline as useWebOnline } from '../../experiments/native-architecture/src/platform/useOnline.web.ts';
-import { subscribeNetworkReturn } from '../../experiments/native-architecture/src/platform/networkReturn.ts';
+import { STORAGE_KEYS } from '../../src/lib/storageKeys.ts';
+import { useOnline } from '../../src/platform/useOnline.ts';
+import { useOnline as useWebOnline } from '../../src/platform/useOnline.web.ts';
+import { subscribeNetworkReturn } from '../../src/platform/networkReturn.ts';
 
 const sdk = vi.hoisted(() => ({
   stored: null,
@@ -103,17 +103,11 @@ it('follows browser connectivity immediately and persists its changes', async ()
 
 it('declares the native network module where Expo autolinking reads it', () => {
   const native = JSON.parse(
-    readFileSync(
-      new NodeURL('../../experiments/native-architecture/package.json', import.meta.url),
-      'utf8'
-    )
+    readFileSync(new NodeURL('../../package.json', import.meta.url), 'utf8')
   );
   const version = native.dependencies['expo-network'];
   expect(version).toBeDefined();
-  const pods = readFileSync(
-    new NodeURL('../../experiments/native-architecture/ios/Podfile.lock', import.meta.url),
-    'utf8'
-  );
+  const pods = readFileSync(new NodeURL('../../ios/Podfile.lock', import.meta.url), 'utf8');
   expect(pods).toContain(`- ExpoNetwork (${version})`);
 });
 

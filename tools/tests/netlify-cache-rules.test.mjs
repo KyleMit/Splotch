@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { IMMUTABLE_EXPORT_DIRECTORIES } from '../migration/check-native-web-precache.mjs';
-import { VERSION_JSON_PATH } from '../../web/src/lib/pwa/versionEndpoint.ts';
+import { VERSION_JSON_PATH } from '../../src/lib/pwa/versionEndpoint.ts';
 
 // A browser reuses a fresh cached file without asking the server, so a rule that
 // outlives the week ADR-0042 allows a stable filename, or says `immutable`, would
@@ -129,8 +129,10 @@ describe('netlify.toml Cache-Control rules', () => {
   });
 
   // adapter-netlify publishes web/_headers' rules and refuses a static/_headers outright.
-  it('has no web/_headers, whose rules would reach the deploy unread by this guard', () => {
-    expect(existsSync(new URL('_headers', new URL('../../web/', import.meta.url)))).toBe(false);
+  it('has no separately served _headers, whose rules would reach the deploy unread by this guard', () => {
+    expect(existsSync(new URL('_headers', new URL('../../assets/static/', import.meta.url)))).toBe(
+      false
+    );
   });
 });
 

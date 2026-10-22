@@ -1,4 +1,4 @@
 export {
   keyStickerBackground,
   punchFlatBackground,
-} from '../../../web/src/lib/server/ai/flatBackgroundPunch.ts';
+} from '../../../netlify/server/ai/flatBackgroundPunch.ts';

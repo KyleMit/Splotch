@@ -4,8 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
-import { PaperTexture } from '../../experiments/native-architecture/src/drawing/PaperTexture.tsx';
+import { NativePaper } from '../../src/rsdDrawing/NativePaper.tsx';
+import { PaperTexture } from '../../src/drawing/PaperTexture.tsx';
 
 const surface = vi.hoisted(() => ({ props: null }));
 
@@ -19,7 +19,7 @@ vi.mock('react-native', () => ({
   View: ({ children }) => createElement('div', null, children),
 }));
 
-vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
+vi.mock('../../src/drawing/DrawingSurface.tsx', () => ({
   DrawingSurface: (props) => {
     surface.props = props;
     return null;

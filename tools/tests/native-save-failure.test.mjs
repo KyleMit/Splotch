@@ -1,12 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  UNSAVED_PICTURE_LIMIT,
-  createSaveFailure,
-} from '../../experiments/native-architecture/src/export/saveFailure.ts';
-import { readUnsavedPictures } from '../../experiments/native-architecture/src/export/unsavedPictures.ts';
+import { UNSAVED_PICTURE_LIMIT, createSaveFailure } from '../../src/export/saveFailure.ts';
+import { readUnsavedPictures } from '../../src/export/unsavedPictures.ts';
 
 const browserDisk = vi.hoisted(() => new Map());
-vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
+vi.mock('../../src/lib/idbDatabase.ts', () => ({
   openDatabase: async (database, store) => ({
     closed: new Promise(() => {}),
     get: async (_, key) => structuredClone(browserDisk.get(`${database}:${store}:${key}`)),
@@ -243,8 +240,7 @@ describe('the Save Failure Banner owner', () => {
 });
 
 it('keeps refused bytes through the browser storage adapter for a new app owner', async () => {
-  const { unsavedPictureStore } =
-    await import('../../experiments/native-architecture/src/platform/unsavedPictures.web.ts');
+  const { unsavedPictureStore } = await import('../../src/platform/unsavedPictures.web.ts');
   await unsavedPictureStore.write(null);
   const first = createSaveFailure(vi.fn(), vi.fn(), unsavedPictureStore);
   first.report('failed', 'web-png');

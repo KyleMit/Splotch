@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  sendFeedback,
-  MAX_FEEDBACK_REPLY_BYTES,
-} from '../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
-import { NETWORK_ERROR_MESSAGE } from '../../web/src/lib/latestRequest.ts';
+import { sendFeedback, MAX_FEEDBACK_REPLY_BYTES } from '../../src/feedback/feedbackTransport.ts';
+import { NETWORK_ERROR_MESSAGE } from '../../src/lib/latestRequest.ts';
 const body = { kind: 'bug', message: 'Fixture feedback', hp: '' };
 const response = (raw, status = 200, headers = {}) =>
   new Response(typeof raw === 'string' ? raw : JSON.stringify(raw), { status, headers });

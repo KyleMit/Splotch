@@ -1,14 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
-import { paintStroke } from '../../experiments/native-architecture/src/drawing/skiaInkPainter.ts';
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { createCrayonTileResources } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
-import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
-import { crayonPasses } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import {
-  addStrokes,
-  createHistory,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { paintStroke } from '../../src/drawing/skiaInkPainter.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
+import { createCrayonTileResources } from '../../src/drawing/crayonTiles.ts';
+import { createContactCohort } from '../../src/drawing/contactCohort.ts';
+import { crayonPasses } from '../../src/drawing/crayon.ts';
+import { addStrokes, createHistory } from '../../src/drawing/model.ts';
 
 // Awaited so this import settles before the static imports start: a concurrent import can take
 // Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.

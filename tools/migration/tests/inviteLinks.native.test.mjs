@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AI_ACCESS_TOKEN_PARAM } from '../../../web/src/lib/inviteLink.ts';
-import { AI_ORIGIN } from '../../../experiments/native-architecture/src/ai/contract.ts';
-import { withCredentialLeases } from '../../../experiments/native-architecture/src/ai/credentialLease.ts';
-import { INVITE_SAVE_FAILED_WARNING } from '../../../experiments/native-architecture/src/ai/inviteLink.ts';
+import { AI_ACCESS_TOKEN_PARAM } from '../../../src/lib/inviteLink.ts';
+import { AI_ORIGIN } from '../../../src/ai/contract.ts';
+import { withCredentialLeases } from '../../../src/ai/credentialLease.ts';
+import { INVITE_SAVE_FAILED_WARNING } from '../../../src/ai/inviteLink.ts';
 
 const linking = vi.hoisted(() => ({
   listeners: [],
@@ -17,8 +17,7 @@ vi.mock('react-native', () => ({
     getInitialURL: () => linking.initial,
   },
 }));
-const { startInviteLinks } =
-  await import('../../../experiments/native-architecture/src/platform/inviteLinks.ts');
+const { startInviteLinks } = await import('../../../src/platform/inviteLinks.ts');
 
 const invite = (code) => `${AI_ORIGIN}/?${AI_ACCESS_TOKEN_PARAM}=${encodeURIComponent(code)}`;
 

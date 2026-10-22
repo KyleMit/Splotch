@@ -1,9 +1,6 @@
 import { createElement, forwardRef } from 'react';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  adoptPaper,
-  LEGACY_PAPER,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { emptyDrawing } from '../../src/drawing/model.ts';
+import { adoptPaper, LEGACY_PAPER } from '../../src/drawing/paperSpace.ts';
 
 export { LEGACY_PAPER };
 

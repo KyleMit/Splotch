@@ -9,8 +9,8 @@
 // collide) — the content-hash column the golden score fixtures
 // (check-golden-scores.mjs, golden/golden-scores.json) deliberately leave out.
 //
-// Covers the shipped art (web/static/coloring/**/*.webp, web/static/styles/*.webp,
-// web/static/ai-value-prop/*.webp)
+// Covers the shipped art (assets/static/coloring/**/*.webp, assets/static/styles/*.webp,
+// assets/static/ai-value-prop/*.webp)
 // AND the committed source-of-truth raws (tools/asset-gen/fill-src/**/*.webp).
 // Offline + deterministic: pure hashing, no key, no network.
 //
@@ -37,9 +37,9 @@ import { fail } from './lib/asset-cli.mjs';
 export const MANIFEST_PATH = join(ASSET_GEN_DIR, 'golden', 'asset-manifest.sha256');
 
 const TREES = [
-  { root: COLORING_DIR, prefix: 'web/static/coloring' },
-  { root: STYLES_DIR, prefix: 'web/static/styles' },
-  { root: AI_VALUE_PROP_DIR, prefix: 'web/static/ai-value-prop' },
+  { root: COLORING_DIR, prefix: 'assets/static/coloring' },
+  { root: STYLES_DIR, prefix: 'assets/static/styles' },
+  { root: AI_VALUE_PROP_DIR, prefix: 'assets/static/ai-value-prop' },
   { root: FILL_SRC_DIR, prefix: 'tools/asset-gen/fill-src' },
 ];
 

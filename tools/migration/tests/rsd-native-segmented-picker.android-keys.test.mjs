@@ -4,12 +4,12 @@ import { act, createElement as h, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { native, resetHost } from './rsd-native-control-host.mjs';
-import { RsdSegmentedPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
+import { RsdSegmentedPicker } from '../../../src/rsdDrawing/RsdSegmentedPicker.tsx';
 
-const WEB_PLATFORM = '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts';
+const WEB_PLATFORM = '../../../src/rsdDrawing/pickerPlatform.ts';
 vi.mock(
-  '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts',
-  () => import('../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.native.ts')
+  '../../../src/rsdDrawing/pickerPlatform.ts',
+  () => import('../../../src/rsdDrawing/pickerPlatform.native.ts')
 );
 
 // Android's View performs a click for Enter, Space or D-pad centre only while it is clickable, and

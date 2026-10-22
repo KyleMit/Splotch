@@ -1,22 +1,22 @@
-import { scale } from '../../../web/src/lib/design/tokens.ts';
+import { scale } from '../../../src/lib/design/tokens.ts';
 import { expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
 
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
-import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { RsdAiReportStatus } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
+import { AI_STYLES } from '../../../src/ai/contract.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { RsdAiReportStatus } from '../../../src/rsdDrawing/RsdAiImageReport.tsx';
 import {
   RsdAiDisclosure,
   RsdAiKeepDrawing,
   RsdAiLoadingCaption,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiResultParts.tsx';
-import { AI_RESULT_METRICS } from '../../../experiments/native-architecture/src/ai/aiResultGeometry.ts';
+} from '../../../src/rsdDrawing/RsdAiResultParts.tsx';
+import { AI_RESULT_METRICS } from '../../../src/ai/aiResultGeometry.ts';
 
 const launcher = vi.hoisted(() => ({ returnFocusToAiLauncher: vi.fn() }));
-vi.mock('../../../experiments/native-architecture/src/platform/aiLauncherFocus.ts', () => launcher);
+vi.mock('../../../src/platform/aiLauncherFocus.ts', () => launcher);
 import {
   save,
   labelled,

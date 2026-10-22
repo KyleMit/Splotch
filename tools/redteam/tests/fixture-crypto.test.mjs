@@ -87,7 +87,7 @@ describe('where the red-team keys are read from', () => {
 
     loadRedteamEnv();
 
-    expect(REDTEAM_ENV_FILE).toBe(join(repoRoot, 'web', '.env'));
+    expect(REDTEAM_ENV_FILE).toBe(join(repoRoot, '.env'));
     expect(load.mock.calls).toEqual(existsSync(REDTEAM_ENV_FILE) ? [[REDTEAM_ENV_FILE]] : []);
   });
 
@@ -95,9 +95,9 @@ describe('where the red-team keys are read from', () => {
     const provisioned = readFileSync(join(repoRoot, '.worktreeinclude'), 'utf8')
       .split('\n')
       .map((line) => line.trim());
-    expect(provisioned).toContain('web/.env');
+    expect(provisioned).toContain('.env');
 
-    const example = readFileSync(join(repoRoot, 'web', '.env.example'), 'utf8');
+    const example = readFileSync(join(repoRoot, '.env.example'), 'utf8');
     for (const name of ['REDTEAM_FIXTURE_KEY', 'OPENAI_API_KEY']) {
       expect(example).toMatch(new RegExp(`^${name}=`, 'm'));
     }

@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  classifyOpenAiResponse,
-  isSafetyError,
-} from '../../../web/src/lib/server/ai/openaiSafety.ts';
+import { classifyOpenAiResponse, isSafetyError } from '../../../netlify/server/ai/openaiSafety.ts';
 import { callVariant } from '../lib/image-providers.mjs';
 import { VARIANTS } from '../lib/model-eval.mjs';
 

@@ -8,9 +8,9 @@ import { existsSync, globSync } from 'node:fs';
 import { join } from 'node:path';
 import { webOnlyBooks } from './lib/coloring-book-assets.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
-import { BOOKS, booksForPlatform, bookAssetPaths } from '../web/src/lib/state/books.ts';
+import { BOOKS, booksForPlatform, bookAssetPaths } from '../src/lib/state/books.ts';
 
-const STATIC_DIR = join(ROOT, 'web', 'static');
+const STATIC_DIR = join(ROOT, 'assets', 'static');
 
 function reportMissingCatalogAssets(staticDir, books) {
   let missing = 0;
@@ -78,7 +78,7 @@ function reportPubliclyServedDocs(staticDir) {
   const docs = globSync('**/*.md', { cwd: staticDir });
   for (const doc of docs) {
     console.error(
-      `[check-coloring-assets] PUBLISHED DOC: ${doc} — web/static/ is served publicly; move it under docs/`
+      `[check-coloring-assets] PUBLISHED DOC: ${doc} — assets/static/ is served publicly; move it under docs/`
     );
   }
   if (docs.length === 0)

@@ -26,14 +26,11 @@ vi.mock('react-native', () => ({
 import {
   PENCIL_DOUBLE_TAP_EVENT,
   subscribePencilDoubleTap,
-} from '../../experiments/native-architecture/src/platform/pencilDoubleTap.ts';
-import {
-  createBrushPreferences,
-  toggleEraser,
-} from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
+} from '../../src/platform/pencilDoubleTap.ts';
+import { createBrushPreferences, toggleEraser } from '../../src/settings/brushPreferences.ts';
 
-const app = join(import.meta.dirname, '../../experiments/native-architecture');
-join(import.meta.dirname, '../../web/src/lib');
+const app = join(import.meta.dirname, '../..');
+join(import.meta.dirname, '../../src/lib');
 const read = (path) => readFileSync(join(app, path), 'utf8');
 
 function emitter() {

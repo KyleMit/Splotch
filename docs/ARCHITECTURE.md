@@ -2,10 +2,9 @@
 
 ## Tech Stack
 
-Splotch is one Expo / React Native / React Strict DOM app for Android, iOS and web (ADR-0182).
-During the cutover the app lives in `experiments/native-architecture/`; shared framework-free
-TypeScript and server modules remain under `web/src/lib/` until the root promotion. Neither
-directory name means that the retired SvelteKit app still runs.
+Splotch is one Expo / React Native / React Strict DOM app for Android, iOS and web (ADR-0182). The
+application and its native projects live at the repository root. Framework-free app modules live
+under `src/lib`; the Netlify API implementation lives under `netlify/server`.
 
 * **React Native and Expo** own the native application, native modules and Metro builds.
 * **React Strict DOM (RSD)** supplies the shared controls and layout. Platform implementations
@@ -15,9 +14,9 @@ directory name means that the retired SvelteKit app still runs.
 * **TypeScript** supplies strict contracts across the app, server and tools.
 * **Netlify** serves the static web export and `netlify/functions/api.ts`. Background generation and
   scheduled retention functions remain separate (ADR-0115).
-* **OpenAI** runs only behind the server's provider interface in `web/src/lib/server/ai/`
-  (ADR-0047). The app supplies drawing bytes and an authorized credential or free grant.
-  `@google/genai` belongs to offline asset tooling, not the application generation path.
+* **OpenAI** runs only behind the server's provider interface in `netlify/server/ai/` (ADR-0047).
+  The app supplies drawing bytes and an authorized credential or free grant. `@google/genai` belongs
+  to offline asset tooling, not the application generation path.
 * **Workbox** precaches the export and bundled starter book. The export build writes the web
   manifest, prerendered documents and content-addressed offline shell (ADR-0180/0181).
 * **Vitest**, **Playwright**, **Lighthouse** and **Maestro** serve unit/mounted tests, browser
@@ -31,8 +30,8 @@ mobile guide owns signing and identity (`docs/MOBILE/native.md`).
 
 ## Source Map
 
-Paths in the following app table are relative to `experiments/native-architecture/src/`. The
-platform split is deliberate: inspect both variants before changing a shared contract.
+Paths in the following app table are relative to `src/`. The platform split is deliberate: inspect
+both variants before changing a shared contract.
 
 | Path                                                           | Owner                                                                               |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
@@ -66,12 +65,12 @@ platform split is deliberate: inspect both variants before changing a shared con
 
 ### Retained shared TypeScript
 
-Paths here are relative to `web/src/lib/`. These modules remain in use by the app, functions or
-asset tooling; the Svelte components, rune stores and tiled Svelte drawing runtime are retired.
+Paths here are relative to `src/lib/`. These modules remain in use by the app, functions or asset
+tooling; the Svelte components, rune stores and tiled Svelte drawing runtime are retired.
 
 | Path                                                                                   | Owner                                                                                    |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `drawing/strokeMath.ts`, `drawing/strokeSettings.ts`                                   | Shared stroke geometry and size vocabulary.                                              |
+| `drawing/strokeMath.ts`, `tools/store-drawings/lib/strokeSettings.ts`                  | Shared stroke geometry and size vocabulary.                                              |
 | `drawing/paperView.ts`                                                                 | Pure contain-fit paper geometry for rotation.                                            |
 | `design/`                                                                              | Shared design values projected into RSD by `tools/migration/gen-rsd-drawing-tokens.mjs`. |
 | `coloringBooks/`, `coloringPacks/`                                                     | Shared catalog, asset and pack contracts used by tooling/app code.                       |

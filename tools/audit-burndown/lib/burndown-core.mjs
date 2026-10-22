@@ -161,9 +161,9 @@ export function diffAddsClientStaticImport(diff) {
 
 function isClientBundlePath(path) {
   return (
-    path.startsWith('web/src/') &&
-    !path.startsWith('web/src/lib/server/') &&
-    !path.startsWith('web/src/routes/api/') &&
+    path.startsWith('src/') &&
+    !path.startsWith('netlify/server/') &&
+    !path.startsWith('src/routes/api/') &&
     !/(^|\/)\+server\.[tj]s$/.test(path) &&
     !/\.server\.[tj]s$/.test(path) &&
     !/\.(test|spec)\.[cm]?[jt]s$/.test(path)

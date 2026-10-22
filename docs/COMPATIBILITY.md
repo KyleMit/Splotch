@@ -3,7 +3,7 @@
 Splotch ships one Expo / React Native / React Strict DOM app to web, Android and iOS (ADR-0182).
 Browser compatibility applies to the web export. Native applications run React Native and Hermes,
 not the web export inside a WebView; their OS floors are separate contracts. The app currently lives
-in `experiments/native-architecture/` pending root promotion.
+in `` pending root promotion.
 
 ## Supported browsers & devices
 
@@ -22,7 +22,7 @@ or preserve that behavior. The cutover does not raise these declared support flo
 ### Why these numbers
 
 The browser floor retains the explicit Chrome 111 / Firefox 114 / Safari 16.4 policy declared in
-`web/browserTargets.ts`; `npm run report:browser-floor` compares feature data with it. A build
+`tools/lib/browserTargets.ts`; `npm run report:browser-floor` compares feature data with it. A build
 passing in current browsers is not evidence that the exact floor versions work.
 
 **Native Android API 24 (7.0)** is the native OS floor. It governs the RN runtime and native modules
@@ -46,11 +46,11 @@ population, followed by an ADR. Update the native project, public claims and dri
 
 ## How the floor is enforced
 
-| Platform floor               | File                                                                                                   | Value                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Declared web browser policy  | `web/browserTargets.ts`                                                                                | `chrome111, edge111, firefox114, safari16.4, ios16.4` |
-| Native iOS deployment target | `experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` | `16.4`                                                |
-| Native Android min SDK       | `experiments/native-architecture/android/gradle.properties` → `android.minSdkVersion`                  | `24`                                                  |
+| Platform floor               | File                                                                   | Value                                                 |
+| ---------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| Declared web browser policy  | `tools/lib/browserTargets.ts`                                          | `chrome111, edge111, firefox114, safari16.4, ios16.4` |
+| Native iOS deployment target | `ios/Splotch.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` | `16.4`                                                |
+| Native Android min SDK       | `android/gradle.properties` → `android.minSdkVersion`                  | `24`                                                  |
 
 `tools/mobile/android/tests/android-config.test.mjs` compares the Android project floor with the
 published claims and beta instructions. Native compile and smoke checks are described in
@@ -63,35 +63,35 @@ This register names the actual browser implementation or guard. Paths are reposi
 surface for retained capabilities, not a claim that every dependency's API use has been exhaustively
 audited during the cutover. Native implementations resolve separately at build time.
 
-| API / feature              | Where                                                                                                                       | Guard / contract                                                    | Behavior when unavailable                                                    |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Pointer events and capture | `experiments/native-architecture/src/drawing/PaperInputView.web.tsx` → `setPointerCapture`                                  | Core browser input; capture failure is caught.                      | Required within the web floor.                                               |
-| Coalesced pointer samples  | `experiments/native-architecture/src/drawing/PaperInputView.web.tsx` → `getCoalescedEvents?.()`                             | Optional sample enhancement.                                        | An absent or empty list uses the dispatched event.                           |
-| Native browser dialog      | `experiments/native-architecture/src/rsdDrawing/RsdSurfaceFailure.web.tsx` → `showModal()`                                  | Core browser failure dialog.                                        | Supported within the declared web floor.                                     |
-| Inert regions              | `experiments/native-architecture/src/rsdDrawing/RsdSectionReveal.tsx` → `inert={!visible}`                                  | Core interaction isolation.                                         | Supported within the declared web floor; native RSD resolves separately.     |
-| Backdrop blur              | `experiments/native-architecture/src/rsdDrawing/RsdBareGlass.web.tsx` → `CSS.supports('backdrop-filter', 'blur(1px)')`      | Capability-detected presentation.                                   | The capability result selects the glass treatment.                           |
-| Web Crypto AES-GCM         | `experiments/native-architecture/src/platform/aiVault.web.ts` → `crypto.subtle.generateKey`                                 | Secure-context credential storage.                                  | A vault operation fails rather than silently storing plaintext.              |
-| IndexedDB                  | `web/src/lib/idbDatabase.ts` → `indexedDB.open`                                                                             | Persistent browser storage.                                         | Database errors reject; callers own recovery.                                |
-| Storage persistence        | `experiments/native-architecture/src/platform/persistentStorage.web.ts` → `navigator.storage?.persist`                      | Best effort.                                                        | Missing API or refusal leaves the existing save intact.                      |
-| Storage estimates          | `experiments/native-architecture/src/platform/offlineLibrary.web.ts` → `navigator.storage?.estimate()`                      | Best-effort capacity estimate.                                      | The library handles an unavailable estimate.                                 |
-| Wake Lock                  | `web/src/lib/boot/wakeLock.ts` → `'wakeLock' in navigator`                                                                  | Optional enhancement.                                               | The page remains usable without keeping the display awake.                   |
-| Element fullscreen         | `experiments/native-architecture/src/platform/useFullscreen.web.ts` → `document.fullscreenEnabled === true`                 | Offered only to supported Android browser tabs.                     | No fullscreen control when the API is unavailable.                           |
-| Screen Orientation lock    | `experiments/native-architecture/src/platform/deviceOrientation.web.ts` → `typeof screenOrientation()?.lock === 'function'` | Optional, coarse-pointer fullscreen only.                           | Unsupported browsers do not request a lock.                                  |
-| Web Audio                  | `experiments/native-architecture/src/platform/drawingAudio.web.ts` → `new AudioContext()`                                   | Browser sound implementation.                                       | Loading errors reject to the sound owner; drawing is independent.            |
-| Idle scheduling            | `web/src/lib/idle.ts` → `typeof requestIdleCallback === 'function'`                                                         | Detected scheduler enhancement.                                     | Fallback waits for input quiet and frame headroom.                           |
-| Service worker             | `experiments/native-architecture/src/platform/serviceWorker.web.ts` → `'serviceWorker' in navigator`                        | Production-only offline enhancement.                                | Unsupported browsers keep the live application without offline registration. |
-| Install prompt             | `experiments/native-architecture/src/platform/installPrompt.web.ts` → `typeof event.prompt === 'function'`                  | Validated browser event.                                            | The device-family install guide remains available.                           |
-| Blocked local storage      | `experiments/native-architecture/src/platform/installPrompt.web.ts` → `localStorage.getItem`                                | Storage access is caught.                                           | The install prompt behaves as on a first visit.                              |
-| Device-family detection    | `experiments/native-architecture/src/platform/installPrompt.web.ts` → `maxTouchPoints`                                      | UA/platform heuristic for browser help text.                        | Unrecognized devices use the generic branch; native uses platform modules.   |
-| Network Information        | `experiments/native-architecture/src/platform/offlineLibrary.web.ts` → `Reflect.get(navigator, 'connection')`               | Optional metered-connection hint.                                   | Missing connection data is treated as not metered.                           |
-| Online state               | `experiments/native-architecture/src/platform/offlineLibrary.web.ts` → `navigator.onLine === true`                          | Link-state hint, not proof of server reachability.                  | Requests still handle network failure.                                       |
-| File System Access         | `experiments/native-architecture/src/platform/folderSave.web.ts` → `typeof window.showDirectoryPicker !== 'function'`       | Optional chosen-folder support.                                     | Other browsers save by download.                                             |
-| Object URL download        | `experiments/native-architecture/src/platform/pictureSave.web.ts` → `URL.createObjectURL`                                   | Browser picture-save path.                                          | Failures return a failed save; object URLs are revoked.                      |
-| WebP canvas encoding       | `web/src/lib/drawing/aiUploadEncoding.ts` → `canvas.toBlob(resolve, 'image/webp'`                                           | Optional upload compression, output MIME checked.                   | The app uploads PNG if encoding is unavailable or fails.                     |
-| CSS zoom                   | `web/src/lib/actions/pinchTextZoomGesture.ts` → `target.style.zoom`                                                         | Settings pinch enhancement; Firefox support starts above its floor. | Older Firefox keeps the normal pane size.                                    |
-| Reduced transparency       | `experiments/native-architecture/src/platform/reducedTransparency.web.ts` → `REDUCED_TRANSPARENCY_QUERY`                    | Preference enhancement.                                             | An unsupported media feature does not match.                                 |
-| Forced colors              | `experiments/native-architecture/src/platform/forcedColors.web.ts` → `FORCED_COLORS_QUERY`                                  | System-color adaptation.                                            | The ordinary theme remains when the query does not match.                    |
-| Browser font loading       | `experiments/native-architecture/src/platform/shippingFont.web.tsx` → `document.fonts.add`                                  | Faces added after mount, not during prerender.                      | Fallback text paints while the requested font loads.                         |
+| API / feature              | Where                                                                                       | Guard / contract                                                    | Behavior when unavailable                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Pointer events and capture | `src/drawing/PaperInputView.web.tsx` → `setPointerCapture`                                  | Core browser input; capture failure is caught.                      | Required within the web floor.                                               |
+| Coalesced pointer samples  | `src/drawing/PaperInputView.web.tsx` → `getCoalescedEvents?.()`                             | Optional sample enhancement.                                        | An absent or empty list uses the dispatched event.                           |
+| Native browser dialog      | `src/rsdDrawing/RsdSurfaceFailure.web.tsx` → `showModal()`                                  | Core browser failure dialog.                                        | Supported within the declared web floor.                                     |
+| Inert regions              | `src/rsdDrawing/RsdSectionReveal.tsx` → `inert={!visible}`                                  | Core interaction isolation.                                         | Supported within the declared web floor; native RSD resolves separately.     |
+| Backdrop blur              | `src/rsdDrawing/RsdBareGlass.web.tsx` → `CSS.supports('backdrop-filter', 'blur(1px)')`      | Capability-detected presentation.                                   | The capability result selects the glass treatment.                           |
+| Web Crypto AES-GCM         | `src/platform/aiVault.web.ts` → `crypto.subtle.generateKey`                                 | Secure-context credential storage.                                  | A vault operation fails rather than silently storing plaintext.              |
+| IndexedDB                  | `src/lib/idbDatabase.ts` → `indexedDB.open`                                                 | Persistent browser storage.                                         | Database errors reject; callers own recovery.                                |
+| Storage persistence        | `src/platform/persistentStorage.web.ts` → `navigator.storage?.persist`                      | Best effort.                                                        | Missing API or refusal leaves the existing save intact.                      |
+| Storage estimates          | `src/platform/offlineLibrary.web.ts` → `navigator.storage?.estimate()`                      | Best-effort capacity estimate.                                      | The library handles an unavailable estimate.                                 |
+| Wake Lock                  | `src/lib/boot/wakeLock.ts` → `'wakeLock' in navigator`                                      | Optional enhancement.                                               | The page remains usable without keeping the display awake.                   |
+| Element fullscreen         | `src/platform/useFullscreen.web.ts` → `document.fullscreenEnabled === true`                 | Offered only to supported Android browser tabs.                     | No fullscreen control when the API is unavailable.                           |
+| Screen Orientation lock    | `src/platform/deviceOrientation.web.ts` → `typeof screenOrientation()?.lock === 'function'` | Optional, coarse-pointer fullscreen only.                           | Unsupported browsers do not request a lock.                                  |
+| Web Audio                  | `src/platform/drawingAudio.web.ts` → `new AudioContext()`                                   | Browser sound implementation.                                       | Loading errors reject to the sound owner; drawing is independent.            |
+| Idle scheduling            | `src/lib/idle.ts` → `typeof requestIdleCallback === 'function'`                             | Detected scheduler enhancement.                                     | Fallback waits for input quiet and frame headroom.                           |
+| Service worker             | `src/platform/serviceWorker.web.ts` → `'serviceWorker' in navigator`                        | Production-only offline enhancement.                                | Unsupported browsers keep the live application without offline registration. |
+| Install prompt             | `src/platform/installPrompt.web.ts` → `typeof event.prompt === 'function'`                  | Validated browser event.                                            | The device-family install guide remains available.                           |
+| Blocked local storage      | `src/platform/installPrompt.web.ts` → `localStorage.getItem`                                | Storage access is caught.                                           | The install prompt behaves as on a first visit.                              |
+| Device-family detection    | `src/platform/installPrompt.web.ts` → `maxTouchPoints`                                      | UA/platform heuristic for browser help text.                        | Unrecognized devices use the generic branch; native uses platform modules.   |
+| Network Information        | `src/platform/offlineLibrary.web.ts` → `Reflect.get(navigator, 'connection')`               | Optional metered-connection hint.                                   | Missing connection data is treated as not metered.                           |
+| Online state               | `src/platform/offlineLibrary.web.ts` → `navigator.onLine === true`                          | Link-state hint, not proof of server reachability.                  | Requests still handle network failure.                                       |
+| File System Access         | `src/platform/folderSave.web.ts` → `typeof window.showDirectoryPicker !== 'function'`       | Optional chosen-folder support.                                     | Other browsers save by download.                                             |
+| Object URL download        | `src/platform/pictureSave.web.ts` → `URL.createObjectURL`                                   | Browser picture-save path.                                          | Failures return a failed save; object URLs are revoked.                      |
+| WebP canvas encoding       | `src/lib/drawing/aiUploadEncoding.ts` → `canvas.toBlob(resolve, 'image/webp'`               | Optional upload compression, output MIME checked.                   | The app uploads PNG if encoding is unavailable or fails.                     |
+| CSS zoom                   | `src/lib/actions/pinchTextZoomGesture.ts` → `target.style.zoom`                             | Settings pinch enhancement; Firefox support starts above its floor. | Older Firefox keeps the normal pane size.                                    |
+| Reduced transparency       | `src/platform/reducedTransparency.web.ts` → `REDUCED_TRANSPARENCY_QUERY`                    | Preference enhancement.                                             | An unsupported media feature does not match.                                 |
+| Forced colors              | `src/platform/forcedColors.web.ts` → `FORCED_COLORS_QUERY`                                  | System-color adaptation.                                            | The ordinary theme remains when the query does not match.                    |
+| Browser font loading       | `src/platform/shippingFont.web.tsx` → `document.fonts.add`                                  | Faces added after mount, not during prerender.                      | Fallback text paints while the requested font loads.                         |
 
 ## Polyfills & workarounds
 
@@ -121,7 +121,7 @@ though it used the same browser APIs.
   proved neither a successful app launch nor an app failure.
 * **Build contracts:** native compile catches toolchain/configuration failures; it does not prove
   interactive drawing or platform I/O. Browser mocks do not prove native file, keychain or Photos
-  behavior; see `experiments/native-architecture/DEVELOPMENT.md`.
+  behavior; see `DEVELOPMENT.md`.
 
 ## Maintaining this
 

@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { soundSettingsStorage } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
-import { createSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { soundSettingsStorage } from '../../src/platform/soundSettings.web.ts';
+import { createSoundSettings } from '../../src/settings/soundSettings.ts';
 vi.mock(
-  '../../experiments/native-architecture/src/platform/parentDefaults.ts',
-  () => import('../../experiments/native-architecture/src/platform/parentDefaults.web.ts')
+  '../../src/platform/parentDefaults.ts',
+  () => import('../../src/platform/parentDefaults.web.ts')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/platform/parentPlatform.ts',
-  () => import('../../experiments/native-architecture/src/platform/parentPlatform.web.ts')
+  '../../src/platform/parentPlatform.ts',
+  () => import('../../src/platform/parentPlatform.web.ts')
 );
 let storage;
 beforeEach(() => {

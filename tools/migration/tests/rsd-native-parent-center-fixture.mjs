@@ -2,17 +2,14 @@ import { act, createElement, useEffect, useState } from 'react';
 import { expect, vi } from 'vitest';
 import { host, mount } from './rsd-native-selection-host.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
-import { createDrawingProduct } from '../../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { RsdParentCenterSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentCenterSection.tsx';
-import { useModalPresence } from '../../../experiments/native-architecture/src/rsdDrawing/useModalPresence.ts';
-import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
-import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { useParentGateCard } from '../../../experiments/native-architecture/src/parentCenter/useParentGateCard.ts';
-import {
-  PARENT_LABELS,
-  PARENT_MODE_LABELS,
-} from '../../../experiments/native-architecture/src/parentCenter/parentCenterCopy.ts';
+import { createDrawingProduct } from '../../../src/product/createDrawingProduct.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { RsdParentCenterSection } from '../../../src/rsdDrawing/RsdParentCenterSection.tsx';
+import { useModalPresence } from '../../../src/rsdDrawing/useModalPresence.ts';
+import { RsdParentGateSheet } from '../../../src/rsdDrawing/RsdParentGateSheet.tsx';
+import { RsdAction } from '../../../src/rsdDrawing/controls.tsx';
+import { useParentGateCard } from '../../../src/parentCenter/useParentGateCard.ts';
+import { PARENT_LABELS, PARENT_MODE_LABELS } from '../../../src/parentCenter/parentCenterCopy.ts';
 
 // The Parent Center section mounted beside a real product owner and its grown-up check, and the
 // queries the Parent Center suites share.

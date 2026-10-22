@@ -87,7 +87,7 @@ export function bleedUnderMask(rgb, mask, width, height) {
 }
 
 // Punch one raw fill (fill-src/{book}/{page}-{orient}.{light,night}.raw.webp) into
-// its shipped path under web/static/coloring/: outline-dark pixels of the line art
+// its shipped path under assets/static/coloring/: outline-dark pixels of the line art
 // inpainted with bled fill color, everything else kept. Throws if the page's line
 // art is missing.
 //

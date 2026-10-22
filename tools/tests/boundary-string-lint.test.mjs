@@ -16,8 +16,8 @@ const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['web/src/**/*.ts'],
-      languageOptions: { parserOptions: { projectService: false } },
+      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
   ],
@@ -36,27 +36,27 @@ const queryViolations = (fixture, source) =>
 
 describe('the localStorage seam ban covers every spelling', () => {
   it('rejects ordinary dot access', async () => {
-    expect(
-      await storageViolations('web/src/lib/probe.ts', "localStorage.getItem('k');")
-    ).toHaveLength(1);
+    expect(await storageViolations('src/lib/probe.ts', "localStorage.getItem('k');")).toHaveLength(
+      1
+    );
   });
 
   // The text scan this replaced matched only dot access, so this spelling was invisible to it.
   it('rejects computed access', async () => {
     expect(
-      await storageViolations('web/src/lib/probe.ts', "localStorage['getItem']('k');")
+      await storageViolations('src/lib/probe.ts', "localStorage['getItem']('k');")
     ).toHaveLength(1);
   });
 
   it('rejects destructuring the global', async () => {
     expect(
-      await storageViolations('web/src/lib/probe.ts', 'const { getItem } = localStorage;')
+      await storageViolations('src/lib/probe.ts', 'const { getItem } = localStorage;')
     ).toHaveLength(1);
   });
 
   it('rejects reaching it through window', async () => {
     expect(
-      await storageViolations('web/src/lib/probe.ts', "window.localStorage.getItem('k');")
+      await storageViolations('src/lib/probe.ts', "window.localStorage.getItem('k');")
     ).toHaveLength(1);
   });
 
@@ -64,19 +64,19 @@ describe('the localStorage seam ban covers every spelling', () => {
   // rather than an Identifier — the first replacement selector was blind to it.
   it('rejects computed access to the global itself', async () => {
     expect(
-      await storageViolations('web/src/lib/probe.ts', "window['localStorage'].getItem('k');")
+      await storageViolations('src/lib/probe.ts', "window['localStorage'].getItem('k');")
     ).toHaveLength(1);
   });
 
   it('rejects computed access through globalThis', async () => {
     expect(
-      await storageViolations('web/src/lib/probe.ts', "globalThis['localStorage'].getItem('k');")
+      await storageViolations('src/lib/probe.ts', "globalThis['localStorage'].getItem('k');")
     ).toHaveLength(1);
   });
 
   it('allows a unit test, where reaching the real store is the point', async () => {
     expect(
-      await storageViolations('web/src/lib/probe.test.ts', "localStorage.getItem('k');")
+      await storageViolations('src/lib/probe.test.ts', "localStorage.getItem('k');")
     ).toHaveLength(0);
   });
 });
@@ -84,10 +84,7 @@ describe('the localStorage seam ban covers every spelling', () => {
 describe('the media-query literal ban closes the typo class', () => {
   it('rejects the correctly spelled query', async () => {
     expect(
-      await queryViolations(
-        'web/src/lib/probe.ts',
-        "matchMedia('(prefers-reduced-motion: reduce)');"
-      )
+      await queryViolations('src/lib/probe.ts', "matchMedia('(prefers-reduced-motion: reduce)');")
     ).toHaveLength(1);
   });
 
@@ -95,17 +92,14 @@ describe('the media-query literal ban closes the typo class', () => {
   // spelling cannot see a typo, and a typo evaluates false forever.
   it('rejects a misspelled query, which a spelling scan cannot see', async () => {
     expect(
-      await queryViolations(
-        'web/src/lib/probe.ts',
-        "matchMedia('(prefers-reduced-motoin: reduce)');"
-      )
+      await queryViolations('src/lib/probe.ts', "matchMedia('(prefers-reduced-motoin: reduce)');")
     ).toHaveLength(1);
   });
 
   it('rejects an optional call through window', async () => {
     expect(
       await queryViolations(
-        'web/src/lib/probe.ts',
+        'src/lib/probe.ts',
         "window.matchMedia?.('(display-mode: standalone)');"
       )
     ).toHaveLength(1);
@@ -113,16 +107,13 @@ describe('the media-query literal ban closes the typo class', () => {
 
   it('rejects a computed matchMedia callee', async () => {
     expect(
-      await queryViolations(
-        'web/src/lib/probe.ts',
-        "window['matchMedia']('(orientation: portrait)');"
-      )
+      await queryViolations('src/lib/probe.ts', "window['matchMedia']('(orientation: portrait)');")
     ).toHaveLength(1);
   });
 
   it('rejects a template literal', async () => {
     expect(
-      await queryViolations('web/src/lib/probe.ts', 'matchMedia(`(orientation: portrait)`);')
+      await queryViolations('src/lib/probe.ts', 'matchMedia(`(orientation: portrait)`);')
     ).toHaveLength(1);
   });
 
@@ -132,7 +123,7 @@ describe('the media-query literal ban closes the typo class', () => {
       'matchMedia(REDUCED_MOTION_QUERY);',
     ].join('\n');
 
-    expect(await queryViolations('web/src/lib/probe.ts', source)).toHaveLength(0);
+    expect(await queryViolations('src/lib/probe.ts', source)).toHaveLength(0);
   });
 
   // Recorded so the rule's reach is written down rather than assumed. A selector cannot resolve a
@@ -144,6 +135,6 @@ describe('the media-query literal ban closes the typo class', () => {
       '\n'
     );
 
-    expect(await queryViolations('web/src/lib/probe.ts', source)).toHaveLength(0);
+    expect(await queryViolations('src/lib/probe.ts', source)).toHaveLength(0);
   });
 });

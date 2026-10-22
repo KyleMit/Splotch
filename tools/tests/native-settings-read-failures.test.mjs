@@ -1,10 +1,7 @@
-import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../src/parentCenter/parentGate.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import {
-  createSoundSettings,
-  MAX_SETTINGS_BYTES,
-} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { createDrawingProduct } from '../../src/product/createDrawingProduct.ts';
+import { createSoundSettings, MAX_SETTINGS_BYTES } from '../../src/settings/soundSettings.ts';
 
 // Stored settings that cannot be used fail one of three ways, and each says only what can help:
 // a store that did not answer may answer a second read; an unusable record needs an explicit

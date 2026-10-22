@@ -4,15 +4,15 @@ import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 
 import { disk, model, png, journal, resetAiDisk } from './aiStorageHarness.mjs';
 
-import { createAiStorage } from '../../../experiments/native-architecture/src/platform/aiStorage.web.ts';
+import { createAiStorage } from '../../../src/platform/aiStorage.web.ts';
 import {
   AI_STORAGE_DATABASE,
   MAX_AI_STORAGE_ATTEMPTS,
   MAX_AI_STORAGE_BYTES,
   checkAiStorageCapacity,
-} from '../../../experiments/native-architecture/src/platform/aiStorageRecords.web.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { JOB_TTL_MS } from '../../../experiments/native-architecture/src/ai/contract.ts';
+} from '../../../src/platform/aiStorageRecords.web.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { JOB_TTL_MS } from '../../../src/ai/contract.ts';
 
 beforeEach(resetAiDisk);
 

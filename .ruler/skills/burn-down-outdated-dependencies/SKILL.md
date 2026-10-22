@@ -81,7 +81,7 @@ through the approved list **sequentially**. For each package:
    list, not just the latest. Summarize the breaking changes that could plausibly touch this repo.
 7. **Bump the version.** Update the range in `package.json` and install (`pnpm add <pkg>@<version>`,
    `-D` for a devDependency).
-8. **Audit every usage.** Grep the whole codebase (`web/src/`, `tools/`, config files, `android/` &
+8. **Audit every usage.** Grep the whole codebase (`src/`, `tools/`, config files, `android/` &
    `ios/` only where they consume the JS package) for imports and API calls of the package. Confirm
    each call site is still valid against the new API; apply the codemod / manual edits the migration
    guide calls for. Don’t assume a clean install means the code is correct.

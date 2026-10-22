@@ -1,10 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  PAGE_SHARE_CARDS,
-  SHARE_CARD_SIZE,
-} from '../../../web/src/lib/components/page/socialCard.ts';
+import { PAGE_SHARE_CARDS, SHARE_CARD_SIZE } from './page/socialCard.ts';
 import { ROOT } from '../../lib/proc.mjs';
 
 const VISUAL_INPUT_FILES = [
@@ -12,11 +9,11 @@ const VISUAL_INPUT_FILES = [
   'tools/marketing-assets/lib/share-card-inputs.mjs',
   'tools/marketing-assets/lib/share-card-document.mjs',
   'tools/marketing-assets/lib/static-document.mjs',
-  'web/src/lib/icons/splotchy.svg',
-  'experiments/native-architecture/assets/paper/handmade-paper.webp',
-  'web/src/lib/design/tokens.ts',
-  'web/src/lib/palette.ts',
-  'web/src/lib/fonts.ts',
+  'assets/icons/splotchy.svg',
+  'assets/paper/handmade-paper.webp',
+  'src/lib/design/tokens.ts',
+  'src/lib/palette.ts',
+  'src/lib/fonts.ts',
   'node_modules/@fontsource-variable/quicksand/index.css',
   'node_modules/@fontsource-variable/quicksand/files/quicksand-latin-wght-normal.woff2',
   'node_modules/@fontsource-variable/quicksand/files/quicksand-latin-ext-wght-normal.woff2',

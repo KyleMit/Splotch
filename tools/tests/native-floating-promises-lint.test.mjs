@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The native candidate's floating-promise fence: a type-aware block in eslint.config.js, scoped by
-// glob to experiments/native-architecture/src and typed against that package's tsconfig. It is
+// glob to src and typed against that package's tsconfig. It is
 // the fence that would have caught Expo SDK 58 turning File.write() into a promise (issue 3062).
 // The rule needs a TypeScript program, so each probe lints seeded source at the path of a real
 // tracked module; ESLint lints the supplied text, not the file on disk.
@@ -15,10 +15,7 @@ const RULE = '@typescript-eslint/no-floating-promises';
 // The first probe builds the candidate's whole TypeScript program; CI measured 7 s for it.
 const TYPE_AWARE_LINT_TIMEOUT_MS = 60_000;
 const ERROR = 2;
-const PROBE_PATHS = [
-  'experiments/native-architecture/src/platform/sectionsSeen.ts',
-  'experiments/native-architecture/src/rsdDrawing/RsdSettingsRoute.tsx',
-];
+const PROBE_PATHS = ['src/platform/sectionsSeen.ts', 'src/rsdDrawing/RsdSettingsRoute.tsx'];
 
 const UNAWAITED_WRITE = `import { File, Paths } from 'expo-file-system';
 export async function probe() {

@@ -127,7 +127,7 @@ Options are columns. The things that vary are rows. Build it in two blocks, and 
 
 |                      | Same either way                   |
 | -------------------- | --------------------------------- |
-| Where the code lives | `web/src/lib/state/` in both      |
+| Where the code lives | `src/lib/state/` in both          |
 | Test story           | Same Vitest suite, no new harness |
 | Rollback             | Revert one commit in both         |
 

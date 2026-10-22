@@ -1,9 +1,8 @@
 # Sounds
 
 This capability owns the pencil drawing sounds: the stereo masters and the step that turns them into
-the mono clips `experiments/native-architecture/src/platform/drawingAudio.ts` loads. It does not
-generate new sounds. New sound effects come from the
-[ElevenLabs capability](../elevenlabs/README.md).
+the mono clips `src/platform/drawingAudio.ts` loads. It does not generate new sounds. New sound
+effects come from the [ElevenLabs capability](../elevenlabs/README.md).
 
 ## Entry point
 
@@ -14,17 +13,17 @@ npm run gen:pencil-sounds
 `gen-pencil-sounds.mjs` encodes every `masters/pencil-N.mp3` into a temporary staging directory and
 reads each result back. It fails if a clip is not mono, if its sample rate or gapless sample count
 differs from the master, or if its LAME tag does not record the chosen VBR mode and quality. Only
-when every clip passes does it copy them into `web/static/sounds/pencil-N.mp3`. It prints the bytes
-and the decoded size of each pair.
+when every clip passes does it copy them into `assets/static/sounds/pencil-N.mp3`. It prints the
+bytes and the decoded size of each pair.
 
 ## Inputs and outputs
 
-| Path                             | Role                                                                              |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| `masters/pencil-N.mp3`           | Source. 48 kHz stereo, 192 kbps CBR, 5.000 s loops, loudness-matched in PR #1188. |
-| `web/static/sounds/pencil-N.mp3` | Generated. Never edit these by hand; change a master and re-run.                  |
-| `lib/mp3-stream.mjs`             | Reads channels, sample rate, gapless length, and LAME VBR mode and quality.       |
-| `tests/pencil-sounds.test.mjs`   | Checks the generated clips against the masters and the app's clip list.           |
+| Path                                | Role                                                                              |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| `masters/pencil-N.mp3`              | Source. 48 kHz stereo, 192 kbps CBR, 5.000 s loops, loudness-matched in PR #1188. |
+| `assets/static/sounds/pencil-N.mp3` | Generated. Never edit these by hand; change a master and re-run.                  |
+| `lib/mp3-stream.mjs`                | Reads channels, sample rate, gapless length, and LAME VBR mode and quality.       |
+| `tests/pencil-sounds.test.mjs`      | Checks the generated clips against the masters and the app's clip list.           |
 
 The masters are the loudness-matched stereo clips the app shipped before this capability existed. No
 lossless recording exists, so the script always encodes from the masters and never from the shipped
@@ -69,8 +68,8 @@ master. Neither end of the decoded loop is quieter than the master's, so the sea
 ## Failure and recovery
 
 The script exits nonzero when `lame` is missing, when a LAME step fails, or when any encoded clip
-fails verification. Nothing is copied into `web/static/sounds` until every clip has passed. The copy
-step backs up each clip it replaces and restores them all if any copy fails, and the staging
+fails verification. Nothing is copied into `assets/static/sounds` until every clip has passed. The
+copy step backs up each clip it replaces and restores them all if any copy fails, and the staging
 directory is removed on success and failure alike, so a failed run leaves the working tree
 unchanged.
 

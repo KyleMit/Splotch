@@ -3,13 +3,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { buildMetadata } from '../../web/buildVersion.ts';
+import { buildMetadata } from '../release/lib/buildVersion.ts';
 import {
   inlineExecutableScriptBodies,
   SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
   WEB_CSP_DIRECTIVES,
-} from '../../web/securityPolicy.ts';
-import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
+} from '../../netlify/securityPolicy.ts';
+import { SECURITY_HEADERS } from '../../netlify/server/securityHeaders.ts';
 import { isMain } from '../lib/proc.mjs';
 import { check, exitWhenFlushed, fatal, json, summarize } from '../lib/smoke.mjs';
 import { recordApiCaching } from './lib/api-caching.mjs';

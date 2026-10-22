@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { STORAGE_KEYS } from '../../../web/src/lib/storageKeys.ts';
-import { drawerOpenStorage as webStorage } from '../../../experiments/native-architecture/src/platform/drawerOpen.web.ts';
+import { STORAGE_KEYS } from '../../../src/lib/storageKeys.ts';
+import { drawerOpenStorage as webStorage } from '../../../src/platform/drawerOpen.web.ts';
 
 // The native app's document directory, as a map from file name to its text.
 const documents = vi.hoisted(() => new Map());
@@ -27,8 +27,7 @@ vi.mock('expo-file-system', () => {
   }
   return { File, Paths: { document: 'document' } };
 });
-const { drawerOpenStorage: nativeStorage } =
-  await import('../../../experiments/native-architecture/src/platform/drawerOpen.ts');
+const { drawerOpenStorage: nativeStorage } = await import('../../../src/platform/drawerOpen.ts');
 
 afterEach(() => {
   localStorage.clear();

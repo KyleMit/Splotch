@@ -4,9 +4,9 @@ import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 
 import { disk, model, resetAiDisk } from './aiStorageHarness.mjs';
 
-import { createAiStorage } from '../../../experiments/native-architecture/src/platform/aiStorage.web.ts';
-import { createNativeAi } from '../../../experiments/native-architecture/src/ai/generation.ts';
-import { aiResultPhase } from '../../../experiments/native-architecture/src/ai/uiState.ts';
+import { createAiStorage } from '../../../src/platform/aiStorage.web.ts';
+import { createNativeAi } from '../../../src/ai/generation.ts';
+import { aiResultPhase } from '../../../src/ai/uiState.ts';
 
 const PICTURES = 4;
 const GRANT = '{"ok":true,"remaining":10,"limit":10}';

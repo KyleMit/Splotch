@@ -2,19 +2,19 @@ import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
 import { records, root, mount } from './rsd-native-selection-host.mjs';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
 import {
   RsdScrollCue,
   SCROLL_CUE_END_SLACK_PX,
   SCROLL_CUE_HEIGHT_PX,
   SCROLL_CUE_OPAQUE_FROM_PERCENT,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdScrollCue.tsx';
+} from '../../../src/rsdDrawing/RsdScrollCue.tsx';
 import {
   COLORING_CUE_END_SLACK_PX,
   COLORING_CUE_HEIGHT_PX,
   COLORING_CUE_OPAQUE_FROM_PERCENT,
   RsdColoringScroll,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringScroll.tsx';
+} from '../../../src/rsdDrawing/RsdColoringScroll.tsx';
 
 function element(component, preference) {
   return createElement(DrawingAppearanceProvider, { preference }, component);

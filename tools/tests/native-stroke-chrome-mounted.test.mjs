@@ -13,22 +13,19 @@ import {
   settle,
   Consumer,
 } from './native-contacts-mounted-harness.mjs';
-import { Animated } from '../../experiments/native-architecture/src/platform/animated.ts';
-import { UndoInkMotion } from '../../experiments/native-architecture/src/drawing/UndoInkMotion.tsx';
-import { UNDO_GHOST_MS } from '../../experiments/native-architecture/src/drawing/undoFeedback.ts';
-import { SvgUndoGhostLayer } from '../../experiments/native-architecture/src/drawing/SvgUndoGhost.tsx';
-import * as tileOwner from '../../experiments/native-architecture/src/drawing/useCrayonTileReadiness.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { Animated } from '../../src/platform/animated.ts';
+import { UndoInkMotion } from '../../src/drawing/UndoInkMotion.tsx';
+import { UNDO_GHOST_MS } from '../../src/drawing/undoFeedback.ts';
+import { SvgUndoGhostLayer } from '../../src/drawing/SvgUndoGhost.tsx';
+import * as tileOwner from '../../src/drawing/useCrayonTileReadiness.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { DrawingKeyboardScope } from '../../experiments/native-architecture/src/platform/KeyboardScope.tsx';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
+import { emptyDrawing, strokeStyle } from '../../src/drawing/model.ts';
+import { DrawingSessionProvider } from '../../src/product/DrawingSession.tsx';
+import { DrawingKeyboardScope } from '../../src/platform/KeyboardScope.tsx';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
 
-vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+vi.mock('../../src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
     await import('../migration/tests/rsd-native-animated-host.mjs');
   const { createElement: element } = await import('react');

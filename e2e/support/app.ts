@@ -2,7 +2,7 @@ import { expect, type Page, type Response } from '@playwright/test';
 import {
   CONTROLS_LIVE_ATTRIBUTE,
   DRAWING_LIVE_ATTRIBUTE,
-} from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+} from '../../src/platform/firstFrameContract.ts';
 
 // How long the drawing screen gets to take over from its prerendered first frame: the engine and
 // the controls each stamp <html> once they listen. Locally that is a few hundred milliseconds; this

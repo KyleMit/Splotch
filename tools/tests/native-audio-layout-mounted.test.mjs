@@ -1,7 +1,4 @@
-import {
-  paperProjection,
-  drawingPaper,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection, drawingPaper } from '../../src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
@@ -16,9 +13,9 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
-import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
-import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
+import { NativePaper } from '../../src/rsdDrawing/NativePaper.tsx';
+import { useDrawingScreen } from '../../src/useDrawingScreen.ts';
+import { useDrawingSound } from '../../src/useDrawingSound.ts';
 
 const sdk = vi.hoisted(() => ({
   input: null,
@@ -28,7 +25,7 @@ const sdk = vi.hoisted(() => ({
   frame: [0, 0, 1024, 768, 40, 800],
 }));
 let owner, root, host;
-vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (original) => {
+vi.mock('../../src/useDrawingScreen.ts', async (original) => {
   const actual = await original();
   return {
     ...actual,
@@ -38,11 +35,11 @@ vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+vi.mock('../../src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: (signal) =>
     new Promise((resolve, reject) => sdk.loads.push({ signal, resolve, reject })),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+vi.mock('../../src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: async () => '{"version":1,"soundEnabled":true}',
     write: async () => {},
@@ -201,6 +198,6 @@ vi.mock(
   () => import('../lib/native-appearance-frame-fixture.mjs')
 );
 
-vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+vi.mock('../../src/platform/ai.ts', async () =>
   (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

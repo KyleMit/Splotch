@@ -2,8 +2,8 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ModalStage } from '../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
-import { RsdScrollCue } from '../../experiments/native-architecture/src/rsdDrawing/RsdScrollCue.tsx';
+import { ModalStage } from '../../src/rsdDrawing/ModalShell.tsx';
+import { RsdScrollCue } from '../../src/rsdDrawing/RsdScrollCue.tsx';
 
 // React Strict DOM's web build compiles its styles into cascade layers (its PostCSS plugin's
 // useCSSLayers), so any unlayered rule outranks them. happy-dom drops @layer blocks, so the
@@ -28,17 +28,14 @@ vi.mock('react-strict-dom', async () => {
 });
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock(
-  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
-  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+  '../../src/platform/KeyboardScope.tsx',
+  () => import('../../src/platform/KeyboardScope.web.tsx')
 );
-vi.mock(
-  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
-  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
-);
+vi.mock('../../src/platform/flyoutFocus.ts', () => import('../../src/platform/flyoutFocus.web.ts'));
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+  '../../src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../src/rsdDrawing/ModalScrim.web.tsx')
 );
 vi.mock('react-native-safe-area-context', () => ({
   initialWindowMetrics: null,

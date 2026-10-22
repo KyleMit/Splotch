@@ -7,28 +7,28 @@ import {
   root,
 } from './rsd-native-selection-host.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 import { act, createElement } from 'react';
 import { Animated } from 'react-native';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
   INSTALL_PREVIEW_ICON_SRC,
   RsdInstallBanner,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdInstallBanner.tsx';
-import { INSTALL_HINT_ID } from '../../../experiments/native-architecture/src/rsdDrawing/RsdInstallText.tsx';
-import { createInstallPrompt } from '../../../experiments/native-architecture/src/install/installPolicy.ts';
-import { PARTING_MESSAGE_MS } from '../../../experiments/native-architecture/src/install/useInstallBanner.ts';
+} from '../../../src/rsdDrawing/RsdInstallBanner.tsx';
+import { INSTALL_HINT_ID } from '../../../src/rsdDrawing/RsdInstallText.tsx';
+import { createInstallPrompt } from '../../../src/install/installPolicy.ts';
+import { PARTING_MESSAGE_MS } from '../../../src/install/useInstallBanner.ts';
 import {
   INSTALL_BANNER_COPY,
   INSTALL_PROMPT_COPY,
   iosBannerSteps,
-} from '../../../experiments/native-architecture/src/install/installCopy.ts';
-import { STORAGE_KEYS } from '../../../web/src/lib/storageKeys.ts';
-import { BANNER_ENTER_MS, BANNER_EXIT_MS } from '../../../web/src/lib/components/bannerMotion.ts';
-import { CALM_FADE_MS } from '../../../web/src/lib/motionDurations.ts';
+} from '../../../src/install/installCopy.ts';
+import { STORAGE_KEYS } from '../../../src/lib/storageKeys.ts';
+import { BANNER_ENTER_MS, BANNER_EXIT_MS } from '../../../src/lib/components/bannerMotion.ts';
+import { CALM_FADE_MS } from '../../../src/lib/motionDurations.ts';
 
 const install = vi.hoisted(() => ({ owner: null }));
-vi.mock('../../../experiments/native-architecture/src/platform/installPrompt.ts', () => ({
+vi.mock('../../../src/platform/installPrompt.ts', () => ({
   get installPrompt() {
     return install.owner;
   },

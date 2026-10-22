@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createParentGate } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { createParentGate } from '../../src/parentCenter/parentGate.ts';
 
 const MASH_WINDOW_MS = 120_000;
 const TRIALS = 2000;

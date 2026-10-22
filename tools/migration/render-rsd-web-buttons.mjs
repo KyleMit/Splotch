@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const app = join(import.meta.dirname, '../../experiments/native-architecture');
+const app = join(import.meta.dirname, '../..');
 // A test seam: --pressable=<file> renders through another web RsdPressable, so the regression
 // test can prove the spread form fails.
 const PRESSABLE_FLAG = '--pressable=';

@@ -8,11 +8,10 @@ vi.mock('react-native', () => ({
   },
 }));
 
-const { DEVICE_LOCK_MODULE, isDeviceLocked } =
-  await import('../../experiments/native-architecture/src/platform/deviceLock.ts');
+const { DEVICE_LOCK_MODULE, isDeviceLocked } = await import('../../src/platform/deviceLock.ts');
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
-const APP = 'experiments/native-architecture/';
+const APP = '';
 const SOURCES = {
   swift: read(`${APP}ios/Splotch/SplotchDeviceLock.swift`),
   bridge: read(`${APP}ios/Splotch/SplotchDeviceLock.m`),

@@ -1,4 +1,4 @@
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -9,13 +9,9 @@ import {
   emptyDrawing,
   strokeStyle,
   undoDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import {
-  planInk,
-  checkpointMatches,
-  needsPreparation,
-} from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
+} from '../../src/drawing/model.ts';
+import { parseDrawing } from '../../src/drawing/drawingFormat.ts';
+import { planInk, checkpointMatches, needsPreparation } from '../../src/drawing/checkpoints.ts';
 
 import { checkpointFixtures } from '../migration/probes/native-eraser/checkpoint-fixtures.mjs';
 

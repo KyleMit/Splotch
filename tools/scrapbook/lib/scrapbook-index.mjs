@@ -38,7 +38,7 @@ const APP_URL = 'https://splotch.art';
 // casing; the owner is case-insensitive.
 const REPO_BLOB_BASE = `${REPO_URL}/blob/main/scrapbook/`;
 
-const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
+const ICONS_DIR = join(ROOT, 'assets/icons');
 
 // The localStorage key the theme switch persists under. Only this page reads it.
 const THEME_STORAGE_KEY = 'scrapbook-theme';

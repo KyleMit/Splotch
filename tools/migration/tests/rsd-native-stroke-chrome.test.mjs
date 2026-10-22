@@ -9,11 +9,11 @@ import {
   expandControls,
 } from './rsd-native-selection-host.mjs';
 import { AI_BUTTON, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 import { adoptedDrawing, canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
-import { FLYOUT_EXIT_MS } from '../../../web/src/lib/motionDurations.ts';
+import { emptyDrawing } from '../../../src/drawing/model.ts';
+import { Animated } from '../../../src/platform/animated.ts';
+import { FLYOUT_EXIT_MS } from '../../../src/lib/motionDurations.ts';
 
 const PORTRAIT_PHONE = { width: 402, height: 874, scale: 1, fontScale: 1 };
 const LANDSCAPE_PHONE = { width: 740, height: 360, scale: 1, fontScale: 1 };

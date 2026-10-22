@@ -4,7 +4,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import { createRequire } from 'node:module';
-import { QUICKSAND_FONT_FAMILY } from '../../../web/src/lib/fonts.ts';
+import { QUICKSAND_FONT_FAMILY } from '../../../src/lib/fonts.ts';
 
 // A reserved name (RFC 2606) no network can answer: only the routes below reply.
 const STATIC_DOCUMENT_ORIGIN = 'http://render.invalid';
@@ -37,7 +37,7 @@ export function quicksandFiles() {
   return files;
 }
 
-// The global reset every app document applies (web/src/app.css), which the compositions were
+// The global reset every app document applies (src/app.css), which the compositions were
 // authored under.
 export const DOCUMENT_RESET_CSS = '*{margin:0;padding:0;box-sizing:border-box}';
 

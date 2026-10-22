@@ -11,10 +11,10 @@ import {
   send,
   settle,
 } from './native-contacts-mounted-harness.mjs';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { EMPTY_SCAN_IDLE_MS } from '../../experiments/native-architecture/src/drawing/inkVisibility.ts';
-import { SCREENSHOT_COOLDOWN_MS } from '../../web/src/lib/drawing/screenshotTiming.ts';
-import { drawingPaperSize } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { DrawingSessionProvider } from '../../src/product/DrawingSession.tsx';
+import { EMPTY_SCAN_IDLE_MS } from '../../src/drawing/inkVisibility.ts';
+import { SCREENSHOT_COOLDOWN_MS } from '../../src/lib/drawing/screenshotTiming.ts';
+import { drawingPaperSize } from '../../src/drawing/paperSpace.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 
 const AUTO_SAVE_CAPTURE_LIMIT = 3;

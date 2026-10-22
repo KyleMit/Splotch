@@ -1,28 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NativeAbortController } from './native-rn-abort-controller.mjs';
-import {
-  CLEAR_PAGE_TURN_ASSET_GAIN,
-  createClearSound,
-} from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
-import amplifiedClearPageTurn from '../../experiments/native-architecture/src/audio/clear-page-turn-amplified.wav';
-import { AUDIO_LOAD_TIMEOUT_MS } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
+import { CLEAR_PAGE_TURN_ASSET_GAIN, createClearSound } from '../../src/audio/pageTurnSound.ts';
+import amplifiedClearPageTurn from '../../src/audio/clear-page-turn-amplified.wav';
+import { AUDIO_LOAD_TIMEOUT_MS } from '../../src/audio/drawingAudio.ts';
 import {
   clearLadderFrequency,
   CLEAR_CANCEL_SPACING_MS,
-} from '../../web/src/lib/audio/clearSoundNotes.ts';
+} from '../../src/lib/audio/clearSoundNotes.ts';
 
 const notes = vi.hoisted(() => ({
   play: vi.fn(async () => {}),
   dispose: vi.fn(),
   load: vi.fn(),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/clearNotes.native.ts', () => ({
+vi.mock('../../src/platform/clearNotes.native.ts', () => ({
   loadClearNotes: notes.load,
 }));
 const audio = vi.hoisted(() => ({ create: vi.fn(), mode: vi.fn(async () => {}) }));
 vi.mock('expo-audio', () => ({ createAudioPlayer: audio.create, setAudioModeAsync: audio.mode }));
-import { loadClearPageTurn } from '../../experiments/native-architecture/src/platform/clearSound.ts';
-import { PLAYBACK_AUDIO_MODE } from '../../experiments/native-architecture/src/audio/playbackMode.ts';
+import { loadClearPageTurn } from '../../src/platform/clearSound.ts';
+import { PLAYBACK_AUDIO_MODE } from '../../src/audio/playbackMode.ts';
 
 function loader() {
   const turn = { note: vi.fn(), play: vi.fn(), dispose: vi.fn() };

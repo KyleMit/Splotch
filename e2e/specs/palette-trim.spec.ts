@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { PALETTE_TRIM_ORDER } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { PALETTE_TRIM_ORDER } from '../../src/drawing/palette.ts';
 import { expect, test } from '../fixtures.ts';
 import { openDrawingScreen } from '../support/drawing.ts';
 

@@ -93,7 +93,7 @@ export function generateCodeMap(argv = process.argv.slice(2)) {
       `${summary.measuredLoc.toLocaleString('en-US')} LOC across ${summary.measuredFiles} files`
   );
   for (const rule of unusedDomainRules(assignments)) {
-    console.warn(`warning: web/src domain rule matched no file — ${rule}`);
+    console.warn(`warning: src domain rule matched no file — ${rule}`);
   }
 }
 

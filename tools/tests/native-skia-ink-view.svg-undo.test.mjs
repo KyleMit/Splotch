@@ -3,19 +3,13 @@ import { act, createElement, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
-import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
-import {
-  DrawingSessionProvider,
-  useDrawingHistory,
-} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import {
-  SvgUndoGhostLayer,
-  useSvgUndoGhostPlan,
-} from '../../experiments/native-architecture/src/drawing/SvgUndoGhost.tsx';
-import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
-import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
-import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
-import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { useUndoAction } from '../../src/useUndoAction.ts';
+import { DrawingSessionProvider, useDrawingHistory } from '../../src/product/DrawingSession.tsx';
+import { SvgUndoGhostLayer, useSvgUndoGhostPlan } from '../../src/drawing/SvgUndoGhost.tsx';
+import { InkPaperScope } from '../../src/drawing/InkPaper.tsx';
+import { InkAppearanceScope } from '../../src/drawing/InkAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../src/drawing/useReduceMotion.ts';
+import { paperProjection } from '../../src/drawing/paperSpace.ts';
 
 const PLANE = { width: 400, height: 300 };
 const state = vi.hoisted(() => ({ frames: new Map(), nextFrame: 0 }));

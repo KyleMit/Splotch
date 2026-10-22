@@ -4,7 +4,7 @@ import {
   brushControl,
   availableBrushes,
   parseBrushPreferences,
-} from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
+} from '../../src/settings/brushPreferences.ts';
 
 function brushFixture(stored = null) {
   let saved = stored;

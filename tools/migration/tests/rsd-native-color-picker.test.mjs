@@ -2,9 +2,9 @@ import { records, root, host, mount } from './rsd-native-selection-host.mjs';
 
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
-import { RsdColorPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorPicker.tsx';
-import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
-import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import { RsdColorPicker } from '../../../src/rsdDrawing/RsdColorPicker.tsx';
+import { ModalShell } from '../../../src/rsdDrawing/ModalShell.tsx';
+import { DialogHeader } from '../../../src/rsdDrawing/DialogHeader.tsx';
 import {
   HEX_DIM_KEYLINE,
   HEX_HOVER_BRIGHTNESS,
@@ -18,16 +18,12 @@ import {
   hexPickerLayout,
   isDiscreteActivation,
   snapHexagon,
-} from '../../../experiments/native-architecture/src/rsdDrawing/hexPicker.ts';
-import { mixSrgb } from '../../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+} from '../../../src/rsdDrawing/hexPicker.ts';
+import { mixSrgb } from '../../../src/rsdDrawing/colorMix.ts';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { DRAWING_THEMES } from '../../../src/drawing/theme.ts';
 
-import {
-  COLOR_FAMILIES,
-  LANDSCAPE_ROWS,
-  PORTRAIT_ROWS,
-} from '../../../web/src/lib/hexPickerLayout.ts';
+import { COLOR_FAMILIES, LANDSCAPE_ROWS, PORTRAIT_ROWS } from '../../../src/lib/hexPickerLayout.ts';
 
 function center(layout, color) {
   const cell = layout.cells.find((entry) => entry.color === color);

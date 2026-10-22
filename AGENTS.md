@@ -18,13 +18,13 @@ Android, iOS and a prerendered web export (ADR-0182).
 
 * **Web** (`splotch.art`, Netlify): the static export, `/admin`, the PWA, and one Netlify Function
   serving `/api/*`.
-* **Native** (Android + iOS): the React Native projects in `experiments/native-architecture`. Native
-  apps call the hosted API. Every non-store build uses `art.splotch.app.dev`.
+* **Native** (Android + iOS): the root `android/` and `ios/` projects. Native apps call the hosted
+  API. Every non-store build uses `art.splotch.app.dev`.
 
-The app lives in `experiments/native-architecture`; framework-free shared modules remain under
-`web/src/lib` until the root promotion in epic #3148. The root package and app share one pnpm lock
-and hoisted dependency tree. Dependency changes require SDK alignment and native script provenance
-review before installation (ADR-0119).
+The app and its native projects live at the repository root. Shared app modules live under
+`src/lib`, server modules under `netlify/server`, and tooling under `tools`. One root package and
+pnpm lockfile own the dependency tree. Dependency changes require SDK alignment and native script
+provenance review before installation (ADR-0119).
 
 Metro resolves platform modules by file extension (`.web.ts`, `.native.ts`, and platform-specific
 variants). Use that build-time boundary instead of adding runtime branches for code that only one
@@ -177,17 +177,17 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   (`@typescript-eslint/no-explicit-any` enforces the zero count).
 * **Near-universal conventions are lint rules, not review vigilance** (ADR-0031, which also records
   the measured rejected candidates — don't re-litigate them without new evidence). The empirically
-  ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
-  uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
-  `prefer-const` enforces immutable bindings, and "should" is banned from test titles. CSS gets its
-  own linter: `npm run lint:css` runs stylelint over hand-authored `.css` files in the repo, and its
-  rules were chosen the same measured way — the ones that catch CSS the parser keeps and the browser
-  silently never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
+  ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `src` uses
+  named exports only, a mixed import marks its types inline (`import { a, type B }`), `prefer-const`
+  enforces immutable bindings, and "should" is banned from test titles. CSS gets its own linter:
+  `npm run lint:css` runs stylelint over hand-authored `.css` files in the repo, and its rules were
+  chosen the same measured way — the ones that catch CSS the parser keeps and the browser silently
+  never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
   `selector-pseudo-class-no-unknown`) plus the notation conventions, colour included
-  (`rgb(0 0 0 / 60%)`, never `rgba(`). Test placement (`.test.ts` colocated under `web/src`,
-  `.spec.ts` in `e2e/specs`) is drift-guarded by `tools/tests/test-file-placement.test.mjs`.
-  Prose-only by choice: PascalCase component files, camelCase lib modules, and dot-joined
-  multi-aspect test names (`platform.osLabel.test.ts`).
+  (`rgb(0 0 0 / 60%)`, never `rgba(`). Test placement (`.test.ts` colocated under `src`, `.spec.ts`
+  in `e2e/specs`) is drift-guarded by `tools/tests/test-file-placement.test.mjs`. Prose-only by
+  choice: PascalCase component files, camelCase lib modules, and dot-joined multi-aspect test names
+  (`platform.osLabel.test.ts`).
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
   `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or
@@ -433,7 +433,7 @@ Remaining `docs/`:
 
 | File                             | When to read it                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/ARCHITECTURE.md`           | Tech stack, the `web/src/lib/` source map, the route/render table, and the UI element glossary — the `architecture` skill routes here                                                                                                                                                                                                                                                                                                                                 |
+| `docs/ARCHITECTURE.md`           | Tech stack, the `src/lib/` source map, the route/render table, and the UI element glossary — the `architecture` skill routes here                                                                                                                                                                                                                                                                                                                                     |
 | `docs/CODING-STANDARDS.md`       | The coding standards: each rule with the incident that earned it and what enforces it (lint rule, type, drift-guard test, budget), plus the ideas considered and not adopted — read before adding, relaxing, or re-proposing a rule                                                                                                                                                                                                                                   |
 | `docs/API.md`                    | The full `/api/*` contract: request/response shapes, auth, CORS, and per-endpoint rate limits — the `api` skill routes here                                                                                                                                                                                                                                                                                                                                           |
 | `docs/TESTING.md`                | Every test layer, its command, and what CI runs it on; flake-resistant spec authoring; Maestro setup — the `testing` skill routes here                                                                                                                                                                                                                                                                                                                                |

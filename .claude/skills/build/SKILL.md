@@ -4,8 +4,8 @@ description: Build the signed release artifacts for the current version (Android
 ---
 
 You are building the **release artifacts** for Splotch — the signed binaries you upload to the app
-stores. The stores ship the React Native app in `experiments/native-architecture`. This is phase 2
-of three, and the phases are ordered for a reason:
+stores. The stores ship the React Native app in `.`. This is phase 2 of three, and the phases are
+ordered for a reason:
 
 | Phase      | Skill               | Produces                                                |
 | ---------- | ------------------- | ------------------------------------------------------- |
@@ -41,11 +41,10 @@ and skip iOS with a note if it doesn't).
    from the matching `releases/<version>.md`. Tell the user the version + versionCode this build
    will carry, so they can confirm it's the one they expect (it reflects the last `cut-release`).
 
-2. **Check signing is configured.** Confirm
-   `experiments/native-architecture/android/keystore.properties` exists. If it does not, **stop**:
-   the store build refuses to configure without the upload key. Tell the user to create it from
-   `keystore.properties.example` beside it, with `storeFile` naming the shipping upload keystore
-   (`../../../android/upload-keystore.jks`) — Play accepts the update only under that key.
+2. **Check signing is configured.** Confirm `android/keystore.properties` exists. If it does not,
+   **stop**: the store build refuses to configure without the upload key. Tell the user to create it
+   from `keystore.properties.example` beside it, with `storeFile` naming the shipping upload
+   keystore (`upload-keystore.jks`) — Play accepts the update only under that key.
 
 3. **Build the signed bundle.** Run `npm run android:bundle`. It runs
    `gradlew -Psplotch.store=true :app:bundleRelease` in the React Native Android project, then
@@ -62,7 +61,7 @@ and skip iOS with a note if it doesn't).
 
 5. **Report.** Tell the user:
    * the app ID, version + versionCode read back out of the built `.aab` and its path
-     (`experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`),
+     (`android/app/build/outputs/bundle/release/app-release.aab`),
    * that signature verification passed.
 
    Uploading to the Google Play Console is still a **manual** step (no Fastfile/CI lane yet) — point
@@ -77,16 +76,15 @@ and skip iOS with a note if it doesn't).
 
 2. **Check the toolchain + signing.** `xcodebuild -version` must work (full Xcode, not Command Line
    Tools), and `pod` must be on `PATH`. Signing is automatic, but it needs the shipping team in
-   `experiments/native-architecture/ios/local.xcconfig` (`DEVELOPMENT_TEAM = …`, from
-   `local.xcconfig.example` beside it). If that file is missing, **stop** and tell the user to
-   create it; never write a team into `project.pbxproj`. A different team cannot update the store
-   app (see the `mobile` skill's `ios.md`).
+   `ios/local.xcconfig` (`DEVELOPMENT_TEAM = …`, from `local.xcconfig.example` beside it). If that
+   file is missing, **stop** and tell the user to create it; never write a team into
+   `project.pbxproj`. A different team cannot update the store app (see the `mobile` skill's
+   `ios.md`).
 
 3. **Build the `.ipa`.** Run `npm run ios:ipa`. It runs `pod install`, archives Release with
    `-xcconfig Store.xcconfig` (the opt-in that clears the `.dev` suffix) and
-   `-allowProvisioningUpdates`, then exports per
-   `experiments/native-architecture/ios/ExportOptions.plist`. Slow (minutes) — let it finish. If
-   xcodebuild fails, surface the error and stop.
+   `-allowProvisioningUpdates`, then exports per `ios/ExportOptions.plist`. Slow (minutes) — let it
+   finish. If xcodebuild fails, surface the error and stop.
 
 4. **Verify the `.ipa` carries the identity and version you expected.** Run
    `npm run release:publish -- --only=ios --dry-run`, which reads `CFBundleIdentifier`,
@@ -96,7 +94,7 @@ and skip iOS with a note if it doesn't).
 
 5. **Report.** Tell the user:
    * the bundle ID, version + build number read back out of the exported `.ipa` and its path
-     (`experiments/native-architecture/ios/build/ipa/Splotch.ipa`),
+     (`ios/build/ipa/Splotch.ipa`),
    * that uploading is **manual**: drag the `.ipa` into Apple's **Transporter** app (or Xcode
      Organizer). The matching "What's New" text lives at
      `fastlane/metadata/en-US/release_notes.txt`.

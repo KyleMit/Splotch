@@ -5,7 +5,7 @@ import { ROOT } from '../../lib/proc.mjs';
 import { compareSemverDesc } from './release-frontmatter.mjs';
 
 export const COLORING_PACK_SNAPSHOT_DIR = join(ROOT, 'tools', 'release', 'coloring-pack-snapshots');
-const WEB_STATIC_DIR = join(ROOT, 'web', 'static');
+const WEB_STATIC_DIR = join(ROOT, 'assets', 'static');
 
 // Every released native version that ships coloring packs, mapped to the exact
 // number of its manifest-addressed files the origin no longer serves. It is the

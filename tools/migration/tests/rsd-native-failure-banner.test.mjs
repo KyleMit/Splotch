@@ -1,24 +1,21 @@
 import { act, createElement } from 'react';
-import { saveFailureCopy } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
+import { saveFailureCopy } from '../../../src/export/pictureSave.ts';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
 import {
   BANNER_CLEAR_RESERVE_PX,
   BANNER_MAX_WIDTH_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
-import { useDrawingMessages } from '../../../experiments/native-architecture/src/drawingMessages.ts';
-import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import { DRAWING_SCALE } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import {
-  BUTTON_SCALE_MAX,
-  DEFAULT_BUTTON_SCALE,
-} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
+} from '../../../src/rsdDrawing/RsdFailureBanner.tsx';
+import { useDrawingMessages } from '../../../src/drawingMessages.ts';
+import { PALETTE_FLOWS } from '../../../src/rsdDrawing/paletteGeometry.ts';
+import { DRAWING_SCALE } from '../../../src/drawing/theme.ts';
+import { BUTTON_SCALE_MAX, DEFAULT_BUTTON_SCALE } from '../../../src/settings/buttonSize.ts';
 
 // The photo library's answer to a save, and the PNGs it was handed.
 const library = vi.hoisted(() => ({ outcome: 'photos', saves: [] }));
-vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
+vi.mock('../../../src/platform/photoLibrary.ts', () => ({
   photoLibrary: {
     save: async (png) => {
       library.saves.push(png);

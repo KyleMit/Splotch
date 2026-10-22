@@ -1,18 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
-import { iosShareButtonLocation } from '../../web/src/lib/iosShareButtonLocation.ts';
-import { INSTALL_PROMPT_COPY } from '../../web/src/lib/installPromptCopy.ts';
-import { QUICKSAND_FONT_FAMILY } from '../../web/src/lib/fonts.ts';
-import { TABLET_MIN_SIDE_PX } from '../../web/src/lib/breakpoints.ts';
+import { iosShareButtonLocation } from '../../src/lib/iosShareButtonLocation.ts';
+import { INSTALL_PROMPT_COPY } from '../../src/lib/installPromptCopy.ts';
+import { QUICKSAND_FONT_FAMILY } from '../../src/lib/fonts.ts';
+import { TABLET_MIN_SIDE_PX } from '../../src/lib/breakpoints.ts';
 
 const viewport = vi.hoisted(() => ({ width: 0, height: 0 }));
 vi.mock('react-native', () => ({ useWindowDimensions: () => viewport }));
 
-const { useShareButtonLocation } =
-  await import('../../experiments/native-architecture/src/install/shareLocation.ts');
+const { useShareButtonLocation } = await import('../../src/install/shareLocation.ts');
 const { INSTALL_PROMPT_COPY: NATIVE_INSTALL_PROMPT_COPY } =
-  await import('../../experiments/native-architecture/src/install/installCopy.ts');
-const { SHIPPING_FONT_FAMILY } =
-  await import('../../experiments/native-architecture/src/platform/shippingFontFaces.ts');
+  await import('../../src/install/installCopy.ts');
+const { SHIPPING_FONT_FAMILY } = await import('../../src/platform/shippingFontFaces.ts');
 // layoutState.orientation: the wider side wins, and a square viewport takes the CSS orientation,
 // which the CSS spec makes portrait.
 const shippingOrientation = (width, height) => (width > height ? 'landscape' : 'portrait');

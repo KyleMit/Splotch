@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
-const NATIVE_PROJECT = 'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj';
-const NATIVE_PLIST = 'experiments/native-architecture/ios/Splotch/Info.plist';
+const NATIVE_PROJECT = 'ios/Splotch.xcodeproj/project.pbxproj';
+const NATIVE_PLIST = 'ios/Splotch/Info.plist';
 const IPHONE_AND_IPAD = '1,2';
 const ORIENTATIONS = {
   UISupportedInterfaceOrientations: [

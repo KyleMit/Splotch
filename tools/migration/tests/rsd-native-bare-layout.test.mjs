@@ -1,13 +1,10 @@
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { RESIZE_SETTLE_MS } from '../../../web/src/lib/drawing/resizeListener.ts';
+import { RESIZE_SETTLE_MS } from '../../../src/lib/drawing/resizeListener.ts';
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
-import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
+import { NativeDrawingLayout } from '../../../src/rsdDrawing/NativeScrollAreas.tsx';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
-import {
-  adoptPaper,
-  UNADOPTED_PAPER,
-} from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { adoptPaper, UNADOPTED_PAPER } from '../../../src/drawing/paperSpace.ts';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());

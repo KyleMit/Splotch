@@ -40,11 +40,10 @@ end. Skip every other entry.
    `node_modules` exists. For the total installed footprint, count the lockfile's `packages:`
    entries — the lockfile is YAML, so this is a text scan, not `node -e`:
    `awk '/^packages:/{f=1;next} /^[a-z]/{f=0} f && /^  [^ ]/{n++} END{print n}' pnpm-lock.yaml`.
-2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep
-   `web/src/`, `web/*.config.*`, `tools/`, `tools/`, and the npm scripts for imports and
-   invocations. A package with no findable usage is itself a finding (candidate for removal — but
-   check `overrides`, `postinstall`, config-file plugin references, and CLI-only use before calling
-   it dead).
+2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep `src/`,
+   `web/*.config.*`, `tools/`, `tools/`, and the npm scripts for imports and invocations. A package
+   with no findable usage is itself a finding (candidate for removal — but check `overrides`,
+   `postinstall`, config-file plugin references, and CLI-only use before calling it dead).
 3. **Note repo entanglements.** Known ones to carry into entries (verify, don't assume):
    * `package.json` `overrides` pins `@capacitor/assets`' transitive `sharp` to the root `$sharp`
      (proxy-blocked libvips download in cloud sessions) — an entanglement for both packages.
@@ -211,7 +210,7 @@ GitHub Actions, runtime-fetched CLIs, system toolchains). Per-package entry form
 ### package-name
 
 * **Version:** `^1.2.3` declared · 1.2.5 locked (per `pnpm-lock.yaml`) · prod
-* **Used for:** what it does for Splotch, and where (`web/src/…`, config, npm scripts)
+* **Used for:** what it does for Splotch, and where (`src/…`, config, npm scripts)
 * **Source:** npm · [github.com/owner/repo](https://github.com/owner/repo) · published by Org/person
 * **License:** MIT
 * **Health** (checked 2026-07-17): [4.2k stars](https://github.com/owner/repo) ·

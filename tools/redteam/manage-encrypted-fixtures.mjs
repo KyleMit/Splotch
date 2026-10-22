@@ -4,7 +4,7 @@
 //   node tools/redteam/manage-encrypted-fixtures.mjs encrypt   # source/    -> encrypted/ (commit these)
 //   node tools/redteam/manage-encrypted-fixtures.mjs decrypt   # encrypted/ -> decrypted/ (gitignored)
 //
-// Requires REDTEAM_FIXTURE_KEY (in web/.env or exported). source/ and decrypted/
+// Requires REDTEAM_FIXTURE_KEY (in .env or exported). source/ and decrypted/
 // are gitignored; only encrypted/*.enc is committed.
 
 import { join } from 'node:path';

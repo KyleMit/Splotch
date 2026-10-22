@@ -5,8 +5,8 @@ import {
   paperBounds,
   paperProjection,
   paperSize,
-} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { COLORING_FILLS } from '../../experiments/native-architecture/src/drawing/pages.ts';
+} from '../../src/drawing/paperSpace.ts';
+import { COLORING_FILLS } from '../../src/drawing/pages.ts';
 
 // Awaited so this import settles before the static imports start: a concurrent import can take
 // Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.
@@ -23,9 +23,7 @@ vi.mock('@shopify/react-native-skia', () => ({
   },
 }));
 
-const PAINTER = fileURLToPath(
-  new URL('../../experiments/native-architecture/src/drawing/skiaInkPainter.ts', import.meta.url)
-);
+const PAINTER = fileURLToPath(new URL('../../src/drawing/skiaInkPainter.ts', import.meta.url));
 const PAINT_TIMEOUT_MS = 30_000;
 const REPEATED_PAINTS = 3;
 

@@ -14,21 +14,15 @@ import {
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { html } from 'react-strict-dom';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import {
-  RsdAction,
-  styles,
-} from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import {
-  RsdPaintAction,
-  RsdMoreColorsSwatch,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
-import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
-import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+import { RsdDrawingScreen } from '../../../src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdAction, styles } from '../../../src/rsdDrawing/controls.tsx';
+import { RsdPaintAction, RsdMoreColorsSwatch } from '../../../src/rsdDrawing/RsdSwatch.tsx';
+import { DrawingAppearanceProvider } from '../../../src/drawing/DrawingAppearance.tsx';
+import { PALETTE_COLORS } from '../../../src/lib/palette.ts';
+import { NativeSoundSettingsDialog } from '../../../src/rsdDrawing/RsdSettingsDialog.tsx';
+import { createSoundSettings } from '../../../src/settings/soundSettings.ts';
+import { TOUCH_TARGET } from '../../../src/drawing/theme.ts';
+import { RsdIconButton } from '../../../src/rsdDrawing/RsdIconButton.tsx';
 it.each(['light', 'dark'])(
   'names paint buttons at the native boundary in %s mode',
   async (theme) => {

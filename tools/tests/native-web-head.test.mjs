@@ -33,9 +33,9 @@ describe('web export install head', () => {
       'apple-touch-icon.png',
       'site.webmanifest',
     ]);
-    const manifest = JSON.parse(readFileSync(join(ROOT, 'web/static/site.webmanifest'), 'utf8'));
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'assets/static/site.webmanifest'), 'utf8'));
     for (const asset of [...assets, ...manifest.icons.map(({ src }) => src.replace(/^\//, ''))]) {
-      expect(existsSync(join(ROOT, 'web/static', asset)), asset).toBe(true);
+      expect(existsSync(join(ROOT, 'assets/static', asset)), asset).toBe(true);
     }
   });
 

@@ -4,7 +4,7 @@ import { caller, host, mount, records, root } from './rsd-native-selection-host.
 import { Linking } from 'react-native';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
+import { ProbeApp } from '../../../src/ProbeApp.tsx';
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { useCaller } from './rsd-native-ai-fixture.mjs';
 
@@ -12,32 +12,29 @@ vi.mock('react-strict-dom', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, css: { ...actual.css, props: () => ({}) } };
 });
-vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
+vi.mock('../../../src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
+vi.mock('../../../src/platform/appPath.ts', () => import('../../../src/platform/appPath.web.ts'));
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/appPath.ts',
-  () => import('../../../experiments/native-architecture/src/platform/appPath.web.ts')
+  '../../../src/platform/informationFragment.ts',
+  () => import('../../../src/platform/informationFragment.web.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/informationFragment.ts',
-  () => import('../../../experiments/native-architecture/src/platform/informationFragment.web.ts')
+  '../../../src/platform/BrowserBack.tsx',
+  () => import('../../../src/platform/BrowserBack.web.tsx')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/BrowserBack.tsx',
-  () => import('../../../experiments/native-architecture/src/platform/BrowserBack.web.tsx')
+  '../../../src/platform/drawingArrival.ts',
+  () => import('../../../src/platform/drawingArrival.web.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/drawingArrival.ts',
-  () => import('../../../experiments/native-architecture/src/platform/drawingArrival.web.ts')
+  '../../../src/platform/drawingVisited.ts',
+  () => import('../../../src/platform/drawingVisited.web.ts')
 );
 vi.mock(
-  '../../../experiments/native-architecture/src/platform/drawingVisited.ts',
-  () => import('../../../experiments/native-architecture/src/platform/drawingVisited.web.ts')
-);
-vi.mock(
-  '../../../experiments/native-architecture/src/platform/parentPlatform.ts',
-  () => import('../../../experiments/native-architecture/src/platform/parentPlatform.web.ts')
+  '../../../src/platform/parentPlatform.ts',
+  () => import('../../../src/platform/parentPlatform.web.ts')
 );
 
 afterEach(() => {

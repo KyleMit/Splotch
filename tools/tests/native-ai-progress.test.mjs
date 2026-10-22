@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, expect, it, vi } from 'vitest';
-import { createAiProgress } from '../../experiments/native-architecture/src/ai/aiProgress.ts';
+import { createAiProgress } from '../../src/ai/aiProgress.ts';
 
 const NOW_MS = 100_000;
 const FUTURE_START_MS = NOW_MS + 5_000;
