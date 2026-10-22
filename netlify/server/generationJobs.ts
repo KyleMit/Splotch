@@ -1,5 +1,5 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import { loggableError } from './logRedaction';
 import { settleWithRetentionConcurrency } from './retentionSweep';
 // Relative, not `$lib`: the background worker imports this module and is built

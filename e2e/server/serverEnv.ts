@@ -32,5 +32,6 @@ export const E2E_SERVER_ENV = {
   // Non-blank: a free-tier report needs generate-image to mint a token report-image accepts.
   REPORT_TOKEN_SECRET: 'test-report-token-secret',
   USAGE_GRANT_ID_SECRET: 'test-usage-grant-id-secret',
+  SPLOTCH_API_MODE: 'production',
   AI_RECOVERY_V1_ENABLED: '',
 } satisfies Record<string, string>;

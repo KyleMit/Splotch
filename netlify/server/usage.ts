@@ -1,5 +1,5 @@
 import { env } from './privateEnv';
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import type { StyleName } from '../../src/lib/ai/styles';
 import type { TokenUsage, UsageOutcome } from '../../src/lib/usageRecord';
 import { isExpiredUsage, USAGE_STORE_NAME, validUsage } from './usageRecordStorage';

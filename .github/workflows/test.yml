@@ -146,6 +146,9 @@ jobs:
       - name: API contract smoke
         run: npm run test:api:smoke
 
+      - name: Test API generation and side-effect isolation
+        run: npm run test:api:smoke:test
+
   # The deploy (netlify.toml) builds the React Native web export from a production-only install
   # (PNPM_FLAGS = --prod, ADR-0070), so this job does too: a build package filed under
   # devDependencies fails here rather than on Netlify. The deploy leaves out the checks that drive

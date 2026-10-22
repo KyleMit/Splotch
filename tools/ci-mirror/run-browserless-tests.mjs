@@ -13,6 +13,7 @@ export const BROWSERLESS_TEST_COMMANDS = [
   'npm run test:tools',
   'npm run test:migration:rsd-selection',
   'npm run test:api:smoke',
+  'npm run test:api:smoke:test',
 ];
 
 export function summarize(failures, log = console) {

@@ -1,4 +1,5 @@
-export const AI_ORIGIN = 'https://splotch.art';
+import { API_ORIGIN } from '../apiOrigin';
+export const AI_ORIGIN = API_ORIGIN;
 export const AI_STYLES = [
   'Magical',
   'Crayon',

@@ -18,6 +18,8 @@
 // Each target first deletes what it writes, so a failed build cannot leave an older version's
 // file where the publish step looks for this one.
 
+import apiOrigin from '../mobile/api-origin.cjs';
+import { verifyNativeApiOrigin } from '../mobile/verify-api-origin.mjs';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, fail, isMain, run } from '../lib/proc.mjs';
@@ -164,8 +166,17 @@ export function main(args = process.argv.slice(2)) {
   const [name, ...extra] = args;
   if (!Object.hasOwn(TARGETS, name ?? '') || extra.length) fail(USAGE);
   const target = TARGETS[name];
+  process.env.EXPO_PUBLIC_SPLOTCH_API_ORIGIN = apiOrigin.readApiOrigin(
+    process.env,
+    target.appId === STORE_APP_ID
+  );
   for (const output of target.outputs) rmSync(join(ROOT, output), { recursive: true, force: true });
   for (const { cmd, args: stepArgs, cwd } of target.steps) run(cmd, stepArgs, { cwd });
+  verifyNativeApiOrigin(
+    join(ROOT, target.artifact),
+    process.env.EXPO_PUBLIC_SPLOTCH_API_ORIGIN,
+    target.appId === STORE_APP_ID
+  );
   console.log(`\nBuilt ${target.appId}: ${target.artifact}`);
 }
 

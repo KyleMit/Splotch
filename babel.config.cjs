@@ -1,5 +1,7 @@
 const reactStrictPreset = require('react-strict-dom/babel-preset');
 
+const { readApiOrigin } = require('./tools/mobile/api-origin.cjs');
+
 const STRICT_DOM = 'react-strict-dom';
 
 // React Strict DOM's web preset compiles every html.* element and css.* call to plain DOM props,
@@ -32,6 +34,8 @@ function dropCompiledStrictDomImports() {
 
 module.exports = function createBabelConfig(api) {
   const platform = api.caller((caller) => caller?.platform ?? 'native');
+  api.cache.using(() => process.env.EXPO_PUBLIC_SPLOTCH_API_ORIGIN ?? '');
+  if (platform !== 'web') process.env.EXPO_PUBLIC_SPLOTCH_API_ORIGIN = readApiOrigin(process.env);
   const dev = api.caller((caller) => caller?.isDev ?? process.env.NODE_ENV === 'development');
   // Babel runs presets last to first and each plugin's Program exit in that order, so the drop
   // sits between the RSD preset, whose StyleX pass compiles css.props at its exit, and Expo's.

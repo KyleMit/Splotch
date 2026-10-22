@@ -10,6 +10,7 @@
 // a successful generation, a real key probe — is out of scope, because a run
 // must fail on a contract regression and nothing else.
 
+import { contractServerEnv } from './lib/server-env.mjs';
 import { randomUUID } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
 import { startNetlifyFunctionHost } from '../lib/netlify-function-host.mjs';
@@ -31,7 +32,6 @@ import { tinyPngBuffer } from './lib/tiny-png.mjs';
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://127.0.0.1:${PORT}`;
 const ADMIN_SECRET = randomUUID();
-const SEED_TOKENS = 'alpha,beta';
 const OVERSIZED_IMAGE_BYTES = MAX_IMAGE_BYTES + 1;
 const OVERSIZED_JSON_CHUNK_BYTES = 9 * 1024;
 // Spaces the chunks so the cap is crossed while the request is still open, where cancellation
@@ -675,28 +675,7 @@ try {
     // env — the host reads no dotenv file, and a name left out is a credential this
     // script's checks would run against for real.
     // tools/tests/e2e-server-env.test.mjs holds this list to the app's reads.
-    env: {
-      ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
-      ALLOWED_TOKENS_LIST: SEED_TOKENS,
-      // A key the provider refuses, so the generate-image cases stop at the request
-      // guards they are checking without spending anyone's quota. It has to be
-      // non-empty: with no key the managed-token path answers 503 from the
-      // authorization step and never reaches those guards.
-      OPENAI_API_KEY: 'not-a-usable-openai-key',
-      // Blank on purpose: the shipped generation deadline is what the contract
-      // should be checked against. Only the manual red-team suite raises it.
-      GENERATE_DEADLINE_MS_OVERRIDE: '',
-      // Reporting stays unconfigured so the report cases assert the graceful 503
-      // rather than opening a real GitHub issue.
-      GITHUB_ISSUE_TOKEN: '',
-      // A repo that does not exist — blank falls back to the real one.
-      GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
-      // Non-blank so the free report path fails on the credential it is being
-      // checked for, rather than on an unconfigured signing secret.
-      REPORT_TOKEN_SECRET: 'smoke-report-token-secret',
-      USAGE_GRANT_ID_SECRET: 'smoke-usage-grant-id-secret',
-      AI_RECOVERY_V1_ENABLED: '',
-    },
+    env: contractServerEnv(ADMIN_SECRET),
   });
   console.log(`Server ready on ${host.origin}\n`);
   await run();

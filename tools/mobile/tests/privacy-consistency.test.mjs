@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import OpenAI from 'openai';
+import apiOrigin from '../api-origin.cjs';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
@@ -155,17 +156,23 @@ describe('privacy disclosure consistency', () => {
     });
   }
 
-  it('pins fixed production hosts without freezing same-origin development and preview hosts', () => {
+  it('pins production defaults without freezing native build origins or same-origin hosts', () => {
     const firstParty = privacyInventory.outboundHosts.find(
       ({ id }) => id === 'first-party-services'
     );
     const github = privacyInventory.outboundHosts.find(({ id }) => id === 'github-api');
     const openai = privacyInventory.outboundHosts.find(({ id }) => id === 'openai-api');
-    const githubSource = read('netlify/server/github.ts');
+    const githubSource = read('netlify/server/githubProduction.ts');
     const openaiSource = read('netlify/server/ai/openai.ts');
 
-    expect(firstParty.hostPolicy).toBe('same-origin-web-and-worker-fixed-production-native');
+    expect(firstParty.hostPolicy).toBe('same-origin-web-and-worker-build-time-native');
     expect(firstParty.productionHosts).toEqual([new URL(NATIVE_API_ORIGIN).host]);
+    expect(apiOrigin.readApiOrigin({})).toBe(NATIVE_API_ORIGIN);
+    expect(
+      apiOrigin.readApiOrigin({ EXPO_PUBLIC_SPLOTCH_API_ORIGIN: 'https://test.splotch.art' })
+    ).toBe('https://test.splotch.art');
+    for (const evidence of firstParty.implementationEvidence)
+      expect(read(evidence.path)).toContain(evidence.contains);
     expect(github.productionHosts).toEqual([
       new URL(githubSource.match(/GITHUB_API = '([^']+)'/)?.[1]).host,
     ]);

@@ -1,3 +1,4 @@
+import { API_ORIGIN } from '../apiOrigin';
 import { OFFLINE_BOOKS } from './books.generated';
 
 import { isOfflineBookId, type OfflineBookId } from './identity';
@@ -16,7 +17,7 @@ export type Pack = Readonly<{
   bytes: number;
   files: readonly PackFile[];
 }>;
-export const PACK_ORIGIN = 'https://splotch.art';
+export const PACK_ORIGIN = API_ORIGIN;
 export const MAX_PACK_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_PACK_BYTES = 16 * 1024 * 1024;
 const PACK_FILE_COUNT = 74;

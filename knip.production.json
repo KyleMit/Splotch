@@ -9,7 +9,8 @@
     "tools/migration/check-native-web-startup.mjs!",
     "src/index.ts",
     "*.cjs",
-    "postcss.config.mjs"
+    "postcss.config.mjs",
+    "tools/api-mode/selection.mjs!"
   ],
   "paths": {
     "$lib/*": ["src/lib/*"]

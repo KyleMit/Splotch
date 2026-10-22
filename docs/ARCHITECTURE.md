@@ -33,35 +33,36 @@ mobile guide owns signing and identity (`docs/MOBILE/native.md`).
 Paths in the following app table are relative to `src/`. The platform split is deliberate: inspect
 both variants before changing a shared contract.
 
-| Path                                                           | Owner                                                                               |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `ProbeApp.tsx`, `useDrawingScreen.ts`                          | Application composition and drawing-screen wiring.                                  |
-| `product/`                                                     | Drawing session, product actions, modal routing, Back handling and deferred owners. |
-| `drawing/model.ts`                                             | Drawing state and its mutation/subscription contract.                               |
-| `drawing/paperInputOwner.ts`, `drawing/paperSpace.ts`          | Contact ownership and paper-coordinate input.                                       |
-| `drawing/PaperInputView.tsx`, `drawing/PaperInputView.web.tsx` | Platform input surfaces.                                                            |
-| `drawing/SkiaInk.tsx`, `drawing/skiaInkScene.ts`               | Native ink scene and its Skia presentation.                                         |
-| `drawing/InkLayer.web.tsx`                                     | Browser ink presentation.                                                           |
-| `drawing/checkpoints.ts`                                       | Flattened drawing history and retained undo state.                                  |
-| `drawing/pictureCompose.ts`, `drawing/pictureCompose.web.ts`   | Platform picture composition.                                                       |
-| `drawing/perfProbe.native.ts`, `drawing/perfReplay.ts`         | Opt-in native contact-cohort probe and replay.                                      |
-| `drawing/bundledFarm/`, `drawing/bundledBookAssets.ts`         | Bundled starter-book artwork.                                                       |
-| `rsdDrawing/RsdDrawingScreen.tsx`                              | Shared RSD screen structure.                                                        |
-| `rsdDrawing/RsdActionsPanel.tsx`                               | Actions Panel and drawer controls.                                                  |
-| `rsdDrawing/RsdSettingsRoute.tsx`                              | Settings surface routing.                                                           |
-| `rsdDrawing/tokens.css.ts`                                     | Generated RSD design-token projection.                                              |
-| `settings/`                                                    | Persisted preferences, section definitions, activity stamps and write ordering.     |
-| `parentCenter/`                                                | Parental-gate policies, challenge state and protected operations.                   |
-| `ai/`                                                          | Generation, credentials, journal recovery, progress, result validation and reports. |
-| `export/`                                                      | Picture names, saves, retained unsaved pictures and failure outcomes.               |
-| `offlineLibrary/`                                              | Installed-book catalog, manifest verification and platform storage.                 |
-| `clear/`                                                       | Drag-to-clear gesture and its dock geometry.                                        |
-| `audio/`, `useDrawingSound.ts`                                 | Drawing and clear audio.                                                            |
-| `install/`                                                     | Browser installation policy, banner and guide copy.                                 |
-| `platform/`                                                    | File, network, secure storage, orientation and other platform integrations.         |
-| `pageDocument/`                                                | Browser document entries, admin console and styleguide.                             |
-| `information/`                                                 | Shared information-page content and navigation.                                     |
-| `prerenderFirstFrame.tsx`                                      | Drawing screen's prerendered first frame (ADR-0180).                                |
+| Path                                                           | Owner                                                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `ProbeApp.tsx`, `useDrawingScreen.ts`                          | Application composition and drawing-screen wiring.                                    |
+| `product/`                                                     | Drawing session, product actions, modal routing, Back handling and deferred owners.   |
+| `drawing/model.ts`                                             | Drawing state and its mutation/subscription contract.                                 |
+| `drawing/paperInputOwner.ts`, `drawing/paperSpace.ts`          | Contact ownership and paper-coordinate input.                                         |
+| `drawing/PaperInputView.tsx`, `drawing/PaperInputView.web.tsx` | Platform input surfaces.                                                              |
+| `drawing/SkiaInk.tsx`, `drawing/skiaInkScene.ts`               | Native ink scene and its Skia presentation.                                           |
+| `drawing/InkLayer.web.tsx`                                     | Browser ink presentation.                                                             |
+| `drawing/checkpoints.ts`                                       | Flattened drawing history and retained undo state.                                    |
+| `drawing/pictureCompose.ts`, `drawing/pictureCompose.web.ts`   | Platform picture composition.                                                         |
+| `drawing/perfProbe.native.ts`, `drawing/perfReplay.ts`         | Opt-in native contact-cohort probe and replay.                                        |
+| `drawing/bundledFarm/`, `drawing/bundledBookAssets.ts`         | Bundled starter-book artwork.                                                         |
+| `rsdDrawing/RsdDrawingScreen.tsx`                              | Shared RSD screen structure.                                                          |
+| `rsdDrawing/RsdActionsPanel.tsx`                               | Actions Panel and drawer controls.                                                    |
+| `rsdDrawing/RsdSettingsRoute.tsx`                              | Settings surface routing.                                                             |
+| `rsdDrawing/tokens.css.ts`                                     | Generated RSD design-token projection.                                                |
+| `settings/`                                                    | Persisted preferences, section definitions, activity stamps and write ordering.       |
+| `parentCenter/`                                                | Parental-gate policies, challenge state and protected operations.                     |
+| `apiOrigin.ts`, `apiOrigin.web.ts`                             | Native build-time HTTPS server origin; web keeps same-origin API requests (ADR-0183). |
+| `ai/`                                                          | Generation, credentials, journal recovery, progress, result validation and reports.   |
+| `export/`                                                      | Picture names, saves, retained unsaved pictures and failure outcomes.                 |
+| `offlineLibrary/`                                              | Installed-book catalog, manifest verification and platform storage.                   |
+| `clear/`                                                       | Drag-to-clear gesture and its dock geometry.                                          |
+| `audio/`, `useDrawingSound.ts`                                 | Drawing and clear audio.                                                              |
+| `install/`                                                     | Browser installation policy, banner and guide copy.                                   |
+| `platform/`                                                    | File, network, secure storage, orientation and other platform integrations.           |
+| `pageDocument/`                                                | Browser document entries, admin console and styleguide.                               |
+| `information/`                                                 | Shared information-page content and navigation.                                       |
+| `prerenderFirstFrame.tsx`                                      | Drawing screen's prerendered first frame (ADR-0180).                                  |
 
 ### Retained shared TypeScript
 

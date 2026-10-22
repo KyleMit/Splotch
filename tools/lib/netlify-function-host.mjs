@@ -9,11 +9,13 @@
 // the caller: no dotenv file is read, and `mode` alone decides runtimeMode's `dev`.
 
 import { createServer } from 'node:http';
+import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
 import { netlifyFunctionRoutes } from './netlify-function-routes.mjs';
 import { ROOT } from './proc.mjs';
+import { readApiMode, apiSelectionPlugin } from './api-mode.mjs';
 
 const FUNCTIONS_DIR = join(ROOT, 'netlify', 'functions');
 // The function loader uses the server's TypeScript project rather than the app's platform graph.
@@ -28,7 +30,7 @@ function routeOf(pathname) {
 
 // Vite fixes import.meta.env.DEV from NODE_ENV as the server is created, and fills an unset
 // NODE_ENV in itself, so the mode holds only for the creation and the caller's value returns.
-async function createModuleLoader(mode) {
+async function createModuleLoader(mode, apiMode) {
   const callerNodeEnv = process.env.NODE_ENV;
   process.env.NODE_ENV = mode;
   try {
@@ -40,6 +42,7 @@ async function createModuleLoader(mode) {
       mode,
       logLevel: 'warn',
       appType: 'custom',
+      plugins: [apiSelectionPlugin(apiMode)],
       server: { middlewareMode: true, hmr: false, ws: false, watch: null },
     });
   } finally {
@@ -53,8 +56,9 @@ async function createModuleLoader(mode) {
  * runtimeMode's `dev` true, so the in-memory stand-ins for Netlify Blobs are writable and the CSRF
  * guard is off. `production` is a deploy's view: no Blobs, guard on.
  */
-export async function loadNetlifyFunctions(mode) {
-  const vite = await createModuleLoader(mode);
+export async function loadNetlifyFunctions(mode, apiMode = 'production') {
+  const vite = await createModuleLoader(mode, apiMode);
+  const background = new Set();
   try {
     const { dev } = await vite.ssrLoadModule(RUNTIME_MODE_MODULE);
     if (dev !== (mode === 'development')) {
@@ -64,11 +68,34 @@ export async function loadNetlifyFunctions(mode) {
     for (const { file, path } of netlifyFunctionRoutes(FUNCTIONS_DIR)) {
       handlers.set(path, (await vite.ssrLoadModule(file)).default);
     }
+    for (const file of readdirSync(FUNCTIONS_DIR).filter((name) =>
+      name.endsWith('-background.ts')
+    )) {
+      const worker = await vite.ssrLoadModule(join(FUNCTIONS_DIR, file));
+      if (worker.config?.background !== true)
+        throw new Error(`${file} must declare background: true`);
+      handlers.set(`/.netlify/functions/${file.slice(0, -3)}`, (request, context) => {
+        const task = worker.default(request, context);
+        background.add(task);
+        void task
+          .catch((error) => console.error('[background-function]', error))
+          .finally(() => background.delete(task));
+        return Promise.resolve(new Response(null, { status: 202 }));
+      });
+    }
+    const decorateResponse =
+      apiMode === 'test'
+        ? (await vite.ssrLoadModule(join(ROOT, 'tools/lib/noindex-response.ts'))).noindexResponse
+        : (response) => response;
     return {
+      decorateResponse,
       functionFor: (pathname) => handlers.get(routeOf(pathname)) ?? null,
       // A module from the functions' own graph, so state it holds is the function's.
       serverModule: (file) => vite.ssrLoadModule(file),
-      close: () => vite.close(),
+      close: async () => {
+        await Promise.allSettled(background);
+        await vite.close();
+      },
     };
   } catch (error) {
     await vite.close();
@@ -127,7 +154,7 @@ function listen(server, port) {
  */
 export async function startNetlifyFunctionHost({ mode, port, env }) {
   Object.assign(process.env, env);
-  const functions = await loadNetlifyFunctions(mode);
+  const functions = await loadNetlifyFunctions(mode, readApiMode(env));
   const server = createServer((req, res) => {
     const handler = functions.functionFor(new URL(req.url ?? '/', `http://${LOOPBACK}`).pathname);
     if (!handler) {
@@ -136,7 +163,7 @@ export async function startNetlifyFunctionHost({ mode, port, env }) {
       return;
     }
     invokeFunction(handler, req)
-      .then((response) => writeResponse(res, response))
+      .then((response) => writeResponse(res, functions.decorateResponse(response)))
       .catch((error) => {
         console.error('[netlify-function-host]', req.method, req.url, error);
         if (!res.headersSent) res.statusCode = 500;

@@ -48,4 +48,4 @@ export interface AiImageProvider {
   verifyKey(apiKey: string): Promise<KeyCheckResult>;
 }
 
-export { openAiProvider as aiProvider } from './openai';
+export { aiProvider } from '../deployment.generated';

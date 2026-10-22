@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import { isStyleName, type StyleName } from '../../src/lib/ai/styles';
 import { USAGE_OUTCOMES, type TokenUsage, type UsageOutcome } from '../../src/lib/usageRecord';
 import { settleWithRetentionConcurrency } from './retentionSweep';

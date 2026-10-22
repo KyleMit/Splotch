@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import type { StyleName } from '../../src/lib/ai/styles';
 import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '../../src/lib/imageReport';
 import { IMAGE_REPORT_STORE_NAME } from './imageReportStoreName';

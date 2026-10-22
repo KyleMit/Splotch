@@ -22,6 +22,7 @@ function fixture() {
     'src',
     'package.json',
     'babel.config.cjs',
+    'tools/mobile/api-origin.cjs',
     'tools/migration/check-rsd-transform.cjs',
     'tools/migration/rsd-brush-source-guards.cjs',
   ]) {

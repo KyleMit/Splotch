@@ -25,9 +25,9 @@ Before changing an endpoint:
 * Every endpoint is served by one plain Netlify Function (`netlify/functions/api.ts`) from a module
   in `netlify/server/api/`; nothing on the wire may change without a deliberate contract change, and
   `tools/api-smoke/tests/wire-diff.test.mjs` holds the wrapper to the recorded answers.
-* These endpoints are **not bundled for native**. The apps call the hosted API through
-  `__NATIVE_API_BASE__`, so a contract change ships to installed apps that were built against the
-  old shape.
+* These endpoints are **not bundled for native**. The apps call the hosted API through the
+  build-time `EXPO_PUBLIC_SPLOTCH_API_ORIGIN`, so a contract change ships to installed apps that
+  were built against the old shape.
 * `.claude/rules/server-api.md` loads automatically when you edit the endpoint modules or functions
   and carries the implementation rules; this skill and [`docs/API.md`](../../../docs/API.md) are the
   contract.
