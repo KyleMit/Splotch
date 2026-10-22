@@ -26,7 +26,7 @@ Use unused local ports. Run the host-exclusive browser and native lanes separate
 
 ```sh
 SPLOTCH_E2E_PORT=5300 npm run test:e2e:api -- --workers=1
-SPLOTCH_E2E_PORT=5303 npm run test:e2e -- e2e/specs/ai-report.spec.ts e2e/specs/feedback.spec.ts --workers=1
+SPLOTCH_E2E_PORT=5303 npm run test:e2e -- e2e/specs/ai-report.spec.ts e2e/specs/feedback-page.spec.ts --workers=1
 SMOKE_PORT=5301 npm run test:api:smoke
 SMOKE_PORT=5302 npm run test:api:smoke:test
 npm run test:tools
