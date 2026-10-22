@@ -71,3 +71,17 @@ remain identical. A real-CLI case in the existing geometry suite proves catalog 
 rewriting the exempt mascot. It fails before the fix and passes after it. Generator help and
 generated headers name the current assets owner. The two generated runtime files change only
 headers; all 24 changed production TypeScript modules emit identical JavaScript to the base.
+
+## Final review
+
+Claude round two
+[confirmed every first-round fix](https://github.com/KyleMit/Splotch/pull/3178#pullrequestreview-5609533589)
+and found no blocking defect. Its one new suggestion is valid: ADR-0125 must distinguish the
+retained rebase tool from the retired catalog-grid test. The scope note, two receipts and CLI header
+explicitly state that no automated grid guard survives; the historical decision remains intact. No
+new guard, geometry change or product-gap assertion is included. This completes the two-round
+budget.
+
+CI also caught formatting drift in semantic-adr-proof.json after the scratch checker rewrote it
+after the local format pass. The final address pass runs the semantic checker before formatting,
+then stages the complete evidence before the final gates. No source generator runs afterward.

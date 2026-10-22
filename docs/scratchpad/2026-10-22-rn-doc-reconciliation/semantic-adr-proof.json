@@ -9,16 +9,6 @@
   "allReceiptsMatch": true,
   "currentOwnerPathsExist": true,
   "allIndexStatusSectionsAgree": true,
-  "startHere": [
-    "0182",
-    "0178",
-    "0179",
-    "0180",
-    "0181",
-    "0008",
-    "0070",
-    "0071",
-    "0058"
-  ],
+  "startHere": ["0182", "0178", "0179", "0180", "0181", "0008", "0070", "0071", "0058"],
   "errors": []
 }
