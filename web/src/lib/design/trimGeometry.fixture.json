@@ -1,0 +1,51 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "colorMenu11FromRank4": [
+    {
+      "thresholdPx": 767.98,
+      "ranks": [4]
+    },
+    {
+      "thresholdPx": 704.98,
+      "ranks": [5]
+    },
+    {
+      "thresholdPx": 641.98,
+      "ranks": [6]
+    },
+    {
+      "thresholdPx": 578.98,
+      "ranks": [7]
+    },
+    {
+      "thresholdPx": 515.98,
+      "ranks": [8]
+    },
+    {
+      "thresholdPx": 452.98,
+      "ranks": [9]
+    },
+    {
+      "thresholdPx": 389.98,
+      "ranks": [10]
+    },
+    {
+      "thresholdPx": 326.98,
+      "ranks": [11]
+    },
+    {
+      "thresholdPx": 263.98,
+      "ranks": [12]
+    },
+    {
+      "thresholdPx": 200.98,
+      "ranks": [13]
+    },
+    {
+      "thresholdPx": 137.98,
+      "ranks": [14]
+    }
+  ],
+  "hexRows": [564.98, 508.98, 452.98, 395.98, 338.98, 282.98],
+  "hexColumns": [639.98, 579.98, 519.98, 459.98, 399.98, 334.98, 279.98]
+}

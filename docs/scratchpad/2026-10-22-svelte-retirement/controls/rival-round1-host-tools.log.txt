@@ -1,0 +1,8 @@
+
+ RUN  v5.0.2 /private/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/dd411d8c-85ca-48b9-afb4-8233d68e3309/worktree/tools
+
+
+ Test Files  10 passed (10)
+      Tests  166 passed (166)
+   Start at  21:21:35
+   Duration  5.43s (tests 95%, import 3%, transform 2%)

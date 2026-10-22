@@ -281,4 +281,3 @@ AssertionError: expected { width: 1600, height: 2000 } to deeply equal { width: 
       Tests  10 failed | 44 passed (54)
    Start at  21:00:39
    Duration  542ms (environment 46%, transform 25%, tests 21%, import 8%, worker 1%)
-

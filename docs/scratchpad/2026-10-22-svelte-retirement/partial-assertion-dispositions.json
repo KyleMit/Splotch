@@ -1169,7 +1169,8 @@
         "expect(\n            corePixels(output, x, y).equals(corePixels(expected, x, y)),\n            `seed ${seed}, core (${x}, ${y}), actual ${coverage(output, x, y)}, shipping ${coverage(expected, x, y)}`\n          ).toBe(true);",
         "expect(coverage(expected, x, y)).toBeLessThan(1);"
       ],
-      "disposition": "Actual RN raster coverage retained for six seeds \u00d7 two failure heights \u00d7 four columns, checking >MIN_COVERAGE and <1. Old pixel identity against deleted Svelte painter deliberately retired."
+      "disposition": "restored-fixed-contract",
+      "rationale": "Independent fixed raw core-pixel SHA256 equality for all48 base windows, plus coverage bounds. A one-pixel native phase fault rejects all six seed cases."
     },
     {
       "inventoryIndex": 86,

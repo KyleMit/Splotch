@@ -1,4 +1,7 @@
-import { vi } from 'vitest';
+import { expect, vi } from 'vitest';
+
+export const CURRENT_VERSION = '1.0.0-test';
+export const NEWER_VERSION = '9.9.9';
 
 export function makeRegistration({
   waiting = null as ServiceWorker | null,
@@ -60,6 +63,12 @@ export function setDocumentVisibility(state: DocumentVisibilityState) {
 
 export function restoreDocumentVisibility() {
   Reflect.deleteProperty(document, 'visibilityState');
+}
+
+export function registeredListener(addEventListener: ReturnType<typeof vi.fn>, type: string) {
+  const call = addEventListener.mock.calls.find(([eventType]) => eventType === type);
+  expect(call).toBeDefined();
+  return call?.[1] as EventListener;
 }
 
 export function controllerChangeListeners(container: {

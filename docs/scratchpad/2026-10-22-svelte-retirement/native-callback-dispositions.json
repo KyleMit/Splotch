@@ -2,9 +2,9 @@
   "source_enumeration": "Initial missing-title inventory of native test callbacks in the base-to-working-tree diff; every entry records original file/title/line for reconstruction with git show at base.",
   "scope": "All171 original missing callback titles rechecked against actual bodies and called helpers. Oracle-only retired means the removed old-source assertion retires; original_operations explicitly identifies any real native work and rationale identifies retained counterparts where applicable. Dense source equivalence is distinguished from independent native contracts.",
   "counts": {
-    "oracle-only retired": 112,
-    "restored": 31,
-    "renamed": 28
+    "oracle-only retired": 110,
+    "restored": 32,
+    "renamed": 29
   },
   "callbacks": [
     {
@@ -830,8 +830,12 @@
       "original_title": "matches the shipping field owner for every RGBA byte in both %s bands",
       "original_line": 49,
       "original_operations": "native pixels against old implementation",
-      "disposition": "oracle-only retired",
-      "rationale": "Calls real crayonTilePixels for each pigment/band and compares every byte to a VM-evaluated old grain owner. The exact deleted-owner pixel-equivalence oracle retires by scope; native PNG round-trip, pigment shading, input validation, phase bounds and broad no-blank raster behavior remain."
+      "disposition": "renamed",
+      "rationale": "Exact native output is compared to independent fixed base-derived RGBA SHA256 fixtures for every pigment/band. Edge dither, shade and field-seed mutations must change those bytes; no deleted source is evaluated at test time.",
+      "successor": {
+        "file": "tools/tests/native-crayon-grain.test.mjs",
+        "title": "pins both unencoded RGBA bands for $hex"
+      }
     },
     {
       "file": "tools/tests/native-crayon-grain.test.mjs",
@@ -851,8 +855,12 @@
       "original_title": "detects a changed field policy %s",
       "original_line": 93,
       "original_operations": "native mutation against old implementation",
-      "disposition": "oracle-only retired",
-      "rationale": "Transpiles three mutated native grain policies, calls their crayonTilePixels and compares bytes to the old owner. These negative controls only enforce the retired exact-old-pixel equivalence; they do not establish an independent no-blank/shading contract."
+      "disposition": "restored",
+      "rationale": "Exact native output is compared to independent fixed base-derived RGBA SHA256 fixtures for every pigment/band. Edge dither, shade and field-seed mutations must change those bytes; no deleted source is evaluated at test time.",
+      "successor": {
+        "file": "tools/tests/native-crayon-grain.test.mjs",
+        "title": "detects a changed field policy %s"
+      }
     },
     {
       "file": "tools/tests/native-crayon-phase.test.mjs",
@@ -865,7 +873,7 @@
         "title": "keeps seed %s tooth across tile boundaries at both native failure heights",
         "line": 130
       },
-      "rationale": "Preserves native raster six-seed \u00d7two-height \u00d7four-column coverage checks with independent no-blank/no-solid coverage limits; exact old raster pixel equality intentionally retires."
+      "rationale": "Real RN raster output is checked against 48 independent base-derived raw core-pixel SHA256 fixtures across six seeds, two heights and four columns, as well as coverage bounds. A one-pixel native pattern-transform fault fails all six seed cases."
     },
     {
       "file": "tools/tests/native-crayon-phase.test.mjs",

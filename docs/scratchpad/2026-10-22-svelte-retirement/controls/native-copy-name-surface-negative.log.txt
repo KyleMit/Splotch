@@ -260,4 +260,3 @@ AssertionError: expected [ '-webkit-touch-callout: none', …(4) ] to deeply equ
       Tests  17 failed | 42 passed (59)
    Start at  21:02:57
    Duration  839ms (import 36%, tests 36%, transform 15%, environment 13%, worker 1%)
-

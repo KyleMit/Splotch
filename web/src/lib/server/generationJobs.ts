@@ -27,7 +27,8 @@ import { isStyleName, type StyleName } from '../ai/styles';
 // whose handoff failed discards its job before answering in-line, and the
 // scheduled purge is the backstop when that cleanup fails too.
 
-const GENERATION_JOB_STORE_NAME = 'ai-generation-jobs';
+// Exported so settlement/store-failure tests inject faults into the actual namespace.
+export const GENERATION_JOB_STORE_NAME = 'ai-generation-jobs';
 
 // A job id is a capability: whoever holds it collects that picture. It is 256
 // bits of randomness, handed only to the caller that started the job, deleted on

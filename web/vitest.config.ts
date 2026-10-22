@@ -13,7 +13,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*TestHarness.ts'],
       reporter: ['text', 'json-summary'],
-      thresholds: { statements: 74.4, branches: 74.7, functions: 77, lines: 75.8 },
+      thresholds: { statements: 82.3, branches: 81.8, functions: 85.5, lines: 83.7 },
     },
   },
 });

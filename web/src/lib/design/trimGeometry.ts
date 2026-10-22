@@ -2,14 +2,8 @@
 // which has no $lib alias.
 import { BREAKPOINT_EPSILON_PX } from '../breakpoints';
 
-// Executable form of the responsive-trim ladders in ColorPalette.svelte,
-// ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim
-// swatches/rows/columns with pure CSS, so every breakpoint is a hand-evaluated
-// arithmetic result baked into a `@media` or `@container` rule. This module
-// holds the geometry, the formulas and the step tables — the whole ladder — so
-// a size change is re-derivable rather than re-guessable, and
-// trimGeometry.test.ts parses each component's `<style>` block and asserts the
-// committed CSS still matches what these functions produce.
+// Responsive color-menu and honeycomb thresholds shared by the native picker and RN web
+// acceptance checks. trimGeometry.test.ts pins the established boundary values independently.
 
 // A `max-*` breakpoint has to sit just below the threshold at which the layout
 // still fits (e.g. 588 → 587.98).

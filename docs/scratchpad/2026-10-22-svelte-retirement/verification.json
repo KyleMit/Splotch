@@ -3,23 +3,23 @@
   "browserless": {
     "exitCode": 0,
     "SMOKE_PORT": 5347,
-    "unit": 1626,
+    "unit": 2021,
     "asset": 298,
     "storeDrawing": 20,
-    "tools": 8077,
+    "tools": 8101,
     "mountedRn": 1043,
     "apiSmokes": 46
   },
   "coverage": {
-    "statements": 74.43,
-    "branches": 74.78,
-    "functions": 77.03,
-    "lines": 75.82,
+    "statements": 82.31,
+    "branches": 81.88,
+    "functions": 85.57,
+    "lines": 83.7,
     "thresholds": {
-      "statements": 74.4,
-      "branches": 74.7,
-      "functions": 77,
-      "lines": 75.8
+      "statements": 82.3,
+      "branches": 81.8,
+      "functions": 85.5,
+      "lines": 83.7
     }
   },
   "buildSite": {
@@ -57,5 +57,16 @@
   "frozenInstall": {
     "command": "pnpm install --frozen-lockfile",
     "exitCode": 0
+  },
+  "reviewRepairs": {
+    "buildLogAssetLinesOmitted": 21,
+    "deviceGuardUnchanged": true,
+    "oldWebTestsDirectoryAbsent": true,
+    "sharedRetainedImportCandidatesClassified": 76,
+    "grainBandsFixedDigestRows": 18,
+    "nativeCorePixelFixedDigestWindows": 48,
+    "independentNativePhaseFault": "6 seed cases rejected",
+    "independentGrainFieldFault": "18 pigment cases rejected",
+    "finalTrackedTreeGuard": "passed after staging all evidence and manifest"
   }
 }

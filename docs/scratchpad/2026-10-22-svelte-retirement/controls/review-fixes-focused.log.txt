@@ -1,0 +1,8 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+
+ Test Files  4 passed (4)
+      Tests  97 passed (97)
+   Start at  21:31:07
+   Duration  1.40s (tests 84%, import 10%, transform 6%)

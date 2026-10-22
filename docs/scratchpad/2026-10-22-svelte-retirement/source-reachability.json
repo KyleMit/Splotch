@@ -295,5 +295,6 @@
       "disposition": "Retained test harness for the RN web service-worker owner."
     }
   ],
-  "note": "AST reachability does not infer filesystem readFile/asset inputs. Zero Svelte imports and the independent knip gate supplement the explicitly retained readers."
+  "note": "AST reachability does not infer filesystem readFile/asset inputs. Zero Svelte imports and the independent knip gate supplement the explicitly retained readers.",
+  "testRetention": "Production reachability does not decide test deletion. Retained shared runtime tests, test-only harnesses and the sealed historical ledger fixture remain independently of production roots. See retained-shared-test-dispositions.json and server-test-dispositions.json."
 }
