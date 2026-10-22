@@ -7,8 +7,8 @@ def base_key(name,version):
 def measure(path):
  root=pathlib.Path(path)
  files=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().split('\0')[:-1]
- groups=collections.defaultdict(lambda:dict(files=0,lines=0,bytes=0))
- extensions={'.js','.jsx','.ts','.tsx','.mjs','.cjs','.css','.html','.svelte','.json','.yaml','.yml','.md','.txt','.py','.sh','.swift','.kt','.java','.gradle','.xml','.rb','.toml','.sql','.csv','.patch','.mm','.h','.cpp','.plist','.properties','.xcconfig','.pbxproj','.lock'}
+ groups=collections.defaultdict(lambda:dict(files=0,lines=0,dependency_lock_lines=0,bytes=0))
+ extensions={'.js','.jsx','.ts','.tsx','.mjs','.cjs','.css','.html','.svelte','.json','.yaml','.yml','.md','.txt','.py','.sh','.swift','.kt','.java','.gradle','.xml','.rb','.toml','.sql','.csv','.patch','.m','.mm','.resolved','.h','.cpp','.plist','.properties','.xcconfig','.pbxproj','.lock'}
  for name in files:
   f=root/name
   if not f.is_file(): continue
@@ -23,6 +23,8 @@ def measure(path):
   groups[group]['files']+=1; groups[group]['bytes']+=len(data)
   if (f.suffix in extensions or f.name in ('Podfile','Gemfile')) and b'\0' not in data:
    groups[group]['lines']+=len(data.splitlines())
+   if f.name in ('Podfile.lock','Package.resolved','Gemfile.lock','pnpm-lock.yaml','uv.lock'):
+    groups[group]['dependency_lock_lines']+=len(data.splitlines())
  lock=yaml.safe_load((root/'pnpm-lock.yaml').read_text()); snaps=lock['snapshots']
  seen=set(); missing=set(); direct=set(); roots={}
  for importer,info in lock['importers'].items():
@@ -48,7 +50,8 @@ def measure(path):
   if n.endswith('Package.resolved'):
    native['spm'].append(dict(file=n,pins=json.loads((root/n).read_text()).get('pins',[])))
  native['gradle_declarations']={n:[s.strip() for s in (root/n).read_text().splitlines() if re.search(r'^\s*(implementation|api|compileOnly|runtimeOnly|classpath)\s*[( ]',s)] for n in files if n.endswith('.gradle') and n.startswith('android/')}
- print(json.dumps(dict(path=path,commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),groups=groups,runtime=dict(direct=len(roots),reachable_name_versions=len(identities),transitive_name_versions=len(identities-direct),peer_snapshots=len(seen),unresolved=sorted(missing),direct_pins=roots,dot_zero=[k for k in sorted(identities) if re.search(r'\d+\.\d+\.0$',k)]),patches=patches,native=native),indent=2))
+ for group in groups.values(): group['nonlock_lines']=group['lines']-group['dependency_lock_lines']
+ print(json.dumps(dict(path=path,commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),groups=groups,runtime=dict(direct=len(roots),reachable_name_versions=len(identities),transitive_name_versions=len(identities-direct),peer_snapshots=len(seen),unresolved=sorted(missing),direct_pins=roots,dot_zero=[k for k in sorted(identities) if re.search(r'\d+\.\d+\.0$',k)]),patches=patches,patch_totals=dict(files=len(patches),bytes=sum(p['bytes'] for p in patches),lines=sum(p['lines'] for p in patches)),native=native),indent=2))
 
 def ledgers(path):
  root=pathlib.Path(path)

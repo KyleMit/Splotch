@@ -38,7 +38,20 @@ another executed candidate.
 | Cost to finish          |      -2 |  -2 | Physical qualification and distribution work remain beyond an already released shipping app.                                      |
 
 Scores use the requested -2…+2 ordinal scale. Web implications are called out within each factor;
-the native architecture score is not a claim of faster RN web rendering.
+the native architecture score is not a claim of faster RN web rendering. The identical scores do not
+imply equal platform work: Android has fewer platform-specific finish items and prior signing
+evidence, while iOS has the Distribution/export and iPad window blockers. Both still lack the
+mandatory final acceptance and channel-release proof, which is why those differences do not cross a
+score boundary here.
+
+The factors share drivers and must not be treated as independent votes. Incomplete #2978 acceptance
+drives both parity coverage and part of finish cost; higher-version signing/submission and RN-only
+data recovery drive both reversibility and finish cost. **The hold recommendation rests on those
+unresolved readiness requirements, not an unweighted tally of negative cells.** Complete the
+applicable final-source acceptance, resolve or explicitly disposition each platform's defects, and
+prove its signed higher-version store release path to reconsider that platform's hold. Maintenance
+and upgrade exposure then remain tradeoffs for the owner to weigh against the companion performance
+results.
 
 ## 1. Maintenance cost
 
@@ -53,16 +66,20 @@ in tracked text extensions. It partitions non-test product paths (`src`, `web/sr
 the historical experiment's `src`), tests, native projects, tooling/agent trees, docs/evidence and
 everything else. Generated declarations and mirrored agent files are included; binary art
 contributes bytes/files but no lines. This is a reproducible text census, not semantic SLOC. Native
-code is shown separately from app code; tooling excludes its test files. Raw per-bucket bytes/files
-and exact path rules are in the script and receipts.
+project text is shown separately from app code; tooling excludes its test files. The reviewed census
+includes Objective-C `.m` source and SPM `Package.resolved` text alongside CocoaPods lock text, then
+subtracts dependency locks consistently from the native line subtotal. Raw per-bucket bytes/files,
+lock-line subtotals and exact path rules are in the script and receipts. Initial census receipts
+remain as superseded collection history; the `-review` receipts own the reported totals. Patch
+totals are computed by the script.
 
-| Tracked text lines                       | Shipping main | RN freeze | Store tag source |
-| ---------------------------------------- | ------------: | --------: | ---------------: |
-| App paths, excluding tests               |        69,105 |    97,242 |           54,830 |
-| Tooling and agent trees, excluding tests |       266,706 |   233,772 |          233,025 |
-| Tests, across the tree                   |       173,807 |   162,575 |           97,581 |
-| Native projects, excluding tests         |         3,219 |     9,094 |            2,255 |
-| Docs and evidence                        |       366,028 |   786,659 |          221,818 |
+| Tracked text lines                                    | Shipping main | RN freeze | Store tag source |
+| ----------------------------------------------------- | ------------: | --------: | ---------------: |
+| App paths, excluding tests                            |        69,105 |    97,242 |           54,830 |
+| Tooling and agent trees, excluding tests              |       266,706 |   233,772 |          233,025 |
+| Tests, across the tree                                |       173,807 |   162,575 |           97,581 |
+| Native projects, excluding tests and dependency locks |         3,219 |     6,540 |            2,255 |
+| Docs and evidence                                     |       366,028 |   786,659 |          221,818 |
 
 The RN tree has retired SvelteKit and Capacitor rather than retaining two complete product UIs. That
 removes old build/bridge owners, but introduces native input/audio/storage seams, Skia, React Strict
@@ -83,10 +100,10 @@ for Netlify belong to these totals; this is **not the native binary's packaged d
 | Transitive name@version identities      |           523 |          842 |              496 |
 | Total reachable name@version identities |           542 |          873 |              517 |
 | Local patch files                       |             0 |            7 |                0 |
-| Patch bytes / physical lines            |         0 / 0 | 13,243 / 444 |            0 / 0 |
+| Patch bytes / physical lines            |         0 / 0 | 13,243 / 344 |            0 / 0 |
 
-[RN](evidence/census-rn.log.txt), [main](evidence/census-main.log.txt) and
-[release-tag](evidence/census-v160.log.txt) receipts contain the raw roots and counts.
+[RN](evidence/census-rn-review.log.txt), [main](evidence/census-main-review.log.txt) and
+[release-tag](evidence/census-v160-review.log.txt) receipts contain the raw roots and counts.
 
 Native project weight differs structurally:
 
@@ -160,6 +177,15 @@ disappear after verifying an upstream equivalent or be rebased and tested. Skia 
 in the freeze; the separate size-reduction proposal was declined in the epic's comments to avoid
 that upkeep.
 
+Open [#2696](https://github.com/KyleMit/Splotch/issues/2696) owns retirement of the guarded
+node-forge patch and exact advisory exception, with a recorded review date of **2026-11-05**. Its
+issue says unpatched distribution bundles must remain unreachable; a dev-only classification does
+not waive that boundary. This is ongoing mitigation debt, not evidence that the official fix has
+since shipped. Before a release beyond that review date, re-audit the actual upstream artifact and
+installed consumers; allow **0.5–1 engineer-day** for that review, plus **1–3 days** if an upstream
+replacement needs integration. These conditional, unmeasured estimates are separate from the
+mandatory finish packages below.
+
 `tools/migration/prerender-native-web.mjs` deep-imports
 `@expo/cli/build/src/export/embed/exportEmbedAsync.js` and consumes
 `createMetroServerAndBundleRequestAsync`. It also deep-imports
@@ -172,15 +198,15 @@ build. Shipping has framework/bundler upgrade risks too; this particular private
 added by RN web's custom pipeline.
 
 The [npm publication-time receipt](evidence/expo-cadence.log.txt) records SDK `.0.0` releases: SDK
-55 on 2026-02-25, 56 on 2026-05-20, 57 on 2026-06-30, and 58 on 2026-09-29. Cadence is irregular and
-already includes **4** releases in this calendar year; a fixed annual bump is not the upstream
-rhythm. Expo's [upgrade guidance snapshot](evidence/expo-upgrade-source.log.txt) recommends
-upgrading SDK versions incrementally and aligning dependencies, native projects and release-note
-changes. Expo Go support is not the production app's support window; this project builds its own
-native apps.
+55 on 2026-02-25, 56 on 2026-05-20, 57 on 2026-06-30, and 58 on 2026-09-29. The same receipt shows
+**3** major releases in 2024 and **2** in 2025. Cadence is irregular and already includes **4**
+releases in this calendar year; a fixed annual bump is not the upstream rhythm. Expo's
+[upgrade guidance snapshot](evidence/expo-upgrade-source.log.txt) recommends upgrading SDK versions
+incrementally and aligning dependencies, native projects and release-note changes. Expo Go support
+is not the production app's support window; this project builds its own native apps.
 
-**Annual planning allowance, not measured effort:** budget **3–4 SDK steps × 3–7 engineer-days =
-9–28 engineer-days/year** for alignment/native project changes, patch/private-API reconciliation,
+**Annual planning allowance, not measured effort:** budget **2–4 SDK steps × 3–7 engineer-days =
+6–28 engineer-days/year** for alignment/native project changes, patch/private-API reconciliation,
 full web/renderer tests, physical service/drawing checks and signed release qualification. This
 includes validation; unfamiliar upstream breakage can exceed it. Skipping intermediate versions
 defers that work rather than removing it. The assumptions and arithmetic are in
@@ -260,6 +286,10 @@ ranges, not additive, and are unmeasured estimates recorded in the planning rece
 prebuilt, tested rescue this is not a same-day switch. A web deployment can restore old
 static/server output faster, but same-origin browser/AI records and API compatibility still need
 review; that does not repair installed native clients.
+
+**Platform distinction:** Android has a prior upload-key feasibility receipt; iOS still lacks an
+exported App Store IPA. Neither has a rehearsed store-channel RN-to-Capacitor rescue or a
+bidirectional data path, so the shared reversibility score remains -2.
 
 **Score: -2 on Android and iOS.** History preserves the implementation; it does not preserve an
 immediately shippable binary or lossless state rollback.
@@ -406,7 +436,7 @@ historical closed defects and owner decisions do not supply current complete par
 
 The `enumerate-sub-issues` skill used the API-backed recursive command, then fetched each
 descendant's body and full comment thread. [Tree](evidence/epic-tree.json),
-[per-issue snapshots](evidence/issues/2690.json) and
+[per-issue snapshots](evidence/issues/2690.json.txt) and
 [complete classification](evidence/epic-classification.csv) are committed. Every descendant is in
 one bucket; closure is source/API evidence of historical work, not frozen release acceptance. The
 inventory is read-only and no existing issue was claimed or closed.
@@ -459,7 +489,12 @@ disposition because “shipping does it too” does not by itself settle their s
 unrelated open provenance/automation ideas **#1098, #222, #241, #248** are not mandatory new product
 features for this campaign: manual artifact/source verification and manual store submission can
 satisfy release mechanics without implementing those proposals. #3011's optional tiered hydration
-remains deferred. Owner-parked web gaps in #3148's final comment remain recorded decisions, not
+remains deferred. The separate infrastructure ideas **#3084** (explicitly backlog, outside
+migration) and **#3091** (compute/device investigation) are not release prerequisites. **#2841,
+#2868 and #2880** describe shipping-only defects, with the RN behavior already improved, so their
+original fixes do not block this frozen RN release. **#2696** is the conditional
+dependency-mitigation review described above, not an instruction to remove a still-needed security
+patch before cutover. Owner-parked web gaps in #3148's final comment remain recorded decisions, not
 silently reopened work.
 
 Release mechanics are concrete. v1.6.0's verified published artifact inventory already establishes
@@ -474,6 +509,12 @@ provisioning/export, archive/IPA verification and App Store Connect submission. 
 Release automation is not a store submission. The prior Android signing receipt and iOS archive are
 useful historical feasibility evidence, but neither certifies new freeze bytes or grants upload
 readiness.
+
+**Platform distinction:** Android has the shorter known repair list (#3142) and historical signing
+feasibility. iOS additionally carries #3121/#3122 and the #3148 Distribution/export prerequisite.
+The effort is therefore lower on Android, but both are still materially behind the released shipping
+app on final acceptance and channel qualification; that common threshold keeps each at -2 rather
+than equating their calendars.
 
 **Score: -2 on Android and iOS.** Remaining work is concentrated in qualification, explicit defect
 disposition and release operations; completed migration implementation is not yet an accepted next

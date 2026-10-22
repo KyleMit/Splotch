@@ -1,0 +1,46 @@
+{
+  "observedAt": "2026-10-22T17:08:32.051Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2880",
+    "title": "Keep the selected swatch ring after closing Settings",
+    "issue_number": 2880,
+    "body": "**What:** in the shipping Capacitor app on iOS, the palette's selected-swatch ring disappears after the Settings dialog closes. This happens on iPhone and iPad, in light and dark.\n\nIt was found while capturing the RN native side-by-sides on 2026-10-14. The RN candidate keeps the ring.\n\n**Evidence:** the shipping captures in `/tmp/splotch-native-ios/` taken after Settings closes.\n\n**Done when:** the ring stays on the selected swatch after Settings closes, and a test covers it.\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-14T12:59:05Z",
+    "updated_at": "2026-10-14T12:59:05Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2880",
+    "display_title": "Keep the selected swatch ring after closing Settings"
+  },
+  "comments": []
+}

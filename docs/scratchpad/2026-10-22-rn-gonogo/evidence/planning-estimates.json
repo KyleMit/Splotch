@@ -6,14 +6,14 @@
     "epic-tree.json",
     "epic-classification.csv",
     "open-issues.json",
-    "issues/*.json",
+    "issues/*.json.txt",
     "installed-pins.log.txt",
     "patches-and-prerender.log.txt"
   ],
   "annualSdk": {
-    "steps": [3, 4],
+    "steps": [2, 4],
     "daysPerStep": [3, 7],
-    "daysPerYear": [9, 28]
+    "daysPerYear": [6, 28]
   },
   "rollbackDays": {
     "rehearsed": [3, 7],
@@ -37,5 +37,8 @@
     "rn": "1.7.0/9",
     "rescue": "1.7.1/10",
     "qualification": "Choose above actual store-uploaded/reserved values. Examples only."
-  }
+  },
+  "conditionalNodeForgeReviewDays": [0.5, 1],
+  "conditionalNodeForgeReplacementDays": [1, 3],
+  "nodeForgeReviewBy": "2026-11-05"
 }

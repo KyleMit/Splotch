@@ -1,0 +1,51 @@
+{
+  "observedAt": "2026-10-22T17:08:31.963Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3084",
+    "title": "Build native probe apps on GitHub Actions instead of the developer Mac",
+    "issue_number": 3084,
+    "body": "## Idea (backlog; not part of the RN migration)\n\nOffload native builds from the developer Mac to GitHub Actions. The repo is public, so runners are free (macOS runners have a concurrency cap).\n\n* **Trigger.** A `workflow_dispatch` workflow (`probe-build`) takes a `ref`, run with `gh workflow run probe-build -f ref=<branch>`. A small `tools/` script then runs `gh run download` and installs the result.\n* **Android.**\n  * An Ubuntu runner builds the probe APK, caching Gradle, the NDK and Metro.\n  * Signing uses a committed throwaway probe keystore (not secret, like Android's public debug key), so CI and local builds share a key and `adb install -r` upgrades in place.\n* **iOS simulator.** A macOS runner builds an unsigned simulator `.app`; install it with `simctl`.\n* **iOS physical device.** CI builds with `CODE_SIGNING_ALLOWED=NO`, and the Mac re-signs the downloaded `.app` locally with the existing identity and profile. No signing material goes into GitHub secrets.\n\n## Why\n\n* Parallel agent sessions each want builds, and two local Gradle or xcodebuild runs at once roughly double both.\n* CI builds would let sessions keep working while a build runs elsewhere.\n\n## Trade-offs\n\n* End-to-end latency is worse than a local build (queue, cold-ish runner, a ~50 MB download). That suits throughput across sessions, not tight diagnose-rebuild loops.\n* CI builds must match the local build config (env flags such as the perf probe, the `Podfile.lock` step), via a shared build script or a drift guard.\n\nLower priority than skipping native builds for JS-only changes (the companion issue).\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:ci-testing",
+        "color": "168f6c",
+        "description": "CI pipeline and test infrastructure"
+      },
+      {
+        "name": "area:infra",
+        "color": "5a6570",
+        "description": "Dev tooling, dependencies, repo infrastructure"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-20T17:01:34Z",
+    "updated_at": "2026-10-20T17:01:34Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3084",
+    "display_title": "Build native probe apps on GitHub Actions instead of the developer Mac"
+  },
+  "comments": []
+}

@@ -1,0 +1,51 @@
+{
+  "observedAt": "2026-10-22T17:08:32.070Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2841",
+    "title": "Render the Settings hub and sidebar rows in Quicksand",
+    "issue_number": 2841,
+    "body": "**What:** In the shipping web app, the Settings hub rows (Appearance, Sound, Tool Drawer, …) render their title and subtitle in the browser's system sans, not Quicksand. The rows are `<button>` elements, and buttons don't inherit `font-family` unless a rule says so. Found while building the native port's hub rows (#2840): on the phone Settings hub, the shipping titles render in the system font while the dialog heading above them is Quicksand. The native parity inventory's capture (2026-10-13) also shows the shipping Settings sidebar rows in system sans.\n\n**Where:**\n- `web/src/lib/components/settings/HubList.svelte` (row button)\n- `nav/SidebarToc.svelte`\n- the global button reset in `web/src/app.css`\n\n**Done when:**\n- Hub and sidebar rows render in `--font-family` (Quicksand).\n- A check fails if a settings row button drops back to the system font.\n- Before/after screenshots of the phone hub.\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      },
+      {
+        "name": "area:settings",
+        "color": "0052cc",
+        "description": "Settings modal and controls"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-13T15:53:47Z",
+    "updated_at": "2026-10-13T15:53:47Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2841",
+    "display_title": "Render the Settings hub and sidebar rows in Quicksand"
+  },
+  "comments": []
+}
