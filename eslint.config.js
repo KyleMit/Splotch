@@ -433,7 +433,7 @@ export default tseslint.config(
   {
     // Flat-config rule entries replace (not merge) across blocks, so this block must include
     // the shared repo-wide playwright restriction alongside its own paths.
-    files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+    files: ['src/**/*.ts', ...SHARED_TYPESCRIPT_FILES],
     rules: {
       'no-restricted-imports': ['error', { paths: WEB_SRC_IMPORT_RESTRICTIONS }],
     },
@@ -441,8 +441,8 @@ export default tseslint.config(
   {
     // Server-only packages stay behind the server boundary. Replaces the block above for
     // everything outside the server paths and tests, so it recomposes that block's full list.
-    files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
-    ignores: ['netlify/server/**', 'src/**/+server.ts', 'src/**/*.server.ts', 'src/**/*.test.ts'],
+    files: ['src/**/*.ts', ...SHARED_TYPESCRIPT_FILES],
+    ignores: ['netlify/server/**', '**/+server.ts', '**/*.server.ts', '**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -493,7 +493,7 @@ export default tseslint.config(
     // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly
     // gets a per-file cap below at its length + 25, with the WHY, rather than a counter-driven
     // split. Tests are excluded because they are mostly describe() callbacks.
-    files: ['src/**/*.ts', 'src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', ...SHARED_TYPESCRIPT_FILES],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'max-lines-per-function': [
@@ -541,7 +541,10 @@ export default tseslint.config(
     // exempt src's colocated unit tests from the named-exports ban — recompose the full
     // effective set for that slice. (The rate-limit selectors stay deliberately absent: ad-hoc
     // literal bucket keys are the point of a unit test.)
-    files: ['src/**/*.test.ts', 'netlify/server/**/*.test.ts'],
+    files: [
+      'src/**/*.test.ts',
+      ...SHARED_TYPESCRIPT_FILES.map((pattern) => pattern.replace('*.ts', '*.test.ts')),
+    ],
     rules: {
       'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS, NAMED_EXPORTS_ONLY],
     },

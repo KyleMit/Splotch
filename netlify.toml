@@ -39,7 +39,7 @@
   # does not follow other import forms (side-effect or dynamic imports).
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- src assets netlify app.json babel.config.cjs metro.config.cjs postcss.config.mjs ':(glob)tools/*.mjs' tools/lib tools/migration tools/icons tools/marketing-assets tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml patches netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- src assets netlify app.json babel.config.cjs metro.config.cjs postcss.config.mjs tsconfig.json ':(glob)tools/*.mjs' tools/lib tools/migration tools/icons tools/marketing-assets tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml patches netlify.toml"
   # The export, with the files the host serves beside it (build-native-web.mjs's
   # HOSTED_STATIC_ENTRIES: the coloring books, robots.txt, the deny page, ...).
   publish = "dist/web"

@@ -157,12 +157,6 @@ export const AREAS = [
     bucket: subtreeBucket('docs/', { '(root)': '(root docs)' }),
   },
   {
-    label: '**web/tests** — E2E + integration',
-    key: 'web/tests',
-    matches: (path) => path.startsWith('web/tests/'),
-    bucket: subtreeBucket('web/tests/', { '(root)': '(root) E2E / integration' }),
-  },
-  {
     label: '**e2e** — RN web export E2E',
     key: 'e2e',
     matches: (path) => path.startsWith('e2e/'),
@@ -196,13 +190,6 @@ export const AREAS = [
     key: '.github',
     matches: (path) => path.startsWith('.github/'),
     bucket: subtreeBucket('.github/'),
-  },
-  {
-    label: 'web/\\* — build/test config and static text',
-    key: 'web config',
-    matches: (path) =>
-      path.startsWith('web/') && !path.startsWith('src/') && !path.startsWith('web/tests/'),
-    bucket: subtreeBucket('web/'),
   },
   {
     label: 'root config / README / shared assets',
@@ -298,7 +285,7 @@ const D = {
   audio: 'Audio',
 };
 
-// First match wins, and matching runs on the subject path relative to web/src.
+// First match wins, and matching runs on the subject path relative to src.
 // The directory-wide rules at the bottom of each group are the fallbacks that
 // place a new file somewhere plausible; `reconcile-code-map` reviews what they caught.
 export const WEB_SRC_DOMAIN_RULES = [

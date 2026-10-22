@@ -101,8 +101,8 @@ npm run gen:coloring-pack-snapshot -- --ref v1.7.0
 npm run check:coloring-pack-retention
 ```
 
-`gen-coloring-pack-snapshot.mjs` extracts the tag's own generator and `assets/static/coloring` into
-a temporary directory with `git archive`, runs that generator for the `mobile` platform, and writes
+`gen-coloring-pack-snapshot.mjs` extracts the tag's own generator and `web/static/coloring` into a
+temporary directory with `git archive`, runs that generator for the `mobile` platform, and writes
 `coloring-pack-snapshots/<version>.json` (download path → digest per book). Run it once after each
 release is tagged, add `'<version>': 0` to `RELEASED_PACK_BROKEN_FILES` in
 `lib/coloring-pack-retention.mjs`, and commit both. `check-coloring-pack-retention.mjs` hashes the

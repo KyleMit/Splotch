@@ -65,6 +65,9 @@ const tsconfigIncludeGlobs = () => {
 };
 
 describe('build-module unit tests', () => {
+  it('type-checks the shared Vitest configuration', () => {
+    expect(tsconfigIncludeGlobs()).toContain('vitest.config.ts');
+  });
   it.each(BUILD_MODULE_TESTS)('collects %s with Vitest', (testFile) => {
     expect(vitestIncludeGlobs()).toContain(testFile);
   });

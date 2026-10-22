@@ -74,6 +74,10 @@ describe('knip project enumeration', () => {
 describe('netlify deploy-skip filter', () => {
   const ignore = netlifyToml.split('\n').find((line) => line.trimStart().startsWith('ignore ='));
 
+  it('watches the TypeScript configuration Metro reads for path aliases', () => {
+    expect(ignore.split(/\s+/)).toContain('tsconfig.json');
+  });
+
   // A plain Git pathspec's '*' crosses directory separators, so an unmagicked
   // 'tools/*.mjs' silently matches every .mjs under tools/ and rebuilds on any
   // capability change — the regression this pins.

@@ -1,0 +1,2599 @@
+{
+  "base": "f73ba89631eecbd4448a5e51a909335759b5bbd9",
+  "promotion": "9affa5dbf156ae0126b2a952783f8484ce484aad",
+  "repairedConfigSha256": "dd8cbae2b25a638d2600b54d1d2f3e6a6f6deac4d99971aecb97056a333ceefb",
+  "method": "ESLint.calculateConfigForFile for every retained moved TypeScript module; compare active rule severity, numeric file/function caps, restricted-syntax selectors and restricted-import paths. Repaired config preserves both base and promotion fences.",
+  "comparedModules": 1082,
+  "baseFenceLossesAfterRepair": 0,
+  "promotionFenceLossesAfterRepair": 0,
+  "restored": [
+    {
+      "from": "web/src/lib/components/iconTypes.test.ts",
+      "to": "tools/icons/lib/iconTypes.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/components/iconTypes.ts",
+      "to": "tools/icons/lib/iconTypes.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/components/iconTypes.ts",
+      "to": "tools/icons/lib/iconTypes.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/components/page/socialCard.test.ts",
+      "to": "tools/marketing-assets/lib/page/socialCard.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/components/page/socialCard.ts",
+      "to": "tools/marketing-assets/lib/page/socialCard.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/components/page/socialCard.ts",
+      "to": "tools/marketing-assets/lib/page/socialCard.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/design/iconTokens.test.ts",
+      "to": "tools/icons/lib/iconTokens.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/design/iconTokens.ts",
+      "to": "tools/icons/lib/iconTokens.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/design/iconTokens.ts",
+      "to": "tools/icons/lib/iconTokens.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/drawing/strokeSettings.ts",
+      "to": "tools/store-drawings/lib/strokeSettings.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/drawing/strokeSettings.ts",
+      "to": "tools/store-drawings/lib/strokeSettings.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/icons/dottie.test.ts",
+      "to": "tools/icons/tests/dottie.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/icons/iconIds.test.ts",
+      "to": "tools/icons/tests/iconIds.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/icons/tokenFallback.test.ts",
+      "to": "tools/icons/tests/tokenFallback.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/deviceProfile.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/deviceProfile.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/deviceProfile.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/deviceProfile.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/devices.test.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/devices.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/devices.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/devices.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/devices.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/devices.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/diagnostics.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/diagnostics.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/diagnostics.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/diagnostics.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/orientations.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/orientations.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/safeAreaMatrix/orientations.ts",
+      "to": "tools/migration/lib/safeAreaMatrix/orientations.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/admin.ts",
+      "to": "netlify/server/admin.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/ai/flatBackgroundPunch.ts",
+      "to": "netlify/server/ai/flatBackgroundPunch.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/ai/imageSize.ts",
+      "to": "netlify/server/ai/imageSize.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/ai/openai.ts",
+      "to": "netlify/server/ai/openai.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/ai/openaiSafety.ts",
+      "to": "netlify/server/ai/openaiSafety.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/ai/provider.ts",
+      "to": "netlify/server/ai/provider.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/adminLogin.ts",
+      "to": "netlify/server/api/adminLogin.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/adminStats.ts",
+      "to": "netlify/server/api/adminStats.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/adminTokens.ts",
+      "to": "netlify/server/api/adminTokens.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/apiEvent.ts",
+      "to": "netlify/server/api/apiEvent.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/apiFunction.ts",
+      "to": "netlify/server/api/apiFunction.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/cspReport.ts",
+      "to": "netlify/server/api/cspReport.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/freeGenerationGrant.ts",
+      "to": "netlify/server/api/freeGenerationGrant.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/generateImage.ts",
+      "to": "netlify/server/api/generateImage.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/generationAttempt.ts",
+      "to": "netlify/server/api/generationAttempt.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/generationResult.ts",
+      "to": "netlify/server/api/generationResult.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/report.ts",
+      "to": "netlify/server/api/report.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/reportImage.ts",
+      "to": "netlify/server/api/reportImage.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/settlementTestHarness.ts",
+      "to": "netlify/server/api/settlementTestHarness.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/verifyAccessCode.ts",
+      "to": "netlify/server/api/verifyAccessCode.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/api/verifyKey.ts",
+      "to": "netlify/server/api/verifyKey.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/apiCors.ts",
+      "to": "netlify/server/apiCors.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/config.ts",
+      "to": "netlify/server/config.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/csrf.ts",
+      "to": "netlify/server/csrf.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationGrants.ts",
+      "to": "netlify/server/freeGenerationGrants.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationLedger.ts",
+      "to": "netlify/server/freeGenerationLedger.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationLedgerPolicy.ts",
+      "to": "netlify/server/freeGenerationLedgerPolicy.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationRecovery.ts",
+      "to": "netlify/server/freeGenerationRecovery.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationRecoveryCas.ts",
+      "to": "netlify/server/freeGenerationRecoveryCas.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationRecoveryReceipts.ts",
+      "to": "netlify/server/freeGenerationRecoveryReceipts.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationRecoveryTestHarness.ts",
+      "to": "netlify/server/freeGenerationRecoveryTestHarness.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/freeGenerationRolloutTestHarness.ts",
+      "to": "netlify/server/freeGenerationRolloutTestHarness.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generateImagePolicy.ts",
+      "to": "netlify/server/generateImagePolicy.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptAccounting.ts",
+      "to": "netlify/server/generationAttemptAccounting.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptDispatch.ts",
+      "to": "netlify/server/generationAttemptDispatch.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptPersistence.ts",
+      "to": "netlify/server/generationAttemptPersistence.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptPolicy.ts",
+      "to": "netlify/server/generationAttemptPolicy.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptProduction.ts",
+      "to": "netlify/server/generationAttemptProduction.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptRecord.ts",
+      "to": "netlify/server/generationAttemptRecord.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptRequest.ts",
+      "to": "netlify/server/generationAttemptRequest.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptService.ts",
+      "to": "netlify/server/generationAttemptService.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptServiceTestHarness.ts",
+      "to": "netlify/server/generationAttemptServiceTestHarness.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptStorage.ts",
+      "to": "netlify/server/generationAttemptStorage.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptSweep.ts",
+      "to": "netlify/server/generationAttemptSweep.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptWork.ts",
+      "to": "netlify/server/generationAttemptWork.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptWorkCredential.ts",
+      "to": "netlify/server/generationAttemptWorkCredential.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptWorker.ts",
+      "to": "netlify/server/generationAttemptWorker.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttempts.ts",
+      "to": "netlify/server/generationAttempts.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAttemptsTestHarness.ts",
+      "to": "netlify/server/generationAttemptsTestHarness.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationAuthorization.ts",
+      "to": "netlify/server/generationAuthorization.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationDelivery.ts",
+      "to": "netlify/server/generationDelivery.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationJobs.ts",
+      "to": "netlify/server/generationJobs.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/generationStart.ts",
+      "to": "netlify/server/generationStart.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/github.ts",
+      "to": "netlify/server/github.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/http.ts",
+      "to": "netlify/server/http.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/imageReport.ts",
+      "to": "netlify/server/imageReport.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/imageReportAuthorization.ts",
+      "to": "netlify/server/imageReportAuthorization.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/imageReportStore.ts",
+      "to": "netlify/server/imageReportStore.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/imageReportStoreName.ts",
+      "to": "netlify/server/imageReportStoreName.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/imageReportUnavailable.ts",
+      "to": "netlify/server/imageReportUnavailable.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/logRedaction.ts",
+      "to": "netlify/server/logRedaction.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/privateEnv.ts",
+      "to": "netlify/server/privateEnv.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/rateLimit.ts",
+      "to": "netlify/server/rateLimit.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/rateLimitKeys.ts",
+      "to": "netlify/server/rateLimitKeys.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/rateLimitPolicy.ts",
+      "to": "netlify/server/rateLimitPolicy.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/report.ts",
+      "to": "netlify/server/report.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/reportToken.ts",
+      "to": "netlify/server/reportToken.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/retentionSweep.ts",
+      "to": "netlify/server/retentionSweep.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/runtimeMode.ts",
+      "to": "netlify/server/runtimeMode.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/securityHeaders.ts",
+      "to": "netlify/server/securityHeaders.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/sleep.ts",
+      "to": "netlify/server/sleep.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/tokens.ts",
+      "to": "netlify/server/tokens.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/tokensTestHarness.ts",
+      "to": "netlify/server/tokensTestHarness.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/usage.ts",
+      "to": "netlify/server/usage.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/usageRecordStorage.ts",
+      "to": "netlify/server/usageRecordStorage.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/server/usageTelemetry.ts",
+      "to": "netlify/server/usageTelemetry.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/frameStyle.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/frameStyle.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/frameStyle.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/frameStyle.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/geometry.test.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/geometry.test.ts",
+      "rule": "no-restricted-syntax",
+      "kind": "selectors-removed",
+      "base": ["ExportDefaultDeclaration"],
+      "promoted": [],
+      "repaired": ["ExportDefaultDeclaration"]
+    },
+    {
+      "from": "web/src/lib/storeFrames/geometry.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/geometry.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/geometry.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/geometry.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/marks.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/marks.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/marks.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/marks.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/pages.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/pages.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/pages.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/pages.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/showcase.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/showcase.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/showcase.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/showcase.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/targets.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/targets.ts",
+      "rule": "no-restricted-imports",
+      "kind": "selectors-removed",
+      "base": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ],
+      "promoted": [],
+      "repaired": [
+        "[\"sharp\",null,null]",
+        "[\"openai\",null,null]",
+        "[\"@netlify/blobs\",null,null]",
+        "{\"group\":[\"sharp/*\",\"openai/*\",\"@netlify/blobs/*\"]}"
+      ]
+    },
+    {
+      "from": "web/src/lib/storeFrames/targets.ts",
+      "to": "tools/marketing-assets/lib/storeFrames/targets.ts",
+      "rule": "max-lines-per-function",
+      "kind": "disabled",
+      "base": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ],
+      "promoted": null,
+      "repaired": [
+        2,
+        {
+          "max": 125,
+          "skipBlankLines": true,
+          "skipComments": true,
+          "IIFEs": true
+        }
+      ]
+    }
+  ]
+}

@@ -62,6 +62,7 @@ export const MEASURED_SURFACE = [
   'babel.config.cjs',
   'metro.config.cjs',
   'postcss.config.mjs',
+  'tsconfig.json',
   'tools/lib/proc.mjs',
   'tools/migration',
   'tools/icons/lib',

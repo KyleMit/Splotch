@@ -16,7 +16,7 @@ const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      files: ['**/*.ts'],
       languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
@@ -50,6 +50,15 @@ describe('the src named-exports ban covers every file shape', () => {
     expect(await namedExportViolations('src/lib/probe.ts', 'export const one = 1;')).toHaveLength(
       0
     );
+  });
+
+  it.each([
+    'tools/icons/lib/probe.test.ts',
+    'tools/icons/tests/probe.test.ts',
+    'tools/marketing-assets/lib/page/probe.test.ts',
+  ])('rejects default exports in the moved shared test %s', async (fixture) => {
+    expect(await namedExportViolations(fixture, 'export default 1;')).toHaveLength(1);
+    expect(await namedExportViolations(fixture, 'export const one = 1;')).toHaveLength(0);
   });
 
   it('leaves default exports outside src alone — configs and tools use them', async () => {

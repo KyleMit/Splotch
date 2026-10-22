@@ -39,6 +39,7 @@ const { values, positionals } = parseArgs({
 // or a commit a shallow clone never fetched would otherwise read as "every asset
 // predates the ref" and yield a sheet with nothing on the before side.
 const rawSource = values.source ?? 'shipped';
+const MAX_GIT_ASSET_BYTES = 64 * 1024 * 1024;
 const gitRef = rawSource.startsWith('git:') ? rawSource.slice(4) : null;
 if (gitRef === '') fail('--source git:<ref> needs a ref, e.g. --source git:HEAD~1 or git:6a95c46');
 if (!gitRef && !['shipped', 'samples'].includes(rawSource))
@@ -107,17 +108,21 @@ function resolvesToCommit(ref) {
 // that (already resolved) ref -> null, same as an absent file on disk.
 function gitDataUri(ref, absPath) {
   const mime = mimeTypeForPath(absPath);
-  let buf;
-  try {
-    buf = execFileSync('git', ['show', `${ref}:${relative(REPO_ROOT, absPath)}`], {
-      cwd: REPO_ROOT,
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-  } catch {
-    return null;
+  const repoPath = relative(REPO_ROOT, absPath);
+  const refPaths = new Set([repoPath, repoPath.replace(/^assets\/static\//, 'web/static/')]);
+  for (const path of refPaths) {
+    try {
+      const buf = execFileSync('git', ['show', `${ref}:${path}`], {
+        cwd: REPO_ROOT,
+        maxBuffer: MAX_GIT_ASSET_BYTES,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      return buf.length ? bytesToDataUri(buf, mime) : null;
+    } catch {
+      continue;
+    }
   }
-  return buf.length ? bytesToDataUri(buf, mime) : null;
+  return null;
 }
 
 // One line-art layer: its canonical SVG, or the opaque ink-on-white raster master

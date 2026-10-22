@@ -16,7 +16,7 @@ const eslint = new ESLint({
   cwd: repoRoot,
   overrideConfig: [
     {
-      files: ['src/**/*.ts', 'netlify/server/**/*.ts'],
+      files: ['**/*.ts'],
       languageOptions: { parserOptions: { projectService: false, project: null } },
       rules: { '@typescript-eslint/no-floating-promises': 'off' },
     },
@@ -37,8 +37,18 @@ const serverOnlyViolations = async (fixture, source) =>
     message.message.includes(SERVER_ONLY_MESSAGE)
   );
 
-const CLIENT_FILES = ['src/lib/ai/probe.ts'];
-const SERVER_FILES = ['netlify/server/probe.ts', 'src/lib/probe.test.ts'];
+const CLIENT_FILES = [
+  'src/lib/ai/probe.ts',
+  'src/ai/probe.ts',
+  'tools/icons/lib/probe.ts',
+  'tools/marketing-assets/lib/page/probe.ts',
+  'tools/migration/lib/safeAreaMatrix/probe.ts',
+];
+const SERVER_FILES = [
+  'netlify/server/probe.ts',
+  'src/lib/probe.test.ts',
+  'tools/icons/lib/probe.test.ts',
+];
 
 const SERVER_ONLY_IMPORTS = [
   "import sharp from 'sharp';",

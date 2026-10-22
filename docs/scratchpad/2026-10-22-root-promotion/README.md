@@ -72,3 +72,33 @@ moves. A new native-release configuration guard evaluates the actual Node resolu
 The iOS device archive passed; App Store export requires the host's shipping distribution identity.
 CocoaPods' generated privacy-manifest reordering preserves identical parsed values, and its local
 podspec checksum churn changes no resolved dependency; neither is committed.
+
+## Independent-review repairs
+
+Claude's first review found the SVG optimizer still scanning the removed root, historical-tag
+snapshot inputs rewritten to current paths, shared function-cap coverage lost during moves, Vite
+ambient types admitted to native compilation, omitted root TypeScript inputs, and obsolete code-map
+areas. These are repaired without changing any cap or art bytes. The SVG check scans all 315 shipped
+SVGs and fails on an empty scan. A real historical-layout Git fixture exercises snapshot extraction;
+another exercises every embedded proof-sheet layer across the static-root move. The proof-sheet
+regression was found by auditing analogous historical readers after the review.
+
+`lint-fence-preservation.json` compares ESLint's resolved configuration for all 1,082 retained moved
+TypeScript modules against both the integration base and the reviewed promotion. It records the
+restored function-size fence on 90 modules, named-export fence on eight moved tests and server-only
+import fence on 14 moved helpers. No active severity, file/function cap, restricted-syntax selector
+or restricted-import path/pattern is lost from either comparison. Positive controls exercise both
+native app paths and the moved owners.
+
+A TypeScript compiler probe rejects Vite-only APIs under the native configuration while accepting
+them under the shared web configuration. The shared Vitest configuration is included in type
+checking. Root `tsconfig.json` is watched by Netlify and included in the Lighthouse source digest;
+only the baseline's digest changes. Code-map areas for the dissolved tree are removed; historical
+map regeneration retains the existing requirement to use the counted commit's own rules.
+
+The repaired six-tier browserless mirror passes 2,021 shared, 299 asset, 20 store-drawing, 8,146
+tool and 1,043 mounted-native tests, plus all 46 API checks. Shared coverage remains
+82.31/81.88/85.57/83.70% (statements/branches/functions/lines). The tool growth after the initial
+reconciliation consists of the installed-Gradle guard and the review's positive controls; no
+retained callback is removed. Preservation checks still resolve all mapped files and confirm
+identical art bytes and unchanged budgets.

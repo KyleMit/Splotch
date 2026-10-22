@@ -91,6 +91,7 @@ describe('the surface a baseline names', () => {
 
     expect(measured).toContain('netlify.toml');
     expect(measured).toContain('pnpm-lock.yaml');
+    expect(measured).toContain('tsconfig.json');
     expect(measured.some((file) => SPEC_FILE.test(file))).toBe(false);
     expect(measured.every((file) => covers(MEASURED_SURFACE, file))).toBe(true);
   });
