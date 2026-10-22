@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import { CAS_ATTEMPTS, CAS_BACKOFF_MS, FREE_GENERATION_STORE_NAME } from './freeGenerationLedger';
 import { sleep } from './sleep';
 

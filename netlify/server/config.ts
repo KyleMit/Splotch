@@ -1,4 +1,5 @@
 import { env } from './privateEnv';
+import { projectApiKey } from './deploymentConfig.generated';
 import { recoveryServiceEnabled } from './generationAttemptPolicy';
 
 // The private feedback repo user reports land in (ADR-0060). .env.example's
@@ -8,7 +9,7 @@ export const DEFAULT_GITHUB_ISSUE_REPO = 'KyleMit/splotch-feedback';
 
 export const config = {
   recoveryV1Enabled: () => recoveryServiceEnabled(env.AI_RECOVERY_V1_ENABLED),
-  openAiApiKey: () => env.OPENAI_API_KEY,
+  openAiApiKey: () => projectApiKey(),
   githubIssueToken: () => env.GITHUB_ISSUE_TOKEN,
   githubIssueRepo: () => env.GITHUB_ISSUE_REPO?.trim() || DEFAULT_GITHUB_ISSUE_REPO,
   reportTokenSecret: () => env.REPORT_TOKEN_SECRET,

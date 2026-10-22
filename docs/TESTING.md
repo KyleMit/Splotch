@@ -24,6 +24,9 @@ server modules in `netlify/server/`.
 | Native compile            | Gradle / xcodebuild      | `npm run android:apk`, `npm run ios:simulator`            | Path-filtered PRs             |
 | Native launch             | Maestro                  | `npm run test:android`, `npm run test:ios`                | Tagged release + manual       |
 
+`npm run test:api:smoke:test` additionally runs the real generation/poll/report flow with the fake
+provider and isolated local Blobs; both API modes run in the Browserless job (ADR-0183).
+
 `npm run check:quality` mirrors the Quality job; `npm run test:browserless` mirrors the browserless
 job. Both keep reporting after an individual failure, and their wiring is guarded against CI drift.
 `npm run check` type-checks shared modules, Netlify, RN and E2E; it does not run Svelte sync or

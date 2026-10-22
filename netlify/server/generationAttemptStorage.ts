@@ -1,4 +1,5 @@
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
+import type { BlobNamespace } from './blobNamespace';
 import {
   RecoveryFault,
   isRecoveryTime,
@@ -31,8 +32,9 @@ export interface AttemptStorage {
   delete(key: string): Promise<void>;
   keys(): AsyncIterable<string>;
 }
-export function createNetlifyAttemptStorage(): AttemptStorage {
-  const store = () => getStore({ name: GENERATION_ATTEMPT_STORE_NAME, consistency: 'strong' });
+export function createNetlifyAttemptStorage(namespace: BlobNamespace = 'active'): AttemptStorage {
+  const store = () =>
+    getStore({ name: GENERATION_ATTEMPT_STORE_NAME, consistency: 'strong' }, namespace);
   return {
     async read(key) {
       const entry = await store().getWithMetadata(key, { type: 'arrayBuffer' });

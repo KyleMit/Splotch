@@ -1,16 +1,12 @@
+import { E2E_SERVER_ENV } from '../../e2e/server/serverEnv.ts';
+import { contractServerEnv } from '../api-smoke/lib/server-env.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Every throwaway server that boots this app — the SvelteKit Playwright web
-// server, the RN web E2E server (e2e/server/serve.ts) and the function host
-// tools/api-smoke/run-local-contract.mjs starts — must declare every private env
-// var the app reads, never inherit it. Each server reads process.env,
-// and the Playwright one fills its gaps from web/.env, so a name missing from
-// either object silently picks up whatever a developer exported or put in
-// their dotenv: that is how an ambient GITHUB_ISSUE_TOKEN turned the /feedback
-// failure-path spec into six real issues in the tracker (#646), and it is also
-// how a spec can pass locally on a credential CI doesn't have.
+// Both local hosts declare every private server read and the build-time API mode, so an ambient
+// credential cannot reach a smoke and a spec cannot pass on a secret CI does not hold. An ambient
+// GitHub token previously turned a feedback failure case into real issues (issue 646).
 const repoRoot = join(import.meta.dirname, '..', '..');
 const appDir = join(repoRoot, 'netlify', 'server');
 // The private env is netlify/server/privateEnv.ts's `env`, imported by a
@@ -55,7 +51,22 @@ const unscannableReads = sources
   )
   .map(({ path }) => path);
 
+function missingEnvironmentNames(candidate) {
+  return [...privateEnvNames, 'SPLOTCH_API_MODE'].filter((name) => !Object.hasOwn(candidate, name));
+}
+
 describe('throwaway server env', () => {
+  it('declares every private read and build-time API mode in both hosts', () => {
+    expect(missingEnvironmentNames(E2E_SERVER_ENV)).toEqual([]);
+    expect(missingEnvironmentNames(contractServerEnv('test-admin'))).toEqual([]);
+  });
+
+  it('detects an omitted API mode as a negative control', () => {
+    const candidate = { ...E2E_SERVER_ENV };
+    delete candidate.SPLOTCH_API_MODE;
+    expect(missingEnvironmentNames(candidate)).toContain('SPLOTCH_API_MODE');
+  });
+
   it('finds the private env reads to check', () => {
     expect(privateEnvNames.size).toBeGreaterThan(0);
   });
@@ -63,8 +74,7 @@ describe('throwaway server env', () => {
   it('finds every private env read in a shape it can scan', () => {
     expect(
       unscannableReads,
-      'read private env as `env.NAME` off lib/server/privateEnv — the other shapes hide the name ' +
-        'from this guard, leaving it to arrive from a developer web/.env'
+      'read private env as `env.NAME` off netlify/server/privateEnv; hidden names bypass host isolation'
     ).toEqual([]);
   });
 });

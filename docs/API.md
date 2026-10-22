@@ -8,6 +8,23 @@ endpoints share one instance's in-memory rate-limit buckets: `verify-access-code
 the web it's called same-origin; the native apps call the hosted endpoints through the transport in
 `src/ai/transport.ts` and its platform adapter.
 
+The `test` branch deploy at `https://test.splotch.art` serves these same endpoints. Build-time
+`SPLOTCH_API_MODE=test` selects a fake image provider/key check, a recording GitHub sink and
+isolated `test-` Blobs names. No endpoint, validation, rate limit, polling or error contract is
+mocked. A test-only edge function adds `X-Robots-Tag: noindex` to every response, pages included.
+Production bundles contain no fake provider, and test bundles contain no OpenAI client. See
+ADR-0183, `tools/api-mode/README.md` for fake keys and `DEVELOPMENT.md` for test-pointed native
+Release builds and the maintainer's setup steps.
+
+Netlify does not automatically schedule branch-deploy functions. Test provider/key-check and
+recording-sink activity therefore sweeps expired test jobs, attempts, image reports, usage and
+recorded feedback, coalesced to once per hour per warm instance. Recorded feedback shares the 30-day
+image-report retention. The published deploy's hourly `purge-test-data` also sweeps these names
+after this revision reaches production; it never touches unprefixed stores. Before that cutover,
+idle branch data waits for the next test-provider activity or a manual dashboard invocation of
+`purge-test-data`. Invoke that function when retiring the test deploy, after its retention windows
+expire. Deletion remains subject to successful storage operations.
+
 **One wrapper:** the function is `apiFunction(...)` (`netlify/server/api/apiFunction.ts`). It
 applies the recorded HTTP contract in this order: the cross-site form guard (a form content type
 posted from an origin other than the site's own, `https://localhost` or `capacitor://localhost` gets

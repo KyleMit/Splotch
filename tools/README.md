@@ -146,6 +146,10 @@ Python/uv filled-SVG-to-centerline stage. It is invoked only through `gen:center
 test command, its manual benchmark, or its path-filtered workflow; default app and repository
 lifecycles do not provision Python.
 
+The [API-mode capability](api-mode/README.md) owns the build-time production/test implementation
+selection, test-only noindex edge output and function/native-origin bundle guards. Its local HTTP
+contract is exercised by the [API smoke capability](api-smoke/README.md).
+
 ## Libraries and ownership
 
 `tools/lib/` is the cross-capability dependency foundation. It never imports from a capability

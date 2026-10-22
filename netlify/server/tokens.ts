@@ -1,6 +1,6 @@
 import { env } from './privateEnv';
 import { dev } from './runtimeMode';
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import { sleep } from './sleep';
 import { deleteUsage } from './usage';
 

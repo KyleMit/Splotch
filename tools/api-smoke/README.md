@@ -142,3 +142,25 @@ The local generation recovery contract checks live in `lib/recovery-contract.mjs
 legacy result lookup check and assert both recovery v1 methods stay closed before qualification. The
 fixture server blanks `AI_RECOVERY_V1_ENABLED`; no provider, ledger or worker is exercised by those
 closed-route checks.
+
+## Test-deploy contract
+
+`npm run test:api:smoke` selects the existing production wire/auth smoke by default. With
+`SPLOTCH_API_MODE=test`, it runs `run-test-contract.mjs` against the real local function host and
+background worker, using the fake provider and the SDK's local Blobs emulator. No OpenAI or GitHub
+credential is present, and outside network requests are refused. The real free-grant, authorization,
+report-token, image delivery and report handlers run; only the selected model and sinks differ.
+
+```sh
+SPLOTCH_API_MODE=test SMOKE_PORT=5300 npm run test:api:smoke
+```
+
+Select an unused port first. The harness verifies generate → pending poll → result, key verification
+and scripted failures, managed Sticker generation, image-report evidence, feedback sink records and
+only `test-` store names. It closes owned listeners and removes temporary storage on failure too.
+The local emulator omits read ETags; `lib/local-blob-fetch.mjs` preserves its write ETags so the
+server's real compare-and-swap path executes. This adapter is only in the local harness.
+
+The historical wire corpus, `fixtures/wire-baseline.json`, additions and `ADDED_API_PATHS` stay
+unchanged. `tools/api-mode/README.md` owns the deploy selector, fake keys and bundle negative
+controls. Hosted test setup and native Release build commands live in `DEVELOPMENT.md`.

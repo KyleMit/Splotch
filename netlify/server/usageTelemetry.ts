@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
 import { createHmac } from 'node:crypto';
 import type { StyleName } from '../../src/lib/ai/styles';
 import {

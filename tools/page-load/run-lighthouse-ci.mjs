@@ -64,6 +64,7 @@ export const MEASURED_SURFACE = [
   'postcss.config.mjs',
   'tsconfig.json',
   'tools/lib/proc.mjs',
+  'tools/mobile/api-origin.cjs',
   'tools/migration',
   'tools/icons/lib',
   'tools/marketing-assets/lib/page',

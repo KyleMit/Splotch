@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs';
+import type { BlobNamespace } from './blobNamespace';
 import { loggableError } from './logRedaction';
 import { settleWithRetentionConcurrency } from './retentionSweep';
 // Relative, not `$lib`: the background worker imports this module and is built
@@ -194,8 +195,8 @@ async function readStoredJobVersion(
   return data && entry ? { data, etag: entry.etag } : null;
 }
 
-function store() {
-  return getStore({ name: GENERATION_JOB_STORE_NAME, consistency: 'strong' });
+function store(namespace: BlobNamespace = 'active') {
+  return getStore({ name: GENERATION_JOB_STORE_NAME, consistency: 'strong' }, namespace);
 }
 
 export function newJobId(): string {
@@ -224,7 +225,7 @@ export const WORK_TICKET_HEADER = 'X-Work-Ticket';
 
 /**
  * A ticket authorizing exactly this job with exactly this payload, or null if unconfigured.
- * `now` is a test seam: production callers omit it and take the wall clock.
+ * `now` permits deterministic retention checks.
  */
 export function issueWorkTicket(
   jobId: string,
@@ -410,7 +411,10 @@ export async function discardJob(
  *
  * `now` is a test seam: production callers omit it and take the wall clock.
  */
-export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
+export async function purgeExpiredGenerationJobs(
+  now = Date.now(),
+  namespace: BlobNamespace = 'active'
+): Promise<{
   attemptedJobs: number;
   purgedJobs: number;
   failedJobs: number;
@@ -418,7 +422,7 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
   deletedBlobs: number;
   failedBlobDeletes: number;
 }> {
-  const jobStore = store();
+  const jobStore = store(namespace);
   let attemptedJobs = 0;
   let purgedJobs = 0;
   let failedJobs = 0;

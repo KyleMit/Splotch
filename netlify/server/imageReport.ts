@@ -5,6 +5,7 @@ import {
   type AiReportKind,
 } from '../../src/lib/imageReport';
 import type { ReportTokenContext } from './reportToken';
+import { scopeStoreName } from './deploymentConfig.generated';
 import { createIssue, escapeIssueMarkdown } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
 import { AI_REPORTING_UNAVAILABLE_MESSAGE } from './imageReportUnavailable';
@@ -121,7 +122,7 @@ export async function submitImageReport({
           : 'An AI-generated picture was reported from the result view.',
         '',
         `- **Category:** ${kind}`,
-        `- **Blob store:** \`${IMAGE_REPORT_STORE_NAME}\``,
+        `- **Blob store:** \`${scopeStoreName(IMAGE_REPORT_STORE_NAME)}\``,
         `- **Blob key prefix:** \`${report.keyPrefix}\``,
         `- **Style:** ${styleLabel}`,
         // The one line not written by this server: the model's own words about a

@@ -27,9 +27,9 @@ summary line that names each failed command.
 
 ## Prerequisites
 
-Installed dependencies (`pnpm install`). `test:browserless` ends with `test:api:smoke`, which starts
-a throwaway Netlify function host on `SMOKE_PORT`. In a concurrent worktree, set `SMOKE_PORT` to an
-unused port, for example `SMOKE_PORT=5287 npm run test:browserless`.
+Installed dependencies (`pnpm install`). `test:browserless` ends with the production and test-mode
+API smokes, which start a throwaway Netlify function host on `SMOKE_PORT`. In a concurrent worktree,
+set `SMOKE_PORT` to an unused port, for example `SMOKE_PORT=5287 npm run test:browserless`.
 
 ## Failure behavior
 

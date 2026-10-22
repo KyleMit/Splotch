@@ -57,7 +57,7 @@
         "confirms a picture report, we store the drawing"
       ],
       "storeListingFacts": {
-        "ios": ["**User Content → Other User Content**"],
+        "ios": ["**User Content \u2192 Other User Content**"],
         "android": ["**Photos and videos**", "**Other user-generated content**"]
       }
     },
@@ -69,7 +69,7 @@
       "tracking": false,
       "privacyPageFacts": ["only what you type is sent to our", "support tracker on GitHub"],
       "storeListingFacts": {
-        "ios": ["**User Content → Customer Support**"],
+        "ios": ["**User Content \u2192 Customer Support**"],
         "android": ["**Other user-generated content**"]
       }
     },
@@ -81,7 +81,7 @@
       "tracking": false,
       "privacyPageFacts": ["include basic device details", "It's off by default"],
       "storeListingFacts": {
-        "ios": ["**Diagnostics → Other Diagnostic Data**"],
+        "ios": ["**Diagnostics \u2192 Other Diagnostic Data**"],
         "android": ["**Diagnostics**"]
       }
     },
@@ -96,7 +96,7 @@
         "We never receive the underlying identifier"
       ],
       "storeListingFacts": {
-        "ios": ["**Identifiers → Device ID**"],
+        "ios": ["**Identifiers \u2192 Device ID**"],
         "android": ["**Device or other IDs**"]
       }
     },
@@ -108,8 +108,8 @@
       "tracking": false,
       "privacyPageFacts": ["attempt and success counts", "operational server log"],
       "storeListingFacts": {
-        "ios": ["**Usage Data → Product Interaction**"],
-        "android": ["**App activity → App interactions**"]
+        "ios": ["**Usage Data \u2192 Product Interaction**"],
+        "android": ["**App activity \u2192 App interactions**"]
       }
     }
   ],
@@ -203,7 +203,7 @@
     {
       "id": "first-party-services",
       "productionHosts": ["splotch.art"],
-      "hostPolicy": "same-origin-web-and-worker-fixed-production-native",
+      "hostPolicy": "same-origin-web-and-worker-build-time-native",
       "actors": ["web-client", "native-client", "server-worker-dispatch"],
       "purposes": ["hosted-api", "coloring-pack-downloads", "hosted-feedback"],
       "dataCategoryIds": [
@@ -219,16 +219,20 @@
           "contains": "export const NATIVE_API_ORIGIN = SITE_ORIGIN;"
         },
         {
-          "path": "web/vite.config.ts",
-          "contains": "const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);"
+          "path": "src/apiOrigin.ts",
+          "contains": "process.env.EXPO_PUBLIC_SPLOTCH_API_ORIGIN"
         },
         {
-          "path": "src/lib/api.ts",
-          "contains": "const base = typeof __NATIVE_API_BASE__ !== 'undefined' ? __NATIVE_API_BASE__ : '';"
+          "path": "src/platform/ai.web.ts",
+          "contains": "aiPath(request)"
         },
         {
-          "path": "netlify/server/generationStart.ts",
-          "contains": "fetch(`${origin}${WORKER_PATH}`"
+          "path": "src/feedback/feedbackTransport.ts",
+          "contains": "`${API_ORIGIN}${FEEDBACK_PATH}`"
+        },
+        {
+          "path": "src/offlineLibrary/manifest.ts",
+          "contains": "export const PACK_ORIGIN = API_ORIGIN;"
         }
       ],
       "privacyPageFacts": [
@@ -246,7 +250,10 @@
       "purposes": ["ai-generation", "api-key-verification"],
       "dataCategoryIds": ["other-user-content"],
       "implementationEvidence": [
-        { "path": "netlify/server/ai/openai.ts", "contains": "import OpenAI from 'openai';" },
+        {
+          "path": "netlify/server/ai/openai.ts",
+          "contains": "import OpenAI from 'openai';"
+        },
         {
           "path": "netlify/server/ai/openai.ts",
           "contains": "return new OpenAI({ apiKey, timeout: timeoutMs, maxRetries });"
@@ -263,7 +270,7 @@
       "dataCategoryIds": ["customer-support", "other-diagnostic-data", "product-interaction"],
       "implementationEvidence": [
         {
-          "path": "netlify/server/github.ts",
+          "path": "netlify/server/githubProduction.ts",
           "contains": "const GITHUB_API = 'https://api.github.com';"
         }
       ],

@@ -67,6 +67,63 @@ change. `tools/migration/tests/native-config-changes.test.mjs` fails if one goes
 relays out live; Bold text applies at the next launch; a dialog open while Display size changes
 keeps its old position until it reopens.
 
+## Release builds against the test API
+
+The `test` branch deploy at `https://test.splotch.art` runs the shared API handlers with a fake
+image provider, a recording GitHub sink and `test-` Blobs stores (ADR-0183). It needs no OpenAI or
+GitHub secret. Web calls its own origin; native selects one HTTPS origin at build time through
+`EXPO_PUBLIC_SPLOTCH_API_ORIGIN`. Changing the origin requires rebuilding; no runtime control,
+launch argument or invite link can change it. The fake keys and outcomes are documented in
+`tools/api-mode/README.md`.
+
+For an Android Release APK with the `.dev` identity, from the repo root:
+
+```sh
+EXPO_PUBLIC_SPLOTCH_API_ORIGIN=https://test.splotch.art npm run android:apk
+```
+
+For an iOS Release device archive with the `.dev` identity, after `pod install` in `ios/` and
+configuring the development team in `ios/local.xcconfig`, run from the repo root:
+
+```sh
+EXPO_PUBLIC_SPLOTCH_API_ORIGIN=https://test.splotch.art xcodebuild \
+  -workspace ios/Splotch.xcworkspace -scheme Splotch -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath ios/build/TestSplotch.xcarchive \
+  -allowProvisioningUpdates archive
+```
+
+Open that archive in Xcode Organizer for development distribution. Do not pass `Store.xcconfig`. For
+a simulator, use the same environment with a plain Release `xcodebuild`, an iOS Simulator
+destination and `CODE_SIGNING_ALLOWED=NO`. Store scripts require the production origin and reject a
+test origin before deleting an existing artifact. Keep the store-installed `art.splotch.app` and its
+drawings untouched; these test builds are `art.splotch.app.dev`.
+
+The native origin routes AI generation/key checks/polling/reports, invite acceptance, feedback and
+coloring-pack downloads together. Canonical marketing URLs and policy/contact links continue to
+identify the public production site; they are not API or pack requests. Native development may use
+any valid HTTPS origin, but official store artifacts require `https://splotch.art`.
+
+After the PR is merged, the maintainer:
+
+1. Enables Netlify branch deploys for `test` and maps `test.splotch.art` to that branch deploy.
+2. Scopes OpenAI and GitHub secrets to production only. Gives the test context its own
+   `REPORT_TOKEN_SECRET` and `USAGE_GRANT_ID_SECRET`, plus a test-only `ADMIN_ACCESS_TOKEN` and
+   optional `ALLOWED_TOKENS_LIST`; never reuse production credentials or grants. The report-token
+   secret is required for background dispatch and false-positive reports.
+3. Pushes the reviewed migration branch: `git push origin codex/native-migration:test`.
+4. Checks the deployed build selected test mode and verifies `X-Robots-Tag: noindex` with
+   `curl -I https://test.splotch.art/`, `/privacy`, a missing page and
+   `curl -i -X OPTIONS https://test.splotch.art/api/generate-image`. Every response must carry it.
+5. Builds the test-pointed native Release apps with the commands above and uses the documented fake
+   keys. Removing the origin variable returns builds to production.
+
+No workflow syncs either branch to `test`. The maintainer controls when a reviewed revision deploys.
+Netlify does not automatically schedule branch-deploy purges. Test provider/key-check and feedback
+activity performs expiry sweeps; after production cutover, the published deploy also sweeps test
+stores hourly. Before that cutover, idle data waits for another provider request or a manual
+dashboard invocation of `purge-test-data`. When retiring the test deploy, invoke that function after
+its retention windows expire. Recorded feedback and image reports use the same 30-day window.
+
 ## Checking a JS-only change on a device
 
 A change to TS or TSX alone needs no native rebuild. Build the Release app once per device as above,
