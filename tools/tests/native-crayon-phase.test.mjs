@@ -2,6 +2,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { createHash } from 'node:crypto';
+import referenceCores from './native-crayon-phase.test.fixture.json';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', async () => {
@@ -131,11 +133,18 @@ describe('crayon phase under native pattern clipping', () => {
     'keeps seed %s tooth across tile boundaries at both native failure heights',
     async (seed) => {
       const output = await artwork(FAILURE_HEIGHTS_PX.map((y) => line(seed, y)));
+      const reference = referenceCores.rows.find((row) => row.seed === seed);
       for (const y of FAILURE_HEIGHTS_PX) {
         for (const x of SAMPLE_COLUMNS) {
           const pigment = coverage(output, x, y);
           expect(pigment, `seed ${seed}, core (${x}, ${y})`).toBeGreaterThan(MIN_COVERAGE);
           expect(pigment, `seed ${seed}, core (${x}, ${y})`).toBeLessThan(1);
+          const expected = reference.windows.find((window) => window.x === x && window.y === y);
+          expect(
+            createHash('sha256')
+              .update(corePixels(output, x, y))
+              .digest('hex')
+          ).toBe(expected.sha256);
         }
       }
     }

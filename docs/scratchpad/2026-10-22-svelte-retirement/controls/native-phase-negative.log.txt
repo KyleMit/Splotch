@@ -1,0 +1,115 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+ ❯ |repo-tools| tests/native-crayon-phase.test.mjs (12 tests | 6 failed) 686ms
+   ❯ crayon phase under native pattern clipping (12)
+     × keeps seed 1 tooth across tile boundaries at both native failure heights 52ms
+     × keeps seed 17 tooth across tile boundaries at both native failure heights 49ms
+     × keeps seed 18 tooth across tile boundaries at both native failure heights 49ms
+     × keeps seed 19 tooth across tile boundaries at both native failure heights 49ms
+     × keeps seed 20 tooth across tile boundaries at both native failure heights 49ms
+     × keeps seed 21 tooth across tile boundaries at both native failure heights 48ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-crayon-phase.test.mjs > crayon phase under native pattern clipping > keeps seed 1 tooth across tile boundaries at both native failure heights
+AssertionError: expected '39e38f0fcc9efaac34cad53af5b42c754fc4a…' to be '3d6f838361aa15f363c611ff2b827256cfcb0…' // Object.is equality
+
+Expected: "3d6f838361aa15f363c611ff2b827256cfcb0c7af592e508b5ad10394f739d21"
+Received: "39e38f0fcc9efaac34cad53af5b42c754fc4a50db64b174a4b048ee0f499bebc"
+
+ ❯ tests/native-crayon-phase.test.mjs:147:13
+    145|               .update(corePixels(output, x, y))
+    146|               .digest('hex')
+    147|           ).toBe(expected.sha256);
+       |             ^
+    148|         }
+    149|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-phase.test.mjs > crayon phase under native pattern clipping > keeps seed 17 tooth across tile boundaries at both native failure heights
+AssertionError: expected '6025e143c53c4342e8353bbcffb107e5f6534…' to be '004908ce88d8f141b4fade806c7074af010d5…' // Object.is equality
+
+Expected: "004908ce88d8f141b4fade806c7074af010d578f6cc35844ea3c243633d1f8e6"
+Received: "6025e143c53c4342e8353bbcffb107e5f653455501190d5aa560c0895383e455"
+
+ ❯ tests/native-crayon-phase.test.mjs:147:13
+    145|               .update(corePixels(output, x, y))
+    146|               .digest('hex')
+    147|           ).toBe(expected.sha256);
+       |             ^
+    148|         }
+    149|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-phase.test.mjs > crayon phase under native pattern clipping > keeps seed 18 tooth across tile boundaries at both native failure heights
+AssertionError: expected 'd5110c281ea89914042837a1ffe52380f366a…' to be '88d20a6af776383f73318be33a81876c3fe66…' // Object.is equality
+
+Expected: "88d20a6af776383f73318be33a81876c3fe669e0b4e0240a1bab99b430533d88"
+Received: "d5110c281ea89914042837a1ffe52380f366a906ca984ce3165d484c37b96490"
+
+ ❯ tests/native-crayon-phase.test.mjs:147:13
+    145|               .update(corePixels(output, x, y))
+    146|               .digest('hex')
+    147|           ).toBe(expected.sha256);
+       |             ^
+    148|         }
+    149|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-phase.test.mjs > crayon phase under native pattern clipping > keeps seed 19 tooth across tile boundaries at both native failure heights
+AssertionError: expected 'd129b3332d37760cf89487edae4cde48df2fa…' to be '899b4ba6f3377e8a9c8d215286fc828d97755…' // Object.is equality
+
+Expected: "899b4ba6f3377e8a9c8d215286fc828d97755429c19b8d58db8bd0e9c6a58155"
+Received: "d129b3332d37760cf89487edae4cde48df2fa47fee7f59f13652cf6e28563f5b"
+
+ ❯ tests/native-crayon-phase.test.mjs:147:13
+    145|               .update(corePixels(output, x, y))
+    146|               .digest('hex')
+    147|           ).toBe(expected.sha256);
+       |             ^
+    148|         }
+    149|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-phase.test.mjs > crayon phase under native pattern clipping > keeps seed 20 tooth across tile boundaries at both native failure heights
+AssertionError: expected '634be0b940ed491888292b2cee2ddadf22fb4…' to be '92b594244f70cb6387561ad8f3ad633d6925c…' // Object.is equality
+
+Expected: "92b594244f70cb6387561ad8f3ad633d6925c2fd14704315ddd7bc60329095b0"
+Received: "634be0b940ed491888292b2cee2ddadf22fb4cfaab4d8a2ff06f8db3ec6b8948"
+
+ ❯ tests/native-crayon-phase.test.mjs:147:13
+    145|               .update(corePixels(output, x, y))
+    146|               .digest('hex')
+    147|           ).toBe(expected.sha256);
+       |             ^
+    148|         }
+    149|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-phase.test.mjs > crayon phase under native pattern clipping > keeps seed 21 tooth across tile boundaries at both native failure heights
+AssertionError: expected '335a12e4272768eb53b05c681866aef490549…' to be 'de623cce71f959105f9c45573cb679a524254…' // Object.is equality
+
+Expected: "de623cce71f959105f9c45573cb679a524254a863812b60edff01ad124402836"
+Received: "335a12e4272768eb53b05c681866aef490549726cd01d6c4e5591c86459c8388"
+
+ ❯ tests/native-crayon-phase.test.mjs:147:13
+    145|               .update(corePixels(output, x, y))
+    146|               .digest('hex')
+    147|           ).toBe(expected.sha256);
+       |             ^
+    148|         }
+    149|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 6 passed (12)
+   Start at  21:34:30
+   Duration  961ms (tests 75%, import 13%, transform 12%)

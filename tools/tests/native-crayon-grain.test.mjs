@@ -1,4 +1,8 @@
 import sharp from 'sharp';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
   CRAYON_BANDS,
@@ -8,8 +12,46 @@ import {
 import { crayonTilePixels } from '../../experiments/native-architecture/src/drawing/crayonGrain.ts';
 import { crayonTilePng } from '../../experiments/native-architecture/src/drawing/crayonTilePng.ts';
 import { PALETTE_COLORS } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import referenceBytes from './native-crayon-grain.test.fixture.json';
+
+const grainSource = readFileSync(
+  new URL('../../experiments/native-architecture/src/drawing/crayonGrain.ts', import.meta.url),
+  'utf8'
+);
+const digest = (pixels) => createHash('sha256').update(pixels).digest('hex');
+
+function mutant(before, after) {
+  expect(grainSource).toContain(before);
+  const exports = {};
+  runInNewContext(
+    ts.transpileModule(grainSource.replace(before, after), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    { exports }
+  );
+  return exports;
+}
 const colors = [...PALETTE_COLORS.map((color) => color.hex), '#FFFFFF', '#123456', '#000000'];
 describe('canonical Crayon grain bytes', () => {
+  it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $hex', ({ hex, bands }) => {
+    expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(hex, coverage)))).toEqual(
+      bands
+    );
+  });
+  it('covers every palette pigment and the custom boundary colors', () => {
+    expect(referenceBytes.rows.map(({ hex }) => hex)).toEqual(colors);
+  });
+  it.each([
+    ['const EDGE_DITHER = 0.045;', 'const EDGE_DITHER = 0;'],
+    ['const SHADE_VARIATION = 0.08;', 'const SHADE_VARIATION = 0.04;'],
+    ['const FIELD_SEED = 0x5c1a1;', 'const FIELD_SEED = 1;'],
+  ])('detects a changed field policy %s', (before, after) => {
+    const changed = mutant(before, after);
+    const reference = referenceBytes.rows.find(({ hex }) => hex === '#123456');
+    expect(digest(changed.crayonTilePixels(reference.hex, CRAYON_BANDS[0].coverage))).not.toBe(
+      reference.bands[0]
+    );
+  });
   it.each(colors)('round trips exact indexed PNG texels for %s', async (hex) => {
     for (const band of CRAYON_BANDS) {
       const pixels = crayonTilePixels(hex, band.coverage);

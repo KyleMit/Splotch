@@ -1,0 +1,445 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+ ❯ |repo-tools| tests/native-crayon-grain.test.mjs (48 tests | 18 failed) 912ms
+   ❯ canonical Crayon grain bytes (48)
+     × pins both unencoded RGBA bands for #AB71E1 13ms
+     × pins both unencoded RGBA bands for #7A74E7 4ms
+     × pins both unencoded RGBA bands for #62A2E9 4ms
+     × pins both unencoded RGBA bands for #4FC4C0 3ms
+     × pins both unencoded RGBA bands for #5CCC90 4ms
+     × pins both unencoded RGBA bands for #8CC864 4ms
+     × pins both unencoded RGBA bands for #BEDD40 4ms
+     × pins both unencoded RGBA bands for #F9D24F 3ms
+     × pins both unencoded RGBA bands for #F89C45 3ms
+     × pins both unencoded RGBA bands for #B5835A 4ms
+     × pins both unencoded RGBA bands for #EC534E 3ms
+     × pins both unencoded RGBA bands for #F47CB0 3ms
+     × pins both unencoded RGBA bands for #E25AD7 3ms
+     × pins both unencoded RGBA bands for #9AA0AC 3ms
+     × pins both unencoded RGBA bands for #0a0b10 3ms
+     × pins both unencoded RGBA bands for #FFFFFF 2ms
+     × pins both unencoded RGBA bands for #123456 4ms
+     × pins both unencoded RGBA bands for #000000 2ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 18 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #AB71E1
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "dad465926b5ee93eac3512ac24634a86abb9b1615435e7b9fd4da7f815f60d04",
+-   "10d01bb66ddf79167455966524810e0f8450d1c7750709cb948a685df79a0a9e",
++   "27722b7d9fd9e1f9373b008f83cc0c581a7cf69f07b82143f1caea2bedd1bafc",
++   "927dfe6e0912f07a7f2e5115f1ca78bd631af72bf78a1cbaffae2383f79e4733",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #7A74E7
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "36114df985ffe7c675ffa738d133b76b9c4b1ddd48d02bf70173fb6cc42e38d4",
+-   "908c5cb04b11e7428fe4fecce432c54b6fa525dda2777ce21ed9654c83131ca2",
++   "f204c22dc698d1d761d9e535696195ce16db1b7b8c7759acf9093760ee3399a4",
++   "c6629df70f9a2e9ab93d9abf3b9072e356298ca7258431da7f1a4218f9f04528",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #62A2E9
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "fca167024b9c523c425fa35cd44e5681c549f94e5fd48174ce789c71244473c9",
+-   "be2b9f61189dce2e6817306457c491afe39ce3345aebfc3306c6ce7554a7097e",
++   "a4327a5b7e660111709703e7ba3b35c4717905b7b4c1b9eb4d7778e75ef61af9",
++   "dbdb4831bda66712ccc86a26725a9de91ded407b72ff87013743b4026fc3b2a6",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #4FC4C0
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "3f770d78c248f761c26aa67446f1d83b29a0d0bedf25ec4d8a3076d969353209",
+-   "e4d6482cc78d96fcf724a4848e925f2d742da06a975d5cc6c5c2429bf6dc40f1",
++   "10f2e7e8beedd88e167f4ee461c68e016d05ae12579b5377afdb814ccee19435",
++   "4f1a3e8f8d22ce35c166fcf51a332c08dc0393f649b113c74a1a4a171feb06ed",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #5CCC90
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "6d96ea8fb558db0318e4741614f5fe84a33f0c173340f7dd51ef351187b43ce7",
+-   "4aa7365b432708f8f39528bb88bdebfb7df24fa05fda074fda9180661544ab37",
++   "d00bdd40aeae2eefe90c737a6e56335aaf68abdbd03f2e5a9dd9cc312fe10b80",
++   "153c55058c98de7b17f8ae1c1b6761fad666cfbe88021956c37059a222c12055",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #8CC864
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "a0a71605acf22659e0ea0a5e53d9487275a82e9f85147ba3a602cae60078eff6",
+-   "2fd2a0b0f9bd0db7d591080c22b23b6c413e17597f2665cb706028d92dedec00",
++   "6164b9c6ba707398e1c005381200952e98e5bcd8510cf8353ef04a6830260931",
++   "f552f7aea4f163c4a2eb766d33ec991735c984490adef4aa81c201f6aed80eac",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #BEDD40
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "ed81585630e186736184747f5a56a45700089b6006b438ea88fc16cefbce0a83",
+-   "c2d4d0b3ff5c49c8683452805910e949589649e8e104d26a2a48a5a1ac27ea76",
++   "24b7c126892b2fae1ce411b2f5c0fa1172d9befc7a21c59a3b4c901aafc7c302",
++   "bd4b9431bb5fad1abe58cfe350a8215b9c7e8070a278ed983ccc44e108184274",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #F9D24F
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "209919e94771be5e9a5ba60b4e67ebbba799b9ca8c66e12c849361d340951e17",
+-   "4ce9e26a66e4a93391cd941ea3e13f8f8b66b0dcf9984e1ad9420abe3498956a",
++   "c7188095fa7a6ae75300fe2e32a71a9d6efafc2abb76206b4c809b1139224244",
++   "88850a55d44a9d9ba21a8e217285a5038b994140d20c76037c1e75ee70fb1bd7",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #F89C45
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "3fab5e417094186e15d694c76a776c2ab6b2e5d8be6d8e22d47182eefff70573",
+-   "bce1606149b8cd7671da9f9dc31740f12fe06a5af1c40cfa46acf53dc37c2db4",
++   "4160a51e3f79fb5b56540dfa32cc29aff880626a0903a4dab06ab20baf90dcaa",
++   "735dab2d5ad03e78536296d795658a3c59b936114ed66060e151b11a3cbb1375",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #B5835A
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "893000693568c203b0091166ec861df0083938cd7fd1c8a23e9cde96e7bcf147",
+-   "6bb528f984cfbe08daa496b07f3220cc04bf73fdbd10c243beb8eed9520b6249",
++   "a30bdd2164ddf1f9e0fe57d5ffb56c5e86e4b1598fc0ead152fe60c8fa3664c2",
++   "144733ad8f1c60d15a020b42a24669c75b6299e31aab2cf9fe9bfcaf3a588762",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #EC534E
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "50e05b52827f7dcc90a4f4ab1161761f84fada2885db16d30aca8440006bc5c3",
+-   "696bca4f20232008c60dcbfdc11c99937b52de79b546ef279971aad8c6105d20",
++   "63b542366791e5bf1d6250fc2b2489c9b60b03374da40b978d497e658888fcd0",
++   "673f45205419a4cfaf5635a6594ca3564b2ec434548e1d15bf78cce3afa6f054",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #F47CB0
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "47108741a2eb05978bba6cbf6b57e0b3c6aafd8d0956673ea927ed9d3933fb78",
+-   "0898082b982d0ae2acf705306aad63e0d3142216b230280baa7ad38a692573e9",
++   "9762a74a601c5be9b17737b4cd0f80b4060dfa6ad0627d19ea2467be46eb6b55",
++   "a9c31ef353d24c9c1e2bcac5c6a88a12478a06e8fa2a2216538399377d87c9d5",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #E25AD7
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "cfbee6ea44b7b393d3b647bf1dea35a7a6f0ef3a817600e213c6950015927ea4",
+-   "9f5904edf382882b639beb734e6dbcca02590828f1fe83ed546d56e01d441326",
++   "ad23f8886ea509dc9c52efd72a73d73342f534f532f6ebd5bc621b261f02684c",
++   "ce1be859ebd9c82239d6bd83dc9160950be0364a9060e973243f57de7660a537",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #9AA0AC
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "07c4ff0bad248421871cfa177e2bd7294d77dd58a1238db07fdbf28c9e77a008",
+-   "77e9ecb1c1c733d6dbc20f442d50ec889bc5d470a4d4f5b6d559821227fe19e1",
++   "b79f68d94a72da886443199ee7272372259d6d11a698ab78989735315948ab44",
++   "809358a1532d9001ca2148283d744aa12d5aaf6a6fbf0195202002b34dfb77cf",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #0a0b10
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "ef348fde738622aa3a0dd576e68a90a2e8b0eb7402adbed2c7048034be87cdff",
+-   "3f41a9f97aac0a85a8648719bd90d5145a9e837b97429485cb508a2109fc13d2",
++   "e0d911855572d63552feade2d85be761fe3151f58db6c343cb10ce240d843b0d",
++   "b34ac3f1150213579d03c0f450824ab1b798e40c894ca7d8a3e03e3f4c6b53d5",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #FFFFFF
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "60e9a099f6370a75e6d3b8209b52648cbb02856ed8435e194e234f55ce59228a",
+-   "fa0d7a6e0a21b2d3607c264599e228b738132f2e8e9a5d72268f269ee48a3d84",
++   "fd2dffa1d2e7eb4884b742e37fe89da183ee0f5f70d96736f0b7bb88a1375106",
++   "4d09a70c2fe986a0b486b2b485bacb58adbac4afaff847e16b6e8376227bbe4c",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #123456
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "2b201186a08c2e836de32fa730e049ac83e5b39c291dadb9e1e6df013e05908f",
+-   "2bac617e2c3f5a94ef5542236087ddaac4cf8f41e29f3547a0e6d092ab2c4895",
++   "77f611763749192ef9b607f17ab62f2725f5aec1f672bf36538877cd38c23862",
++   "fbb643d0fe609e330294d1bb4a28ad8953d2d1248b1dfe1a492593d5ab644f6b",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/18]⎯
+
+ FAIL  |repo-tools| tests/native-crayon-grain.test.mjs > canonical Crayon grain bytes > pins both unencoded RGBA bands for #000000
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "138ce2dc16c2ff1b20a77c16e0ce104de877298101a775d4fb1e832b207e7b8f",
+-   "0f2767f744f270f62bd06037d09db58f69c1bd021cc28f1612e5f88d961fc9c8",
++   "67d6e990cbd3791bd00dba9dbab94df57d91cb7d9e85f2c74f955cf0ed0fa17e",
++   "147eb933d25d13886c8ff9a9bee24b0cb495704d35fd720861dad6acb726a314",
+  ]
+
+ ❯ tests/native-crayon-grain.test.mjs:37:89
+     35| describe('canonical Crayon grain bytes', () => {
+     36|   it.each(referenceBytes.rows)('pins both unencoded RGBA bands for $he…
+     37|     expect(CRAYON_BANDS.map(({ coverage }) => digest(crayonTilePixels(…
+       |                                                                                         ^
+     38|       bands
+     39|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/18]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  18 failed | 30 passed (48)
+   Start at  21:34:31
+   Duration  1.13s (tests 84%, import 11%, transform 5%)
