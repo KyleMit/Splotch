@@ -59,6 +59,20 @@ downloads share this origin. Web resolves `apiOrigin.web.ts` and continues makin
 requests. Public policy/contact links and canonical marketing URLs remain production links. There is
 no runtime switch, launch argument or deep link that changes a native origin.
 
+The per-PR `test:e2e:api` lane serves the export beside these shared handlers and worker with the
+API smoke's isolated Blobs emulator and outside-fetch refusal. It blocks endpoint interception and
+asserts recording-sink writes as well as rendered results. Focused intercepted UI tests retain their
+timing/offline scope. Hosted native UI coverage is a separate explicit `test:native:api` journey on
+virtual targets with the development identity; the deployment smoke in ADR-0120 stays boot-only. The
+development iOS simulator target signs ad hoc for Keychain access, while the store simulator boot
+target retains its existing configuration. The native journey solves the rendered parental gate. The
+hosted Android journey also guards the capture boundary: the Android SVG adapter lays export pixels
+out in density-correct points, bounding the hidden display bitmap while retaining the explicit
+`toDataURL` output grid. The former pixel-as-point layout crashed before the request. A fresh
+Android AVD and a fresh iOS simulator prevent retained system identities from reusing grants. The
+existing build-time origin variable accepts either configured test alias for this journey;
+production artifact checks reject both test hostnames.
+
 Bundle guards cover every function entry point and compile the native network-origin owners through
 Expo's released inlining transform. They reject opposite-mode bundles as negative controls. The
 unchanged historical wire corpus remains the production contract. An additional test-mode smoke runs

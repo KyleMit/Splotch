@@ -1,0 +1,15 @@
+
+> splotch@1.6.0 check
+> tsc --project tsconfig.shared.json && npm run check:netlify && npm run check:migration:types && npm run check:e2e
+
+
+> splotch@1.6.0 check:netlify
+> tsc --project netlify/tsconfig.json
+
+
+> splotch@1.6.0 check:migration:types
+> tsc --noEmit -p tsconfig.json
+
+
+> splotch@1.6.0 check:e2e
+> tsc --project e2e/tsconfig.json

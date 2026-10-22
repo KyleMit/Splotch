@@ -13,6 +13,11 @@ Configuration is separate so storage/purge functions do not import a model. It a
 `.netlify/api-mode-edge`: empty for production, with the universal noindex edge function for test.
 `netlify.toml` selects this directory outside the published web directory.
 
+Netlify detects the root `Gemfile` during dependency installation, before the JavaScript build. That
+manifest belongs to native CocoaPods and exits when Netlify sets `NETLIFY=true`, leaving the web
+install with no Ruby dependencies or native Ruby version requirement. Local native builds retain the
+pinned Ruby version and gems.
+
 The test selector imports only the fake model, recording GitHub sink and test storage/project key.
 The production selector imports only the production implementations. No runtime environment flag
 selects server behavior. `netlify/server/blobs.ts` prefixes all test store names, including stores
@@ -83,3 +88,9 @@ and any non-production first-party origin; the configured origin must be present
 development builds enforce the same exclusion, and Gradle tracks the origin as a bundle input. This
 check runs on actual compiled artifacts in native CI, in addition to the focused Expo inlining
 guards.
+
+The real-handler UI lane reuses `tools/api-smoke/lib/test-api-environment.mjs` with the same
+outside-fetch refusal and ETag adapter. `SPLOTCH_E2E_PORT=5300 npm run test:e2e:api -- --workers=1`
+drives the export through generation, polling, results, reports, feedback and representative fake
+failures. Each test owns fresh local storage and a function graph; no test endpoint or wire field is
+added. See `docs/TESTING.md` and `DEVELOPMENT.md` for the separate explicit hosted native UI lane.

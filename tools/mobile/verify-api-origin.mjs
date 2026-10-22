@@ -15,10 +15,11 @@ export function assertNativeApiOrigin(bundle, expectedOrigin, storeBuild) {
     'The native bundle does not contain its configured API origin'
   );
   if (storeBuild || expectedOrigin === apiOrigin.PRODUCTION_API_ORIGIN) {
-    assert.ok(
-      !text.includes('test.splotch.art'),
-      'A production native bundle contains the test host'
-    );
+    for (const origin of apiOrigin.TEST_API_ORIGINS)
+      assert.ok(
+        !text.includes(new URL(origin).hostname),
+        'A production native bundle contains the test host'
+      );
     const origins = [...new Set(text.match(/https:\/\/(?:[a-z0-9-]+\.)*splotch\.art/g))];
     assert.deepEqual(
       origins,

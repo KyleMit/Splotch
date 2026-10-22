@@ -1,0 +1,66 @@
+
+> splotch@1.6.0 test:api:smoke
+> node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/run-contract.mjs
+
+Starting the /api function host…
+Server ready on http://127.0.0.1:5341
+
+  ✓ login with wrong key → 403 {ok:false}
+  ✓ login with correct key → 200 {ok:true, session:<64-hex>}
+  ✓ tokens without auth → 401 {ok:false, error}
+  ✓ tokens with bad bearer → 401 {ok:false, error}
+  ✓ OPTIONS /api/* → 204 with the CORS set and no security headers
+  ✓ non-OPTIONS /api/* → CORS set stamped, nosniff present, document-only headers absent
+[tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ tokens GET → 200 {ok, tokens[], invites[]}
+  ✓ tokens GET → persistent:false on the local host
+  ✓ tokens POST adds a token
+[ai-usage] failed to delete usage: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ tokens DELETE removes the token
+  ✓ tokens POST malformed body → 400 {ok:false, error}
+  ✓ tokens POST oversized body → 413 {ok:false, error}
+  ✓ tokens POST chunked oversized body → clean no-store 413 without a socket reset
+  ✓ stats without auth → 401
+[ai-usage] Netlify Blobs unavailable, no usage stats: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ stats GET → 200 {ok, usageAvailable:false, codes[], in-memory freeGrantStats}
+  ✓ verify-access-code invalid → 200 {ok:false, error}
+  ✓ verify-access-code valid → 200 {ok:true, accessCode}
+  ✓ report empty message → 400 {ok:false, error}
+  ✓ report invalid kind → 400
+  ✓ report valid but no GITHUB_ISSUE_TOKEN → 503 {ok:false, error}
+  ✓ report with filled honeypot → answered exactly as the same payload without it
+  ✓ report throttled → 429 with Retry-After
+  ✓ report-image with private reporting unconfigured → 503 {ok:false, error}
+  ✓ report-image with a free installation id → not a credential rejection
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+  ✓ csp-report report-uri payload → 204
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"inline","directive":"style-src-attr","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+  ✓ csp-report Reporting-API payload → 204
+  ✓ csp-report non-report content type → 415
+  ✓ csp-report oversize body → 413
+  ✓ csp-report malformed JSON → dropped with 204
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+  ✓ csp-report throttled → 429 with Retry-After
+  ✓ generate-image with invalid token → 403 {ok:false, error}
+  ✓ generate-image with valid token but no image → 400 {ok:false, error}
+  ✓ generate-image oversized image → 413 {ok:false, error}
+  ✓ generate-image image with no Content-Type → 415 {ok:false, error}
+  ✓ generate-image legacy multipart invalid token → 403
+  ✓ generate-image legacy multipart valid token, bad type → 415 {ok:false, error}
+  ✓ generation-result malformed job id → 400 {ok:false, error}
+[generation-jobs] could not read the job store: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ generation-result unknown job → 404, or 503 GENERATION_UNAVAILABLE, never a 500 crash
+  ✓ recovery v1 GET stays closed before qualification
+  ✓ recovery v1 POST stays closed before qualification
+  ✓ verify-key with no key → 400 {ok:false, error}
+  ✓ free-generation-grant fresh installation → 10 remaining
+  ✓ credential-free generation is authorized before image validation
+  ✓ throttled → 429 {ok:false, error} with Retry-After
+  ✓ generate-image invalid token while limited → shared 429
+  ✓ every non-OPTIONS /api/* response → Cache-Control: no-store
+
+46 passed, 0 failed

@@ -1,0 +1,48 @@
+EXPO_PUBLIC_SPLOTCH_API_ORIGIN=https://test--splotchy.netlify.app npm run test:native:api -- --platform ios --device 1E7ED8C0-775A-4BD8-A2E1-830F9465E154
+Exit code: 0
+Final build and flow output:
+note: Run script build phase '[CP-User] Build ExpoModulesJSI xcframework' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoModulesJSI' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoModulesCore XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoModulesCore' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoModulesWorklets XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoModulesWorklets' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoMediaLibrary XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoMediaLibrary' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoFont XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoFont' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoFileSystem XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoFileSystem' from project 'Pods')
+note: Run script build phase '[CP-User] Generate app.config for prebuilt Constants.manifest' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'EXConstants' from project 'Pods')
+** BUILD SUCCEEDED **
+
+
+Built art.splotch.app.dev: ios/build/development-simulator/Build/Products/Release-iphonesimulator/Splotch.app
+$ xcrun simctl install 1E7ED8C0-775A-4BD8-A2E1-830F9465E154 /Users/kylemit/.codex/worktrees/00f5/Splotch/ios/build/development-simulator/Build/Products/Release-iphonesimulator/Splotch.app
+$ maestro --device 1E7ED8C0-775A-4BD8-A2E1-830F9465E154 test .maestro/api-generation.yaml
+Running on Splotch-API-Keypad-20261022 - iOS 27.0 - 1E7ED8C0-775A-4BD8-A2E1-830F9465E154
+ > Flow api-generation
+Launch app "art.splotch.app.dev" with clear state... COMPLETED
+Assert that "Settings" is visible... COMPLETED
+Tap on "Settings"... COMPLETED
+Scrolling DOWN until "AI Art.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "AI Art.*"... COMPLETED
+Run flow when "Got it" is visible...
+Run flow when "Got it" is visible... SKIPPED
+Tap on "Create AI Images"... COMPLETED
+Assert that "10 free AI creations left\..*" is visible... COMPLETED
+Tap on "Close"... COMPLETED
+Swipe from (35%, 40%) to (65%, 60%) in 800 ms... COMPLETED
+Tap on "Expand controls"... COMPLETED
+Tap on "Create AI image, 10 free left"... COMPLETED
+Assert that "Grown-Ups Only" is visible... COMPLETED
+Copy text from element with "What is [0-9]+ times [0-9]+\?"... COMPLETED
+Run ${output.operands = maestro.copiedText.match(/[0-9]+/g)}... COMPLETED
+Assert that ${output.operands.length == 2} is true... COMPLETED
+Run ${output.answer = String(Number(output.operands[0]) * Number(output.operands[1]))}... COMPLETED
+Run ${output.digitIndex = 0}... COMPLETED
+Repeat indefinitely...
+  Tap on id: ${'gate-key-' + output.answer.charAt(output.digitIndex)}... COMPLETED
+  Run ${output.digitIndex = output.digitIndex + 1}... COMPLETED
+Repeat 2 times... COMPLETED
+Tap on "Check answer"... COMPLETED
+Tap on "Magical"... COMPLETED
+Assert that "Your AI picture" is visible... COMPLETED
+Assert that "Download" is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot .maestro/screenshots/hosted-api-result... COMPLETED
+PASS hosted generation UI: ios, 1E7ED8C0-775A-4BD8-A2E1-830F9465E154, Release art.splotch.app.dev, https://test--splotchy.netlify.app

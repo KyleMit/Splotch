@@ -1,0 +1,12 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/mobile/tests/hosted-api-target-refresh.test.mjs tools/mobile/tests/hosted-api-journey.test.mjs tools/api-smoke/tests/ui-integration-guards.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+
+ Test Files  3 passed (3)
+      Tests  19 passed (19)
+   Start at  10:12:32
+   Duration  138ms (import 48%, transform 39%, tests 10%, worker 3%)

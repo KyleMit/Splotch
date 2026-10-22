@@ -157,3 +157,10 @@ Run focused verification with:
 npm run test:tools -- tools/release/tests
 npm run gen:releases
 ```
+
+The `development-simulator` target (`ios:simulator:development`) builds a Release simulator app with
+`art.splotch.app.dev` into `ios/build/development-simulator/`, without `Store.xcconfig`. It signs ad
+hoc for simulator Keychain access without store credentials. It supports the existing build-time
+API-origin variable and artifact inspection. The `simulator` target remains the store-identity,
+production-origin deployment smoke build. The explicit hosted UI journey in `DEVELOPMENT.md` uses
+only the development target.

@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:migration:rsd-selection
+> vitest run --config tools/migration/rsd-drawing-vitest.config.mjs tools/migration/tests/rsd-native-api-keypad.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-screen-orientation/build/ScreenOrientation.types.js" points to missing source files
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  09:52:09
+   Duration  592ms (transform 50%, environment 26%, import 16%, tests 7%)

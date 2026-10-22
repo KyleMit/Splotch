@@ -75,6 +75,7 @@ function engineAvailable(
 
 export default defineConfig({
   testDir: './specs',
+  testIgnore: 'api-integration.spec.ts',
   outputDir: resolve(REPO_ROOT, 'test-results'),
   fullyParallel: true,
   // Playwright's default worker count, half the logical cores, is ADR-0078's measured capacity of

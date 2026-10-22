@@ -1,0 +1,42 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-capture-svg-android.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+ ❯ |repo-tools| tests/native-capture-svg-android.test.mjs (3 tests | 2 failed) 9ms
+   × bounds the display bitmap at density 2 while preserving explicit export pixels 2ms
+   × bounds the display bitmap at density 3.5 while preserving explicit export pixels 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-capture-svg-android.test.mjs > bounds the display bitmap at density 2 while preserving explicit export pixels
+AssertionError: expected 3072 to be close to 1536, received difference is 1536, but expected 0.005
+ ❯ tests/native-capture-svg-android.test.mjs:40:53
+     38|   await act(async () => root.render(createElement(CaptureSvg, { ...ras…
+     39|   const svg = host.querySelector('svg');
+     40|   expect(Number(svg.getAttribute('width')) * scale).toBeCloseTo(raster…
+       |                                                     ^
+     41|   expect(Number(svg.getAttribute('height')) * scale).toBeCloseTo(raste…
+     42|   expect(svg.getAttribute('viewBox')).toBe(viewBox);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |repo-tools| tests/native-capture-svg-android.test.mjs > bounds the display bitmap at density 3.5 while preserving explicit export pixels
+AssertionError: expected 5376 to be close to 1536, received difference is 3840, but expected 0.005
+ ❯ tests/native-capture-svg-android.test.mjs:40:53
+     38|   await act(async () => root.render(createElement(CaptureSvg, { ...ras…
+     39|   const svg = host.querySelector('svg');
+     40|   expect(Number(svg.getAttribute('width')) * scale).toBeCloseTo(raster…
+       |                                                     ^
+     41|   expect(Number(svg.getAttribute('height')) * scale).toBeCloseTo(raste…
+     42|   expect(svg.getAttribute('viewBox')).toBe(viewBox);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  09:31:47
+   Duration  256ms (environment 77%, import 10%, transform 8%, tests 4%, worker 1%)

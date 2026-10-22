@@ -71,6 +71,7 @@ export function RsdParentGateKeypad({
             <html.button
               key={key}
               data-key={key}
+              data-testid={`gate-key-${key}`}
               aria-label={typeof key === 'number' ? undefined : PARENT_GATE_KEY_LABELS[key]}
               aria-disabled={locked}
               style={[

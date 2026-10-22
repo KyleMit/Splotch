@@ -1,0 +1,29 @@
+
+> splotch@1.6.0 test:e2e
+> playwright test --config e2e/playwright.config.ts e2e/specs/ai-report.spec.ts e2e/specs/feedback-page.spec.ts --project chromium --workers=1
+
+[WebServer] (node:76357) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 14 tests using 1 worker
+
+(node:76394) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › e2e/specs/ai-report.spec.ts:60:3 › an AI picture report › is confirmed, then sent with the access code and handed back as a reference (5.8s)
+  ✓   2 [chromium] › e2e/specs/ai-report.spec.ts:86:5 › an AI picture report › dismissed with Escape leaves the result untouched and hands focus back to Report (5.2s)
+  ✓   3 [chromium] › e2e/specs/ai-report.spec.ts:86:5 › an AI picture report › dismissed with Cancel leaves the result untouched and hands focus back to Report (5.7s)
+  ✓   4 [chromium] › e2e/specs/ai-report.spec.ts:109:3 › an AI picture report › carries the signed report token and installation of a free-tier picture (5.8s)
+  ✓   5 [chromium] › e2e/specs/ai-report.spec.ts:132:3 › an AI picture report › reports a free-tier safety refusal as a false positive, with the rejected drawing only (4.5s)
+  ✓   6 [chromium] › e2e/specs/ai-report.spec.ts:156:3 › an AI picture report › that fails offers a retry in place, without asking for another picture (5.4s)
+(node:76620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 [chromium] › e2e/specs/feedback-page.spec.ts:31:3 › the feedback page › renders its shell and the report form (88ms)
+  ✓   8 [chromium] › e2e/specs/feedback-page.spec.ts:40:3 › the feedback page › the privacy policy points its contact at this page (86ms)
+  ✓   9 [chromium] › e2e/specs/feedback-page.spec.ts:49:3 › the feedback page › an idea swaps the prompt, drops the device opt-in and renames the button (212ms)
+  ✓  10 [chromium] › e2e/specs/feedback-page.spec.ts:63:3 › the feedback page › opting into device info shows what will be sent, and unticking takes it back (257ms)
+  ✓  11 [chromium] › e2e/specs/feedback-page.spec.ts:76:3 › the feedback page › an empty report never reaches the server (208ms)
+  ✓  12 [chromium] › e2e/specs/feedback-page.spec.ts:86:3 › the feedback page › a delivery the server cannot make explains itself, offers email and keeps the draft (311ms)
+  ✓  13 [chromium] › e2e/specs/feedback-page.spec.ts:104:3 › the feedback page › the support address is in no document a crawler could fetch (6ms)
+  ✓  14 [chromium] › e2e/specs/feedback-page.spec.ts:110:3 › the feedback page › a sent report gets a thank-you, and Send another starts an empty one (326ms)
+
+  14 passed (35.4s)

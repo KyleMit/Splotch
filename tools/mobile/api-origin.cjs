@@ -1,4 +1,5 @@
 const PRODUCTION_API_ORIGIN = 'https://splotch.art';
+const TEST_API_ORIGINS = ['https://test.splotch.art', 'https://test--splotchy.netlify.app'];
 
 function readApiOrigin(env, storeBuild = false) {
   const value = env.EXPO_PUBLIC_SPLOTCH_API_ORIGIN ?? PRODUCTION_API_ORIGIN;
@@ -22,4 +23,4 @@ function readApiOrigin(env, storeBuild = false) {
   return url.origin;
 }
 
-module.exports = { readApiOrigin, PRODUCTION_API_ORIGIN };
+module.exports = { readApiOrigin, PRODUCTION_API_ORIGIN, TEST_API_ORIGINS };

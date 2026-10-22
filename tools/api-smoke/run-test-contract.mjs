@@ -1,23 +1,16 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { getStore, listStores, setEnvironmentContext } from '@netlify/blobs';
-import { BlobsServer } from '@netlify/blobs/server';
+import { getStore, listStores } from '@netlify/blobs';
 import { startNetlifyFunctionHost } from '../lib/netlify-function-host.mjs';
 import { contractServerEnv } from './lib/server-env.mjs';
 import { tinyPngBuffer } from './lib/tiny-png.mjs';
 import { GENERATION_JOB_PARAM } from '../../src/lib/apiParams.ts';
-import { localBlobFetch } from './lib/local-blob-fetch.mjs';
+import { startTestApiEnvironment } from './lib/test-api-environment.mjs';
 
 const POLL_INTERVAL_MS = 200;
 const POLL_DEADLINE_MS = 15_000;
 const IMAGE_BYTES = tinyPngBuffer();
-const directory = mkdtempSync(join(tmpdir(), 'splotch-test-api-'));
-const blobs = new BlobsServer({ directory, port: 0 });
-const previousContext = globalThis.netlifyBlobsContext;
-const previousFetch = globalThis.fetch;
+let environment;
 let host;
 
 async function pollResult(base, jobId) {
@@ -145,28 +138,16 @@ async function checkReports(base) {
 }
 
 try {
-  const address = await blobs.start();
-  const url = `http://127.0.0.1:${address.port}`;
-  globalThis.fetch = localBlobFetch(previousFetch, url);
-  setEnvironmentContext({
-    siteID: 'test-site',
-    token: 'local-test-token',
-    edgeURL: url,
-    uncachedEdgeURL: url,
-    apiURL: url,
-  });
+  environment = await startTestApiEnvironment(contractServerEnv(randomUUID(), 'test'));
   host = await startNetlifyFunctionHost({
     mode: 'production',
     port: Number(process.env.SMOKE_PORT ?? 5199),
-    env: contractServerEnv(randomUUID(), 'test'),
+    env: environment.env,
   });
   await checkGeneration(host.origin);
   await checkKeysAndOutcomes(host.origin);
   await checkReports(host.origin);
 } finally {
   await host?.close();
-  await blobs.stop();
-  globalThis.fetch = previousFetch;
-  globalThis.netlifyBlobsContext = previousContext;
-  rmSync(directory, { force: true, recursive: true });
+  await environment?.close();
 }

@@ -44,6 +44,7 @@ both variants before changing a shared contract.
 | `drawing/InkLayer.web.tsx`                                     | Browser ink presentation.                                                             |
 | `drawing/checkpoints.ts`                                       | Flattened drawing history and retained undo state.                                    |
 | `drawing/pictureCompose.ts`, `drawing/pictureCompose.web.ts`   | Platform picture composition.                                                         |
+| `drawing/CaptureSvg.android.tsx`                               | Android capture layout at device density; explicit export pixels stay fixed.          |
 | `drawing/perfProbe.native.ts`, `drawing/perfReplay.ts`         | Opt-in native contact-cohort probe and replay.                                        |
 | `drawing/bundledFarm/`, `drawing/bundledBookAssets.ts`         | Bundled starter-book artwork.                                                         |
 | `rsdDrawing/RsdDrawingScreen.tsx`                              | Shared RSD screen structure.                                                          |

@@ -25,6 +25,7 @@ const NATIVE_CI_STEPS = [
       'npm run test:e2e -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
   },
   { job: 'firefox-smoke', command: 'npm run test:firefox:smoke' },
+  { job: 'api-ui-integration', command: 'npm run test:e2e:api -- --workers=1' },
   { job: 'webkit-smoke', command: 'npm run test:webkit:smoke' },
 ];
 
@@ -66,7 +67,7 @@ describe('the native candidate checks run in CI', () => {
 // never one of their own, and only an export at netlify.toml's publish directory is the one the
 // suite's server (e2e/server/netlifySite.ts) serves.
 const EXPORT_ARTIFACT = 'rn-web-export';
-const EXPORT_SERVING_JOBS = ['rn-web-e2e', 'firefox-smoke', 'webkit-smoke'];
+const EXPORT_SERVING_JOBS = ['rn-web-e2e', 'firefox-smoke', 'webkit-smoke', 'api-ui-integration'];
 const { publish } = readNetlifyConfig(readFileSync(join(repoRoot, 'netlify.toml'), 'utf8'));
 const workflowJobs = parse(testWorkflow).jobs;
 const stepIndex = (steps, matches) => steps.findIndex(matches);

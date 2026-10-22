@@ -71,3 +71,13 @@ Firefox and WebKit smoke jobs download it and run with `SPLOTCH_E2E_PREBUILT=1`.
 the `shard` list in the `rn-web-e2e` job of `.github/workflows/test.yml`. Each job uploads
 `playwright-report/`, which also holds the flaky reporter's `flaky.json`
 (`e2e/playwright-flaky-reporter.ts`, shared with the SvelteKit suite).
+
+## Real-handler integration lane
+
+Run `SPLOTCH_E2E_PORT=5300 npm run test:e2e:api -- --workers=1` on an unused port. The dedicated
+config selects `specs/api-integration.spec.ts`; the focused suite excludes it. Each scenario uses
+fresh browser storage, a new local Blobs emulator and the shared function/worker host with the fake
+provider selected before module loading. Request interception is forbidden by the fixture. Reports
+and feedback must appear in the recording sink; no OpenAI/GitHub credentials or production storage
+are available. See `docs/TESTING.md` for the coverage boundary and negative controls. Hosted native
+UI coverage has its own explicit command in `DEVELOPMENT.md` and never follows from this lane.
