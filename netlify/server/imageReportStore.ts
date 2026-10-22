@@ -1,4 +1,5 @@
 import { getStore } from './blobs';
+import type { BlobNamespace } from './blobNamespace';
 import type { StyleName } from '../../src/lib/ai/styles';
 import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '../../src/lib/imageReport';
 import { IMAGE_REPORT_STORE_NAME } from './imageReportStoreName';
@@ -115,7 +116,7 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
   return saved;
 }
 
-export async function purgeExpiredImageReports(): Promise<{
+export async function purgeExpiredImageReports(namespace: BlobNamespace = 'active'): Promise<{
   attemptedBlobs: number;
   deletedBlobs: number;
   expiredReports: number;
@@ -123,7 +124,7 @@ export async function purgeExpiredImageReports(): Promise<{
   retainedBlobs: number;
 }> {
   const cutoff = Date.now() - REPORT_RETENTION_MS;
-  const store = getStore({ name: IMAGE_REPORT_STORE_NAME, consistency: 'eventual' });
+  const store = getStore({ name: IMAGE_REPORT_STORE_NAME, consistency: 'eventual' }, namespace);
   const expiredReportIds = new Set<string>();
   let attemptedBlobs = 0;
   let deletedBlobs = 0;

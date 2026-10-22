@@ -19,3 +19,11 @@ it.each([
   getStore({ name, consistency: 'strong' });
   expect(sdk.getStore).toHaveBeenLastCalledWith({ name: `test-${name}`, consistency: 'strong' });
 });
+
+it('opens the maintenance namespace once even when the active deployment is already test', () => {
+  getStore({ name: 'ai-image-reports', consistency: 'strong' }, 'test');
+  expect(sdk.getStore).toHaveBeenLastCalledWith({
+    name: 'test-ai-image-reports',
+    consistency: 'strong',
+  });
+});

@@ -1,4 +1,5 @@
 import type { AiImageProvider } from './provider';
+import { maintainTestData } from '../testDataRetention';
 
 // Long enough for the client to paint its waiting state and poll, without a paid model call.
 export const FAKE_IMAGE_DELAY_MS = 1_500;
@@ -14,6 +15,11 @@ const ERROR_REASONS = {
 
 export const fakeAiProvider: AiImageProvider = {
   async generateImage({ apiKey, deadlineMs }) {
+    try {
+      await maintainTestData();
+    } catch {
+      return { kind: 'error', reason: 'Test data retention is unavailable' };
+    }
     await new Promise((resolve) => setTimeout(resolve, Math.min(FAKE_IMAGE_DELAY_MS, deadlineMs)));
     if (deadlineMs < FAKE_IMAGE_DELAY_MS)
       return { kind: 'error', reason: ERROR_REASONS['sk-test-timeout'] };
@@ -26,6 +32,11 @@ export const fakeAiProvider: AiImageProvider = {
     return { kind: 'image', data: CANNED_IMAGE, mimeType: 'image/png' };
   },
   async verifyKey(apiKey) {
+    try {
+      await maintainTestData();
+    } catch {
+      return { ok: false, kind: 'unreachable', reason: 'Test data retention is unavailable' };
+    }
     await new Promise((resolve) => setTimeout(resolve, FAKE_KEY_DELAY_MS));
     if (apiKey === 'sk-test-verify-rate-limited' || apiKey === 'sk-test-verify-timeout')
       return { ok: false, kind: 'unreachable', reason: 'The key check ran out of time' };

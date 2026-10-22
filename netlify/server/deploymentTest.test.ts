@@ -2,6 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { projectApiKey } from './deploymentTest';
 import { fakeAiProvider } from './ai/fake';
+vi.mock('./testDataRetention', () => ({ maintainTestData: vi.fn().mockResolvedValue(undefined) }));
 
 afterEach(() => {
   vi.useRealTimers();

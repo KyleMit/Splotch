@@ -1,4 +1,5 @@
 import { getStore } from './blobs';
+import type { BlobNamespace } from './blobNamespace';
 import { isStyleName, type StyleName } from '../../src/lib/ai/styles';
 import { USAGE_OUTCOMES, type TokenUsage, type UsageOutcome } from '../../src/lib/usageRecord';
 import { settleWithRetentionConcurrency } from './retentionSweep';
@@ -68,7 +69,7 @@ async function purgeUsageRecord(
 }
 
 /** Delete expired records and legacy raw-keyed blobs from the dedicated store. */
-export async function purgeExpiredUsageRecords(): Promise<{
+export async function purgeExpiredUsageRecords(namespace: BlobNamespace = 'active'): Promise<{
   attemptedRecords: number;
   deletedExpiredRecords: number;
   deletedLegacyRecords: number;
@@ -76,7 +77,7 @@ export async function purgeExpiredUsageRecords(): Promise<{
   failedRecords: number;
   retainedRecords: number;
 }> {
-  const store = getStore({ name: USAGE_STORE_NAME, consistency: 'eventual' });
+  const store = getStore({ name: USAGE_STORE_NAME, consistency: 'eventual' }, namespace);
   const nowMs = Date.now();
   let deletedExpiredRecords = 0;
   let deletedLegacyRecords = 0;

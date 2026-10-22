@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from 'vitest';
 import { fakeAiProvider, FAKE_IMAGE_DELAY_MS } from './fake';
+const retention = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock('../testDataRetention', () => ({ maintainTestData: retention }));
 
 afterEach(() => vi.useRealTimers());
 const request = (apiKey: string) => ({
@@ -8,6 +10,20 @@ const request = (apiKey: string) => ({
   image: { bytes: new Uint8Array([1]), mimeType: 'image/png' },
   prompt: 'Draw a picture',
   deadlineMs: 20_000,
+});
+
+it('maps retention outages through the existing provider failure contracts', async () => {
+  retention.mockRejectedValueOnce(new Error('Storage unavailable'));
+  expect(await fakeAiProvider.generateImage(request('sk-test-success'))).toEqual({
+    kind: 'error',
+    reason: 'Test data retention is unavailable',
+  });
+  retention.mockRejectedValueOnce(new Error('Storage unavailable'));
+  expect(await fakeAiProvider.verifyKey('sk-test-success')).toEqual({
+    ok: false,
+    kind: 'unreachable',
+    reason: 'Test data retention is unavailable',
+  });
 });
 
 it('respects a shorter caller deadline and refuses an unrecognized generation key', async () => {

@@ -3,6 +3,7 @@ import {
   RECOVERY_MAX_RECORD_BYTES,
 } from '../../src/lib/ai/generationAttempt';
 import { RECOVERY_PROVISIONAL_TOMBSTONE_MS } from './generationAttemptRecord';
+import type { BlobNamespace } from './blobNamespace';
 import { attemptKey, readAttemptVersion, requireAttemptTime } from './generationAttemptPersistence';
 import {
   createNetlifyAttemptStorage,
@@ -84,6 +85,8 @@ export async function sweepGenerationAttempts(
   }
   return { inspected, deleted, retained, unavailable };
 }
-export async function purgeExpiredGenerationAttempts(): Promise<AttemptSweepResult> {
-  return sweepGenerationAttempts(createNetlifyAttemptStorage(), Date.now());
+export async function purgeExpiredGenerationAttempts(
+  namespace: BlobNamespace = 'active'
+): Promise<AttemptSweepResult> {
+  return sweepGenerationAttempts(createNetlifyAttemptStorage(namespace), Date.now());
 }
