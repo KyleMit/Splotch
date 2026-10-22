@@ -1,7 +1,16 @@
 # ADR-0136: Do Not Charge a Late Frame That the Next Frame Gives Back
 
-**Status:** Accepted — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
-depends on [ADR-0134](0134-frame-beat-from-the-dominant-interval.md). **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The late-frame lostFrameTimeShare scorer and its calibrated performance
+gate retired with the old capture harness. The examples and metric reasoning remain historical
+evidence, not an RN acceptance gate.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted — amends
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); depends on
+[ADR-0134](0134-frame-beat-from-the-dominant-interval.md). **Date:** 2026-08
 
 ## Context
 

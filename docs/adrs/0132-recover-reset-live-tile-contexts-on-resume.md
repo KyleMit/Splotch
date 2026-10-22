@@ -1,7 +1,14 @@
 # ADR-0132: Recover Reset Live-Tile Contexts on Resume
 
-**Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) and
-[ADR-0110](0110-single-replay-worker-canvas-context-recovery.md) **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte live-tile context-recovery implementation was removed. RN
+renderer recovery is owned by its drawing surfaces.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)
+and [ADR-0110](0110-single-replay-worker-canvas-context-recovery.md) **Date:** 2026-08
 
 ## Context
 

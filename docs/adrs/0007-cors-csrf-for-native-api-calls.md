@@ -13,6 +13,14 @@
 > `curl` verification at the bottom still works as-is against the legacy path; the raw-body
 > equivalent is `-H "X-Access-Token: x" -H "Content-Type: image/png" --data-binary @tiny.png`.
 
+## Current scope after the RN cutover (2026-10)
+
+The framework-free wrapper `netlify/server/api/apiFunction.ts` applies the cross-site form guard
+from `netlify/server/csrf.ts` and CORS from `apiCors.ts`. The recorded trusted origins and wire
+responses remain unchanged; there is no Svelte configuration or hook. RN native transport calls the
+hosted API and RN web calls it same-origin. The historical design below retains its original
+context.
+
 ## Context
 
 The native apps (Android: `https://localhost`, iOS: `capacitor://localhost`) call the hosted

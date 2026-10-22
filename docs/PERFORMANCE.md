@@ -2,7 +2,7 @@
 
 Splotch's active performance surface is the React Native app and its web export (ADR-0182).
 `docs/PROFILING.md` owns the measurement workflow; the `profiling` skill routes to the in-app probe
-and replay instructions. The app remains in `` until root promotion.
+and replay instructions. The app lives at the repository root.
 
 ## Active measurements and gates
 

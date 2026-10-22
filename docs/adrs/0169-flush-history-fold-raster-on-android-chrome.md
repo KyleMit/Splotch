@@ -1,6 +1,12 @@
 # ADR-0169: Flush the History Fold's Canvas Raster to the GPU on Android Chrome
 
-**Status:** Active **Date:** 2026-09
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The tiled-history WebGL raster flush was removed with the Svelte renderer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-09
 
 ## Context
 

@@ -55,7 +55,7 @@
   description: 'Admin console, access codes, quotas, ops'
 - name: 'area:native'
   color: '006b75'
-  description: 'Android / iOS / Capacitor'
+  description: 'Android / iOS / React Native'
 - name: 'area:ci-testing'
   color: '168f6c'
   description: 'CI pipeline and test infrastructure'

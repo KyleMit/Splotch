@@ -2,8 +2,8 @@
 
 Splotch ships one Expo / React Native / React Strict DOM app to web, Android and iOS (ADR-0182).
 Browser compatibility applies to the web export. Native applications run React Native and Hermes,
-not the web export inside a WebView; their OS floors are separate contracts. The app currently lives
-in `` pending root promotion.
+not the web export inside a WebView; their OS floors are separate contracts. The app and native
+projects live at the repository root.
 
 ## Supported browsers & devices
 

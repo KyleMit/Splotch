@@ -9,6 +9,13 @@ and [0182](0182-splotch-is-one-react-native-app.md)) **Date:** 2026-06
 > autolinking in its `Podfile`), so the Swift Package Manager choice below describes only the
 > retiring Capacitor project. The rejection of fastlane stands.
 
+## Current scope after the RN cutover (2026-10)
+
+The root `ios/Splotch.xcodeproj` resolves Expo/RN modules through CocoaPods, with the committed
+`Gemfile`, `Podfile` and lockfile. Plain `xcodebuild` archive/export and manual store upload remain
+the release path. SPM/no-CocoaPods below describes the removed Capacitor project; it is not setup
+advice. See `docs/MOBILE/ios.md`. The historical design below retains its original context.
+
 ## Context
 
 Adding iOS as a deployment target (the second native platform after Android, anticipated by

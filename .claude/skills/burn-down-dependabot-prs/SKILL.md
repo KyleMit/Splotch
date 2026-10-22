@@ -94,7 +94,7 @@ answered *no* by evidence instead of by reasoning about a changelog.
 **Compare extracted contents, not archives.** Nested tarballs (a CLI's bundled platform templates)
 can differ as binary blobs between two releases purely from gzip repack metadata while their
 contents are byte-identical. A checksum diff reports a change that isn't there — and on a
-`@capacitor/*` bump that false positive is the difference between "no-op" and "schedule a native
+native-module bump that false positive is the difference between "no-op" and "schedule a native
 rebuild."
 
 **This repo's own code — the blast radius.** For every behavior change, grep for whether the repo is
@@ -138,26 +138,23 @@ rising number with an improving posture looks like a regression to anyone readin
 
 **An advisory named for the package you're bumping may not be about the copy you're bumping.** Match
 its vulnerable range against the *installed path*, not the package name: `pnpm audit` can report a
-moderate on `@capacitor/cli` that belongs to a vendored 5.7.8 copy nested under `@capacitor/assets`,
-whose range tops out far below the top-level version already installed. The bump reads as clearing
-the advisory and clears nothing.
+moderate on a CLI that belongs to a nested vendored copy whose version is older than the top-level
+copy. The bump reads as clearing the advisory and clears nothing.
 
 ### Splotch-specific traps
 
 * **The inverted `dependencies` / `devDependencies` split** (ADR-0070) — Netlify installs with
   `--omit=dev`. A build-needed package sitting in `devDependencies` breaks the deploy while CI stays
   green. Check which side a bump lands on.
-* **`@capacitor/*`** — may need a native rebuild, and the family moves in lockstep. Settle both with
-  the tarball diff above rather than assuming; a version-only republish needs no rebuild at all. If
-  only part of the family has a PR, don't read the silence as "that one is already current" — check
-  the open-PR cap, because the sibling holding the release's only real code change is exactly the
-  one you want to see.
+* **Expo / React Native and native modules** — the SDK set is excluded from ordinary Dependabot
+  bumps and moves through ADR-0119's alignment/provenance review. If such a PR appears, verify
+  `.github/dependabot.yml` and all native callers before treating it as an isolated update.
 * **Action pins** — Dependabot rewrites the SHA and its `# vX.Y.Z` comment together. A pin whose SHA
   and comment disagree is a red flag.
 * **Peer-dependency caps fail at `pnpm install --frozen-lockfile`, not at type-check.** Read the
   actual install error. Check *every* consumer's peer range, not just the one that failed loudest —
-  a sibling PR that looks like it unblocks the upgrade may not (svelte-check widening to `^5 || ^6`
-  still excludes 7).
+  a sibling PR that looks like it unblocks the upgrade may not (a peer widening to `^5 || ^6` still
+  excludes 7).
 
 ## 3. Sequence the merges
 

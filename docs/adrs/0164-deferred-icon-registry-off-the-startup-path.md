@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+Deferred icons remain outside startup through `src/rsdDrawing/deferredIconWarmup.ts` and its web
+split. Metro replaces Rollup and the Svelte registry; RN startup and per-document byte caps enforce
+the boundary. The historical design below retains its original context.
+
 ## Context
 
 `Icon.svelte` inlines every icon in `web/src/lib/icons/` through one eager `import.meta.glob`

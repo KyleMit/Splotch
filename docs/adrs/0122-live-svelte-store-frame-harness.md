@@ -1,6 +1,13 @@
 # ADR-0122: Store-Screenshot Frames Are Live Svelte Components Behind a Dev Harness
 
-**Status:** Active **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The live Svelte store-frame route was removed. The retained frame-only
+generator consumes captured inputs (ADR-0182).
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-08
 
 ## Amendment (2026-10-21): the frames render as static documents
 

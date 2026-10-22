@@ -45,26 +45,19 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 
 | Entry point                        | Public command or owner                   | Purpose                                                       |
 | ---------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
-| `check-bundle-budgets.mjs`         | `postbuild`                               | Enforce byte budgets and web/native modulepreload counts      |
 | `check-coloring-assets.mjs`        | `check:coloring-assets`                   | Validate the complete coloring-book asset catalog             |
 | `check-github-action-versions.mjs` | `check:github-actions`                    | Inventory workflow action pins and optionally query releases  |
-| `check-netlify-cli.mjs`            | `predev:netlify`                          | Require an authenticated, linked Netlify CLI                  |
-| `check-pwa-precache.mjs`           | `postbuild`                               | Enforce offline-asset coverage and the precache budget        |
-| `check-release-seams.mjs`          | `postbuild`                               | Reject profiling and development seams in release output      |
 | `fetch-image-reports.mjs`          | `fetch:image-reports`                     | Fetch retained production AI-report evidence for local review |
 | `optimize-svg-assets.mjs`          | `optimize:svg-assets`, `check:svg-assets` | Optimize shipped SVGs or detect optimization drift            |
 | `print-playwright-version.mjs`     | GitHub setup actions                      | Emit the installed Playwright version for cache keys          |
-| `run-web-tool.mjs`                 | web build, check, and test commands       | Run root-installed web tools with `web/` as their working dir |
-| `start-cloud-tunnel.mjs`           | `dev:tunnel`                              | Start the cloud preview server and authenticated tunnel       |
-| `stop-dev-servers.mjs`             | `dev:stop`                                | Stop this checkout's dev servers; refuse any other listener   |
 
 The check and optimization commands are deterministic and local except
 `check:github-actions -- --check-latest`, which queries GitHub and reports unknown release data when
 the network is unavailable. Despite its migration-defined name, `check:github-actions` remains an
 advisory inventory and always exits zero; changing that behavior is outside this rename-only phase.
-`dev:tunnel` requires the cloud-session tunnel credentials documented in
-[`docs/CLOUD/Claude-Code.md`](../docs/CLOUD/Claude-Code.md). Contract-enforcing root checks fail
-nonzero rather than silently weakening validation when an external prerequisite is missing.
+The RN export startup/precache checks live under `tools/migration/`; `docs/CLOUD/Claude-Code.md`
+documents the supported preview path. Contract-enforcing root checks fail nonzero rather than
+silently weakening validation when an external prerequisite is missing.
 
 ### Production image-report fetch
 

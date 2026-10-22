@@ -2,6 +2,14 @@
 
 **Status:** Active **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+This decision governs the installed web app: `assets/static/site.webmanifest` and its maskable icons
+keep the brand launch background. RN export tooling publishes those web assets. Native launch
+resources belong to the committed Android/iOS projects and are not qualified by these browser
+measurements. The former web directory paths below are historical. The historical design below
+retains its original context.
+
 ## Context
 
 An installed web app's launch screen is drawn by the operating system from the manifest, before any

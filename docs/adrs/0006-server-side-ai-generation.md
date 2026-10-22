@@ -3,6 +3,13 @@
 **Status:** Active\
 **Date:** 2025
 
+## Current scope after the RN cutover (2026-10)
+
+The server-only provider boundary remains in `netlify/server/ai/` and the framework-free API
+handlers. OpenAI under ADR-0113 and the background job flow under ADR-0115 replace the original
+Gemini synchronous call. Current credential and free-grant contracts are documented in
+`docs/API.md`. The historical design below retains its original context.
+
 ## Context
 
 The AI "color this drawing" feature calls the Gemini API to transform a canvas screenshot into a

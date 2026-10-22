@@ -43,8 +43,8 @@ deletion shows up.
   be generated.
 * `WEB_SRC_DOMAIN_RULES` — ordered, first match wins, matched against the file's *subject*: a
   co-located test or test harness classifies as the module it exercises. The last rules are
-  directory-wide fallbacks (`lib/components/*` → Core UI controls, `lib/state/*` → App state,
-  `lib/*` → Focused utilities, anything else → Routes / app shell), so a new file always lands
+  directory-wide fallbacks (`rsdDrawing/*` and `lib/components/*` → Core UI controls, `lib/*` →
+  Focused utilities, anything else → App shell / information pages), so a new file always lands
   somewhere plausible; `--assignments` shows which rule placed it.
 * `DOMAIN_SUBDIVISIONS` — the subdomain rules and definitions for the drawing engine and AI
   generation.

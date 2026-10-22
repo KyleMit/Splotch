@@ -3,6 +3,14 @@
 **Status:** Active — amended 2026-08-19 to classify background coloring-pack installs as automatic,
 not explicit. **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The explicit-action persistence rule remains in the RN credential session and web save-folder
+adapter: `src/ai/session.ts`, `src/platform/persistentStorage.web.ts` and
+`src/platform/folderSave.web.ts`. Automatic offline-library installation does not request
+persistence. The former Svelte store call sites below were removed. The historical design below
+retains its original context.
+
 ## Context
 
 The web app keeps several kinds of data in browser-managed storage: parent-selected encrypted AI

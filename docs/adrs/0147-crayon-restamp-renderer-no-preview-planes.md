@@ -1,6 +1,13 @@
 # ADR-0147: Crayon Deposition Is a Per-Runtime Decision — Restamp on Web, Planes on Native
 
-**Status:** Active for the web build; its native decision is superseded by
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte web restamp and Capacitor preview-plane renderer split was
+removed.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active for the web build; its native decision is superseded by
 [ADR-0148](0148-crayon-per-op-glaze-on-native.md), which also refutes this record's attribution of
 the plane pipeline's cost to the pass-cadence bake — amends
 [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s crayon preview architecture for the web

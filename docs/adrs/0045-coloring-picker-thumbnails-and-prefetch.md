@@ -6,6 +6,13 @@ amendment reuses derivatives for screen-sized web/native packs, and the 2026-08-
 raster page thumbnails after vector overlays shipped; ADR-0152 restores responsive raster selectors
 after physical-device performance evidence while keeping full-page art vector. **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The RN offline library and artwork owners replace Svelte picker prefetch. `src/offlineLibrary/` owns
+complete-book visibility; `src/offlineLibrary/artwork.tsx` owns artwork URLs. Historical
+decode/prefetch mechanism details below do not describe RN component lifecycle. The historical
+design below retains its original context.
+
 ## Context
 
 The Coloring Book Picker (`ColoringBook.svelte`) renders every book cover and, inside a book, every

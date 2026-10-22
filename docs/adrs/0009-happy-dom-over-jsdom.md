@@ -3,6 +3,13 @@
 **Status:** Active\
 **Date:** 2025
 
+## Current scope after the RN cutover (2026-10)
+
+happy-dom remains the shared and mounted RSD test environment; pure server/tool tests use Node where
+configured. Svelte `$app/environment` aliases and their stubs were removed. The current Vitest
+configs and `docs/TESTING.md` own the test environments. The historical design below retains its
+original context.
+
 ## Context
 
 Vitest unit tests that exercise the storage layer and Svelte `$state` modules need a browser-like

@@ -180,7 +180,7 @@ export const AREAS = [
     bucket: subtreeBucket('perf-profiles/'),
   },
   {
-    label: 'android + ios + fastlane + Maestro — native shells',
+    label: 'android + ios + fastlane + Maestro + replay traces — native projects',
     key: 'native shells',
     matches: (path) => under(path, NATIVE_ROOTS),
     bucket: rootBucket,
@@ -223,7 +223,7 @@ export const AREAS = [
     bucket: subtreeBucket('releases/'),
   },
   {
-    label: 'netlify — edge functions and config',
+    label: 'netlify — API, workers and server modules',
     key: 'netlify',
     matches: (path) => path.startsWith('netlify/'),
     bucket: subtreeBucket('netlify/'),
@@ -267,180 +267,127 @@ const D = {
   drawing: 'Drawing / canvas engine',
   ai: 'AI image generation',
   design: 'Design system, styleguide + icons',
-  settings: 'Settings surface',
-  shell: 'Routes / app shell / dev surfaces',
+  settings: 'Settings / parent center',
+  shell: 'App shell / information pages',
   controls: 'Core UI controls',
-  gestures: 'Gestures / Svelte actions',
-  admin: 'Admin console + token backend',
-  coloring: 'Coloring books + pack delivery',
+  gestures: 'Gestures',
+  admin: 'Web admin console',
+  coloring: 'Coloring books + offline library',
   pwa: 'PWA / installation',
   platform: 'Platform / device integration',
   color: 'Color palette & picker',
-  server: 'Server / API backend',
-  storage: 'Storage / persistence',
-  state: 'App state (runes)',
-  beta: 'Beta onboarding',
+  storage: 'Storage / picture export',
   utilities: 'Focused utilities / generated app data',
   feedback: 'Feedback / reporting',
   audio: 'Audio',
 };
 
-// First match wins, and matching runs on the subject path relative to src.
-// The directory-wide rules at the bottom of each group are the fallbacks that
-// place a new file somewhere plausible; `reconcile-code-map` reviews what they caught.
+// Specific feature owners precede the component and shared-utility fallbacks.
 export const WEB_SRC_DOMAIN_RULES = [
-  [D.ai, /^lib\/drawing\/(aiGenerationPoll|aiImage|aiImageResponse|polaroidAnimation)$/],
-  [D.drawing, /^lib\/drawing\//],
-  [D.drawing, /^lib\/components\/(DrawingCanvas|LiveSurface)$/],
-  [D.drawing, /^lib\/state\/canvas$/],
-  [D.drawing, /^routes\/dev\/engine\//],
-
+  [D.ai, /^ai\//],
   [D.ai, /^lib\/ai\//],
-  [D.ai, /^lib\/server\/ai\//],
-  [
-    D.ai,
-    /^lib\/server\/(generation\w*|generateImagePolicy|freeGenerationGrants|imageReport\w*|retentionSweep|usage\w*)$/,
-  ],
-  [
-    D.ai,
-    /^lib\/server\/api\/(generateImage|generationResult|settlement|reportImage|freeGenerationGrant|verifyKey)$/,
-  ],
-  [D.ai, /^lib\/components\/(Ai\w+|aiDialGeometry|aiPreview)$/],
-  [
-    D.ai,
-    /^lib\/state\/(aiGeneration|aiProgress|aiKey|aiAccessToken|freeGenerations|secureCredentialCoordinator)$/,
-  ],
   [D.ai, /^lib\/(freeGenerations|imageReport|usageRecord)$/],
+  [D.ai, /^lib\/components\/aiDialGeometry$/],
+  [D.ai, /^rsdDrawing\/(RsdAi\w+|ai\w+|polaroid\w+)$/],
 
-  [D.admin, /^lib\/components\/admin\//],
-  [D.admin, /^routes\/admin\//],
-  [D.admin, /^lib\/server\/api\/admin\w*$/],
-  [D.admin, /^lib\/server\/(admin|tokens)$/],
+  [D.drawing, /^(drawing|clear)\//],
+  [D.drawing, /^lib\/drawing\//],
+  [
+    D.drawing,
+    /^rsdDrawing\/(NativePaper|RsdPaperSlot|Departing\w+|paintedTile|RsdClear\w+|clearSurfaces|RsdUndoTile|undo\w+|useMeasuredPaperArea)$/,
+  ],
+  [D.drawing, /^(useUndoAction|useRendererRecovery|drawingScan|drawingMessages)\.ts$/],
+
+  [D.admin, /^pageDocument\/admin\//],
   [D.admin, /^lib\/(adminFormat|inviteLink)$/],
-  [D.admin, /^lib\/pwa\/adminRoute$/],
+  [D.feedback, /^feedback\//],
+  [D.feedback, /^lib\/(report|reportReply|errorLog)$/],
 
-  [D.beta, /^lib\/components\/beta\//],
-  [D.beta, /^routes\/(beta|android-beta|ios-beta)\//],
-  [D.beta, /^lib\/phoneStep$/],
-
-  [D.feedback, /^lib\/components\/report\//],
-  [D.feedback, /^routes\/feedback\//],
-  [D.feedback, /^lib\/(report|errorLog)$/],
-  [D.feedback, /^lib\/components\/settings\/ReportForm$/],
-
+  [D.settings, /^(settings|parentCenter)\//],
   [D.settings, /^lib\/components\/settings\//],
-  [D.settings, /^lib\/components\/(SettingsModal|SettingsButton|ParentalGate\w*)$/],
-  [D.settings, /^lib\/state\/(settings|parentalGate|parentalGateLockout)$/],
+  [
+    D.settings,
+    /^rsdDrawing\/(RsdSettings\w+|RsdParent\w+|RsdSavingSection|RsdOrientationPicker|soundSettingsActions)$/,
+  ],
 
-  [D.coloring, /^lib\/coloringPacks\//],
-  [D.coloring, /^lib\/components\/(Coloring\w+)$/],
-  [D.coloring, /^lib\/state\/(coloringBook|coloringPacks|coloringPicker|books|bookCatalog)$/],
-  [D.coloring, /^lib\/(boot|plugins)\/coloringPacks$/],
-
+  [D.coloring, /^offlineLibrary\//],
+  [D.coloring, /^lib\/(coloringPacks|state)\//],
+  [D.coloring, /^rsdDrawing\/(RsdColoring\w+|coloringGrid)$/],
+  [D.pwa, /^install\//],
   [D.pwa, /^lib\/pwa\//],
-  [D.pwa, /^lib\/components\/InstallBanner$/],
-  [D.pwa, /^lib\/state\/install$/],
-  [D.pwa, /^lib\/imagePrefetch$/],
+  [D.pwa, /^lib\/installPromptCopy$/],
+  [D.pwa, /^rsdDrawing\/(RsdInstall\w+|installBanner\w+)$/],
 
-  [D.color, /^lib\/components\/(Color\w+)$/],
   [D.color, /^lib\/(colorRing|palette|hexPickerLayout)$/],
-  [D.color, /^lib\/state\/colors$/],
-
-  [D.design, /^lib\/components\/(design|styleguide|nav)\//],
-  [D.design, /^lib\/(design|icons)\//],
-  [
-    D.design,
-    /^lib\/components\/(Icon|SectionIcon|SplotchyIcon|InkOrMagicIcon|iconRegistry|iconTypes|icon-names|icon-orphans|deferredIcons)$/,
-  ],
-  [D.design, /^routes\/design\//],
-  [D.design, /^tokens\.css$/],
-
+  [D.color, /^rsdDrawing\/(RsdColor\w+|colorMenuLayout|hexPicker|RsdSwatch\w+|swatch\w+)$/],
+  [D.design, /^lib\/design\//],
+  [D.design, /^pageDocument\/design\//],
+  [D.design, /^rsdDrawing\/(RsdIcon|RsdSectionIcon|icons)$/],
+  [D.design, /^strict\.css$/],
   [D.gestures, /^lib\/actions\//],
-
+  [D.audio, /^audio\//],
   [D.audio, /^lib\/audio\//],
+  [D.audio, /^useDrawingSound\.ts$/],
+  [D.platform, /^platform\//],
+  [D.platform, /^lib\/platform\//],
+  [D.platform, /^rsdDrawing\/(NativeFrame|RsdNotchBand|notchBandSurface)$/],
 
-  [D.platform, /^lib\/(platform|plugins)\//],
-  [D.platform, /^lib\/(nativePlugin|secureStorage|storeCapture)$/],
-  [D.platform, /^lib\/components\/(FullscreenToggle|NotchBand)$/],
-
-  [D.storage, /^lib\/(idb|idbDatabase|storage|storageKeys|saveNaming|hydration)$/],
-  [D.storage, /^lib\/state\/(saveFolder|saveFailure)$/],
-  [D.storage, /^lib\/components\/SaveFailureBanner$/],
-  [D.storage, /^lib\/boot\/(persistedState|persistedStateStatus)$/],
-
-  [D.state, /^lib\/state\//],
-
-  [D.server, /^lib\/server\//],
-
-  [
-    D.controls,
-    /^lib\/(actionButtonLayout|actionUnavailableFeedback|bareToolbar|breakpoints|glassPanes|landscapeToolbar)$/,
-  ],
-  [D.controls, /^lib\/components\/[^/]+$/],
-
+  [D.storage, /^export\//],
+  [D.storage, /^lib\/(idbDatabase|storageKeys|saveNaming|installationId)$/],
+  [D.storage, /^(keepPicture|useSavePicture|lazyExport)\.ts$/],
+  [D.shell, /^(information|pageDocument|product)\//],
   [D.shell, /^lib\/boot\//],
-  [D.shell, /^lib\/components\/page\//],
-  [D.shell, /^routes\//],
+  [D.shell, /^lib\/components\/(page|beta)\//],
+  [
+    D.shell,
+    /^rsdDrawing\/(RsdPage\w+|RsdInformation\w+|RsdNotFoundPage|notFound\w+|RsdReleaseArticle|RsdWhatsNewSection|useInformation\w+|useReleaseHistory|page\w+)$/,
+  ],
 
+  [D.controls, /^rsdDrawing\//],
+  [D.controls, /^lib\/components\//],
   [D.utilities, /^lib\//],
   [D.shell, /^/],
 ];
 
-// The last rule matches every path, so each src file resolves to a domain.
-export function webSrcDomainRuleOf(webSrcPath) {
-  const subject = subjectOf(webSrcPath);
+export function webSrcDomainRuleOf(srcPath) {
+  const subject = subjectOf(srcPath);
   const ruleIndex = WEB_SRC_DOMAIN_RULES.findIndex(([, pattern]) => pattern.test(subject));
   return { domain: WEB_SRC_DOMAIN_RULES[ruleIndex][0], ruleIndex };
 }
 
 const DRAWING_SUBDOMAIN_RULES = [
-  [
-    'Paper view & coloring integration',
-    /^lib\/drawing\/(paperView|paperLayout|coloringAppearance)$/,
-  ],
-  [
-    'Export, saving & screenshot pipeline',
-    /^lib\/drawing\/(export\w*|screenshot\w*|pngEncoder\w*|folderSave|androidGallery|saveOnDelete|saveFailureCopy|unsavedPictureStore)$/,
-  ],
-  [
-    'Tiled renderer, retained history & undo',
-    /^lib\/drawing\/(tiled\w*|undoHistory|liveTile\w*|progressiveClearCapture)$/,
-  ],
-  [
-    'Stroke model & brush rendering',
-    /^lib\/drawing\/(crayon\w*|magic\w*|stroke\w*|inkMotion\w*|penStreamQuirks|opGeometry|canvas2d)$/,
-  ],
-  ['Engine orchestration & canvas integration', /./],
+  ['Bundled coloring assets & paper layout', /^(drawing\/bundledFarm|lib\/drawing\/paper)/],
+  ['Shared drawing geometry & retained primitives', /^lib\/drawing\//],
+  ['Clear gesture & animation', /^clear\//],
+  ['Native / web rendering, input & history', /./],
 ];
-
 const AI_SUBDOMAIN_RULES = [
-  ['Server authorization, jobs, storage & endpoints', /^lib\/server\//],
-  ['Generation, result & reporting UI', /^lib\/components\//],
-  ['Client pipeline, state & shared contracts', /./],
+  ['Generation, result & reporting UI', /^rsdDrawing\//],
+  ['Shared contracts & progress geometry', /^lib\//],
+  ['Client transport, recovery & generation state', /./],
 ];
 
 export const DOMAIN_SUBDIVISIONS = {
   [D.drawing]: {
     definition:
-      'The drawing domain contains `lib/drawing/**` except the AI-generation and polaroid modules, ' +
-      'plus `DrawingCanvas.svelte`, `LiveSurface.svelte`, `state/canvas.svelte.ts`, and ' +
-      '`routes/dev/engine/**`.',
+      'The drawing domain contains `drawing/`, `clear/`, shared `lib/drawing/` primitives and ' +
+      'the paper, departing-ink, clear and undo components in `rsdDrawing/`. ' +
+      'Picture export lives in the storage domain; server code is measured under `netlify/`.',
     rules: DRAWING_SUBDOMAIN_RULES,
   },
   [D.ai]: {
     definition:
-      'This vertical includes generation-specific client code, state, components, server modules, ' +
-      'and the four public generation/reporting API routes. General-purpose server infrastructure ' +
-      'and the admin token surface remain in their own domains.',
+      'This domain includes the client transport, recovery and generation state in `ai/`, ' +
+      'shared AI contracts and the generation/result/reporting components. ' +
+      'The hosted API and workers are measured separately under `netlify/`.',
     rules: AI_SUBDOMAIN_RULES,
   },
 };
 
-export function subdomainOf(domain, webSrcPath) {
+export function subdomainOf(domain, srcPath) {
   const subdivision = DOMAIN_SUBDIVISIONS[domain];
   if (!subdivision) return null;
-  const subject = subjectOf(webSrcPath);
-  return subdivision.rules.find(([, pattern]) => pattern.test(subject))[0];
+  return subdivision.rules.find(([, pattern]) => pattern.test(subjectOf(srcPath)))[0];
 }
 
 export const SPLIT_THRESHOLD_LOC = 3000;

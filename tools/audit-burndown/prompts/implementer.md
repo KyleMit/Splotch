@@ -25,11 +25,9 @@ These are the commands the driver gates on, so run them before you commit: the a
 from the brief, `npm run check`, the fast unit tests (`npm run test:unit`), `npx eslint` on the
 files you changed, and any Playwright E2E specs the acceptance criteria name
 (`npm run test:e2e -- <spec>`). A red one sends the finding back to you as another round, and a
-finding that never goes green is discarded entirely. Two eslint rules a type-check will not catch
-for you: no `any` (`@typescript-eslint/no-explicit-any` — type it precisely), and no raw
-`Map`/`Set`/`Date` in a `.svelte.ts`/`.svelte` file (use `svelte/reactivity`'s
-`SvelteMap`/`SvelteSet`). If you cannot reach green, do not commit at all: return success=false with
-an explanation in summary.
+finding that never goes green is discarded entirely. A type-check does not enforce the lint rules:
+for example, `@typescript-eslint/no-explicit-any` rejects `any`, so type the boundary precisely. If
+you cannot reach green, do not commit at all: return success=false with an explanation in summary.
 
 Commit message format:
 

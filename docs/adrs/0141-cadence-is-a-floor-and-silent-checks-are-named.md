@@ -1,7 +1,15 @@
 # ADR-0141: Cadence Is a Floor, and a Check a Runtime Cannot Answer Is Named as Such
 
-**Status:** Accepted — amends [ADR-0139](0139-per-runtime-input-fidelity-expectations.md); depends
-on [ADR-0135](0135-split-device-capture-input-and-measurement.md),
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The cadence verdict belonged to the retired input-fidelity scorer; it is
+not an RN acceptance gate.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted — amends
+[ADR-0139](0139-per-runtime-input-fidelity-expectations.md); depends on
+[ADR-0135](0135-split-device-capture-input-and-measurement.md),
 [ADR-0138](0138-preserve-a-capture-evidence-subset.md). **Date:** 2026-08
 
 ## Context

@@ -1,6 +1,15 @@
 # ADR-0021: Tunneling the Dev Server from Claude Code Cloud Sessions
 
-**Status:** Active (rev. 2026-06) **Date:** 2026-06
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Vite development-server reverse tunnel and its chisel setup retired
+with the Svelte app. RN cloud inspection uses the production export; public phone preview uses a
+verified Netlify deployment. This record preserves the measured proxy constraints, not a current
+tunnel setup requirement.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active (rev. 2026-06) **Date:** 2026-06
 
 > **This revision supersedes two earlier decisions in this ADR.** We first shipped a Cloudflare
 > quick tunnel (`dev:tunnel`), then switched the cloud path to ngrok (`dev:tunnel:ngrok`) on the

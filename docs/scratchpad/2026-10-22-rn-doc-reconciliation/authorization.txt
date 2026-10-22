@@ -1,0 +1,49 @@
+# Campaign authorization provenance
+
+Original human request was read directly from the user-submitted attachment at
+/Users/kylemit/.codex/attachments/d88fa5da-af48-4848-a171-80335a04e483/Pasted text.txt. The scoped
+parent brief carries this standing grant and the original quoted approvals verbatim. The parent owns
+merge/closure; this implementer stops shippable.
+
+## Standing authorization
+
+Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
+branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
+merge each PR through `ship-issue`'s autonomous gate (step 1 puts that approval on record in the
+user's own words), comment on queued issues and their epic, and ship two kinds of unqueued
+**free-form unit**: a trunk-repair PR that fixes `main` forward after it turns red during the
+campaign (step 4), and a gate-repair PR for a check proven broken on its own base (step 3). It does
+**not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
+a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
+work outside the queue and those two exceptions. Carry this block verbatim, followed by the user's
+quoted approvals from step 1, into every unit's instructions: an unattended unit must never have to
+infer its authority, and a runner that sees "never merge" anywhere in its instructions will refuse
+the merge.
+
+The user explicitly overrides default-main and default-closing mechanics below. The parent
+orchestrator performs every merge; the implementer returns shippable. These are role boundaries, not
+a withdrawal of the human's merge grant.
+
+Verbatim authorization from the original user-submitted attachment (the user says it contains their
+request):
+
+* Run `$ship-campaign` on the remaining #3148 sub-issues. Ship each through
+  `$ship-issue mode=autonomous` with the trunk overridden to `codex/native-migration`:
+  * branch from `origin/codex/native-migration`;
+  * open each PR with `--base codex/native-migration`;
+  * run the survey as
+    `node .agents/skills/reconcile-with-main/survey.mjs --base=codex/native-migration`.
+* Your rival is Claude, through `$run-rival-agent`. It may read this repo's code and diffs, and its
+  reviews post to the PRs. At most 2 rounds per PR.
+* Merge a PR into `codex/native-migration` once it is reviewed and its CI is green on the exact
+  head: `gh pr merge <n> --merge --delete-branch --match-head-commit <head>`. Never merge into
+  `main`, never push to `main`, never open a PR against `main`.
+* **Close issues by hand.** GitHub does not auto-close issues from a non-default base. After
+  verifying a merge, close the sub-issue with a comment naming the PR and merge SHA, remove
+  `in-progress` and the assignee, and re-read the issue.
+* File no new issues. Draft follow-ups only for an observed defect that would otherwise ship broken;
+  leftovers go in the PR body.
+* **Devices.** The attached iPad and Galaxy carry the store-installed `art.splotch.app` with private
+  drawings. Never install over, clear, draw in or screenshot it. Local builds are
+  `art.splotch.app.dev`; only the store scripts produce `art.splotch.app`.
+* **Stop.** Stop by Fri 2026-10-23 13:00Z unless the owner says otherwise.

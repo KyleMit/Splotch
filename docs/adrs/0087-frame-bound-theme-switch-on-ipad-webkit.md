@@ -1,7 +1,14 @@
 # ADR-0087: Keep iPad Theme Changes Frame-Bound by Retiring Idle Canvas Layers
 
-**Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) and
-[ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md). **Date:** 2026-07 The
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte tiled renderer and its theme-preparation path were removed. RN
+rendering owns theme changes.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)
+and [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md). **Date:** 2026-07 The
 alpha-native follow-up is implemented by [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md).
 [ADR-0121](0121-recode-retained-magic-ink-with-coloring-appearance.md) later reverses this record's
 immutable settled-magic rule so page and theme changes deliberately recode existing magic ink.

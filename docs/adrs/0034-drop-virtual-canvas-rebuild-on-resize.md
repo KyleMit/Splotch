@@ -1,8 +1,16 @@
 # ADR-0034: Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log
 
-**Status:** Active — the decision (no virtual canvas; resize rebuilds from retained history)
-survives ADR-0066's reversal of ADR-0033; the rebuild is now one blit of the paper raster
-(`repaintAll`) instead of a baseline + command-log replay. **Date:** 2026-06
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The virtual-canvas, baseline/log and repaintAll resize pipeline was
+removed. RN paper geometry and retained ink use their own presentation and replay owners under
+src/drawing; this record does not specify their resize implementation.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — the decision (no virtual canvas; resize rebuilds from
+retained history) survives ADR-0066's reversal of ADR-0033; the rebuild is now one blit of the paper
+raster (`repaintAll`) instead of a baseline + command-log replay. **Date:** 2026-06
 
 ## Context
 

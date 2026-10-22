@@ -46,8 +46,9 @@ variables, testing, deployment, and conventions — head to the
 
 ## Finding your way around
 
-One SvelteKit codebase ships two targets: the web app on Netlify (SSR + `/api/*` functions) and
-fully static native apps via Capacitor. The best entry points, roughly in reading order:
+One Expo / React Native / React Strict DOM app ships Android, iOS and a prerendered web export.
+Netlify serves the export and a framework-free Function for `/api/*` (ADR-0182). The best entry
+points, roughly in reading order:
 
 | Start here                                                 | For                                                              |
 | ---------------------------------------------------------- | ---------------------------------------------------------------- |

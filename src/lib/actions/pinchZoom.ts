@@ -13,10 +13,6 @@ interface Bounds {
   height: number;
 }
 
-// MIN_SCALE/MAX_SCALE/clampScale/clampTransform are exported so
-// pinchZoom.svelte.test.ts can unit-test the pure gesture math directly (incl.
-// edge cases like NaN) rather than only through createPinchZoom's pointer-event
-// surface.
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 const IDENTITY_TRANSFORM: Transform = { scale: 1, x: 0, y: 0 };
@@ -51,8 +47,7 @@ function centroid(points: Point[]): Point {
 }
 
 // A DOM-free gesture accumulator: feed it pointer positions (in surface-local
-// coordinates) and read back the clamped transform. The Svelte action wires real
-// PointerEvents to it; tests drive it with synthetic points.
+// coordinates) and read back the clamped transform. DOM event wiring stays with its caller.
 export function createPinchZoom(getBounds: () => Bounds) {
   const tracker = createSpreadTracker();
   let transform: Transform = { ...IDENTITY_TRANSFORM };

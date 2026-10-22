@@ -1,6 +1,13 @@
 # ADR-0049: Idle-Mount the Boot-Hidden Overlays (Settings on First Open)
 
-**Status:** Active **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte boot-hidden overlay pump was removed. RN lazy surfaces and
+platform splits own startup loading (ADR-0179).
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-07
 
 ## Context
 

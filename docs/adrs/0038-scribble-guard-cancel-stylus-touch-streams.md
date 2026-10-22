@@ -1,6 +1,14 @@
 # ADR-0038: Cancel Stylus Touch Streams to Stop iPadOS Scribble Swallowing Quick Pen Strokes
 
-**Status:** Active **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Safari stylus Touch-event cancellation action and its Svelte control
+integration were removed. RN input uses platform paper/contact owners; this record preserves the old
+Scribble investigation without claiming that the removed mechanism is enforced by the RN app.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-07
 
 ## Context
 

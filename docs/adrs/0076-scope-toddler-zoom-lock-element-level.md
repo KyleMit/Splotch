@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The drawing surface still scopes toddler zoom restrictions; information documents retain browser
+zoom. RN web platform adapters and export markup implement it. The Svelte route marker below was
+removed. The historical design below retains its original context.
+
 ## Context
 
 [ADR-0041](0041-lock-viewport-zoom-for-toddlers.md) locked pinch-zoom for the **whole document** by

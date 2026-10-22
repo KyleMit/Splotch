@@ -3,6 +3,12 @@
 **Status:** Active (web boundary amended by
 [ADR-0168](0168-browser-back-dialogs-and-drawing-guard.md)) **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+RN Android Back handling uses the platform BackHandler integration and product back policy. The
+Capacitor `SystemBackPlugin` below was removed with its shell; see the current `src/platform/`
+adapter and mounted Back tests. The historical design below retains its original context.
+
 ## Context
 
 Nothing in the Android app handled the system Back button or the back gesture. `MainActivity`

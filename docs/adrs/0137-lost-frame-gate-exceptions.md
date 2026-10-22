@@ -1,7 +1,15 @@
 # ADR-0137: Codify Lost-Frame Gate Exceptions, Not Per-Cell Budgets
 
-**Status:** Accepted — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
-depends on [ADR-0136](0136-browser-target-lost-frame-gate.md); extended by
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The lost-frame exception ledger belonged to the retired renderer and
+performance gates. Its numeric allowances are historical evidence.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted — amends
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); depends on
+[ADR-0136](0136-browser-target-lost-frame-gate.md); extended by
 [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md). **Date:** 2026-08
 
 > **Extended by [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md):**

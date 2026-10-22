@@ -3,6 +3,12 @@
 **Status:** Active\
 **Date:** 2025 (tiered migration)
 
+## Current scope after the RN cutover (2026-10)
+
+Strict TypeScript remains the contract. `npm run check` runs the shared, Netlify, RN and E2E
+TypeScript projects; Svelte components and svelte-check were removed. The migration tiers below
+describe the original conversion. The historical design below retains its original context.
+
 ## Context
 
 The original codebase was written in JavaScript. As the project grew — adding a canvas drawing

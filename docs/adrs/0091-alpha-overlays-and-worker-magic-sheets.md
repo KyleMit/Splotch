@@ -7,6 +7,12 @@
 
 **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The alpha-overlay asset format remains. RN drawing/native Skia and web rendering consume the assets;
+Svelte canvas worker implementation details below were removed. The historical design below retains
+its original context.
+
 ## Context
 
 The tiled renderer fixed continuous drawing, undo, screenshot, theme, and rotation stalls on the

@@ -1,6 +1,13 @@
 # ADR-0174: iPad Drawing Lost-Frame Is Judged Against the Real-Finger Floor
 
-**Status:** Active — amends
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The iPad lost-frame floor and release gate belonged to the retired
+harness. Historical measurements remain unchanged.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md) and
 [ADR-0135](0135-split-device-capture-input-and-measurement.md); builds on
 [ADR-0136](0136-browser-target-lost-frame-gate.md) and

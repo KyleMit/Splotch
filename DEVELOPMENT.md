@@ -1,8 +1,8 @@
 # Native app development
 
 This is the React Native (Expo) Splotch app. CI builds it on every pull request that touches it, and
-the native smoke flow (`.maestro/smoke.yaml`, `docs/TESTING.md`) boots its store-identity Release
-builds on an emulator and a simulator.
+the native smoke flow (`.maestro/smoke.yaml`, `docs/TESTING.md`) boots Release builds on an emulator
+and a simulator in the tag/dispatch deploy workflows.
 
 ## Setup
 
@@ -11,10 +11,10 @@ separate install step; Metro and the native builds resolve packages from the roo
 
 ## Checks
 
-CI runs three checks over this app on every pull request, alongside the web app's:
+The shared test workflow checks the app and web export together:
 
 * `npm run check:migration:types` type-checks this app's own TypeScript project (`tsconfig.json`),
-  which `npm run check` does not reach. It runs in the Quality job.
+  which is included in `npm run check`. It runs in the Quality job.
 * `npm run test:migration:rsd-selection` mounts the drawing screen's tests
   (`tools/migration/tests/rsd-native-*.test.mjs`) through the released native react-strict-dom
   renderer. It runs in the Browserless tests job.
@@ -276,9 +276,9 @@ policy and storage keys. Their behavior is covered by mounted RN tests and the e
 Svelte template parity checks retired with the old components.
 
 Text uses the shipping font, Quicksand. RSD text inherits the `fonts` tokens in
-`src/rsdDrawing/tokens.css.ts` from the screen and dialog roots, and headings take `boldText`; React
-Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never from `react-native`.
-`ShippingFontGate` (`src/platform/shippingFont.tsx`) wraps the screen.
+`src/rsdDrawing/tokens.css.ts` from the screen and dialog roots, and headings take their generated
+font tokens; React Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never
+from `react-native`. `ShippingFontGate` (`src/platform/shippingFont.tsx`) wraps the screen.
 
 * **Web** keeps the shipping stack and its variable face. Metro's web CSS pipeline does not bundle a
   stylesheet's local `url()` sources, so the gate registers the `@fontsource-variable/quicksand`
@@ -294,8 +294,7 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
   `includeFontPadding: false`, a style React Strict DOM drops.
   `patches/react-strict-dom@0.0.54.patch` sets it on every RSD text, so a line is the face's ascent
   plus descent, as Chromium's `line-height: normal` is.
-* **Shipping's hub rows** (`HubList.svelte`) are `<button>`s that never inherit the page font, so a
-  WebView sets them in the system face, which `src/rsdDrawing/hubRowFace.native.ts` names as
+* **Native hub rows** use the system face, which `src/rsdDrawing/hubRowFace.native.ts` names as
   `system-ui`. iOS resolves that family itself; Android rounds an unregistered family to regular or
   bold, so `MainApplication.kt` registers `system-ui` as the system typeface and the semibold title
   keeps its weight (`tools/migration/tests/native-system-face.test.mjs` binds the two names). The
@@ -309,13 +308,12 @@ heading or weight bypasses the font tokens, or a component imports `Text` from `
 ### Large OS text
 
 Native text follows the OS text size (iOS Dynamic Type reaches 3.571× at its largest accessibility
-category); shipping's WebView does not, so these layouts have no shipping precedent to copy. A word
-must never break across lines. Where a label can meet a narrow box, render it with `WholeWordText`
-(`src/rsdDrawing/WholeWordText.native.tsx`): it reports a word the layout broke, and with `fit` it
-shrinks only that text until its widest word fits. Dialog titles take their own row before they fit,
-and a segmented track stacks its options once a label breaks. A live change of the OS text size
-leaves already measured React Native text at its old frame until it remounts, so these adapters
-remount on a font-scale key; other text corrects itself when the dialog reopens.
+category). A word must never break across lines. Where a label can meet a narrow box, render it with
+`WholeWordText` (`src/rsdDrawing/WholeWordText.native.tsx`): it reports a word the layout broke, and
+with `fit` it shrinks only that text until its widest word fits. Dialog titles take their own row
+before they fit, and a segmented track stacks its options once a label breaks. A live change of the
+OS text size leaves already measured React Native text at its old frame until it remounts, so these
+adapters remount on a font-scale key; other text corrects itself when the dialog reopens.
 
 ## Permissions
 
@@ -334,18 +332,16 @@ deliberately not registered in `app.json`: it would add the read permissions and
 manifest, including every permission expo-media-library declares. Check a built APK's merged
 permissions when a dependency changes; `:app:processReleaseMainManifest` writes the merged manifest
 under `android/app/build/intermediates/merged_manifest/release/`. `expo-haptics` merges the
-normal-level `VIBRATE` permission for the drag-to-clear threshold haptic, as the shipping app's
-`@capacitor/haptics` does.
+normal-level `VIBRATE` permission for the drag-to-clear threshold haptic.
 
 ## AI invite links
 
 An admin hands out invite links shaped `https://splotch.art/?ai_access_token=<code>` (the parameter
 is `AI_ACCESS_TOKEN_PARAM` in `src/lib/inviteLink.ts`). `src/index.ts` starts `startInviteLinks`
-before the first render, and both targets apply a link the way the shipping page's
-`captureAiAccessTokenFromUrl` does: the code is saved unverified into the access-code slot of the
-secure AI vault, with no Parent Center gate and no on-screen confirmation; the server checks it on
-first use. A code that fails `validCredential` (`src/ai/credentials.ts`), which every vault write
-enforces, is ignored.
+before the first render. Both targets apply a link through the credential owner: the code is saved
+unverified into the access-code slot of the secure AI vault, with no Parent Center gate and no
+on-screen confirmation; the server checks it on first use. A code that fails `validCredential`
+(`src/ai/credentials.ts`), which every vault write enforces, is ignored.
 
 * **Web** (`src/platform/inviteLinks.web.ts`) reads the launch URL and removes the parameter only
   after the save succeeds, so a failed or superseded save leaves the link in place to retry. The
@@ -356,7 +352,7 @@ enforces, is ignored.
   being read, so an older link never overwrites a newer credential. `AppDelegate.swift` already
   forwards `open url` and universal-link activities to `RCTLinkingManager`.
 
-No link reaches the native app yet. The shipping Capacitor app declares no intent filter, URL
+No hosted link reaches the native app yet. The root native projects declare no intent filter, URL
 scheme, or associated domain, so this app adds none either. Routing invite links to the store builds
 at cutover needs:
 

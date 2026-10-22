@@ -1,0 +1,9 @@
+{
+  "base": "109b5c38b4010e4c93a5ce166b3d424ba4d7f0a8",
+  "byteIdentical": {
+    "assets/static/share/privacy.png": true,
+    "assets/static/share/beta.png": true,
+    "assets/static/share/feedback.png": true,
+    "assets/static/share/changelog.png": true
+  }
+}

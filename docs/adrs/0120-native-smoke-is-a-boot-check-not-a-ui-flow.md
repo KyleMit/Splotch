@@ -2,6 +2,14 @@
 
 **Status:** Active **Date:** 2026-08 (amends [0008](0008-three-tier-testing-strategy.md))
 
+## Current scope after the RN cutover (2026-10)
+
+The flow still only launches, waits for Settings and captures the painted screen. Its literal
+Settings owner is `src/rsdDrawing/RsdEdgeControls.tsx`, guarded by
+`tools/tests/native-smoke-flow.test.mjs`. Tag/dispatch deploy workflows boot root RN Release builds;
+CI compilation is separate. No UI navigation was added to the smoke. The historical design below
+retains its original context.
+
 ## Context
 
 The Maestro flow in `.maestro/smoke.yaml` is the third tier of ADR-0008 and the only test that

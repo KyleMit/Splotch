@@ -3,6 +3,12 @@
 **Status:** Active — amends ADR-0043 (magic brush selection) and ADR-0065 (crayon as the only
 free-draw mode). **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The single brush choice remains in RN brush preferences and drawing state. RN rendering consumes the
+closed brush vocabulary; Svelte engine boolean setters below are historical. The historical design
+below retains its original context.
+
 ## Context
 
 The crayon brush (ADR-0065) shipped as the pen's *only* rendering mode: `DrawingCanvas.svelte`

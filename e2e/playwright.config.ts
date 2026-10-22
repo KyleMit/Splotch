@@ -32,7 +32,7 @@ const baseURL = `http://127.0.0.1:${port}`;
  */
 export const REPORT_FOLDER = resolve(REPO_ROOT, 'playwright-report');
 
-// Shared with the SvelteKit suite while both run: one reporter, one flaky.json record shape.
+// Every browser project writes the same flaky.json record shape for the rolling digest.
 const FLAKY_REPORTER = resolve(REPO_ROOT, 'e2e', 'playwright-flaky-reporter.ts');
 
 const SERVE_COMMAND = `node --experimental-strip-types --disable-warning=ExperimentalWarning e2e/server/serve.ts --port ${port}`;
@@ -48,8 +48,7 @@ const WEB_SERVER_COMMAND = process.env.SPLOTCH_E2E_PREBUILT
 const BUILD_AND_SERVE_BUDGET_MS = 240_000;
 
 // A deadlock backstop, not a performance budget: nothing else bounds the web server wait or a
-// wedged run. web/playwright.shared.ts derives it for the SvelteKit suite's full unsharded run;
-// this suite's specs are ported from that one, so it never runs more and shares the ceiling.
+// wedged run. It bounds the full unsharded run independently of per-test deadlines.
 const RUN_DEADLOCK_CEILING_MS = 1_200_000;
 
 // Retries let a flake through on CI, and the flaky reporter annotates every retried pass so the

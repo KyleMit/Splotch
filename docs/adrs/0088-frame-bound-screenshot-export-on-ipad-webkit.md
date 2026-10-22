@@ -1,9 +1,16 @@
 # ADR-0088: Keep iPad Screenshot Export Frame-Bound with Settled Live Tiles
 
-**Status:** Active — amends [ADR-0015](0015-capped-dpr-canvas-rendering.md) for saved-image quality,
-complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and is amended by
-[ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles; bounded
-polaroid feedback amended 2026-08-02 and 2026-08-09; worker context-loss recovery added by
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte tiled screenshot-export pipeline was removed. Picture capture
+and saving are owned by RN drawing and `src/export/`.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0015](0015-capped-dpr-canvas-rendering.md) for
+saved-image quality, complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and is
+amended by [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles;
+bounded polaroid feedback amended 2026-08-02 and 2026-08-09; worker context-loss recovery added by
 [ADR-0110](0110-single-replay-worker-canvas-context-recovery.md); trusted-press preparation amended
 2026-08-17 and 2026-09-11. **Date:** 2026-07
 

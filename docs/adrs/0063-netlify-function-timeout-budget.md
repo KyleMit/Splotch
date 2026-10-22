@@ -3,6 +3,13 @@
 **Status:** Active\
 **Date:** 2026-07-18
 
+## Current scope after the RN cutover (2026-10)
+
+Shared limits live in `src/lib/ai/limits.ts`; the framework-free Netlify handlers and RN transport
+use the current deadline owners. Async generation uses background jobs under ADR-0115. The original
+Gemini and Svelte error-UI names below are historical; the deadline ordering and controlled failure
+contract remain. The historical design below retains its original context.
+
 ## Context
 
 `/api/generate-image` (and the `/api/verify-key` oracle) call Gemini from inside SvelteKit's SSR

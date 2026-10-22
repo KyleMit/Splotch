@@ -1,6 +1,14 @@
 # ADR-0100: Split the Commit Gate by What Each Half Can Decide — Structural Pre-Merge, Timing Post-Merge
 
-**Status:** Active (amends [0093](0093-two-tier-webkit-commit-gate-in-ci.md)) **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The split WebKit commit gates were retired with the engine and performance
+harness they measured.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active (amends [0093](0093-two-tier-webkit-commit-gate-in-ci.md))
+**Date:** 2026-08
 
 ## Amendment — 2026-08-11: retire the legacy structural half
 

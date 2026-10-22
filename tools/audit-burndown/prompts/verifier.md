@@ -60,8 +60,8 @@ handles input, or any user-visible flow (essentially any change under `src/` tha
 type-only edit, or dead-code removal), find the Playwright E2E spec(s) that exercise it — grep
 `e2e/specs/` for the component, route, or behaviour — and:
 
-* list them in the structured result's `e2e_specs`, as paths relative to `web/`, e.g.
-  `tests/<name>.spec.ts` (the driver runs exactly these as a per-finding gate before the fix
+* list them in the structured result's `e2e_specs`, as paths relative to the repository root, e.g.
+  `e2e/specs/<name>.spec.ts` (the driver runs exactly these as a per-finding gate before the fix
   commits); and
 * name the same commands in the "Acceptance criteria" section.
 

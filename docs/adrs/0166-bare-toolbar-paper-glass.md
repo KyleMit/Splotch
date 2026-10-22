@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+Buttons/Bare remains a persisted RN setting. RSD toolbar geometry and prerendered RN web markup
+implement it; the old Svelte settings and boot script below were removed. The historical design
+below retains its original context.
+
 ## Context
 
 The Bare toolbar handoff removes action cards and the opaque palette band while retaining existing

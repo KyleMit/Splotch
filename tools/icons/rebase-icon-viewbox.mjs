@@ -1,5 +1,5 @@
 // Rebases every icon in assets/icons/ onto the canonical square
-// `viewBox="0 0 1000 1000"` (iconViewBox.test.ts enforces it) by baking the
+// `viewBox="0 0 1000 1000"` by baking the
 // uniform scale + translate into the coordinate data itself — path commands,
 // circle/ellipse/rect geometry, <use> stamp offsets, userSpaceOnUse gradient
 // vectors — so each file stays a natively aligned asset rather than original
@@ -7,6 +7,7 @@
 // rect is centered in the square box, which is exactly where xMidYMid
 // letterboxing already painted it, so rendering is unchanged.
 //
+// Rebase imported UI art with npm run gen:icon-viewbox; no catalog test enforces the grid.
 //   node tools/icons/rebase-icon-viewbox.mjs [<icon-name> ...]
 //
 // With no names, rebases every non-canonical icon. Every write is verified by
@@ -19,12 +20,11 @@ import sharp from 'sharp';
 import { ROOT, isMain } from '../lib/proc.mjs';
 import { roundCoordinate, transformPathData } from './lib/svg-path-transform.mjs';
 
-const ICON_DIR = join(ROOT, 'src/lib/icons');
+const ICON_DIR = join(ROOT, 'assets', 'icons');
 const CANONICAL_SIDE = 1000;
 const CANONICAL_VIEWBOX = `0 0 ${CANONICAL_SIDE} ${CANONICAL_SIDE}`;
 
-// The mascot is not an <Icon> asset (NON_RENDERABLE_ICONS): it renders via a
-// Vite URL import where the file's own frame is the source of truth.
+// The mascot keeps its artwork frame outside the canonical UI glyph grid.
 const REBASE_EXEMPT = new Set(['splotchy.svg']);
 
 const DIFF_SIZE = 512;

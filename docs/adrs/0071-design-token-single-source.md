@@ -10,6 +10,13 @@ amendment at the end. Amended 2026-08-08: `/changelog` adopted the pinned light-
 palette. Amended 2026-08-10: **no page opts out of night mode** — the light-only set is empty and
 the concept retired; see the amendment at the end.
 
+## Current scope after the RN cutover (2026-10)
+
+`src/lib/design/tokens.ts` remains the semantic design source. RN styles use generated RSD tokens
+via `tools/migration/gen-rsd-drawing-tokens.mjs` and its drift checker; the Svelte CSS
+generator/ratchets below were removed. The `design` skill owns current styling guidance. The
+historical design below retains its original context.
+
 ## Context
 
 The visual language lived in three loosely-coupled places. `app.css` held ~40 hand-written color

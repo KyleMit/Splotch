@@ -60,11 +60,9 @@ node .agents/skills/run-rival-agent/scripts/install-cloud.mjs \
 
 pnpm install --frozen-lockfile --prefer-offline --store-dir /workspace/.cache/pnpm-store \
   || warn "pnpm install failed — dependencies may be stale or incomplete. Usually pnpm-lock.yaml disagreeing with package.json; run 'pnpm install' locally and commit the refreshed lockfile."
-node tools/run-web-tool.mjs svelte-kit sync \
-  || warn "svelte-kit sync failed — SvelteKit generated types may be missing until it is re-run."
 
 if [ -z "${PLAYWRIGHT_CHROMIUM:-}" ]; then
-  node tools/run-web-tool.mjs playwright install chromium \
+  pnpm exec playwright install chromium \
     || warn "Playwright Chromium install failed — check browser download access."
 fi
 

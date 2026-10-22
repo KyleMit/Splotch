@@ -26,7 +26,7 @@ import {
 // The accept ring's reveal and the delete-ready emphasis, from the ring's pop and --duration-base.
 const RING_REVEAL_MS = 300;
 const EMPHASIS_MS = 200;
-// ClearButton.svelte's clear-lift-off squash as the button leaves its dock.
+// The tab squashes before leaving its dock.
 const LIFT_OFF_MS = 180;
 const EASE_POP = Easing.bezier(...DRAWING_EASE_POP);
 const CSS_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);

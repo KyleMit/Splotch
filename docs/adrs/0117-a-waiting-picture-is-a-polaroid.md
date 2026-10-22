@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The waiting polaroid remains in `src/ai/AiWaitingPolaroid.tsx` and RN AI state. The Svelte component
+and rune-store names below are historical; RN async owners handle cancellation and late settlement.
+The historical design below retains its original context.
+
 ## Context
 
 [ADR-0116](0116-minimize-a-waiting-generation.md) made a still-generating result dismissable and put

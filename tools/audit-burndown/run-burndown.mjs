@@ -432,12 +432,7 @@ export function createBurndownRun({ config, effects }) {
   // Resolves to null when green, else { reason, detail, output }: `reason` is the
   // deferral label a human reads months later in docs/AUDIT-DEFERRED.md;
   // `detail` and the bounded command output are what the implementer gets.
-  // Bundle composition is the one regression class every other gate is blind to:
-  // a new static import edge under src re-partitions Rollup's chunks however
-  // small the imported module, and the failing marker can name a module the fix
-  // never touched (PR #771). When the range under review adds one, gate on the
-  // startup-bundle spec so the regression becomes this finding's fix round
-  // instead of an asynchronous CI red the supervisor has to bisect.
+  // BUNDLE_SPEC is an optional targeted supplement to build:site's production byte checks.
   function withBundleGate(baseSha, specs) {
     if (!BUNDLE_SPEC || specs.includes(BUNDLE_SPEC)) return specs;
     if (!diffAddsClientStaticImport(gitOut('diff', baseSha, 'HEAD', '--', 'src'))) return specs;
@@ -476,7 +471,7 @@ export function createBurndownRun({ config, effects }) {
     }
 
     // Lint is a separate axis from the type-check: a fix can satisfy CHECK_CMD yet
-    // ship a stray `any` or a raw Map in a .svelte.ts and redden CI's Quality job.
+    // ship a stray `any` and fail CI's Quality job.
     const lintable = lintablePaths(
       gitOut('diff', '--name-only', baseSha, 'HEAD').split('\n'),
       existsSync

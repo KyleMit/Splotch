@@ -1,6 +1,13 @@
 # ADR-0005: Dual-Layer Storage (localStorage + Capacitor Preferences)
 
-**Status:** Active\
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The localStorage/IndexedDB dual-write store was removed. Platform-specific
+RN stores own settings, credentials and offline books.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active\
 **Date:** 2025
 
 ## Context

@@ -46,7 +46,7 @@ settings and available to shell commands:
 
 Keep this table in sync with external environment settings by hand. These paths are specific to
 Codex Cloud; local Corepack, npm, and Playwright normally use their own defaults. Leave the
-overrides unset locally unless a local tool needs them. `web/.env` does not configure these tools.
+overrides unset locally unless a local tool needs them. `.env` does not configure these tools.
 
 The committed setup and startup instructions also apply the following defaults, rather than separate
 environment-settings entries. Existing overrides are respected:
@@ -75,12 +75,12 @@ Choose credentials by workflow:
 | ElevenLabs sound generation                 | `ELEVENLABS_API_KEY`                                                                                                                                                  |
 | Claude rival reviews                        | `CLAUDE_CODE_OAUTH_TOKEN`; setup installs the pinned CLI and trusted cloud wrappers                                                                                   |
 
-`.env.example` documents the loading rules for each credential. A local `web/.env` is not
-automatically copied to a cloud machine. API credentials also need access to their provider's
-network destinations. HMAC signing keys, access-code lists, and the red-team decryption key need
-their actual values available to the application or tool; network-proxy placeholders cannot supply
-local cryptographic operations. GitHub repository access through the platform's Git proxy is
-separate from `GITHUB_ISSUE_TOKEN`, which grants feedback-issue access.
+`.env.example` documents the loading rules for each credential. A local `.env` is not automatically
+copied to a cloud machine. API credentials also need access to their provider's network
+destinations. HMAC signing keys, access-code lists, and the red-team decryption key need their
+actual values available to the application or tool; network-proxy placeholders cannot supply local
+cryptographic operations. GitHub repository access through the platform's Git proxy is separate from
+`GITHUB_ISSUE_TOKEN`, which grants feedback-issue access.
 
 ### Secret destination domains
 
@@ -134,8 +134,8 @@ bash .codex/cloud/maintenance.sh
 
 The scripts accept `CODEX_PROJECT_DIR`, otherwise use the current checkout when it has a
 `pnpm-lock.yaml`, and fall back to `/workspace/Splotch` when run from the workspace root. Both
-install lockfile-resolved dependencies, refresh SvelteKit's generated types, and verify the selected
-Chromium. Only setup installs Linux libraries when downloading the pinned browser.
+install lockfile-resolved dependencies and verify the selected Chromium. Only setup installs Linux
+libraries when downloading the pinned browser.
 
 Both scripts run `corepack enable --install-directory /workspace/.cache/bin pnpm` and
 `corepack install` before installing. `corepack install` with no argument reads `package.json`'s
@@ -250,11 +250,10 @@ publication checks; do not silently switch credentials.
 ## Relationship to Claude Code Cloud
 
 Codex Cloud and Claude Code Cloud are separate environments with separate setup mechanisms. For
-Claude's proxy, preview, branching, and tunnel workflow, see [Claude Code Cloud](Claude-Code.md).
-Its setup source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Both environments
-use Corepack to provision the `packageManager`-pinned pnpm version. Codex uses the writable cache
-paths and startup instructions described above; Claude's preview and tunnel setup stays in its own
-environment.
+Claude's proxy, preview and branching workflow, see [Claude Code Cloud](Claude-Code.md). Its setup
+source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Both environments use
+Corepack to provision the `packageManager`-pinned pnpm version. Codex uses the writable cache paths
+and startup instructions described above; Claude's setup stays in its own environment.
 
 ## Related files
 

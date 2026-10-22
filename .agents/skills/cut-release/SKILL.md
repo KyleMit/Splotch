@@ -12,8 +12,7 @@ The stores ship the React Native app in `.`, so the cut writes the native versio
 (`tools/release/lib/native-version.mjs`): `versionName` and `versionCode` in
 `android/app/build.gradle`, and `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in
 `ios/Splotch.xcodeproj`. They continue the shipping app's lineage, so each store build upgrades the
-installed `art.splotch.app` in place (ADR-0182). The Capacitor `android/` and `ios/` projects are
-not versioned.
+installed `art.splotch.app` in place (ADR-0182).
 
 Optional argument: a target version (e.g. `1.2.0`). If omitted, you will propose one.
 
@@ -71,13 +70,12 @@ Follow these steps:
    it can be built, so any bundle sitting in the build output directory right now is necessarily
    from an **older** version. Attaching it is how v1.4.0 shipped a 1.2.0 bundle (ADR-0077).
 
-   **Once the tag exists, record the release's coloring-pack snapshot**:
-   `npm run gen:coloring-pack-snapshot -- --ref v<version>`, add `'<version>': 0` to
-   `RELEASED_PACK_BROKEN_FILES` in `tools/release/lib/coloring-pack-retention.mjs`, then commit both
-   with the new `tools/release/coloring-pack-snapshots/<version>.json` (on a branch and PR when the
-   release was published to `main`). It cannot ride in the release commit, because it records the
-   tag's commit. Until it lands, the tools tier fails wherever tags are fetched, and nothing guards
-   the files that release downloads (see `tools/release/README.md`).
+   **Verify released coloring-art retention:** run `npm run check:coloring-pack-retention` for the
+   existing legacy snapshots. RN tags do not contain the historical manifest generator, so do not
+   create a legacy snapshot or add an RN version to `RELEASED_PACK_BROKEN_FILES`. Preserve every
+   byte addressed by supported installed releases. The RN integrity catalog in `src/offlineLibrary/`
+   owns new pack addresses; `tools/release/README.md` documents the historical reconstruction tool
+   and retention boundary.
 
 8. **Point to the next steps** — releasing is the first of three phases:
 

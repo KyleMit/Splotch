@@ -11,6 +11,13 @@
 > Issues (see `docs/ISSUE-WORKFLOW.md`), and `docs/` has since grown other human-process docs
 > (`COMPATIBILITY.md`, `ISSUE-WORKFLOW.md`, `DEPENDABOT.md`, `CLOUD/`).
 
+## Current scope after the RN cutover (2026-10)
+
+The three loading tiers survive under generated root/nested AGENTS.md and CLAUDE.md, path-scoped
+Claude rules and on-demand skills. `.ruler/` and the direct-provider registry own their sources
+(ADR-0058). There is no CAPACITOR build rule or Svelte path rule; reference skills route to living
+docs instead of requiring their deletion. The historical design below retains its original context.
+
 ## Context
 
 Project knowledge lived in four large reference docs (`docs/ARCHITECTURE.md`, `docs/API.md`,

@@ -1,0 +1,14 @@
+{
+  "integrationBase": "109b5c38b4010e4c93a5ce166b3d424ba4d7f0a8",
+  "changedRecordDispositions": 136,
+  "cutoverSupersessions": 62,
+  "scopeAmendments": 74,
+  "currentDecisions": 99,
+  "unchangedCurrentDecisions": 25,
+  "allHistoricalSectionsPreserved": true,
+  "allReceiptsMatch": true,
+  "currentOwnerPathsExist": true,
+  "allIndexStatusSectionsAgree": true,
+  "startHere": ["0182", "0178", "0179", "0180", "0181", "0008", "0070", "0071", "0058"],
+  "errors": []
+}

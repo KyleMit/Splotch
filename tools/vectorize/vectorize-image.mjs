@@ -313,7 +313,6 @@ async function describeError(res) {
 // .env, and sourcing it before every call is easy to forget.
 function resolveAuth() {
   loadEnvFile(resolve('.env'));
-  loadEnvFile(resolve('.env'));
 
   if (process.env.VECTORIZER_AUTHORIZATION) return process.env.VECTORIZER_AUTHORIZATION;
 

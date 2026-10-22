@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The authoritative free-grant API remains in `netlify/server/`. RN client pseudonyms come from
+platform installation identity and shared hashing, not Capacitor Device or a rune store. The wire
+contract and privacy purpose remain unchanged. The historical design below retains its original
+context.
+
 ## Context
 
 Every fresh Splotch installation should be able to experience ten successful managed AI image

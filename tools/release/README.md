@@ -90,25 +90,29 @@ after every selected artifact passes its embedded app ID and version checks.
 
 ## Retain released coloring-pack files
 
-A native build bundles `coloring/manifest-<version>.json` and downloads every non-starter book from
-`https://splotch.art` by that manifest's `downloadPath`, rejecting any file whose SHA-256 differs.
-ADR-0103 therefore requires the web deploy to keep serving those exact bytes for as long as the
-release is installed. The manifest is generated at build time and never committed, so each release
-records what it addresses:
+Released Capacitor builds address coloring assets by a versioned manifest and exact SHA-256.
+ADR-0103's retention obligation survives deletion of that build pipeline: keep every addressed
+legacy asset byte reachable while those releases remain supported.
+
+`gen:coloring-pack-snapshot` is a **historical-tag reconstruction tool**. It extracts the selected
+tag's own `web/coloringPackManifest.ts` generator and `web/static/coloring` tree with `git archive`,
+then records the resulting download-path/digest pairs. Those paths belong to the tag's layout. Use
+it only for a historical pack-shipping tag that contains that generator, not for a new RN tag.
 
 ```sh
-npm run gen:coloring-pack-snapshot -- --ref v1.7.0
+npm run gen:coloring-pack-snapshot -- --ref v1.6.0
 npm run check:coloring-pack-retention
 ```
 
-`gen-coloring-pack-snapshot.mjs` extracts the tag's own generator and `web/static/coloring` into a
-temporary directory with `git archive`, runs that generator for the `mobile` platform, and writes
-`coloring-pack-snapshots/<version>.json` (download path → digest per book). Run it once after each
-release is tagged, add `'<version>': 0` to `RELEASED_PACK_BROKEN_FILES` in
-`lib/coloring-pack-retention.mjs`, and commit both. `check-coloring-pack-retention.mjs` hashes the
-current `assets/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the
-same check in the CI tools tier and, where tags are present locally, fails on a pack-shipping tag
-with no snapshot.
+The existing snapshots and `lib/coloring-pack-retention.mjs` inventory remain enforced by
+`tests/coloring-pack-retention.test.mjs`. The check hashes current `assets/static` against every
+recorded release; where historical tags are available, it also detects a missing legacy snapshot.
+
+RN releases bundle Farm as native assets (ADR-0181) and use the integrity catalog in
+`src/offlineLibrary/` for additional books. They do not ship the historical manifest generator, so
+no new snapshot is produced by that command. The RN catalog and platform download owners define
+their addressed bytes; replacing hosted art still requires preserving bytes that supported installed
+releases address.
 
 `RELEASED_PACK_BROKEN_FILES` is the committed release inventory. The check fails when a listed
 release has no snapshot or a snapshot has no entry, so a lost snapshot fails CI even though CI's

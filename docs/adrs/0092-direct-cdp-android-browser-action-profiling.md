@@ -1,6 +1,13 @@
 # ADR-0092: Drive Android Browser Action Profiles Directly over CDP
 
-**Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Android browser action capture target was retired with the old
+performance harness.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:** 2026-07
 
 ## Context

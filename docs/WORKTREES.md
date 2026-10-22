@@ -3,8 +3,8 @@
 Both agent runners cut a linked git worktree per session — Claude Code through `--worktree`, the
 desktop app's parallel sessions, and the `EnterWorktree` tool; Codex through its own worktree
 manager. A linked worktree is a fresh checkout: it has the tracked files and nothing else, so
-without setup it has no `node_modules`, no `web/.env`, and no Android SDK path. Every `npm run …` in
-it fails until that is fixed.
+without setup it has no `node_modules`, no `.env`, and no Android SDK path. Every `npm run …` in it
+fails until that is fixed.
 
 Two mechanisms fix it, and they are split by whether the file is tracked.
 
@@ -187,11 +187,11 @@ its own local worktrees.
 
 What is listed and why:
 
-| Path                       | Why a worktree needs it                                   |
-| -------------------------- | --------------------------------------------------------- |
-| `web/.env`                 | API keys the dev server and `/api/*` functions read       |
-| `android/local.properties` | `sdk.dir` — every Gradle invocation fails without it      |
-| `ios/local.xcconfig`       | `DEVELOPMENT_TEAM` for automatic signing on device builds |
+| Path                       | Why a worktree needs it                                                         |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `.env`                     | Keys for explicitly invoked local tools; test hosts inject isolated credentials |
+| `android/local.properties` | `sdk.dir` — every Gradle invocation fails without it                            |
+| `ios/local.xcconfig`       | `DEVELOPMENT_TEAM` for automatic signing on device builds                       |
 
 Release signing material (`android/keystore.properties`, `android/upload-keystore.jks`) is
 deliberately **not** copied. Store builds are host-exclusive and run from the main checkout, so
@@ -216,8 +216,8 @@ gets `.worktreeinclude`'s files, but the bootstrap's steps have to be run by han
    `git switch -c <branch> origin/main`): the worktree is cut from whatever ref the shared `.git`
    last fetched.
 2. `pnpm install --frozen-lockfile --prefer-offline`.
-3. `npm run check` before `npm run test:tools` or `npm run test:asset-gen`: its `precheck` generates
-   the `web/.svelte-kit/` those suites need (`docs/TESTING.md`).
+3. `npm run check` verifies the shared modules, Netlify handlers, RN app and E2E types. No generated
+   framework types or sync step are required (`docs/TESTING.md`).
 
 ## Retiring a worktree
 

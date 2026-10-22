@@ -3,6 +3,13 @@
 **Status:** Active, partly superseded by [0080](0080-committed-brush-mode-seam-and-paced-strokes.md)
 **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+Host exclusivity and verification under equal worker load remain. The RN Playwright config uses the
+default half-core worker count; the old Svelte suite calibration and helper names below are
+historical and do not override `e2e/playwright.config.ts`. The historical design below retains its
+original context.
+
 ## Context
 
 `playwright.config.ts` set `workers: '100%'` with a comment justifying it on wall clock alone: "on a

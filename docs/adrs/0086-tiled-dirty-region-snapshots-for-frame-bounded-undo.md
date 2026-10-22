@@ -1,9 +1,16 @@
 # ADR-0086: Restore Tiled Dirty-Region Snapshots for Frame-Bounded Undo
 
-**Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) for production
-undo; amended by [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for tile visibility
-snapshots; amended in 2026-08 to preserve the advertised twenty-step depth for measured large
-sweeps. **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte dirty-region undo renderer was removed; RN drawing owns
+retained history and native Skia surfaces.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)
+for production undo; amended by [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for tile
+visibility snapshots; amended in 2026-08 to preserve the advertised twenty-step depth for measured
+large sweeps. **Date:** 2026-07
 
 ## Context
 

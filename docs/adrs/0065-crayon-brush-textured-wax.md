@@ -1,18 +1,26 @@
 # ADR-0065: Crayon Brush — Textured Wax via Phase-Shifted Paper-Tooth Pattern Ops
 
-**Status:** Active — amended by ADR-0066 (2026-07): snapshot undo replaced command replay, so the
-replay-determinism contract this ADR was built under narrows to "the commit fold must reproduce the
-live pixels." The RDP-bypass carve-out and the replay-cost consequence are moot (simplification and
-keyframing are deleted); the binary tooth is still required for intra-pass idempotence on the pass
-buffer, but the replay-era constraints against soft fractional-alpha tooth, per-stroke composited
-layers, and nondeterministic grain are lifted. Also amended by ADR-0067 (2026-07): the crayon is no
-longer the only free-draw mode — the solid pen returned as a sibling brush type, both selected from
-the Brush Menu, with the pen as the default. Also amended by ADR-0068 (2026-07): closed passes now
-commit as live-captured rasters, so the fold blits them instead of re-rendering this ADR's pattern
-fills — the deposit itself is unchanged. Also amended by ADR-0146 (2026-08): wax-deposition op
-granularity is a per-runtime decision — the web build keeps one op per pointermove while the native
-Capacitor build merges a frame's moves into one capped op; the deposit and its visual output are
-unchanged, and this file's "per-frame ops" phrasing predates that split. **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte crayon command-log/CanvasPattern implementation was removed.
+Native ink renders through Skia (ADR-0178); RN web has its own renderer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amended by ADR-0066 (2026-07): snapshot undo replaced command
+replay, so the replay-determinism contract this ADR was built under narrows to "the commit fold must
+reproduce the live pixels." The RDP-bypass carve-out and the replay-cost consequence are moot
+(simplification and keyframing are deleted); the binary tooth is still required for intra-pass
+idempotence on the pass buffer, but the replay-era constraints against soft fractional-alpha tooth,
+per-stroke composited layers, and nondeterministic grain are lifted. Also amended by ADR-0067
+(2026-07): the crayon is no longer the only free-draw mode — the solid pen returned as a sibling
+brush type, both selected from the Brush Menu, with the pen as the default. Also amended by ADR-0068
+(2026-07): closed passes now commit as live-captured rasters, so the fold blits them instead of
+re-rendering this ADR's pattern fills — the deposit itself is unchanged. Also amended by ADR-0146
+(2026-08): wax-deposition op granularity is a per-runtime decision — the web build keeps one op per
+pointermove while the native Capacitor build merges a frame's moves into one capped op; the deposit
+and its visual output are unchanged, and this file's "per-frame ops" phrasing predates that split.
+**Date:** 2026-07
 
 ## Context
 

@@ -17,15 +17,10 @@ import {
   RECOVERY_RECEIPT_HEADER,
 } from '../../src/lib/ai/generationAttempt';
 
-// The native apps load from a WebView origin (https://localhost on Android,
-// capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
-// cross-origin requests, so the endpoints need permissive CORS. Credentialed
-// routes authenticate each request; the unauthenticated free-generation path
-// is bounded by its durable daily provider-start ceiling and per-IP rate limit.
-// None of the APIs relies on cookies (the wildcard origin is incompatible with
-// credentialed requests anyway). Only /api/* is opened up (ADR-0007): the
-// endpoint functions stamp it through apiFunction, and hooks.server.ts stamps it
-// on the /api/* answers SvelteKit still gives, the 404 for an unknown path.
+// Native apps call the hosted API across origins. Each credentialed request authenticates itself;
+// the free-generation path is bounded by a durable daily ceiling and per-IP rate limits. No API
+// uses cookies, so wildcard CORS does not expose a cookie session. apiFunction stamps matched API
+// responses; unknown paths belong to the static host. ADR-0007 records the original wire contract.
 export const API_CORS_HEADERS: Readonly<Record<string, string>> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',

@@ -1,0 +1,102 @@
+{
+  "base": "109b5c38b4010e4c93a5ce166b3d424ba4d7f0a8",
+  "checked": 24,
+  "files": [
+    {
+      "path": "netlify/functions/generate-image-background.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/securityPolicy.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/server/apiCors.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/server/csrf.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/server/generationJobs.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/server/http.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/server/privateEnv.ts",
+      "identical": true
+    },
+    {
+      "path": "netlify/server/securityHeaders.ts",
+      "identical": true
+    },
+    {
+      "path": "src/clear/clearDock.ts",
+      "identical": true
+    },
+    {
+      "path": "src/clear/dragToClear.ts",
+      "identical": true
+    },
+    {
+      "path": "src/clear/useClearGesture.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lazyExport.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/actions/pinchTextZoomGesture.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/actions/pinchZoom.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/design/tokens.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/errorLog.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/hexPickerLayout.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/pwa/updates.ts",
+      "identical": true
+    },
+    {
+      "path": "src/lib/saveNaming.ts",
+      "identical": true
+    },
+    {
+      "path": "src/rsdDrawing/icons.deferred.generated.ts",
+      "identical": true
+    },
+    {
+      "path": "src/rsdDrawing/icons.generated.ts",
+      "identical": true
+    },
+    {
+      "path": "src/settings/savingSection.ts",
+      "identical": true
+    },
+    {
+      "path": "src/settings/toolDrawerSection.ts",
+      "identical": true
+    },
+    {
+      "path": "tools/release/lib/buildVersion.ts",
+      "identical": true
+    }
+  ]
+}

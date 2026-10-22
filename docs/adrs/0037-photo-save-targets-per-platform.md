@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+The save-target product contract survives through `src/export/` and the platform `pictureSave`
+adapters. RN native export uses its native drawing capture; web uses browser download/folder APIs.
+Capacitor Media calls and Svelte bridges below are historical. The historical design below retains
+its original context.
+
 ## Context
 
 Saving a drawing is the app's one "keep this" action, reached three ways, all of which funnel

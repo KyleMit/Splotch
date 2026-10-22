@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+`netlify/server/api/report.ts` implements the endpoint and delegates to `netlify/server/report.ts`;
+the React Native feedback transport calls it. The endpoint contract and sanitized support issue
+behavior remain; Svelte route/form actions below were removed. The historical design below retains
+its original context.
+
 ## Context
 
 Settings' only "report a problem" path was a link to `github.com/KyleMit/Splotch/issues/new/choose`.

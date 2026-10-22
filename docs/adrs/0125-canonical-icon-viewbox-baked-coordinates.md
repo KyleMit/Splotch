@@ -2,6 +2,15 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The canonical grid remains the icon convention for `assets/icons/`, with `splotchy.svg` retaining
+its own frame. The rebase owner is `tools/icons/rebase-icon-viewbox.mjs`; run
+`npm run gen:icon-viewbox` after adding UI art. The cutover removed the committed-catalog grid test
+described below; no automated grid guard replaces it. Generated RSD assets and
+`tools/icons/README.md` own the live workflow. The historical design below retains its original
+context.
+
 ## Context
 
 The icon corpus in `web/src/lib/icons/` accumulated a dozen coordinate grids from its sources:

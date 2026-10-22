@@ -1,7 +1,13 @@
 # ADR-0142: Anchor Rotation Action Measurements at `resize`, Not `orientationchange`
 
-**Status:** Accepted — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md)
-**Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The resize-anchored action probe was retired with the old capture harness.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted — amends
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md) **Date:** 2026-08
 
 ## Context
 

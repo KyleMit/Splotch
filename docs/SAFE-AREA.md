@@ -2,7 +2,7 @@
 
 The React Native app reads safe areas through `react-native-safe-area-context`. Its web export maps
 the browser's safe-area environment into that same provider. Read this before moving controls near a
-cutout, home indicator or system bar. The app is in `` until root promotion (ADR-0182).
+cutout, home indicator or system bar. The app lives at the repository root (ADR-0182).
 
 ## Current owners and checks
 

@@ -79,8 +79,8 @@ install_sdk_packages() {
 
 # A session inherits none of this script's exports — they die with the setup process — and
 # platform-tools is not on the default PATH, so without this every `adb` in a fresh session is
-# `command not found`. /usr/local/bin is on the default PATH and already holds chisel from the
-# shared setup, so a symlink there is what makes the repo's plain `adb …` calls resolve.
+# `command not found`. A symlink on the default /usr/local/bin PATH makes the repo's
+# plain `adb …` calls resolve in later sessions.
 link_adb_onto_path() {
   ln -sf "$ANDROID_SDK_ROOT/platform-tools/adb" /usr/local/bin/adb
 }

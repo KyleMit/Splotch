@@ -14,10 +14,9 @@ Keep issues scoped and hand-off-ready — a good issue says **what** to build, *
 * **Title** — a concise imperative summary ("Add a stamps tool", not "Stamps").
 * **Body** — what / why / where / done-when. The `.github/ISSUE_TEMPLATE/` forms (`feature_request`,
   `bug_report`, `task`) scaffold this; blank issues are allowed for quick notes. A verification
-  command must run as written from the repo root (a single Vitest file runs as
-  `node tools/run-web-tool.mjs vitest run src/...`, never `npx vitest run src/...`; see
-  `docs/TESTING.md`), and a done-when check such as a grep is scoped to exactly the sites the issue
-  enumerates.
+  command must run as written from the repo root (app tests use `npm run test:unit -- <file>` and
+  tool tests use `npm run test:tools -- <file>`; see `docs/TESTING.md`), and a done-when check such
+  as a grep is scoped to exactly the sites the issue enumerates.
 * **Labels** — exactly one `type:*`, one or more `area:*`, and optionally a `priority:*` and any
   meta labels (see the glossary below).
 * **Escaping `#`-numbers** — GitHub auto-links a bare `#12` into a reference to issue/PR 12. In
@@ -58,7 +57,7 @@ files it on every audit finding that survives validation, and `fix-audits` burns
 | `area:ux`             | Layout, polish, responsiveness                      |
 | `area:settings`       | Settings modal and controls                         |
 | `area:admin-security` | Admin console, access codes, quotas, ops            |
-| `area:native`         | Android / iOS / Capacitor                           |
+| `area:native`         | Android / iOS / React Native                        |
 | `area:ci-testing`     | CI pipeline and test infrastructure                 |
 | `area:release`        | Release and deployment automation                   |
 | `area:infra`          | Dev tooling, dependencies, repo infrastructure      |

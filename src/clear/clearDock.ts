@@ -1,9 +1,5 @@
 import type { Point } from './dragToClear';
 
-// ClearButton.svelte's dock, projected across the candidate boundary because its owner is a
-// stylesheet: the .clear-container offsets and the .clear-button and .clear-icon sizes, per
-// orientation. native-clear-projection.test.mjs reads each shipping literal back and fails on
-// divergence.
 export const CLEAR_DOCK_OVERHANG_PX = 10;
 const CLEAR_DOCK_PORTRAIT_TOP_PX = 90;
 // Landscape docks below Android's immersive-mode reveal strip: a floor, or the safe-area top plus

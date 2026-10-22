@@ -1,28 +1,11 @@
-// Single source of truth for the site's platform response headers. Netlify
-// stamps the literal mirror onto CDN/static responses. For SSR, hooks.server.ts
-// adds the non-CSP headers but preserves SvelteKit's complete nonce CSP instead
-// of replacing it with this prerender-only complementary subset. The TOML
-// cannot import this module, so securityHeaders.test.ts guards both copies.
+// Netlify stamps this header contract onto static responses. The plain API wrapper applies its
+// non-document subset. TOML cannot import TypeScript, so securityHeaders.test.ts guards its mirror.
 
 import { RESPONSE_CSP_DIRECTIVES, serializeCspDirectives } from '../securityPolicy.ts';
 
 const CONTENT_SECURITY_POLICY = serializeCspDirectives(RESPONSE_CSP_DIRECTIVES);
 
-/**
- * Routes whose document must disclose its own origin to itself.
- *
- * A cross-document form POST from a page served `Referrer-Policy: no-referrer`
- * carries `Origin: null` — Chromium opaques the origin along with the referrer
- * — and SvelteKit's CSRF guard rejects that as cross-site with a bare 403
- * "Cross-site POST form submissions are forbidden". It only bites without
- * JavaScript, because `use:enhance` posts via fetch and sends no Origin at all.
- * `same-origin` is the tightest policy that fixes it: a full referrer on
- * same-origin navigations, still nothing at all cross-origin, so the outbound
- * links to GitHub leak no more than before.
- *
- * Keyed by exact pathname — a prefix match would quietly cover future
- * sub-routes that never asked for it.
- */
+// The /feedback same-origin referrer policy is retained in the recorded hosting contract.
 const SAME_ORIGIN_REFERRER_ROUTES: ReadonlySet<string> = new Set(['/feedback']);
 
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = {

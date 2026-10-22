@@ -24,6 +24,7 @@ Read the relevant guide:
 
 Use the existing `android:*` and `ios:*` scripts. Ordinary local builds use `art.splotch.app.dev`;
 only explicit store targets use `art.splotch.app`. Never install over or clear a store copy with
-private drawings. Device captures require the `start-capture-session` skill and its ownership
-checks. Plain Gradle/xcodebuild scripts produce releases; upload stays manual, with no EAS or
-fastlane.
+private drawings. Device capture procedures and ownership live in
+[`docs/PROFILING.md`](../../../docs/PROFILING.md) and
+[`tools/device-parity/README.md`](../../../tools/device-parity/README.md). Plain Gradle/xcodebuild
+scripts produce releases; upload stays manual, with no EAS or fastlane.

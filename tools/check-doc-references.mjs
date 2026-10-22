@@ -85,6 +85,11 @@ const WORD = /[A-Za-z_$][\w$]*/g;
 // references that are deliberately unresolvable where they stand.
 export const ALLOWED_REFERENCES = [
   {
+    doc: 'tools/release/README.md',
+    ref: 'web/coloringPackManifest.ts',
+    why: "the historical-tag reconstruction tool reads the selected tag's retired layout, not the current tree",
+  },
+  {
     doc: 'tools/.ruler/AGENTS.md',
     ref: 'tools/android/android-setup.mjs',
     why: 'the naming rule cites it as the layout not to use',
@@ -122,7 +127,7 @@ export const ALLOWED_REFERENCES = [
   {
     doc: '.ruler/skills/create-handoff/SKILL.md',
     ref: 'docs/handoff/coloring-fill-drift.md',
-    why: 'an example of the packet name the skill writes',
+    why: 'an illustrative packet filename the file-mode procedure creates',
   },
   {
     doc: '.claude/skills/analyze-session-transcripts/SKILL.md',

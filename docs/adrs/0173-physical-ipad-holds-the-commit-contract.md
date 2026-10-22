@@ -1,7 +1,14 @@
 # ADR-0173: The Physical iPad Holds the Commit Contract; the Runner Gate Stays Advisory
 
-**Status:** Active — amends [ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md) and
-[ADR-0140](0140-commit-gate-host-control-and-breach-confirmation.md). **Date:** 2026-09
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The physical-iPad commit-latency gate and the advisory WebKit fallback
+were retired. No RN latency claim is inherited from them.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md)
+and [ADR-0140](0140-commit-gate-host-control-and-breach-confirmation.md). **Date:** 2026-09
 
 ## Context
 

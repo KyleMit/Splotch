@@ -5,8 +5,8 @@ cloud task is already isolated; do not create a Git worktree unless the user exp
 one. Read the repository's `AGENTS.md` and relevant nested instructions. Preserve user changes and
 keep tracked files, dependency declarations, and lockfiles unchanged during environment setup.
 
-The snapshot retains dependencies, Corepack/pnpm caches, generated SvelteKit types, and installed
-browsers. Live servers do not survive publication or new tasks and must be restarted.
+The snapshot retains dependencies, Corepack/pnpm caches and installed browsers. Live servers do not
+survive publication or new tasks and must be restarted.
 
 Activate the tools in each shell:
 
@@ -28,14 +28,14 @@ and a final summary while keeping the container usable; an exit code of zero alo
 readiness. Investigate warnings before continuing. Never use `npm install` or `npm ci` in the
 checkout.
 
-The standard workflow is local SvelteKit web development and Chromium testing. No secrets are
-required. This environment configures `PLAYWRIGHT_CHROMIUM=/usr/bin/chromium`, the
-repository-supported override, because the pinned browser CDN download was blocked by network
-policy. Setup and maintenance validate the selected browser by launching it and painting a canvas.
-When that override is unset, the scripts install the browser revision pinned by the installed
-Playwright package; setup also installs its Linux libraries. Native toolchains, real model calls,
-Netlify deployment, and hosted Blobs integration require separate setup. Firefox, WebKit, and
-visual-baseline parity have not been validated.
+The standard workflow is the RN production web export and Chromium testing. No secrets are required.
+This environment configures `PLAYWRIGHT_CHROMIUM=/usr/bin/chromium`, the repository-supported
+override, because the pinned browser CDN download was blocked by network policy. Setup and
+maintenance validate the selected browser by launching it and painting a canvas. When that override
+is unset, the scripts install the browser revision pinned by the installed Playwright package; setup
+also installs its Linux libraries. Native toolchains, real model calls, Netlify deployment, and
+hosted Blobs integration require separate setup. Firefox, WebKit, and visual-baseline parity have
+not been validated.
 
 Build the RN web export before opening it:
 

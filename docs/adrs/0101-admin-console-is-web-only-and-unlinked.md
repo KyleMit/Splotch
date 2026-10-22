@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Admin remains web-only and unlinked, implemented in `src/pageDocument/admin/` against the bearer
+JSON API. Metro platform boundaries keep that document out of native UI; the old Capacitor
+route-exclusion list, Svelte form actions and static bundle sentinel guard below were removed. The
+historical design below retains its original context.
+
 ## Context
 
 ADR-0016 gave the token console two front doors over one server core: the cookie-session `/admin`

@@ -4,11 +4,9 @@ ios/
 ios/Pods/
 android/.gradle/
 android/app/.cxx/
-# Byte-identical copies of the shipping branding, written by tools/migration/gen-native-branding.mjs
-# and held to the shipping files by tools/tests/native-branding.test.mjs.
+# Xcode asset-catalog metadata keeps the native project's formatting.
 ios/Splotch/Images.xcassets/AppIcon.appiconset/Contents.json
 ios/Splotch/Images.xcassets/Splash.imageset/Contents.json
-**/.svelte-kit/
 **/build/
 **/.netlify/
 **/node_modules/
@@ -36,7 +34,6 @@ src/lib/releases.json
 src/lib/releaseHues.ts
 src/information/releaseNotes.generated.json
 tools/store-drawings/generated/store-drawings.mjs
-web/tests/**/*-snapshots/
 *.svg
 # Frozen empirical run output; live pipeline configuration remains formatted.
 tools/asset-gen/ideas-exploration/**/*.json

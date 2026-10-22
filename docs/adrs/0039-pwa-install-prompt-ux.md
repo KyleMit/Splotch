@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-06 **Amended:** 2026-08-16
 
+## Current scope after the RN cutover (2026-10)
+
+The install-prompt product rule remains in `src/install/` and `src/platform/installPrompt.web.ts`,
+with RSD banner components. The rune store and Svelte boot service below were removed. The
+historical design below retains its original context.
+
 ## Context
 
 On the web target, the best way to "install" Splotch is to add it to the home screen so it launches

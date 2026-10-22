@@ -264,6 +264,7 @@ views, the outline-% badge, size constraints — lives in
 
 ## Not here
 
-Scripts that **drive the live app** (`gen:store-assets`, `gen:promotional-image`, `gen:share-cards`
-— Playwright against the running UI) or that are **build-path codegen** (`gen:icon-names`,
-`gen:releases`) stay in the repo-root `tools/`. They are app-coupled, not asset producers.
+Marketing renderers live in `tools/marketing-assets/`: `gen:store-assets` renders committed captures
+at store pixel sizes, and `gen:share-cards` renders standalone documents in Chromium without an app
+server. Build-path codegen such as `gen:icon-names` and `gen:releases` stays with its tool
+capability. These responsibilities do not belong to the asset-authoring pipeline.

@@ -2,7 +2,7 @@
 # break them, so a Kotlin, Swift, C++, Gradle, CocoaPods or JavaScript bundling
 # error fails its own PR instead of the next release tag. Both are Release
 # builds, so each also bundles the JavaScript the way the store build embeds
-# it. The deploy smokes (android-deploy.yml, ios-deploy.yml) stay tag-only
+# it. The deploy smokes (android-deploy.yml, ios-deploy.yml) run on tags or dispatch
 # because booting an emulator or simulator is what costs; building does not
 # (ADR-0008's 2026-09-28 amendment).
 #

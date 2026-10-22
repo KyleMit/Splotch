@@ -39,22 +39,15 @@ export type ContentSecurityPolicyDirectives = Readonly<
 
 export const NATIVE_API_ORIGIN = SITE_ORIGIN;
 
-// The native WebView origins (Android https://localhost, iOS capacitor://localhost),
-// which SvelteKit's CSRF guard trusts (svelte.config.js) and the /api functions'
-// copy of it trusts too (src/lib/server/csrf.ts). Shipped native builds still post
-// the legacy multipart generate-image form (ADR-0064), and a form content type from
-// an untrusted origin is refused before any handler runs, so before the CORS
-// headers that would let the WebView read the refusal. Safe to trust: the AI
-// endpoints are credential-gated, and /admin's one cookie is SameSite=strict, so
-// these cross-site requests never carry it.
+// The recorded API contract trusts these legacy native origins for multipart requests. Requests
+// still authenticate independently; the API uses bearer credentials rather than cookies.
 export const CSRF_TRUSTED_ORIGINS: readonly string[] = [
   'https://localhost',
   'capacitor://localhost',
 ];
 
-// app.html is shared by prerendered and SSR pages, so its synchronous pre-paint
-// stamp cannot use SvelteKit's SSR-only nonce placeholder. securityPolicy.test.ts
-// hashes the exact script body and guards this source against template drift.
+// Legacy template hashes remain part of the recorded policy contract. The RN exporter hashes
+// its own exact inline scripts; native-web-csp.test.mjs verifies the produced documents.
 export const APP_TEMPLATE_SCRIPT_HASH = 'sha256-1pjHdfh26XA4hXd3HptBbskVTUHN00rhO0SeMv6OuEw=';
 
 // /beta injects one other pre-paint script from BETA_PLATFORM_BOOT_SCRIPT.
@@ -70,7 +63,7 @@ export const SVELTEKIT_META_UNSUPPORTED_DIRECTIVES: ReadonlySet<ContentSecurityP
 export const WEB_CSP_DIRECTIVES = Object.freeze({
   'default-src': Object.freeze(['self']),
   'script-src': Object.freeze(['self', APP_TEMPLATE_SCRIPT_HASH, BETA_PLATFORM_SCRIPT_HASH]),
-  // Component CSS and Svelte transition styles are inlined by the configured threshold.
+  // The export emits inline component CSS and motion styles.
   'style-src': Object.freeze(['self', 'unsafe-inline']),
   // blob: covers generated previews; data: covers the in-memory placeholder image.
   'img-src': Object.freeze(['self', 'blob:', 'data:']),
@@ -88,12 +81,8 @@ export const WEB_CSP_DIRECTIVES = Object.freeze({
   'report-to': Object.freeze(['csp']),
 }) satisfies ContentSecurityPolicyDirectives;
 
-// Netlify must deliver the directives a prerendered CSP meta tag cannot. This
-// deliberately has neither default-src nor script-src: it composes with
-// SvelteKit's hash-bearing meta policy instead of independently blocking the
-// inline scripts that policy authorizes. SSR responses already carry the full
-// SvelteKit nonce policy, so hooks.server.ts preserves it rather than replacing
-// it with this subset.
+// Header-only directives compose with the prerendered document's hash-bearing meta policy.
+// Omitting default-src and script-src prevents this subset from blocking scripts it authorizes.
 export const RESPONSE_CSP_DIRECTIVES = Object.freeze(
   Object.fromEntries(
     Object.entries(WEB_CSP_DIRECTIVES).filter(([directive]) =>
@@ -147,7 +136,7 @@ function scriptAttribute(attributes: string, name: 'src' | 'type'): string | und
 }
 
 export function inlineExecutableScriptBodies(html: string): string[] {
-  // JSON and other script data blocks are not governed by script-src and SvelteKit does not hash them.
+  // JSON and other script data blocks are not executable and need no script-src hash.
   return [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
     .filter((match) => scriptAttribute(match[1] ?? '', 'src') === undefined)
     .filter((match) => {

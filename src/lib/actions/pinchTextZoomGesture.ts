@@ -15,9 +15,6 @@ export interface PinchTextZoomOptions {
   resetKey?: unknown;
 }
 
-// The gesture itself, with no reactive context of its own — the $effect above is
-// the only rune in `pinchTextZoom`, so splitting it off lets the pointer
-// bookkeeping be unit-tested against a real element (`pinchTextZoom.svelte.test.ts`).
 export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
   const tracker = createSpreadTracker();
   let zoom = MIN_TEXT_ZOOM;
@@ -30,7 +27,7 @@ export function attachPinchTextZoom(node: HTMLElement, getOptions: () => PinchTe
   // fires a `click` when it lifts, which would open the section or flip the
   // setting underneath it. Remember that the gesture became a pinch, and once
   // its last finger lifts swallow the one trailing pointer click it produces
-  // (the ghost-click guard from svelte.md) — only within the click window, so a
+  // only within the click window, so a
   // pinch that leaked no click cannot eat the next mouse tap, and only a
   // pointer-synthesized click (detail >= 1), so keyboard and assistive-tech
   // activation always get through.

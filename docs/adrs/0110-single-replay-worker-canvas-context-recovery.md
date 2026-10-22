@@ -1,6 +1,15 @@
 # ADR-0110: Recover Worker Canvas Context Loss with One Full Replay
 
-**Status:** Active — amends [ADR-0088](0088-frame-bound-screenshot-export-on-ipad-webkit.md) and
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The disposable Canvas 2D worker brokers, context-recovery wrapper and
+worker replay paths were removed. RN native Skia and the RN web SVG/raster renderer have different
+surface owners; this record does not establish a recovery policy for them.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
+[ADR-0088](0088-frame-bound-screenshot-export-on-ipad-webkit.md) and
 [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md); live-surface exclusion amended by
 [ADR-0132](0132-recover-reset-live-tile-contexts-on-resume.md) **Date:** 2026-08
 

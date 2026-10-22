@@ -8,6 +8,16 @@ holds its books, and again 2026-09 so native packs survive app updates; and amen
 [ADR-0042](0042-static-media-cache-invalidation.md), and
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md). **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Farm remains the bundled starter book (ADR-0181). `src/offlineLibrary/catalog.generated.json` and
+its controller own the RN pack catalog, integrity and installation identity; platform adapters
+provide native background installation and browser storage. The versioned WebView manifest generator
+below is historical. Released legacy snapshots remain a retention obligation, but
+`gen:coloring-pack-snapshot` only reconstructs tags containing that historical generator; it is not
+a step for RN releases. See `tools/release/README.md`. The historical design below retains its
+original context.
+
 ## Context
 
 The eight-book coloring catalog had become most of both offline installs. Native packages bundled

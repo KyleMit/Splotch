@@ -1,6 +1,16 @@
 # ADR-0138: Track a Per-Campaign Subset of Raw Captures, Whole
 
-**Status:** Active — depends on [ADR-0134](0134-frame-beat-from-the-dominant-interval.md),
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The perf-profiles corpus promotion, rescore commands and per-campaign
+raw-capture selection workflow retired with the old performance harness. Retained evidence remains
+attributable to its recorded renderer; the current RN probe/replay workflow is documented in
+docs/PROFILING.md.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — depends on
+[ADR-0134](0134-frame-beat-from-the-dominant-interval.md),
 [ADR-0136](0136-browser-target-lost-frame-gate.md); amends
 [ADR-0059](0059-committed-run-artifacts-github-pages.md). **Date:** 2026-08
 

@@ -1,7 +1,14 @@
 # ADR-0002: Svelte 5 Runes Over Legacy Stores
 
-**Status:** Active — amended in 2026-09 with the state and lifecycle standards established by epic
-#1926 (see the amendment below).\
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** Svelte runes and their lifecycle no longer ship; React owns component
+state and lifecycle.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amended in 2026-09 with the state and lifecycle standards
+established by epic #1926 (see the amendment below).\
 **Date:** 2024
 
 ## Context

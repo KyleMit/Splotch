@@ -1,9 +1,16 @@
 # ADR-0040: Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR
 
-**Status:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color Palette and Actions
-Panel share deterministic first-paint geometry for the persisted visible-button count, with
-orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19: the AI button
-uses the last known connectivity state to paint before runtime status resolves.
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The SvelteKit per-route render modes were removed. The RN export
+prerenders documents and the drawing first frame under ADR-0180.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-07. Amended 2026-08-03: the landscape Color
+Palette and Actions Panel share deterministic first-paint geometry for the persisted visible-button
+count, with orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19:
+the AI button uses the last known connectivity state to paint before runtime status resolves.
 
 > **Amended by [ADR-0176](0176-drawing-route-holds-first-paint-until-the-toolbar-is-parsed.md):**
 > the prerendered drawing route holds its first paint until its toolbar has been parsed.

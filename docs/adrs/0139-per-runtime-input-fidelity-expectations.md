@@ -1,10 +1,17 @@
 # ADR-0139: State Input-Fidelity Expectations Per Runtime, and Name the Uncalibrated Ones
 
-**Status:** Accepted, amended by [ADR-0141](0141-cadence-is-a-floor-and-silent-checks-are-named.md)
-— which retires the cadence ceiling this ADR called runtime-independent, and adds the not-applicable
-state its Android entries were standing in for. Amends
-[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); depends on
-[ADR-0135](0135-split-device-capture-input-and-measurement.md),
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The per-runtime fidelity scorer and Capacitor capture runtimes were
+retired.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted, amended by
+[ADR-0141](0141-cadence-is-a-floor-and-silent-checks-are-named.md) — which retires the cadence
+ceiling this ADR called runtime-independent, and adds the not-applicable state its Android entries
+were standing in for. Amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
+depends on [ADR-0135](0135-split-device-capture-input-and-measurement.md),
 [ADR-0138](0138-preserve-a-capture-evidence-subset.md). **Date:** 2026-08
 
 ## Context

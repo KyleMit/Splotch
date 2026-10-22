@@ -50,20 +50,21 @@ documented decision. Open work lives in GitHub issues, not here.
 A two-year-old can draw without adult help. Every control is reachable one-handed, forgiving of
 imprecise contact, and wordless.
 
-**Backed by.** The `flows-*` Playwright specs, `multitouch.spec.ts`, `e2e/specs/pen.spec.ts`,
-`e2e/specs/clear.spec.ts`, and `tools/tests/native-physical-paper-contact.test.mjs` cover the
-interaction paths; `dialogTabletScaling.test.ts` covers reach on tablet. The `run-splotch` skill
-drives the real app when a change needs eyes on it rather than an assertion, and
-`critique-page-inventory` reviews the captured surface inventory.
+**Backed by.** The RN Playwright flow specs, `e2e/specs/multitouch.spec.ts`,
+`e2e/specs/pen.spec.ts`, `e2e/specs/clear.spec.ts`, and
+`tools/tests/native-physical-paper-contact.test.mjs` cover the interaction paths; mounted modal and
+settings tests cover tablet layout contracts. The `run-splotch` skill drives the real app when a
+change needs eyes on it rather than an assertion, and `critique-page-inventory` reviews the captured
+surface inventory.
 
 ## Design System
 
 Every surface draws from one token vocabulary. No ad-hoc color, size, radius, shadow, or easing in
 component styles.
 
-**Backed by.** `lint:tokens` and `gen:tokens:check` in the quality gate; `e2e/specs/design.spec.ts`,
-`chipInk.test.ts`, and `scrollbar-chrome.spec.ts`; the public `/design` styleguide as the rendered
-reference. The `design` skill carries the token vocabulary, primitives, and voice rules.
+**Backed by.** `check:migration:rsd-drawing-tokens` in the quality gate; `e2e/specs/design.spec.ts`,
+RSD token specimen tests and mounted component contracts; the public `/design` styleguide as the
+rendered reference. The `design` skill carries the token vocabulary, primitives, and voice rules.
 
 ## Accessibility
 
@@ -89,15 +90,12 @@ the `vectorize-image` skill covers raster-to-vector tracing.
 Drawing holds its frame budget on the supported device floor, and startup stays inside a reviewed
 byte budget.
 
-**Backed by.** The `perf:*` harness across web, Android, and iOS. The committed matrix with
-`check:matrix-staleness`, which ranks every matrix section by capture age with the commits landed
-since, at every regeneration, and fails only a section missing its date or commit under `--strict`
-or a release-gate section past `RELEASE_GATE_MAX_AGE_DAYS` under `--release-gate-age`, the age
-clause of a performance campaign's completion gate (ADR-0175). The WebKit commit gates and the undo
-commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and native-export sizes
-and the web and native startup modulepreload counts; `check-pwa-precache.mjs` holds precache
-integrity. Skills: `profiling`, `capture-performance-matrix`, `start-capture-session` before
-physical-device work, and `audit-page-load` for page load.
+**Backed by.** The in-app performance probe and committed replay traces described in
+`docs/PROFILING.md` measure RN drawing. `tools/migration/check-native-web-startup.mjs` enforces
+first-paint, core-control and per-document byte caps; `check-native-web-precache.mjs` checks the
+service-worker inventory. The RN-export Lighthouse gate measures page load (ADR-0149/0182).
+Historical performance records remain evidence for their recorded renderer. The old matrix age
+checker retired with that harness.
 
 ## Resilience
 
@@ -108,9 +106,9 @@ a fresh page; carrying work across a restart is not a guarantee this axis makes 
 **Backed by.** `e2e/specs/first-frame.spec.ts` and `e2e/specs/early-input.spec.ts` on the startup
 path (the paper texture that once painted late behind its own request now ships inline with the
 document, `paperTexture.test.ts`), `pwa-registration.spec.ts` on the service worker,
-`tools/tests/native-resumed-contact-mounted.test.mjs` on interrupted input. `idb.ts` requests
-persistent storage and resets its memoized promise on rejection; `storage.ts` handles
-`QuotaExceededError`.
+`tools/tests/native-resumed-contact-mounted.test.mjs` on interrupted input. RN platform storage
+owners validate persisted records and surface storage failures through their current settings,
+offline-library and picture-save contracts.
 
 ## Storefront
 
@@ -126,11 +124,11 @@ No accounts, no analytics SDKs, no advertising identifiers, no child name, email
 Everything that leaves the device is disclosed in `/privacy` in parent-readable terms, with
 retention stated on both sides - what we keep, and what the provider keeps.
 
-**Backed by.** The Capacitor build's bundle guard (removed with the Capacitor shell) failed the
-build if the privacy page was missing from the static export or if nothing in the bundle linked to
-it (ADR-0120). Retention windows are imported into the page as constants rather than restated in
-prose, so the disclosure cannot drift from the cleanup that enforces it. ADR-0105 records the
-app-purpose pseudonym; ADR-0114 records provider retention.
+**Backed by.** `tools/migration/check-native-web-pages-without-js.mjs` checks the exported privacy
+document, and the native smoke remains a launch-and-paint check (ADR-0120). The native settings/info
+tests cover the bundled information surface. Retention windows are imported into the page as
+constants rather than restated in prose, so the disclosure cannot drift from the cleanup that
+enforces it. ADR-0105 records the app-purpose pseudonym; ADR-0114 records provider retention.
 
 ## Content Safety
 
@@ -154,15 +152,15 @@ drift. `securityHeaders.ts` pins HSTS, `nosniff`, `Referrer-Policy`, `Cross-Orig
 `e2e/specs/hosting.spec.ts` check the delivered policy. Admin secrets compare in constant time.
 Credential endpoints carry sliding-window limits that peek before the check, so a legitimate caller
 never spends budget on someone else's guessing. `pnpm audit` runs in the quality gate, and the
-`security-review` skill reviews a branch before it ships.
+independent review checks the changed branch before it ships.
 
 ## Compliance
 
 Every store guideline and children's-privacy obligation that shaped this codebase is quoted
 verbatim, answered with the decision that satisfies it, and traceable to the commit where it landed.
 
-**Backed by.** [`MOBILE/compliance.md`](MOBILE/compliance.md) holds the ledger. The Capacitor
-build's bundle guard enforced the privacy-page assertions at build time. The manifest ships no
+**Backed by.** [`MOBILE/compliance.md`](MOBILE/compliance.md) holds the ledger. The RN privacy
+document and native information surfaces share the disclosure owners. The manifest ships no
 identifier from the Play Families prohibited list, requests no location permission, and sets
 `android:allowBackup="false"`. The `mobile` skill carries the kids-compliance checklists.
 
@@ -189,10 +187,10 @@ New code reads like the code around it. No dead exports, no unformatted files, n
 duplicate declarations.
 
 **Backed by.** `check:quality` runs the whole set in one pass and reports every failure rather than
-the first - format, svelte-check, eslint, ruler drift, token lint, knip, asset manifest, scrapbook
-index, and audit. The `format-edited-file.sh` hook routes each edited file through Prettier or
-dprint. Skills: `audit-code` and `audit-extractions` to find work, `vet-audits` to prune it,
-`fix-audits` and `burn-down-audits` to clear it, `simplify` and `code-review` on a working diff.
+the first - format, TypeScript checks, eslint, ruler drift, RSD token checks, knip, asset manifest,
+scrapbook index, and audit. The `format-edited-file.sh` hook routes each edited file through
+Prettier or dprint. Skills: `audit-code` and `audit-extractions` to find work, `vet-audits` to prune
+it, `fix-audits` and `burn-down-audits` to clear it, independent review on a working diff.
 `docs/CODING-STANDARDS.md` holds the coding rules, the incident behind each, and what enforces it.
 
 ## Testing
@@ -203,20 +201,19 @@ suite whose signal can be trusted rather than re-run until green.
 **Backed by.** `test:browserless` runs CI's browser-free test job in one pass - every Vitest tier
 and the API contract smoke - and reports every failure rather than the first. Unit specs sit beside
 their sources in `src`, end-to-end specs in `e2e/specs`, tool specs in `tools/tests`, and native
-flows in `.maestro`. `playwright-flaky-reporter.ts` surfaces flake; the WebKit commit gates carry a
-bounded retry leg rather than an open one; ESLint's vacuous-test rules fail a spec that asserts
-nothing, under both the vitest and playwright spellings. The `testing` skill carries the full
-strategy and commands.
+flows in `.maestro`. `e2e/playwright-flaky-reporter.ts` surfaces flake. Retries are bounded by the
+Playwright configuration; ESLint's vacuous-test rules fail a spec that asserts nothing, under both
+the vitest and playwright spellings. The `testing` skill carries the full strategy and commands.
 
 ## Compatibility
 
 The native apps behave the same as the web app on every shipped surface, and every browser and OS
 version named in [`COMPATIBILITY.md`](COMPATIBILITY.md) runs the current build.
 
-**Backed by.** `browserFloor.test.ts` guards the floor against drift, and `COMPATIBILITY.md` carries
-the per-API risk register. `nativeExcludedRoutes.ts` keeps server routes and native code out of the
-static export; `android-config.test.mjs` guards native config; Maestro smoke runs on both platforms.
-The `mobile` skill covers the Capacitor build and on-device testing.
+**Backed by.** `COMPATIBILITY.md` carries the browser/OS floors and per-API risk register. Platform
+file extensions keep native modules out of the web graph. Native configuration guards and Maestro
+launch smokes cover both projects; Playwright smoke covers Firefox and WebKit. The `mobile` skill
+covers React Native builds and native testing.
 
 ## Documentation
 
@@ -225,9 +222,8 @@ change that invalidates it.
 
 **Backed by.** `ruler:check` reruns the generation pipeline and fails if output changed;
 `check:skill-refs` catches the wrong invocation sigil for the tree it appears in; `check:adrs`
-guards record integrity; `check:matrix-staleness` reports how old each performance claim is;
-`scrapbook:check` guards the published index. Skills: `skills-guide` for the catalog,
-`create-handoff` and `resume-handoff` for session-to-session transfer.
+guards record integrity; `scrapbook:check` guards the published index. Skills: `skills-guide` for
+the catalog, `create-handoff` and `resume-handoff` for session-to-session transfer.
 
 ## Developer Experience
 
@@ -239,5 +235,5 @@ them. `ruler:apply` and `ruler:check` keep both provider trees deterministic.
 `package-manager.test.mjs` fails if any CI, hook, or bootstrap file starts installing with npm
 instead of pnpm. `check:github-actions` and `workflow-hygiene.test.mjs` guard the workflow set.
 Skills: `improve-agent-workflow`, `audit-session`, and `self-heal` for the loop itself;
-`audit-dependency-health` and `burn-down-dependabot-prs` for dependency upkeep;
-`fewer-permission-prompts` for friction.
+`audit-dependency-health` and `burn-down-dependabot-prs` for dependency upkeep; the cloud/worktree
+guides for environment setup.

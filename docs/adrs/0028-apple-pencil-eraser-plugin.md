@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+The product gesture survives through `src/platform/pencilDoubleTap.ts` and its web adapter, with
+native module support in the root iOS project. The Capacitor plugin implementation below was
+removed; RN subscriptions own the lifecycle. The historical design below retains its original
+context.
+
 ## Context
 
 Splotch has an eraser tool toggled by the on-screen eraser button in the Actions Panel

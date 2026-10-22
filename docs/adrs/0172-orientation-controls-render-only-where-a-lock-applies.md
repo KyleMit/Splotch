@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+The gating decision remains in RN platform orientation adapters, with Expo screen-orientation on
+native and Screen Orientation/fullscreen on web. `docs/ORIENTATION.md` owns current code and tests;
+the Svelte/Capacitor measurements below retain their original scope. The historical design below
+retains its original context.
+
 ## Context
 
 The Settings Orientation picker rendered wherever the engine exposed `screen.orientation.lock` and

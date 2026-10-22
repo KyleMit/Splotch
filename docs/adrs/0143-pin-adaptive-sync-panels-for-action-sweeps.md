@@ -1,7 +1,13 @@
 # ADR-0143: Pin adaptive-sync Android panels to 60Hz for action sweeps
 
-**Status:** Active (amends [ADR-0092](0092-direct-cdp-android-browser-action-profiling.md))
-**Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Android browser action sweep and its refresh-rate pin were retired.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active (amends
+[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md)) **Date:** 2026-08
 
 ## Context
 

@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
-// The shipping iconRegistry.svelte.ts contract: a module no startup surface renders loads in its
+// A module no startup surface renders loads in its
 // own chunk on first use, a failed load is logged and forgotten so the next consumer to mount
 // retries, and every mounted consumer waiting on the chunk paints when any load succeeds.
 export function createLazyExport<T>(load: () => Promise<T>) {

@@ -43,8 +43,8 @@ orchestrator then pauses the queue and asks the user.
   `docs/audit-deferred/decisions/`. If a finding is wrong or already fixed, say so and ship nothing
   for it.
 * **Startup and hot path.**
-  * If you touch any module reachable at startup, run `npm run build:site`, which pins the startup
-    modulepreload count exactly. Report the count and the byte delta.
+  * If you touch any module reachable at startup, run `npm run build:site`, which enforces the
+    first-paint, controls and per-page byte caps. Report the byte deltas.
   * A runtime import from a startup module into a module that lazy code also imports can create a
     new startup chunk.
   * Leave the per-pointer drawing path unchanged unless you can measure it.
@@ -122,8 +122,8 @@ read goes out before the read's output does.
 * **Copy pins:**
   * Copy tests must compare rendered text exactly. Prettier re-wrapping a template line changes DOM
     text; a short local alias for a long constant keeps the line intact.
-  * `__IS_CAPACITOR__` compiles to true in unit tests, so a rendered-output guard needs a
-    `*.webSsr.test.ts` twin to cover the web build.
+  * Metro selects `.web` and native adapters at build time; test both production implementations
+    when a contract spans them.
 * **Source-text guards:** tools drift guards read app and shared source text (type unions, constants
   and styles). Run `npm run test:tools` before changing declarations they read, and preserve each
   active guard's negative control when changing its subject.
@@ -140,7 +140,6 @@ read goes out before the read's output does.
   * `tools/asset-gen` and `tools/rival-agent` must not import `tools/lib`.
 * **Test environment:**
   * Vitest fake timers don't drive Node's `AbortSignal.timeout`.
-  * `vi.resetModules()` detaches Svelte's runtime from a test's `$effect.root`.
   * Vitest clears mocks before every test (`clearMocks` defaults on), so a `vi.fn` call made at
     import time is gone by the test body: record it in a `vi.hoisted` array. `unstubEnvs` stays off
     in `tools/vitest.config.mjs`, so pair `vi.stubEnv` with `vi.unstubAllEnvs()` in `afterEach`.
@@ -165,7 +164,7 @@ read goes out before the read's output does.
 * **CI logs:** `gh api repos/<owner>/<repo>/actions/jobs/<id>/logs` exits 1 without
   `--allow-escape-sequences`, so with stderr discarded the logs look empty.
 * **Lane worktree:**
-  * Run `npm run check` (it runs `svelte-kit sync`) before `npm run test:tools`.
+  * Run `npm run check` and the tests covering the changed owners.
   * The format-on-edit hook formats nothing here: it runs from the parent checkout, whose Prettier
     and dprint ignores skip `.claude/worktrees/`. Run `npx prettier --write` and `npx dprint fmt` on
     the files you edit.

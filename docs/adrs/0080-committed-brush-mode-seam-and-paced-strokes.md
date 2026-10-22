@@ -1,6 +1,13 @@
 # ADR-0080: Tests Observe the Engine's Committed Brush Mode, and Pace Their Own Strokes
 
-**Status:** Active **Date:** 2026-07 **Amends:**
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte committed-brush global and engine-harness stroke seam were
+removed. RN E2E drives the export through `e2e/support/`.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-07 **Amends:**
 [0078](0078-playwright-worker-count-and-flake-tuning.md) (the Playwright tuning record) **Amended
 by:** [0109](0109-dev-gated-production-invoke-handles-for-e2e.md)
 

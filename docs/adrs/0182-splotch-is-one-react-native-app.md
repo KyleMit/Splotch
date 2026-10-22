@@ -3,9 +3,9 @@
 **Status:** Accepted — supersedes [ADR-0001](0001-sveltekit-dual-adapter-strategy.md) and
 [ADR-0024](0024-web-app-subdirectory-for-netlify-watcher.md); amends
 [ADR-0020](0020-ios-build-toolchain.md) **Date:** 2026-10. The owner accepted these rulings on
-2026-10-21 at the preflight of the cutover campaign (epic #3148). This record states the end state
-before it is built: the cutover sub-issues #3151–#3164 implement it, and #3164 reconciles this
-record with what was built.
+2026-10-21 at the preflight of the cutover campaign (epic #3148). The cutover sub-issues #3151–#3164
+implement this decision; #3164 reconciles the record with the RN-only tree. The migration branch
+remains separate from `main` until the owner merges it.
 
 ## Context
 
@@ -15,7 +15,7 @@ at build time chose between them.
 
 The React Native migration (epic #2690) built the replacement in `experiments/native-architecture/`:
 an Expo / React Native / React Strict DOM app that ships Android, iOS and a web export from one
-codebase. By step 7 of that migration (#3007):
+codebase. At step 7 of that migration (#3007), before the deletion campaign:
 
 * Netlify builds and publishes the React Native web export, and `netlify/functions/api.ts` serves
   every `/api` path (#3130). SvelteKit's code is still in the tree, but the deploy no longer uses
@@ -71,9 +71,9 @@ prerendered web export from one codebase.
 
 ### Home: the repo root
 
-The app moves to the repo root: one `package.json`, with the app's `android/` and `ios/` at the
-root. The move (#3163) waits until the Capacitor projects (#3162) and `web/` (#3161) are gone, so
-the old and new native projects never share a path.
+The app lives at the repo root: one `package.json`, with `src/`, `android/` and `ios/` beside it.
+The move (#3163) followed deletion of the Capacitor projects (#3162) and SvelteKit app (#3161).
+There is no `web/` or `experiments/` tree.
 
 Alternatives considered:
 
@@ -90,7 +90,7 @@ root. The one reason the app was in a subdirectory, ADR-0024's watcher crash, go
 
 Releases use Gradle `bundleRelease` and an `xcodebuild` archive plus `-exportArchive`, run against
 the React Native projects, with manual store upload as today (#3158). The `build`, `cut-release` and
-`publish-artifacts` skills are rewritten for those scripts.
+`publish-artifacts` skills use those scripts.
 
 Today there is no fastlane setup. `fastlane/` holds only store-listing text (`fastlane/metadata/`),
 store upload is manual, and CI never holds the shipping signing credentials. The Android deploy
@@ -118,8 +118,8 @@ key, the shipping Apple team and the shipping version lineage (1.6.0, build 8). 
 therefore upgrades the shipping app in place.
 
 Every non-store build carries `art.splotch.app.dev`, so nothing a developer installs replaces the
-store copy. The React Native projects build as `art.splotch.migration.probe` until #3158 switches
-them.
+store copy. The root native projects default to `.dev`; explicit store scripts select the shipping
+ID.
 
 ### Tools that stay, aimed at the React Native app
 
@@ -130,9 +130,9 @@ stays for a use case the React Native app has, with the evidence that it fits th
   * Use: unit tests for the app, the function and the tools. It also runs mounted tests of React
     Strict DOM components, which render through RSD's native build in happy-dom (ADR-0009,
     `tools/migration/rsd-drawing-vitest.config.mjs`).
-  * Evidence: it is already the React Native app's test runner. It runs about 280
-    `tools/tests/native-*` and `rsd-*` files, plus `tools/migration/tests`, the wire tests and the
-    framework-free `web/src/lib` tests.
+  * Evidence: it is already the React Native app's test runner. It runs the native and RSD contracts
+    under `tools/tests/` and `tools/migration/tests/`, the wire tests and retained shared tests in
+    `src/lib/`.
   * Alternative: Jest with `jest-expo`, Expo's documented default. Moving to it would re-host every
     one of those files and gain no coverage.
 * **Playwright, for browser E2E on the web export.**
@@ -140,12 +140,13 @@ stays for a use case the React Native app has, with the evidence that it fits th
   * Evidence: it is the only runner in the repo that drives Chromium, Firefox and WebKit. The export
     already uses the Playwright library for three `postnative:web:build` checks: pages without
     JavaScript, the admin console against the real function, and the safe-area matrix.
-  * #3153–#3156 repoint the E2E suite.
+  * #3153–#3156 ported the E2E suite into `e2e/`, with recorded reasons for deleted cases and
+    explicit owner gaps in the disposition tables.
 * **Lighthouse and the byte budgets, for page load.**
   * Use: the throttled page-load gate. `tools/page-load/run-lighthouse-ci.mjs` gates FCP and LCP
     against `tools/page-load/baseline.json` (ADR-0149).
   * Evidence: Lighthouse measured each of ADR-0179's and ADR-0180's startup cuts on the React Native
-    export. The CI gate still builds the SvelteKit app; #3157 repoints it at the export.
+    export. The CI gate builds and times that export (#3157).
   * The byte budgets in `tools/migration/check-native-web-startup.mjs` are
     `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` (47,052 at this decision),
     `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` (827,535) and `MAX_NATIVE_WEB_PAGE_BYTES` per page. They
@@ -157,7 +158,7 @@ stays for a use case the React Native app has, with the evidence that it fits th
     and iOS simulator smokes today (ADR-0020), and the app carries no test code for it. Detox, the
     usual React Native alternative, is a gray-box runner that loads its own library into the app
     under test; a boot check needs no more than a black-box flow.
-  * #3159 repoints the flows at the React Native apps.
+  * #3159 repointed the flows at the React Native apps.
 * **Netlify with one Function, for hosting and `/api`.**
   * Use: serve the static export and every `/api` path.
   * Evidence: it already does both on this branch (#3130). The server is built on Netlify's own
@@ -166,7 +167,8 @@ stays for a use case the React Native app has, with the evidence that it fits th
     use case the React Native app lacks. The wire-diff test
     (`tools/api-smoke/tests/wire-diff.test.mjs`) pins the function to the 108 responses recorded
     from SvelteKit and the 9 cases added since.
-  * #3152 removes `@sveltejs/kit` from the function's server code.
+  * #3152 removed `@sveltejs/kit` from the function's server code; shared HTTP helpers are
+    framework-free and wire-diff tested.
 
 ### Retired, each with its replacement
 
@@ -180,9 +182,9 @@ stays for a use case the React Native app has, with the evidence that it fits th
 | The `/dev/engine` perf targets, the advisory WebKit commit gates, the `tools/perf` web and Capacitor targets | The React Native in-app probe and replay traces (#3160)                                              |
 | `dev:netlify`                                                                                                | Local `/api` on a plain Node host (#3152)                                                            |
 
-The perf targets and commit gates drive engines that no longer ship. The worker sweep and the flaky
-digest follow the Playwright suite: they stay only if the React Native suite keeps the reporter they
-read.
+The perf targets and commit gates drive engines that no longer ship. The worker sweep retired with
+its Svelte suite. The flaky digest stays: RN shards emit `playwright-report-rn-shard-N` artifacts
+through the retained reporter in `e2e/`.
 
 ### `dev:netlify` retires, and with it ADR-0024's reason for `web/`
 
@@ -194,15 +196,16 @@ ADR-0024 is superseded and the app can live at the root next to its own native t
 
 ### E2E coverage, spec by spec
 
-Port a SvelteKit spec when it tests behaviour the React Native app has and nothing else covers it.
-Otherwise delete it with a recorded reason: "covered by X" or "Svelte-only". #3154–#3156 apply this
-to the suite in three groups.
+The campaign ported a SvelteKit spec when it tested behaviour the React Native app has and nothing
+else covered it. Other specs were deleted with recorded reasons. The group A/B/C disposition tables
+under `docs/scratchpad/2026-10-21-rn-e2e-dispositions/` preserve those decisions and the fourteen RN
+gaps parked for the owner. Those gaps are not silently claimed as covered.
 
 ### Shared code
 
-Framework-free TypeScript that the app, the function or the tools still use moves next to its user
-(#3163). About 185 files remain in `web/src/lib`; none imports Svelte once #3152 removes the kit
-helpers. Svelte components, runes state and the Svelte drawing engine are deleted (#3161).
+Framework-free app modules live under `src/lib/`, server modules under `netlify/server/`, and
+tool-only modules under their capability in `tools/`. The root package and pnpm lockfile own one
+dependency tree. Svelte components, rune stores and the Svelte drawing runtime were deleted.
 
 ### Supersessions
 
@@ -234,9 +237,8 @@ helpers. Svelte components, runes state and the Svelte drawing engine are delete
   EAS Submit or fastlane, means creating the Play service account and App Store Connect API key this
   decision avoids.
 * − A `.dev` build is a separate app on the device, with its own storage, beside the store copy.
-* − The root move lands last (#3163), after the deletions. Until then the app stays in
-  `experiments/native-architecture/`, and its paths change once more.
 * − Each SvelteKit E2E spec costs a recorded decision, and a spec deleted as "covered by X" is only
   as good as X.
-* − The other Svelte- and Capacitor-era records, such as ADR-0002, ADR-0004, ADR-0005, ADR-0013,
-  ADR-0022 and ADR-0040, still read Active until #3164 reconciles them with what was built.
+* − Historical Svelte/Capacitor ADRs preserve their original evidence. Retired decisions are
+  superseded; surviving product/operational decisions carry an RN scope amendment and current
+  owners. Their old paths and measurements are not instructions for the RN app.

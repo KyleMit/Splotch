@@ -1,6 +1,13 @@
 # ADR-0013: Platform Detection Without Importing @capacitor/core
 
-**Status:** Active\
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** Capacitor global detection was removed. Metro resolves `.web` and native
+adapters at build time (ADR-0179).
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active\
 **Date:** 2025
 
 ## Context

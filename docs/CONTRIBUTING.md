@@ -32,9 +32,9 @@ npm run info
 npm run build:site
 ```
 
-Splotch is the Expo / React Native / React Strict DOM app in `` (ADR-0182). Root promotion is a
-later cutover step. Shared TypeScript and hosted assets still live under `web/`; that directory no
-longer holds a runnable SvelteKit application.
+Splotch is the Expo / React Native / React Strict DOM app at the repository root (ADR-0182). App
+modules live under `src/`, hosted server modules under `netlify/server/`, and shared static assets
+under `assets/static/`. One root package and pnpm lockfile own the dependency graph.
 
 For a local review of the production web export, select an unused port with
 `npm --silent run show:free-port`, then run:
@@ -75,7 +75,7 @@ keeping the RN export's generated artifacts current.
 
 Drawing works without model credentials. The hosted `/api` function reads secrets through
 `netlify/server/privateEnv.ts` from its process environment. Production values come from Netlify.
-The plain Node host does **not** implicitly load `web/.env`; its caller supplies the environment.
+The plain Node host does **not** implicitly load root `.env`; its caller supplies the environment.
 The E2E host deliberately ignores shell/dotenv secrets.
 
 | Variable                        | Server owner under `src/lib/` | Purpose                                                                   |
@@ -99,10 +99,10 @@ Tools own their own credential loading; a variable in a dotenv file is not autom
 Read the tool's guide before running it. In particular:
 
 * `GEMINI_API_KEY` serves the offline asset-generation tools, not application generation.
-* `npm run vectorize` reads Vectorizer credentials from the shell, root `.env` and `web/.env`; its
-  guide is `tools/vectorize/README.md`.
+* `npm run vectorize` reads Vectorizer credentials from the shell, root `.env`; its guide is
+  `tools/vectorize/README.md`.
 * `npm run gen:sound-effect` reads `ELEVENLABS_API_KEY` from the shell, root `.env.local`, root
-  `.env` and `web/.env`; its guide is `tools/elevenlabs/README.md`.
+  `.env`; its guide is `tools/elevenlabs/README.md`.
 * Red-team fixture loading is owned by `tools/redteam/lib/fixture-crypto.mjs`.
 * `EXPO_PUBLIC_SPLOTCH_PERF_PROBE` is an opt-in native Release build flag; follow the probe
   instructions in `DEVELOPMENT.md`, not a generic dotenv recipe.

@@ -1135,3 +1135,10 @@ which each recovered or deferred cleanly. Also not done: porting this to the Cod
 wholesale. It got one targeted step for the base-commit check, in its own numbered idiom, because
 that lesson is a fact about this repo rather than about a runner; the rest stays Claude-side until a
 Codex run earns its own version.
+
+## RN-only reconciliation (2026-10)
+
+The Claude implementation now points import-change verification at `build:site` and the RN byte
+caps. The historical Rollup/startup-bundle incident still explains the boundary, but its browser
+spec retired; an empty `BUNDLE_SPEC` is not verification. This is a direct-provider documentation
+change, independently reviewed against the Claude driver; no package was copied from Codex.

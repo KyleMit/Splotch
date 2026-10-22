@@ -6,15 +6,91 @@
 > it was checked. This file records analysis only — upgrades are applied by
 > `burn-down-outdated-dependencies`, and replacements are tracked as GitHub issues.
 
-**Last refresh:** 2026-07-17 at `e2812b3`, amended 2026-08-19 for the centerline-tracing toolchain ·
-21 prod + 34 dev direct · 1107 total installed (lockfile snapshots) · plus dev-lifecycle deps
-outside `package.json` (GitHub Actions, runtime-fetched CLIs, system toolchains — see the final
-section)
+**Current local inventory:** RN cutover, 2026-10-22. The single root `package.json` declares 31
+build/production dependencies and 34 local/CI dependencies. The inverted split follows ADR-0070:
+Netlify's production install must contain everything its web build executes. `pnpm-lock.yaml` owns
+resolved versions; the ranges below are manifest facts, not a new external health assessment.
 
-**Cutover scope:** the assessments below preserve their dated external-health evidence for retained
-packages. SvelteKit, Svelte and Capacitor dependencies retired under ADR-0182; their rows and
-sections are removed. The root and app package manifests declare the current dependency set and
-build/runtime classification.
+Expo/React Native, React Strict DOM and native modules are one SDK/template-aligned graph
+(ADR-0119). Review `pnpm-workspace.yaml`, patches, autolinking, native-script provenance and both
+native builds before changing that graph. Ordinary dependency automation excludes the SDK set in
+`.github/dependabot.yml`. SvelteKit, Svelte and Capacitor packages are absent.
+
+| Direct package                   | Declared range | Build/prod or local/CI |
+| -------------------------------- | -------------- | ---------------------- |
+| `@babel/core`                    | `7.29.7`       | Build/prod             |
+| `@expo-google-fonts/quicksand`   | `0.4.1`        | Build/prod             |
+| `@fontsource-variable/quicksand` | `5.3.0`        | Build/prod             |
+| `@netlify/blobs`                 | `^11.1.1`      | Build/prod             |
+| `@shopify/react-native-skia`     | `2.14.0`       | Build/prod             |
+| `babel-preset-expo`              | `58.0.17`      | Build/prod             |
+| `expo`                           | `58.0.14`      | Build/prod             |
+| `expo-asset`                     | `58.0.16`      | Build/prod             |
+| `expo-audio`                     | `58.0.9`       | Build/prod             |
+| `expo-file-system`               | `58.0.9`       | Build/prod             |
+| `expo-font`                      | `58.0.8`       | Build/prod             |
+| `expo-haptics`                   | `58.0.7`       | Build/prod             |
+| `expo-keep-awake`                | `58.0.3`       | Build/prod             |
+| `expo-media-library`             | `58.0.10`      | Build/prod             |
+| `expo-network`                   | `58.0.3`       | Build/prod             |
+| `expo-screen-orientation`        | `58.0.3`       | Build/prod             |
+| `happy-dom`                      | `^20.14.5`     | Build/prod             |
+| `openai`                         | `^7.23.0`      | Build/prod             |
+| `postcss`                        | `8.5.28`       | Build/prod             |
+| `react`                          | `19.3.0`       | Build/prod             |
+| `react-dom`                      | `19.3.0`       | Build/prod             |
+| `react-native`                   | `0.88.0`       | Build/prod             |
+| `react-native-reanimated`        | `4.7.1`        | Build/prod             |
+| `react-native-safe-area-context` | `5.10.1`       | Build/prod             |
+| `react-native-svg`               | `15.16.0`      | Build/prod             |
+| `react-native-web`               | `0.21.4`       | Build/prod             |
+| `react-native-worklets`          | `0.13.0`       | Build/prod             |
+| `react-strict-dom`               | `0.0.54`       | Build/prod             |
+| `sharp`                          | `^0.35.5`      | Build/prod             |
+| `vite`                           | `^8.3.3`       | Build/prod             |
+| `workbox-build`                  | `^7.4.1`       | Build/prod             |
+| `@axe-core/playwright`           | `^4.13.0`      | Local/CI               |
+| `@dprint/json`                   | `^0.25.0`      | Local/CI               |
+| `@dprint/markdown`               | `^0.24.0`      | Local/CI               |
+| `@dprint/typescript`             | `^0.96.1`      | Local/CI               |
+| `@eslint/js`                     | `^10.0.1`      | Local/CI               |
+| `@fontsource-variable/quicksand` | `^5.3.0`       | Local/CI               |
+| `@google/genai`                  | `^2.24.0`      | Local/CI               |
+| `@intellectronica/ruler`         | `0.3.44`       | Local/CI               |
+| `@playwright/test`               | `^1.63.0`      | Local/CI               |
+| `@resvg/resvg-js`                | `^2.6.2`       | Local/CI               |
+| `@types/node`                    | `^22.20.4`     | Local/CI               |
+| `@types/react`                   | `19.3.0`       | Local/CI               |
+| `@vitest/coverage-v8`            | `^5.0.2`       | Local/CI               |
+| `@vitest/eslint-plugin`          | `^1.6.27`      | Local/CI               |
+| `browserslist`                   | `4.29.2`       | Local/CI               |
+| `dprint`                         | `^0.57.4`      | Local/CI               |
+| `eslint`                         | `^10.11.0`     | Local/CI               |
+| `eslint-config-prettier`         | `^10.1.8`      | Local/CI               |
+| `eslint-plugin-playwright`       | `^2.12.0`      | Local/CI               |
+| `eslint-plugin-react-hooks`      | `^7.1.1`       | Local/CI               |
+| `expo-sharing`                   | `58.0.19`      | Local/CI               |
+| `fit-curve`                      | `^0.2.0`       | Local/CI               |
+| `globals`                        | `^17.12.0`     | Local/CI               |
+| `knip`                           | `^6.38.0`      | Local/CI               |
+| `lighthouse`                     | `13.5.0`       | Local/CI               |
+| `prettier`                       | `^3.9.9`       | Local/CI               |
+| `scripts-info`                   | `^1.0.5`       | Local/CI               |
+| `stylelint`                      | `^17.15.0`     | Local/CI               |
+| `svgo`                           | `^4.1.0`       | Local/CI               |
+| `typescript`                     | `^6.0.3`       | Local/CI               |
+| `typescript-eslint`              | `^8.71.0`      | Local/CI               |
+| `vitest`                         | `^5.0.2`       | Local/CI               |
+| `web-features`                   | `3.40.0`       | Local/CI               |
+| `yaml`                           | `2.9.1`        | Local/CI               |
+
+## Dated external-health evidence
+
+The retained assessments below were last refreshed on 2026-07-17 at `e2812b3`, with a scoped
+centerline-tracing amendment on 2026-08-19. Their version, maintenance and advisory claims are dated
+evidence, not current vulnerability clearance. Retired framework-package entries were removed; new
+RN dependencies above have no external-health verdict in this report. A complete health refresh uses
+`audit-dependency-health`; current security gating uses `pnpm audit`.
 
 ## Verdict summary
 
@@ -329,7 +405,7 @@ Non-`keep` rows first.
 ### prettier
 
 * **Version:** `^3.8.4` declared · 3.8.4 locked (latest 3.9.5) · dev
-* **Used for:** Formatting source (JS/TS/Svelte/CSS) — owns code formatting (ADR-0057);
+* **Used for:** Formatting source (JS/TS/TSX/CSS) — owns code formatting (ADR-0057);
   `format`/`format:check`.
 * **Source:** npm · [github.com/prettier/prettier](https://github.com/prettier/prettier) · published
   by the Prettier team
@@ -399,8 +475,8 @@ Non-`keep` rows first.
 * **Maintenance:** active — Microsoft-backed
 * **Concerns:** none for health. **TS 7 (the native/Go compiler rewrite) is now latest** while the
   repo is on 6.x — a major-version update to evaluate, not a health risk. Hand to
-  `burn-down-outdated-dependencies`; verify svelte-check / typescript-eslint compatibility before
-  moving.
+  `burn-down-outdated-dependencies`; verify typescript-eslint and Expo toolchain compatibility
+  before moving.
 * **Alternatives:** none needed
 * **Verdict:** keep — the type system; healthy (TS7 migration is an update decision, tracked
   elsewhere)
@@ -433,7 +509,7 @@ Non-`keep` rows first.
 * **Health** (checked 2026-07-17): [82k stars](https://github.com/vitejs/vite) · latest 8.1.5 on
   2026-07-16 · last push 2026-07-17 · 720 open issues
 * **Maintenance:** active — VoidZero-backed, very frequent releases
-* **Concerns:** none — part of the coordinated Svelte/Vite upgrade set
+* **Concerns:** none — retained tooling dependency; verify the actual Vite/Vitest peer ranges
 * **Alternatives:** none needed
 * **Verdict:** keep — the build tool; healthy
 
@@ -534,10 +610,8 @@ in `tools/ci-mirror/tests/run-quality-checks.test.mjs` parses them.
 | `js-yaml` quadratic DoS (**moderate**)      | `js-yaml@3.14.2` ← `@intellectronica/ruler`                | `@intellectronica/ruler` | fixable via ruler dep tree (dev-only, trusted YAML)                                            |
 | `@opentelemetry/*` memory (**moderate** ×5) | `@opentelemetry/core` ← `@netlify/otel` ← `@netlify/blobs` | `@netlify/blobs`         | only fix offered is a semver-major *downgrade* to blobs 10.1.0 — not viable; wait for upstream |
 
-**Takeaway:** the six high-severity advisories all originate from **`@capacitor/assets`** (dev-only,
-dormant, run locally) and **`@capacitor/cli`'s bundled `tar`** — none reach the shipped web/native
-runtime, and none have an upstream fix. The only advisory clearable by a routine update is kit's
-`cookie` (low). See `@capacitor/assets` and `@capacitor/cli` entries above.
+The original total included retired Capacitor and SvelteKit dependency chains. It is not a current
+advisory count for the RN graph; run `pnpm audit` against the lockfile for current exposure.
 
 ### Deprecated transitives
 
@@ -547,16 +621,16 @@ any of the 50 direct packages).
 ### Packages with install scripts (`hasInstallScript`)
 
 Supply-chain-relevant subset from the lockfile: `@google/genai` (direct dev), `dprint` (direct dev),
-`sharp` (direct prod), `esbuild` (under `@sveltejs/adapter-netlify`), `protobufjs` (under
-`@google/genai`), `fsevents` (macOS-only, under `vite`), and `yarn` (transitive tooling copy). All
-are well-known, org- or foundation-backed packages; none are anomalous.
+`sharp` (direct prod), `esbuild` (tooling), `protobufjs` (under `@google/genai`), `fsevents`
+(macOS-only, under `vite`), and `yarn` (transitive tooling copy). All are well-known, org- or
+foundation-backed packages; none are anomalous.
 
 ## Development lifecycle dependencies (outside `package.json`)
 
 Not every dependency the project relies on is an npm package. CI workflows pull in **GitHub
-Actions** (pinned by tag, resolved from the Actions marketplace, not the lockfile), several npm
-scripts fetch **CLIs at runtime** (`npx …`, or a globally-installed tool), and the native builds
-need **system toolchains** that no npm range governs. These carry the same provenance/health/pinning
+Actions** (SHA-pinned with version comments, resolved outside the lockfile), several npm scripts
+fetch **CLIs at runtime** (`npx …`, or a globally-installed tool), and the native builds need
+**system toolchains** that no npm range governs. These carry the same provenance/health/pinning
 questions as npm deps, so they're inventoried here — but versions come from workflow/script pins,
 not `pnpm-lock.yaml`.
 
@@ -609,7 +683,6 @@ above are the pins as found in those files on the refresh date.
 
 ---
 
-**Phase 3 note:** The one action-required verdict (`capacitor-set-version`, investigate replacement)
-was filed as [`#332`](https://github.com/KyleMit/Splotch/issues/332) (`type:chore` + `area:infra`,
-per `docs/ISSUE-WORKFLOW.md`). The `cookie` (low) advisory under `@sveltejs/kit` is an ordinary
-version bump — hand it to `burn-down-outdated-dependencies` rather than the backlog.
+**Historical follow-up:** the earlier `capacitor-set-version` replacement question was filed as
+[issue 332](https://github.com/KyleMit/Splotch/issues/332). The package and SvelteKit's `cookie`
+chain retired with the cutover; neither is an upgrade instruction for the RN graph.

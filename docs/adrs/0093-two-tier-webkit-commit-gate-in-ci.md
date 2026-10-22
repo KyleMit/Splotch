@@ -1,6 +1,13 @@
 # ADR-0093: Run a Two-Tier WebKit Commit Gate in CI
 
-**Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** Both WebKit commit-gate workflows were retired; they exercised the removed
+engine.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); amended by
 [ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md), which moved this tier off
 the pull-request path. ADR-0100's 2026-08-11 amendment retired the structural half when tiled

@@ -1,8 +1,7 @@
 // Serves the custom Netlify Functions (netlify/functions/) on plain Node, each at the paths its
 // `config.path` claims, as Netlify routes them — no SvelteKit and no `vite dev`. The API smoke
 // (tools/api-smoke/run-local-contract.mjs) runs on startNetlifyFunctionHost; the native admin
-// check (tools/migration/check-native-web-admin.mjs) and the Vite servers' function plugin
-// (web/netlifyFunctionsHost.ts) compose the parts below into servers of their own.
+// check and the RN E2E export host compose the parts below into servers of their own.
 //
 // A config-free Vite server is the module loader and nothing else: the functions' TypeScript
 // imports are extensionless, which Node's type stripping cannot resolve, and the admin check
@@ -17,8 +16,7 @@ import { netlifyFunctionRoutes } from './netlify-function-routes.mjs';
 import { ROOT } from './proc.mjs';
 
 const FUNCTIONS_DIR = join(ROOT, 'netlify', 'functions');
-// The functions' own TypeScript project, for every module they reach. Without it the transform
-// takes tsconfig.shared.json, which extends a file only `svelte-kit sync` writes.
+// The function loader uses the server's TypeScript project rather than the app's platform graph.
 const FUNCTIONS_TSCONFIG = join(ROOT, 'netlify', 'tsconfig.json');
 const RUNTIME_MODE_MODULE = join(ROOT, 'netlify', 'server', 'runtimeMode.ts');
 const LOOPBACK = '127.0.0.1';

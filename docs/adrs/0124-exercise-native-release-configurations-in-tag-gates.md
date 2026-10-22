@@ -2,6 +2,14 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Tag/manual deploy workflows build the root RN Release configurations and run the boot-only smoke.
+Android uses disposable CI signing; iOS uses a simulator build without store signing. PR native
+compilation remains separate. The production web sync and Debug simulator steps below describe the
+removed Capacitor pipeline; ADR-0120 still bounds the smoke to launch-and-paint. The historical
+design below retains its original context.
+
 ## Context
 
 The tagged native workflows proved that a Debug Android APK and Debug iOS simulator app could boot,

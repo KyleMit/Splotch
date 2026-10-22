@@ -1,6 +1,13 @@
 # ADR-0160: Measured P95 Allowances for GPU-Attributed iPad Safari Transitions
 
-**Status:** Active — amends
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The iPad transition allowances belonged to the retired action gate; their
+measured values remain historical.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md),
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md), and
 [ADR-0137](0137-lost-frame-gate-exceptions.md); amended by

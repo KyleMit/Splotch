@@ -5,6 +5,13 @@
 
 **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The responsive selector asset tiers and canonical SVG line art remain. RN library/artwork owners
+replace the Capacitor srcset branch and Svelte picker below; native and web adapters select their
+own presentation sources under the shared integrity catalog. The historical design below retains its
+original context.
+
 ## Context
 
 ADR-0129 made the light and dark page SVGs canonical, resolution-independent coloring art. Its first

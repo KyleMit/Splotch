@@ -50,17 +50,6 @@ else
   warn "playwright browser install skipped — could not derive a numeric @playwright/test version from package.json"
 fi
 
-# Phone-preview reverse-tunnel client (ADR-0021). Cached into the snapshot at a persisted
-# path so later sessions skip the download. Pinned to the version
-# docs/CLOUD/Claude-Code.md references.
-CHISEL_VERSION=1.10.1
-if ! command -v chisel >/dev/null 2>&1; then
-  curl -sSL "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_amd64.gz" \
-    | gunzip > /usr/local/bin/chisel && chmod +x /usr/local/bin/chisel \
-    && echo "chisel ${CHISEL_VERSION} installed to /usr/local/bin/chisel" \
-    || warn "chisel install skipped — check github release-asset egress"
-fi
-
 # Codex CLI for the run-rival-agent skill. Its linux-x64 binary ships as an npm optional
 # dependency, so the install reaches only registry.npmjs.org. The install is all this script does
 # for Codex: the login is seeded per session by tools/seed-codex-auth.mjs from the

@@ -5,8 +5,10 @@ that opts in. It is also slow enough, and limited enough, that it is the wrong t
 you would want an Android device for. Read the [capability table](#what-it-can-and-cannot-do) before
 standing one up.
 
-Everything here was measured in a cloud session, not inferred. Where a claim rules something out,
-the command output that ruled it out is quoted.
+The measurements below were captured against the retired Capacitor build. They establish the cloud
+emulator and WebView behavior for that runtime, not an RN/Skia verdict. The RN app has not been
+recaptured in this environment. The setup and launch commands target the current root native
+project; its runtime result must be verified independently.
 
 ## Why it is slow: there is no accelerator
 
@@ -53,9 +55,9 @@ Measured on a 4-vCPU / 15 GB session, AVD `splotch_cloud` (API 34, AOSP `default
 
 ### The WebView is the blocker for this app
 
-Splotch is a Capacitor app, so everything the user sees is a WebView. On this emulator the WebView
-renderer process crashes at a fixed faulting offset in `libwebviewchromium.so`, taking the app with
-it:
+The measured Splotch build was a Capacitor app, so its UI ran in a WebView. On this emulator the
+WebView renderer process crashes at a fixed faulting offset in `libwebviewchromium.so`, taking the
+app with it:
 
 ```
 E chromium: [ERROR:aw_browser_terminator.cc(156)] Renderer process crash detected (code 5).
@@ -74,12 +76,11 @@ it got; none of them stopped the crash.
 The system's own UI is unaffected — the AOSP launcher, wallpaper, icons and dialogs all render — so
 the emulator is genuinely working. It is specifically Chromium that will not survive on it.
 
-**So: this environment is for the Android toolchain, not for looking at Splotch.** Building,
+**Scope of the recorded result:** this environment supported the former Android toolchain. Building,
 signing, installing, `adb` inspection, manifest and permission checks, and native-shell behaviour
-that does not depend on WebView paint are all in reach. Seeing the drawing canvas is not; use a
-physical device or the
-[phone preview tunnel](../../docs/CLOUD/Claude-Code.md#previewing-the-dev-server-on-a-phone), which
-serves the real app to a real browser and costs none of this.
+that does not depend on WebView paint are all in reach. That build did not paint its drawing canvas.
+For RN web, inspect the export in the cloud browser or use a verified Netlify deployment for a
+public phone preview; see [previewing the app](../../docs/CLOUD/Claude-Code.md#previewing-the-app).
 
 ### Expect "isn't responding" dialogs
 
@@ -116,7 +117,7 @@ covers why these files are the reviewable copy of a cloud object that has no as-
 Three choices here are worth stating, because each had a plausible alternative:
 
 * **A profile var, not a second setup script.** A separate `setup-android.sh` would have to repeat
-  the shared steps (pnpm, Playwright, chisel), and those two copies drift. Dispatching on
+  the shared steps (pnpm and Playwright), and those two copies drift. Dispatching on
   `SPLOTCH_CLOUD_PROFILE` keeps one entry point and makes the extras additive — a future use case
   adds a profile rather than another script.
 * **Deltas, not a full second config file.** `environment.android.example` records only what differs
@@ -198,8 +199,9 @@ adb -s emulator-5554 shell am start -n art.splotch.app.dev/art.splotch.app.MainA
 adb -s emulator-5554 exec-out screencap -p > /tmp/shot.png
 ```
 
-Everything up to and including `am start` works. The screenshot will show the app's window and then
-its crash, for the reason in [the WebView section](#the-webview-is-the-blocker-for-this-app).
+The historical build launched and then crashed in its WebView as recorded above. These commands
+build RN; inspect its actual process and screenshot before assigning a verdict. No RN/Skia execution
+result is established by the old capture.
 
 ## If you need more than this
 

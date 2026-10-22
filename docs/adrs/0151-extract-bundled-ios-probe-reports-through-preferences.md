@@ -1,6 +1,12 @@
 # ADR-0151: Extract Bundled iOS Probe Reports Through Preferences
 
-**Status:** Active **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Capacitor Preferences probe mailbox and capture seam were removed.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-08
 
 ## Context
 

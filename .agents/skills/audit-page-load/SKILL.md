@@ -7,10 +7,9 @@ description: Run a Lighthouse page-load audit of the Splotch web app emulated on
 
 Measures **page load** (how fast the app becomes usable) on a throttled device, as opposed to the
 `profiling` skill, which measures **drawing interaction** once loaded. The LCP element is the full
-drawing surface (currently the `paper-texture` layer of the React Native web export; the SvelteKit
-build's was `.paper-sheet`, and earlier ones `<canvas#drawingCanvas>`) — "loaded" means that surface
-has painted. Confirm the element from each report instead of assuming it stayed the same across UI
-changes.
+drawing surface (the `paper-texture` layer of the React Native web export) — "loaded" means that
+surface has painted. Confirm the element from each report instead of assuming it stayed the same
+across UI changes.
 
 The driver [`run-audit.mjs`](run-audit.mjs) runs Lighthouse via `npx lighthouse@12` (no install
 needed) for two form factors × two visit types under a fixed slow-device/slow-internet profile,
@@ -39,29 +38,23 @@ node .claude/skills/audit-page-load/run-audit.mjs \
 | `--storage`     | `key=value;key=value`         | none                               |
 | `--save-assets` | flag                          | off                                |
 
-**Startup-setting variants (`--storage`).** A returning child's device boots from persisted settings
-— dark theme, bare toolbar, open drawer, a bigger button scale — and each changes the first paint
-(bare mode even moves the LCP element from `.paper-sheet` to `.rail-glass`). The flag seeds
-localStorage for the audited origin into the Chrome profile before that device's runs
-(`seed-storage.mjs`, through a page whose every request is answered locally, so the HTTP cache stays
-cold). Lighthouse 12 resets only file systems, shader cache, service workers, Cache Storage and the
-HTTP cache between runs, so the seed survives into a first visit. Keys are the `STORAGE_KEYS` values
-in `src/lib/storageKeys.ts`; confirm the seed took by decoding the report's `final-screenshot` (a
-dark run averages well under 100 per channel). Example:
-
-```bash
-node .claude/skills/audit-page-load/run-audit.mjs --device phone --visits first \
-  --storage "splotch-theme=dark;splotch-toolbar-style=bare;splotch-drawer-open=true"
-```
+**Startup-setting variants (`--storage`).** The flag seeds localStorage for the audited origin into
+Chrome's profile before the runs (`seed-storage.mjs`, through a locally answered page, so the HTTP
+cache stays cold). Lighthouse 12 does not clear localStorage between these runs. Use the RN records
+owned by `src/platform/soundSettings.web.ts` and the codec in `src/settings/soundSettingsCodec.ts`,
+rather than the retired per-setting keys in `src/lib/storageKeys.ts`. Check the decoded final
+screenshot and the loaded settings to prove a seed took effect before comparing runs. A legacy theme
+key alone does not seed RN settings.
 
 **Reading a long task (`--save-assets`).** The flag keeps `<name>-0.trace.json` beside the report.
 Lighthouse's `long-tasks` and `bootup-time` attribute a task to the *first script URL on the stack*,
 which on this app is whichever tiny chunk happens to run first (a 670-byte safe-area helper got the
 whole 206 ms boot task). The trace's `RunTask` children tell the truth: `v8.evaluateModule` is
 module evaluation (the engine boot), `RunMicrotasks` under
-`BlinkScheduler_PerformMicrotaskCheckpoint` is SvelteKit hydration, and Lighthouse's trace carries
-no CPU samples. For function-level attribution record the load in Chrome DevTools' Performance panel
-(its trace has the V8 sampler) on an export built with `expo export --no-minify` (the call in
+`BlinkScheduler_PerformMicrotaskCheckpoint` may include React hydration or other queued work;
+inspect its children before assigning a cause, and Lighthouse's trace carries no CPU samples. For
+function-level attribution record the load in Chrome DevTools' Performance panel (its trace has the
+V8 sampler) on an export built with `expo export --no-minify` (the call in
 `tools/migration/build-native-web.mjs` passes neither that nor `--source-maps`), and for the caller
 of a forced style recalc trace with `disabled-by-default-devtools.timeline.stack` so
 `UpdateLayoutTree` events carry a stack; the sampler's clock trails the trace clock by up to ~20 ms,
@@ -180,11 +173,10 @@ confirm any startup concern with an independent DevTools startup trace before fi
 URL also appears, investigate that app-attributed work normally.
 
 **False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit currently
-flags *"`fetchpriority=high` should be applied: false"*. The LCP is `.paper-sheet`, whose tiny CSS
-background texture is already discoverable in the initial document and requested at high priority;
-the `<div>` cannot itself take `fetchpriority`. Earlier builds used the painted canvas and had no
-LCP resource at all. Confirm the current LCP node plus `lcp-breakdown-insight` and request priority;
-only file this if a future LCP resource has meaningful discovery delay.
+may flag missing `fetchpriority` on a painted or CSS-background LCP element. The drawing texture is
+inlined in the prerendered document; the element itself cannot take an image's `fetchpriority`.
+Confirm the report's LCP node, resource request, discovery delay and priority before filing a
+finding; a node with no separate network resource needs no fetch hint.
 
 **Sandbox Chrome:** the cloud sandbox's Playwright Chromium lives at
 `/opt/pw-browsers/chromium-<rev>/chrome-linux/chrome` (older downloads used `chrome-linux64`); the

@@ -1,0 +1,12 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/audit-burndown/tests/burndown-core.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+
+ Test Files  1 passed (1)
+      Tests  80 passed (80)
+   Start at  00:17:15
+   Duration  115ms (tests 47%, transform 36%, import 14%, worker 3%)

@@ -331,7 +331,7 @@ describe('lint gate file selection', () => {
   const present = (kept) => (path) => kept.includes(path);
 
   it('keeps lintable source files that still exist', () => {
-    const paths = ['src/a.ts', 'src/B.svelte', 'tools/c.mjs', 'tools/d.cjs', 'e.js'];
+    const paths = ['src/a.ts', 'src/B.tsx', 'tools/c.mjs', 'tools/d.cjs', 'e.js'];
     expect(lintablePaths(paths, present(paths))).toEqual(paths);
   });
 

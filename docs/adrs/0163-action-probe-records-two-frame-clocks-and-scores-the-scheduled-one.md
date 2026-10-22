@@ -1,6 +1,13 @@
 # ADR-0163: The Action Probe Records Two Frame Clocks and Scores the Scheduled One
 
-**Status:** Active — complements
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The two-clock browser action probe was retired with the old capture
+harness.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — complements
 [ADR-0162](0162-measured-p95-allowance-for-the-android-web-theme-flip.md) and
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md) **Date:** 2026-09
 

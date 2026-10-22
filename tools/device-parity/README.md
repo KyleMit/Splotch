@@ -270,9 +270,10 @@ rules below).
 
 This capability owns the migration's crash verdicts and parity captures: the scenario and slice
 definitions, how a verdict is reached per platform, and the capture layout the comparators read.
-Performance capture belongs to `tools/perf/`, and browser-driven app scenarios to `e2e/`; neither is
-imported here. Shared host details come from `tools/mobile/android/lib/android-toolchain.mjs` (the
-`adb` path) and `tools/lib/proc.mjs` (CLI helpers).
+Drawing performance belongs to the in-app probe and replay traces described in `docs/PROFILING.md`;
+browser-driven app scenarios belong to `e2e/`. Neither is imported here. Shared host details come
+from `tools/mobile/android/lib/android-toolchain.mjs` (the `adb` path) and `tools/lib/proc.mjs` (CLI
+helpers).
 
 ## Maintenance
 

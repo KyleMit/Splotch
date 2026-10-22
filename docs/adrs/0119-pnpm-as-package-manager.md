@@ -3,6 +3,13 @@
 **Status:** Active — supersedes [ADR-0029](0029-npm-as-package-manager.md)\
 **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+One root package and lockfile own the app, hosted API and tools; there is no private experiments
+workspace member. Hoisted resolution remains for the root native projects and existing native-module
+patches. SDK/template alignment, script provenance, pnpm installs and npm script invocation remain
+mandatory. The historical design below retains its original context.
+
 ## Context
 
 [ADR-0029](0029-npm-as-package-manager.md) chose npm in 2026-06 and named the reason a future

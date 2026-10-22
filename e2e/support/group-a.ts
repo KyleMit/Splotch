@@ -7,7 +7,7 @@ import { ADMIN_SESSION_KEY } from '../../src/pageDocument/admin/adminContract.ts
 import { test as base } from '../fixtures.ts';
 import { ADMIN_ACCESS_TOKEN, MANAGED_ACCESS_CODE } from '../server/serverEnv.ts';
 import { waitForDrawingScreen } from './app.ts';
-import type { DrawingScreen } from './drawing.ts';
+import { INK_CHANNEL_DELTA, type DrawingScreen } from './drawing.ts';
 
 export const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36';
@@ -95,7 +95,6 @@ export async function expectPaperCleared(
 // that put ink down through their own input rather than the drawing helpers' mouse.
 export type ScreenRegion = { x: number; y: number; width: number; height: number };
 const RGB_CHANNELS = 3;
-const INK_CHANNEL_DELTA = 48;
 const REGION_PADDING_PX = 24;
 
 /** The screen rectangle that holds the segment between two points, padded past a brush's width. */

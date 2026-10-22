@@ -2,8 +2,6 @@ import type { NativeIconName } from '../rsdDrawing/icons.generated';
 import type { BrushAvailability, OptionalBrush } from './brushPreferences';
 import type { DrawerControl, DrawingControlPreferences } from './drawingControlPreferences';
 
-// The shipping Tool Drawer section's copy (settings/ControlsSection.svelte and the compact cell in
-// CompactShell.svelte); rsd-native-tool-drawer-settings.test.mjs reads each from those sources.
 export const TOOL_DRAWER_COPY = {
   enable: 'Enable tool drawer',
   enableHelp: 'Shows the brushes, stroke width, and undo in the drawer',

@@ -3,6 +3,14 @@
 **Status:** Active\
 **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+macOS/Linux development support remains unchanged. The root RN native projects require Expo/RN
+patches and package-manager lifecycle steps under ADR-0119; the original removal of
+Capacitor/patch-package below does not prohibit those reviewed patches. Script entry points invoke
+the committed Gradle wrapper through Node helpers. The historical design below retains its original
+context.
+
 ## Context
 
 Splotch's tooling was originally written to run on Windows `cmd.exe` as well as macOS and Linux

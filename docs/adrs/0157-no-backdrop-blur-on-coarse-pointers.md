@@ -3,6 +3,13 @@
 **Status:** Active — amends [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) **Date:**
 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+The backdrop policy remains in `src/rsdDrawing/ModalScrim.web.tsx` and its native counterpart. The
+coloring picker requests a plain touch backdrop; web also honors reduced transparency. The old
+dialog CSS and tiled-renderer measurements below are historical, not RN timing proof. The historical
+design below retains its original context.
+
 ## Context
 
 Nine `<dialog>`-based modals share `.modal-dialog::backdrop` in `web/src/app.css`: a 0.6 black dim

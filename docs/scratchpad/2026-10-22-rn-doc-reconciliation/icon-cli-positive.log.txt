@@ -1,0 +1,1 @@
+[rebase-icon-viewbox] all icons already on viewBox="0 0 1000 1000".

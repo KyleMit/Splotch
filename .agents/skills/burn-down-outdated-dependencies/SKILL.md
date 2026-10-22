@@ -8,9 +8,9 @@ disable-model-invocation: true
 Bring the project's dependencies up to date **deliberately**: one package at a time, each backed by
 its migration guide, with every usage in the codebase checked and a clean commit per upgrade.
 
-There is **one root `package.json`** for the whole repo (web + Capacitor native); the SvelteKit app
-lives in `web/` but its dependencies are declared at the root (see `CLAUDE.md`). Run npm tooling
-from the repo root.
+There is **one root `package.json`** for the Expo / React Native / React Strict DOM app, hosted API
+and tooling. Run npm tooling from the repository root. SDK alignment and native install-script
+provenance must be reviewed before installing dependency changes (ADR-0119).
 
 **Wrong skill if Dependabot already opened the PRs.** This one picks the packages itself from
 `pnpm outdated` and drives each bump. To clear a queue of open Dependabot PRs — verify each, merge
@@ -45,24 +45,23 @@ where no user is present to answer questions.
    * **Major** (`latest` > `wanted`, crosses a major) — needs a migration guide and a usage audit.
 3. **Flag the landmines** before touching anything. Call out packages where an upgrade is known to
    be entangled with this repo's setup:
-   * **`@capacitor/*` and `@capacitor/cli`** — a major Capacitor bump can break the native build.
-     Treat the whole `@capacitor/*` family as a coordinated set, not independent bumps.
-   * **`svelte` / `@sveltejs/*` / `vite` / `vite-plugin-*`** — these move together; a Svelte or
-     SvelteKit major usually pins a Vite/plugin range. Don't bump one in isolation.
-   * **`typescript`, `svelte-check`, `vitest`, `@playwright/test`, `happy-dom`** — toolchain; a
-     major here can surface new type errors or test-runner API changes across the codebase.
+   * **Expo, React, React Native and native modules** — treat the SDK/template-compatible set as one
+     unit. Read ADR-0119, `pnpm-workspace.yaml`, `patches/` and the `mobile` skill before changing
+     it; verify autolinking and both native projects.
+   * **`typescript`, `vitest`, `@playwright/test`, `happy-dom`** — a major can surface new type
+     errors or test-runner API changes throughout the app and tooling.
    * Anything whose name implies it gates the build/native targets.
 
 ## Phase 2 — Plan & ask (gate)
 
 4. **Propose an ordering.** Sequence the upgrades safest-first: standalone leaf libraries and dev
-   tooling before framework cores; coordinated families (Capacitor, Svelte/Vite) handled as a single
-   grouped step. Skip anything that's intentionally pinned for a documented reason.
+   tooling before framework cores; coordinated families (Expo/React Native, Vitest) handled as a
+   single grouped step. Skip anything that's intentionally pinned for a documented reason.
 5. **Surface decisions with `AskUserQuestion`** *before* doing any work — this is the one place to
    interrupt; after it you run autonomously. Good things to confirm:
    * Whether to include **major** version jumps or stick to minor/patch this run.
-   * How to handle the **coordinated families** (e.g. attempt the Svelte 5.x → next-major or
-     Capacitor major together, or defer them).
+   * How to handle the **coordinated families** (e.g. attempt an Expo SDK upgrade with its aligned
+     React Native and native modules, or defer them).
    * Any package the user wants to **hold back** or pin.
    * Whether to run the **full `npm test`** (unit + Playwright E2E) per package or just
      `npm run check` + unit tests, with full E2E once at the end (E2E is the slow part — default to
@@ -85,17 +84,17 @@ through the approved list **sequentially**. For each package:
    `ios/` only where they consume the JS package) for imports and API calls of the package. Confirm
    each call site is still valid against the new API; apply the codemod / manual edits the migration
    guide calls for. Don’t assume a clean install means the code is correct.
-9. **Verify.** Run `npm run check` (svelte-check / types) and the agreed test tier for this package.
-   Type errors and test failures are part of the migration — fix them here, not in a later commit.
-   If the upgrade can't be made green within reason, **revert that package** (restore
-   `package.json` + `pnpm-lock.yaml`, reinstall), note why, and move on — don't leave the tree
-   broken.
+9. **Verify.** Run `npm run check` (TypeScript across app, server and E2E) and the agreed test tier
+   for this package. Type errors and test failures are part of the migration — fix them here, not in
+   a later commit. If the upgrade can't be made green within reason, **revert that package**
+   (restore `package.json` + `pnpm-lock.yaml`, reinstall), note why, and move on — don't leave the
+   tree broken.
 10. **Commit just this upgrade.** Stage `package.json`, `pnpm-lock.yaml`, and the source edits this
     upgrade required — nothing from other packages. Review the staged diff (`git diff --cached`) to
     confirm it's scoped to this one package before committing. Use a plain imperative subject
-    matching the repo's style, e.g. `Upgrade vitest to 4.x` or `Bump @capacitor/* to 8.4`. Mention
-    the notable breaking change handled in the body if it's non-obvious. Then move to the next
-    package.
+    matching the repo's style, e.g. `Upgrade vitest to 4.x` or `Upgrade the aligned Expo SDK set`.
+    Mention the notable breaking change handled in the body if it's non-obvious. Then move to the
+    next package.
 
 Keep each commit self-contained and green so any single upgrade can be reverted or bisected on its
 own.
@@ -113,9 +112,9 @@ exercised when it next runs on CI, so keep each Action bump to its own commit fo
 11. **Full verification.** After the last upgrade, run the complete `npm test` (unit + E2E) once to
     confirm the combined result is green, even if you ran lighter tiers per package.
 12. **ADR check.** If any upgrade changed an architectural constraint or encoded a non-obvious
-    decision (e.g. dropping a Capacitor plugin, a build target change, a new pinned floor), consider
-    documenting it with the **`create-adr`** skill. If the Capacitor patch changed, update
-    ADR-0011's notes.
+    decision (e.g. dropping a native module, a build target change, a new pinned floor), consider
+    documenting it with the **`create-adr`** skill. Update an existing ADR when its constraint
+    changed.
 13. **Report.** Summarize what was upgraded (and to what) — npm packages **and** GitHub Actions pins
     — what was deferred or reverted and why, and anything still outdated by design. List the commits
     you made.

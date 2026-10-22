@@ -1,6 +1,13 @@
 # ADR-0123: A Capture-Mode Flag Hides Per-Install Chrome in Store Screenshots
 
-**Status:** Active **Date:** 2026-08 **Amends:**
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte storeCapture runtime flag and live capture entry were removed.
+Retained historical captures keep their original provenance.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-08 **Amends:**
 [0109](0109-dev-gated-production-invoke-handles-for-e2e.md)
 
 ## Context

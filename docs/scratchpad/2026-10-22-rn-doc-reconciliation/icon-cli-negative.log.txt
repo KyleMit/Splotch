@@ -1,0 +1,15 @@
+node:internal/fs/promises:876
+      await PromisePrototypeThen(
+      ^
+
+Error: ENOENT: no such file or directory, scandir '/Users/kylemit/.codex/worktrees/0714/Splotch/src/lib/icons'
+    at async readdirRecursive (node:internal/fs/promises:876:7)
+    at async rebaseIconViewboxes (file:///Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs:446:21)
+    at async file:///Users/kylemit/.codex/worktrees/0714/Splotch/tools/icons/rebase-icon-viewbox.mjs:475:3 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/Users/kylemit/.codex/worktrees/0714/Splotch/src/lib/icons'
+}
+
+Node.js v24.16.0
