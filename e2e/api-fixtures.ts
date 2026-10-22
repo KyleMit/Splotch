@@ -21,9 +21,8 @@ export const test = base.extend<{ apiEnvironment: ApiEnvironment; apiOrigin: str
     }
   },
   apiOrigin: async ({ apiEnvironment }, use) => {
-    void apiEnvironment;
     const port = parseNumberFlag('SPLOTCH_E2E_PORT', process.env.SPLOTCH_E2E_PORT ?? '', TCP_PORT);
-    const site = await startNetlifySite({ port, env: contractServerEnv(randomUUID(), 'test') });
+    const site = await startNetlifySite({ port, env: apiEnvironment.env });
     try {
       await use(site.origin);
     } finally {

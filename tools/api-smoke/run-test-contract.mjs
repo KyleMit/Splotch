@@ -142,7 +142,7 @@ try {
   host = await startNetlifyFunctionHost({
     mode: 'production',
     port: Number(process.env.SMOKE_PORT ?? 5199),
-    env: contractServerEnv(randomUUID(), 'test'),
+    env: environment.env,
   });
   await checkGeneration(host.origin);
   await checkKeysAndOutcomes(host.origin);

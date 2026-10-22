@@ -13,7 +13,8 @@ export function requireTestApiEnvironment(env) {
 }
 
 export async function startTestApiEnvironment(env) {
-  requireTestApiEnvironment(env);
+  const validatedEnv = Object.freeze({ ...env });
+  requireTestApiEnvironment(validatedEnv);
   const directory = mkdtempSync(join(tmpdir(), 'splotch-test-api-'));
   const blobs = new BlobsServer({ directory, port: 0 });
   const previousContext = globalThis.netlifyBlobsContext;
@@ -36,6 +37,7 @@ export async function startTestApiEnvironment(env) {
       apiURL: origin,
     });
     return {
+      env: validatedEnv,
       close,
       issues: async () => {
         const sink = getStore({ name: 'test-github-issues', consistency: 'strong' });
