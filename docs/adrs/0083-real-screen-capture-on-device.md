@@ -1,6 +1,13 @@
 # ADR-0083: Measure the Real Screen on Device as a Separate Instrument (`perf:ipad:frames`)
 
-**Status:** Active **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The WebKit screen-probe capture command was retired. The retained
+measurements do not describe the RN renderer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-07
 
 > **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
 > real-screen measurement contract remains in force. Its command replacements are `perf:ipad:frames`

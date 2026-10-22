@@ -1,7 +1,14 @@
 # ADR-0085: Tile the Full-Resolution Live Canvas to Avoid WebKit Surface-Flush Starvation
 
-**Status:** Active — supersedes ADR-0066, ADR-0068, ADR-0069, ADR-0074, and ADR-0082 for the
-production drawing route; amended by
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The tiled Svelte renderer was removed. RN rendering and native Skia
+ownership replace its surface model (ADR-0178).
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — supersedes ADR-0066, ADR-0068, ADR-0069, ADR-0074, and
+ADR-0082 for the production drawing route; amended by
 [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md) for production undo and
 [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for idle tile composition, and amended
 by [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotation presentation and lazy

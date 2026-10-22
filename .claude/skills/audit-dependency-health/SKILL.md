@@ -18,7 +18,7 @@ decides whether a dependency *deserves its place at all*. If an entry here concl
 should merely be updated, that's a hand-off to `burn-down-outdated-dependencies`, not work for this
 run.
 
-There is **one root `package.json`** for the whole repo (web + Capacitor native); run all npm
+There is **one root `package.json`** for the whole repo (app, hosted API and tooling); run all npm
 tooling from the repo root. **Direct** dependencies are the entries in its `dependencies` /
 `devDependencies`; everything else in `pnpm-lock.yaml` is **transitive**. Direct deps get the full
 per-package treatment below; transitives get the lighter aggregate pass — a human review of ~50
@@ -41,15 +41,16 @@ end. Skip every other entry.
    entries — the lockfile is YAML, so this is a text scan, not `node -e`:
    `awk '/^packages:/{f=1;next} /^[a-z]/{f=0} f && /^  [^ ]/{n++} END{print n}' pnpm-lock.yaml`.
 2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep `src/`,
-   `web/*.config.*`, `tools/`, `tools/`, and the npm scripts for imports and invocations. A package
-   with no findable usage is itself a finding (candidate for removal — but check `overrides`,
-   `postinstall`, config-file plugin references, and CLI-only use before calling it dead).
+   root config files, `netlify/`, `tools/`, and the npm scripts for imports and invocations. A
+   package with no findable usage is itself a finding (candidate for removal — but check
+   `overrides`, `postinstall`, config-file plugin references, and CLI-only use before calling it
+   dead).
 3. **Note repo entanglements.** Known ones to carry into entries (verify, don't assume):
-   * `package.json` `overrides` pins `@capacitor/assets`' transitive `sharp` to the root `$sharp`
-     (proxy-blocked libvips download in cloud sessions) — an entanglement for both packages.
-   * The Svelte/Vite family and `@capacitor/*` move as coordinated sets (see
-     `burn-down-outdated-dependencies`'s landmine list) — replacement cost for any member includes
-     the set.
+   * Expo, React Native, React, React Strict DOM and native modules are SDK/template-aligned
+     (ADR-0119). Review patches, autolinking and native install-script provenance before judging
+     replacement cost; do not treat a single package as independent of that set.
+   * Vitest and its coverage package release together. The actual Dependabot family patterns and SDK
+     exclusions live in `.github/dependabot.yml`.
 
 ## Phase 2 — External facts (network, dated)
 

@@ -1,6 +1,13 @@
 # ADR-0148: Native Crayon Applies the Glaze Per Op, Directly on the Tile
 
-**Status:** Active — supersedes the native half of
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Capacitor native crayon glaze pipeline was removed. Native ink renders
+through Skia (ADR-0178).
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — supersedes the native half of
 [ADR-0147](0147-crayon-restamp-renderer-no-preview-planes.md) (web keeps restamp unchanged), retires
 [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s preview planes on the Capacitor WKWebView,
 and refutes ADR-0147's attribution of the plane pipeline's cost **Date:** 2026-08

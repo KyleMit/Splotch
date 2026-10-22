@@ -7,6 +7,14 @@
 is refused with `415` rather than defaulted to PNG. The server does not sniff the bytes, so a
 default would forward unidentified bytes to the paid provider; every shipped client sends a type.
 
+## Current scope after the RN cutover (2026-10)
+
+The raw-byte/header-credential wire contract remains in `netlify/server/api/generateImage.ts` and RN
+transport. The legacy multipart branch and trusted origins remain wire-tested; retaining that API
+behavior is distinct from the cutover decision to import no Capacitor device data. Current
+credential/provider names are documented in `docs/API.md`. The historical design below retains its
+original context.
+
 ## Context
 
 `/api/generate-image` originally accepted `multipart/form-data`: the PNG in an `image` field, the

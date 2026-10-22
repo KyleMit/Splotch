@@ -951,9 +951,8 @@ regression.
 
 ## React Native app
 
-These rules cover the shipping React Native app in `` pending root promotion (ADR-0182). Its
-platform vocabulary, and the adapters named here, are in
-[`RSD-VOCABULARY.md`](../RSD-VOCABULARY.md).
+These rules cover the root React Native app (ADR-0182). Its platform vocabulary, and the adapters
+named here, are in [`RSD-VOCABULARY.md`](../RSD-VOCABULARY.md).
 
 ### Stroke activity stays out of the chrome's props
 

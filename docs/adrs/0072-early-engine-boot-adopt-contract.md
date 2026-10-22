@@ -1,7 +1,14 @@
 # ADR-0072: Early Engine Boot at Module Evaluation — Components Adopt the Running Engine
 
-**Status:** Active — amends [ADR-0004](0004-imperative-canvas-engine.md): "components mount the
-engine" becomes "components adopt the engine". **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The module-evaluation engine boot/adoption seam was removed. RN
+first-frame prerendering and hydration are covered by ADR-0180.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0004](0004-imperative-canvas-engine.md):
+"components mount the engine" becomes "components adopt the engine". **Date:** 2026-07
 
 ## Context
 

@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The locked-paper containment policy remains in shared geometry and RN drawing presentation. The
+retired tiled engine names below are historical. The historical design below retains its original
+context.
+
 ## Context
 
 ADR numbers are permanent identifiers, but Git sees two records with the same number as unrelated

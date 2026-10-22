@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Settings remains freely openable; sensitive operations own their parent challenge. `src/settings/`,
+`src/parentCenter/` and the RSD settings shells implement that rule. The Svelte identifier
+vocabulary and boot-hidden overlay mechanism below were removed; opening Settings still proves no
+adult identity. The historical design below retains its original context.
+
 ## Context
 
 The app's corner utility modal is mostly ordinary settings: appearance, sound, saving, drawing

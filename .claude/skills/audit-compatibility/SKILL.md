@@ -54,9 +54,9 @@ Two constraints decide most cases:
 * **The web WebKit target cannot pass the native iOS deployment target** (`browserFloor.test.ts`). A
   web Safari/iOS raise is also an iOS app raise, and it drops every device whose last iOS is below
   the new version. Name those devices.
-* **The Android OS floor is a separate question.** The WebView updates independently of the OS. Read
-  "Why the Android floor is not raised to API 29" in `docs/COMPATIBILITY.md` and only reopen it on
-  one of the two triggers it names.
+* **The Android OS floor is a separate question.** The RN runtime and native modules have their own
+  OS requirements. Read "Why the Android floor is not raised to API 29" in `docs/COMPATIBILITY.md`
+  and only reopen it on one of the two triggers it names.
 
 A recommended raise is a **finding**, not an action: title it with the proposed targets, and put the
 cost, the yield (as a deletion list), the dropped devices, and "needs an ADR" in it. A keep needs no
@@ -78,8 +78,9 @@ themselves.
 Two checks settle most of these:
 
 * **What does happy-dom have?** Don't assume. Drop a throwaway `src/zz-probe.test.ts` that writes
-  `typeof X` for each candidate to a temp file, run it with `npx vitest run` from `web/`, then
-  delete it. Write to a file, because the test reporter swallows `console.log`.
+  `typeof X` for each candidate to a temp file, run it with
+  `npm run test:unit -- src/zz-probe.test.ts` from the repository root, then delete it. Write to a
+  file, because the test reporter swallows `console.log`.
 * **Which engine versions support it?** Use `--feature`. **web-features scores the whole feature**,
   every option included, so its version can be later than the one the code needs:
   `createimagebitmap` reads Safari 17.2 while the bare call has worked since Safari 15. When the
@@ -87,9 +88,9 @@ Two checks settle most of these:
 
 **"Not cited in register" is not a finding by itself.** The register cites the guard, not every use
 ("`Where` answers where is the guard" in `docs/COMPATIBILITY.md`). A second instance of an existing
-row's pattern is correct as it is. So is a deliberate duplicate across a bundle boundary
-(`saveFolder.svelte.ts` repeats `folderSave.ts`'s probe on purpose). File one only for a probe with
-a distinct guard or behavior that no row describes.
+row's pattern is correct as it is. So is a deliberate duplicate across a bundle boundary (the
+platform adapters own separate browser and native capabilities). File one only for a probe with a
+distinct guard or behavior that no row describes.
 
 ## 4. Check the register against the engines and the code
 

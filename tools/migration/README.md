@@ -47,11 +47,11 @@ Tooling for the React Native app in `.` while it migrates toward replacing the C
   `tools/migration/tests/rsd-native-*.test.mjs` (`RSD_NATIVE_RENDERER_TESTS` in
   `lib/rsd-drawing-checks.mjs`) joins this suite with no list to edit, and
   `tests/rsd-test-tiers.test.mjs` fails when one runs in neither tier or in both. CI's Browserless
-  tests job runs the tier on every pull request; its pre hook runs `svelte-kit sync`, so it needs no
-  earlier `npm run check`. `tests/native-ci-wiring.test.mjs` fails if the tier, or
-  `check:migration:types` (the candidate's own type check, in the Quality job), leaves CI. Among the
-  tier's tests, `rsd-native-segmented-picker.test.mjs` and `rsd-native-slider.test.mjs` mount the
-  shared `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow` controls over the stand-in in
+  tests job runs the tier on every pull request without a framework sync prerequisite.
+  `tests/native-ci-wiring.test.mjs` fails if the tier, or `check:migration:types` (the candidate's
+  own type check, in the Quality job), leaves CI. Among the tier's tests,
+  `rsd-native-segmented-picker.test.mjs` and `rsd-native-slider.test.mjs` mount the shared
+  `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow` controls over the stand-in in
   `rsd-native-control-host.mjs` and hold each literal those ports carry, and the colour token each
   painted part takes, to the shipping Svelte sources. The picker's RTL thumb origin is laid out by
   React Native's own Yoga, which `rsd-yoga-host.mjs` compiles from the installed `react-native`'s
@@ -72,13 +72,13 @@ Tooling for the React Native app in `.` while it migrates toward replacing the C
   image inlined into it. `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the
   scripts, stylesheets and preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds
   every script and stylesheet the controls wait for, including the bundle the boot script loads
-  after first paint. Both are set from the measured export, and the check reports them against the
-  shipping `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor. The constants'
-  comments carry the numbers. A surface the drawing screen shows only on request loads through
-  `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
-  failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
-  drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
-  load only leaves the banner out.
+  after first paint. Both retain the reviewed cutover caps. Their named constants and comments carry
+  the measured derivation; the removed Svelte checker is not another active budget authority. A
+  surface the drawing screen shows only on request loads through `drawingSheets.web.ts`, so it stays
+  off that path, and mounts inside an `RsdSurfaceBoundary`, so a failed load cannot blank the
+  drawing screen. The Install Banner, which waits for settled-in drawing, loads through
+  `installBannerSurface.web.ts` once the browser offers an install; a failed load only leaves the
+  banner out.
 * `prerender-native-web.mjs` runs inside `native:web:build` (ADR-0180). It bundles
   `src/prerenderFirstFrame.tsx` for Node through Expo's own bundle request, renders the drawing
   screen's first frame for each size class, orientation and theme, and writes them into `index.html`

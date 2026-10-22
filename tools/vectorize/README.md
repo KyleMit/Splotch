@@ -38,7 +38,7 @@ credit**, and credits do not come back. Read
 
 ## Credentials
 
-The driver reads these variables from the shell, then root `.env` and `web/.env` when unset:
+The driver reads these variables from the shell, then root `.env` when unset:
 
 | Variable                   | What it is                                                    |
 | -------------------------- | ------------------------------------------------------------- |

@@ -1,6 +1,14 @@
 # ADR-0140: Give the Commit Gate a Stable Host Control and Confirm Its Breaches
 
-**Status:** Accepted — amends [ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md) and
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The WebKit commit gates and their host-control/confirmation implementation
+were retired.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted — amends
+[ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md) and
 [ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md); amended by
 [ADR-0158](0158-a-retry-confirms-only-the-same-failure.md) and
 [ADR-0173](0173-physical-ipad-holds-the-commit-contract.md). **Date:** 2026-08

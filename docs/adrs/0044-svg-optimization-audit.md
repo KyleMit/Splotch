@@ -10,6 +10,13 @@
 > spans `web/src/lib/icons/` and `web/src/lib/icons/deferred/`; the audit already walks `web/**`, so
 > every icon is still optimized in place, but only the top level is inlined on the startup path.
 
+## Current scope after the RN cutover (2026-10)
+
+The re-runnable SVG contract survives as `tools/optimize-svg-assets.mjs`, `optimize:svg-assets` and
+`check:svg-assets` (ADR-0111). The shipped assets live under `assets/static/`; the old scripts/web
+roots and img:audit aliases below are historical. The historical design below retains its original
+context.
+
 ## Context
 
 The Splotch logo and the whole `web/src/lib/icons/*.svg` set are inlined into the DOM via `{@html}`

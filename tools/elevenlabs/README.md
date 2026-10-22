@@ -11,7 +11,7 @@ makes a live API call in the test suite.
 
 ## Setup
 
-Set the key in the shell or in a gitignored `.env.local`, `.env`, or `web/.env` file:
+Set the key in the shell or in a gitignored `.env.local` or `.env` file:
 
 ```dotenv
 ELEVENLABS_API_KEY=your-key-here

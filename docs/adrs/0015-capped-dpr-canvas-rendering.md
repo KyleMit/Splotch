@@ -5,6 +5,13 @@
 export floor stand unchanged; the memory and export architectures evolved around them. See the
 amendments at the end. **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+The bounded paper backing scale remains in `src/drawing/paperSpace.ts` as MAX_BACKING_SCALE. Export
+quality is owned separately by `src/drawing/pictureExport.ts`; native Skia surface density follows
+its own renderer contract (ADR-0178). The Svelte engine propagation and undo details below were
+removed. The historical design below retains its original context.
+
 ## Context
 
 The drawing canvas's backing store was sized in CSS pixels (`canvas.width = rect.width`).

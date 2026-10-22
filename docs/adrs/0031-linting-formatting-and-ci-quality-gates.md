@@ -8,6 +8,14 @@ five auto-fixable notation rules adopted through one isolated reformat — issue
 `:global()` selectors ratcheted — issue 1938; amended 2026-10: React's two hooks rules adopted for
 the native candidate, whose type check joins the quality job — issue 2690)
 
+## Current scope after the RN cutover (2026-10)
+
+The root quality mirror runs TypeScript checks, ESLint, CSS lint, format and the declared
+drift/dependency gates. Svelte ESLint/style ratchets were removed. React hooks, shared conventions
+and scoped type-aware no-floating-promises remain enforced; RSD token drift has its own checker. The
+historical measured rule evaluations below do not re-enable removed framework rules. The historical
+design below retains its original context.
+
 ## Context
 
 Splotch enforced its conventions (Svelte 5 runes only and no legacy stores — ADR-0002; TypeScript

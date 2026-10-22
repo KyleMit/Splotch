@@ -46,9 +46,3 @@ fi
 if [ "$lock_was_clean" = true ] && ! git diff --quiet -- pnpm-lock.yaml; then
   git checkout -- pnpm-lock.yaml
 fi
-
-# Generate web/.svelte-kit types so `npm run check` and `npm run dev` work
-# immediately (the SvelteKit app lives in web/, so sync must run there —
-# ADR-0024; tools/run-web-tool.mjs is the cwd shim).
-node tools/run-web-tool.mjs svelte-kit sync ||
-  echo 'session-start.sh: svelte-kit sync failed — rerun node tools/run-web-tool.mjs svelte-kit sync before using npm run check'

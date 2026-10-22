@@ -1,6 +1,13 @@
 # ADR-0090: Gate iPad Performance with In-Page Timings Driven by Real XCUITest Input
 
-**Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte/Capacitor physical capture gates and advisory WebKit gates were
+retired. RN performance evidence uses the in-app probe and replay traces.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md); amended by
 [ADR-0092](0092-direct-cdp-android-browser-action-profiling.md),
 [ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md), and

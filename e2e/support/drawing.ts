@@ -21,7 +21,7 @@ const STROKE_MOVE_STEPS = 12;
 const STROKE_REGION_PADDING_PX = 24;
 // A channel must move this far for a pixel to count as inked. The paper's grain and antialiasing
 // stay well under it; every palette colour on either paper clears it.
-const INK_CHANNEL_DELTA = 48;
+export const INK_CHANNEL_DELTA = 48;
 const RGBA_CHANNELS = 4;
 
 async function regionPixels(page: Page, region: Region): Promise<Buffer> {

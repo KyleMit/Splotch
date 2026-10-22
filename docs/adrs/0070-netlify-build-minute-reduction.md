@@ -4,6 +4,14 @@
 and its rationale are unchanged, but the manager is pnpm, so the flag is `PNPM_FLAGS = "--prod"`)\
 **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The inverted dependency split and narrow deploy filter remain. One root manifest now contains the RN
+app and Netlify build inputs; Svelte/Capacitor packages are absent. `netlify.toml`, the production
+install validator and `knip.production.json` own the current install/filter contract. Old
+package/byte counts below are dated measurements. The historical design below retains its original
+context.
+
 ## Context
 
 Netlify build minutes were running out. Profiling showed the build command itself is cheap (~20s:

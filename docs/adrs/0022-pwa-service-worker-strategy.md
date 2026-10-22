@@ -11,6 +11,14 @@ the hidden edge (`visibilitychange` → hidden), so a visible session is never r
 the user. Amended 2026-09-13 to precache a build-matched app shell as the offline and
 stalled-network answer for `/`, replacing the runtime page cache for that route.
 
+## Current scope after the RN cutover (2026-10)
+
+The custom lifecycle in `src/lib/pwa/updates.ts` remains. The RN export emits its own service worker
+and precache through `tools/migration/build-native-web.mjs`; `check-native-web-precache.mjs`
+validates the inventory. `vite-plugin-pwa` was removed; the RN exporter calls `workbox-build`
+directly. The implementation below records the former generator, not an active dependency. The
+historical design below retains its original context.
+
 ## Context
 
 The web target needs a service worker to:

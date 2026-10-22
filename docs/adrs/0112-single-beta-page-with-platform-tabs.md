@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The shared `/beta` document and RSD information surface own platform tabs. Browser documents may
+show both store tracks; the native iOS surface excludes Android listing content through platform
+boundaries. The Svelte route-exclusion mechanism below was removed. The historical design below
+retains its original context.
+
 ## Context
 
 Beta enrollment shipped as two standalone pages, `/android-beta` (Google Play closed testing) and

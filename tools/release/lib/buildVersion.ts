@@ -63,13 +63,8 @@ function currentBuildTime(): string {
 
 type BuildMetadata = { appVersion: string; buildTime: string };
 
-// SvelteKit's client build re-evaluates vite.config.ts in the same process, so
-// each evaluation would otherwise ask git again: a commit landing mid-build (or
-// the clock crossing a minute) splits one build across two versions — the SSR
-// bundle on one, the client chunks, version.json, and sw.js on the other.
-// process.env is the only state that survives the re-evaluation, and child
-// processes such as the prerenderer inherit it. The platform is recorded so a
-// Capacitor build spawned from a web build's process never reuses the web version.
+// Child build processes inherit one pinned version and minute-resolution build time, so a commit
+// or clock tick during export cannot split document, bundle and service-worker metadata.
 export const PINNED_BUILD_METADATA_ENV = 'SPLOTCH_PINNED_BUILD_METADATA';
 
 function pinnedBuildMetadata(

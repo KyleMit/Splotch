@@ -6,6 +6,13 @@ support was dropped, so the Windows-specific mechanics recorded below (nvm-windo
 **Node ≥ 22** and a **full JDK 21** — still hold on macOS and Linux.\
 **Date:** 2026-06-01
 
+## Current scope after the RN cutover (2026-10)
+
+The root React Native Android project uses its committed Gradle wrapper, Kotlin, Expo autolinking
+and the toolchain documented in `docs/MOBILE/android.md`. The former Java-only Capacitor toolchain
+details below are historical; Windows remains unsupported under ADR-0062. The historical design
+below retains its original context.
+
 ## Context
 
 Building the Splotch Android app (Capacitor 8 + AGP/Gradle) on Windows has non-obvious toolchain

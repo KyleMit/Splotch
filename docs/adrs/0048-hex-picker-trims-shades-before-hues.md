@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The shade-before-hue arrangement remains in `src/lib/hexPickerLayout.ts` and
+`src/rsdDrawing/hexPicker.ts`. The Svelte dual-grid/CSS implementation below was removed; the RN
+picker uses its own measured layout. The historical design below retains its original context.
+
 ## Context
 
 The custom color picker is a 9×9 honeycomb: 9 hue families × 9 shades. Small viewports can't fit all

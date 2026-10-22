@@ -130,18 +130,12 @@ export function needsRulerApply(paths) {
 // whoever triages docs/AUDIT-DEFERRED.md later. Deletions of .json/.webp never
 // exposed it because those extensions are not lintable to begin with.
 export function lintablePaths(paths, exists) {
-  return paths.filter((path) => /\.(ts|svelte|mjs|cjs|js)$/.test(path) && exists(path));
+  return paths.filter((path) => /\.(tsx?|mjs|cjs|js)$/.test(path) && exists(path));
 }
 
-// A new static import edge in the client source tree is the one fix shape none
-// of the per-finding gates can see: Rollup re-partitions chunks around the new
-// edge however dependency-light the imported module is, and the fallout can
-// land in a chunk the fix never touched (PR #771 — a six-line predicate hoist
-// pulled the save pipeline onto the startup critical path, visible only in
-// CI). This scans a unified diff for added static import / re-export lines in
-// files that can reach the client bundle, so the driver can gate such fixes on
-// the startup-bundle spec before they commit. Type-only imports leave no
-// runtime edge; server-only modules and test files never enter the bundle.
+// Import edges can alter Metro's startup graph even when the imported helper is tiny. The
+// optional BUNDLE_SPEC gate supplements the production export byte checks; type-only imports
+// and tests do not introduce a runtime edge.
 export function diffAddsClientStaticImport(diff) {
   let inClientFile = false;
   for (const line of String(diff ?? '').split('\n')) {

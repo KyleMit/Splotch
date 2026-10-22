@@ -1,7 +1,15 @@
 # ADR-0134: Derive the Frame Beat from the Dominant Interval, Not a Percentile
 
-**Status:** Active — amends [ADR-0083](0083-real-screen-capture-on-device.md) and the acceptance
-gates in [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The frame-interval scorer belonged to the retired performance capture
+harness.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0083](0083-real-screen-capture-on-device.md) and
+the acceptance gates in [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:**
+2026-08
 
 ## Context
 

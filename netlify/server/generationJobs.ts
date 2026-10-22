@@ -3,15 +3,12 @@ import { getStore } from '@netlify/blobs';
 import { loggableError } from './logRedaction';
 import { settleWithRetentionConcurrency } from './retentionSweep';
 // Relative, not `$lib`: the background worker imports this module and is built
-// without SvelteKit's aliases.
+// with framework-free imports.
 import { GENERATION_JOB_TTL_MS } from '../../src/lib/ai/limits';
 import { isStyleName, type StyleName } from '../../src/lib/ai/styles';
 
-// Where a generation lives between the request that starts it and the request
-// that collects it (ADR-0115). Alias-free and config-free on purpose: the
-// background worker under netlify/ imports this, and that build has neither
-// SvelteKit's `$lib`/`$env` nor a way to reach them — so the signing secret is
-// passed in by whichever side has it.
+// Where generation lives between the starting request and the collecting request (ADR-0115).
+// Signing secrets are passed explicitly so the worker shares this contract without an env loader.
 //
 // The child's drawing passes through here, and that is a platform constraint
 // rather than a choice: a Netlify background function's invocation body is
@@ -50,9 +47,8 @@ const TICKET_TTL_MS = 60_000;
 
 // What the worker decided. Nothing here needs a credential or the free-grant
 // ledger: settling the reservation and minting the report token both stay with
-// the poll request, which is a SvelteKit route and can reach them. The worker
-// cannot — it is built without those aliases — and that constraint is what keeps
-// this record free of anything secret.
+// the collecting poll request, which holds the caller credential. The worker needs only
+// the drawing reference and non-secret delivery metadata.
 export type GenerationJobOutcome =
   | { status: 'image'; mimeType: string }
   | { status: 'refusal'; reason: string }

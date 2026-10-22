@@ -18,7 +18,7 @@ canonical failure shape every endpoint returns.
 | Admin         | `POST /api/admin/login`, `/api/admin/tokens`, `GET /api/admin/stats`                                       |
 
 Also in the doc: **Validating the API** (the contract smoke tests to run after a change) and **Local
-development** (how `vite dev` and `vite preview` host the endpoint functions same-origin).
+development** (how the plain Node function host serves the endpoints beside the RN export).
 
 Before changing an endpoint:
 

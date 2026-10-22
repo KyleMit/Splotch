@@ -1,5 +1,4 @@
-// Stylelint over every hand-authored stylesheet in the repo — each `<style>`
-// block in a Svelte component and each plain .css file (issue 1859, ADR-0031).
+// Stylelint over every hand-authored .css file in the repo (ADR-0031).
 //
 // Selection is ignore-based, not an allowlist, for the reason ADR-0031 amended
 // itself in 2026-07: an allowlist fails silently. A hand-authored stylesheet
@@ -16,8 +15,7 @@
 // Two things deliberately stay out:
 //   * Stylistic rules. Prettier owns CSS formatting (ADR-0031, ADR-0057), and
 //     stylelint 16 removed its own stylistic rules for that reason.
-//   * The checks in `npm run lint:tokens` (ADR-0071). Some are expressible
-//     here, but consolidating them is its own decision.
+// Token values are owned by the React Strict DOM design system (ADR-0182).
 import keyframeCurves from './tools/stylelint-keyframe-curves.mjs';
 
 export default {
@@ -31,8 +29,7 @@ export default {
   reportInvalidScopeDisables: true,
 
   ignoreFiles: [
-    // Build output and SvelteKit's generated tree (root.svelte lives here).
-    '**/.svelte-kit/**',
+    // Generated web and native build output.
     '**/build/**',
     '**/.netlify/**',
     // Worktree-isolated agent checkouts hold a second copy of src, which
@@ -42,13 +39,8 @@ export default {
     // Committed scrapbook run outputs (ADR-0059) are promoted output, not
     // hand-authored source, and .prettierignore excludes them for that reason.
     'scrapbook/**',
-    // The native trees' synced web build and Xcode's build products: gitignored
-    // copies of the same generated CSS, present only on a machine that has run
-    // a native build, where they made `npm run lint:css` report hundreds of
-    // errors CI never sees.
-    'ios/App/App/public/**',
+    'ios/Pods/**',
     'ios/DerivedData/**',
-    'android/app/src/main/assets/public/**',
     // The React Native web export (`npm run native:web:build`): gitignored Expo output.
     'dist/**',
   ],
@@ -80,12 +72,7 @@ export default {
     'no-irregular-whitespace': true,
     'property-no-unknown': true,
     'selector-anb-no-unmatchable': true,
-    // `:global()` is Svelte scoping syntax, not an unknown pseudo-class, and
-    // the 325 uses of it are the only thing that stood between this rule and
-    // zero. Teaching the rule the framework's vocabulary is what ADR-0031
-    // already does for genuine idioms; the rule then catches the typo it is
-    // for (`:focus-visable`) across every component.
-    'selector-pseudo-class-no-unknown': [true, { ignorePseudoClasses: ['global'] }],
+    'selector-pseudo-class-no-unknown': true,
     'selector-pseudo-element-no-unknown': true,
     'selector-type-no-unknown': [true, { ignore: ['custom-elements'] }],
     'string-no-newline': [true, { ignore: ['at-rule-preludes', 'declaration-values'] }],
@@ -107,8 +94,7 @@ export default {
     'font-family-no-duplicate-names': true,
     'keyframe-block-no-duplicate-selectors': true,
     // A keyframe declaration is unreachable by !important, so one there is
-    // always a mistake — unlike the app-wide !important ban, which lives in
-    // `npm run lint:tokens` (ADR-0071).
+    // always a mistake.
     'keyframe-declaration-no-important': true,
     'no-duplicate-at-import-rules': true,
     'no-empty-source': true,

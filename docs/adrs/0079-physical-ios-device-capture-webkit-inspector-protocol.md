@@ -1,6 +1,13 @@
 # ADR-0079: Drive a Physical iOS Device Over the WebKit Inspector Protocol
 
-**Status:** Active **Date:** 2026-07
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The real-iPad Safari capture harness was retired; its observations remain
+historical measurements of the former renderer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-07
 
 > **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
 > physical-device WebKit capture contract remains in force. Its commands are now

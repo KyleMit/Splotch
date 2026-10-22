@@ -31,9 +31,9 @@ before filing, sharpen the finding so the fix agent can act on it without re-der
   confirm the fix resolves it: repro steps, a command or script to paste, a profile to capture, the
   test that should fail before and pass after. This is the highest-value thing you add; leave no
   filed issue without it whenever a verification is feasible. Run each command as written from the
-  repo root before filing (a Vitest file runs through
-  `node tools/run-web-tool.mjs vitest run src/...`, not `npx vitest run src/...`), and scope a
-  done-when check such as a grep to exactly the sites the issue enumerates.
+  repo root before filing (app tests run through `npm run test:unit -- <file>` and tool tests
+  through `npm run test:tools -- <file>`), and scope a done-when check such as a grep to exactly the
+  sites the issue enumerates.
 
 Then open the issue (see **Filing the issue** below).
 

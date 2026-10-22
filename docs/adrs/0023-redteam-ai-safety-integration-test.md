@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+The manual encrypted red-team corpus remains under `tools/redteam/`. Its runner starts the
+framework-free local function host; credentials come from the shell or root `.env`, never
+`web/.env`. The current provider is OpenAI behind the server seam; the original model observations
+below retain their date and scope. The historical design below retains its original context.
+
 ## Context
 
 Splotch sends a toddler's drawing to Gemini and shows the stylized result (`/api/generate-image`,

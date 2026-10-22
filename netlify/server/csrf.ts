@@ -1,8 +1,7 @@
 import { CSRF_TRUSTED_ORIGINS } from '../securityPolicy.ts';
 
-// SvelteKit's CSRF guard, which every /api route answered behind before the
-// endpoints became a plain Netlify Function; svelte.config.js still configures
-// SvelteKit's own for the pages it serves, from the same trusted origins.
+// The recorded cross-site form contract is shared by the plain /api function.
+// The wire corpus pins the historical content types and trusted origins.
 
 // Content types an HTML form can send without a preflight, plus SvelteKit's own
 // binary form encoding, which its guard lists with them.

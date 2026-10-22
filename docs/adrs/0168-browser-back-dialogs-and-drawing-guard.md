@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+RN product history and browser platform adapters own Back, dialogs and drawing guards. The SvelteKit
+shallow-history implementation below was removed. The campaign records a remaining browser Back
+screen/URL gap after an information-page reload; no claim of complete parity follows from this
+amendment. The historical design below retains its original context.
+
 ## Context
 
 ADR-0165 gave the native Android app an explicit system-Back policy and deliberately left browser

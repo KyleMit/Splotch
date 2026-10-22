@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The canonical icon grid and rebase tool remain. Current generated RSD icon assets and
+`tools/icons/README.md` replace the Svelte Icon unit and path rule below; no Svelte rule file is
+part of the live workflow. The historical design below retains its original context.
+
 ## Context
 
 The icon corpus in `web/src/lib/icons/` accumulated a dozen coordinate grids from its sources:

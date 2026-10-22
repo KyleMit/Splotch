@@ -1,6 +1,13 @@
 # ADR-0146: Crayon Op Granularity Is a Per-Runtime Decision
 
-**Status:** Active — amends ADR-0065 and ADR-0137 **Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The `CAPACITOR` crayon op-granularity branches were removed with the old
+renderer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends ADR-0065 and ADR-0137 **Date:** 2026-08
 
 ## Context
 

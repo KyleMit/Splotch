@@ -14,11 +14,12 @@ paths:
   app modules, colocated `.test.ts` files for server and build-time modules), Playwright E2E
   (`e2e/specs/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared
   by Android and iOS). Pick the lowest layer that can catch the regression.
-* Unit tests cover pure logic and state modules only; UI flows belong in Playwright. The Vitest
-  environment is **happy-dom**, not jsdom (ADR-0009). Test files that need no DOM at all —
-  `lib/server/**` and pure-logic modules — opt out with a `// @vitest-environment node` first line
-  (per-file happy-dom setup is the suite's biggest fixed cost); a file whose module (or imports)
-  touches `localStorage`/`document`/`window` must stay on the happy-dom default.
+* Unit tests cover logic and state; mounted RSD tests cover component contracts. UI flows belong in
+  Playwright. The Vitest environment is **happy-dom**, not jsdom (ADR-0009). Test files that need no
+  DOM at all — `netlify/server/**` and pure-logic modules — opt out with a
+  `// @vitest-environment node` first line (per-file happy-dom setup is the suite's biggest fixed
+  cost); a file whose module (or imports) touches `localStorage`/`document`/`window` must stay on
+  the happy-dom default.
 * `npm test` runs the CI test tiers described by the `test` entry in `package.json` and its
   `scripts-info` description; the native smoke tests (`test:android`, `test:ios`) are deliberately
   excluded because they require an emulator/simulator and native tooling.
@@ -77,50 +78,14 @@ paths:
 * Shared per-test setup lives in a Playwright **fixture**, never in a top-level `test.beforeEach` in
   a helper module: a helper is evaluated once per worker, so such a hook attaches only to the first
   spec file that imports it and every later spec file in that worker silently runs with no setup.
-  Extend `test` in the helper and import `test`/`expect` from it (`engine-harness` in the retired
-  SvelteKit suite).
-* **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
-  there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
-  interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or
-  reuse a retrying helper (`openSettingsModal`/`openDrawer`/`openStrokeMenu`), and give `retryOpen`
-  a hydration-only or otherwise durable outcome that cannot appear before hydration and reset
-  afterward; retry the *open* rather than the wait when the open itself picks a view (the coloring
-  picker chooses book grid vs. single book from an installed set that resolves after load and never
-  re-picks, so a longer wait can't reach the grid — `openColoringBookGrid` reopens until one lands
-  on it, issue #936); use `expect.poll` / web-first assertions instead of a fixed `waitForTimeout`
-  to wait for something to happen (a fixed sleep is fine only to idle *past* a known threshold or to
-  prove a state does *not* change); poll async canvas/relayout state through a retrying assertion
-  with a window sized for a starved worker (`expect(await count()).toBe(n)` races the repaint — use
-  `await expect.poll(() => count())`); wait on the *engine's* state rather than the button that
-  requests it (`pickBrush` polls `window.__committedBrushMode`, ADR-0080); let a fly-in dialog
-  **land** before any pointer action on its content — an `evaluate` never waits for the element to
-  stop moving, and a real `.click()` only usually does (a fly-in still *pending* its start time
-  holds its first keyframe across frames, which passes the stability check), while a dialog still
-  flying in sits inside the launch dead zone that swallows the gesture; await its
-  `Animation.finished` first via `settleFlyIn`, as `openSettingsModal` and `landedReportConfirm` do
-  (ADR-0078 §4a); when a spec needs an animation to be *in* a phase, wait on the browser's signal
-  for that phase, never a sleep sized to its duration: `Animation.ready` for started (a play-pending
-  animation cancelled before its first frame fires no `animationcancel` at all),
-  `Animation.finished` or the `animationend`/`animationcancel` event for settled — the event, not
-  `finished`, when the product's own handler is on that event, since the `finished` continuation
-  runs before the event dispatches (the lifting-halo spec, issue #2196; Svelte hash-scopes component
-  keyframe names, so match `animationName` by suffix); when a spec must act *inside* an animation
-  rather than after it, widen that animation instead of timing the act — the halo lift-off specs
-  override `--halo-in-duration` through a `:root:root` rule that outranks the component's scoped
-  declaration, so the release lands deep inside a grow-in no slow frame can finish first, and an
-  inline override would arrive too late because the element does not exist until the halo mounts;
-  budget a **frame-paced** condition in frames rather than milliseconds — the wide Settings pane
-  mounts a section per frame, so `settleSettingsPane` samples `aria-busy` from inside the page once
-  per `requestAnimationFrame` and spends `SETTINGS_FILL_FRAME_BUDGET` frames, where the default 5s
-  assertion timeout failed a fill that was only unfinished; reach for `settleTapGuard` when clicking
-  where a tap just landed, since `launchGuard` arms a dead zone for any tap that repaints something
-  under the finger, modal or not (a book cover swapping in that book's page grid, say); drive
-  strokes through `draw`/`dragStroke`, which pace their samples inside the engine's dropped-pointer
-  threshold — a hand-rolled run of far-apart `mouse.move`s gets read as a lifted finger and paints a
-  stub of the stroke; make a mocked endpoint control resolve only after its awaited
-  `route.fulfill()` completes; pace compositor-dependent synthetic gesture phases with rendered
-  frames, not a fixed sleep; leave an element by hovering a real control, never by dispatching a
-  synthetic `pointerleave`, which leaves the browser's hover target in place; do not invent generic
-  `waitForStable`, route-controller, or `nextFrame` abstractions without multiple real callers; and
-  verify a fix with `--repeat-each=10`, never in isolation. Full checklist with examples: the
-  `testing` skill, "Writing flake-resistant specs."
+  Extend `test` in the helper and import `test`/`expect` from it (`e2e/fixtures.ts`).
+* **Flake resistance:** the RN config uses Playwright's default half-core worker count. Use
+  `expect.poll`, retrying assertions and observable hydration/settled-state helpers rather than a
+  fixed delay. `openDrawingScreen` waits for the drawing screen; the group helpers wait for React
+  handlers or settled controls where a prerendered element can exist before it is interactive.
+  Import helpers from their actual owner in `e2e/support/` and read their guarantees before using
+  them. Do not wait on deleted engine globals. For animations use the browser's ready/finished
+  signal or the product's completion event, and pace frame-dependent gestures with rendered frames.
+  A fixed sleep is justified only to pass a known threshold or prove state does not change. Keep
+  mocked endpoint controls pending until `route.fulfill()` completes. Verify a flake fix under equal
+  worker load with `--repeat-each=10`; see `docs/TESTING.md`.

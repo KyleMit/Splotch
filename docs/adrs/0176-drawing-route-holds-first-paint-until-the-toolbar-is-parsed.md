@@ -1,7 +1,14 @@
 # ADR-0176: The Drawing Route Holds Its First Paint Until the Toolbar Is Parsed
 
-**Status:** Active — amends [ADR-0040](0040-per-route-render-modes-and-ssg-home.md) **Date:**
-2026-09
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte render-blocking expectation link was removed. RN first-frame
+prerendering is governed by ADR-0180.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
+[ADR-0040](0040-per-route-render-modes-and-ssg-home.md) **Date:** 2026-09
 
 ## Context
 

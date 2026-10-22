@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+AI remains an explicit persisted opt-in in RN settings. Its defaults and validated codec live in
+`src/settings/`; the Svelte dual-layer store below was removed. No legacy settings import is
+promised by the cutover. The historical design below retains its original context.
+
 ## Context
 
 Splotch can send a child's drawing to a hosted image-generation service. The feature previously

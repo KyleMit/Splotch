@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+RN modal presence and sheet owners in `src/rsdDrawing/` retain exit-before-unmount behavior. The
+Svelte modal action below was removed; current mounted modal tests own completion and
+interrupted-exit contracts. The historical design below retains its original context.
+
 ## Context
 
 Every modal that goes through the `modalDialog` action flew in from its opening button over 480 ms

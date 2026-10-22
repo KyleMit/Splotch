@@ -153,9 +153,7 @@ as possible:
   `TEST_CMD` (fast unit tests) **and** `LINT_CMD` on the files the fix changed — it does not trust
   the role prompts to have run them. Keep `TEST_CMD` fast (unit only). The lint gate exists because
   a type-check is a different axis from eslint: a fix can pass `CHECK_CMD` yet ship a stray `any`
-  (`@typescript-eslint/no-explicit-any`) or a raw `Map` in a `.svelte.ts`
-  (`prefer-svelte-reactivity`) — both slipped an early run onto the branch and reddened CI's Quality
-  (lint) job.
+  (`@typescript-eslint/no-explicit-any`). Type checks do not enforce every lint convention.
 * **UI-touching findings only**, at the same point, the driver also runs `E2E_CMD` against the
   Playwright spec(s) the verifier named for that finding (its `e2e_specs`). This catches a
   behavioural regression *before it commits*, attributed to the one finding that caused it, without
@@ -252,18 +250,13 @@ run is impossible until the base is green.
   the fix commit. A finding that edits any `.ruler/` source must run `npm run ruler:apply` itself
   and commit the regenerated output in the same commit — several did, unprompted, but nothing
   enforces it.
-* **Bundle composition gets its own conditional gate, because no other gate can see it.** A fix that
-  adds a static import edge under `web/src` can re-partition Rollup's chunks however small the
-  imported module, and the fallout lands in a chunk the fix never touched — PR 771's one CI
-  regression was a six-line predicate hoist that pulled the save pipeline onto the startup critical
-  path, red only on the `startup-bundle` spec with a failing marker naming a module the commit never
-  edited, attributable only by `git bisect`. The driver now scans the range's diff at each review
-  round and, when it adds a static import / re-export in a client-bundle file (type-only imports,
-  server modules, and tests excluded — `diffAddsClientStaticImport` in `lib/burndown-core.mjs`),
-  appends `BUNDLE_SPEC` (default empty: the `startup-bundle` spec retired with the SvelteKit suite,
-  ADR-0182) to that finding's E2E gate. The cost is a production build per import-adding finding,
-  paid via Playwright's web server; set `BUNDLE_SPEC=''` to fall back to CI-only detection if a
-  backlog makes that too slow.
+* **Bundle composition needs production verification.** A runtime import under `src/` can add a
+  Metro chunk to startup even when the imported helper is tiny. The current authority is
+  `npm run build:site`, whose startup checker enforces first-paint, core-control and per-page byte
+  caps. The driver's `diffAddsClientStaticImport` detects added client imports and can append
+  `BUNDLE_SPEC` to targeted E2E, but the default is empty because the old startup-bundle browser
+  spec retired. Run the production build for an import change rather than treating an empty
+  `BUNDLE_SPEC` as bundle verification.
 * **Cross-finding interactions the per-finding specs can't see are CI's job, not the driver's.**
   `PUSH_TEST_CMD` (the local full-suite gate) defaults to empty and does not run. Every finding is
   pushed to the draft PR, and the PR's CI runs the whole suite on that push — in parallel, off the

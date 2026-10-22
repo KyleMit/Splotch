@@ -8,6 +8,13 @@
 
 **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+Invariant SVG overlays remain canonical line art. The current RN integrity catalog under
+`src/offlineLibrary/` replaces the former WebView manifest generator; platform asset owners resolve
+the catalog. The old manifest format/storage wiring below retains its historical scope. The
+historical design below retains its original context.
+
 ## Context
 
 ADR-0091 made transparent alpha overlays the presentation format for coloring pages so full-paper

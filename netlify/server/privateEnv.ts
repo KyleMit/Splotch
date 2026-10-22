@@ -1,8 +1,3 @@
-// The server's secrets and settings. Netlify hands every function, SvelteKit's
-// included, the site's environment as process.env. Locally, the Vite servers'
-// deployment injects its private variables into it;
-// the plain Node host (tools/lib/netlify-function-host.mjs) reads no dotenv and
-// takes the env its caller passes. Read through here rather
-// than SvelteKit's $env/dynamic/private, which a plain Netlify Function cannot
-// resolve.
+// Netlify supplies the deployed function environment through process.env. The plain Node host
+// reads no dotenv file and supplies only its caller's environment. Centralize private reads here.
 export const env: Record<string, string | undefined> = process.env;

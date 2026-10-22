@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The consolidated token vocabulary remains in `src/lib/design/tokens.ts` and its generated RSD
+projection. The design skill owns current usage; historical CSS variable consumer lists below refer
+to the former component implementation. The historical design below retains its original context.
+
 ## Context
 
 ADR-0097 pruned the token vocabulary to steps that earn their place and attached a usage rule to

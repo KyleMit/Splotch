@@ -7,6 +7,13 @@ margin retention; ADR-0089 moves tiled production presentation to CSS and makes 
 letterbox margins non-drawable; ADR-0099 narrows the adopt-vs-lock rule so a same-angle viewport
 shrink windows the paper instead of re-adopting it. See the amendments at the end. **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The locked-paper product decision remains in `src/drawing/` and shared
+`src/lib/drawing/paperView.ts`. RN native and web renderers own presentation; none of the removed
+Svelte engine callbacks below are active APIs. The historical design below retains its original
+context.
+
 ## Context
 
 Ops, the baseline, and the keyframes all live in the visible canvas's coordinate space

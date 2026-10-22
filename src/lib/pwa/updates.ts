@@ -3,7 +3,7 @@
 // Registration is manual and deferred (issue #462): installing the offline app
 // shell and starter book at window.load would compete with boot's idle-deferred
 // work and the child's first strokes. Instead:
-//   • First visit: +page.svelte's stroke-count gate calls
+//   • First visit: the drawing engagement gate calls
 //     registerDeferredServiceWorker() once the child has drawn a few strokes
 //     (the Install Banner's "earned it" signal), and the actual register()
 //     lands at idle. Save-Data connections skip registration entirely.
@@ -213,7 +213,7 @@ function createDeferredRegistration(
     return registrationScheduled;
   }
 
-  // First-visit registration, called from +page.svelte's stroke-count gate.
+  // First-visit registration, called after drawing engagement.
   // Resolves false only when a later stroke needs to retry the registration.
   function registerDeferredServiceWorker(): Promise<boolean> {
     if (isDevelopment() || !serviceWorkerSupported()) return Promise.resolve(true);
@@ -223,10 +223,7 @@ function createDeferredRegistration(
   return { schedule, registerDeferredServiceWorker };
 }
 
-// Native builds drop this module only if constructing the pwaUpdates singleton
-// is provably side-effect-free, and the bundler cannot prove that through the
-// sub-factory calls on its own. tools/mobile/check-static-bundle.mjs fails the
-// native build if the web-only lifecycle survives.
+// The pure factory annotation lets bundlers discard an unused web lifecycle across sub-factories.
 export interface PWAUpdateEnvironment {
   canvasEmpty(): boolean;
   isDevelopment(): boolean;

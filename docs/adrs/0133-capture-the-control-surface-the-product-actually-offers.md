@@ -1,7 +1,14 @@
 # ADR-0133: Capture the Control Surface the Product Actually Offers
 
-**Status:** Active — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md)
-**Date:** 2026-08
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The old performance capture control-surface resolver was retired with its
+harness.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md) **Date:** 2026-08
 
 ## Context
 

@@ -13,11 +13,8 @@ import { loggableError } from '../server/logRedaction';
 // The long half of image generation (ADR-0115). A background function gets 15
 // minutes where the request that started this one had to answer in under 26.
 //
-// It stays deliberately thin. Settling the free-generation reservation and
-// minting the report token both need SvelteKit's `$lib`/`$env` aliases, which
-// this build does not have, so they stay with the poll request that collects the
-// result — and that constraint is a feature: nothing secret has to be written
-// down for a later request to pick up.
+// The worker produces the provider result. The collecting poll owns free-grant settlement and
+// report-token minting, so the handoff never needs to persist the caller's credential.
 
 const badPayload = () => new Response('Bad payload', { status: 400 });
 

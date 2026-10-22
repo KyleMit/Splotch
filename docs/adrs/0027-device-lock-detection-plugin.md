@@ -1,6 +1,13 @@
 # ADR-0027: A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning
 
-**Status:** Active **Date:** 2026-06
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Capacitor DeviceLock plugin was removed with its native shell. RN
+platform lifecycle owners replace that integration.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active **Date:** 2026-06
 
 ## Context
 

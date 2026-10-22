@@ -1,6 +1,12 @@
 # ADR-0162: Measured P95 Allowance for the Android Web Theme Flip
 
-**Status:** Active — amends
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Android theme-flip allowance belonged to the retired action gate.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
 [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md) and
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md) **Date:** 2026-09
 

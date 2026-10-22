@@ -1,17 +1,24 @@
 # ADR-0032: Automated Performance Profiling Harness
 
-**Status:** Active — amended by ADR-0066 (2026-07): the harness and the analyzer stand unchanged,
-but the mark set below is replay-era — `engine.foldBaseline` (and ADR-0035's `engine.keyframe`) were
-deleted with the replay system; a commit now splits into `engine.snapshot` + `engine.fold`, and
-`engine.undo` pairs an explicit end mark. Further amended by ADR-0079 (2026-07): a **fourth capture
-path** drives a physical iOS device over the WebKit Inspector Protocol, so "device-accurate iOS
-profiling stays a documented manual step" below now holds only for Timeline recording. Further
-amended by ADR-0090 (2026-07): calibrated physical-iPad drawing and discrete-action measurements are
-absolute regression gates, while shared-runner browser profiles remain on-demand diagnostics.
-Further amended by ADR-0092 (2026-07): Android Chrome discrete-action profiles use direct CDP rather
-than Appium. Further amended by ADR-0093 (2026-08): a narrowly calibrated WebKit commit-shape gate
-runs in shared CI without claiming device-accurate timing. See the amendments at the end. **Date:**
-2026-06
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The SvelteKit/Capacitor capture harness was retired. RN drawing uses the
+in-app probe and replay traces described in `docs/PROFILING.md`.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amended by ADR-0066 (2026-07): the harness and the analyzer
+stand unchanged, but the mark set below is replay-era — `engine.foldBaseline` (and ADR-0035's
+`engine.keyframe`) were deleted with the replay system; a commit now splits into `engine.snapshot` +
+`engine.fold`, and `engine.undo` pairs an explicit end mark. Further amended by ADR-0079 (2026-07):
+a **fourth capture path** drives a physical iOS device over the WebKit Inspector Protocol, so
+"device-accurate iOS profiling stays a documented manual step" below now holds only for Timeline
+recording. Further amended by ADR-0090 (2026-07): calibrated physical-iPad drawing and
+discrete-action measurements are absolute regression gates, while shared-runner browser profiles
+remain on-demand diagnostics. Further amended by ADR-0092 (2026-07): Android Chrome discrete-action
+profiles use direct CDP rather than Appium. Further amended by ADR-0093 (2026-08): a narrowly
+calibrated WebKit commit-shape gate runs in shared CI without claiming device-accurate timing. See
+the amendments at the end. **Date:** 2026-06
 
 ## Context
 

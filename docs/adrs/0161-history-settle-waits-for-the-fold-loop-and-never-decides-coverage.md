@@ -1,7 +1,14 @@
 # ADR-0161: The History Settle Waits for the Fold Loop and Never Decides Gate Coverage
 
-**Status:** Active — amends [ADR-0158](0158-a-retry-confirms-only-the-same-failure.md) **Date:**
-2026-09
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The tiled-history fold loop and performance-gate settle implementation
+were removed.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
+[ADR-0158](0158-a-retry-confirms-only-the-same-failure.md) **Date:** 2026-09
 
 ## Context
 

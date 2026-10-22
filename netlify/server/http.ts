@@ -104,9 +104,7 @@ export async function readJsonBody(request: Request, maxBytes: number): Promise<
 
 /**
  * The bounded `request.formData()`, which would otherwise buffer whatever the
- * client sends: a form action has no body cap of its own on Netlify. Callers
- * map each rejection themselves, since a form action answers with `fail()` and
- * an endpoint with a Response; the actions share `unreadableFormBody`.
+ * client sends. Each endpoint maps the closed rejection reason to its HTTP answer.
  */
 export async function readFormBody(
   request: Request,
@@ -129,7 +127,7 @@ export async function readFormBody(
   }
 }
 
-/** A form action's answer to a body `readFormBody` refused, worded as `readJsonBody`'s. */
+/** A body rejection worded identically to `readJsonBody`'s answer. */
 export function unreadableFormBody(reason: BodyRejection['reason']) {
   return reason === 'too-large'
     ? ({ status: 413, message: BODY_TOO_LARGE_MESSAGE } as const)
@@ -190,9 +188,7 @@ export function formStringField(form: FormData, name: string): string {
 }
 
 /**
- * The one throttling sentence a visitor ever sees. Exported so a rate-limited
- * form action — which returns `fail()` rather than a Response — words it
- * identically to every JSON endpoint.
+ * The shared throttling sentence used by every JSON endpoint.
  */
 function throttledMessage(retryAfter: number): string {
   return `Too many attempts. Please wait ${retryAfter}s.`;

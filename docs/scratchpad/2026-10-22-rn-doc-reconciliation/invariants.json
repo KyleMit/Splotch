@@ -1,0 +1,7 @@
+{
+  "base": "109b5c38b4010e4c93a5ce166b3d424ba4d7f0a8",
+  "lighthouseExceptSourceDigestUnchanged": true,
+  "startupCapSourceByteIdentical": true,
+  "dependencyDeclarationsUnchanged": true,
+  "nativeAssetLockDiff": ""
+}

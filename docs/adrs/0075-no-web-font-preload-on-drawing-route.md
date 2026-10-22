@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The RN drawing export keeps fonts outside first paint; document pages can load their required fonts.
+The no-startup-font-preload budget decision survives, while the Svelte layout warm-up below was
+removed. Startup byte caps are enforced by the RN export checker. The historical design below
+retains its original context.
+
 ## Context
 
 A page-load audit flagged the Quicksand web font as a Speed Index lever: on a bad-variance phone

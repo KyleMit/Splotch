@@ -1,8 +1,16 @@
 # ADR-0158: A Retry Confirms Only the *Same* Failure
 
-**Status:** Active — amends [ADR-0140](0140-commit-gate-host-control-and-breach-confirmation.md);
-amended by [ADR-0161](0161-history-settle-waits-for-the-fold-loop-and-never-decides-coverage.md)
-**Date:** 2026-09
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The old performance breach-confirmation gate was retired; its
+failure-fingerprint implementation no longer runs.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
+[ADR-0140](0140-commit-gate-host-control-and-breach-confirmation.md); amended by
+[ADR-0161](0161-history-settle-waits-for-the-fold-loop-and-never-decides-coverage.md) **Date:**
+2026-09
 
 ## Amendment — 2026-09-30: a separate job files what the retry decides
 

@@ -40,8 +40,6 @@ function yellowWash(strength: number): string {
 }
 
 // Brand accent used for active/hover chrome across parent + AI UI.
-// Custom properties pierce Svelte's style scoping, so components reference
-// these directly via var().
 //
 // --brand is the identity hue: hairlines, focus rings, accent-color, and the
 // fills that carry no text (it is only 3.4:1 against --on-brand). A brand fill
@@ -308,10 +306,7 @@ export interface ThemeTokens {
   /** Tracked labels need stronger apparent weight on dark surfaces. */
   labelInk: string;
   /**
-   * Monochrome icon fill — matches the SVGs' baked fill, guarded against
-   * drift by src/lib/components/Icon.svelte.test.ts. Also the hover
-   * state of --icon-muted: quiet chrome icons rest muted and hover to full
-   * ink — there is no intermediate hover step.
+   * Monochrome icon fill. Quiet chrome icons rest muted and hover to full ink.
    */
   iconInk: string;
   iconMuted: string;
@@ -425,10 +420,7 @@ export interface ThemeTokens {
   darkInkKeyline: string;
   /**
    * The fill of the palette's Black swatch, which shows white on dark paper.
-   * A token so the prerendered swatch already wears the theme's color: a fill
-   * resolved in JS paints black until hydration and then fades to white.
-   * colors.svelte.ts owns the ink the swatch draws with;
-   * colors.svelte.test.ts holds the two to the same answer.
+   * A token lets the prerendered swatch carry the selected theme before hydration.
    */
   blackSwatchInk: string;
 }

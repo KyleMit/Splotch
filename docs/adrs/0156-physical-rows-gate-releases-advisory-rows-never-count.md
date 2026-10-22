@@ -1,6 +1,14 @@
 # ADR-0156: Physical Rows Gate a Release; Advisory Rows Never Count Toward Completion
 
-**Status:** Active — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md),
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The four physical capture rows and their release gate belonged to the
+retired harness. They are not RN release evidence.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md),
 [ADR-0137](0137-lost-frame-gate-exceptions.md), and
 [ADR-0142](0142-rotation-actions-anchor-at-resize.md); amended by
 [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md),

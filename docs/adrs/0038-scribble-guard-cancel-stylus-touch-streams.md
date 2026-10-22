@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+Input rejection is owned by the RN drawing input path and platform stylus adapters. The Svelte event
+listeners below were removed; current mounted contact tests and RN E2E pen/multitouch specs define
+enforcement. The historical design below retains its original context.
+
 ## Context
 
 On iPadOS Safari, an Apple Pencil stroke that starts within ~450ms of a pen *tap* (on a color

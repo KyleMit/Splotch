@@ -3,6 +3,12 @@
 **Status:** Active — amends [ADR-0052](0052-dark-mode-theme-tokens.md) and
 [ADR-0071](0071-design-token-single-source.md). **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The icon geometry/token principle remains in `src/rsdDrawing/RsdIcon.tsx` and generated icon assets.
+The Svelte icon registry and token-map module below were removed; the `design` skill owns current
+icon generation. The historical design below retains its original context.
+
 ## Context
 
 ADR-0052 themes the monochrome glyphs wholesale: they bake `fill="#1f1f1f"` and one `app.css` rule

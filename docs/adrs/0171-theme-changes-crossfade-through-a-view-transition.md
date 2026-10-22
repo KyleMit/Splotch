@@ -3,6 +3,12 @@
 **Status:** Active (amended 2026-09-26: a veil on the card replaces the view transition) **Date:**
 2026-09
 
+## Current scope after the RN cutover (2026-10)
+
+RN settings and theme-cover adapters own the theme transition. The Svelte view-transition wiring
+below was removed; no browser View Transition API is required by the native app. The historical
+design below retains its original context.
+
 ## Context
 
 Switching Light, Dark, or System in Appearance flipped every token in one frame: paper, palette bar,

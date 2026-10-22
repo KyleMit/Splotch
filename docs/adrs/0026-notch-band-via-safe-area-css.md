@@ -2,6 +2,14 @@
 
 **Status:** Active **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+The shared `src/lib/platform/notchBand.ts` decision is rendered by
+`src/rsdDrawing/RsdNotchBand.tsx`. Native insets come from the safe-area provider; web insets come
+from browser CSS. `docs/SAFE-AREA.md` owns the platform boundaries; the Svelte component and
+Capacitor status-bar integration below are historical. The historical design below retains its
+original context.
+
 ## Context
 
 A phone's top notch / hole-punch strip is dead space in Splotch. The goal was to paint it with the

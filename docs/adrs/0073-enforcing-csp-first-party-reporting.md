@@ -2,6 +2,14 @@
 
 **Status:** Active. **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+RN export documents carry a hash-bearing meta resource policy, with header-only directives in
+`netlify.toml`. The plain API wrapper applies its non-document security headers. The bounded
+first-party CSP report endpoint remains. Svelte SSR hooks and nonce configuration below were
+removed; RN document/CSP tests own current enforcement. The historical design below retains its
+original context.
+
 ## Context
 
 The site had carried a `Content-Security-Policy-Report-Only` header since the staged rollout plan of

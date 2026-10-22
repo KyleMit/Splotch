@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+`tools/release/lib/buildVersion.ts` derives the web version from Git, while native store builds
+retain the release semver/build lineage. The RN export consumes that metadata through
+`tools/migration/build-native-web.mjs`; the old Vite/`CAPACITOR` wiring below was removed. The
+historical design below retains its original context.
+
 ## Context
 
 `package.json` holds the canonical semver, bumped only by `scripts/release.mjs` (ADR-0010 injects it

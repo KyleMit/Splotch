@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The job/worker/collection split remains in `netlify/server/` and the background Netlify Function.
+The collecting poll owns settlement and report-token minting because it holds the caller credential;
+no Svelte alias restriction is involved. The RN transport consumes the same shared ticket/result
+wire contract. The historical design below retains its original context.
+
 ## Context
 
 ADR-0063 sized the AI deadline ladder against a measured fact: Netlify's synchronous function

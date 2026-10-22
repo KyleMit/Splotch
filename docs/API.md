@@ -3,24 +3,22 @@
 The hosted site (Netlify, `https://splotch.art`) serves a small JSON API under `/api/*`, all from
 one plain Netlify Function, `netlify/functions/api.ts`, whose `config.path` lists every endpoint
 path and which calls each endpoint's module in `netlify/server/api/`. It is one function so the
-endpoints share one instance's in-memory rate-limit buckets, as they did inside SvelteKit's single
-function: `verify-access-code`, `generate-image`, `generation-attempt` and `report-image` spend one
-per-IP failed-guess budget (see Rate limiting). On the web it's called same-origin; the native apps
-call the hosted endpoints through the transport in `src/ai/transport.ts` and its platform adapter.
+endpoints share one instance's in-memory rate-limit buckets: `verify-access-code`, `generate-image`,
+`generation-attempt` and `report-image` spend one per-IP failed-guess budget (see Rate limiting). On
+the web it's called same-origin; the native apps call the hosted endpoints through the transport in
+`src/ai/transport.ts` and its platform adapter.
 
-**One wrapper:** the function is `apiFunction(...)` (`netlify/server/api/apiFunction.ts`). The
-endpoints were SvelteKit routes until issue 3007, and installed native builds keep calling them, so
-the wrapper answers as SvelteKit and `hooks.server.ts` did, in their order: SvelteKit's CSRF guard
-(a form content type posted from an origin other than the site's own, `https://localhost` or
-`capacitor://localhost` gets a bare `403` before any handler runs; `netlify/server/csrf.ts`), the
-`308` from a trailing slash to the bare path, the CORS preflight, a `405` with `Allow` for a method
-the endpoint lacks, and on every other answer the CORS set, the `no-store` default and `nosniff`.
+**One wrapper:** the function is `apiFunction(...)` (`netlify/server/api/apiFunction.ts`). It
+applies the recorded HTTP contract in this order: the cross-site form guard (a form content type
+posted from an origin other than the site's own, `https://localhost` or `capacitor://localhost` gets
+a bare `403` before any handler runs; `netlify/server/csrf.ts`), the `308` from a trailing slash to
+the bare path, the CORS preflight, a `405` with `Allow` for a method the endpoint lacks, and on
+every other answer the CORS set, the `no-store` default and `nosniff`.
 `tools/api-smoke/tests/wire-diff.test.mjs` holds every function to the answers SvelteKit gave a
 recorded request corpus (`tools/api-smoke/lib/wire-corpus.mjs`), status, headers and body.
 
 **CORS:** `apiFunction` answers preflights and adds `Access-Control-Allow-Origin: *` to every
-`/api/*` response (the set is `API_CORS_HEADERS` in `netlify/server/apiCors.ts`, which
-`hooks.server.ts` also stamps on the 404 SvelteKit gives an `/api/` path no function claims), with
+`/api/*` response (the set is `API_CORS_HEADERS` in `netlify/server/apiCors.ts`), with
 `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` / `X-Access-Token` /
 `X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
 `X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
@@ -46,28 +44,26 @@ The `error` field is user-facing (clients surface it directly). That `{ ok: fals
 the **one client-facing JSON error shape** across `/api/*`, built by the same module's
 `fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)` (a lint rule,
 `API_HANDLER_WRAPPED` in `eslint.config.js`, rejects an unwrapped export from an endpoint module),
-which converts every thrown failure into the same shape at the boundary — a SvelteKit `error(...)`
-keeps its status and message, and an unexpected exception becomes a 500 with the generic error text
-— so neither throw-based control flow nor a crashed dependency can leak a `{ message }` body. The
-one exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
-module's `readJsonBody(request, maxBytes)` is the shared bounded JSON-body parser — every caller
-supplies a named endpoint cap, an oversized body is a uniform `413 "Request body is too large"`, and
-a malformed body is a uniform `400 "Expected a JSON body"`. The shared raw-body reader consumes
-streams only through the first chunk that crosses the cap and then releases its reader;
-`Content-Length` remains an early-rejection hint rather than the authority. It deliberately does not
-cancel because SvelteKit's Node adapter maps cancellation to socket destruction before the 413 can
-be written. Use these helpers in any new endpoint instead of hand-rolling the parse, the failure
-body, or the 429. `readFormBody(request, maxBytes)` is the bounded twin of `request.formData()`: it
-reads through the same capped reader and answers `too-large` or `malformed` for the caller to word.
-The multipart endpoints (`generate-image`'s legacy shape, `report-image`) and the `/feedback` and
-`/admin` form actions all parse forms through it, because nothing else bounds a form body on
-Netlify; the form actions answer with the same `413 "Request body is too large"` wording.
+which converts every thrown failure into the same shape at the boundary — the local HTTP helper's
+`error(...)` keeps its status and message, and an unexpected exception becomes a 500 with the
+generic error text — so neither throw-based control flow nor a crashed dependency can leak a
+`{ message }` body. The one exemption is `csp-report`, whose responses are deliberately bodyless
+(browsers ignore them). The module's `readJsonBody(request, maxBytes)` is the shared bounded
+JSON-body parser — every caller supplies a named endpoint cap, an oversized body is a uniform
+`413 "Request body is too large"`, and a malformed body is a uniform `400 "Expected a JSON body"`.
+The shared raw-body reader consumes streams only through the first chunk that crosses the cap and
+then releases its reader; `Content-Length` remains an early-rejection hint rather than the
+authority. It deliberately does not cancel the stream: the original socket-destruction failure and
+the chunked-request 413 response are pinned by the API smoke corpus. Use these helpers in any new
+endpoint instead of hand-rolling the parse, the failure body, or the 429.
+`readFormBody(request, maxBytes)` is the bounded twin of `request.formData()`: it reads through the
+same capped reader and answers `too-large` or `malformed` for the caller to word. The multipart
+endpoints (`generate-image`'s legacy shape and `report-image`) parse forms through it. The RN
+feedback and web admin clients send JSON to the same public API; there are no server form actions.
 
 The small credential and admin-mutation JSON endpoints cap their bodies at 8 KiB. `/api/report`
-allows 64 KiB for its 4,000-character message plus the optional device snapshot. Each cap lives in
-the core module both front doors share (`MAX_ADMIN_LOGIN_BODY_BYTES` in `netlify/server/admin.ts`,
-`MAX_TOKEN_MUTATION_BODY_BYTES` in `netlify/server/tokens.ts`, `MAX_REPORT_BODY_BYTES` in
-`netlify/server/report.ts`), so the form action and its JSON twin stop reading at the same size.
+allows 64 KiB for its 4,000-character message plus the optional device snapshot. The named limits
+live in `netlify/server/admin.ts`, `netlify/server/tokens.ts` and `netlify/server/report.ts`.
 
 **Caching:** every `/api/*` response carries `Cache-Control: no-store` unless its route sets its own
 Cache-Control — `applyApiCacheDefault` (`netlify/server/apiCors.ts`) applies the default after the
@@ -116,7 +112,7 @@ is at rest until the poll that hands it over deletes it. The request path stores
 without first base64-encoding them, and the drawing stays bytes through the provider seam; the
 single base64 encode happens inside the adapter, which needs it for the vendor's data URL. A job
 expires after 20 minutes, and an hourly sweep deletes whatever was never collected. The server still
-answers in-line wherever there is no worker (`vite dev`, whose function host serves no background
+answers in-line wherever there is no worker (the plain Node local host, which serves no background
 function, or an unconfigured signing secret) and whenever the handoff fails with no worker owning
 the job (the job store could not take it, or the worker refused it), and a client that never sends
 the header always gets the synchronous shape. A generation slower than the synchronous deadline ends
@@ -136,7 +132,7 @@ and can only be updated via an app-store release (and PWA clients can run a stal
 so a deploy is never atomic with its clients — dropping multipart would `403` every
 already-installed client for missing credential headers. The handler branches on `Content-Type`; the
 multipart branch is a labelled shim to remove once the oldest supported client sends the raw body.
-This is also why the CSRF `trustedOrigins` allow-list (ADR-0007) is still required — the legacy
+This is also why the CSRF `CSRF_TRUSTED_ORIGINS` allowlist (ADR-0007) is still required — the legacy
 multipart POST from native is a cross-origin form submission that the guard would otherwise reject.
 The complete legacy multipart envelope is capped at the 15 MiB image limit plus 64 KiB for fields,
 part headers, and boundaries before it is parsed, so unused fields cannot create an unbounded read.
@@ -252,8 +248,8 @@ started with another credential gets no free-tier token. Rate-limited per IP, wi
 for waiting rather than guessing.
 
 Settling the free-generation reservation and minting the report token both happen **here**, not in
-the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why
-no credential is ever written into the job record.
+the worker. The collecting poll holds the caller's credential and performs delivery-time settlement;
+no credential needs to be persisted in the job record.
 
 ### `GET` / `POST /api/generation-attempt/v1` (closed source proposal)
 
@@ -494,7 +490,7 @@ a renamed key fails to compile on both sides.
 The GitHub REST call is isolated behind a server seam, `netlify/server/github.ts` (mirroring the AI
 provider seam, ADR-0047) — route code never touches the token or the REST shape. Auth is a
 fine-grained PAT in `GITHUB_ISSUE_TOKEN` (scope: *Issues: Read and write* on the target repo), read
-via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default private repository
+through `netlify/server/privateEnv.ts`; `GITHUB_ISSUE_REPO` overrides the default private repository
 `KyleMit/splotch-feedback`. The optional `device` payload is shaped by the shared, dependency-free
 `src/lib/platform/deviceReport.ts` (also used client-side to preview exactly what will be sent) and
 re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the issue
@@ -615,18 +611,17 @@ Every `503` carries that one sentence, `AI_REPORTING_UNAVAILABLE_MESSAGE` in
 ### `POST /api/csp-report`
 
 First-party receiver for browser CSP violation reports (issue #457) — the `report-uri` / `report-to`
-target of the site's composed Content Security Policy (SvelteKit's resource policy plus the
-meta-unsupported subset in root `netlify.toml`, which also sends the matching
+target of the site's composed Content Security Policy (the prerendered document's hash-bearing meta
+policy plus the header-only subset in root `netlify.toml`, which also sends the matching
 `Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured `[csp-report]`
 lines in the Netlify function log — the app's only telemetry sink (no third-party reporting by
-design; same stance as `handleError` in `hooks.server.ts` and its twin in `apiFunction`).
+design; unexpected API failures are logged by `apiHandler` / `apiFunction`).
 
-Delivery is browser-best-effort rather than complete telemetry. SSR policies are response headers
-and carry both `report-uri` and `report-to`. Prerendered resource policies are meta-delivered, where
-`report-uri` is forbidden; Chromium and WebKit generate observable `report-to` entries, but network
-delivery is not guaranteed, and Firefox versions without Reporting API delivery have no fallback.
-The complementary response policy's own violations still use `report-uri`. See ADR-0073 for the
-accepted prerendering tradeoff.
+Delivery is browser-best-effort rather than complete telemetry. Prerendered resource policies are
+meta-delivered, where `report-uri` is forbidden; Chromium and WebKit generate observable `report-to`
+entries, but network delivery is not guaranteed, and Firefox versions without Reporting API delivery
+have no fallback. The complementary response policy's own violations still use `report-uri`. See
+ADR-0073 for the accepted prerendering tradeoff.
 
 Browsers post these unauthenticated, so there is no credential gate. Accepted `Content-Type`s:
 `application/csp-report` (the legacy `report-uri` batch, `{"csp-report": {…kebab-case…}}` — Firefox
@@ -650,13 +645,12 @@ with no body; browsers ignore the response, so there is nothing to return.
 The authenticated `/admin` page shows the exact current UTC day's provider starts against the daily
 ceiling. To keep page load bounded, it reads at most 200 records from the `free-generation-grants`
 store and labels all grant-derived success, failure, active/exhausted, reservation, and activity
-figures as sampled. The raw Capacitor identifier is never sent or stored.
+figures as sampled. The raw device identifier is never sent or stored.
 
-JSON twin of the server-rendered `/admin` console, driven by `tools/api-smoke/lib/admin-client.mjs`
-(the local and deploy smoke tests) and by the React Native web export's `/admin` console
-(`src/pageDocument/admin/`). Both front doors call the same core (`netlify/server/admin.ts` \+
-`netlify/server/tokens.ts`) — the server-rendered console executes it directly in its form actions
-and **never** loops back through these endpoints.
+The React Native web export's `/admin` console (`src/pageDocument/admin/`) and the smoke client
+(`tools/api-smoke/lib/admin-client.mjs`) both call these JSON endpoints. Endpoint modules delegate
+to `netlify/server/admin.ts` and `netlify/server/tokens.ts`; the browser holds its bearer session in
+session storage and forgets it on a 401 or sign-out. The admin document is web-only.
 
 ### Authentication model
 
@@ -727,10 +721,10 @@ colliding (possible under Blobs eventual consistency, ADR-0025), `POST`/`DELETE`
 A mutation returns `503 { ok: false, error }` and changes nothing whenever durable storage is
 unavailable in a production-shaped runtime: `getStore()` threw, a Blobs read threw, or every
 seed-race confirmation read threw. Writing into the in-memory fallback there would report a token
-add/revoke that no durable list saw. Only Vite dev accepts mutations into memory; its list is
-deliberately process-local so the admin workflow remains usable without Blobs. The status per
-failure reason is `MUTATION_FAILURE_STATUS` in `netlify/server/tokens.ts`, shared with the `/admin`
-form action so both front doors answer the same failure identically.
+add/revoke that no durable list saw. Only development mode accepts mutations into memory; its list
+is deliberately process-local so the admin workflow remains usable without Blobs. The status per
+failure reason is `MUTATION_FAILURE_STATUS` in `netlify/server/tokens.ts`, used by the admin API
+handler.
 
 Invite URLs are built from the request origin, so they point at the host that served the API.
 
@@ -746,11 +740,11 @@ still removes them at their existing deadlines.
 
 ### `GET /api/admin/stats`
 
-The figures the server-rendered console's loader reads beside the code list: each listed code's
-generation tally and the free-generation grant figures above. Same bearer session and uniform `401`
-as `/api/admin/tokens`; `GET` (and `HEAD`) only, every other method is `405`. It is a sibling
-endpoint rather than more fields on the tokens snapshot, so that snapshot stays exactly what
-installed clients read, and a slow or failing tally read never holds up the code list.
+The figures the web admin console reads beside the code list: each listed code's generation tally
+and the free-generation grant figures above. Same bearer session and uniform `401` as
+`/api/admin/tokens`; `GET` (and `HEAD`) only, every other method is `405`. It is a sibling endpoint
+rather than more fields on the tokens snapshot, so that snapshot stays exactly what installed
+clients read, and a slow or failing tally read never holds up the code list.
 
 ```json
 {
@@ -802,7 +796,7 @@ installed clients read, and a slow or failing tally read never holds up the code
   described above, or `null` for a code with no tally.
 * `usageAvailable: false` means the tally store is unreachable or `USAGE_GRANT_ID_SECRET` is unset.
   Every `usage` is then `null` for that reason, not because the code was never used.
-* Like the server-rendered console's load, the read deletes each expired tally it meets.
+* The read deletes each expired tally it meets.
 * `freeGrantStats` is `null` when the grant store could not be read; the tallies are unaffected.
   `persistent: false` means the figures come from this server instance's memory. `installation` is
   the first eight characters of the hashed installation ID, never the raw identifier.
@@ -830,7 +824,7 @@ a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow (login success/failur
 and a token add/remove round-trip), the CORS contract (`OPTIONS /api/*` → 204 carrying the CORS set,
 a non-`OPTIONS` `/api/*` response carrying it too, that non-`OPTIONS` response also carrying
 `API_RESPONSE_HEADERS` — the `nosniff` subset of `SECURITY_HEADERS` that means something on a
-non-document body — and neither carrying the rest of the SSR set; the preflight returns before the
+non-document body — and neither carrying the document-only headers; the preflight returns before the
 header hook and so carries neither), `no-store` on every non-`OPTIONS` `/api/*` response its checks
 receive (`tools/api-smoke/lib/api-caching.mjs`), the `verify-access-code` shape, `report`'s
 validation + honeypot + graceful-unconfigured path (no `GITHUB_ISSUE_TOKEN` in the smoke env, so no
@@ -851,7 +845,7 @@ DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
 ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
 ```
 
-It checks the deployed `/`, `/privacy`, and SSR-rendered `/admin` routes, security and cache
+It checks the deployed `/`, `/privacy`, and prerendered `/admin` documents, security and cache
 headers, exact ADR-0030 version freshness, both native CORS origins, representative canonical
 failures that cannot reach a model call, `no-store` on every non-`OPTIONS` `/api/*` response, and
 the admin-token persistence contract. The workflow probes production daily with a read-only

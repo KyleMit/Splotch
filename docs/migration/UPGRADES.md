@@ -28,8 +28,8 @@ signing lineage and iOS team/keychain access. A different application ID or sign
 separate installation, even when its screen looks identical.
 
 The supported floors belong to [COMPATIBILITY.md](../COMPATIBILITY.md),
-[Android variables](../../android/variables.gradle), and
-[the iOS project](../../ios/App/App.xcodeproj/project.pbxproj). Dependency selection must establish
+[Android variables](../../android/gradle.properties), and
+[the iOS project](../../ios/Splotch.xcodeproj/project.pbxproj). Dependency selection must establish
 which released React Native, renderer, audio, and native-module versions meet those floors. An
 increase requires a recorded architecture decision and corresponding compatibility changes.
 

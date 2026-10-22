@@ -1,8 +1,5 @@
 import { ACCEPT_RADIUS_FACTOR } from '../lib/actions/dragToClearGeometry';
 
-// The shipping gesture's tuning, projected across the candidate boundary because its owner
-// (src/lib/actions/dragToClear.ts) imports the web engine. native-clear-projection.test.mjs
-// reads each shipping literal back and fails on divergence.
 export const HOLD_DURATION_MS = 500;
 export const MOVEMENT_THRESHOLD_PX = 50;
 const MULTI_CLICK_WINDOW_MS = 1000;
@@ -10,18 +7,17 @@ const MULTI_CLICK_THRESHOLD = 3;
 export const ACCEPT_ZONE_HIDE_DELAY_MS = 250;
 // How far the wash's fade-out edge reaches at full progress, as a fraction of the area diagonal.
 export const WASH_REACH_DIAGONAL_FRACTION = 1.3;
-// ClearButton.svelte's release: the button sails home on --ease-pop over this long, and a
-// committed flood lets go over its own fade.
+// Returning the tab and releasing a committed flood have separate completion times.
 export const RETURN_HOME_MS = 480;
 export const FLOOD_RELEASE_MS = 280;
 export const FLOOD_COMMITTED_OPACITY = 0.92;
-// The departing page's flight, from src/lib/drawing/inkMotion.ts and app.css's clear-sheet.
+// The departing page collapses toward its dock while the committed flood releases.
 export const CLEAR_SHEET_DURATION_MS = 560;
 const CLEAR_SHEET_CORNER_PULL = 0.34;
 export const CLEAR_SHEET_END_SCALE = 0.02;
 export const CLEAR_SHEET_END_TURN_DEG = 14;
 export const CLEAR_SHEET_CURVE = [0.32, 0.02, 0.42, 1] as const;
-// The coachmark's mime, from src/lib/components/ClearCoachmark.svelte.
+// The coachmark repeats the gesture long enough to teach it before dismissing.
 export const COACHMARK_AUTO_DISMISS_MS = 6000;
 export const GHOST_TRAVEL_OVERSHOOT = 1.18;
 export const COACHMARK_LOOP_MS = 2800;

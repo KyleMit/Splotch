@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-06
 
+## Current scope after the RN cutover (2026-10)
+
+One plain V2 Netlify Function serves `/api/*`; endpoint modules and shared stores live in
+`netlify/server/`. Background and scheduled functions remain separate. The Blobs storage and
+degrade-never-throw decisions remain; adapter-netlify is no longer present. The historical design
+below retains its original context.
+
 ## Context
 
 Two pieces of server-side state outlive a single request and must be mutable at runtime: the **AI

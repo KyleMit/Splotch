@@ -8,16 +8,16 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 The full guide is **[`docs/TESTING.md`](../../../docs/TESTING.md)**: the layer-by-layer table (tool,
 command, and what CI runs it on), then a section per layer.
 
-| Read this section        | When                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| The layer table (top)    | Picking which suite covers a change, or working out why CI ran something you didn't expect                                |
-| Server-contract smoke    | Changing an `/api/*` endpoint, the adapter, or the Netlify config                                                         |
-| Unit tests               | Writing Vitest for app code, the asset pipeline, store drawings, or repo scripts                                          |
-| E2E web tests            | Writing or running Playwright — **including "Writing flake-resistant specs", the section that earns its keep most often** |
-| Engine smoke / a11y tier | Touching the critical path or anything with a11y surface                                                                  |
-| Cloud session gotchas    | Running Playwright inside a cloud session                                                                                 |
-| Native smoke (Maestro)   | Android/iOS smoke runs, or installing Maestro for the first time                                                          |
-| Continuous integration   | Debugging a CI failure, or deciding where a new suite should run                                                          |
+| Read this section         | When                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| The layer table (top)     | Picking which suite covers a change, or working out why CI ran something you didn't expect                                |
+| Server-contract smoke     | Changing an `/api/*` endpoint, the adapter, or the Netlify config                                                         |
+| Unit tests                | Writing Vitest for app code, the asset pipeline, store drawings, or repo scripts                                          |
+| E2E web tests             | Writing or running Playwright — **including "Writing flake-resistant specs", the section that earns its keep most often** |
+| Browser smoke / a11y tier | Touching the critical path or anything with a11y surface                                                                  |
+| Cloud session gotchas     | Running Playwright inside a cloud session                                                                                 |
+| Native smoke (Maestro)    | Android/iOS smoke runs, or installing Maestro for the first time                                                          |
+| Continuous integration    | Debugging a CI failure, or deciding where a new suite should run                                                          |
 
 The two rules worth carrying before you open it:
 

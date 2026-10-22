@@ -1,10 +1,17 @@
 # ADR-0004: Imperative Canvas Engine with Callback Interface
 
-**Status:** Active — amended by ADR-0066 (2026-07): the imperative-engine and callback-bridge
-decisions stand unchanged, but the sibling-module list and the undo-memory notes below are
-replay-era — snapshot undo re-opens resident-raster memory as a managed, tiered budget. Amended by
-ADR-0072 (2026-07): "components mount the engine" becomes "components **adopt** the engine" — init
-moved to module-evaluation time, before hydration. See the amendments at the end.\
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The singleton Svelte canvas engine and its callback bridge were removed;
+the RN drawing owners live under `src/drawing/`.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amended by ADR-0066 (2026-07): the imperative-engine and
+callback-bridge decisions stand unchanged, but the sibling-module list and the undo-memory notes
+below are replay-era — snapshot undo re-opens resident-raster memory as a managed, tiered budget.
+Amended by ADR-0072 (2026-07): "components mount the engine" becomes "components **adopt** the
+engine" — init moved to module-evaluation time, before hydration. See the amendments at the end.\
 **Date:** 2024
 
 ## Context

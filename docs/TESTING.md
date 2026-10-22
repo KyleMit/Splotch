@@ -5,8 +5,8 @@
 The three layers are unit/mounted tests, Playwright against the RN web export, and native launch
 smokes (ADR-0008/0182). SvelteKit's component, SSR and tiled-engine browser suites are retired;
 their spec-by-spec decisions are recorded under `docs/scratchpad/2026-10-21-rn-e2e-dispositions/`.
-The app remains in `` pending root promotion, while retained shared TypeScript and server modules
-remain in `src/lib/`.
+The app lives in root `src/`; retained framework-free app modules live in `src/lib/` and hosted
+server modules in `netlify/server/`.
 
 | Layer                     | Tool                     | Command                                                   | CI                            |
 | ------------------------- | ------------------------ | --------------------------------------------------------- | ----------------------------- |

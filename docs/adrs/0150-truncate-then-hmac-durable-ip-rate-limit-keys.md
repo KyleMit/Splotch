@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The truncate-then-HMAC durable-IP rule remains in the framework-free Netlify server modules. Current
+request boundaries live under `netlify/server/`; client framework removal changes neither the
+pseudonym contract nor the recorded privacy constraints. The historical design below retains its
+original context.
+
 ## Context
 
 [ADR-0014](0014-in-memory-rate-limiting.md) deliberately keeps request-rate limits inside one

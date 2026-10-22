@@ -2,6 +2,13 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+The public `/design` document is generated from the RN web page-document owners under
+`src/pageDocument/design/` and current design sources. It remains a public styleguide; its Svelte
+route/partials and icon registry below were removed. The historical design below retains its
+original context.
+
 ## Context
 
 An externally-produced design-system package (built by an AI design tool from this repo's code)

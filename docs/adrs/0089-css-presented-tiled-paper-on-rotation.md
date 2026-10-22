@@ -1,6 +1,13 @@
 # ADR-0089: Present Rotated Tiled Paper with CSS Instead of Reallocating Canvas Surfaces
 
-**Status:** Active — amends [ADR-0050](0050-locked-paper-view-on-rotation.md),
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Svelte live-tile CSS presentation layer was removed. RN paper geometry
+preserves the locked-paper product rule independently.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends [ADR-0050](0050-locked-paper-view-on-rotation.md),
 [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and
 [ADR-0088](0088-frame-bound-screenshot-export-on-ipad-webkit.md). **Date:** 2026-07
 

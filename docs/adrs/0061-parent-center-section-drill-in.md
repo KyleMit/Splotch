@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+The section owners live in `src/settings/` and `src/parentCenter/`; the compact/wide RSD settings
+shells render those definitions. The product drill-in decision remains; the former Svelte shells
+below were removed. The historical design below retains its original context.
+
 ## Context
 
 The modal had grown to four top tabs (Settings, AI, Setup, About) rendered through a horizontal

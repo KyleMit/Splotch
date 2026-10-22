@@ -148,7 +148,7 @@ jobs:
             ## Splotch-specific checks
 
             - **Blast radius.** Grep for the package's actual import sites
-              (src/, tools/, tools/). A package nothing imports directly
+              (src/, netlify/, tools/). A package nothing imports directly
               is a much cheaper merge than one on the drawing hot path. Say
               which files would be affected.
             - **The dependency split is inverted (ADR-0070).** `dependencies` =
@@ -156,9 +156,9 @@ jobs:
               tooling. Netlify installs with `--omit=dev`, so if this bump moves
               a package between groups, or adds a build-needed package to
               `devDependencies`, the deploy breaks while CI stays green. Flag it.
-            - **Capacitor.** A `@capacitor/*` bump needs a native rebuild and may
-              move the min OS target — check the mobile implications and whether
-              android/ or ios/ config needs a matching change.
+            - **Expo / React Native.** SDK and native-module changes require aligned
+              versions, patch/provenance review (ADR-0119), and both native builds.
+              Check android/ and ios/ configuration and declared OS floors.
             - **GitHub Actions bumps.** Confirm the SHA pin matches the version
               comment, and check whether the new release changed its runtime
               (e.g. a new Node major) or its required permissions.

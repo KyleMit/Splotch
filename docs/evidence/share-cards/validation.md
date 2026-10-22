@@ -1,5 +1,11 @@
 # Standalone page share cards
 
+**Historical validation record.** The Svelte harness and bundle counts below describe the original
+capture. Current cards are regenerated from the self-contained document in
+`tools/marketing-assets/lib/share-card-document.mjs` by `npm run gen:share-cards`. The RN cutover
+retains the PNG bytes and checks their input provenance; old Svelte tests and chunk counts are not
+current RN gates.
+
 The four cards identify Privacy, Changelog, Feedback, and Beta when their links are shared. Each
 card is a committed 1200×630 PNG captured from the real Svelte harness at device scale 1, using
 Quicksand, the canonical Splotchy mark, the crayon strip, and the decoded handmade-paper texture.

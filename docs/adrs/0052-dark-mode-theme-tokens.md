@@ -8,6 +8,12 @@ this ADR's "no pre-generated inverted assets" clause. Also amended by
 [ADR-0098](0098-second-token-prune-consolidated-ramps.md): `--float-shadow-flyout` folded into the
 one `--float-shadow` lift. **Date:** 2026-07
 
+## Current scope after the RN cutover (2026-10)
+
+Theme choice and tokens are owned by RN settings, the RSD token source and platform theme adapters.
+The Svelte root attribute and generated-CSS mechanism below is historical. RN web prerendering
+stamps the initial document theme. The historical design below retains its original context.
+
 ## Context
 
 Parents asked for a dark mode with three choices — Light, Dark, or System (follow the OS) — picked

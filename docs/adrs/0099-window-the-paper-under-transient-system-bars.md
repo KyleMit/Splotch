@@ -2,6 +2,13 @@
 
 **Status:** Active (amends [0050](0050-locked-paper-view-on-rotation.md)) **Date:** 2026-08
 
+## Current scope after the RN cutover (2026-10)
+
+RN drawing paper geometry owns resize, rotation and viewport presentation, using shared
+`src/lib/drawing/paperView.ts` where appropriate. The Svelte resizeCanvas/tiled renderer below was
+removed; its exact browser measurements remain historical evidence rather than a separate RN
+implementation. The historical design below retains its original context.
+
 ## Context
 
 Splotch runs full-screen on Android with the navigation bar hidden in immersive-sticky mode

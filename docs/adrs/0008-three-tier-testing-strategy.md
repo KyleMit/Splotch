@@ -8,6 +8,13 @@
 > `tools/` and its command was renamed `test:scripts` → `test:tools`. The three-tier strategy itself
 > is unchanged.
 
+## Current scope after the RN cutover (2026-10)
+
+The three tiers remain Vitest (shared, tool and mounted RSD contracts), Playwright against the RN
+production export in `e2e/`, and Maestro launch-and-paint smokes against root native projects.
+`docs/TESTING.md` owns current commands and CI applicability. The historical design below retains
+its original context.
+
 ## Context
 
 Splotch has three distinct layers of testable behavior that require different tools:

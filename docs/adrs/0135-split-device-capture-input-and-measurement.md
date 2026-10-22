@@ -1,6 +1,13 @@
 # ADR-0135: Split the Device Capture's Input and Measurement Channels
 
-**Status:** Active — amends
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The split physical capture harness was retired. Trusted-input requirements
+remain relevant when designing a new instrument, but this implementation no longer runs.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active — amends
 [ADR-0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md),
 [ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md), and
 [ADR-0092](0092-direct-cdp-android-browser-action-profiling.md); amended by

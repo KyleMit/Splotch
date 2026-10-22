@@ -68,7 +68,8 @@ trusting the rest.
   summaries.
 
 Keep it a packet, not a recap: prefer a `file:line` pointer over a paragraph re-explaining the code.
-`docs/handoff/coloring-fill-drift.md` is a worked example of the right density.
+`docs/handoff/coloring-fill-drift.md` illustrates a task-specific packet filename; create the packet
+when file mode is requested.
 
 ## Prompt mode (default)
 

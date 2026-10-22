@@ -10,10 +10,8 @@ import {
   testWorkflow,
 } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 
-// The React Native candidate's checks sit outside everything else CI runs: `npm run check` never
-// reads its TypeScript project, test:tools excludes its renderer tests, and its web E2E suite runs
-// from its own Playwright config. None protects a pull request unless a job names it, so each
-// command is held to the job that runs it and each script to what it must invoke.
+// Type checks, mounted renderer contracts and real-browser suites each need an explicit CI home.
+// This guard pins both the command and the job rather than accepting a command in any job.
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
 const nativeTsconfig = JSON.parse(readFileSync(join(repoRoot, 'tsconfig.json'), 'utf8'));

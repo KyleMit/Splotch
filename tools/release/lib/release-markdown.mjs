@@ -1,4 +1,4 @@
-// Markdown -> HTML for the Svelte components generated from releases/*.md.
+// Markdown -> HTML for the release-note documents generated from releases/*.md.
 //
 // Release notes are written in one narrow vocabulary — level-2/3 section
 // headings, unordered lists, short paragraphs, and inline emphasis, code, and
@@ -122,7 +122,7 @@ function takeParagraph(lines, start) {
 
 /**
  * Render one release-note body (or one `##` section of it) to the HTML the
- * generated Svelte components embed. Blocks are emitted one per line, each
+ * generated release documents embed. Blocks are emitted one per line, each
  * newline-terminated, and the caller re-indents.
  */
 export function renderReleaseMarkdown(markdown) {

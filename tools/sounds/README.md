@@ -79,8 +79,8 @@ To change the encoding, edit `LAME_VBR_QUALITY` (or `LAME_MONO_ENCODE_ARGS`, alo
 `EXPECTED_ENCODER`) in `gen-pencil-sounds.mjs`, re-run the script, and listen to the clips on a
 tablet speaker before committing. The test reads the LAME tag of each shipped clip, so an encode
 from a different profile fails it. Update the table above with the new measurements. To add a clip,
-add `masters/pencil-N.mp3`, add its URL to `SOUND_URLS` in `drawingSound.ts`, and re-run the script.
-The test fails until all three agree.
+add `masters/pencil-N.mp3`, import it into `PENCIL_SOUNDS` in `src/audio/pencilSounds.ts`, and
+re-run the script. The test fails until all three agree.
 
 Verify with:
 

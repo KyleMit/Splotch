@@ -27,7 +27,7 @@ const NODE_BUILTIN_IMPORT_RESTRICTIONS = builtinModules
     name,
     message: `Use the node: protocol (import from 'node:${name}').`,
   }));
-// The full no-restricted-imports set for web/src. Every block that configures the rule for a
+// The full no-restricted-imports set for src. Every block that configures the rule for a
 // slice of src spreads this, so the replace gotcha above can't silently drop an entry there.
 // tools/tests/server-only-imports-lint.test.mjs is the positive control.
 const SHARED_TYPESCRIPT_FILES = [
@@ -118,7 +118,7 @@ const BLOBS_CONSISTENCY_EXPLICIT = [
 // every later block that adds selectors for a slice of it. Each set is merged here rather than into
 // its own src block, which would silently replace the rate-limit selectors (that actually
 // happened during evaluation). The Vitest block replaces this entry for its file shapes,
-// then a web/src-scoped block recomposes NAMED_EXPORTS_ONLY.
+// then a src-scoped block recomposes NAMED_EXPORTS_ONLY.
 const WEB_SRC_SYNTAX_RESTRICTIONS = [
   ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
     selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
@@ -257,17 +257,16 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/tests/fetch-image-reports.test.mjs': 568,
 };
 
-// Flat config lives at the repo root (where package.json / node_modules are), but the app
-// source is under web/. Type checking is owned by `npm run check`; ESLint runs
+// Flat config and app source live at the repo root. Type checking is owned by
+// `npm run check`; ESLint runs
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
 // — it covers correctness/style rules and the project conventions, not type errors. The one
 // deliberate exception is no-floating-promises, run type-aware by two scoped blocks near the
-// bottom (src TS and the native candidate's src), which pay the TS-program cost for that rule
+// bottom, which pay the TS-program cost for that rule
 // alone.
 export default tseslint.config(
   {
     ignores: [
-      '**/.svelte-kit/',
       '**/build/',
       '**/.netlify/',
       '**/node_modules/',
@@ -280,8 +279,8 @@ export default tseslint.config(
       '**/test-results/',
       '.claude/worktrees/',
       'screenshots/',
-      'android/',
-      'ios/',
+      'android/**',
+      'ios/**',
       'scrapbook/',
       // The React Native web export (`npm run native:web:build`): bundled Expo output.
       'dist/',

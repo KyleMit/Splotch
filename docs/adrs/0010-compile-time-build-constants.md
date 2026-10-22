@@ -1,6 +1,13 @@
 # ADR-0010: Compile-Time Build Constants via Vite Define
 
-**Status:** Active\
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The Vite `buildDefines()` injection and its Svelte build contract were
+removed. RN build inputs are owned by Babel, Metro and the native projects.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Active\
 **Date:** 2024
 
 ## Context

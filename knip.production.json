@@ -14,7 +14,6 @@
   "paths": {
     "$lib/*": ["src/lib/*"]
   },
-  "ignoreUnresolved": ["^\\$app/", "^\\$env/"],
   "ignoreDependencies": [
     "@expo/cli",
     "@expo/metro",

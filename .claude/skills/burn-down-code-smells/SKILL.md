@@ -84,7 +84,7 @@ Run waves in this order, and start the next one as the queue drains:
 | Wave            | Auditors (one per row, in parallel)                                                                                                                                                                                                                                                                                                                                                                               |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Principles   | Illegal states, fail fast, command-query separation, least astonishment · Single responsibility, cohesion, coupling, separation of concerns, explicit over implicit · DRY, YAGNI, KISS (across `src` and `tools/`) · Names, tell-don't-ask, Demeter, interface segregation · Tooling (`tools/`: fail fast, entry versus library, coupling, size) · Seams: dependency inversion, Liskov, open/closed, test doubles |
-| 2. Practice     | Compliance with the root `CLAUDE.md` Conventions and `docs/CODING-STANDARDS.md` · The Svelte component layer · Test-suite quality: tests that can't fail, order dependence, timeout headroom, drifting doubles                                                                                                                                                                                                    |
+| 2. Practice     | Compliance with the root `CLAUDE.md` Conventions and `docs/CODING-STANDARDS.md` · The React Strict DOM component layer · Test-suite quality: tests that can't fail, order dependence, timeout headroom, drifting doubles                                                                                                                                                                                          |
 | 3+. Area passes | One whole-area pass per area no auditor has covered yet, for example server routes and functions, state and boot, drawing modules off the hot path, pipelines such as asset generation, page routes, E2E specs, and the agent-instruction tooling                                                                                                                                                                 |
 
 Later waves take a list of the merged campaign PRs and the earlier findings files, so they never
@@ -139,9 +139,8 @@ Quality work adds these habits:
 * **Startup and hot path.** The build pins catch a new startup chunk. For byte creep, compare the
   startup totals the postbuild budget reports across merges. If a regression lands anyway, fix it
   forward as its own unit, and harden the gate in the same PR.
-* **Instrument fingerprints.** Perf-harness files listed in `INSTRUMENT_FILES_BY_COMMAND` change
-  campaign fingerprints. Each tools unit lists which perf campaigns now need
-  `--accept-instrument-change`, and the morning report collects them.
+* **Performance inputs.** Record changes to the RN probe, replay traces and native build inputs in
+  the unit's evidence. The retired capture campaign fingerprint map is not an active gate.
 * **Deferred on purpose.** Hot-path refactors that need a quiet-host perf run can't be judged while
   lanes are busy. Defer them with the reason instead of shipping them unmeasured.
 

@@ -1,6 +1,14 @@
 # ADR-0144: Coalescing Is a Witness, Not a Check
 
-**Status:** Accepted — amends [ADR-0139](0139-per-runtime-input-fidelity-expectations.md) and
+**Status:** Superseded by [ADR-0182](0182-splotch-is-one-react-native-app.md)
+
+**RN cutover (2026-10):** The coalescing classification belonged to the retired input-fidelity
+scorer.
+
+The record below preserves the retired implementation and its evidence.
+
+**Original status and date:** Accepted — amends
+[ADR-0139](0139-per-runtime-input-fidelity-expectations.md) and
 [ADR-0141](0141-cadence-is-a-floor-and-silent-checks-are-named.md). **Date:** 2026-08
 
 ## Context

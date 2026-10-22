@@ -1,0 +1,42 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/audit-burndown/tests/burndown-core.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+ ❯ |repo-tools| audit-burndown/tests/burndown-core.test.mjs (80 tests | 1 failed) 28ms
+   ❯ lint gate file selection (4)
+     × keeps lintable source files that still exist 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| audit-burndown/tests/burndown-core.test.mjs > lint gate file selection > keeps lintable source files that still exist
+AssertionError: expected [ 'src/a.ts', 'tools/c.mjs', …(2) ] to deeply equal [ 'src/a.ts', 'src/B.tsx', …(3) ]
+
+- Expected
++ Received
+
+  [
+    "src/a.ts",
+-   "src/B.tsx",
+    "tools/c.mjs",
+    "tools/d.cjs",
+    "e.js",
+  ]
+
+ ❯ audit-burndown/tests/burndown-core.test.mjs:335:50
+    333|   it('keeps lintable source files that still exist', () => {
+    334|     const paths = ['src/a.ts', 'src/B.tsx', 'tools/c.mjs', 'tools/d.cj…
+    335|     expect(lintablePaths(paths, present(paths))).toEqual(paths);
+       |                                                  ^
+    336|   });
+    337|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 79 passed (80)
+   Start at  00:17:05
+   Duration  120ms (tests 51%, transform 34%, import 13%, worker 2%)

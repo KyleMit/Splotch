@@ -2,11 +2,8 @@
 // shades (light → dark), arranged two ways. Portrait keeps each family as a
 // row with its shades running across; landscape renders the transpose —
 // families as columns (rainbow sweeping left → right), shade levels as rows
-// (light → dark downward). ColorPicker.svelte renders BOTH grids and lets CSS
-// media queries pick one and progressively trim it, so the layout is correct
-// on the prerendered first paint with no JS measurement (same rationale as
-// ColorPalette.svelte's trim rules). The guiding rule encoded in those trim
-// ladders: the viewport's constrained axis drops shades, never hues — even
+// (light → dark downward). The RN picker selects the arrangement for its measured geometry.
+// The constrained axis drops shades, never hues — even
 // the smallest picker offers the whole rainbow. See ADR-0048.
 
 export interface ColorFamily {

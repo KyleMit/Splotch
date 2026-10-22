@@ -1,8 +1,8 @@
 # Device rotation and landscape
 
 Read this before changing the Orientation picker or device rotation. ADR-0172 records the gating
-rationale; ADR-0182 replaces its Svelte/Capacitor implementation with the RN app in ``. Browser API
-risks live in `docs/COMPATIBILITY.md`.
+rationale; ADR-0182 replaces its Svelte/Capacitor implementation with the RN app in `src/`. Browser
+API risks live in `docs/COMPATIBILITY.md`.
 
 ## The two questions
 
