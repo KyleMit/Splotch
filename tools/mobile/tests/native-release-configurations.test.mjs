@@ -23,6 +23,21 @@ const iosSmokeRunner = read('tools/mobile/ios/run-simulator-smoke-test.mjs');
 const nativeCompileWorkflow = read('.github/workflows/native-compile.yml');
 const stepArgs = ({ steps }) => steps.flatMap(({ args }) => args);
 
+it('resolves the included Expo Gradle build inside its installed autolinking package', () => {
+  const settings = read(join(ANDROID_PROJECT_DIR, 'settings.gradle'));
+  const expoPlugin = settings.match(
+    /def expoPluginsPath = new File\(([\s\S]+?)\)\.absolutePath/
+  )[1];
+  const expression = expoPlugin.match(/commandLine\("node", "--print", "([^"]+)"\)/)[1];
+  const child = expoPlugin.match(/trim\(\),\s*"([^"]+)"/)[1];
+  const manifest = execFileSync('node', ['--print', expression], {
+    cwd: join(repoRoot, ANDROID_PROJECT_DIR),
+    encoding: 'utf8',
+  }).trim();
+
+  expect(existsSync(join(resolve(manifest, child), 'build.gradle.kts'))).toBe(true);
+});
+
 // What `pnpm install` reads. pnpm-workspace.yaml's settings and patches/ decide
 // what lands in node_modules, which both native builds compile from, and
 // editing either need not touch the lockfile.

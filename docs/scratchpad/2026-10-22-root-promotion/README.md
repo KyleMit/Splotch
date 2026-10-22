@@ -62,3 +62,13 @@ This count change removes no runtime contract test. The installer still refuses 
 stage before child execution and protects the only module tree it cleans. The Lighthouse import
 closure still verifies every tracked export dependency, with a negative control that removes `src`;
 the folded root manifest follows the existing lockfile-owned dependency fingerprint policy.
+
+Signed-build preflight exposed an Android package-relative path that had been mistaken for an
+application-relative path. Expo's included Gradle build resolves from the autolinking package
+manifest, so its original `../android/expo-gradle-plugin` suffix remains valid after the application
+moves. A new native-release configuration guard evaluates the actual Node resolution from
+`settings.gradle` and verifies the installed Gradle build exists; it fails with the erroneous
+`./expo-gradle-plugin` suffix. This adds one tool test after the reconciliation above (8,092 total).
+The iOS device archive passed; App Store export requires the host's shipping distribution identity.
+CocoaPods' generated privacy-manifest reordering preserves identical parsed values, and its local
+podspec checksum churn changes no resolved dependency; neither is committed.

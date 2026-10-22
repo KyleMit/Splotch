@@ -12,7 +12,7 @@ pluginManagement {
       workingDir(rootDir)
       commandLine("node", "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
     }.standardOutput.asText.get().trim(),
-    "./expo-gradle-plugin"
+    "../android/expo-gradle-plugin"
   ).absolutePath
   includeBuild(expoPluginsPath)
 }
