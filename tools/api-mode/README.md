@@ -13,6 +13,11 @@ Configuration is separate so storage/purge functions do not import a model. It a
 `.netlify/api-mode-edge`: empty for production, with the universal noindex edge function for test.
 `netlify.toml` selects this directory outside the published web directory.
 
+Netlify detects the root `Gemfile` during dependency installation, before the JavaScript build. That
+manifest belongs to native CocoaPods and exits when Netlify sets `NETLIFY=true`, leaving the web
+install with no Ruby dependencies or native Ruby version requirement. Local native builds retain the
+pinned Ruby version and gems.
+
 The test selector imports only the fake model, recording GitHub sink and test storage/project key.
 The production selector imports only the production implementations. No runtime environment flag
 selects server behavior. `netlify/server/blobs.ts` prefixes all test store names, including stores
