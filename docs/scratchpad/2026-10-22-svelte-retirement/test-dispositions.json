@@ -1290,5 +1290,11 @@
       "file": "web/tsconfig.test.ts",
       "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
     }
+  ],
+  "retiredEntryPoints": [
+    {
+      "file": "tools/asset-gen/crayon-reference/capture-current-brush.mjs",
+      "disposition": "Deleted live /dev/engine capture entry point; its build/preview/global-engine contract has no RN caller. Static gen-comparison-sheet.mjs rendering from prior captures remains supported."
+    }
   ]
 }
