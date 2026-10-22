@@ -79,6 +79,12 @@ provider tree read-only, run it with host/escalated write access from the first 
 mid-pass can interrupt restoration of a registered direct-provider package; if a retry reports a
 missing direct-provider source, restore that exact tracked path before running Ruler again.
 
+Apply and check temporarily remove and restore direct-provider directories. In one checkout,
+serialize them against file scanners and the full browserless mirror, including when invoked by
+`check:quality`; separate CI checkouts do not share this race. When retiring nested instructions,
+remove the empty nested `.ruler/` directory as well as its source and generated siblings, then run
+apply followed by check to verify stable output without orphan instructions.
+
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
 source. For a registered direct package, edit its selected `.claude/` or `.agents/` package and note
@@ -260,6 +266,10 @@ For every GitHub task, **use the native GitHub skill and its MCP/app tools first
 `gh` CLI after that native path fails to perform the required operation. The sandbox cannot use the
 host's macOS Keychain-backed `gh` credentials, so `gh` authentication failures there are expected;
 never try to repair them by re-authenticating from the sandbox.
+
+Discover a native tool's invocation schema from its metadata before calling it; Codex exposes the
+complete declarations in `ALL_TOOLS`. Never invoke a mutation with empty arguments to learn its
+schema. Supply a complete request for the already-authorized repository and destination.
 
 When `gh` is needed from a scratch directory outside this checkout, pass `-R KyleMit/Splotch` and
 verify any expected downloaded files exist. For long-running work, open a draft PR early, commit

@@ -38,6 +38,27 @@ applicable full tier. Host ports and CPU are shared across worktrees: choose an 
 `npm --silent run show:free-port`; full browser suites, native runs and performance captures are
 host-exclusive. Stop only processes created by the current session.
 
+## Retiring or relocating code
+
+A deletion inventory identifies candidates, not permission to delete tests. Trace each test's called
+owner through wrappers and re-exports, including multi-aspect filenames. Distinguish a retired
+source/parser assertion or oracle from retained runtime behavior. Audit each callback's assertions
+and helper calls, even in surviving tests, and record its successor or reason for retirement.
+Synthetic fixture paths naming retired files do not make a parser or reporter obsolete.
+
+Preserve retained behavior with live contracts or independent expected fixtures. When exact bytes
+are the contract, capture base-derived fixtures or digests, including rendered output samples where
+applicable; qualitative checks do not replace byte parity. Seed meaningful faults in the retained
+implementation to prove the successor guards fail, following
+[A regression test must fail against the old code](#a-regression-test-must-fail-against-the-old-code).
+Do not weaken a passing expectation to accommodate the move.
+
+Separate current-root paths from paths resolved inside historical Git trees: an old ref needs that
+ref's layout. Exercise retained CLIs against their intended inputs, with old/new-ref fixtures when
+they read Git history, and verify a scan processes inputs rather than succeeding empty. Validate the
+final gates in a clean checkout or with retired empty directories removed; local leftovers must not
+supply an absent tracked input.
+
 ## A test that cannot fail is a lint error
 
 A test that has only ever passed carries no evidence it is connected to anything, and a green suite
