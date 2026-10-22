@@ -1,3 +1,6 @@
+# Netlify detects this native-only manifest before running the JavaScript web build.
+return if ENV['NETLIFY'] == 'true'
+
 source 'https://rubygems.org'
 
 # You may use http://rbenv.org/ or https://rvm.io/ to install and use this version
