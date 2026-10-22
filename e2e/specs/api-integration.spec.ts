@@ -2,6 +2,7 @@ import { expect, test } from '../api-fixtures.ts';
 import { openSettings, startAiGeneration } from '../support/group-a.ts';
 import type { Page } from '@playwright/test';
 import { waitForHydration } from '../support/group-b.ts';
+import { REQUEST_TIMEOUT_MS } from '../../src/ai/contract';
 
 test('the lane refuses page and context request interception', async ({ page, context }) => {
   expect(() => page.route('**/api/**', (route) => route.fulfill({ status: 200 }))).toThrow(
@@ -37,7 +38,14 @@ test('a fresh installation generates through the worker and polls, then reports 
     if (path.startsWith('/api/')) responses.push({ path, status: response.status() });
   });
   await enablePictures(page);
-  const { result } = await startAiGeneration(drawingScreen);
+  const [{ result }] = await Promise.all([
+    startAiGeneration(drawingScreen),
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/generation-result' && response.status() === 200,
+      { timeout: REQUEST_TIMEOUT_MS }
+    ),
+  ]);
   await expect(result.getByRole('img', { name: 'Your AI picture' })).toBeVisible();
   await expect(result.getByRole('status')).toHaveText('Your picture is ready');
   await testInfo.attach('real-handler-result', {

@@ -105,3 +105,12 @@ controls fail without the post-build recheck. Both deliberate source mutations r
 restored the exact committed bytes. These checks use isolated local storage or mocked device
 commands; no further native generation or physical-device operation was needed for the runner-only
 review changes.
+
+## CI result synchronization
+
+The first CI lane run failed its image assertion while the UI was still making the picture. The
+trace shows that the assertion started before capture submitted the request; its five-second budget
+ended before the first scheduled result poll. The success journey waits for the actual successful
+result response within the client request budget before asserting the rendered image. Its image,
+status, report and grant assertions are unchanged. Retries remain disabled. The retained CI trace
+timing summary is in `controls/ci-result-synchronization.log.txt`.
