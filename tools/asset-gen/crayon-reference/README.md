@@ -37,24 +37,9 @@ npm --prefix ../../.. run scrapbook:index                                     # 
 
 ## Comparing against the shipping brush
 
-The committed [`vs-current.html`](../../../scrapbook/crayon-brush-samples/vs-current.html) puts each
-acceptance scene side by side with the real ADR-0065 renderer and names the visual gap per scene
-(first built for the 2026-07 re-architecture study). To refresh it after a brush change:
-
-```bash
-# 1. Serve the production build with the dev harness unlocked (vite dev won't do:
-#    /dev/engine SSR currently 500s there — its `window` read survives only in the
-#    minified build).
-npm --prefix ../../.. run build
-PUBLIC_ENABLE_DEV_HARNESS=true npm --prefix ../../.. run preview -- --port 4188
-
-# 2. Re-capture the scenes and rebuild the sheet (no API key needed).
-node capture-current-brush.mjs --url=http://localhost:4188
-node gen-comparison-sheet.mjs
-```
-
-* `capture-current-brush.mjs` — drives the crayon brush through each reference mark on `/dev/engine`
-  (Playwright, synthetic strokes) and screenshots into the gitignored `screenshots/crayon-current`.
-* `gen-comparison-sheet.mjs` — pairs those captures with the reference images into the
-  self-contained `vs-current.html`. Same `--artifact=<path>` fragment option as
-  `gen-reference-sheet.mjs`.
+The committed [`vs-current.html`](../../../scrapbook/crayon-brush-samples/vs-current.html) is an
+archival comparison with the ADR-0065 renderer from the July 2026 re-architecture study. Its Svelte
+engine capture executable is retired. The sheet can still be assembled from previously captured
+images with `node gen-comparison-sheet.mjs`; it performs no live application capture. The
+`--current=<dir>` flag selects the capture directory, and the same `--artifact=<path>` fragment
+option as `gen-reference-sheet.mjs` remains available.

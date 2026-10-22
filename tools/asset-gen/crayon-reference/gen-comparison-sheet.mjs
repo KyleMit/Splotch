@@ -1,12 +1,12 @@
 // Assemble the reference-vs-current comparison sheet: each acceptance scene as
 // a side-by-side pair — the real-crayon reference next to the shipping brush
-// driven through the same mark (capture-current-brush.mjs) — with the visual gap
+// captured through the same mark in the archived renderer study — with the visual gap
 // named per scene. Self-contained (images inlined) like the contact sheet.
 //
 //   node gen-comparison-sheet.mjs [--renders=<dir>] [--artifact=<path>]
 //
 // Writes ../../../scrapbook/crayon-brush-samples/vs-current.html. `--renders`
-// points at capture-current-brush.mjs output (default screenshots/crayon-current);
+// points at previously captured scene images (default screenshots/crayon-current);
 // `--artifact` also emits a body-only fragment for the Claude Artifact tool.
 
 import { writeFile } from 'node:fs/promises';
