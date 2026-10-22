@@ -30,6 +30,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // the sharded Tests job, the sharded RN web E2E job and the two engine smoke jobs;
 // flaky-digest-workflow.test.mjs pins both sides.
 const REPORT_JOBS = [
+  // Runs from before the SvelteKit suite's job was removed stay harvestable until their report
+  // artifacts expire.
   {
     pattern: /^Tests \((\d+)\/(\d+)\)$/,
     artifact: (match) => `playwright-report-shard-${match[1]}`,

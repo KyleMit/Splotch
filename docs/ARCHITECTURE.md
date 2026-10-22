@@ -340,7 +340,7 @@ orientation from CSS media queries + the head-script stamp in `app.html`).
 > * **Bare toolbar** makes the canvas full-bleed beneath the pointer-intercepting palette.
 >   `BareToolbarPaper.svelte` supplies its rail glass and printed margin; `GlassPanes.svelte`
 >   supplies the action strip and menu glass. Fullscreen explicitly clears the rail in this mode.
-> * **Every modal dialog has an accessible name** (`a11y.spec.ts` `NAMED_DIALOGS` asserts each).
+> * **Every modal dialog has an accessible name** (`e2e/specs/a11y.spec.ts` asserts each by name).
 >   Label it by a visible heading or legend that never changes; where the heading changes with the
 >   view (Settings drill-ins, the Coloring Book Picker's book pages) or there is none, give it the
 >   fixed name recorded here instead.

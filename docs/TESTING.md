@@ -462,15 +462,15 @@ Write specs that can't race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare
-  `.click()` + `expect(modal).toBeVisible()` flakes. `tests/helpers.ts` exports a shared
-  `retryOpen(ready, open, opts?)` primitive for this — it retries `open()` until `ready` shows,
-  skipping the click when it is already open. The ready locator must be durable: prerendered or
-  native behavior must not be able to satisfy it before hydration and then reset it. Either wait on
-  a hydration-only sentinel before interacting (the Beta page's on-mount-only support link and
-  `openHydratedContents`' computed panel cap are examples), or retry the complete action plus its
-  durable product outcome as one transaction. `openSettingsModal` (also `tests/helpers.ts`) and
-  `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate` (`tests/flows-harness.ts`)
-  are all one-liners over `retryOpen`. Reach for one of those contracts (or wrap the complete
+  `.click()` + `expect(modal).toBeVisible()` flakes. The retired SvelteKit suite's `helpers`
+  exported a shared `retryOpen(ready, open, opts?)` primitive for this — it retries `open()` until
+  `ready` shows, skipping the click when it is already open. The ready locator must be durable:
+  prerendered or native behavior must not be able to satisfy it before hydration and then reset it.
+  Either wait on a hydration-only sentinel before interacting (the Beta page's on-mount-only support
+  link and `openHydratedContents`' computed panel cap are examples), or retry the complete action
+  plus its durable product outcome as one transaction. `openSettingsModal` (also in `helpers`) and
+  `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate` (in `flows-harness`) are all
+  one-liners over `retryOpen`. Reach for one of those contracts (or wrap the complete
   open-and-outcome transaction in `expect(...).toPass()`) rather than repeating a bare click or
   treating transient visibility as readiness.
 * **A view an overlay picks *at open time* can't be waited into — reopen it.** Retrying an assertion
@@ -481,21 +481,20 @@ Write specs that can't race in the first place:
   the next open, so the picker never moves under a finger. So a picker opened while only the starter
   book is known shows its pages and *stays* there, which is how "no viewport draws a cover smaller
   than four columns" came to fail with the cover grid simply absent (issue \#936). The sentinel to
-  retry the open against is the view you need, not the dialog: `openColoringBookGrid`
-  (`tests/flows-harness.ts`) closes and reopens until an open lands on the grid, since each open
-  re-reads the installed set. Prefer it over `openColoringDialog` in any spec that then reads a book
-  cover, and seed the page with `gotoAppWithInstalledColoringBook`/`…AllColoringBooksInstalled` so
-  there is a grid to land on — a spec that means to exercise the fresh-install view drives the
-  dialog directly instead (`coloring-pack-download.spec.ts`). On the web, seeding is also what makes
-  a boot count as a returning visit: a device with no pack storage downloads nothing until the child
-  draws a few strokes or opens the picker, so a plain `gotoApp` spec that needs other books must
-  engage first.
+  retry the open against is the view you need, not the dialog: `openColoringBookGrid` (in
+  `flows-harness`) closes and reopens until an open lands on the grid, since each open re-reads the
+  installed set. Prefer it over `openColoringDialog` in any spec that then reads a book cover, and
+  seed the page with `gotoAppWithInstalledColoringBook`/`…AllColoringBooksInstalled` so there is a
+  grid to land on — a spec that means to exercise the fresh-install view drives the dialog directly
+  instead (`e2e/specs/coloring-picker.spec.ts`). On the web, seeding is also what makes a boot count
+  as a returning visit: a device with no pack storage downloads nothing until the child draws a few
+  strokes or opens the picker, so a plain `gotoApp` spec that needs other books must engage first.
 * **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
   retries until the condition holds (`expect(locator).toBeVisible()`, `expect.poll(() => …)`,
   `expect(...).toPass()`). A fixed sleep is only legitimate when it is **monotonic-safe under
   load**: (a) deliberately idling *past* a known threshold to reproduce a timing bug (e.g. the
-  stroke-resume gap in `engine-pointer-recovery.spec.ts`), or (b) proving a *negative* — that state
-  must **not** change within a window (e.g. the "SW never registers" check in
+  settle past the departing page's flight in `e2e/specs/clear.spec.ts`), or (b) proving a *negative*
+  — that state must **not** change within a window (e.g. the "SW never registers" check in
   `e2e/specs/pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases,
   so they can't false-red. Comment the reason when you keep one.
 * **Use the drawing app's durable ready state.** `gotoApp()` does not return merely because the
@@ -516,7 +515,7 @@ Write specs that can't race in the first place:
   reads exactly once and races the repaint; `await expect.poll(() => count(page)).toBe(n)` waits for
   it to settle. Same for `getViewState()`/`pixelAt()` reads after a rotation.
 * **A sequence that must land inside a timing window must retry as a whole.** A triple-tap that has
-  to fall inside dragToClear's 1000ms multi-click window (`clear-tutorial.spec.ts`) can straddle it
+  to fall inside dragToClear's 1000ms multi-click window (`e2e/specs/clear.spec.ts`) can straddle it
   under load — wrap the entire burst in `toPass()`, don't just add a longer wait between taps.
 * **A mocked endpoint control resolves after delivery, not after queuing.** If a helper exposes
   `succeed()` or `fail()`, resolve that control only after the intercepted handler's awaited
@@ -552,41 +551,41 @@ Write specs that can't race in the first place:
   to stop moving, and a real Playwright `.click()` only *usually* does: its stability check is two
   consecutive frames with an identical rect, and a CSS animation still **pending** its start time (a
   starved compositor grants it late) holds its first keyframe across frames and passes that check.
-  Captured under full-suite contention in `ai-report.spec.ts`: the click on the confirmation's Send
-  button dispatched 52ms after open, at a 17×21px dialog (the 5% keyframe), 9px from the launch
-  origin — inside the dead zone below, so it was swallowed and nothing was sent. The immune tests in
-  that spec were the ones that pressed Escape or ran under reduced motion, which is the tell.
-  `dialogFlyFromOrigin` (app.css) starts a modal scaled down **on the button that opened it**, and
-  `modalDialog` arms a launch dead zone at that same point (`launchGuard`: 72px, 600ms) whose
-  capture-phase `pointerdown` handler swallows everything inside it — dialog content included, by
-  design (issue \#308's ghost click). So for the opening frames the whole dialog sits in the dead
-  zone: Settings' content pane centers **6px** from the launch origin at the first keyframe and only
-  clears the radius ~13ms into the animation. A CSS animation advances with *rendered frames*, so a
-  starved worker parks the dialog on that keyframe for far longer than 13ms of wall clock, and the
-  gesture is aimed straight into the guard and silently does nothing. That was issue \#665 — the
-  three zoom/pinch specs that were the entire residual flake rate (ADR-0078 §4), all failing as "the
-  pinch produced no zoom". The fix is to await the dialog's `Animation.finished` before touching it
-  — `settleFlyIn` (`tests/helpers.ts`), which `openSettingsModal` and `landedReportConfirm`
-  (`tests/ai-harness.ts`) wrap. Landed, the Settings pane rests 574px from the origin and the report
-  confirmation's buttons 130px+, so the dependency on animation progress is removed instead of
-  timed. Every dialog carrying `modal-fly-in` (`#settingsModal`, `#color-picker`,
-  `#coloring-book-dialog`, `.ai-prompt-modal`, `.parental-gate`, `.ai-report-confirm`) needs the
-  same wait between its open and the first pointer action on its content. The colour picker is the
-  sharpest case: it snapshots every hexagon's center and its snap radius on the `pointerdown` that
-  starts a drag, so a drag begun on an unlanded grid would keep a scaled-down snapshot for the whole
-  gesture. Whether that explains the one red run ADR-0078 §4a recorded for the pointer-exploration
-  spec is unproven — a down at the first keyframe is swallowed by the launch zone before the picker
-  sees it, and the failure was never reproduced — but the spec now waits like its tap sibling, which
-  closes the window either way. Query `getAnimations()` on the dialog element alone — the fly-in
-  animates it directly, and `{ subtree: true }` would start waiting on unrelated descendant
-  animations too.
+  Captured under full-suite contention in the SvelteKit suite's AI report spec, now
+  `e2e/specs/ai-report.spec.ts`: the click on the confirmation's Send button dispatched 52ms after
+  open, at a 17×21px dialog (the 5% keyframe), 9px from the launch origin — inside the dead zone
+  below, so it was swallowed and nothing was sent. The immune tests in that spec were the ones that
+  pressed Escape or ran under reduced motion, which is the tell. `dialogFlyFromOrigin` (app.css)
+  starts a modal scaled down **on the button that opened it**, and `modalDialog` arms a launch dead
+  zone at that same point (`launchGuard`: 72px, 600ms) whose capture-phase `pointerdown` handler
+  swallows everything inside it — dialog content included, by design (issue \#308's ghost click). So
+  for the opening frames the whole dialog sits in the dead zone: Settings' content pane centers
+  **6px** from the launch origin at the first keyframe and only clears the radius ~13ms into the
+  animation. A CSS animation advances with *rendered frames*, so a starved worker parks the dialog
+  on that keyframe for far longer than 13ms of wall clock, and the gesture is aimed straight into
+  the guard and silently does nothing. That was issue \#665 — the three zoom/pinch specs that were
+  the entire residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom". The fix
+  is to await the dialog's `Animation.finished` before touching it — `settleFlyIn` (in `helpers`),
+  which `openSettingsModal` and `landedReportConfirm` (in `ai-harness`) wrap. Landed, the Settings
+  pane rests 574px from the origin and the report confirmation's buttons 130px+, so the dependency
+  on animation progress is removed instead of timed. Every dialog carrying `modal-fly-in`
+  (`#settingsModal`, `#color-picker`, `#coloring-book-dialog`, `.ai-prompt-modal`, `.parental-gate`,
+  `.ai-report-confirm`) needs the same wait between its open and the first pointer action on its
+  content. The colour picker is the sharpest case: it snapshots every hexagon's center and its snap
+  radius on the `pointerdown` that starts a drag, so a drag begun on an unlanded grid would keep a
+  scaled-down snapshot for the whole gesture. Whether that explains the one red run ADR-0078 §4a
+  recorded for the pointer-exploration spec is unproven — a down at the first keyframe is swallowed
+  by the launch zone before the picker sees it, and the failure was never reproduced — but the spec
+  now waits like its tap sibling, which closes the window either way. Query `getAnimations()` on the
+  dialog element alone — the fly-in animates it directly, and `{ subtree: true }` would start
+  waiting on unrelated descendant animations too.
 * **Budget a frame-paced condition in frames, not milliseconds.** The wide Settings pane mounts one
   section per frame once the card lands (issue \#910), and `aria-busy` clears only when the last one
   is in — so the wait for it is on the fill's clock, which is the frame. Playwright's assertion
   timeout is wall clock, and contention stretches a frame without adding any, which is how the
   default 5s cap on `expect(pane).toHaveAttribute('aria-busy', 'false')` came to fail a WebKit smoke
   run three times over on a fill that was merely unfinished (issue \#918 — the `web/` tree under
-  test was byte-identical to a green `main`). `settleSettingsPane` (`tests/helpers.ts`) samples the
+  test was byte-identical to a green `main`). `settleSettingsPane` (in `helpers`) samples the
   attribute from inside the page once per `requestAnimationFrame` and gives up only after
   `SETTINGS_FILL_FRAME_BUDGET` frames, so a starved worker costs it wall clock and nothing else, and
   the budget still bounds a fill that has genuinely stopped. Sampling from inside the page is half
@@ -596,19 +595,21 @@ Write specs that can't race in the first place:
   runs on rendered frames too, but it exposes `Animation.finished`, so there you await the browser's
   own signal instead of counting.
 * **Pace a spec on the animation it depends on, never on a clock sized to it.** The lifting-halo
-  spec in `drawing-motion.spec.ts` needs a lift that has started and not ended when reduced motion
-  switches it off, and the `animationcancel` that switch produces is dispatched only by a rendering
-  update. Three fixed sleeps sized that on an idle machine and went red 8 times in 20 repeats at
-  four times capacity (issue \#2196): the shard rendered no frame inside the 300 ms budget, so the
-  cancel never came and the ring was still there. The rewrite waits on the browser's own signal for
-  each phase — the grow-in's `animationend`, then the lift's `Animation.ready` before the attribute
-  flips, then the lift's `animationcancel` — and asserts the removal through a web-first
-  `toHaveCount(0)`, so a starved worker stretches each wait and breaks none of them. Two of those
-  choices are load-bearing, both measured in Chromium: a play-pending animation cancelled before its
-  first frame fires no `animationcancel` at all, so `ready` is what makes the cancel certain; and an
-  `Animation.finished` continuation runs before `animationend` dispatches, so a spec that depends on
-  the product's end handler having run waits on the event, not the promise. Svelte scopes a
-  component's keyframe names with its hash, so match `animationName` by suffix, not equality.
+  spec in the SvelteKit suite's drawing-motion spec (retired; the React Native halo is held by
+  `tools/tests/native-pointer-halos.test.mjs`) needed a lift that has started and not ended when
+  reduced motion switches it off, and the `animationcancel` that switch produces is dispatched only
+  by a rendering update. Three fixed sleeps sized that on an idle machine and went red 8 times in 20
+  repeats at four times capacity (issue \#2196): the shard rendered no frame inside the 300 ms
+  budget, so the cancel never came and the ring was still there. The rewrite waits on the browser's
+  own signal for each phase — the grow-in's `animationend`, then the lift's `Animation.ready` before
+  the attribute flips, then the lift's `animationcancel` — and asserts the removal through a
+  web-first `toHaveCount(0)`, so a starved worker stretches each wait and breaks none of them. Two
+  of those choices are load-bearing, both measured in Chromium: a play-pending animation cancelled
+  before its first frame fires no `animationcancel` at all, so `ready` is what makes the cancel
+  certain; and an `Animation.finished` continuation runs before `animationend` dispatches, so a spec
+  that depends on the product's end handler having run waits on the event, not the promise. Svelte
+  scopes a component's keyframe names with its hash, so match `animationName` by suffix, not
+  equality.
 
   A spec that has to act *inside* an animation needs the mirror-image move: widen the animation
   rather than timing the act. The retired halo lift-off specs released the stroke partway through a
@@ -649,9 +650,8 @@ Write specs that can't race in the first place:
   `/dev/engine` specs "flaking" with a missing `#drawingCanvas` or an undefined `window.__engine`,
   green on retry (a retry re-runs the file alone) and green in isolation. Extend `test` in the
   helper instead (`base.extend({ page: async ({ page }, use) => { …setup…; await use(page) } })`,
-  see `tests/engine-harness.ts`) and have specs import `test`/`expect` from the helper;
-  `tools/tests/e2e-harness-imports.test.mjs` fails the build if one imports `test` from
-  `@playwright/test` instead.
+  see `engine-harness` in the retired SvelteKit suite) and have specs import `test`/`expect` from
+  the helper.
 * **Prove it's fixed under load, not in isolation.** Flakes only appear under contention, so verify
   with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the configured
   workers) before trusting green — a single isolated pass proves nothing. A stubborn one may only
@@ -724,9 +724,9 @@ has an automated push/PR signal:
   Chromium alone while both smoke jobs remain green on the correctly tagged tests.
   `tools/tests/e2e-engine-tags.test.mjs` rejects literals and unknown tags, requires a tagged spec,
   and guards agreement among the project, script, and CI-job names.
-* Keep the spec cross-engine portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and
-  the `touchDriver` in `e2e/specs/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes,
-  no assertions tied to Chromium's rasterizer.
+* Keep the spec cross-engine portable: no CDP sessions (the `touchDriver` in
+  `e2e/specs/settings-zoom.spec.ts` is Chromium-only), no dev-harness routes, no assertions tied to
+  Chromium's rasterizer.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 
@@ -735,30 +735,32 @@ coverage, not the floor version or a native iOS boot. The declared bundle target
 coverage, while native iOS 16.4 remains a manual/device concern; see `docs/COMPATIBILITY.md` for the
 exact boundary and hosted-run evidence.
 
-### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
+### Accessibility tier — axe-core scans (`e2e/specs/a11y.spec.ts`)
 
 The **adult-facing surfaces** get an automated axe-core scan (`@axe-core/playwright`, a
-devDependency per ADR-0070 — CI-only tooling, never in the Netlify build) as part of the normal E2E
-run — no separate command or workflow:
+devDependency per ADR-0070 — CI-only tooling, never in the Netlify build) as part of the normal RN
+web E2E run — no separate command or workflow:
 
-* **What's scanned:** `/privacy`, `/changelog`, `/admin` (logged-out *and* logged-in, via the
-  `test-admin-secret` web-server key), and Settings dialog opened over `/`.
+* **What's scanned:** `/privacy`, `/changelog`, `/beta` (both platform tabs), `/feedback` with its
+  device-info panel open, `/admin` (signed out *and* signed in, through the `adminPage` fixture in
+  `e2e/support/group-a.ts`), the Settings dialog opened over `/`, and the AI flow's dialogs (Pick a
+  style, the picture-ready AI Result, the refusal's report confirmation, the grown-up check), each
+  in light and dark.
 * **What's deliberately not:** the drawing canvas and toddler-facing chrome. Toddler UX (giant
-  wordless buttons, no reading order) isn't WCAG's model, so Settings scan is **scoped to
-  `#settingsModal`** via `AxeBuilder.include()` instead of scanning the whole drawing page.
+  wordless buttons, no reading order) isn't WCAG's model, so a dialog's scan is **scoped to the
+  dialog** via `AxeBuilder.include()` instead of scanning the whole drawing page. `/design` is not
+  scanned either: its scroll-cue specimens are scrollable regions without keyboard access (axe's
+  `scrollable-region-focusable`), recorded as a gap in
+  `docs/scratchpad/2026-10-21-rn-e2e-dispositions/group-a.md`.
 * **The gate:** only violations with impact `serious` or `critical` fail the test, but the failure
-  message prints *every* violation axe found (id, impact, offending selectors, fix hints), so the
-  moderate/minor tail is visible in any red run.
-* **Adding a surface:** add a test to `tests/a11y.spec.ts` that navigates (or opens the overlay),
-  waits for a stable element, and calls `expectNoSeriousViolations(page)` — pass a CSS selector as
-  the second argument to scope the scan when the surface is an overlay above toddler chrome.
-* **What axe cannot see inside a modal `<dialog>`:** its `aria-dialog-name` rule matches only
-  `[role=dialog]`, so a native `<dialog>` with no name scans green, and it reports every text node
-  inside a modal as *incomplete* (the top-layer backdrop overlaps it), so dialog text contrast goes
-  unchecked. `NAMED_DIALOGS` in the same spec opens every modal the web build can raise and asserts
-  its accessible name, then `expectTextContrast` (`tests/text-contrast.ts`) measures each one's
-  visible text against the AA floors in both themes, compositing ink over the backgrounds beneath
-  it. Its doc comment lists what it still cannot see. A new modal gets an entry there.
+  message prints *every* serious violation axe found (id, impact, offending selectors, fix hints).
+* **Adding a surface:** add a test to `e2e/specs/a11y.spec.ts` that opens the page or overlay, waits
+  for it to settle (`expectSettled`, `expectColorsSettled`, `expectWired`), and calls
+  `expectNoSeriousViolations(page)` — pass a selector as the second argument to scope the scan when
+  the surface is an overlay above toddler chrome.
+* **What axe cannot see:** a placeholder lives on a pseudo-element it never inspects, so the admin
+  sign-in placeholder's contrast is measured directly in the same spec, and every dialog's
+  accessible name is asserted by name (`getByRole('dialog', { name })`) where it opens.
 * **Fixing vs suppressing:** fix violations in the app source. Only suppress (axe `disableRules` or
   an exclusion) for a genuine false positive or an unfixable-by-design case, each with a comment
   saying why.

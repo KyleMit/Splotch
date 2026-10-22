@@ -50,18 +50,18 @@ documented decision. Open work lives in GitHub issues, not here.
 A two-year-old can draw without adult help. Every control is reachable one-handed, forgiving of
 imprecise contact, and wordless.
 
-**Backed by.** The `flows-*` Playwright specs, `multitouch.spec.ts`,
-`engine-pointer-recovery.spec.ts`, and `engine-edge-swipe.spec.ts` cover the interaction paths;
-`dialogTabletScaling.test.ts` covers reach on tablet. The `run-splotch` skill drives the real app
-when a change needs eyes on it rather than an assertion, and `critique-page-inventory` reviews the
-captured surface inventory.
+**Backed by.** The `flows-*` Playwright specs, `multitouch.spec.ts`, `e2e/specs/pen.spec.ts`,
+`e2e/specs/clear.spec.ts`, and `tools/tests/native-physical-paper-contact.test.mjs` cover the
+interaction paths; `dialogTabletScaling.test.ts` covers reach on tablet. The `run-splotch` skill
+drives the real app when a change needs eyes on it rather than an assertion, and
+`critique-page-inventory` reviews the captured surface inventory.
 
 ## Design System
 
 Every surface draws from one token vocabulary. No ad-hoc color, size, radius, shadow, or easing in
 component styles.
 
-**Backed by.** `lint:tokens` and `gen:tokens:check` in the quality gate; `design.spec.ts`,
+**Backed by.** `lint:tokens` and `gen:tokens:check` in the quality gate; `e2e/specs/design.spec.ts`,
 `chipInk.test.ts`, and `scrollbar-chrome.spec.ts`; the public `/design` styleguide as the rendered
 reference. The `design` skill carries the token vocabulary, primitives, and voice rules.
 
@@ -70,9 +70,9 @@ reference. The `design` skill carries the token vocabulary, primitives, and voic
 Adult-facing surfaces hold WCAG 2.1 AA. The toddler canvas chrome is deliberately out of scope -
 giant wordless buttons and no reading order are not WCAG's model.
 
-**Backed by.** `a11y.spec.ts` runs axe-core, and hand-computes contrast for the cases axe reports as
-`incomplete` and therefore never fails on: short text nodes, `::placeholder` pseudo-elements,
-`aria-hidden` digits, and dialogs whose background it cannot resolve.
+**Backed by.** `e2e/specs/a11y.spec.ts` runs axe-core, and hand-computes contrast for the cases axe
+reports as `incomplete` and therefore never fails on: short text nodes, `::placeholder`
+pseudo-elements, `aria-hidden` digits, and dialogs whose background it cannot resolve.
 
 ## Illustration
 
@@ -105,11 +105,12 @@ Every degraded path returns usable app state rather than a dead end - offline, p
 exhausted quota, denied storage. Drawing history lives in memory for the session, so a reload starts
 a fresh page; carrying work across a restart is not a guarantee this axis makes today.
 
-**Backed by.** `early-boot.spec.ts` on the startup path (the paper texture that once painted late
-behind its own request now ships inline with the document, `paperTexture.test.ts`),
-`pwa-registration.spec.ts` on the service worker, `engine-pointer-recovery.spec.ts` on interrupted
-input. `idb.ts` requests persistent storage and resets its memoized promise on rejection;
-`storage.ts` handles `QuotaExceededError`.
+**Backed by.** `e2e/specs/first-frame.spec.ts` and `e2e/specs/early-input.spec.ts` on the startup
+path (the paper texture that once painted late behind its own request now ships inline with the
+document, `paperTexture.test.ts`), `pwa-registration.spec.ts` on the service worker,
+`tools/tests/native-resumed-contact-mounted.test.mjs` on interrupted input. `idb.ts` requests
+persistent storage and resets its memoized promise on rejection; `storage.ts` handles
+`QuotaExceededError`.
 
 ## Storefront
 
@@ -149,10 +150,11 @@ limited so guessing is throttled rather than free. Access codes are revocable at
 
 **Backed by.** `securityPolicy.ts` hashes the exact inline script bodies and fails on template
 drift. `securityHeaders.ts` pins HSTS, `nosniff`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`,
-`Permissions-Policy`, and frame denial; `csp.spec.ts` checks the delivered policy. Admin secrets
-compare in constant time. Credential endpoints carry sliding-window limits that peek before the
-check, so a legitimate caller never spends budget on someone else's guessing. `pnpm audit` runs in
-the quality gate, and the `security-review` skill reviews a branch before it ships.
+`Permissions-Policy`, and frame denial; `tools/migration/tests/native-web-csp.test.mjs` and
+`e2e/specs/hosting.spec.ts` check the delivered policy. Admin secrets compare in constant time.
+Credential endpoints carry sliding-window limits that peek before the check, so a legitimate caller
+never spends budget on someone else's guessing. `pnpm audit` runs in the quality gate, and the
+`security-review` skill reviews a branch before it ships.
 
 ## Compliance
 

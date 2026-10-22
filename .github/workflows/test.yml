@@ -267,71 +267,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  # Each shard builds the app itself rather than restoring it from a build job:
-  # a shared artifact serializes every shard behind `needs:` (measured ≈81s +
-  # tests) while concurrent per-shard builds overlap (≈69s + tests). Playwright's
-  # `--shard` deals out individual tests (fullyParallel), self-balancing by
-  # count as tests are added — no hand-kept partition. The matrix is wide enough
-  # to disperse adjacent stress tests while setup still overlaps every shard.
-  test:
-    name: Tests (${{ matrix.shard }}/${{ strategy.job-total }})
-    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      # strategy.job-total is the shard denominator, so shard must remain the
-      # only matrix axis with no include/exclude entries. workflow-hygiene.test.mjs enforces it.
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup-pnpm
-
-      # Chromium alone: the non-Blink browsers are deliberately absent, so
-      # playwright.config.ts drops both engine-smoke projects. Their standalone
-      # jobs below own that coverage.
-      - uses: ./.github/actions/setup-playwright
-        with:
-          browsers: chromium
-
-      - name: Run e2e tests
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-
-      # The gen:* generators drive the live app through tools/app-driver/lib/app-driver.mjs
-      # and never run elsewhere in CI, so this smoke keeps that module from rotting
-      # silently on selector/import changes. Reuses the chromium installed above.
-      # One shard suffices — the smoke doesn't shard, it just needs to run once.
-      - name: App-driver smoke
-        if: ${{ matrix.shard == 1 }}
-        run: npm run test:driver:smoke
-
-      # The worker sweep only ever runs from the manual worker-sweep.yml, so a
-      # config change that breaks its harness stays invisible until the next
-      # re-tune — issue #1044 was exactly that, every rep green-lighting zero
-      # tests. One grepped rep proves a sweep still executes tests; --prebuilt
-      # reuses the bundle the e2e step above just built.
-      - name: Worker-sweep smoke
-        if: ${{ matrix.shard == 1 }}
-        run: npm run test:sweep:smoke
-
-      - name: Upload report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-report-shard-${{ matrix.shard }}
-          # playwrightReportFolder in web/playwright.shared.ts: the HTML report
-          # plus the flaky reporter's flaky.json. Drift-guarded by
-          # tools/tests/playwright-report-folder.test.mjs.
-          path: playwright-report/
-          if-no-files-found: error
-          retention-days: 7
-
   # The React Native web export in Chromium: every spec of the RN Playwright suite (e2e/README.md),
   # dealt across shards by Playwright's --shard. Each shard serves the export the Native web build
   # job uploaded instead of building its own, so the suite tests the bytes the deploy would publish.
-  # The SvelteKit Tests shards above keep running until their specs are ported or deleted.
   rn-web-e2e:
     name: RN web E2E (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: native-web-build

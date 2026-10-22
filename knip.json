@@ -14,7 +14,6 @@
         "web/defines.ts",
         "web/playwright.config.ts",
         "web/playwright.webkit-scratch.config.ts",
-        "web/tests/**/*.spec.ts",
         "web/tests/global-setup.ts",
         "web/src/**/*.test.ts",
         "web/*.test.ts",

@@ -65,8 +65,9 @@ Three tests hold the seam together:
 * `tools/migration/check-native-web-safe-area.mjs` — at runtime, `env(safe-area-inset-*)` resolves
   to the emulated insets. The SvelteKit `safe-area-matrix.spec.ts` also read `var(--safe-area-top)`
   against it; that seam retired with the SvelteKit app (ADR-0182).
-* `capacitor-safe-area.spec.ts` — injected portrait/landscape values and explicit zero override
-  conflicting `env()` values; removing an injected property restores the web fallback.
+* `capacitor-safe-area.spec.ts` (retired with the Capacitor shell) — injected portrait/landscape
+  values and explicit zero override conflicting `env()` values; removing an injected property
+  restores the web fallback. The React Native export has no such override seam.
 
 `measureSafeAreaInsets()` (`lib/platform/safeArea.ts`) reads the numbers with a hidden
 fixed-position probe rather than `getComputedStyle` on the custom property — the property read is
@@ -85,7 +86,8 @@ fixed-position probe rather than `getComputedStyle` on the custom property — t
 | Android dev options → simulate a cutout   | OS-level yes                     | Propagation into `env()` is **unverified**; see the open questions      |
 | Real-device clouds                        | **Yes**                          | Yes, and expensive. Release branches, not every PR                      |
 
-Two traps in the CDP path, both handled by `overrideSafeAreaInsets` in `web/tests/cdp.ts`:
+Two traps in the CDP path, both handled by the helper the SvelteKit suite had (retired with it,
+ADR-0182):
 
 * **Send all eight keys.** The protocol says "unset values will cause the respective variables to be
   undefined, even if previously overridden" — omitting `left` un-defines it rather than leaving it

@@ -45,7 +45,6 @@ describe('Playwright report folder', () => {
     expect(reportUploads.map(({ name }) => name).sort()).toEqual([
       'playwright-report-firefox',
       'playwright-report-rn-shard-${{ matrix.shard }}',
-      'playwright-report-shard-${{ matrix.shard }}',
       'playwright-report-webkit',
     ]);
     for (const { name, path } of reportUploads)

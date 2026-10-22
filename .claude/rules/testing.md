@@ -1,6 +1,7 @@
 ---
 paths:
   - "web/tests/**"
+  - "e2e/**"
   - "web/src/**/*.test.ts"
   - "web/*.test.ts"
   - "web/playwright.config.ts"
@@ -49,9 +50,9 @@ paths:
   both non-Blink jobs while they stay green on the other specs —
   `tools/tests/e2e-engine-tags.test.mjs` rejects tag literals and unknown tags for that reason.
 * Adult-facing surfaces (`/privacy`, `/admin`, Settings dialog) get axe-core scans in
-  `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
-  of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
-  the `testing` skill.
+  `e2e/specs/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is
+  out of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details
+  in the `testing` skill.
 * Parametrized tests import the constant/manifest they exercise — never re-declare the value (a
   mirrored copy keeps passing for the wrong reason). Prove the derivation: temporarily change the
   source and confirm the test tracks it. If the source executes at import time, move the constant to
@@ -87,8 +88,8 @@ paths:
 * Shared per-test setup lives in a Playwright **fixture**, never in a top-level `test.beforeEach` in
   a helper module: a helper is evaluated once per worker, so such a hook attaches only to the first
   spec file that imports it and every later spec file in that worker silently runs with no setup.
-  Extend `test` in the helper and import `test`/`expect` from it (`tests/engine-harness.ts`);
-  `tools/tests/e2e-harness-imports.test.mjs` guards the import.
+  Extend `test` in the helper and import `test`/`expect` from it (`engine-harness` in the retired
+  SvelteKit suite).
 * **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
   there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
   interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or

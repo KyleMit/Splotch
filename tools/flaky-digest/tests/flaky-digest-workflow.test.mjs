@@ -42,18 +42,15 @@ describe('test.yml report uploads', () => {
 
   const sharded = ({ jobName }) => jobName.includes('${{ matrix.shard }}');
 
-  it('finds both sharded suites and both engine smoke jobs', () => {
+  it('finds the sharded suite and both engine smoke jobs', () => {
     expect(uploads.map(({ jobName }) => jobName).sort()).toEqual([
       'Firefox smoke',
       'RN web E2E (${{ matrix.shard }}/${{ strategy.job-total }})',
-      'Tests (${{ matrix.shard }}/${{ strategy.job-total }})',
       'WebKit smoke',
     ]);
   });
 
   it.each([
-    ['Tests', 1],
-    ['Tests', 8],
     ['RN web E2E', 1],
     ['RN web E2E', 8],
   ])('maps the %s shard %i job to the artifact its upload step writes', (suite, shard) => {

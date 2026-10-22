@@ -579,19 +579,16 @@ export default tseslint.config(
     // overrides each state why the file stays whole, and TOOLS_GRANDFATHERED_MAX_LINES freezes the
     // tools/ outliers at their size so they can only shrink. The burn-down-oversized-code skill's
     // measure.mjs reads this block as the one default scope, so tools/ shares it rather than taking
-    // its own. Excluded: generated pointer-instruction data, the frozen ideas-exploration archive,
-    // and the one-epic person-present session driver.
+    // its own. Excluded: generated pointer-instruction data and the frozen ideas-exploration
+    // archive.
     files: [
       'web/src/**',
       'web/tests/**',
+      'e2e/**',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
-    ignores: [
-      'tools/store-drawings/generated/**',
-      'tools/asset-gen/ideas-exploration/**',
-      'tools/perf/run-person-session.mjs',
-    ],
+    ignores: ['tools/store-drawings/generated/**', 'tools/asset-gen/ideas-exploration/**'],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
     },
@@ -823,7 +820,7 @@ export default tseslint.config(
   {
     // Playwright specs. Same vacuous-test guard as the Vitest block above, spelled in this
     // plugin's rule names; the two vocabularies never mix, so the globs stay disjoint.
-    files: ['web/tests/**/*.spec.ts'],
+    files: ['web/tests/**/*.spec.ts', 'e2e/specs/**/*.spec.ts'],
     plugins: { playwright },
     rules: {
       ...VACUOUS_TEST_RULES.playwright,
@@ -847,8 +844,8 @@ export default tseslint.config(
     // The shared E2E helpers hold the retrying opens every spec leans on, so a dropped await
     // inside one goes vacuous in every caller. expect-expect and no-conditional-expect judge a
     // test, and a helper is not one.
-    files: ['web/tests/**/*.ts'],
-    ignores: ['web/tests/**/*.spec.ts'],
+    files: ['web/tests/**/*.ts', 'e2e/**/*.ts'],
+    ignores: ['web/tests/**/*.spec.ts', 'e2e/specs/**/*.spec.ts'],
     plugins: { playwright },
     rules: PLAYWRIGHT_ASSERTION_SHAPE_RULES,
   },

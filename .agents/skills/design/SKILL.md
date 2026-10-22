@@ -323,7 +323,8 @@ Two consequences worth knowing before styling one:
   hues) derives its wash and ink with `color-mix()` against `--page-sheet` and `--page-ink`, which
   darkens the hue on the light sheet and lightens it on the dark one from one declaration. The mix
   strengths are named custom properties; contrast is measured on both grounds by
-  `web/tests/beta.spec.ts` rather than assumed from the light reading.
+  `e2e/specs/a11y.spec.ts`'s axe scan of the React Native page rather than assumed from the light
+  reading.
 
 ## Brand & iconography
 
