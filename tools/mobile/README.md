@@ -91,3 +91,16 @@ Focused repository checks:
 npm run test:tools -- tools/mobile
 npm run check
 ```
+
+## Hosted test API generation UI
+
+`run-hosted-api-journey.mjs` (`test:native:api`) builds and installs a development-identity Release
+on the explicit `--platform android|ios --device ID` virtual target, then runs
+`.maestro/api-generation.yaml`. It accepts only Android emulator serials with the emulator property
+or a booted available iOS simulator UUID. The existing build-time origin variable accepts only the
+two configured test aliases; it compiles the selected origin into the bundle and requires the hosted
+test response marker before building. It neither accepts a runtime origin nor uses admin
+credentials. The caller owns starting/stopping the target; iOS requires a fresh simulator to avoid
+retained Keychain identities. Preconditions, commands and failure handling are in `DEVELOPMENT.md`.
+Keep this opt-in remote journey separate from the deployment boot smoke and hermetic local API/UI
+lanes. The platform builds and artifact origin inspection retain their existing owners.

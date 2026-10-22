@@ -1,0 +1,39 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+RN_TASK_DECODER {"name":"actual Android sBIT producer","pngSha256":"bec2c1fceb86daff95c56e12ff12bdfc4f96727d7c6e32875fc224e152b3f9ec","grid":{"width":1024,"height":768},"status":"accepted","empty":false,"frameMs":16.666666666666668,"frames":0,"timerCalls":13,"taskCalls":13,"timersFired":0,"tasksFired":13,"timersCancelled":13,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":68.470958,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 0","pngSha256":"0d594f793f708cadd80118234a20551149956c51208186cde6aeb2f843d9b5f7","grid":{"width":1024,"height":768},"status":"accepted","empty":true,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":87.2085,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 3","pngSha256":"c89cc1bb73f3f5dcabbbd07ae7e484c40252a66391f6c63316ea2eec684a1095","grid":{"width":1024,"height":768},"status":"accepted","empty":true,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":61.95025,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 4","pngSha256":"d755fdd863d4c58862c0eb8fd3a205ce6aa89da3295b23ef4f9438de9660e640","grid":{"width":1024,"height":768},"status":"accepted","empty":false,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":75.235459,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 255","pngSha256":"92f0345244b7c4b1623857350b97f496662f55c9182e1af067f38ebf6aaaa72b","grid":{"width":1024,"height":768},"status":"accepted","empty":false,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":63.549875,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-file-system/build/index.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-file-system/build/Paths.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-file-system/build/Directory.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-file-system/build/ExpoFileSystem.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/index.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/ts-declarations/global.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/ts-declarations/EventEmitter.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/ts-declarations/NativeModule.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/ts-declarations/SharedObject.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/ts-declarations/SharedRef.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/sweet/setUpJsLogger.fx.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/errors/CodedError.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/requireNativeModule.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/NativeModulesProxy.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/TurboModuleToExpoModuleProxy.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/ensureNativeModulesAreInstalled.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-modules-core/build/EventEmitter.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/00f5/Splotch/node_modules/expo-screen-orientation/build/ScreenOrientation.types.js" points to missing source files
+LEGAL_DYNAMIC_WORK_FENCE {"status":"resource-policy-refused","message":"Picture observation exceeded its synchronous work limit.","independentOracle":"Node inflateSync accepted 30-distance-code variant","header":{"HLIT":29,"HDIST":29,"HCLEN":15,"explicitLengths":316},"elapsedMs":0.7866250000000008,"encodedCharacters":8278,"pngBytes":4140}
+
+ Test Files  506 passed (506)
+      Tests  8225 passed (8225)
+   Start at  09:55:35
+   Duration  50.36s (tests 86%, import 8%, transform 3%, environment 3%)
+
+    Isolate  506 workers spawned · ~93ms startup each (spawn + environment, per file)
+             at least ~5.15s faster with isolate: false — reuses workers across files instead of one per file

@@ -6,8 +6,12 @@ export type NetlifyFunction = (request: Request, context: NetlifyContext) => Pro
 
 export function functionFiles(): (pathname: string) => string | null;
 
-export function loadNetlifyFunctions(mode: 'development' | 'production'): Promise<{
+export function loadNetlifyFunctions(
+  mode: 'development' | 'production',
+  apiMode?: 'production' | 'test'
+): Promise<{
   functionFor: (pathname: string) => NetlifyFunction | null;
+  decorateResponse: (response: Response) => Response;
   close: () => Promise<void>;
 }>;
 

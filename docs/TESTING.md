@@ -312,6 +312,41 @@ from the same checkout; a stale export can pass against code that no longer exis
 fixture for booted interactive drawing, `openDocument` for other documents, and the request fixture
 for the same-origin API. The export has no Svelte dev harness.
 
+### Real-handler UI integration — `test:e2e:api`
+
+This separate Chromium lane drives the exported app through the shared HTTP handlers, background
+worker, polling and result delivery. It covers fresh free grants and their persisted decrement,
+image reports, feedback, rejected keys, content refusal reports and provider failure. Ordinary
+focused UI tests retain intercepted responses for timing, cancellation and offline behavior.
+
+```sh
+SPLOTCH_E2E_PORT=5300 npm run test:e2e:api -- --workers=1
+```
+
+Select an unused port first. The command builds the export; `SPLOTCH_E2E_PREBUILT=1` skips that
+build only when this checkout's current export already exists. CI's **Real-handler UI integration**
+job downloads the same export as the ordinary E2E jobs. The normal config excludes this lane's spec.
+
+Each test starts a fresh Blobs emulator directory and function graph, in production request mode
+with test implementations selected before loading. The API environment declares every private
+variable, leaves OpenAI/GitHub secrets empty, and refuses outside fetches using the API smoke's
+adapter. Cleanup drains background work before removing storage. The historical wire corpus stays
+unchanged. The shared emulator setup also runs the hermetic test-mode API smoke.
+
+The fixture blocks page/context routing and HAR replay, and service workers are disabled. Negative
+controls attempt interception on actual Playwright objects and reject production mode or supplied
+provider/GitHub secrets. The success case requires an async HTTP ticket, result polling, a displayed
+image, a recorded issue in the test sink and a persisted allowance of nine. The API smoke separately
+asserts a pending poll; the fake may finish before the UI's first scheduled poll.
+
+Native hosted coverage is explicit: `npm run test:native:api -- --platform android|ios --device ID`.
+It builds Release with the development identity and the hosted test origin compiled in, then drives
+`.maestro/api-generation.yaml`. It solves the displayed grown-up check rather than changing its
+policy. The development iOS simulator target signs ad hoc for Keychain access. It requires an
+emulator/simulator and shared remote availability, so it is outside ordinary tests and per-PR CI.
+See `DEVELOPMENT.md` for fresh-target setup. The existing `.maestro/smoke.yaml` remains a boot-only
+deployment gate (ADR-0120). Browser passes and raw HTTP checks do not establish native UI coverage.
+
 ### Writing flake-resistant specs
 
 The RN config uses Playwright's default half-core worker count; the retired Svelte suite's measured

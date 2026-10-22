@@ -1,0 +1,47 @@
+appId: art.splotch.app.dev
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: Settings
+    timeout: 30000
+- tapOn: Settings
+- scrollUntilVisible:
+    element: 'AI Art.*'
+- tapOn: 'AI Art.*'
+- runFlow:
+    when:
+      visible: Got it
+    commands:
+      - tapOn: Got it
+- tapOn: Create AI Images
+- extendedWaitUntil:
+    visible: '10 free AI creations left\..*'
+    timeout: 30000
+- tapOn: Close
+- swipe:
+    start: 35%, 40%
+    end: 65%, 60%
+    duration: 800
+- tapOn: Expand controls
+- tapOn: 'Create AI image, 10 free left'
+- assertVisible: Grown-Ups Only
+- copyTextFrom: 'What is [0-9]+ times [0-9]+\?'
+- evalScript: ${output.operands = maestro.copiedText.match(/[0-9]+/g)}
+- assertTrue: ${output.operands.length == 2}
+- evalScript: ${output.answer = String(Number(output.operands[0]) * Number(output.operands[1]))}
+- evalScript: ${output.digitIndex = 0}
+- repeat:
+    times: ${output.answer.length}
+    commands:
+      - tapOn:
+          id: ${'gate-key-' + output.answer.charAt(output.digitIndex)}
+      - evalScript: ${output.digitIndex = output.digitIndex + 1}
+- tapOn: Check answer
+- tapOn: Magical
+- extendedWaitUntil:
+    visible: Your AI picture
+    timeout: 60000
+- assertVisible: Download
+- waitForAnimationToEnd
+- takeScreenshot: .maestro/screenshots/hosted-api-result

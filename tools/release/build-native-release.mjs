@@ -47,6 +47,14 @@ export const RELEASE_SIMULATOR_APP = join(
   'Release-iphonesimulator',
   `${IOS_PROJECT_NAME}.app`
 );
+const DEVELOPMENT_SIMULATOR_DATA = join(IOS_PROJECT_DIR, 'build', 'development-simulator');
+export const DEVELOPMENT_SIMULATOR_APP = join(
+  DEVELOPMENT_SIMULATOR_DATA,
+  'Build',
+  'Products',
+  'Release-iphonesimulator',
+  `${IOS_PROJECT_NAME}.app`
+);
 
 const gradle = (...tasks) => ({
   cmd: join(ROOT, ANDROID_PROJECT_DIR, 'gradlew'),
@@ -108,6 +116,19 @@ const simulatorBuild = ios(
   'CODE_SIGNING_ALLOWED=NO',
   'build'
 );
+const developmentSimulatorBuild = {
+  ...simulatorBuild,
+  args: simulatorBuild.args
+    .filter((arg, index, args) => arg !== '-xcconfig' && args[index - 1] !== '-xcconfig')
+    .map((arg) =>
+      arg === join(ROOT, RELEASE_SIMULATOR_DERIVED_DATA)
+        ? join(ROOT, DEVELOPMENT_SIMULATOR_DATA)
+        : arg === 'CODE_SIGNING_ALLOWED=NO'
+          ? 'CODE_SIGNING_ALLOWED=YES'
+          : arg
+    )
+    .concat('CODE_SIGN_IDENTITY=-'),
+};
 
 const appStoreExport = ios(
   'xcodebuild',
@@ -157,6 +178,12 @@ export const TARGETS = {
     artifact: RELEASE_SIMULATOR_APP,
     outputs: [RELEASE_SIMULATOR_APP],
     steps: [podInstall, simulatorBuild],
+  },
+  'development-simulator': {
+    appId: DEV_APP_ID,
+    artifact: DEVELOPMENT_SIMULATOR_APP,
+    outputs: [DEVELOPMENT_SIMULATOR_APP],
+    steps: [podInstall, developmentSimulatorBuild],
   },
 };
 

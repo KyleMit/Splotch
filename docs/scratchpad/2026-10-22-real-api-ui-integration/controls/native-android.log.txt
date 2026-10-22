@@ -1,0 +1,58 @@
+EXPO_PUBLIC_SPLOTCH_API_ORIGIN=https://test--splotchy.netlify.app npm run test:native:api -- --platform android --device emulator-5556
+Exit code: 0
+Final build and flow output:
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleRelease
+
+[Incubating] Problems report is available at: file:///Users/kylemit/.codex/worktrees/00f5/Splotch/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 14s
+493 actionable tasks: 24 executed, 469 up-to-date
+
+Built art.splotch.app.dev: android/app/build/outputs/apk/release/app-release.apk
+$ /Users/kylemit/Library/Android/sdk/platform-tools/adb -s emulator-5556 shell settings put secure immersive_mode_confirmations confirmed
+$ /Users/kylemit/Library/Android/sdk/platform-tools/adb -s emulator-5556 install -r /Users/kylemit/.codex/worktrees/00f5/Splotch/android/app/build/outputs/apk/release/app-release.apk
+Performing Streamed Install
+Success
+$ maestro --device emulator-5556 test .maestro/api-generation.yaml
+Running on Splotch_API_Journey_Keypad
+ > Flow api-generation
+Launch app "art.splotch.app.dev" with clear state... COMPLETED
+Assert that "Settings" is visible... COMPLETED
+Tap on "Settings"... COMPLETED
+Scrolling DOWN until "AI Art.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "AI Art.*"... COMPLETED
+Run flow when "Got it" is visible...
+Run flow when "Got it" is visible... SKIPPED
+Tap on "Create AI Images"... COMPLETED
+Assert that "10 free AI creations left\..*" is visible... COMPLETED
+Tap on "Close"... COMPLETED
+Swipe from (35%, 40%) to (65%, 60%) in 800 ms... COMPLETED
+Tap on "Expand controls"... COMPLETED
+Tap on "Create AI image, 10 free left"... COMPLETED
+Assert that "Grown-Ups Only" is visible... COMPLETED
+Copy text from element with "What is [0-9]+ times [0-9]+\?"... COMPLETED
+Run ${output.operands = maestro.copiedText.match(/[0-9]+/g)}... COMPLETED
+Assert that ${output.operands.length == 2} is true... COMPLETED
+Run ${output.answer = String(Number(output.operands[0]) * Number(output.operands[1]))}... COMPLETED
+Run ${output.digitIndex = 0}... COMPLETED
+Repeat indefinitely...
+  Tap on id: ${'gate-key-' + output.answer.charAt(output.digitIndex)}... COMPLETED
+  Run ${output.digitIndex = output.digitIndex + 1}... COMPLETED
+Repeat 2 times... COMPLETED
+Tap on "Check answer"... COMPLETED
+Tap on "Magical"... COMPLETED
+Assert that "Your AI picture" is visible... COMPLETED
+Assert that "Download" is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot .maestro/screenshots/hosted-api-result... COMPLETED
+PASS hosted generation UI: android, emulator-5556, Release art.splotch.app.dev, https://test--splotchy.netlify.app

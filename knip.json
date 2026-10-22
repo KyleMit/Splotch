@@ -5,6 +5,8 @@
       "entry": [
         "src/**/*.test.ts",
         "e2e/playwright.config.ts",
+        "e2e/playwright.api.config.ts",
+        "e2e/server/buildApiExport.ts",
         "e2e/specs/**/*.spec.ts",
         "e2e/server/serve.ts",
         "netlify/**/*.ts",

@@ -10,6 +10,11 @@ Settings owner is `src/rsdDrawing/RsdEdgeControls.tsx`, guarded by
 CI compilation is separate. No UI navigation was added to the smoke. The historical design below
 retains its original context.
 
+The test API deploy follow-up adds a separate explicit development-identity journey in
+`.maestro/api-generation.yaml` (ADR-0183). It drives generation on virtual targets through the
+hosted fake API and solves the real parental gate. It is outside the deployment smoke and ordinary
+CI; `.maestro/smoke.yaml` retains its single launch/paint assertion.
+
 ## Context
 
 The Maestro flow in `.maestro/smoke.yaml` is the third tier of ADR-0008 and the only test that
