@@ -41,6 +41,11 @@ react {
     autolinkLibrariesWithApp()
 }
 
+// Gradle does not track environment variables read by Expo's Babel transform.
+tasks.matching { it.name.startsWith('createBundle') }.configureEach {
+    inputs.property('splotchApiOrigin', providers.environmentVariable('EXPO_PUBLIC_SPLOTCH_API_ORIGIN').orElse(''))
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion

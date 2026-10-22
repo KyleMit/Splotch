@@ -22,4 +22,4 @@ function readApiOrigin(env, storeBuild = false) {
   return url.origin;
 }
 
-module.exports = { readApiOrigin };
+module.exports = { readApiOrigin, PRODUCTION_API_ORIGIN };

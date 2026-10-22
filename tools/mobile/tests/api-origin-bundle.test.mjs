@@ -11,6 +11,7 @@ it.each(['utf8', 'utf16le'])(
     expect(() => assertNativeApiOrigin(store, 'https://splotch.art', true)).not.toThrow();
     const wrong = Buffer.concat([store, Buffer.from('https://test.splotch.art', encoding)]);
     expect(() => assertNativeApiOrigin(wrong, 'https://splotch.art', true)).toThrow('test host');
+    expect(() => assertNativeApiOrigin(wrong, 'https://splotch.art', false)).toThrow('test host');
   }
 );
 

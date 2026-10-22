@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { IOS_PROJECT_NAME } from '../release/lib/native-app.mjs';
+import apiOrigin from './api-origin.cjs';
 
 // Bounds extraction while allowing headroom above the complete app bytecode bundles.
 const MAX_NATIVE_BUNDLE_BYTES = 64 * 1024 * 1024;
@@ -13,13 +14,16 @@ export function assertNativeApiOrigin(bundle, expectedOrigin, storeBuild) {
     text.includes(expectedOrigin),
     'The native bundle does not contain its configured API origin'
   );
-  if (storeBuild) {
-    assert.ok(!text.includes('test.splotch.art'), 'A store native bundle contains the test host');
+  if (storeBuild || expectedOrigin === apiOrigin.PRODUCTION_API_ORIGIN) {
+    assert.ok(
+      !text.includes('test.splotch.art'),
+      'A production native bundle contains the test host'
+    );
     const origins = [...new Set(text.match(/https:\/\/(?:[a-z0-9-]+\.)*splotch\.art/g))];
     assert.deepEqual(
       origins,
-      ['https://splotch.art'],
-      'A store native bundle contains a non-production first-party origin'
+      [apiOrigin.PRODUCTION_API_ORIGIN],
+      'A production native bundle contains a non-production first-party origin'
     );
   }
 }
