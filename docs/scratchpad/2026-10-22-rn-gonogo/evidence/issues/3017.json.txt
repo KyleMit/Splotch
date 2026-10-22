@@ -1,0 +1,63 @@
+{
+  "observedAt": "2026-10-22T16:52:06.877Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3017",
+    "title": "Ship a hash-based Content-Security-Policy with the RN web document",
+    "issue_number": 3017,
+    "body": "## What\n\nThe RN web export's `index.html` carries no Content-Security-Policy. The shipping prerendered drawing document has a meta policy:\n- `default-src 'self'; worker-src 'self'; connect-src 'self' blob:; …`;\n- both of its inline scripts are authorized by `sha256-` hashes;\n- `script-src` has no `'unsafe-inline'`.\n\nThe RN shell runs its own inline scripts (boot theme, app surface and, after #3006, the boot script) with no policy at all.\n\n## Why\n\nThe \"Enforced security and uncached admin\" check in `docs/migration/WEB-CONTRACT.md` requires preserving hash-authorized scripts on prerendered documents, and says a UI dependency must not require loosening script policy. Ledger rows E0189, E0190, E0191 and L0228.\n\nChecked at d10d375c8 (after #3006): the RN web build tooling still emits no CSP.\n\n## Where\n\n- `tools/migration/build-native-web.mjs` writes the shell head, and #3006's prerender owns the first-paint shell.\n- The shipping owner is `web/securityPolicy.ts`. Response-delivered directives that a meta tag cannot express belong to the host configuration (`netlify.toml`).\n\n## Repro (rn-web, Chromium)\n\n1. Build and serve the RN web export at 00fcc5c78d1031873db1a214301c008daa4bd080.\n2. Load `/` and read `document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]')`.\n3. Expected: a policy whose hashes cover every inline script, without `'unsafe-inline'` (shipping: 2 of 2 inline scripts hash-authorized). Actual: `null`.\n\nEvidence: WEB-1 record, cell `boot-head` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- The RN web document ships a policy at least as strict as shipping's. Every inline script is hash-authorized, there is no `'unsafe-inline'` in `script-src`, and first-party reporting is kept.\n- A build check fails when an inline script's hash is missing from the policy, with a positive control.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:security",
+        "color": "b60205",
+        "description": "Access, admin, privacy, or security hardening"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:15:22Z",
+    "updated_at": "2026-10-20T04:34:26Z",
+    "closed_at": "2026-10-20T04:34:26Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3017",
+    "display_title": "Ship a hash-based Content-Security-Policy with the RN web document"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3017#issuecomment-6283460224",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3039, merged into codex/native-migration as a0487f24d8b840ffe6f2496a63b8e85a82410803. The RN web export's index.html and 404.html now open with a Content-Security-Policy meta tag: shipping's native meta policy, with script-src holding 'self' and the hash of each inline script, never 'unsafe-inline'. The post-build check fails a document whose policy misses a hash.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6283460224,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

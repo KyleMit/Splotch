@@ -1,0 +1,566 @@
+UTC 2026-10-22T16:59:52.301596+00:00
+CWD /workspace/rn-freeze
+COMMIT fffeed1fe4116112bb10297a180ac552f9754046
+RUN COUNT 1
+COMMAND for p in patches/*.patch; do echo PATCH:$p; cat "$p"; done; sed -n '85,130p' tools/migration/prerender-native-web.mjs; sed -n '225,310p' src/drawing/SkiaInk.tsx; cat src/drawing/skiaViewPicture.ts; head -8 tools/device-parity/swap-js-bundle.mjs; sed -n '131,170p' tools/device-parity/README.md
+PATCH:patches/@stylexjs__stylex@0.15.4.patch
+--- a/lib/es/types/VarTypes.d.ts
++++ b/lib/es/types/VarTypes.d.ts
+@@ -93,11 +93,11 @@
+   | Color<T>
+   | Url<T>
+   | Image<T>
+-  | Integer<T>
++  | (T extends number ? Integer<T> : never)
+   | LengthPercentage<T>
+   | Length<T>
+   | Percentage<T>
+-  | Num<T>
++  | (T extends number ? Num<T> : never)
+   | Resolution<T>
+   | Time<T>
+   | TransformFunction<T>
+--- a/lib/es/types/StyleXCSSTypes.d.ts
++++ b/lib/es/types/StyleXCSSTypes.d.ts
+@@ -1440,7 +1440,7 @@
+   textTransform?: all | textTransform;
+   textUnderlineOffset?: all | number | string;
+   textUnderlinePosition?: all | textUnderlinePosition;
+-  textWrap?: all | 'wrap' | 'nowrap' | 'balance';
++  textWrap?: all | 'wrap' | 'nowrap' | 'balance' | 'pretty';
+   timelineScope?: all | string;
+   top?: all | top;
+   touchAction?: all | touchAction;
+PATCH:patches/expo-audio@58.0.9.patch
+diff --git a/ios/AudioModule.swift b/ios/AudioModule.swift
+index 42ce9e8..7c85a2c 100644
+--- a/ios/AudioModule.swift
++++ b/ios/AudioModule.swift
+@@ -7,6 +7,7 @@ public class AudioModule: Module {
+   private let sessionQueue = DispatchQueue(label: "expo.modules.audio.session", qos: .userInitiated)
+   private var sessionIsActive = false
+   private var audioSessionActivityKeepers = Set<String>()
++  private var externalClearNotes = Set<String>()
+   private let audioEnabled = OSAllocatedUnfairLock(initialState: true)
+ 
+   // MARK: Properties
+@@ -31,6 +32,9 @@ public class AudioModule: Module {
+       #endif
+ 
+       setupInterruptionHandling()
++      NotificationCenter.default.addObserver(self,
++        selector: #selector(handleClearAudioActivity),
++        name: Notification.Name("SplotchClearAudioActivity"), object: nil)
+     }
+ 
+     AsyncFunction("setAudioModeAsync") { (mode: AudioMode) in
+@@ -953,11 +957,29 @@ public class AudioModule: Module {
+     return [.notifyOthersOnDeactivation]
+   }
+ 
++  @objc private func handleClearAudioActivity(_ notification: Notification) {
++    guard let id = notification.userInfo?["id"] as? String,
++      let active = notification.userInfo?["active"] as? Bool else { return }
++    sessionQueue.async { [weak self] in
++      guard let self else { return }
++      if active {
++        // The Clear sampler activates the shared session itself; record it so the deactivation
++        // guard, which skips a session it believes inactive, releases it after the last note.
++        self.externalClearNotes.insert(id)
++        self.sessionIsActive = true
++      } else {
++        self.externalClearNotes.remove(id)
++        self.deactivateSession()
++      }
++    }
++  }
++
+   private func deactivateSession() {
+     sessionQueue.asyncAfter(deadline: .now() + .milliseconds(100)) { [weak self] in
+       guard let self,
+         self.sessionIsActive,
+         self.audioSessionActivityKeepers.isEmpty,
++        self.externalClearNotes.isEmpty,
+         !self.isSessionInUse else {
+         return
+       }
+diff --git a/ios/AudioPlayer.swift b/ios/AudioPlayer.swift
+index 0f68a52..997b133 100644
+--- a/ios/AudioPlayer.swift
++++ b/ios/AudioPlayer.swift
+@@ -313,36 +313,12 @@ public class AudioPlayer: SharedRef<AVPlayer>, Playable, LockScreenPlayable {
+   }
+ 
+   func handleMediaServicesReset() {
+-    guard let source else {
+-      updateStatus(with: ["mediaServicesDidReset": true])
+-      return
+-    }
+-
+-    // Store these before we reset
+-    let shouldResume = wasPlaying
+-    let savedTime = currentTime
+-    let savedRate = currentRate > 0 ? currentRate : 1.0
+-    let wasSamplingEnabled = samplingEnabled
+-
+-    replacePlayer(with: source, restoreSampling: wasSamplingEnabled)
+-
+-    onReady { [weak self] in
+-      guard let self else { return }
+-      self.restorePlaybackState(time: savedTime, shouldResume: shouldResume, rate: savedRate)
+-      self.wasPlaying = false
+-      self.updateStatus(with: ["mediaServicesDidReset": true])
+-    }
+-  }
+-
+-  private func replacePlayer(with source: AudioSource, restoreSampling: Bool) {
++    wasPlaying = false
++    ref.volume = 0
++    ref.pause()
++    ref.currentItem?.cancelPendingSeeks()
+     teardownPlayer()
+-
+-    ref = AudioUtils.createAVPlayer(from: source)
+-    setupPublisher()
+-
+-    if restoreSampling {
+-      shouldInstallAudioTap = true
+-    }
++    updateStatus(with: ["mediaServicesDidReset": true])
+   }
+ 
+   private func teardownPlayer() {
+@@ -371,14 +347,6 @@ public class AudioPlayer: SharedRef<AVPlayer>, Playable, LockScreenPlayable {
+       .store(in: &cancellables)
+   }
+ 
+-  private func restorePlaybackState(time: Double, shouldResume: Bool, rate: Float) {
+-    let cmTime = CMTime(seconds: time, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+-    ref.seek(to: cmTime) { [weak self] _ in
+-      guard let self, shouldResume else { return }
+-      self.play(at: rate)
+-    }
+-  }
+-
+   private func installTap() {
+     guard isLoaded else {
+       shouldInstallAudioTap = true
+PATCH:patches/expo-screen-orientation@58.0.3.patch
+diff --git a/ios/ScreenOrientationRegistry.swift b/ios/ScreenOrientationRegistry.swift
+index f7fc584..b2f949a 100644
+--- a/ios/ScreenOrientationRegistry.swift
++++ b/ios/ScreenOrientationRegistry.swift
+@@ -102,8 +102,6 @@ public class ScreenOrientationRegistry: NSObject, UIApplicationDelegate {
+         #endif
+       }
+       self.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+-      UIDevice.current.setValue(newOrientation.rawValue, forKey: "orientation")
+-      UIViewController.attemptRotationToDeviceOrientation()
+ 
+       if self.currentScreenOrientation == .unknown {
+         // CurrentScreenOrientation might be unknown (especially just after launch), but at this point we already know it.
+PATCH:patches/node-forge@1.4.0.patch
+--- a/lib/rsa.js
++++ b/lib/rsa.js
+@@ -1168,11 +1168,18 @@
+             parseAllBytes: options._parseAllDigestBytes
+           });
+ 
+-          // validate DigestInfo structure and element count
++          // validate DigestInfo structure and element counts (outer DigestInfo
++          // and nested DigestAlgorithm). asn1.validate ignores extra children,
++          // so length must be checked explicitly at each nesting level to
++          // prevent low-exponent PKCS#1 v1.5 signature forgery (CVE-2026-85393).
++          // ASN.1 NULL parameters must also be empty, not unchecked bytes.
+           var capture = {};
+           var errors = [];
+           if(!asn1.validate(obj, digestInfoValidator, capture, errors) ||
+-            obj.value.length !== 2) {
++            obj.value.length !== 2 ||
++            obj.value[0].value.length !==
++              (('parameters' in capture) ? 2 : 1) ||
++            ('parameters' in capture && capture.parameters !== '')) {
+             var error = new Error(
+               'ASN.1 object does not contain a valid RSASSA-PKCS1-v1_5 ' +
+               'DigestInfo value.');
+PATCH:patches/react-native-svg@15.16.0.patch
+diff --git a/android/src/main/java/com/horcrux/svg/SvgView.java b/android/src/main/java/com/horcrux/svg/SvgView.java
+--- a/android/src/main/java/com/horcrux/svg/SvgView.java
++++ b/android/src/main/java/com/horcrux/svg/SvgView.java
+@@ -278,9 +278,18 @@
+       return null;
+     }
+     Bitmap bitmap = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
++    drawBitmap(bitmap);
++    return bitmap;
++  }
++
++  private synchronized void drawBitmap(Bitmap bitmap) {
++    Bitmap previousBitmap = mCurrentBitmap;
+     mCurrentBitmap = bitmap;
+-    drawChildren(new Canvas(bitmap));
+-    return bitmap;
++    try {
++      drawChildren(new Canvas(bitmap));
++    } finally {
++      mCurrentBitmap = previousBitmap;
++    }
+   }
+ 
+   Rect getCanvasBounds() {
+@@ -352,7 +361,7 @@
+     Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+ 
+     clearChildCache();
+-    drawChildren(new Canvas(bitmap));
++    drawBitmap(bitmap);
+     clearChildCache();
+     this.invalidate();
+     ByteArrayOutputStream stream = new ByteArrayOutputStream();
+@@ -366,7 +375,7 @@
+     Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+ 
+     clearChildCache();
+-    drawChildren(new Canvas(bitmap));
++    drawBitmap(bitmap);
+     clearChildCache();
+     this.invalidate();
+     ByteArrayOutputStream stream = new ByteArrayOutputStream();
+PATCH:patches/react-native@0.88.0.patch
+diff --git a/Libraries/StyleSheet/processBackgroundImage.js b/Libraries/StyleSheet/processBackgroundImage.js
+index 36f67b2217c20a5871cf4defa83d7fc27211ac1e..8983de48c8bb5d5782ec702c74af1e57e564a94e 100644
+--- a/Libraries/StyleSheet/processBackgroundImage.js
++++ b/Libraries/StyleSheet/processBackgroundImage.js
+@@ -190,7 +190,28 @@ export default function processBackgroundImage(
+     }
+   }
+ 
+-  return result;
++  return result.map(withEndpointPositions);
++}
++
++// CSS places a first color stop with no position at 0% and a last one at 100%. Stating those
++// keeps React Native Android's stop parser from logging each null position as an unsupported
++// radius type; the gradient it draws is the same.
++function withEndpointPositions(
++  gradient: ParsedBackgroundImageValue,
++): ParsedBackgroundImageValue {
++  const stops = gradient.colorStops;
++  const last = stops.length - 1;
++  if (last < 0 || (stops[0].position != null && stops[last].position != null)) {
++    return gradient;
++  }
++  return {
++    ...gradient,
++    colorStops: stops.map((stop, index) =>
++      stop.position == null && (index === 0 || index === last)
++        ? {...stop, position: index === 0 ? '0%' : '100%'}
++        : stop,
++    ),
++  };
+ }
+ 
+ function processColorStops(bgImage: BackgroundImageValue): ReadonlyArray<{
+PATCH:patches/react-strict-dom@0.0.54.patch
+diff --git a/dist/native/index.d.ts b/dist/native/index.d.ts
+index 427cd0e84ab1bdeeb62f287f80aedcb17791d572..1e6414ec4f2ea6b8e285c741f10d4afc07b50285 100644
+--- a/dist/native/index.d.ts
++++ b/dist/native/index.d.ts
+@@ -20,10 +20,14 @@ import * as React from 'react';
+ import * as compat from './compat';
+ import * as html from './html';
+ import { ProvideViewportScale } from './modules/ContextViewportScale';
+-type StyleTheme<V, T> = Theme<V, T>;
+-type StyleVars<T> = VarGroup<T>;
+-type Styles<T> = StyleXStyles<T>;
+-type StylesWithout<T> = StyleXStylesWithout<T>;
++type StyleObject = Exclude<
++  Parameters<TStyleX['create']>[0][string],
++  (...args: never[]) => unknown
++>;
++type StyleTheme<V extends VarGroup<{}>, T extends symbol> = Theme<V, T>;
++type StyleVars<T extends { [key: string]: unknown }> = VarGroup<T>;
++type Styles<T extends StyleObject> = StyleXStyles<T>;
++type StylesWithout<T extends StyleObject> = StyleXStylesWithout<T>;
+ type ProviderValue = Readonly<{ [$$Key$$: string]: string | number }>;
+ type ProviderProps = Readonly<{
+   children: React.ReactNode;
+diff --git a/dist/native/index.js b/dist/native/index.js
+index ffbf4fb06609055c270df01fa0843b34c254a0d8..29a2b6de964e7124b46d1e44b04e801ccc5e011e 100644
+--- a/dist/native/index.js
++++ b/dist/native/index.js
+@@ -2381,6 +2381,9 @@ function TextString(props) {
+     withInheritedStyle: true,
+     withTextStyle: true
+   });
++  if (Platform.OS === 'android') {
++    nativeProps.style.includeFontPadding = false;
++  }
+   return jsx(Text, {
+     ...nativeProps,
+     children: children
+@@ -2836,8 +2839,6 @@ function createStrictDOMComponent(tagName, defaultProps) {
+     }
+     if (tagName === 'button') {
+       nativeProps.role ??= 'button';
+-    } else if (tagName === 'header') {
+-      nativeProps.role ??= 'header';
+     } else if (tagName === 'li') {
+       nativeProps.role ??= 'listitem';
+     } else if (tagName === 'ol' || tagName === 'ul') {
+@@ -3081,6 +3082,9 @@ function createStrictDOMTextComponent(tagName, defaultProps) {
+     nativeProps.style = Object.assign(nativeProps.style, disableUserSelect ? {
+       userSelect: 'none'
+     } : null);
++    if (Platform.OS === 'android') {
++      nativeProps.style.includeFontPadding = false;
++    }
+     if (nativeProps.animated === true) {
+       NativeComponent = Animated.Text;
+     }
+diff --git a/dist/types/styles.d.ts b/dist/types/styles.d.ts
+index f3451cf766770ce460a18ed774f9ca1002b956de..b3423d5ffa1df3c319cf738517ad5ee66e2c5b53 100644
+--- a/dist/types/styles.d.ts
++++ b/dist/types/styles.d.ts
+@@ -18,7 +18,7 @@ import type * as $$IMPORT_TYPEOF_1$$ from '@stylexjs/stylex';
+ type TStyleX = typeof $$IMPORT_TYPEOF_1$$;
+ export type Style = InlineStyles;
+ export type Styles = StyleXArray<
+-  StyleXStyles | Theme<VarGroup<{ readonly [$$Key$$: string]: unknown }>>
++  StyleXStyles | Theme<VarGroup<{}>>
+ >;
+ export type IStyleX = Readonly<{
+   create: TStyleX['create'];
+diff --git a/dist/web/index.d.ts b/dist/web/index.d.ts
+index 79878921cce558434dfcc067688e0a678e5a9f80..1c0ee2ea5c8e1fb024424b463370b3c98c47f7a2 100644
+--- a/dist/web/index.d.ts
++++ b/dist/web/index.d.ts
+@@ -16,9 +16,14 @@ import type {
+ } from '@stylexjs/stylex';
+ import * as html from './html';
+ import * as css from '@stylexjs/stylex';
+-type StyleTheme<V, T> = Theme<V, T>;
+-type StyleVars<T> = VarGroup<T>;
+-type Styles<T> = StyleXStyles<T>;
+-type StylesWithout<T> = StyleXStylesWithout<T>;
++type TStyleX = typeof css;
++type StyleObject = Exclude<
++  Parameters<TStyleX['create']>[0][string],
++  (...args: never[]) => unknown
++>;
++type StyleTheme<V extends VarGroup<{}>, T extends symbol> = Theme<V, T>;
++type StyleVars<T extends { [key: string]: unknown }> = VarGroup<T>;
++type Styles<T extends StyleObject> = StyleXStyles<T>;
++type StylesWithout<T extends StyleObject> = StyleXStylesWithout<T>;
+ export type { StaticStyles, StyleTheme, StyleVars, Styles, StylesWithout };
+ export { css, html };
+export function variantKey(viewport, theme) {
+  return `${sizeClass(viewport)}${viewport.width > viewport.height ? 'l' : 'p'}${theme}`;
+}
+
+export function expoBundleRequestFactory() {
+  return require('@expo/cli/build/src/export/embed/exportEmbedAsync.js')
+    .createMetroServerAndBundleRequestAsync;
+}
+
+export function hydrationFlagScriptContents() {
+  return require('@expo/router-server/build/utils/html.js').getHydrationFlagScriptContents();
+}
+
+// Expo's SSR loader turns the bundle's final run call into its exports the same way.
+export function asCommonJsModule(bundle) {
+  return bundle.replace(/^(__r\(.*\);)$/gm, 'module.exports = $1');
+}
+
+// Metro bundles an entry for Node the way Expo Router's ssrLoadModule does: Babel folds
+// `typeof window` to 'undefined', so every guard takes its server branch.
+export async function bundleForNode(entryFile, customResolverOptions = {}) {
+  const { server, bundleRequest } = await expoBundleRequestFactory()(NATIVE_APP_DIR, {
+    entryFile,
+    platform: 'web',
+    dev: false,
+    minify: false,
+    resetCache: false,
+  });
+  try {
+    const { code } = await server.build({
+      ...bundleRequest,
+      customTransformOptions: { ...bundleRequest.customTransformOptions, environment: 'node' },
+      customResolverOptions: {
+        ...bundleRequest.customResolverOptions,
+        ...customResolverOptions,
+        environment: 'node',
+      },
+    });
+    return asCommonJsModule(code);
+  } finally {
+    await server.end();
+  }
+}
+
+export function bundleFirstFrameRenderer() {
+  return bundleForNode(FIRST_FRAME_ENTRY);
+  return view;
+}
+
+const handOff = perfTimed('handoff', showPicture);
+
+// Hands the view the scene's newest picture, if ink changed since the last one.
+function present(scene: InkScene, view: SkiaPictureView | null): boolean {
+  if (!view || !scene.present((picture) => handOff(view, picture))) return false;
+  perfSubmitted();
+  return true;
+}
+
+// Live ink renders no React (ADR-0178). Each packet paints its samples and hands the view a new
+// picture as it arrives, unless it reached JavaScript too soon after the last hand-off to be
+// shown before the next one (handoffCadence.ts). A contact that ends paints at once. A cohort
+// that finished and was not committed after all leaves the layer by the frame after its commit
+// would have rendered.
+function useLiveFrames(
+  scene: InkScene,
+  live: LiveInkFeed,
+  view: { current: SkiaPictureView | null },
+  latest: {
+    current: {
+      strokes: readonly Stroke[];
+      input: SceneInput | null;
+      onError: (error: unknown) => void;
+    };
+  }
+) {
+  useEffect(() => {
+    let check: number | null = null;
+    // A fault detaches the input, which settles the feed again: report it once.
+    let failed = false;
+    // Whether it handed the view new ink.
+    const paint = () => {
+      const source = live.source();
+      if (!source || failed) return false;
+      try {
+        scene.flush(source);
+        const shown = present(scene, view.current);
+        if (check === null && scene.orphaned(latest.current.strokes))
+          check = requestAnimationFrame(() => {
+            check = null;
+            const { strokes, input } = latest.current;
+            if (!input || !scene.orphaned(strokes)) return;
+            scene.rebuild(input, source.live());
+            present(scene, view.current);
+          });
+        return shown;
+      } catch (error) {
+        failed = true;
+        latest.current.onError(error);
+        return false;
+      }
+    };
+    const cadence = createHandoffCadence(FRAME_CLOCK, paint);
+    const unsubscribe = live.subscribe((event) => {
+      if (event === 'sample') cadence.sample();
+      else cadence.settle();
+    });
+    return () => {
+      unsubscribe();
+      cadence.dispose();
+      if (check !== null) cancelAnimationFrame(check);
+    };
+  }, [scene, live, view, latest]);
+}
+
+const SkiaInkLayer = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaInk(props, ref) {
+  const paper = useInkPaper();
+  const projection = useInkProjection();
+  const { pageId, theme } = useInkAppearance();
+  const [size, setSize] = useState<Size | null>(null);
+  const view = useSurfaceRedraw(size);
+  const tiles = useCrayonTileResources(
+    props.strokes,
+    theme,
+    props.brush === 'crayon' ? props.color : undefined
+  );
+  const bookFill = useBookFill(pageId, theme, paperBounds(projection), props.onError);
+  const context = useInkContext(projection, tiles, bookFill);
+  const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}:${projection.extent.width}x${projection.extent.height}`;
+  const [scene] = useState(createInkScene);
+  const state = useSceneSync(scene, props.live, props.strokes, size, context, key, props.undoGhost);
+  useInkCommitProbe();
+  const failure = state.error;
+import type { SkPicture, SkiaPictureView } from '@shopify/react-native-skia';
+
+type ViewApi = Readonly<{
+  setJsiProperty: (nativeId: number, name: string, value: unknown) => void;
+}>;
+
+function isViewApi(value: unknown): value is ViewApi {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'setJsiProperty' in value &&
+    typeof value.setJsiProperty === 'function'
+  );
+}
+
+// SkiaPictureView hands its `picture` prop to the native view through Skia's JSI view API in its
+// own componentDidUpdate. The ink layer calls the same setter on each display frame, so a new
+// frame of ink renders no React; the view is never given a `picture` prop to overwrite it with.
+// The native view keeps its own reference to the picture it holds, so the caller may release the
+// one before as soon as this returns. That relies on react-native-skia's picture renderer taking
+// one lock to replace its picture on this thread and to copy it on its render thread: with nothing
+// ordering the two, dropping a replaced picture's last reference can free it mid-draw ("Pure
+// virtual function called!" on Android). native-picture-lifetime.test.mjs reads the renderer.
+export function showPicture(view: SkiaPictureView, picture: SkPicture) {
+  const api: unknown = Reflect.get(globalThis, 'SkiaViewApi');
+  if (!isViewApi(api)) throw new Error('The drawing paper could not be shown.');
+  api.setJsiProperty(view.nativeId, 'picture', picture);
+}
+// Rebuilds only the React Native app's JavaScript and puts it into a Release build that a full
+// Gradle or Xcode build already produced, then installs that copy. A JS-only change reaches the
+// device in about a minute instead of a native rebuild (issue 3083). Native code, resources and
+// signing entitlements come unchanged from the base build, so a Kotlin or Swift change, or a new
+// Android image or sound, still needs the full build; the Android route refuses an asset the base
+// APK lacks.
+//
+// Android: the bundle replaces assets/index.android.bundle, then the APK is page-aligned and signed
+## Checking a JS-only change without a native build
+
+`swap-js-bundle.mjs` puts freshly built JavaScript into a Release build that a full Gradle or Xcode
+build already produced, then installs that copy. A change to TS or TSX reaches the device in about
+ten seconds instead of a native rebuild, and the device stays on a Release build, so timing checks
+still hold (issue 3083). The base is the `art.splotch.app.dev` app: a plain Release build carries
+that ID and installs beside the store copy.
+
+```sh
+# Android: the base APK from `npm run android:apk`, which signs with the local debug key;
+# signing again with that key lets `adb install -r` keep the app's data
+node tools/device-parity/swap-js-bundle.mjs --platform=android --base=<app-release.apk> \
+  --bundle=art.splotch.app.dev --keystore=$HOME/.android/debug.keystore \
+  --key-alias=androiddebugkey --ks-pass=pass:android --out=<new dir> --device=<serial>
+# iOS: the base .app from `xcodebuild … -configuration Release`, signed again with the identity
+# that signed it
+node tools/device-parity/swap-js-bundle.mjs --platform=ios --base=<Splotch.app> \
+  --bundle=art.splotch.app.dev --identity="Apple Development" --out=<new dir> --device=<udid>
+```
+
+Relaunch the app afterwards. `--ks-pass` and `--key-pass` take apksigner's forms (`env:NAME`,
+`file:PATH`, `pass:VALUE`); without `--device` the tool only writes the swapped build into `--out`.
+
+* **It builds what the native build builds.** The bundle step and Hermes flags are the ones React
+  Native's Gradle task and Xcode script pass for Release (`lib/js-bundle.mjs`), and
+  `tests/js-bundle.test.mjs` fails when React Native changes them. At an unchanged commit the
+  Android bundle is byte for byte the one Gradle packaged. The iOS one differs only in the path
+  Hermes records for its source. On iOS the bundle step sources the app's `.xcode.env` files, as
+  Xcode's bundle phase does; on Android it uses the calling environment, as a Gradle build started
+  from it does, so an `EXPO_PUBLIC_*` value applies either way. The tool prints whether the
+  JavaScript differs from the base build's, which catches a forgotten save.
+* **Native code and Android resources come from the base build.** A Kotlin, Swift or native config
+  change needs a full build. On Android, an image or sound the base APK lacks is refused, because
+  React Native compiles those into the APK's resources; an edited one under an unchanged name is not
+  detected. On iOS the bundle's images and sounds are plain files in the app, so they travel with
+  the swap.
+* **Use a full build for committed performance captures**, whose provenance names a built commit.
+* The tool refuses `art.splotch.app`, an artifact whose bundle id is not `--bundle`, a bundle built
+  for a different Hermes bytecode version, and an `--out` that already holds files.
+
+
+EXIT 0

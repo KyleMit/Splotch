@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:42.637Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2831",
+    "title": "Smooth native strokes the way shipping does when input is sparse",
+    "issue_number": 2831,
+    "body": "**What:** With the same sparse mouse input (3 steps per segment), the RN app draws sharp polyline corners where shipping smooths the path into round peaks. Found by the parity inventory on 2026-10-13. Fast toddler strokes on a real device arrive similarly sparse, so this may be a visible ink-quality gap.\n\n**Where:**\n- Shipping: the stroke path construction in `web/src/lib/` behind `DrawingCanvas.svelte`. Find how it builds a stroke from points (curve fitting or midpoint quadratic smoothing).\n- Native: `experiments/native-architecture/src/drawing/model.ts` (`strokePath`), `skiaInkPainter.ts`, and the web `RasterInk.tsx`.\n\n**Done when:**\n- The same point sequence produces the same curve shape in both apps on web, Android and iOS.\n- A shared fixture compares the two path builders and fails on divergence.\n- The PR shows a side-by-side of a fast zigzag drawn in both apps.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      },
+      {
+        "name": "area:drawing-engine",
+        "color": "ededed",
+        "description": null
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:32:38Z",
+    "updated_at": "2026-10-13T15:01:15Z",
+    "closed_at": "2026-10-13T15:01:15Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2831",
+    "display_title": "Smooth native strokes the way shipping does when input is sparse"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2831#issuecomment-6148528374",
+      "body": "Fixed in #2832.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6148528374,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

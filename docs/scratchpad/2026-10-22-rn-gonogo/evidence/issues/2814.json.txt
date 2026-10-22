@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:33.520Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2814",
+    "title": "Match the native drawing screen frame and palette to shipping",
+    "issue_number": 2814,
+    "body": "**Parity unit U8** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**Gaps (from the parity inventory):**\n\n| # | Surface | Shipping file(s) | RN file(s) | Severity | Gap | Shots |\n|---|---|---|---|---|---|---|\n| 1 | Drawing screen frame / paper | `DrawingCanvas.svelte`, `LiveSurface.svelte`, `paperTexture` (app.css), `web/src/routes/+page.svelte` | `rsdDrawing/RsdDrawingScreen.tsx`, `RsdPaperSlot.tsx`, `NativePaper.tsx`, `NativeScrollAreas.tsx`, `edgeLayout.ts` | looks wrong | RN paper is a flat, hairline-bordered, rounded card inset in a white frame, with a text status strip under it. Shipping is full-bleed textured paper with no border. | `drawing` |\n| 2 | Dark theme (drawing) | `web/src/lib/design/tokens.ts` (`themes.dark`), `web/src/tokens.css` | `rsdDrawing/tokens.css.ts` (`darkTheme`), `drawing/theme.ts` | looks wrong | Dark colors are right. The paper has no texture, and the corner controls sit on raised dark tiles instead of muted glyphs. Only 8 themed colors are defined in RN. | `drawing-dark` |\n| 3 | Color Palette bar | `ColorPalette.svelte`, `web/src/lib/palette.ts` | `rsdDrawing/RsdEdgeControls.tsx` (`RsdPalette`), `controls.tsx`, `drawing/palette.ts` | looks wrong | Swatches are 44px against shipping's 60px, so RN fits extra paints (Lime and Grey on the tablet). The bar has no `--surface` plate or shadow edge separating it from the paper. | `drawing` |\n| 5 | Gradient Swatch (More colors) | `ColorSwatch.svelte` (custom variant) | `controls.tsx` (`RsdMoreColorsSwatch`) | minor | The honeycomb is drawn bare. Shipping sits it on a white raised disc with a shadow. | `drawing` |\n| 20 | Settings Button | `SettingsButton.svelte`, app.css `.corner-button` | `RsdEdgeControls.tsx` (`settings` `RsdAction`) | looks wrong | RN puts a black gear in a raised white tile. Shipping uses a muted transparent corner gear. | `drawing` |\n\n**Done when:** the RN surface looks and behaves like shipping. The PR shows same-viewport, side-by-side screenshots (shipping web next to RN web) at phone 390x844 and tablet 1366x1024, in light and dark, plus the Android emulator. Every RN-only control in scope is removed or moved as listed. Existing behavior tests still pass, and new behavior has tests that fail without it.\n\n**Order:** Depends on the primitive issues (U1–U7) it needs; build on those components rather than one-off styles.\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\n**RN-only controls to remove or move** for this surface: see the epic list (https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6147912989).\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:31:31Z",
+    "updated_at": "2026-10-14T03:49:16Z",
+    "closed_at": "2026-10-14T03:49:16Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2814",
+    "display_title": "Match the native drawing screen frame and palette to shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2814#issuecomment-6160454435",
+      "body": "Done in #2850, merged into `codex/native-migration`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6160454435,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

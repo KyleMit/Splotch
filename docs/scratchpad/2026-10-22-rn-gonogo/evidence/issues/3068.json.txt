@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:20.135Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3068",
+    "title": "RN iOS: empty keychain slots read as undefined, so every AI credential save fails",
+    "issue_number": 3068,
+    "body": "Part of #2978. Found by the owner on the iPad and reproduced with a diagnostic build at ccd185b08425d71fe736792dab7c442ece8f4c0e (the #3064, #3065 and #3067 fixes merged locally).\n\n## What the owner saw\n\n> ios - when I type in my API Key is says it could not be saved securely. This blocks testing the AI generation.\n\n## Cause\n\n`SplotchAIEnvironment.swift`'s `guarded` resolves whatever its operation returns. `readCredential` returns `String?`, so an empty slot resolves `nil`. React Native's new-architecture interop delivers that `nil` to JS as `undefined`, not `null`. Android's `promise.resolve(null)` delivers `null`. `nativeVault.read` in `platform/ai.ts` accepts only `null` or a valid credential, so on iOS every read of an empty slot throws `Secure AI storage could not be read.`\n\nLogged on the iPad while saving a dummy, non-real credential through a build that skips the server check:\n\n```\n'[diag-vault] reference', 'string', 64\n'[diag-vault] readBack matches', true\n'[diag-vault] confirmed', 'managed', true\n'[diag-read-shape]', 'byok', 'undefined', 0\n'[diag-keysave]', 'Error: Secure AI storage could not be read.'\n```\n\nThe keychain write itself succeeds and is confirmed. The save then reads the other, empty slot and fails, so the owner sees \"could not be saved securely\" for a key that was in fact stored.\n\nThe same read runs at launch (`readStatus`). That is likely why Settings › AI Art on the iPad says the free allowance is unavailable.\n\n## Done when\n\n* `guarded` resolves `NSNull()` when its operation has no value, so an empty slot reaches JS as `null`, as on Android.\n* A drift-guard test pins that resolution in the Swift source.\n* On the iPad, a credential save is accepted, and AI Art shows the free allowance.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:22:39Z",
+    "updated_at": "2026-10-20T15:12:39Z",
+    "closed_at": "2026-10-20T15:12:39Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3068",
+    "display_title": "RN iOS: empty keychain slots read as undefined, so every AI credential save fails"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3068#issuecomment-6294194295",
+      "body": "Fixed by #3070, merged as 29eb9e641c51fccc9f382d7c095e3cb37e783e16. Verified on the iPad (Release): AI Art showed \"10 free AI creations left\" instead of an unavailable allowance, a credential saved and read back, and a free Watercolor creation came back and displayed with Download and Report.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6294194295,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

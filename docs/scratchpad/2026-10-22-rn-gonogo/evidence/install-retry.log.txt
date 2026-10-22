@@ -1,0 +1,29 @@
+? Verifying lockfile against supply-chain policies (1240 entries)...
+Lockfile is up to date, resolution step is skipped
+Packages: +1133
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /workspace/.cache/data/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 0, reused 751, downloaded 0, added 20
+Progress: resolved 0, reused 751, downloaded 1, added 29
+Progress: resolved 0, reused 751, downloaded 17, added 33
+Progress: resolved 0, reused 751, downloaded 59, added 76
+Progress: resolved 0, reused 751, downloaded 60, added 122
+Progress: resolved 0, reused 751, downloaded 64, added 203
+Progress: resolved 0, reused 751, downloaded 102, added 222
+Progress: resolved 0, reused 751, downloaded 116, added 278
+Progress: resolved 0, reused 751, downloaded 121, added 385
+Progress: resolved 0, reused 751, downloaded 122, added 385
+Progress: resolved 0, reused 751, downloaded 189, added 441
+Progress: resolved 0, reused 751, downloaded 245, added 480
+Progress: resolved 0, reused 751, downloaded 277, added 566
+Progress: resolved 0, reused 751, downloaded 312, added 701
+Progress: resolved 0, reused 751, downloaded 340, added 762
+Progress: resolved 0, reused 751, downloaded 340, added 859
+Progress: resolved 0, reused 751, downloaded 340, added 1132
+Progress: resolved 0, reused 751, downloaded 340, added 1133, done
+✓ Lockfile passes supply-chain policies (1240 entries in 23.4s)
+
+Done in 24.4s using pnpm v11.22.0

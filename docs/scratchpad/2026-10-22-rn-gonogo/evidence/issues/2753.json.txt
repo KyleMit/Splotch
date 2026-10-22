@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:15.757Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2753",
+    "title": "Give the native drawing screen an icon toolbar and swatch palette",
+    "issue_number": 2753,
+    "body": "**What:** The RN drawing screen uses text buttons (\"Undo\", \"Drawing tools\", \"Brush: Pen\") and hides Clear, Save, Pictures, Coloring pages and Settings in a \"Drawing tools\" dialog. Colors are named buttons with a dot.\n\n**Why:** Splotch is for children who cannot read. The shipping app's icon Actions Panel and Color Palette are the toddler interface.\n\n**Where:** Svelte reference `web/src/lib/components/ActionsPanel.svelte`, `ColorPalette.svelte`, `ColorSwatch.svelte`; RN `experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx`, `controls.tsx`.\n\n**Done when:** every primary drawing action is an icon button on the drawing screen and colors are tappable swatches, on web, Android and iOS.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T01:45:16Z",
+    "updated_at": "2026-10-13T04:44:51Z",
+    "closed_at": "2026-10-13T04:44:51Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2753",
+    "display_title": "Give the native drawing screen an icon toolbar and swatch palette"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2753#issuecomment-6138420535",
+      "body": "Done in #2772 (merged into `codex/native-migration`): icon toolbar from the shipping icon set and text-free round swatches. Layout parity with the shipping screen continues in #2773.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6138420535,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

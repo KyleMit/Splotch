@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:52.819Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2886",
+    "title": "Keep the native drawer tiles at full strength after switching Button style",
+    "issue_number": 2886,
+    "body": "**What:** in the React Native candidate, switching Button style from Raised to Flat in Settings while the drawer is open leaves the drawer tiles faded until the app restarts. Shipping switches cleanly.\n\nThe faded tiles also show in the 2026-10-14 native Galaxy evidence (the `block2-flat` jank captures). They are not caused by #2874's fix.\n\n**Where:** the drawer tile skin switch in `experiments/native-architecture/src/rsdDrawing/`, the Flat/Raised skin of `RsdIconButton` tiles and anything animated (opacity) on style change. Compare with shipping's drawer in `web/src`.\n\n**Done when:** switching Button style either way with the drawer open shows tiles at full strength on Android and iOS. A renderer test switches the style with the drawer mounted and asserts the tiles' resting opacity.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T18:25:42Z",
+    "updated_at": "2026-10-14T21:00:56Z",
+    "closed_at": "2026-10-14T21:00:56Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2886",
+    "display_title": "Keep the native drawer tiles at full strength after switching Button style"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2886#issuecomment-6178397349",
+      "body": "Fixed by #2893, merged into `codex/native-migration`. On Android the Raised disabled fade runs on the native driver, so switching to Flat sent no opacity change and the tiles stayed at 0.3. `RsdIconButton` now keys its button by Button style, so a switch mounts a fresh view. The renderer host now models native opacity, and the new test switches the style both ways with the drawer and Settings open. The iOS disabled-Flat look is a separate pre-existing gap, #2895.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6178397349,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

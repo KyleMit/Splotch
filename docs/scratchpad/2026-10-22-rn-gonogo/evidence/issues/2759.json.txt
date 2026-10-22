@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:18.372Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2759",
+    "title": "Verify native Crayon against the crayon ADRs on phone and tablet",
+    "issue_number": 2759,
+    "body": "**What:** Crayon grain, wax buildup and color mixing are reported weak on phone, and the native `<Filter>` blend may not be supported by react-native-svg. Compare native Crayon with the shipping app against ADR-0065 and ADR-0067 and fix the differences.\n\n**Where:** RN `drawing/crayon*.ts`, `CrayonGlaze.tsx`, `Ink.tsx`.\n\n**Done when:** side-by-side screenshots of the same scribble on web, Android and iPad show matching grain, buildup and mixing.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:test",
+        "color": "bfd4f2",
+        "description": "Test coverage or CI test infrastructure"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      },
+      {
+        "name": "area:crayon",
+        "color": "ededed",
+        "description": null
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T01:45:33Z",
+    "updated_at": "2026-10-13T09:36:41Z",
+    "closed_at": "2026-10-13T09:36:41Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2759",
+    "display_title": "Verify native Crayon against the crayon ADRs on phone and tablet"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2759#issuecomment-6142667873",
+      "body": "Shipped in #2788.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6142667873,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

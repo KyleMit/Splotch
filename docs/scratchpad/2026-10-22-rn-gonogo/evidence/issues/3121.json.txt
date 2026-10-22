@@ -1,0 +1,51 @@
+{
+  "observedAt": "2026-10-22T16:54:35.227Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3121",
+    "title": "RN iPadOS: in a resized window the window controls cover the first palette swatch",
+    "issue_number": 3121,
+    "body": "Part of #2978. Found during the 2026-10-21 iOS bug hunt: Release build of `codex/native-migration` at 7eca9e4f8007026fbfa9ef5f78274da59d74ae2a. Reproduced twice on a fresh iPad Pro 13-inch (M5) simulator (iPadOS 26.5) and once on the physical iPad Pro 12.9-inch (iPadOS 26).\n\n## What happens\n\niPadOS 26 lets a full-screen app be dragged into a window by its bottom-right corner grabber. In a window, the system draws its window controls (the red, yellow and green dots) in the window's top-left corner. The RN app lays the palette out from the top edge of the window as if that corner were free. The window controls sit on top of the first swatch (Purple).\n\n**Repro:**\n\n1. Launch the app full-screen on an iPad running iPadOS 26.\n2. Drag the bottom-right resize grabber toward the middle of the screen to make a window.\n3. Look at the first swatch, then tap its top half.\n\n* **Actual:** the window controls cover the top of the Purple swatch. A tap there expands the controls into **Close**, **Minimize** and **Zoom** over Purple and Blue, instead of picking Purple. The next tap by a child can close or minimize the app.\n* **Expected:** no app control sits under the window controls, so a tap on a swatch always picks the colour. iPadOS 26 can report the corner the window controls take to an app's layout; the RN layout reads only the plain safe-area insets, which do not include it here. Either inset the palette from that corner, or keep the app full-screen.\n\nThe accessibility tree shows the overlap: `Window Controls, Splotch` occupies the same top-left corner as the `Purple` button.\n\n## Comparison and open questions\n\n* **Shipping does the same.** A simulator build of the shipping (Capacitor) app from the same commit, bundle `art.splotch.app.baseline`, put in the same window, shows the window controls on its Purple swatch too. This is not an RN regression. It is still a defect under the owner's rule (whatever is better).\n* Whether the fix should inset the palette or opt out of windowing (`UIRequiresFullScreen`). Issue #2806 changed only the initial window size.\n\n## Done when\n\nOn iPadOS 26 in a resized window, no swatch or other control sits under the window controls, in portrait and landscape and in both toolbar styles. Check on the simulator and on the physical iPad.\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-21T06:22:06Z",
+    "updated_at": "2026-10-21T06:30:41Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3121",
+    "display_title": "RN iPadOS: in a resized window the window controls cover the first palette swatch"
+  },
+  "comments": []
+}

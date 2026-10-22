@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:18.896Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3062",
+    "title": "RN: settings and other stores verify files before Expo SDK 58's async write lands",
+    "issue_number": 3062,
+    "body": "Part of #2978. Found by the owner on the Galaxy and reproduced with a diagnostic build at 58463f481acdb299a7fee629af5701d1110dfdb4.\n\n## What the owner saw\n\n> android - when I toggle settings - I get the error message that the settings work for this session, but could not be saved\n\n## Cause\n\nExpo SDK 58 (12ddc6b70) made `File.write()` asynchronous on both platforms (`AsyncFunction(\"write\")`; `writeSync()` is the new synchronous call). Ten call sites under `experiments/native-architecture/src/platform/` still call `write()` without awaiting it. Where the store reads the file back to verify it, the read can land before the bytes do.\n\nLogged on the Galaxy while toggling Sound and Appearance quickly:\n\n```\n'[diag-sound] mismatch', 34, 'wrote', 697, 'read', 0, 'firstDiff', 0, 'size', 697\nError: Sound settings could not be saved completely.\n```\n\nThe read returned an empty string, while the same file measured 697 bytes a moment later. Slow toggles usually win the race; quick ones lose it.\n\n## Affected stores\n\n| Store | File | User-visible effect when the race is lost |\n| --- | --- | --- |\n| Settings | `soundSettings.ts` | \"could not be saved\" message; the choice is lost on relaunch |\n| Brushes | `brushPreferences.ts` | brush choice not saved |\n| Feedback policy | `feedback.ts` | \"Feedback protection was not saved\" |\n| Held pictures | `unsavedPictures.ts` | an unsaved picture may not survive a relaunch |\n| Coloring downloads | `offlineLibrary.ts` | a page can be moved into place before its bytes land |\n| AI dismissal, sections seen, session count | `ai.ts`, `sectionsSeen.ts`, `settingsSessions.ts` | the write finishes later, unordered |\n| Drawer open, last network state | `drawerOpen.ts`, `useOnline.ts` | synchronous callers; a failure escapes their try/catch |\n\n## Why tests passed\n\nEvery hand-written `expo-file-system` fake in `tools/tests/native-*.test.mjs` has a synchronous `write`, and the type-aware `no-floating-promises` rule in `eslint.config.js` covers only `web/src`.\n\n## Done when\n\n* Every async store awaits `write()`, and the two synchronous callers use `writeSync()`.\n* `no-floating-promises` runs over `experiments/native-architecture/src`, with a positive control.\n* The verifying stores' fakes write asynchronously, so an unawaited write fails their tests.\n* On the Galaxy, rapid Settings toggles save without the message, and the choice survives a relaunch.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      },
+      {
+        "name": "area:settings",
+        "color": "0052cc",
+        "description": "Settings modal and controls"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T13:51:10Z",
+    "updated_at": "2026-10-20T14:57:10Z",
+    "closed_at": "2026-10-20T14:57:10Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3062",
+    "display_title": "RN: settings and other stores verify files before Expo SDK 58's async write lands"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3062#issuecomment-6293859295",
+      "body": "Fixed by #3064, merged as 4a304e2e475b88920ce299a3df0bcc7343934cd3. Verified on the Galaxy (Release): six quick Sound and Appearance pairs showed no save message, and the final choices survived a force-stop and relaunch. On the diagnostic build without the fix, the same taps failed six times. The type-aware `no-floating-promises` rule now covers `experiments/native-architecture/src`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293859295,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

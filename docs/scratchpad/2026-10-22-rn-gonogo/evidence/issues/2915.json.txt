@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:57.483Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2915",
+    "title": "Bring native Settings and Parent Center logic to shipping parity",
+    "issue_number": 2915,
+    "body": "**What:** Settings and Parent Center logic differs from shipping, including the parental gate's session rule.\n\n| ID | Difference | Sev | Status | Slice refs |\n| --- | --- | --- | --- | --- |\n| X16 | Gate session solve recorded under any mode and not cleared on a policy change | H | Verified | S-D2 |\n| X17 | Activity dots only for What's New | H | Verified | S-D1 |\n| X33 | Night Mode quick toggle pins light/dark instead of the loosest preference | M | Code-read | S-D3 |\n| X34 | Back, Escape and scrim inside a drilled-in Settings section go to the hub | M | Verified | S-D4, P-23 |\n| X35 | Privacy and release notes are external and gated; the in-app `/privacy` Parent Center entry is lost | M | Verified | S-D5 |\n| X36 | Feedback device report fields and outcome copy differ | M | Code-read | S-D6 |\n| X37 | Button Size ceiling fixed at 130 | M | Code-read | S-D7, C-D21, P-36 |\n| X38 | Gate card: error never clears; destination opens before the \"Unlocked!\" hold; no keyboard | M | Code-read | S-D8 |\n| X39 | No pinch-to-enlarge text in Settings; OS font scaling unverified | M | Code-read; device | S-D9, S-D15 |\n| X55 | Settings read failure turns sound, coloring and AI off (whole-record rejection) | M | Code-read | P-22, C-D20 |\n| X64 | RN web has no `/privacy`, `/changelog` or `/feedback` route | L–M (web) | Code-read | S-D13g |\n| X65 | Re-picking Never on \"Opening Parent Center\" reopens the confirmation | L | Code-read | S-D13f |\n\n**Done when:**\n- Each item matches shipping on the native targets (and on RN web where it applies), or the issue says why it stays different. Shipping is the spec.\n- Each fix has a test that reads or pins shipping's behaviour, with a negative control.\n- Visible changes come with shipping-vs-RN side-by-sides.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) (§3 per surface, §4 index; the slice files hold file:line evidence). Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-15T00:12:06Z",
+    "updated_at": "2026-10-15T08:34:22Z",
+    "closed_at": "2026-10-15T08:34:22Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2915",
+    "display_title": "Bring native Settings and Parent Center logic to shipping parity"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2915#issuecomment-6187954189",
+      "body": "Implemented and merged via PR #2928 at 6be2f56ef67ca90a016d7a557241a608e9fd6f7d after two independent review rounds, resolved threads and all 21 CI checks (17 success, 4 expected skips). Final local gates include 10,822 tool tests, 672 RSD tests, both native Release builds and web startup 870,190 / 870,798 B. Final Galaxy/iPhone Settings and Feedback checks passed; 35 uploaded comparison pairs were SHA-256 verified, and web Feedback success used intercepted mocked responses only. Shipping preferences and device ownership were restored.\n\nRemaining differences have concrete owners: native 2× label loss in #2931; the missing native Online metadata row in #2916; tight native picker and shared information-footer styling in #2917. This closes the Settings logic unit without claiming those remaining visual/platform differences are fixed.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6187954189,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

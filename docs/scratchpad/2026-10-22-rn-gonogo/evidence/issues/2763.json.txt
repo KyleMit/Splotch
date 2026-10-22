@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:20.964Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2763",
+    "title": "Add accessibility and What's New sections to native settings",
+    "issue_number": 2763,
+    "body": "**What:** Port Button Size, the in-app Reduce Motion switch, per-release What's New notes with the new-version dot, and the sectioned settings layout.\n\n**Where:** Svelte `settings/AccessibilitySection.svelte`, `ButtonSizeSetting.svelte`, `WhatsNewSection.svelte`, `HubList.svelte`; RN `rsdDrawing/NativeDialog.tsx`, `information/content.ts`.\n\n**Done when:** each setting exists and persists on native.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      },
+      {
+        "name": "area:settings",
+        "color": "0052cc",
+        "description": "Settings modal and controls"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T01:45:42Z",
+    "updated_at": "2026-10-13T09:32:50Z",
+    "closed_at": "2026-10-13T09:32:50Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2763",
+    "display_title": "Add accessibility and What's New sections to native settings"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2763#issuecomment-6142603389",
+      "body": "Shipped in #2787.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6142603389,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

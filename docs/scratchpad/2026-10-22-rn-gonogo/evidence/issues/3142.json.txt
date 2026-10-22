@@ -1,0 +1,46 @@
+{
+  "observedAt": "2026-10-22T16:54:35.366Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3142",
+    "title": "RN Android: action buttons lose their icons in the smallest split-screen pane",
+    "issue_number": 3142,
+    "body": "## Problem\n\nOn an Android phone in split screen, at the shortest pane size, the five expanded action buttons show as blank white tiles with no icons. Undo still works. Going back to full screen restores the icons.\n\nFound by the campaign's Codex Android sweep for #2978 (RN-CONFIG-002, S3), reproduced in two fresh processes.\n\n## Repro (API 34 phone emulator, Release build at 3fed2d551fbb)\n\n1. Launch `art.splotch.migration.probe`, draw something, and open the action drawer.\n2. Enter split screen with another app, and drag the divider so Splotch gets the smallest pane.\n\n**Expected:** the buttons shrink but keep their icons.\n**Actual:** the icons vanish and the tiles render blank.\n\n## Suspected area\n\n`experiments/native-architecture/src/rsdDrawing/edgeLayout.ts` around lines 145–147 clamps the face size to the available space but keeps padding derived from `base × scale`. `RsdIconButton.tsx` around line 313 then subtracts that unchanged padding and border from the smaller face, which can leave no room for the glyph. This is a hypothesis.\n\n## Acceptance\n\n- At the smallest split-screen pane, every action button shows its icon, with padding scaled to the clamped face.\n- A unit or mounted test pins the glyph size above zero at the clamp.\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-21T11:00:59Z",
+    "updated_at": "2026-10-21T11:00:59Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3142",
+    "display_title": "RN Android: action buttons lose their icons in the smallest split-screen pane"
+  },
+  "comments": []
+}

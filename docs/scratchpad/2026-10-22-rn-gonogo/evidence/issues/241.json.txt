@@ -1,0 +1,162 @@
+{
+  "observedAt": "2026-10-22T16:54:35.477Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/241",
+    "title": "Fastlane store-deploy automation",
+    "issue_number": 241,
+    "body": "Set up Fastlane to automate Android + iOS store deployments.\n\n* **Where:** `android/`, `ios/`, and root `scripts/`; keep cross-platform (ADR-0017) and don't leak\n  secrets into the repo. Coordinate with the `release`/`build` skills and ADR-0012/0020 toolchains.\n* **Done when:** a documented Fastlane lane builds and uploads a signed artifact per platform\n  (dry-run in CI without publishing), with secrets sourced from env. Add/adjust an ADR for the\n  release pipeline.\n\n---\n_Migrated from IDEAS.md → Native / mobile_",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "needs-adr",
+        "color": "d876e3",
+        "description": "Needs an architectural decision record before or alongside implementation"
+      },
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:release",
+        "color": "9e6a03",
+        "description": "Release and deployment automation"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "triage:needs-decision",
+        "color": "bf3989",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "reopened",
+    "comments": 5,
+    "created_at": "2026-07-15T13:51:57Z",
+    "updated_at": "2026-10-01T12:48:19Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/241",
+    "display_title": "Fastlane store-deploy automation"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/241#issuecomment-5311426419",
+      "body": "Re-verified 2026-08-16: still unimplemented — `fastlane/` holds only the metadata/changelog tree that `npm run gen:releases` writes as paste-ready store text; no Fastfile or lanes exist, and both the build and publish-artifacts flows document store upload as manual (Play Console; Transporter). The blocking decision, ranked:\n\n1. **Fastlane (`supply` + `deliver`).** The metadata already lives in Fastlane's exact directory layout, so upload lanes get changelogs for free; one tool covers both stores; runs on macOS + Linux (ADR-0017). Cost: a Ruby toolchain in an otherwise Node-only repo, plus credential setup.\n2. **Stay manual (status quo).** Release cadence is low, artifact verification is already strong (ADR-0077), and uploads are minutes of work. Cost: the last manual, error-prone step of every release stays manual.\n3. **Lighter per-platform tools** — Gradle Play Publisher for Android, `xcrun altool`/App Store Connect API for iOS. No Ruby, but two separate tools to maintain and the metadata layout has to be re-mapped.\n\nWhichever automated path is chosen, human-only prerequisites remain: a Play Console service account with API access (JSON key) and an App Store Connect API key, both stored as CI/local secrets — never in the repo. Recommendation: decide via ADR; option 1 if automation is wanted (the metadata layout is already Fastlane's), otherwise explicitly record option 2 and close.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5311426419,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/241#issuecomment-5770697234",
+      "body": "Decision brief (2026-09-22). The spike is the August comment's option 1 made concrete: a locked Ruby bundle (Fastlane 2.240.1, 102 gems, 112 MB, a 367-line `Gemfile.lock`), an `Appfile`, two `upload` lanes that consume the metadata `gen:releases` already writes in Fastlane's layout, and a Node wrapper behind `npm run release:upload` that re-runs the ADR-0077 embedded-version check and refuses without credentials before Fastlane starts. `fastlane lanes` lists both lanes in the cloud container; no store call was made, by design. Two constraints the issue's done-when did not weigh: ADR-0124 keeps store identities out of CI, so the \"dry-run in CI without publishing\" can only mean \"the lanes load\" (Play's `validate_only` needs the service-account key; `deliver` has no validate mode at all), and the cadence is one upload per store per month across 8 releases since January.\n\n**Recommendation: drop for now**, recording the status quo in the ADR this issue asks for and closing, with the spike branch as the resume point. Twelve uploads a year do not repay a permanent Ruby toolchain plus two release-grade credentials to provision and rotate. The question only you can answer: do you want builds going to Play's internal track or TestFlight more often than the monthly production release? That is the only cadence at which a scripted upload pays for itself.\n\n* Brief: https://claude.ai/artifact/SFENHNwvTGkQJfUTY2SQqz\n* Spike: `claude/spike-241-fastlane-store-upload` at 45306aec81b9 (9 files, +571, 367 of them the lockfile; 152 tools-tier tests passing including the workflow hygiene and package-manager guards)\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5770697234,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/241#issuecomment-5931683532",
+      "body": "Second decision brief (2026-09-22), from an independent verification of the spike above. The dry run went further than expected: the cloud container has Ruby 3.3.6, so `bundle install` completed (102 gems), `bundle exec fastlane lanes` listed both lanes, and with no artifact and no credentials the Node wrapper refused first and Fastlane itself refused at the missing `.aab` when called directly. No store was contacted. What could not be exercised: Play's `validate_only` call (needs the service-account key), App Store Connect authentication (needs the `.p8`), and the lanes-load CI job.\n\nTwo prior verdicts lean the same way: ADR-0020 rejected Fastlane for *building* iOS as a Ruby dependency for two xcodebuild commands, and `docs/MOBILE/native.md` §7 says \"automate only when the manual step starts to hurt\". Dependabot here covers npm and Actions only, so the 367-line lockfile would rot silently. The Android store checklist (Data safety, content rating, target audience) is still open and the app is on Closed testing, so both consoles stay open per release regardless.\n\n**Recommendation: defer**, recorded in the ADR this issue asks for, with the spike branch as the resume point. What would change it: two releases where the upload or the paste actually went wrong, or a move to CI-driven uploads.\n\n* Brief: https://claude.ai/artifact/4nX56TyvA8hsYPL3aT7xhy\n* Spike: `claude/spike-241-fastlane-store-upload` at 45306aec81b9626af639b11ad287a235837d3d0b (9 files, +571; Ruby syntax OK; 152 tools-tier tests and ESLint pass)\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931683532,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/241#issuecomment-5931713238",
+      "body": "## Decision brief: should the store upload become a Fastlane lane?\n\n**Verdict: Drop for now.** Record the status quo in an ADR and close; the spike branch is the resume point.\n\n**What is being decided.** Whether the last manual step of a release, dragging the `.aab` into Play Console and the `.ipa` into Transporter, becomes a scripted Fastlane lane, and whether that is worth a permanent Ruby toolchain and two release-grade store credentials.\n\n### What is at stake\n\nShipping is three scripted phases that end at a GitHub Release with version-verified binaries (ADR-0077). The store upload is the only step left by hand, and `docs/MOBILE/native.md` already records the position: automate only when the manual step starts to hurt. This decision is about maintenance and credential surface, not release safety.\n\n| Measured | Value |\n| --- | --- |\n| Releases since 2026-01-20 | 8, about one upload per store per month |\n| Fastlane install | 102 gems, 112 MB, a 367-line `Gemfile.lock` |\n| New long-lived credentials | 2: a Play service-account key with release rights, an App Store Connect API key |\n| Store calls a CI dry run can make without those credentials | 0; `deliver` has no validate-only mode at all |\n\nTwo facts shape the options. The repository is already fastlane-shaped: `npm run gen:releases` writes the Play changelog and App Store release notes into Fastlane's exact metadata layout, so `supply` and `deliver` would push store text for free. And ADR-0124 decided that store identities stay out of CI: the tag gates sign Android with a disposable key and compile iOS unsigned. So the issue's \"dry-run in CI without publishing\" can only mean \"the lanes load\"; an actual validation against either store needs the credential in CI, which reverses that decision.\n\nWrong pick is cheap to undo either way. Not deciding has cost nothing for eight releases.\n\n### The real options\n\n1. **Stay manual and say so.** Record the status quo as an ADR, close the issue, keep the spike branch to resume from.\n2. **Fastlane `supply` and `deliver` (the spike).** A locked Ruby bundle, an `Appfile`, two `upload` lanes that consume the existing metadata, and a Node wrapper that re-runs the ADR-0077 embedded-version check and refuses without credentials before Fastlane starts. Runs on macOS and Linux (ADR-0017); the iOS *build* still needs macOS.\n3. **Lighter per-platform tools.** Gradle Play Publisher for Android (no Ruby) and Apple's Transporter command line for iOS. No new language runtime, but two tools with two credential schemes, and the metadata layout has to be re-mapped for both.\n\nLeft out: uploading from CI on the tag. Would put both store credentials into GitHub secrets; ADR-0124 already weighed that and kept them local.\n\n### Same either way\n\n| | Same either way |\n| --- | --- |\n| Phases 1 to 3 | cut-release, build, publish-artifacts unchanged; the GitHub Release still gets verified binaries |\n| Store text | Generated into `fastlane/metadata/` by `gen:releases` as today |\n| Console visits | Compliance, rating, and review submission still happen in the two consoles |\n| CI posture | No store credential in CI (ADR-0124) |\n\n### Where they differ\n\n| | 1. Stay manual | 2. Fastlane | 3. Per-platform tools |\n| --- | --- | --- | --- |\n| Minutes per release | A few, by hand, twice | About one command per store, after one-time credential setup | Same as Fastlane |\n| New toolchain | None | Ruby 3 plus Bundler on every release machine (macOS ships an old system Ruby) | Gradle plugin; Transporter app |\n| Dependency upkeep | None | Fastlane releases often; Dependabot bundler PRs, roughly monthly | One Gradle plugin bump line |\n| Credentials to provision and rotate | Your console logins | Play service-account JSON, ASC API key (`.p8`, key id, issuer id) | The same two |\n| Pushes store text too | Paste by hand | Yes, from the existing layout | Android yes; iOS needs a re-map |\n| CI proves | n/a | Lanes load and the wrapper refuses; no store call | Plugin configures; no store call |\n| Files touched | 1 ADR | 9 (+571, 367 of them the lockfile) | About 6 (estimate) |\n\n### Pros and cons\n\n* **Stay manual.** For: one upload a month per store, and the console is where the validation feedback and the compliance forms are anyway. Against: the one step that can still attach the wrong file to the wrong track is the one with no script behind it.\n* **Fastlane.** For: one tool covers both stores and pushes the already-generated store text; the wrapper keeps ADR-0077's refusal in front of it; the spike shows it loads and refuses correctly. Strongest argument against: a permanent Ruby toolchain and two release-grade credentials for twelve uploads a year, and the CI dry run the issue asks for cannot exist without putting those credentials where ADR-0124 said they do not go.\n* **Per-platform tools.** For: no Ruby, and the Android half is a Gradle plugin the build already speaks. Against: two tools, two credential schemes, and the iOS metadata pipeline has to be rebuilt for Transporter.\n\n### What the spike showed\n\n* Branch `claude/spike-241-fastlane-store-upload` at 45306aec81b9: 9 files, +571. `Gemfile` and lock, `fastlane/Appfile`, `fastlane/Fastfile` (two lanes, analytics opted out), `tools/release/upload-store-artifacts.mjs` behind `npm run release:upload`, a test, a PR-path workflow that proves the lanes load, gitignore entries for gems, reports, and `.p8` keys.\n* Tools tier: 152 tests passing, including the workflow hygiene and package-manager guards.\n* Dry run: Fastlane 2.240.1 installed from the lockfile in the container (Ruby 3.3.6); `fastlane lanes` lists both lanes; `ruby -c` passes on both files; the wrapper refused with no artifact built.\n* Not exercised: any store call; there are no credentials in the container, by design.\n\n```\n$ bundle exec fastlane lanes\n--------- android---------\n----- fastlane android upload\nUpload the signed .aab plus fastlane/metadata/android to the Play track in\nSPLOTCH_PLAY_TRACK (default internal); SPLOTCH_STORE_DRY_RUN=true validates\nwith the Play API without publishing\n\n--------- ios---------\n----- fastlane ios upload\nUpload the exported .ipa plus fastlane/metadata/en-US to App Store Connect\nwithout submitting for review; SPLOTCH_STORE_DRY_RUN=true stops after\nauthenticating (deliver has no validate-only mode)\n\n$ node tools/release/upload-store-artifacts.mjs --only=android --dry-run\nNo android artifact built — run npm run android:bundle first.\n```\n\n### Cost to finish\n\nAbout a day of repository work from spike to mergeable, plus the human-only parts: create the Play service account and grant it release access, create the App Store Connect API key, decide where the two secrets live on the release machine. In the repo: a `.ruby-version`, Dependabot's bundler ecosystem, `native.md` section 7 and both platform checklists, the `publish-artifacts` skill gaining a phase 4, and the ADR the issue's label asks for. Ongoing: gem bumps, a Ruby install on each machine that cuts releases, two credentials to rotate.\n\n### Recommendation\n\n**Drop for now, recording the status quo in an ADR and closing.** One upload a month per store does not repay a permanent Ruby toolchain and two release-grade credentials, and the CI dry run the issue asks for cannot exist without reversing ADR-0124. Cost accepted: the store upload stays the one unscripted step, and the store text stays paste-by-hand. What would change this: uploading to Play's internal track or TestFlight more than once a month. First step: write the ADR from the August comment's three options and this brief, then close.\n\n**The one question only you can answer:** do you want builds going to Play's internal track or TestFlight more often than the monthly production release? That is the only cadence at which a scripted store upload pays for itself.\n\nRendered version: https://claude.ai/artifact/SFENHNwvTGkQJfUTY2SQqz\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931713238,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/241#issuecomment-5931797338",
+      "body": "Spike preserved as a closed draft PR so the branch stays attached here: #2588 (`claude/spike-241-fastlane-store-upload`).\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931797338,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

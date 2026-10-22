@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:31.999Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3155",
+    "title": "Port or retire SvelteKit E2E specs, group B (engine-resize to install-banner-layout)",
+    "issue_number": 3155,
+    "body": "**Depends on:** #3153\n\n## What\n\nDecide each SvelteKit E2E spec in group B (41 specs, `engine-resize.spec.ts` through `install-banner-layout.spec.ts` in `web/tests/`) under the spec-by-spec rule below:\n\n- **Port it** into the RN web Playwright suite (from the harness sub-issue) when it tests behaviour the RN app has and nothing else covers it. Other coverage includes the ~280 RN Vitest and mounted RSD tests in `tools/tests` and `tools/migration/tests`, the `postnative:web:build` checks, and the page budgets.\n- **Otherwise delete it** with a recorded reason: \"covered by <test path>\", or \"Svelte-only: <why the RN app has no such behaviour>\".\n\nThen delete the group's SvelteKit specs, their snapshots, and any helper in `web/tests/` that only this group used. Put new shared helpers in a group-local helper file, not the suite's common fixtures, so the three groups never edit the same file. Commit the disposition table, one row per spec with its outcome and reason, as `docs/scratchpad/2026-10-21-rn-e2e-dispositions/group-b.md`.\n\n## Specs\n\n- `engine-resize.spec.ts`\n- `engine-rotation.spec.ts`\n- `engine-smoke.spec.ts`\n- `engine-system-bars.spec.ts`\n- `engine-undo.spec.ts`\n- `error-screen.spec.ts`\n- `failure-paths.spec.ts`\n- `feedback.spec.ts`\n- `first-paint.spec.ts`\n- `flows-actions-panel.spec.ts`\n- `flows-ai.spec.ts`\n- `flows-coloring-book-active-page.spec.ts`\n- `flows-coloring-book-off-undo.spec.ts`\n- `flows-coloring-book-picker.spec.ts`\n- `flows-coloring-book-theme.spec.ts`\n- `flows-coloring-book.spec.ts`\n- `flows-coloring-scroll-cue-resize.spec.ts`\n- `flows-coloring-scroll-cue.spec.ts`\n- `flows-icons.spec.ts`\n- `flows-magic-brush.spec.ts`\n- `flows-magic-recode.spec.ts`\n- `flows-magic-supersession.spec.ts`\n- `flows-optional-brushes.spec.ts`\n- `flows-palette-brush.spec.ts`\n- `flows-palette-rendering.spec.ts`\n- `flows-parent-center-warning.spec.ts`\n- `flows-parent-center.spec.ts`\n- `flows-parental-gate-escape.spec.ts`\n- `flows-parental-gate-lockout.spec.ts`\n- `flows-parental-gate.spec.ts`\n- `flows-resume-layout.spec.ts`\n- `flows-screenshot.spec.ts`\n- `flows-settings-report.spec.ts`\n- `flows-settings.spec.ts`\n- `flows-tile-history.spec.ts`\n- `flows-undo-persistence.spec.ts`\n- `flows-vector-overlays.spec.ts`\n- `generate-image.spec.ts`\n- `halo-lift.spec.ts`\n- `helpers.spec.ts`\n- `install-banner-layout.spec.ts`\n\n## Done when\n\n- None of this group's specs remain in `web/tests/`.\n- Every ported behaviour passes in the RN web suite in CI.\n- The disposition table covers every spec above.\n- Each ported spec's PR notes a negative control: the spec fails against a deliberately broken export.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:test",
+        "color": "bfd4f2",
+        "description": "Test coverage or CI test infrastructure"
+      },
+      {
+        "name": "area:ci-testing",
+        "color": "168f6c",
+        "description": "CI pipeline and test infrastructure"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-21T17:52:29Z",
+    "updated_at": "2026-10-21T23:50:09Z",
+    "closed_at": "2026-10-21T23:50:08Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3155",
+    "display_title": "Port or retire SvelteKit E2E specs, group B (engine-resize to install-banner-layout)"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3155#issuecomment-6329151065",
+      "body": "Merged in #3172 (merge commit 5222c8281c362839d979ba75de1cdd7d7330d437) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base. Three RN gaps found while porting are parked for the owner; see the disposition table in the PR.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6329151065,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

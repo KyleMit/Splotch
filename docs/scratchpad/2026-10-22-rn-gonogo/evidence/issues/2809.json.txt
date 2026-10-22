@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:31.473Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2809",
+    "title": "Port the shipping modal frame and DialogHeader to native",
+    "issue_number": 2809,
+    "body": "**Parity unit U3** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**What to build:**\n\n| # | Primitive to build in RN | Shipping source | Tokens / specifics to port |\n|---|---|---|---|\n| P3 | `ModalShell` + `DialogHeader` (replaces the full-screen `NativeDialog` + footer) | app.css `.modal-dialog`, `.modal-fly-in`, `.modal-shell`, `.modal-close-btn`, `.dialog-header-control`; `design/DialogHeader.svelte` | Centered card on a dimmed, blurred scrim, with `--surface`, `--radius-lg` and `--shadow-pop`.<br>Width `calc(100vw - 2·--modal-gutter)` with a per-modal max-width (Settings 500 / 860 wide; gate 336–560; confirm 336).<br>Header: back = `chevron-left` on a `--brand-wash` blob (`--radius-blob-1`); title h2 xl semibold; close = 48px outlined circle.<br>Fly-in from the opener, plus a fade exit. |\n\n**Done when:** the primitive exists in `experiments/native-architecture` with light and dark values drift-guarded against the shipping source (imported or read by a test, never hand-copied). The PR includes a specimen screenshot next to the shipping `/design` styleguide rendering of the same primitive. No visible surface changes yet, except where a caller adopting the primitive is in this unit's scope.\n\n**Order:** after U1, U2.\n\n**Gaps (from the parity inventory):**\n\n| # | Surface | Shipping file(s) | RN file(s) | Severity | Gap | Shots |\n|---|---|---|---|---|---|---|\n| 29 | Settings modal frame + header | `SettingsModal.svelte`, `design/DialogHeader.svelte`, app.css `.modal-dialog` / `.modal-shell` / `.modal-close-btn` | `rsdDrawing/NativeDialog.tsx` (`NativeDialog`, `NativeSoundSettingsDialog`) | looks wrong | RN is a full-screen page with no scrim, card, title row or close ✕, and a grey void below the content. Its footer bar holds \"Back to Settings\" / \"Keep drawing\" text buttons. Shipping is a centered card over a dimmed, blurred canvas, with the DialogHeader (brand-wash back blob, title, outlined close). | `settings`, `settings-dark` |\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:31:08Z",
+    "updated_at": "2026-10-13T17:20:39Z",
+    "closed_at": "2026-10-13T17:20:39Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2809",
+    "display_title": "Port the shipping modal frame and DialogHeader to native"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2809#issuecomment-6151175904",
+      "body": "Shipped in #2842.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6151175904,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

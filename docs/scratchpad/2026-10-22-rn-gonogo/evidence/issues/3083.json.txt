@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:27.452Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3083",
+    "title": "Verify JS-only RN fixes on devices without a native rebuild",
+    "issue_number": 3083,
+    "body": "Related: #3084 (the CI-builder idea, deferred). Part of #2978.\n\n## What\n\nDevice checks of JS-only fixes should not need a native rebuild. Today every fix gets a full Release `assembleRelease` or `xcodebuild`, which takes 3–5 minutes and saturates the Mac, even when only TS/TSX changed. On 2026-10-20 most diagnose-and-verify loops for #3062 to #3071 were native rebuilds of unchanged native code.\n\n## How\n\n1. **Debug probe plus Metro (functional checks).** Build a Debug probe once per device, with a suffixed bundle ID under the allowed `art.splotch.migration.probe*` set. After that, a JS change is a reload:\n   * Run Metro on a free port (`npm --silent run show:free-port`).\n   * On Android, use `adb reverse`; the iPad reaches Metro over the LAN.\n   * Debug JS is slower, so this is for \"does it draw / is it visible / does the tap land\", not timing.\n2. **Release with a swapped JS bundle (timing-faithful).** Build the Release probe once, then on each change only regenerate the bundle (`react-native bundle`, about 30–60 s) and load it without a native build. Two candidate routes:\n   * repackage and re-sign the APK, and for iOS replace `main.jsbundle` in the `.app` and re-sign;\n   * a probe-only switch that loads a sideloaded bundle path. It must be absent from shipping builds and drift-guarded like the other probe flags.\n3. **Document the split** in `docs/MOBILE/` and the device-parity tooling: JS-only changes use route 1 or 2; native (Kotlin/Swift) changes and performance captures use a full local build.\n\n## Done when\n\n* A JS-only fix can be verified on the Galaxy and the iPad without running Gradle or xcodebuild after the first build.\n* The Release swapped-bundle route reproduces the same behaviour as a full Release build on one known fix (for example #3071's swatch probe).\n* The workflow is documented where the device skills point.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:infra",
+        "color": "5a6570",
+        "description": "Dev tooling, dependencies, repo infrastructure"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T17:01:33Z",
+    "updated_at": "2026-10-20T19:44:09Z",
+    "closed_at": "2026-10-20T19:44:09Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3083",
+    "display_title": "Verify JS-only RN fixes on devices without a native rebuild"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3083#issuecomment-6299851789",
+      "body": "Done by #3090, merged into `codex/native-migration` as 3c48992d03be7ee6a5bf7bd4b7810cb2a38bdd30.\n\n`tools/device-parity/swap-js-bundle.mjs` is route 2. It:\n\n1. bundles and compiles only the JavaScript, with the flags React Native's own Release build steps pass;\n2. puts that bundle into a Release probe a full build already produced;\n3. signs the copy again with the base build's keystore or identity;\n4. installs it.\n\nA TS-only change reaches a device in about 10 seconds, still on a Release build. Usage and limits are in `tools/device-parity/README.md`, the app's `DEVELOPMENT.md`, and a pointer in `docs/MOBILE/native.md`.\n\n## Done-when\n\n* **No Gradle or xcodebuild run after the first build.**\n  * Galaxy: the swapped APK installed with `adb install -r` and kept the app's data.\n  * iPad: a swapped one-line `console.error` marker showed up in the device log from `HelloWorld`.\n* **Same behaviour as a full Release build, on #3071's swatch probe.** The probe was five genuine colour changes, each followed 100 ms later by a stroke on its own row.\n\n  | Build on the Galaxy | Strokes drawn |\n  | --- | --- |\n  | Full Release build at the tip | 5 of 5, in both runs |\n  | Tip's JavaScript swapped in | 5 of 5, in both runs, from a byte-identical bundle |\n  | #3081's JavaScript reverted and swapped in | 3 of 5 in both runs, the #3071 bug |\n\n* **Documented** where the device docs point.\n\nAt an unchanged commit, the Android bundle is byte for byte the one Gradle packaged. The iOS bundle compiles from byte-identical JavaScript and differs only in the source path Hermes records.\n\nRoute 1, a Debug probe with Metro, isn't tooled. At about 10 s per change the Release route covers functional checks as well. A separate Debug probe ID would need build-config changes on both platforms, and `DEVELOPMENT.md` still describes the iOS Debug build with Metro.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6299851789,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

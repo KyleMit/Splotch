@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:14.598Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3023",
+    "title": "Request persistent storage after saving an AI key on RN web",
+    "issue_number": 3023,
+    "body": "## What\n\nAfter a parent saves an OpenAI key in Settings › AI Art, shipping web calls `navigator.storage.persist()` once (ADR-0128). The browser is then less likely to evict the origin's storage, and the encrypted key with it. RN web saves the key but never calls it.\n\n## Why\n\nLedger row L0154 lists \"no requestPersistentStorage after save (web, ADR-0128)\". Without the request, best-effort storage eviction can silently drop the saved key on a low-storage device.\n\n## Where\n\n`experiments/native-architecture/src/ai/session.ts` (credential save) and `platform/aiVault.web.ts`. The shipping owner is in `web/src/lib/state/aiKey.ts` and its persistence helper.\n\n## Repro (rn-web, Chromium)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export. Answer `/api/verify-key` with `{ \"ok\": true }` from a fixture.\n2. Wrap `navigator.storage.persist` to count calls.\n3. Turn on Settings › AI Art › Create AI Images, paste a key, and press Save.\n4. Expected: one `persist()` call after the save (shipping: 1). Actual: 0.\n\nEvidence: WEB-1 record, cell `vault-save-reload-and-connection-loss` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- A successful key or access-code save on RN web requests persistent storage, as shipping does.\n- A test proves it.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:16:14Z",
+    "updated_at": "2026-10-20T06:13:05Z",
+    "closed_at": "2026-10-20T06:13:05Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3023",
+    "display_title": "Request persistent storage after saving an AI key on RN web"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3023#issuecomment-6284673285",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3045, merged into codex/native-migration as 2eb276f34285ab7ebc1455988165d942639de6bc. After a parent's verified key or access-code save that still owns the session, RN web asks `navigator.storage.persist()` once, as shipping does (ADR-0128). An invite-link capture and an abandoned save ask nothing. On the RN web export in Chromium, saving a key made one `persist()` call, against 0 before.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6284673285,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

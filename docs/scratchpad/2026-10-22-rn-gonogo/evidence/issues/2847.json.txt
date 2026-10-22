@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:45.781Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2847",
+    "title": "Pass style explicitly through RsdPressable on web",
+    "issue_number": 2847,
+    "body": "**What:** On web, `RsdPressable.web.tsx` (from #2839) spreads its `props` onto `html.button`. That hides `style` from React Strict DOM's Babel transform: the compiled adapter merges only RSD's default button styles and passes the caller's compiled StyleX array straight to the DOM. When the round-2 review of #2839 rendered a brand hero button, the DOM got `style=\"0:[object Object];1:[object Object];…\"` with only the default classes. Its dimensions, fill, typography and hover/active rules were all lost. This affects every `RsdButton` and `RsdIconButton` skin on web. No screen uses them yet, so nothing visible is broken today.\n\n**Where:** `experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx`.\n\n**Done when:**\n- `style` is destructured and passed explicitly (`<html.button {...props} style={style} />`).\n- A web compile-and-render regression test runs the production RSD Babel transform, renders a Button and each IconButton skin, asserts the StyleX classes are present, and fails on the spread form.\n- The specimen is re-captured on RN web next to shipping.\n\nPart of #2690. Refs #2810.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T16:28:30Z",
+    "updated_at": "2026-10-13T17:04:19Z",
+    "closed_at": "2026-10-13T17:04:19Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2847",
+    "display_title": "Pass style explicitly through RsdPressable on web"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2847#issuecomment-6150880405",
+      "body": "Fixed in #2848.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6150880405,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

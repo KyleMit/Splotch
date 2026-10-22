@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:21.302Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3071",
+    "title": "RN: a stroke started right after a rail swatch tap draws nothing until the finger lifts",
+    "issue_number": 3071,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20, on the iPad and the Galaxy:\n\n> \"ipad & android - I noticed if I changed the color and started drawing really quickly thereafter, it wouldn't draw a line until I picked up my finger and put it back down again\"\n\nAsked where the color was changed, the owner answered: \"A swatch on the rail\".\n\n## Where\n\nThe code was located by reading it; nothing is verified on a device yet.\n\n* `experiments/native-architecture/src/drawing/paperInputOwner.ts`, `start()`: a non-pen contact is admitted as `ignored` when `Date.now() - changedAt < COLOR_CHANGE_DEBOUNCE_MS` (100 ms, `web/src/lib/drawing/strokeMath.ts`).\n* `changedAt` is stamped by `observeStyle`, which `DrawingSurface.tsx` calls from a `useLayoutEffect`. So the 100 ms window starts when React commits the color, not when the swatch was tapped.\n* `RsdEdgeControls.tsx`: the swatch's `onPressBegin={screen.finishInput}` runs `ContactResponder.finishInput` (`drawing/contactResponder.ts`), which marks every live paper contact `ignored`. A paper finger that lands before the swatch finger lifts is dropped for its whole life.\n\n## Likely cause\n\nOnce a contact is ignored, nothing admits it later, so the whole touch draws nothing. The late commit stamp also stretches the debounce past what shipping applies.\n\n## Done when\n\n* A paper touch that starts right after a swatch tap draws, on both devices, matching shipping's debounce, which counts from the tap.\n* A replayable probe (swatch tap, then a stroke 50 to 150 ms later) shows ink.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:58:16Z",
+    "updated_at": "2026-10-20T16:59:27Z",
+    "closed_at": "2026-10-20T16:59:27Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3071",
+    "display_title": "RN: a stroke started right after a rail swatch tap draws nothing until the finger lifts"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3071#issuecomment-6296426771",
+      "body": "Fixed by #3081, merged as f53e29651dec78c104d0676b5abee2943254b8bf. On the Galaxy (Release), five swatch taps each followed at once by a stroke drew all five strokes. Before the fix the page stayed blank: the render after a tap held the JS thread for up to 223 ms, and each finger was read 5 to 36 ms after the commit. The debounce is now timed from the pick (rail swatch, landscape Color Menu and colour picker), and only for a genuine paint change, as in shipping.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6296426771,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:23.252Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2779",
+    "title": "Hide the RN web install banner while the drawer is open",
+    "issue_number": 2779,
+    "body": "**What:** On the React Native web build, opening the edge drawer while the install banner is showing renders the drawer tools over the banner card. Its last install steps are hidden at 844x390, and every tool overlaps at 568x320.\n\n**Why:** The banner became an absolute overlay in #2778, and its insets reserve the corner controls but not the expanded drawer.\n\n**Where:** `experiments/native-architecture/src/rsdDrawing/RsdInstallBanner.tsx`, and `RsdEdgeLayout` (which owns `drawerOpen`) in `src/rsdDrawing/`.\n\n**Done when:** opening the drawer hides the banner, and closing it restores the banner. A landscape mounted test covers the interaction.\n\nFound by the round-2 rival review of #2778. Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T06:26:32Z",
+    "updated_at": "2026-10-13T10:10:55Z",
+    "closed_at": "2026-10-13T10:10:55Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2779",
+    "display_title": "Hide the RN web install banner while the drawer is open"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2779#issuecomment-6143245229",
+      "body": "Shipped in #2792.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6143245229,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

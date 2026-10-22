@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:50.599Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2877",
+    "title": "Match shipping's native status bar and notch band colours",
+    "issue_number": 2877,
+    "body": "**What:** the status bar and top safe-area colours differ from shipping on both platforms.\n- **iOS (iPhone and iPad portrait):** RN fills the top safe-area inset with the selected brush colour (purple at launch, then whatever colour is picked). Shipping keeps it white in light mode and dark in dark mode. In dark mode RN shows a bright band with black status text.\n- **Android:** the reverse. Shipping tints the status bar with the selected colour, while RN stayed blue in the same state.\n\nTo fix, compare shipping's `NotchBand.svelte` and its native status-bar handling on each platform with RN's `RsdNotchBand` (#2867).\n\n**Evidence:** `/tmp/splotch-native-ios/pairs/iphone-01*`, `iphone-09*`, and the `g-p-*` Android pairs.\n\n**Done when:** the status bar and notch colours match shipping on iOS and Android, in light and dark, and a test pins each platform's rule.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T12:59:00Z",
+    "updated_at": "2026-10-14T18:36:25Z",
+    "closed_at": "2026-10-14T18:36:25Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2877",
+    "display_title": "Match shipping's native status bar and notch band colours"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2877#issuecomment-6175574745",
+      "body": "Resolved by #2882, merged into `codex/native-migration`. The iOS difference is shipping's cold-start bug #1313: after a resume, shipping paints the selected colour behind the clock just as RN does, since RN imports shipping's `computeNotchBandState`. The Android \"stayed blue\" case came from RN restoring the last brush colour, now #2883. The one real gap, the Android landscape cutout band, is fixed: RN reads the display rotation through expo-screen-orientation. Tests pin dark-mode status icons, the Android portrait tint and the landscape cutout on each side.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6175574745,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

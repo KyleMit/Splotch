@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:51:57.525Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2914",
+    "title": "Match shipping's coloring pack download behaviour natively",
+    "issue_number": 2914,
+    "body": "**What:** coloring pack downloads in RN start later, abort more often, and follow different network rules than shipping's.\n\n| ID | Difference | Sev | Status | Slice refs |\n| --- | --- | --- | --- | --- |\n| X18 | Coloring downloads wait for the picker to open, every session | H | Code-read | P-4 |\n| X19 | RN web treats an unknown connection as metered, so no downloads on Safari, Firefox or desktop Chrome | H | Code-read | P-5 |\n| X20 | Downloads abort on every stroke and on background; no OS background job | H | Code-read | P-6 |\n| X50 | Removing books disables downloads across relaunch and keeps the applied page | M | Code-read | P-12 |\n| X51 | Low Data Mode and Data Saver rules inverted; no network-return retry | M | Code-read | P-13, P-14 |\n| X52 | Full-resolution packs on phones; Farm fill art at the 1152 px tier | M | Code-read | P-15, P-16 |\n| X53 | A Back button can appear mid-open in the coloring picker | M | Code-read | P-17 |\n\n**Done when:**\n- Each item matches shipping on the native targets (and on RN web where it applies), or the issue says why it stays different. Shipping is the spec.\n- Each fix has a test that reads or pins shipping's behaviour, with a negative control.\n- Visible changes come with shipping-vs-RN side-by-sides.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) (§3 per surface, §4 index; the slice files hold file:line evidence). Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-15T00:12:04Z",
+    "updated_at": "2026-10-15T21:46:45Z",
+    "closed_at": "2026-10-15T21:46:45Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2914",
+    "display_title": "Match shipping's coloring pack download behaviour natively"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2914#issuecomment-6185225495",
+      "body": "Bounded native transfer run completed on the assigned emulator and iPhone 17 Pro Max simulator.\n\nAndroid: the real WorkManager `SystemJobService` requested `NOT_METERED`, `INTERNET`, and `VALIDATED` network capabilities. Settings showed 2/7 extra books before Home, 5/7 after returning, and finally 7/7 (23.0 MB). Three `SplotchLibraryWorker` SUCCESS events at local 01:28:40, 01:28:55, and 01:29:11 occurred while NexusLauncher held focus. All seven workers eventually succeeded; this is not a claim that all seven finished in the background. Each worker’s publication path verifies the complete 74-file book before its installed marker and directory are published. Direct private-file extraction was unavailable because this production emulator image refuses adb root and has no su.\n\nThe iOS Release build succeeded, but background publication remains unproven. The persisted Dinosaur job stayed at file index 0: `nsurlsessiond` rejected the probe’s null client bundle ID, followed by XPC error 4097 and download-task error -1. A separate ad-hoc signed copy with the correct verified identifier, bound Info.plist, and sealed resources had the same rejection. Cause unresolved; tracked specifically in #2927. No service restart or shipping app/data mutation was used.\n\nBoth device locks and the host slot were released; the own WDA runner stopped and its port is clear. Final integration, full gates, startup measurement, and matched visual comparisons still precede the coloring branch push.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6185225495,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2914#issuecomment-6202955496",
+      "body": "Coloring download/removal parity merged in #2934 as 47b6e8bbe44a23c7767f8491a36bb5d9ba624908 after both independent review rounds, all ten resolved threads and exact-head green CI (15 success, four expected skips).\n\nFinal local gates pass: Quality 15/15, Tools 10,916, RSD 746, shipping unit 4,861/SSR 46, formatting and export/postgates. Startup is 867,454/870,798 bytes. Fresh signed-probe Android and unsigned iOS Release compilations pass with pinned dependency versions.\n\nOn the physical Galaxy, only the same-key RN probe was updated. Shipping's installed APK remained byte-identical. Without changing policies or canceling jobs, Settings showed 4/7 books before Home and 5/7 after returning across 20 seconds. A WorkManager SUCCESS timestamp falls inside the conservatively aligned recorded launcher interval; no job UUID-to-book inference is made. The final catalog reached 7/7, 23.0 MB ready offline, with real downloaded covers and six Dinosaurs pages rendered. Contacts/sessions were released; the user's charging/stay-awake preference remains set.\n\nThe [PR body](https://github.com/KyleMit/Splotch/pull/2934) contains actual browser shipping-left/RN-right loading/failure/recovery comparisons and native functional images/recordings, all hosted bytes verified. Existing Feedback typography/card-height differences are retained honestly and remain in #2917.\n\nThe remaining iOS background-relaunch proof is specifically tracked in #2927; compilation is not that proof. Shared shipping/RN Data Saver policy remains tracked in #2941, and a physical joined-backoff reproduction is unproved. This issue's implementation/review unit is complete; those bounded follow-ups remain open.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6202955496,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "observedAt": "2026-10-22T16:52:17.035Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3026",
+    "title": "Fix RN web's information and not-found pages: back label, links, forced colors and no-JS",
+    "issue_number": 3026,
+    "body": "## What\n\nThe RN web export answers `/privacy`, `/changelog`, `/feedback` and unknown paths with its own in-app pages. Their copy and layout match shipping's closely, with these differences:\n\n1. **Back label (E0576, L0270).** RN never reads shipping's `splotch-drawing-visited` session flag or the referrer, so the masthead link falls back to \"Start drawing\" where shipping says \"Back to drawing\":\n   - Open Privacy from Settings › About and reload. Shipping keeps \"Back to drawing\".\n   - Load `/no-such-page` after the drawing has run in the same tab, or with the drawing (`/`) as referrer. Shipping says \"Back to drawing\"; RN's not-found page has no label resolver at all and always shows the cold-visit label. Cold visits and a `/changelog` referrer read \"Start drawing\" on both.\n2. **Links that aren't links.** The masthead SPLOTCH mark is not a link; on shipping it links to `/`. The Privacy and Changelog contents entries and \"Back to drawing\" render with `role=\"link\"` but no `href`; shipping uses real anchors (`#on-device`, `#release-1-6-0`, `/`). Middle-click, copy-link and open-in-new-tab don't work.\n3. **Title case.** The tab title is \"Privacy policy · Splotch\" against shipping's \"Privacy Policy · Splotch\".\n4. **Not-found layout at 320 px (E0323).** The links wrap the same, but \"These are still here\" breaks at a different word and the footer sits 5 px lower.\n5. **Forced colors (E0326).** The crayon divider and the back-link disc keep their brand colours; shipping switches them to system colours.\n6. **No JavaScript (E0319).** Every path renders only \"You need to enable JavaScript to run this app.\"; shipping serves the friendly page and its head. #3007's second done-when covers this for the long term.\n\nThe pages also render as a `role=\"dialog\"` named \"Information page\" above the drawing shell, with the paper still mounted beneath.\n\n## Why\n\nThese are WEB-1 rows E0319, E0323, E0326, E0576 and L0270, and part of the X64 route disposition. #3007 makes RN web the long-term owner of these pages. Until then, a parent who reaches them from the RN app gets weaker navigation than shipping offers.\n\n## Where\n\n`experiments/native-architecture/src/information/` (`appPages.ts` and the page components), `src/rsdDrawing/RsdInformationPage.tsx` (passes `sessionFlag: null, referrer: ''` to `resolveBackLabel`), `src/rsdDrawing/RsdNotFoundPage.tsx` (defaults to the cold label) and `platform/appPath.web.ts`. Shipping: `web/src/lib/components/page/backLabel.ts`, `web/src/routes/privacy`, `changelog`, `feedback` and `+error.svelte`.\n\n## Repro (rn-web, Chromium)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build the RN web export and serve it with an SPA fallback.\n2. Load `/privacy`, `/changelog`, `/no-such-page` and `/privacy/missing` directly. Repeat at 320x640 in light, dark and forced colors, and with JavaScript disabled.\n3. Load `/no-such-page` cold, with `Referer: <origin>/`, and after loading `/` in the same tab.\n4. Compare links (`href`), labels, titles and captures with shipping.\n\nEvidence: WEB-1 record, cells `routes-direct-and-in-app`, `routes-without-javascript`, `not-found-layouts`, `not-found-back-label` and `info-back-label-after-reload` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- Items 1–5 match shipping, and those WEB-1 cells pass.\n- Item 6 is either solved by the prerender work, or explicitly left to #3007.\n\nRefs #2978, #3007",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 4,
+    "created_at": "2026-10-19T20:17:57Z",
+    "updated_at": "2026-10-20T23:13:00Z",
+    "closed_at": "2026-10-20T23:13:00Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3026",
+    "display_title": "Fix RN web's information and not-found pages: back label, links, forced colors and no-JS"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3026#issuecomment-6285312523",
+      "body": "Items 1 (back label) and 3 (title case) are fixed by #3052, merged into `codex/native-migration` as 16c5db613cb210021c1b8c610314982b12e904ff.\n\n* The drawing screen writes shipping's `splotch-drawing-visited` session flag. Both pages pass that flag and the referrer to shipping's `resolveBackLabel`.\n* The information pages' tab titles take shipping's `<title>` case.\n\n**Rerun.** WEB-1 `not-found-back-label` and `info-back-label-after-reload` were rerun on rn-web-chromium. They now give web-prod's recorded values: \"Start drawing\" cold and from `/changelog`, and \"Back to drawing\" from the canvas, after the drawing ran, and through a reload. E0576 and L0270 return to unverified until WEB-1 covers their other targets.\n\nItems 2 (real links), 4 (320 px layout), 5 (forced colors) and 6 (no JavaScript) stay open.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6285312523,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3026#issuecomment-6286532047",
+      "body": "**Item 2 (links that aren't links)** is fixed, apart from the external links:\n\n* **#3054**, merged as 05e5da6e28110fe084f7db12016fa64b13f243b0: the masthead back link and SPLOTCH mark, the footer's mark and page links, \"What's new\", and the feedback page's privacy link.\n* **#3059**, merged as f562bb9444d2ca36a72b0c3a7ae758ce76b63eb6: the privacy and changelog contents entries, each privacy section's copy-link anchor, the policy's in-text section links, and Back to top.\n\nOn the web each is now an anchor with shipping's address. A plain click still acts in place, and a middle or modified click is left to the browser.\n\n**Rerun.** WEB-1 `routes-direct-and-in-app` was rerun on rn-web-chromium. The link lists of `/no-such-page`, `/feedback`, `/privacy` and `/changelog` now equal web-prod's recorded ones.\n\n**Side effect.** As anchors, the contents rows fill their rail (232 px), as shipping's `width: 100%` rows do. The buttons had shrunk to their labels.\n\n**Still open in item 2.** The policy's external links (OpenAI's pages and the hosted feedback form) keep their grown-up check and no address. An address would let a middle-click skip the check, so they need a gated-link design rather than a plain anchor.\n\n**Seen in review, not caused by these PRs.** Codex reproduced the same failure on the base. On a phone-width changelog, pressing Enter on a row of the expanded contents disclosure intermittently leaves the page where it is.\n\nItems 4, 5 and 6 stay open.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6286532047,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3026#issuecomment-6293567842",
+      "body": "**Owner decision on the external links, 2026-10-20.**\n\nThe question was about shipping's middle-click bypass of the grown-up check, and RN's links that have no addresses. The owner answered:\n\n> \"there's no reason to file any issues to fix shipping - once the migration is done, that gets removed entirely - so only fix RN.  Grown up check should work based on the user settings for a middle click and regular click alike.  However we get there is fine for me.  Semantically, I'd prefer links that have URLs be rendered as anchor elements, but keep that as a preference that might be separate from the actual parent gate portion.\"\n\nFor RN, that means:\n\n* **Required:** the grown-up check follows the parent's settings for a middle-click exactly as for a regular click. No issue is filed against shipping.\n* **Preferred, as a separate goal:** links that have a URL render as anchor elements, provided the check still runs on every activation.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293567842,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3026#issuecomment-6303876622",
+      "body": "Items 2 (external links), 4 (320 px not-found layout) and 5 (forced colors) are fixed by #3099, merged into `codex/native-migration` as 6bc71161afeb6b0d360f1d8241ce564f866f70ca. With items 1 and 3 fixed earlier (#3052) and item 2's internal links in #3054 and #3059, this issue's done-when is met: items 1–5 match shipping, and item 6 (no JavaScript) is left to #3007, whose design and cutover-hosting proof are in #3095.\n\n* **Item 2, external links,** per the owner's decision: every activation (plain, Ctrl/Cmd/Shift/Alt click, Enter, middle click) runs the grown-up check whenever the parent's setting makes one due. When no check is due, the link is a real `<a href target=_blank rel=\"noopener noreferrer\">`. While a check is due it has no `href` (still `role=link`, focusable, Enter-activated), which closes Firefox's Shift-right-click menu route Codex found in round 1. Verified in real Chromium and, by Codex, in Firefox. No shipping issue filed, per the owner.\n* **Item 4, E0323:** the page root takes shipping's `line-height: 1.62` and `text-wrap: pretty`. WEB-1 `not-found-layouts`: 0 differences in all four contexts against shipping built from the same tree.\n* **Item 5, E0326:** the crayon divider becomes a 2 px `CanvasText` line and the back-link disc takes shipping's `BackToTopLink` forced-colors treatment (shipping's own `BackLink` loses its chevron there, so RN takes the better one).\n\nStartup bytes unchanged (first paint 45,628 / 47,052, core controls 822,240 / 827,535). Ledger rows E0323 and E0326 get their rerun recorded in the campaign's batch ledger PR.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303876622,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

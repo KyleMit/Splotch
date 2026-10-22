@@ -1,0 +1,41 @@
+{
+  "observedAt": "2026-10-22T17:08:32.057Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2868",
+    "title": "Keep the landscape palette's last swatch clear of the bottom safe-area inset",
+    "issue_number": 2868,
+    "body": "**What:** in shipping's column (landscape) Color Palette, the trim ladder counts paints against the full viewport height. With a bottom safe-area inset (the iPad home indicator, for example), the last swatch can land inside the system gesture area. At 1180×820 with a 34px bottom inset, the last swatch ends at about 816px, so More colors sits under the home indicator.\n\n**Found while:** porting the edge states to the React Native app (PR 2867). That PR trims by viewport height minus the bottom inset, keeping More colors reachable at the cost of one paint.\n\n**Where:** `web/src/lib/components/ColorPalette.svelte` and the palette trim ladder in `web/src/lib/palette.ts`, together with the `--safe-area-*` seam (`docs/SAFE-AREA.md`).\n\n**Done when:**\n- Every landscape palette swatch, including More colors, ends above the bottom inset at every size in the safe-area matrix.\n- `safe-area-matrix.spec.ts` (or a focused spec) fails if a swatch enters the inset.",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-13T23:52:31Z",
+    "updated_at": "2026-10-13T23:52:31Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2868",
+    "display_title": "Keep the landscape palette's last swatch clear of the bottom safe-area inset"
+  },
+  "comments": []
+}

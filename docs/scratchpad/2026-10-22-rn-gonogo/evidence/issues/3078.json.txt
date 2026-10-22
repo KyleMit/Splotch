@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:25.290Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3078",
+    "title": "RN: the first tap on a Parent Center option after scrolling is sometimes lost",
+    "issue_number": 3078,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20, on the iPad and the Galaxy:\n\n> \"android & ios - after scrolling, when clicking on a parent center toggle, sometimes the first click doesn't register and I have to click again\"\n\n## Where\n\nLocated by reading the code; these are unverified hypotheses.\n\n* The options are `html.button`s in `experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx`, rendered by `PolicyCard` in `RsdParentCenterSection.tsx`.\n* The scroller is `RsdScrollCue.tsx`, a plain `ScrollView`:\n  * `onScroll` sets state every 16 ms.\n  * The wide shell's `onExtent` updates the scroll-spy state (`RsdSettingsWide.tsx`).\n* `src/platform/SettingsTextZoom.tsx` claims capture for pinches inside it.\n\n## Likely cause\n\nThere are two candidates:\n\n1. The `ScrollView` takes a tap that lands during momentum to stop the scroll, as RN does.\n2. A previous save is still in flight, so `setPolicy` returns early because `editable()` is false (`product/createDrawingProduct.ts`), and the tap is dropped silently. This may be the same root as the 3-way control flash.\n\n## Done when\n\nOn both devices, a tap on a Parent Center option after the scroll has come to rest always registers. A replayable probe (scroll, settle, tap) shows the choice applied on the first tap.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "area:settings",
+        "color": "0052cc",
+        "description": "Settings modal and controls"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "not_planned",
+    "comments": 2,
+    "created_at": "2026-10-20T14:58:29Z",
+    "updated_at": "2026-10-20T21:08:51Z",
+    "closed_at": "2026-10-20T21:08:51Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3078",
+    "display_title": "RN: the first tap on a Parent Center option after scrolling is sometimes lost"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3078#issuecomment-6297708279",
+      "body": "**Investigation, 2026-10-20 (Galaxy [redacted-device-id], Release).** Settings › Parent Center, the \"Sending feedback\" picker. Each trial:\n\n1. Fling the list away, then fling it back so the second fling ends against the bottom edge.\n2. Wait a set time.\n3. Tap \"Per session\", and read the pill's colour to see whether the tap registered.\n4. Restore the owner's \"Never\".\n\n| Delay after the fling input | Tap registered |\n| ---: | --- |\n| 0.3 s | 0 of 3 |\n| 0.4 s | 3 of 3 |\n| 0.5 s | 3 of 3 |\n| 0.6 s | 3 of 3 |\n| 0.7 s | 3 of 3 |\n| 1.2 s | 3 of 3 |\n| 2.0 s | 3 of 3 |\n\n**What this shows:** a tap is lost only while the list is still settling from a fling, within about 0.3 s of it. At that point React Native's `ScrollView` takes the touch to stop the scroll (`_handleStartShouldSetResponderCapture` while `_isAnimating()`). That is the same \"a tap stops the fling\" rule Chrome, Safari and native scroll views follow, so shipping behaves this way too.\n\nOnce the list is at rest, every tap registered. The scroll view is not left thinking it is still moving.\n\n**The other path, ruled out:** a tap made while a Parent Center choice is still saving is ignored by design, for the write's few frames. #3082 removed the dim that came with it. That window is far shorter than the 0.3 s above, so it can't be what the owner saw.\n\n**Recommendation:** treat this as platform behaviour. If it still reads as a miss once #3082 is on the device, the remaining lever is a faster deceleration on the Settings scroller, which changes how scrolling feels. That is the owner's call, so the issue stays open for it.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6297708279,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3078#issuecomment-6301531114",
+      "body": "**Owner decision, 2026-10-20: closed as platform behaviour.**\n\nThe owner chose \"Close as platform behaviour\" when asked whether to keep this or tune the Settings scroller.\n\nThe investigation above showed a tap is lost only while the list is still settling, within about 0.3 s of a fling. React Native's `ScrollView` takes that touch to stop the scroll, as Chrome, Safari and native scroll views do, and shipping behaves the same way. Once the list is at rest every tap registered.\n\nReopen if a tap is lost with the list at rest, which would be a different defect.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6301531114,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

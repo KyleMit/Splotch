@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:52.919Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2896",
+    "title": "Remove the white strip under the native Flat toolbar",
+    "issue_number": 2896,
+    "body": "**What:** in Flat style, the React Native candidate shows a white strip along the bottom of the screen that shipping does not have. It was reported from the #2883/#2886 device passes on the iPhone simulator and the Android emulator; the exact platform still needs confirming.\n\n**Where:** check the bottom-inset strip and plate in `RsdEdgeControls.tsx`. #2887 and #2888 changed both: the strip was made relative, then removed in landscape. Also check the Flat rail glass and the immersive-mode inset from #2882.\n\n**Done when:** a Flat side-by-side of the drawing screen in portrait and landscape, on iPhone, iPad and Android, shows no strip that shipping lacks, and a renderer test pins it.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T20:49:08Z",
+    "updated_at": "2026-10-15T00:08:18Z",
+    "closed_at": "2026-10-15T00:08:18Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2896",
+    "display_title": "Remove the white strip under the native Flat toolbar"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2896#issuecomment-6181273223",
+      "body": "Fixed by #2906, merged into `codex/native-migration`. The strip was the lower half of a lifted sheet: RN's floating Flat bar made the paper area taller than in Raised. With the bar kept in the flow, as in shipping, the strip is gone on the Galaxy, iPhone and iPad. This was verified on the combined tree in #2904's PR.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6181273223,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

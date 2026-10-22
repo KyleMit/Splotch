@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:44.855Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2837",
+    "title": "Draw shipping's keyboard focus ring on RN web controls",
+    "issue_number": 2837,
+    "body": "**What:** In the RN web build, keyboard focus on every control shows the browser's default blue focus rectangle. Shipping draws its own focus ring: a 2px brand outline that follows the control's shape (a pill for segmented options and switches, rounded for buttons and tiles), only when focus came from the keyboard (`:focus-visible`). The parity work for SegmentedPicker and Slider (#2812) found this. react-strict-dom exposes no `outline` or `:focus-visible` styling, so every RSD control on web is affected.\n\nOn Android and iOS, check how focus is drawn with a hardware keyboard or switch control against the shipping app in its WebView.\n\n**Where:**\n- Shipping: the focus ring styles in `web/src/app.css` (`:focus-visible` and the `--focus-*` tokens, now projected into `src/rsdDrawing/tokens.css.ts`).\n- Native: the shared RSD controls in `experiments/native-architecture/src/rsdDrawing/`, including those landing for U3–U7.\n\n**Done when:**\n- RN web shows shipping's focus ring, in shipping's shape, on keyboard focus only, for every shared control.\n- A single shared mechanism drives it: a global stylesheet rule in the web export, or an RSD-compatible focus-visible wrapper.\n- A test fails if a shared control loses it.\n- The PR includes side-by-side screenshots of keyboard focus on a button, a segmented option, a switch and a slider.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T15:37:53Z",
+    "updated_at": "2026-10-14T18:36:31Z",
+    "closed_at": "2026-10-14T18:36:31Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2837",
+    "display_title": "Draw shipping's keyboard focus ring on RN web controls"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2837#issuecomment-6175576610",
+      "body": "Fixed by #2885, merged into `codex/native-migration`. Global rules in `strict.css` draw shipping's 2px brand focus ring on `:focus-visible`. Markers move it onto the switch track, slider track, checkbox box and Clear half-disc, inset it on the disclosure, round it to the header blob, and give the AI cover its halo. `native-focus-ring.test.mjs` reads the values from shipping's CSS. Native hardware-keyboard focus is not covered.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6175576610,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "observedAt": "2026-10-22T16:52:23.380Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3074",
+    "title": "RN Android: a resting palm cancels the stroke under the finger",
+    "issue_number": 3074,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20:\n\n> \"if I'm mid-stroke and rest my palm on the screen, iOS will continue drawing the strokes under my finger. android will not and will cancel them.\"\n\nAsked which is right, the owner answered: \"Keep drawing (iOS way)\".\n\n## Where\n\n* `experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchPaperInput.kt`, `onTouchEvent`:\n  * `ACTION_CANCEL` becomes phase `cancel` with every pointer changed, then `starts.clear()`.\n  * The surviving finger's later `ACTION_MOVE`s hit `starts[identifier] ?: continue` and are dropped.\n  * `ACTION_POINTER_UP` maps to `end` without checking `FLAG_CANCELED`, so a palm contact the system cancelled is committed as a stroke.\n* iOS `SplotchPaperInput.swift` `touchesCancelled` cancels only the touches UIKit cancelled.\n* `src/drawing/paperInputOwner.ts` finishes every changed contact on `cancel`.\n\n## Done when\n\n* On the Galaxy, a palm landing mid-stroke leaves the finger's stroke drawing, as on iOS.\n* A palm contact the system cancels (`FLAG_CANCELED`) is cancelled, not committed.\n* A replayable two-contact probe covers both.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "not_planned",
+    "comments": 3,
+    "created_at": "2026-10-20T14:58:21Z",
+    "updated_at": "2026-10-20T19:55:42Z",
+    "closed_at": "2026-10-20T19:55:42Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3074",
+    "display_title": "RN Android: a resting palm cancels the stroke under the finger"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3074#issuecomment-6296209144",
+      "body": "**Investigation, 2026-10-20 (Galaxy [redacted-device-id], Android 16, Release build of 22928fcc0b5eeb5a6e937115fc447b97b64187a2 that logs every `MotionEvent` the paper view receives).**\n\nSELinux refuses `sendevent` on the real `sec_touchscreen`, so the replays used a virtual touchscreen registered through `uinput`.\n\n| Replay | What the paper view received | On screen |\n| --- | --- | --- |\n| S1: finger stroke, then a second large contact (`TOUCH_MAJOR` 200) | `POINTER_DOWN(1)`, moves for both, `POINTER_UP(1)`, finger moves, `UP` | Finger kept drawing; the second contact left a dot |\n| S2: as S1, then the second contact is marked `MT_TOOL_PALM` | `POINTER_UP(1)` with `FLAG_CANCELED` (0x20); the finger's moves continue | Finger kept drawing; the palm's dot is committed |\n| S3: the lone finger is marked palm, then finger again | `ACTION_CANCEL` with `FLAG_CANCELED`, then a fresh `ACTION_DOWN` and moves | The line resumes as a second stroke after a gap |\n\nWhat this shows:\n\n* On every input path Android itself produces, RN already keeps the finger drawing, which is what the owner chose (\"Keep drawing (iOS way)\").\n* No parent view steals the gesture when a second contact lands.\n* Shipping commits a stroke on `pointercancel` too, so RN treating a cancel like an end matches it.\n\nSo the stop the owner saw most likely comes from the Samsung touch firmware. `sec_touchscreen` advertises Samsung's custom keys, including 0x2be (believed to be the driver's touch-cancel key), which the framework turns into a gesture-wide `ACTION_CANCEL`. After that, one of two things happens:\n\n* The finger is suppressed until the palm lifts. No app can draw through that.\n* The finger keeps reporting moves with no new `ACTION_DOWN`. `SplotchPaperInput.kt` drops those today, because `starts` was cleared. Adopting them as a new contact would keep drawing.\n\n**Next step:** a 20-second check with a real palm on the logging build (patch kept locally), to read which of the two happens. The fix is only worth writing for the second; the first is a platform limit to record here.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6296209144,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3074#issuecomment-6300088073",
+      "body": "**Real-palm check, 2026-10-20 (Galaxy [redacted-device-id], Android 16).** The build was a Release build of 3c48992d03be7ee6a5bf7bd4b7810cb2a38bdd30 that logs every `MotionEvent` the paper view receives, with each contact's touch size and tool type. The owner drew with one finger and rested a palm on the paper mid-stroke, several times. The owner's verdict: \"still cancels the finger stroke when palm touches down\".\n\n| Palm landing | Palm contact to cancel | Finger moves after the cancel | Next event |\n| ---: | ---: | ---: | --- |\n| 1 | 121 ms | 0 | a fresh `ACTION_DOWN` 1.8 s later |\n| 2 | 63 ms | 0 | a fresh `ACTION_DOWN` 4.1 s later |\n| 3 | 821 ms | 0 | a fresh `ACTION_DOWN` 3.1 s later |\n| 4 | 155 ms | 0 | a fresh `ACTION_DOWN` 2.6 s later |\n| 5 | 63 ms | 0 | a fresh `ACTION_DOWN` |\n\nEach time, the sequence was the same:\n\n1. The palm arrived as an ordinary second finger (`ACTION_POINTER_DOWN`, tool type 1, a small touch size).\n2. 63–821 ms later, Android sent `ACTION_CANCEL` with `FLAG_CANCELED` (0x20) for the whole gesture. The palm's reported size at that moment ranged from 9 to 40, so the cancel doesn't track the size Android reports.\n3. After that the paper view received nothing at all, not one move for the finger that was still drawing, until a new touch began.\n\nAndroid never reported the palm as `TOOL_TYPE_PALM`.\n\n**Conclusion:** this is the first of the two cases above. The Samsung touch stack withholds the finger while the palm is down, so no app can keep drawing through it, and RN already ends the stroke at the cancel as shipping does. Drawing on through a palm, as the owner chose (\"Keep drawing (iOS way)\"), isn't reachable on this device through any public Android API.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6300088073,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3074#issuecomment-6300125735",
+      "body": "Closing as a platform limit, at the owner's request. On the Galaxy, Samsung's touch stack cancels the whole gesture when a palm lands and sends nothing for the drawing finger until a new touch begins, so no app can keep drawing through it. The real-palm log is in the comment above. RN already ends the stroke at the cancel, as shipping does. If a later device or Android release delivers the finger's moves after the cancel, reopen this issue: `SplotchPaperInput.kt` could adopt those moves as a new contact.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6300125735,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

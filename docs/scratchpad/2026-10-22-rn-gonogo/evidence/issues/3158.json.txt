@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:32.957Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3158",
+    "title": "Build, version and sign the RN apps for release",
+    "issue_number": 3158,
+    "body": "## What\n\nThe React Native apps version, build and sign for release from this branch, through plain native scripts with manual upload.\n\n**Android:** `experiments/native-architecture/android/app/build.gradle`\n- `namespace` and `applicationId` become `art.splotch.app`. Debug builds get `applicationIdSuffix \".dev\"`.\n- Release signing reads an untracked `keystore.properties`, in the same pattern as the shipping `android/app/build.gradle:3-20`. This replaces the `candidateRelease` guard.\n\n**iOS:**\n- The Release `PRODUCT_BUNDLE_IDENTIFIER` becomes `art.splotch.app`; Debug becomes `art.splotch.app.dev`.\n- `DEVELOPMENT_TEAM` comes from an untracked xcconfig beside the RN iOS project, not `../../../ios/local.xcconfig`.\n- Rename the template `HelloWorld` project, target and scheme to `Splotch`.\n\n**Versions:**\n- `tools/release/lib/native-version.mjs` writes versionName/versionCode and MARKETING_VERSION/CURRENT_PROJECT_VERSION into the RN projects.\n- The lineage continues from 1.6.0 / build 8, so the next store build upgrades the shipping app in place.\n\n**Scripts and tooling:**\n- `package.json` gets scripts for the RN release bundle and APK, and for the iOS archive and IPA.\n- `tools/release/publish-release-artifacts.mjs` verifies the RN artifacts' embedded versions and IDs.\n- Rewrite the `build`, `cut-release` and `publish-artifacts` skills (`.ruler/skills/`) for this path.\n- The Capacitor scripts and projects stay until the Capacitor deletion.\n\n## Done when\n\n- A local release bundle and an iOS archive/export produce `art.splotch.app` artifacts with the right version. Prove it with throwaway signing in the PR; the owner's upload key and team stay local.\n- The release tooling tests pass.\n- The three skills describe the RN path.\n- No CI or store credentials are added.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:release",
+        "color": "9e6a03",
+        "description": "Release and deployment automation"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-21T17:52:36Z",
+    "updated_at": "2026-10-21T19:19:29Z",
+    "closed_at": "2026-10-21T19:19:27Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3158",
+    "display_title": "Build, version and sign the RN apps for release"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3158#issuecomment-6324500715",
+      "body": "Merged in #3167 (merge commit e035f9cc90c1437c4645d92e071260ba37274b70) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6324500715,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

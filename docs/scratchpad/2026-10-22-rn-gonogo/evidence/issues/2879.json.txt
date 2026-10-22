@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:50.754Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2879",
+    "title": "Silence the native runtime warnings seen in the device passes",
+    "issue_number": 2879,
+    "body": "Runtime warnings logged during the 2026-10-14 native passes:\n- **Android, during rotation and Settings transitions:** about 1,440 `Reanimated synchronouslyUpdateUIProps failed` warnings (\"Unable to find SurfaceMountingManager for tag\"), via `react-native-svg` `VirtualView.setClientRect`. These may relate to the Raised jank regression.\n- **iOS, every iPhone launch:** `BUG IN CLIENT OF UIKIT: Setting UIDevice.orientation is not supported`, likely from the portrait-lock path.\n- **Skia:** `SkPath.moveTo()/quadTo() is deprecated … use Skia.PathBuilder`.\n- **Android:** `Unsupported type for radius property: Null` and `Unsupported Role value: header`.\n- **iOS simulator:** `FigFilePlayer` errors with each sound effect. Check on a device.\n\n**Done when:** each is fixed or documented as harmless, and a normal session's logs are clean of them on both platforms.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T12:59:04Z",
+    "updated_at": "2026-10-14T21:18:37Z",
+    "closed_at": "2026-10-14T21:18:37Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2879",
+    "display_title": "Silence the native runtime warnings seen in the device passes"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2879#issuecomment-6178723650",
+      "body": "Fixed by #2898, merged into `codex/native-migration`.\n\n**Fixed at source:**\n- **Android Reanimated `synchronouslyUpdateUIProps` (20 per session):** fixed by backporting upstream's `getViewExists` guard.\n- **iOS `UIDevice.orientation` setter (3):** the expo-screen-orientation patch moves the setter to pre-iOS 16 only.\n- **Skia `moveTo/quadTo` deprecation:** the painter now uses `PathBuilder`.\n- **Android `Role header`:** the default role is removed in the RSD patch.\n- **Android `radius Null` (10):** gradient stops now get their CSS default positions.\n- **iOS `supportedInterfaceOrientations` exception** (not in the original list): fixed by making dialogs follow the rotation lock.\n\nAll of these are at zero in the after logs on both platforms.\n\n**Documented as harmless:** the iOS simulator `FigFilePlayer` errors (-12864 and -12860) are CoreMedia log noise. Every effect still reaches `Playing; rate 1.0` with the audio hardware running, and Apple's reply on Developer Forums thread 763973 calls `-12860` noise when playback works. They are not yet confirmed on a physical iPhone.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6178723650,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

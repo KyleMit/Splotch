@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:51:57.795Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2916",
+    "title": "Port the missing native platform features from shipping",
+    "issue_number": 2916,
+    "body": "**What:** RN lacks several platform features shipping has.\n\n| ID | Difference | Sev | Status | Slice refs |\n| --- | --- | --- | --- | --- |\n| X8 | Android 7–10 saving unsupported | H | Verified | P-1, C-D9 |\n| X22 | No PWA update lifecycle (RN web) | H (web) | Code-read | P-8 |\n| X23 | Clear drag silent (no ladder or unwind) | H | Code-read | C-D2, P-9 |\n| X24 | iOS silent switch no longer mutes (`playsInSilentMode`) | H? | Device | P-10 |\n| X56 | No wake lock | M | Code-read | P-24 |\n| X57 | No context-menu or callout guard (RN web) | M | Code-read | P-25 |\n| X58 | Theme flash on native cold start; no status-bar re-hide after resume | M | Code-read | P-27, P-28 |\n| X60 | Pencil sound: speed units, stillness fade, lazy first-stroke load; native page-turn volume capped | M | Code-read | P-33, C-D19, P-45 |\n| X61 | Folder save missing (RN web) | M (web) | Code-read | P-35 |\n| X62 | Overlays load on first open (no idle prefetch) | M | Code-read | P-37 |\n\n**Out of scope:** X21 (the root error boundary) is handled by the RN standards unit.\n\n**Done when:**\n- Each item matches shipping on the native targets (and on RN web where it applies), or the issue says why it stays different. Shipping is the spec.\n- Each fix has a test that reads or pins shipping's behaviour, with a negative control.\n- Visible changes come with shipping-vs-RN side-by-sides.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) (§3 per surface, §4 index; the slice files hold file:line evidence). Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-15T00:12:10Z",
+    "updated_at": "2026-10-15T12:19:50Z",
+    "closed_at": "2026-10-15T12:19:50Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2916",
+    "display_title": "Port the missing native platform features from shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2916#issuecomment-6187733047",
+      "body": "The final native Feedback check for PR #2928 confirms the OS/model/viewport/pixel-ratio/language/shell values, but RN omits shipping’s “Online: Yes” metadata row. This platform pass will add the current native network state through the existing expo-network port, using shipping’s snapshot contract and an actual negative control. Keep this gap explicit until the fix and fresh native screenshot pass.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6187733047,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2916#issuecomment-6191888181",
+      "body": "Implemented in #2929, merged into codex/native-migration as 592478a61d8f28f050fdf17ff49c8b7ca104287d. The reviewed platform change covers gallery saves, first-lift wake ownership, audio policy, browser folder saves, feedback online state, PWA updates and lazy-modal fallback lifecycle. Both review findings are fixed, the final rival round found no issues, and all CI checks complete successfully or are intentionally skipped. The PR contains eight shipping-left / RN-right folder-state pairs and actual PNG write/reopen/Forget and optional-chunk-failure checks.\n\nNative Clear bubble notes remain tracked in #2930. Fresh combined native device comparisons remain in the final campaign pass. The controlled browser reload check remains unproven: Chromium exits with SIGTRAP in the shipping arm after reload. The picker returns a real OPFS test directory, so this is a validation limitation rather than evidence about OS picker permission renewal. These limits are recorded in the merged PR.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6191888181,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

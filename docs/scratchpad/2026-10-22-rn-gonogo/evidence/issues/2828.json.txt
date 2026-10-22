@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:41.883Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2828",
+    "title": "Match the native AI Style Prompt and AI Result to shipping",
+    "issue_number": 2828,
+    "body": "**Parity unit U22** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**Gaps (from the parity inventory):**\n\n| # | Surface | Shipping file(s) | RN file(s) | Severity | Gap | Shots |\n|---|---|---|---|---|---|---|\n| 15 | AI Image Button | `AiImageButton.svelte` | `RsdEdgeControls.tsx` (`AiPictureAction`) | minor | Present when AI is on. It lacks shipping's checking / unavailable / free-count states and its minimized-run label. | `ai-entry` |\n| 48 | AI Style Prompt (\"Pick a style\") | `AiImagePrompt.svelte`, `aiPreview.ts` | `rsdDrawing/RsdAiSheet.tsx`, `RsdAiStyleChoices.tsx`, `ai/stylePreviewAssets.ts` | looks wrong | RN is a full-screen sheet: about 6 lines of privacy and mechanics copy, a \"Check AI allowance\" button, \"Secure AI setup unavailable\", then style tiles with \"Selected/Choose\" captions. Shipping's prompt is a modal card with the style-cover grid under \"Pick a style\"; it could not be opened because `/api` is unavailable in preview. | `ai-entry` |\n| 49 | AI Result (dial, stage, footer, report disclosure, error, confetti) | `AiImageResult.svelte`, `AiDial.svelte`, `AiResultStage.svelte`, `AiResultFooter.svelte`, `AiResultDisclosure.svelte`, `AiResultError.svelte`, `AiErrorCard.svelte`, `AiConfetti.svelte`, `aiDialGeometry.ts` | `RsdAiSheet.tsx`, `RsdAiRunPolaroid.tsx`, `RsdAiPictureView.tsx`, `ai/AiProgressDial.tsx`, `ai/AiConfetti.tsx`, `ai/AiRecoveryActions.tsx` | looks wrong | Code review only, since the API is unreachable. RN renders results inside the same text sheet with `RsdAction` buttons. Shipping uses a dedicated result modal: dial over the blurred drawing, then picture, Download, and disclosure. | (none) |\n| 50 | AI image report | `AiImageReport.svelte`, `imageReportFlow.svelte.ts` | `ai/AiPictureReport.tsx` (legacy React Native primitives, reused by RSD) | looks wrong | Built on legacy RN `View`/`Text` controls, not the shipping confirm card. Code review only. | (none) |\n| 51 | Waiting Polaroid | `AiWaitingPolaroid.svelte` | `ai/AiWaitingPolaroid.tsx` (via `RsdPaperSlot.tsx`) | minor (unverified) | Present. Needs a live generation to compare. | (none) |\n\n**Done when:** the RN surface looks and behaves like shipping. The PR shows same-viewport, side-by-side screenshots (shipping web next to RN web) at phone 390x844 and tablet 1366x1024, in light and dark, plus the Android emulator. Every RN-only control in scope is removed or moved as listed. Existing behavior tests still pass, and new behavior has tests that fail without it.\n\n**Order:** Depends on the primitive issues (U1–U7) it needs; build on those components rather than one-off styles.\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\n**RN-only controls to remove or move** for this surface: see the epic list (https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6147912989).\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:32:16Z",
+    "updated_at": "2026-10-14T03:49:41Z",
+    "closed_at": "2026-10-14T03:49:41Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2828",
+    "display_title": "Match the native AI Style Prompt and AI Result to shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2828#issuecomment-6160459350",
+      "body": "Done in #2869, merged into `codex/native-migration`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6160459350,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:28.729Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3152",
+    "title": "Serve /api without @sveltejs/kit and host the function on plain Node locally",
+    "issue_number": 3152,
+    "body": "## What\n\n`/api` stops importing `@sveltejs/kit`, and a plain Node host runs the function locally.\n\n- Replace `json`, `error`, `text` and `isHttpError` from `@sveltejs/kit` with a small framework-free HTTP module in these 22 files under `web/src/lib/server/`:\n  - `http.ts`\n  - `api/apiFunction.ts`\n  - `api/generateImage.ts`\n  - `api/adminTokens.ts`\n  - `api/{adminLogin,adminStats,report,reportImage,verifyAccessCode,verifyKey}.ts`\n  - `api/generationResult.ts`\n  - `generationAttemptAccounting.ts`\n  - `generationAttemptRequest.ts`\n  - `generationDelivery.ts`\n  - `http.ts` reads `cause.body.message` off a kit `HttpError`; keep that behaviour.\n- `server/devHarness.ts` (`$app/environment`, `$env/dynamic/public`) is reached only by SvelteKit. Leave it for the SvelteKit deletion, or remove it if nothing needs it.\n- The existing wire-diff test is the proof: `tools/api-smoke/tests/wire-diff.test.mjs`, with 108 baseline cases plus 9 additions. It must pass unchanged.\n- Lift the Request/Response adapter out of `web/netlifyFunctionsHost.ts` into a standalone, SvelteKit-free function host that `tools/api-smoke/run-local-contract.mjs` and `tools/migration/check-native-web-admin.mjs` both use. Today the API smoke boots `vite dev`; the admin check already has a SvelteKit-free host at lines 72-110 to start from.\n  - Choose the TypeScript loading on its merits: an esbuild bundle as Netlify does, `tsx`, or a config-free Vite `ssrLoadModule`.\n  - Handle dev mode and env loading explicitly.\n- Move `tinyPngBuffer` and anything else the smoke takes from `web/tests/fixtures.ts` next to the smoke.\n\n## Done when\n\n- No file under `netlify/` or `web/src/lib/server/` imports `@sveltejs/kit`, `$app/*` or `$env/*`, except `devHarness.ts` if it stays for the SvelteKit deletion.\n- The wire-diff test passes.\n- `npm run test:api:smoke` passes without `vite dev` or SvelteKit.\n- The admin check passes on the shared host.\n- Removing `@sveltejs/kit` from `package.json` is not in scope; the SvelteKit deletion does that.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:infra",
+        "color": "5a6570",
+        "description": "Dev tooling, dependencies, repo infrastructure"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-21T17:52:21Z",
+    "updated_at": "2026-10-21T19:04:33Z",
+    "closed_at": "2026-10-21T19:04:31Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3152",
+    "display_title": "Serve /api without @sveltejs/kit and host the function on plain Node locally"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3152#issuecomment-6323764273",
+      "body": "PR #3166 implements this and passed its Codex review with no findings, but CI's Production dependency check is red: with the function no longer importing SvelteKit, `@sveltejs/kit` and `@sveltejs/vite-plugin-svelte` must move to `devDependencies` in `package.json` and `pnpm-lock.yaml`, files outside this lane. Releasing the claim until the campaign orchestrator grants that edit or lands it elsewhere; the PR comment there has the evidence.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6323764273,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3152#issuecomment-6324191092",
+      "body": "Merged in #3166 (merge commit 10ec948699b2233b5a2215538efb74dcacf761b0) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6324191092,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

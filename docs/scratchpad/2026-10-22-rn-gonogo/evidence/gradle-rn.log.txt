@@ -1,0 +1,12 @@
+UTC 2026-10-22T16:51:31.296865+00:00
+CWD /workspace/rn-freeze
+COMMIT fffeed1fe4116112bb10297a180ac552f9754046
+RUN COUNT 1
+COMMAND java -version; cd android && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-deb13u1-Debian)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-deb13u1-Debian, mixed mode, sharing)
+Exception in thread "main" java.lang.RuntimeException: Could not create parent directory for lock file /home/agent/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1-bin.zip.lck
+	at org.gradle.wrapper.GradleWrapperMain.main(SourceFile:65)
+
+EXIT 1

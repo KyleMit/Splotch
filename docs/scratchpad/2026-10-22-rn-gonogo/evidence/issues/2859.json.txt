@@ -1,0 +1,63 @@
+{
+  "observedAt": "2026-10-22T16:51:48.722Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2859",
+    "title": "Stop native-crayon-phase timing out at 5 s under full test:tools load",
+    "issue_number": 2859,
+    "body": "**What:** `tools/tests/native-crayon-phase.test.mjs` > 'crayon phase under native pattern clipping' > 'exhibits a shipping-field counterexample to the legacy coverage ceiling' hits Vitest's 5 s default timeout during full `npm run test:tools` runs, then passes 15/15 when run alone. On 2026-10-13 it failed this way in at least five separate full runs across parallel native-port branches, none of which touched it. `native-skia-painter.test.mjs` also failed to load once with a Flow parse error in `react-native/index.js` under the same load and passed alone.\n\n**Where:** `tools/tests/native-crayon-phase.test.mjs`, around line 247.\n\n**Done when:** the case either finishes well inside the budget, or carries a named timeout constant sized from its measured worst case under full-suite load. `npm run test:tools` then passes three consecutive full runs on one machine without that failure.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T20:17:55Z",
+    "updated_at": "2026-10-14T21:48:45Z",
+    "closed_at": "2026-10-14T21:48:45Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2859",
+    "display_title": "Stop native-crayon-phase timing out at 5 s under full test:tools load"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2859#issuecomment-6179237912",
+      "body": "Fixed by #2899, merged into `codex/native-migration`. The counterexample case now reuses one shipping crayon oracle and memoised references: 3 ms in a full run, down from 4.4 s. `test:tools` passed three consecutive full runs. The `native-skia-painter` 'Flow is not supported' flake was a Vitest mock-resolution race caused by an un-awaited `vi.hoisted(async …)`; four files now await it.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6179237912,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

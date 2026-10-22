@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:33.127Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3161",
+    "title": "Delete the SvelteKit web app",
+    "issue_number": 3161,
+    "body": "**Depends on:** #3152 #3153 #3154 #3155 #3156 #3157 #3160\n\n## What\n\nDelete the SvelteKit web app and everything that exists only for it. Prove each deletion dead with knip and the import graph.\n\n**The app:**\n- `web/src/routes`\n- every `.svelte` and `.svelte.ts` file, and the Svelte components, engine and state that only they reach\n- `web/svelte.config.js`, `web/vite.config.ts`, `web/netlifyFunctionsHost.ts`, `app.html`, the hooks\n- `vite-plugin-pwa`\n- `svelte-check`: `npm run check` becomes `tsc` over the kept code, plus `check:netlify` and `check:migration:types`\n\n**Build and CI:**\n- the `release-build-smoke` job and the SvelteKit postbuild checks (`check-bundle-budgets`, the PWA precache check, the eager-error bundle check, and the rest)\n- the `dev`, `build` and `preview` scripts\n- the `pretest` `svelte-kit sync` of `test:migration:rsd-selection`\n\n**Tests:**\n- the Svelte unit tests (keep the framework-free ones; rebase the coverage ratchet)\n- the ~84 `tools/tests` and `tools/migration/tests` files that read `.svelte` source as text: delete each, or rewrite it against RN\n- whatever `web/playwright*.ts` and shard-job pieces the spec-porting sub-issues left\n\n**Lint and generators:**\n- the `.svelte` glob in `lint:css`\n- `lint:tokens`, which parses with `svelte/compiler`, and `gen:tokens:check`\n- the Svelte ESLint config\n- `tools/release/gen-release-notes.mjs`, which generates Svelte route source\n\n**Packages:** `svelte` and every `@sveltejs/*` package leave `package.json`.\n\n**Ledger rows citing `web/src/routes/dev/`:**\n- B0013, B0155 and L0095 → `web/src/lib/storeFrames/geometry.test.ts`\n- B0201, B0202 and B0226 → `tools/migration/tests/rsd-native-settings-info.test.mjs`\n\nThe framework-free code stays in `web/src/lib` until the promotion sub-issue moves it. If this is too large for one reviewable PR, split it: tests and tooling first, then the app.\n\n## Done when\n\n- No `.svelte` file remains.\n- No `svelte` or `@sveltejs/*` package is in `package.json`.\n- `npm run build:site` and all CI are green.\n- The page budgets are unchanged.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:infra",
+        "color": "5a6570",
+        "description": "Dev tooling, dependencies, repo infrastructure"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-21T17:52:44Z",
+    "updated_at": "2026-10-22T02:22:00Z",
+    "closed_at": "2026-10-22T02:21:59Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3161",
+    "display_title": "Delete the SvelteKit web app"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3161#issuecomment-6327561713",
+      "body": "Scope addition from the campaign orchestrator (2026-10-21): the Capacitor plugin packages that `web/src` still imports at runtime stay in `package.json` until this issue deletes their last importers. That covers `@capacitor/core`, `device`, `haptics`, `network`, `preferences` and `screen-orientation`, plus `@aparajita/capacitor-secure-storage` and `@capacitor-community/media`. So this issue also removes them, alongside `svelte` and `@sveltejs/*`. #3162 removes the shell and the Capacitor packages nothing imports from JS.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6327561713,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3161#issuecomment-6331138932",
+      "body": "Completed by #3176, merged into `codex/native-migration` as f73ba89631eecbd4448a5e51a909335759b5bbd9. Verified the merge commit is on the migration branch and has the exact gated base and reviewed head as its parents.\n\nAll 12 PR jobs passed on 850bd8d8b6355d2117633e01c2204e8ee2d9f16d. [Claude round 2](https://github.com/KyleMit/Splotch/pull/3176#pullrequestreview-5608387956) has no findings or unverified claims, and all earlier threads are resolved. Exact-head [Android API 24/API 33 launch smokes](https://github.com/KyleMit/Splotch/actions/runs/39707809565) and [iOS simulator launch smoke](https://github.com/KyleMit/Splotch/actions/runs/39707807631) passed. Startup/page caps are unchanged.\n\nClosing this issue by hand because the PR targets the non-default migration branch. Root promotion and complete documentation reconciliation continue in #3163 and #3164.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6331138932,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

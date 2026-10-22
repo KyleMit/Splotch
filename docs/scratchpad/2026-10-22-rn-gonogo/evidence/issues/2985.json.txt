@@ -1,0 +1,136 @@
+{
+  "observedAt": "2026-10-22T16:52:03.344Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2985",
+    "title": "Keep native dialog titles, Settings choices and picker labels readable at maximum OS font",
+    "issue_number": 2985,
+    "body": "Refs #2978 and #2690. This is an unresolved device-parity defect, not an accepted difference or a completion boundary.\n\nOn a fresh notched iPhone simulator at the largest real OS text category, giving the Settings heading the full row fixes “Setting/s”, but a longer section title still splits as “Appearan/ce” even at full width. The Appearance choices also split Light/Dark/System into narrow letter groups. Private original inspection by Codex and Claude confirms the state at source 0eac2daa345d0cadcc7791da2ab436bcec56af5d. That source is a reviewed-in-progress candidate, not the final campaign head. The shared source for these choices is unchanged from the before arm; actual shipping Dynamic Type equivalence has not been established.\n\nComplete this as a separate causal readability unit after PR #2983: choose and independently review a responsive layout for words wider than the full header and segmented choices; preserve legible selected text sizing and public Back/Close/selection behavior. Do not add an unreviewed font-size cap or silently treat the remaining split as accepted. Verify ordinary and largest fonts, phone/tablet, portrait/landscape and both themes on the final merged head; record narrower simulator and physical evidence separately.\n\nAlso diagnose the oversized row geometry when Settings is first mounted at maximum font and the live simulator font override is reduced. It reproduces in both source arms. Source inspection suggests native text measurement survives the font drop, but real OS Settings/resume and physical evidence are required before classifying the cause or accepting a boundary. No cell is passed from that symptom.\n\nAll comparison media and detailed device records remain private with byte-verified recovery. Public records give source provenance, counts, states and inspectors only. PR #2983 addresses wasted header width and web focus retention; it does not satisfy every maximum-font acceptance cell. Epic #2690 stays open.\n\nAdditional matched public-UI probe: the active-page chip and book captions clip at maximum OS font in both d83fd4a37907f05aa90430a4f018528ad32ab50e and 28e97c4a706ef0edee675ed6aed5a22e73573b68. Codex inspected both originals. Their chip/tile owners are source-identical between those arms. The latter fixes title reflow and preserves the trailing chip/Close group, but these content labels remain an unresolved readability defect. Include them in this responsive-content unit, with selected-page identity, activation and ordinary-font geometry retained. This establishes an existing RN defect; shipping equivalence and final target coverage remain pending.",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": null,
+    "milestone": null,
+    "state_reason": null,
+    "comments": 5,
+    "created_at": "2026-10-18T20:51:03Z",
+    "updated_at": "2026-10-20T23:28:40Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2985",
+    "display_title": "Keep native dialog titles, Settings choices and picker labels readable at maximum OS font"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2985#issuecomment-6256388878",
+      "body": "The active-page chip containment subcase is implemented in #2986, reviewed at bbcc06b84c111e6627efd02f050357ff91343d96 and merged as 1e84110dbd06e5d14e3fce9f4927988a8cf129eb after all 15 applicable hosted jobs passed. Codex and Claude inspected four private matched originals: ordinary-font frames were byte-identical, and the maximum-font chip grew vertically to contain the complete selected-page label while preserving its public selection and Close behavior. [Independent review](https://github.com/KyleMit/Splotch/pull/2986#pullrequestreview-5565348097).\n\nThis is causal-unit simulator evidence only. Long section titles, Settings choices, picker captions, font reduction/resume and required final target/font/theme/orientation coverage remain unresolved here. Issue #2985 stays open. No final matrix cell was promoted by this merge.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6256388878,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2985#issuecomment-6261960826",
+      "body": "PR #2994 addresses the responsive-content part of this issue. Its rival review rounds are done, and all 15 applicable hosted jobs pass on the exact head a96fb0663c1f03cfcbcb038b23c6e6972ddd1073. It is waiting for merge.\n\n**Shipping behavior.** The reconstructed v1.6.0 Release does not scale text with Dynamic Type at all. This was checked on owned iOS 26.5 iPhone 17 Pro and iPad mini simulators, at the default size and at the largest category (AX5), both live and after a relaunch. RN keeps OS scaling instead, following the walk-through-decision picks the rival agreed with:\n- No word breaks.\n- Dialog titles take their own row, then shrink only a word wider than that row.\n- Segmented choices stack full width.\n- Cover captions grow and fit.\n- Hub titles fit their card.\n- Sidebar, switch-row and slider labels fit.\n\n**Diagnosis of the oversized rows after a font reduction.** On a live text-size change, React Native leaves every text that does not remount at the frame it was first measured with. Raising the size live clips glyphs instead. React Native 0.86's own invalidation path exists and is enabled, but the frames still go stale; the failing step inside React Native was not instrumented. The cause is in the native renderer, not in app layout code. Text keyed on font scale, which covers every adapter in the PR, corrects itself. Other text corrects when Settings reopens.\n\nThis issue stays open for:\n- **Android shipping and RN at maximum `font_scale`:** not observed. The host disk could not hold an emulator, which needs 7.4 GB free to boot.\n- **Phone landscape compact Settings at AX5:** the pinned \"Switch to portrait for the full settings.\" note takes most of the card, so the quick toggles scroll in a short window.\n- **Live text-size changes:** non-adapted text stays stale until Settings reopens.\n- **Physical device font and screen-reader checks:** iPad and Galaxy, left to the human session.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6261960826,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2985#issuecomment-6278749387",
+      "body": "**Android at maximum `font_scale`: observed.** This is the first subcase the issue left open.\n\n- **Setup.** A wiped API 36 Pixel 7 emulator (portrait, light). `font_scale` was set to 2.0, the largest Android offers, before each fresh launch, then restored to 1.0.\n- **Arms.** RN Release at 00fcc5c78d10 and the reconstructed v1.6.0 reference (`art.splotch.app.baseline.release`), with a default-scale RN batch as baseline.\n- **Surfaces.** Drawing screen with the drawer open, the Settings hub (top and scrolled), Appearance, Coloring Books, and the grown-up check.\n\n**RN.**\n\n- Text scales with the OS on every surface.\n- The Theme, Button style and Orientation choices stack full width.\n- \"Settings\", \"Appearance\", \"Coloring Books\" and \"Grown-Ups Only\" stay whole on one row. Every hub title and library caption is whole.\n- No word splits or clipped glyphs.\n- One subtitle, Parent Center's \"Choose when grown-up checks appear\", ends in an ellipsis after two lines. Shipping clamps hub subtitles to two lines too (`line-clamp: 2` in `HubList.svelte`), so this is parity.\n\n**v1.6.0.** Unlike on iOS, the Android release does scale its text with the OS. At 2.0 it:\n\n- clips \"System\" at the edge of the Theme picker;\n- truncates the dialog title to \"Coloring Bo…\";\n- wraps \"Grown-Ups Only\" onto two lines;\n- ellipsizes the same Parent Center subtitle.\n\nSo on this phone RN is more readable than the reference at maximum font. The tablet and landscape cells were not captured.\n\nThis issue stays open for:\n\n- phone landscape compact Settings at AX5;\n- text that stays stale after a live text-size change;\n- the physical-device checks.\n\nRefs #2978\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6278749387,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2985#issuecomment-6284301231",
+      "body": "**Phone landscape compact Settings at AX5: observed on RN.** This is the first open subcase.\n\n- **Setup.** The DS-2 iPhone 16e simulator on iOS 26.5, with text size set to the largest category (`accessibility-extra-extra-extra-large`, AX5), then restored to `large`. RN was a Release simulator build at c76b374665cf3219c0a5fa8c7b477f804431accc. Its Orientation was set to Auto for the capture and restored to Portrait afterwards. Both apps lock phones to portrait by default, so the device does not rotate otherwise.\n- **RN.**\n  - In landscape, Settings opens the compact shell: the quick-toggle cards and the \"Switch to portrait for the full settings.\" hint.\n  - At AX5 the hint grows to three lines and covers the lower half of the shell.\n  - The cards' labels are clipped where the shell ends: \"Sound\" is cut through the middle beside its switch, and \"Night Mode\" shows only \"Night\".\n  - The heading \"Settings\" and Close stay whole.\n  - That is a readability defect on RN: the toggles' labels cannot be read at the largest text size in phone landscape.\n- **v1.6.0 on iOS** ignores Dynamic Type (recorded above on 2026-10-19), so its compact shell keeps ordinary-size text there. That is not a parity target for RN's scaled text; the target is RN's own legibility.\n- **Media.** The comparison media stays private, as this issue's other records do.\n\nStill open:\n\n- the compact shell's layout at AX5 in phone landscape (above);\n- text left stale after a live text-size change;\n- the physical-device checks, which are on the owner's session checklist.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6284301231,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2985#issuecomment-6304116661",
+      "body": "**Phone landscape compact Settings at AX5: fixed** by #3102, merged into `codex/native-migration` as 6848c13d7a4c3e82167e96acb247d2637df28dce.\n\n* Above `NOTE_PINNED_MAX_FONT_SCALE` (1.4, between iOS XXXL 1.353 and AX1 1.786) the \"Switch to portrait for the full settings.\" hint becomes the last item of the scrolling list instead of staying pinned beneath it, so the toggles get the shell's full height. At ordinary sizes it stays pinned, as shipping has it.\n* Fresh iPhone 17 Pro simulator, iOS 26.5, Release, landscape: the AX5 defect reproduced on the base (three-line hint, \"Sound\" cut, only \"Night\"); on the fix every label reads whole and every toggle is reachable. Default-size captures before and after are pixel-identical. API 36 phone emulator at `font_scale` 2.0 landscape: every card fits.\n* Regression test `tools/migration/tests/rsd-native-settings-compact.test.mjs` (negative control: forcing the pinned hint fails the AX5 case).\n\n**Text left stale after a live text-size change: left as is.** On the compact shell a live change in either direction renders the same as reopening Settings. The general fix (keying the whole dialog on font scale) would remount every section and throw away a half-typed AI key or feedback message, scroll position and screen-reader focus, which costs more than a defect that clears when Settings reopens. One small leftover: after a live reduction the orientation picker's selected thumb sits a few points off until Settings reopens.\n\nThis issue stays open for the physical-device font and screen-reader checks, which are on the owner's session checklist.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6304116661,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

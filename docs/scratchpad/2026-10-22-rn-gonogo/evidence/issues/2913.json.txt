@@ -1,0 +1,131 @@
+{
+  "observedAt": "2026-10-22T16:51:57.476Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2913",
+    "title": "Port shipping's paper presentation and picture lifecycle rules to native",
+    "issue_number": 2913,
+    "body": "**What:** RN's paper is always contain-fitted, and its undo, clear and save lifecycle differs from shipping's.\n\n| ID | Difference | Sev | Status | Slice refs |\n| --- | --- | --- | --- | --- |\n| X11 | Fit-only paper presentation (no crop-in-place window, no re-adopt); erase-to-blank stays locked | H | Code-read; device | E-D5, C-D13 |\n| X12 | A page pick is always an undo step | H | Verified | E-D3 |\n| X13 | Undo depth 50 plus a whole-snapshot point budget, vs 20 | H | Verified | E-D1 |\n| X9 | A failed Auto-Save on Delete aborts the Clear; the Clear waits for the save | H | Verified | P-2, C-D6 |\n| X10 | Unsaved pictures in memory only | H (iOS) | Verified | P-3, C-D9 |\n| X43 | No screenshot cooldown or burst coalescing; a second polaroid cuts the first | M | Code-read | C-D8, P-34 |\n| X54 | Renderer fault shows the Error Screen; Start over wipes the draft | M | Code-read | P-21 |\n| X63 | Leave-dialog copy (\"It is lost if Splotch closes\") is untrue on RN | L | Code-read | P-43 |\n\n**Shipping's policy:** an occupied paper keeps its dimensions and view scale across layout changes, with a view translation compensating (ADR-0050, ADR-0166). #2906 instead made the Flat and Raised canvas boxes identical. Revisit that against ADR-0166, especially where the palette is a side column (iPad landscape).\n\n**Product decisions pending:** X6 (RN restores the last picture after a relaunch) and X7 (picture caps with error banners) are RN-only behaviours awaiting the user's call. They are not in scope until decided.\n\n**Done when:**\n- Each item matches shipping on the native targets (and on RN web where it applies), or the issue says why it stays different. Shipping is the spec.\n- Each fix has a test that reads or pins shipping's behaviour, with a negative control.\n- Visible changes come with shipping-vs-RN side-by-sides.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) (§3 per surface, §4 index; the slice files hold file:line evidence). Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 4,
+    "created_at": "2026-10-15T00:12:00Z",
+    "updated_at": "2026-10-15T11:27:12Z",
+    "closed_at": "2026-10-15T11:27:12Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2913",
+    "display_title": "Port shipping's paper presentation and picture lifecycle rules to native"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2913#issuecomment-6181804260",
+      "body": "**Correction from the #2913 work (2026-10-14):** #2906's premise was wrong.\n\nShipping's Bare/Flat palette is `position: absolute` (`ColorPalette.svelte`, `html[data-toolbar='bare'] .color-palette`), so the canvas runs under the bar in portrait and under the left column in tablet landscape, as ADR-0166 says. Shipping keeps an inked paper's pixels across a style switch, and re-adopts it on rotation.\n\nThe fix for #2905 and #2896 is therefore this issue's presentation policy, not identical boxes:\n- Restore the floating Flat bar, undoing #2906's `NativeScrollAreas` change.\n- Keep `RsdGlassPanes`' `paperTop`/`paperLeft`, which #2909 uses.\n- Make sure the lifted-sheet behaviour (#2905) and the white strip (#2896) stay fixed through the policy.\n\nThe WIP is on `claude/native-paper-presentation` (081f5fd6e).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6181804260,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2913#issuecomment-6182056730",
+      "body": "The user decided both remaining product questions on 2026-10-14: remove X6 (restoring the last picture and interrupted AI runs after relaunch) and X7 (the 1,000-stroke / 100,000-point caps and their error banners), so RN matches shipping. Both are now in scope for the picture-lifecycle parity work.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6182056730,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2913#issuecomment-6183308601",
+      "body": "X11 implementation now restores the floating Flat palette, keeps an occupied paper at its screen position across a style change, uses shipping's crop-in-place rule for system-bar-sized occlusion, shares the same presentation with Clear/departing sheets, and frees an erased-to-blank paper. Mounted controls failed against the prior layout and pass with this implementation.\n\nOne X11 difference remains in the current local implementation: when shipping's policy chooses `adopt` for a large resize at the original orientation, RN still contain-fits its existing paper reference. Its stored coordinates, stroke widths, grain and export dimensions all derive from that reference. Stretching the view or rewriting every stored point would change the drawing, so this needs a separate change to the paper reference and renderer contract. It is tracked in #2924, not accepted as a product difference. Final screenshots will identify it explicitly if it remains. No claim of complete X11 parity is being made.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6183308601,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2913#issuecomment-6190957339",
+      "body": "Implemented and merged through #2932 into codex/native-migration: fresh relaunch sessions, the approved cap removal, shipping Undo/page behavior, retained Flat paper, verified held PNG retry, renderer recovery, and the empirically discovered tablet drawer obstruction. Final head 8bac3827766a15bdfec9e83fd4fc89ec2fe026ae passed the required gates and CI; two independent review rounds and the final manual follow-up review are complete. The PR contains all 18 matched web comparison pairs plus the before/after drawer crops, with hosted hashes verified. Rotation occupancy remains tracked in #2924. Fresh combined native screenshots and performance remain in the campaign’s final pass; this comment does not claim those checks have completed.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6190957339,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

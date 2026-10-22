@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:59.005Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 2,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2812",
+    "title": "Port the shipping SegmentedPicker and Slider to native",
+    "issue_number": 2812,
+    "body": "**Parity unit U6** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**What to build:**\n\n| # | Primitive to build in RN | Shipping source | Tokens / specifics to port |\n|---|---|---|---|\n| P7 | `SegmentedPicker` (segment / chip / underline) | `design/SegmentedPicker.svelte`, `segmentThumb.svelte.ts`, `rovingRadio.ts` | **Segment:** `--control-track` track with 4px padding; sliding `--brand-solid` thumb with `--shadow-control` (220ms); options 48px, sm semibold, 16px icon.<br>**Chip:** 2-column toggle grid, 26px icon + check.<br>Radio and toggle modes. |\n| P8 | `Slider` + `SliderRow` | `Slider.svelte`, `settings/SliderRow.svelte` | 28px pill track with an inset shadow and `--brand` fill; 36px white thumb with a 2px `--border-warm` ring; snap notch `--slider-notch`. Row shows label and value %. |\n\n**Done when:** the primitive exists in `experiments/native-architecture` with light and dark values drift-guarded against the shipping source (imported or read by a test, never hand-copied). The PR includes a specimen screenshot next to the shipping `/design` styleguide rendering of the same primitive. No visible surface changes yet, except where a caller adopting the primitive is in this unit's scope.\n\n**Order:** after U1.\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:31:17Z",
+    "updated_at": "2026-10-13T16:13:20Z",
+    "closed_at": "2026-10-13T16:13:19Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2812",
+    "display_title": "Port the shipping SegmentedPicker and Slider to native"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2812#issuecomment-6149945842",
+      "body": "Shipped in #2838.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6149945842,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "observedAt": "2026-10-22T16:51:25.501Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2796",
+    "title": "Let parents turn off native Pencil double-tap",
+    "issue_number": 2796,
+    "body": "**What:** Native Apple Pencil double-tap toggles the Eraser (#2764), but parents can't turn the gesture off. The shipping app has a `pencilEraserEnabled` setting (default on). Its Settings row appears only after a Pencil has been used, which shipping records as `applePencilSeen`. Native has neither setting nor the row, so the gesture is always on wherever the Eraser is shown.\n\n**Where:** check the shipping setting, how it records `applePencilSeen`, and the row's placement in Settings. Native: `experiments/native-architecture/src/settings/`, `src/useBrushPreferences.ts`, `src/platform/pencilDoubleTap.ts`.\n\n**Done when:**\n- Native persists both values.\n- It records the first Pencil tap.\n- It shows the same row once a Pencil has been seen.\n- The toggle respects the setting.\n- A mounted test covers each.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-13T10:38:12Z",
+    "updated_at": "2026-10-13T11:14:29Z",
+    "closed_at": "2026-10-13T11:14:29Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2796",
+    "display_title": "Let parents turn off native Pencil double-tap"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2796#issuecomment-6143854531",
+      "body": "Folded into #2797: the round-1 review pointed out that ADR-0028 requires this off switch, so the gesture ships with it.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6143854531,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2796#issuecomment-6144299020",
+      "body": "Shipped in #2797.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6144299020,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

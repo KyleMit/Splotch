@@ -1,0 +1,108 @@
+{
+  "observedAt": "2026-10-22T16:52:03.522Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2931",
+    "title": "RN Settings: keep hub labels visible at native 2× text zoom (X39)",
+    "issue_number": 2931,
+    "body": "Refs #2690 and #2915. The Settings migration fixes web text wrapping, but native enlarged hub rows still lose their Appearance and Sound labels.\n\nOn an iPhone 17 Pro simulator running iOS 26.5, open Settings in portrait and enlarge the reading pane to about 2×. Shipping keeps whole words visible; the RN candidate at e0fafd04bbeed1a675091d0b7cf07eda554df892 shows the icons and switches but no Appearance/Sound text. Normal-size text, OS Dynamic Type enlargement, and closing/reopening to reset the zoom work. Android 2× label layout remains to be checked.\n\n![Shipping left, RN right at enlarged Settings text](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/native-settings-zoom-gap/iphone-settings-zoom-gap-pair.png)\n\nThe squeezed text container reaches zero width. On web, shipping uses normal word overflow while React Strict DOM defaults to breaking words; the web correction restores normal wrapping. Native Text cannot reproduce that CSS overflow. A bounded native experiment changing the text container from flexShrink 1 to 0 restored glyphs, but broke Appearance mid-word and overflowed Tool Drawer to the right, so it was rejected and the production layout restored. No native zoom parity is claimed.\n\n![Rejected native shrink experiment](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/native-settings-zoom-gap/iphone-native-zoom-shrink0.png)\n\nUse the existing native renderer controls and real two-finger device checks to preserve readable whole words at enlarged sizes without changing web geometry or clipping controls. Verify the Galaxy and iPhone, retain one-finger scrolling, and keep close/reopen reset behavior.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": [
+      {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      }
+    ],
+    "labels": [
+      {
+        "name": "in-progress",
+        "color": "d93f0b",
+        "description": "Claimed by a ship-issue or ship-campaign session; excluded from pickup until the issue closes"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 3,
+    "created_at": "2026-10-15T07:45:33Z",
+    "updated_at": "2026-10-17T02:35:53Z",
+    "closed_at": "2026-10-17T02:35:53Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2931",
+    "display_title": "RN Settings: keep hub labels visible at native 2× text zoom (X39)"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2931#issuecomment-6227935223",
+      "body": "Resumed the preserved native whole-word measurement draft. Focused Settings renderer checks pass (38 cases across row faces, row geometry, and text zoom), the native font guard passes (37 cases), and the candidate type check passes. Bypassing the measured title produces seven failures in the new regressions; the exact source was restored afterward.\n\nNative acceptance is in progress against the approved current-shipping Galaxy Debug baseline from 54f56ba892827a336b37087dcaeb3e0c7860fd84 and a fresh iPhone simulator on iOS 27.0. The baseline APK hash, distinct package, and debug certificate were verified. No native zoom parity is claimed yet; whole glyphs, switch taps, one-finger scrolling, and close/reopen reset still require native observation. All new media remains private.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6227935223,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2931#issuecomment-6228232571",
+      "body": "Native verification at b0dbc96dfa4e4f8d4a2731aabd78017817ddd07e now shows the complete Appearance, Sound, and Tool Drawer words near 2× on Galaxy and a fresh iPhone 17 Pro simulator running iOS 27.0. Night Mode and Sound were toggled independently and restored, one-finger scrolling reached Tool Drawer, and close/reopen restored normal title/control geometry on both. Galaxy also passed with OS font_scale 1.15, then returned to its original 1.0. All media remains private. Codex inspected the sequences; the campaign handler independently inspected both light 2× Appearance captures.\n\nThe native-only correction lets the icon/title and switch wrap when the measured whole word cannot fit beside them. Normal-size geometry remains intact. The current shipping Galaxy baseline itself clips Appearance and overlaps its switch at 2×; that clipping is recorded as a baseline limitation, not copied into the RN acceptance criteria.\n\nOne comparison prerequisite is blocked: both a freshly built current-shipping Release app and the existing byte-equivalent current-shipping Debug app trap before input on the fresh iOS 27 simulator in UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption. The RN app passes there. No shipping source or retained app was changed, and no iPhone shipping parity is claimed. The repository Quality gate passes all 15 checks; the full test tiers and independent review are continuing.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6228232571,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2931#issuecomment-6228576281",
+      "body": "Merged in d2262c3e7628d8983520fffb1d8a4a124287ff41 via [PR 2967](https://github.com/KyleMit/Splotch/pull/2967), reviewed at fc9a48d1b1d389df1ddcfb84274e6b50f3561826. All 15 applicable checks passed on that exact head, with four intentional WebKit gate skips; both authorized Claude rounds completed in one conversation and every thread is resolved.\n\nNative near-2× proof passed on Galaxy and a fresh iPhone iOS 27 simulator: whole Appearance/Sound/Tool Drawer words, independent switch on/off taps, one-finger scroll and normal-size reset after close/reopen, in both themes and with enlarged OS text. Implementation Codex, campaign-handler Codex and Claude inspected the private comparisons described in the PR. Normal-size geometry is preserved; taller wrapped rows satisfy the required whole-word readability.\n\nExplicit limits: at 3×, Accessibility clips in both RN and current-source shipping Galaxy builds; RN switches remain reachable. The wrapped action divider is cosmetic. Current-source shipping Debug and Release apps trap before input on fresh iOS 27, so that shipping comparison is unavailable under the user's standing unreachable-cell disposition. No native iOS shipping parity is inferred from the RN observations. Current Galaxy shipping control is Debug at 54f56ba892827a336b37087dcaeb3e0c7860fd84. All new media stays private. Closing the issue's near-2× acceptance scope.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6228576281,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:20.914Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2775",
+    "title": "Fit the native paper to the screen so phones in portrait get a full-height page",
+    "issue_number": 2775,
+    "body": "**What:** Native paper is a fixed 1024x768 landscape page. On a phone in portrait, which becomes the default with the orientation lock (#2758), it fills only the width: about a third of the screen, with blank space above and below. The shipping app fits its paper to the screen it is drawn on and keeps that shape after rotation (ADR-0050).\n\n**Why:** On a phone the drawing area is the product, and toddlers mostly hold phones upright.\n\n**Where:** `experiments/native-architecture/src/drawing/model.ts` (`PAPER_WIDTH`/`PAPER_HEIGHT`), `paperSpace.ts` (which already has an `adopted` paper reference carrying `cssWidth`/`cssHeight`), `PaperWorkspace.tsx`, `NativePaper.tsx`, the Skia ink layer (#2771), and PNG capture and export. The beta is a fresh start with no legacy drawings, so the stored format can change.\n\n**Done when:** a new drawing on a portrait phone fills the paper area below the color bar. Rotating keeps the picture's shape the way ADR-0050 describes. Save, reopen, export and AI all use the drawing's own paper shape on web, Android and iOS.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      },
+      {
+        "name": "area:drawing-engine",
+        "color": "ededed",
+        "description": null
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T05:10:46Z",
+    "updated_at": "2026-10-13T08:44:27Z",
+    "closed_at": "2026-10-13T08:44:27Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2775",
+    "display_title": "Fit the native paper to the screen so phones in portrait get a full-height page"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2775#issuecomment-6141783598",
+      "body": "Done in #2786 (merged into `codex/native-migration`): new drawings take the shape of the paper area they are first drawn in (full-height on upright phones) and keep it through rotation, on Skia native and SVG web, with export and AI following the drawing's shape. Tall coloring art continues in #2785.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6141783598,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

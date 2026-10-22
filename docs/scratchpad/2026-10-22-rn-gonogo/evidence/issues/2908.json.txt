@@ -1,0 +1,215 @@
+{
+  "observedAt": "2026-10-22T16:51:55.230Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2908",
+    "title": "Ink the first native stroke after closing Settings or clearing the page",
+    "issue_number": 2908,
+    "body": "**What:** on the iPhone simulator, the React Native candidate drops the first one to three strokes after Settings closes, and after a Clear. Those swipes leave no ink, and later strokes ink normally. Shipping inks every one of the same simulated swipes. This was seen during the #2900/#2905 device passes (PRs #2906, #2907) and also happens on the base build without those changes.\n\n**Why it matters:** for a toddler, a stroke that doesn't appear right after closing Settings or clearing the page reads as \"the app is broken\".\n\n**Where to look:**\n- The paper's PanResponder and contact responder after a modal closes: is the Modal's exit animation or scrim still taking touches?\n- The Clear animation's input lease.\n- Anything that holds `screen.drawing` or a command lock past the visible end of the transition.\n\nFirst check whether real touches (not only `simctl` / Maestro swipes) reproduce it, on iOS and on Android.\n\n**Done when:** the first stroke after closing any dialog, and after a Clear, inks on iOS and Android as in shipping, and a mounted test drives a contact immediately after close and after clear, with a negative control.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 8,
+    "created_at": "2026-10-14T23:48:24Z",
+    "updated_at": "2026-10-17T04:48:32Z",
+    "closed_at": "2026-10-17T04:48:32Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2908",
+    "display_title": "Ink the first native stroke after closing Settings or clearing the page"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6183382275",
+      "body": "Bounded follow-up on the Android emulator: shipping inked all three synthetic strokes begun 250 ms after closing Settings; the integrated RN candidate still permanently missed the first stroke (two of three visible both immediately and one second after all fingers lifted).\n\nOne instrumented warm Release run traced paper readiness, responder admission and contact completion. The missing stroke produced no DrawingSurface ready/grant/start/end event; the other two reached the paper with valid native touch history and completed with drawing inactive. This narrows the loss to before paper admission, but does not establish a native Modal/window-routing cause. Physical touches and the iOS case still need verification.\n\nA proposed 200 ms dismissal-deadline fallback did not fix the device sequence and was removed along with its test; it is not shipping as a claimed fix. Clear and Save input-lease improvements are being shipped separately. This issue stays open.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6183382275,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6195538655",
+      "body": "The new physical Galaxy comparison reproduces the gap in a fresh Release probe built from clean 15f14910e778704457793115442970065203f3f8 (APK SHA256 3942cadccf4aa49ac592cefbf88364c1efe2fa03e068a3eb5831da755792c231). Existing release sourcemap contents for the paper/input/modal owners byte-match that commit, and the APK’s Hermes bundle matches the generated bundle. Shipping is the preserved debug-signed 1.6 baseline.\n\nThis is a new matched UiAutomator2 synthetic-touch case, not a recovered original trace. On the measured 1080×2340 screen, the single-pointer action sequence taps the settled Close centre (probe 900,320; shipping 906,313), pauses 250 ms, then draws three separate 400 ms swipes from x250 to x850 at y650,1350,1850, with 150 ms after each lift. Probe shows two new horizontal bands and misses the first; shipping shows all three. Baseline ink is preserved in the images; the preliminary Clear tap did not activate Clear and is not counted as Clear proof. Widths/settings were not normalized, so these compare stroke admission rather than complete visual parity.\n\n| Baseline before the action sequence: shipping left / RN right | Result: shipping left / RN right |\n| --- | --- |\n| ![Baseline](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/native-input-galaxy-20261015/native-input-galaxy-bands-before-pair.png) | ![Result](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/native-input-galaxy-20261015/native-input-galaxy-bands-after-pair.png) |\n\nNative drawing, cohort Undo, toolbar-descendant Ctrl+Z, text-field exclusion and Escape separately passed. A staggered held-paper/second-toolbar action was rejected identically by both apps; that path remains unproved. The current experiment has no native event/window trace establishing a cause, and this issue stays open while the path before paper admission is investigated. No dismissal-deadline workaround is being represented as a fix.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6195538655,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6197303286",
+      "body": "The recovered Galaxy trace narrows the post-Settings missed stroke on 15f14910e778704457793115442970065203f3f8. In the same in-call Close → 250 ms → three 400 ms bands sequence, the first band's DOWN reached the closing modal at +264 ms, with input disabled. It produced no main-window, native paper, or JS paper packet. The custom 200 ms exit completed at +266 ms; the modal detached at +287 ms. The later two bands reached the main window and real paper owner and were admitted. Both windows had the same animation attribute; the missing DOWN occurred before custom completion, so an additional system-window animation is not needed to explain this failure.\n\nA bounded fix moves route synchronization and custom animation start into layout effects; durations, curves, completion-based dismissal and stale-epoch guards remain unchanged. Its mounted ordering regression fails against the actual old motion owner and passes after exact restoration. PR #2933 remains open pending final composed gates and five native trials each for same-base old owner, restored fix and shipping. No native success claim is made yet. The instrumented APK/source/logs and original production APK are preserved privately; trace code was removed and the production probe restored. Shipping's installed APK is unchanged.\n\nCompleted controlled repeat on final source fc283bcfe5ee66accb239b1b037f390bfcdf7a38: every baseline was blank, and every critical sequence remained one Close → 250 ms → three 400 ms bands action call.\n\n| Arm | Trials | Bands received in every trial |\n| --- | --- | --- |\n| Same final base, only two hooks reverted | 5 | 2 of 3; first absent |\n| Final two-layout-effect source | 5 | 2 of 3; first absent |\n| Shipping, installed APK unchanged | 5 | 3 of 3 |\n\nThe two-effect change does not fix the native loss. Purple/Pen is visibly selected; stored stroke widths differ, so this is contact-admission evidence, not pixel parity or performance. An absent shipping Brush menu was initially misread as inert input; direct Settings worked and all five shipping trials ran. Initial shipping drawer state was restored. The exact fixed-source trace is now observing the remaining native boundary before any further product change; issue #2908 stays open.\n\nA second bounded production experiment on the same fc283bcfe5ee66accb239b1b037f390bfcdf7a38 base derives closing state during render and reports successful non-iOS exit completion directly, retaining the existing durations, curves, iOS dismissal, and epoch rules. Its first-commit and completion-order regressions fail with their actual previous owners and pass after exact restoration; canceled and repeated callbacks are covered. However, all five native repetitions still receive only bands 2 and 3, each from a blank baseline. Root independently verified APK SHA-256 e32b8151ea574d4df72b5215352507772e3ffd8fed1d24a51dc3391316d71e58 and inspected the first result screenshot. This remains an uncommitted hypothesis, not a native fix; the prepared existing-owner trace will locate the remaining boundary. Shipping's APK remains unchanged.\n\nThe render-derived/direct-report experiment's existing-owner trace also draws 2 of 3 bands. Its extended trace separates final closing-route return, card return, layout, tween construction and actual start dispatch. In that instrumented run, final route return → shell render took 7 ms, phase rerender 1 ms, and card return → motion layout effect 26 ms; construction and actual start call/return were within one logged millisecond. These are observed trace intervals, not an uninstrumented performance result. Completion reported dismissal immediately. The first DOWN dispatched to the modal after completion, but its Android event timestamp maps to approximately 2 ms before completion (about 1 ms clock-alignment precision), so dispatch ordering alone does not establish an extra system-window-animation cause. No first-band main-window, paper-native, or JS paper packet exists; later bands are accepted. All temporary source bytes were restored exactly, the uninstrumented production experiment APK was reinstalled and verified, and shipping stayed unchanged. The next bounded source check targets the descendant/render-commit segment while preserving inert and callback guards.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6197303286,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6207840583",
+      "body": "The preserved row-memoization experiment does **not** fix the native first-stroke loss. It remains unmerged; no fix or final acceptance is claimed.\n\nFresh physical-Galaxy controls used one UiAutomator2 action call for Close → 250 ms → three separate 400 ms horizontal bands, with 150 ms after each lift. Every trial began with a captured blank baseline; actual Close bounds were read from accessibility (RN centre 900,320; separate shipping baseline 897,313).\n\n| Arm | Trials | Visible bands in every trial |\n| --- | --- | --- |\n| Prior RN Release, exact 00d0345b4ba8e50fbd54afeb7244fbee150a76e4 APK (product bytes equal the merged 04539e93d0ca4900dc620c572e41a8f94a581694 base) | 5 | 2 of 3; first absent |\n| Recovered memoization after normal merge of that base, local unpushed 993d3f043e5b72aa84eae157734c980cb3916240 | 5 | 2 of 3; first absent |\n| Shipping v1.6.0 from d8b86469f63c57a06a9de45664a42eea15b99eb0, **debug**, local-only `.baseline` applicationIdSuffix | 5 | 3 of 3 |\n\nCandidate APK SHA-256 `80a3f6ebaea42021cf5c03e270af6877e5271c1714f8dff654ab8786ea5399d3`, 47,977,207 bytes, arm64 Release; the sourcemap's actual row-owner source and the APK's packaged Hermes bundle matched the build outputs. Durable development certificate matched before `install -r`. Shipping baseline APK SHA-256 `d91213dc667adeb3ed8d37d1568a0f7a21e7ba333054b20c31b6513d7a8a7bef`, 13,268,325 bytes. The retained `art.splotch.app` was never used for these inputs or published.\n\nA separate post-Clear control passed for both prior RN and the shipping baseline: five trials each received all three bands. A distinct vertical seed mark was present before every critical Clear and absent afterward, excluding an unactivated Clear as a false pass. This run reproduces a Settings-close failure, not a remaining Clear admission failure. These are synthetic contact-admission observations, not real-finger latency or pixel/performance parity.\n\nOne bounded diagnostic reuses the existing eight-owner trace packet, retaining the newer keyboard-focus behavior. Closing-route return → shell render was 17 ms, card return → motion layout 21 ms, construction/start within the same logged millisecond; exit start → completion 212 ms. The first DOWN dispatched to the inert modal 18 ms after JS completion, but its Android event timestamp maps to about 1 ms before completion (roughly 1 ms clock alignment), so dispatch order does not establish an extra system-window-animation cause. The modal detached 44 ms after completion. Later bands reached the main window and actual paper owner; the first did not. These are instrumented intervals, not an uninstrumented performance result. Original captures and trace remain private/machine-local. All eight diagnostic source files were restored exactly to the candidate commit, the uninstrumented candidate APK was reinstalled, and boot and foreground package were verified before independent work resumed.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6207840583,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6212769470",
+      "body": "Current controls narrow the Settings-close report; no new fix is claimed. Issue #2908 stays open for the remaining native acceptance.\n\nThe current RN arm64 Release artifact is from b2d4e1c681a3b78b723c04e3937d17d75eb7dbe2, whose product source matches merged migration base daa176fd74faaad00e53066abed2f1048c2261b6. On the physical Galaxy SM-G990U1 / API 36, Raised / light / portrait, one blank-baseline Close sequence received only bands two and three with a 250 ms pause after Close pointer-up. Changing only that pause to 500 ms received all three. Both results were unchanged after another second. A separate current post-Clear control used a distinct Purple seed, verified auto-save off and actual removal of that seed, then received all three Blue bands starting 250 ms after Clear pointer-up. This supports current post-Clear admission in that control; it does not establish every dialog or iOS behavior.\n\nA fresh, explicitly owned API 36 emulator had no retained art.splotch.app before installation. It compared the same RN Release with shipping source 54f56ba892827a336b37087dcaeb3e0c7860fd84, Debug, local-only art.splotch.app.baseline.current. Both used the same emulator, 1080×2340 / density 480 / font scale 1, Raised / light / portrait, stock Purple/Pen, Coloring disabled and system motion enabled. Every repetition had verified blank-before and blank-after states, immediate and one-second observations, and bounded Undo cleanup.\n\n| App | Received strokes in three 250 ms repetitions | Received strokes in three 500 ms repetitions |\n| --- | --- | --- |\n| Newer shipping Debug suffix | 3, 3, 2 | 3, 3, 3 |\n| Current RN arm64 Release | 2, 3, 2 | 3, 3, 3 |\n\nThe fixed 250 ms probe therefore does not isolate an RN-only loss against this shipping owner. These small samples do not establish a comparative failure rate, real-finger latency, pixel equivalence or performance parity. Shipping produced unexplained wrapped/partial stroke shapes on this emulator; actual Undo counts and the blank controls independently support the reported accepted-stroke counts.\n\nA separate instrumented shipping 250 ms run recorded all three DOWN/UP pairs targeting the real canvas at the requested coordinates, with the Settings dialog already closed at the first DOWN. It accepted three strokes and did not reproduce the miss. The temporary listener was removed; this diagnostic is not a causal explanation of an uninstrumented failure.\n\nThe earlier physical v1.6.0 comparison remains valid for that older source, but it predates the authored exit-wait behavior in newer shipping. It cannot alone establish a regression against current shipping. Likewise, the earlier RN trace generated its missing first DOWN approximately one millisecond before animation completion; dispatch after completion did not establish a contact begun after retirement.\n\nNo production patch, PR or rival round was added by this control. The failed memoization and callback-order experiments remain rejected; the unrun onset assertions are not promoted into a product contract. A current-shipping physical-Galaxy comparison awaits the user's explicit boundary decision, and iOS plus settled-dismissal acceptance remain pending. The independent worker used existing native primitives and only owned fresh-test resources; retained shipping installs received no input or publication. Original media remains private. Other campaign units continue through their qualification loop.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6212769470,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6228698945",
+      "body": "The authorized current-shipping physical-Galaxy control is complete: 80 unique trials, ten interleaved repetitions per app, action and pause.\n\n| App | Close 250 ms, failed trials | Close 500 ms, failed trials | Clear 250 ms, failed trials | Clear 500 ms, failed trials |\n| --- | --- | --- | --- | --- |\n| RN arm64 **Release**, b0dbc96dfa4e4f8d4a2731aabd78017817ddd07e | 10/10 | 0/10 | 0/10 | 0/10 |\n| Current shipping **Debug**, 54f56ba892827a336b37087dcaeb3e0c7860fd84, separate `art.splotch.app.baseline.current` | 0/10 | 0/10 | 0/10 | 0/10 |\n\nEvery RN Close-at-250-ms trial received bands two and three only. Every other completed trial received all three. Actual Undo counts agree in every row. This exceeds the user's allowed one-in-ten comparative difference for the 250 ms Close cell; issue #2908 stays open for a bounded fix or an explicit accepted disposition.\n\nRN production bytes match merged migration d2262c3e7628d8983520fffb1d8a4a124287ff41; the intervening final review commit changed tests only. APK SHA-256: `401095385f3d34b9472a1322bbeef0bca1a43301bb547f100a9e930ded47fcd3`. The approved shipping APK remains the verified `057d3465c028d63610ca8f929ab6ed13bde0ce68d32cbc394242df4c9dd0c7b6` artifact.\n\nBoth arms used the same physical Galaxy SM-G990U1 / API 36, Raised/light/portrait, Pen Size 3, Blue ink, Coloring off, Auto-save off, Sound on, OS font scale 1.0 and system motion enabled. Each critical sequence was one UiAutomator2 action request: actual Close bounds or actual drag-Clear, pointer-up, the named pause, then three 400 ms horizontal bands at y650/1350/1850 with 150 ms between them. App order alternated. Each trial began blank with empty history, retained earliest-available and one-second screenshots, and ended with bounded Undo cleanup back to blank/disabled Undo. Clear additionally began with a distinct vertical seed, proved its removal, admitted three new bands, and used five Undo steps; the fourth restored the seed and the fifth removed it. Root inspected representative originals for both apps. All 40 original pair recordings and captures remain private and were hash-verified into durable local recovery. This is synthetic contact-admission evidence; no real-finger latency or performance claim is made.\n\nThe remaining difference is bounded to the 250 ms Close cell under these settings. The earlier animation-completion-edge trace is a hypothesis for this control, not fresh causal timing evidence. Failed memoization, layout/callback-order and deadline experiments remain rejected. An isolated candidate starts the existing Settings exit from Close before descendant commit, retaining the authored duration, cancellation and iOS dismissal authority. Focused mounted tests pass; native qualification and full gates are pending, so no production fix is claimed.\n\nThe composed immediate-after-retirement/Clear regression drives the real contact and history owners with a semantic renderer boundary. Omitting the actual Settings input release fails the two Close cases; keeping the real paper lock after Clear fails the two Clear cases. Exact owner bytes were restored and all four positive cases pass. These tests remain unlanded.\n\nCurrent-source shipping Debug and Release apps trap before input on the fresh iOS 27 simulator, so the requested current iOS pairing is unavailable under the user's standing unreachable-cell disposition. Retained shipping installs received no input or publication.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6228698945,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6229089903",
+      "body": "Complete candidate physical-Galaxy result, with the same 80-trial protocol as the [original control](https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6228698945):\n\n| App | Close250 failed trials | Close500 failed trials | Clear250 failed trials | Clear500 failed trials |\n| --- | --- | --- | --- | --- |\n| RN arm64 **Release**, eca9915a8c8a46e994c062e64199aa701b6b1ec1 | 1/10 | 0/10 | 0/10 | 0/10 |\n| Current shipping **Debug**, 54f56ba892827a336b37087dcaeb3e0c7860fd84, `art.splotch.app.baseline.current` | 0/10 | 0/10 | 0/10 | 0/10 |\n\nRN Close250 received 3, 3, 3, 3, 3, 3, 3, 3, 2, 3 bands. Every trial in every other cell received three. All 80 rows are unique and complete; actual Undo agrees with visible admission, and every Clear seed was removed and recovered during bounded Undo cleanup. All 40 original pair recordings and captures were hash-verified into durable private recovery.\n\nThis meets the user's explicit tolerance of at most one additional failed trial in ten in each action/pause cell. It does not show zero misses. The candidate starts the existing Settings exit from Close before descendant layout work, retaining the authored duration/curves, cancellation guards, route epochs and iOS native dismissal authority. No deadline or new native-window policy was added.\n\nFresh APK SHA-256 `97e19cff6841165930926d4aedb10308023f6bcdc80cc7dd1be470d25071b2c4`; verified `art.splotch.migration.probe`, development signing certificate identical to the prior probe, packaged Hermes bundle identical to the freshly generated bundle, and source-map content identical to the committed Settings source. All 15 local Quality checks pass. Browserless passed all six tiers, native-web export/precache passed at 866,195/870,798 startup bytes, and full Playwright passed 1,172 tests. Both mounted admission guards and causal negatives pass as recorded above; the four admission cases also pass on base and do not simulate native-driver timing. Six separate backdrop/order/lifecycle cases fail on the base owner. Native A/B evidence qualifies the timing change.\n\nBoth qualified arms use Blue/Pen/Size 3, Raised/light/portrait, Coloring off, Auto-save off, Sound on at 50%, font scale 1.0 and system motion enabled. The probe restart reset ink to Purple: one earlier setup pair began before that was caught in its preflight image. That complete pair and originals are preserved separately and excluded from these counts. Before qualified trial one, Blue was explicitly restored on both apps, Pen/Size 3 verified, blank paper and disabled Undo verified, and controls collapsed. Actual Undo admission agrees with each counted row. Root inspected representative original captures; all media stays private.\n\nFresh iPhone simulator / iOS 27 **Release** build of the same commit succeeded; main bundle SHA-256 `3a96e58847d92008af861e27ceacae317a640ba4053bea6d6797cd8616e26df6`, with both changed Settings sources verified against the committed bytes through its source map. A compound Close + 250 ms + contact request left Settings open, so that take is invalid and contributes no timed result. Separate settled native requests verified actual modal retirement, then one rendered contact and exactly one Undo. A separate Clear observation verified a distinct seed's removal, one rendered subsequent contact, and three Undo steps restoring then removing the seed; the probe ended blank with disabled Undo. Root inspected the original images and preserved the private 164-second video. These are unpaired settled observations, not the requested timed iOS comparison. Current-shipping Debug and Release still trap before input on this fresh runtime, so the pairing remains unavailable under the standing disposition.\n\nPR #2968 has completed both authorized Claude rounds in one conversation. Round one independently inspected the private comparisons and raw counts; its two nonblocking documentation findings were addressed. [Round two](https://github.com/KyleMit/Splotch/pull/2968#pullrequestreview-5556233970) found no new findings and reran the touched suites (26/26). Final head 6b0ac7a6c809245e55a0feaa5cb2c86907b46e0c adds only three comment lines to the qualified runtime candidate; emitted JavaScript for both files is identical and all 15 Quality checks were rerun successfully. Exact-head CI is finishing Browserless; the other 13 applicable Tests jobs and ADR integrity pass. Issue #2908 stays open pending the exact-head CI-green merge.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6229089903,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6229813812",
+      "body": "Done: PR #2968 merged into codex/native-migration as 10798745a6c5a373c403ee84b508a1bd75665cb7. Reviewed head 6b0ac7a6c809245e55a0feaa5cb2c86907b46e0c passed the complete expected CI set: all 14 applicable Tests jobs plus ADR integrity, with four conditionally excluded WebKit jobs. Both Claude rounds are complete, all findings addressed, and local full gates/native proof are recorded in the [comparison](https://github.com/KyleMit/Splotch/issues/2908#issuecomment-6229089903).\n\nGalaxy RN Release versus current-shipping Debug source 54f56ba892827a336b37087dcaeb3e0c7860fd84: failed trials per ten are Close250 1 versus 0; Close500, Clear250 and Clear500 all 0 versus 0. This meets the user's explicit comparative tolerance and retains the one observed miss as a limitation. Mounted immediate post-retirement/Clear admission guards and their causal negatives are landed. Current-source shipping traps before input on fresh iOS 27, so timed iOS pairing is unavailable under the standing user disposition; settled unpaired RN checks passed. Main and retained shipping installs remain untouched.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6229813812,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

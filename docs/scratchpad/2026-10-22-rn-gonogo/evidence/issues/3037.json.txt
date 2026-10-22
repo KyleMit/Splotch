@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:19.346Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3037",
+    "title": "Clear can stay held after the finger lifts (scripted drags right after a stroke)",
+    "issue_number": 3037,
+    "body": "Part of #2978 (crash hunt). Not a crash, but it blocks scripted Clear stress runs and may reach a real finger.\n\n## Symptom\n\nClear stays held after the finger lifts: the button stays lifted (in its dock, or out on the page where the drag left it) and the accept ring stays visible. Nothing commits or cancels until the next touch on Clear, which ends the stuck gesture.\n\n## Where it was seen\n\nAll on scripted W3C drags. A real finger has not been tried yet; it is on the owner's checklist.\n\n| Target | Build | Driver | Rate |\n| --- | --- | --- | --- |\n| iPad Pro 12.9-inch simulator, iOS 26.5 | e3819ab70986 and the 4cbd0b713093 fix | XCUITest through Appium | 2 of 5, then 1 of 3 grabs of Clear made right after a paper stroke |\n| Physical 12.9-inch iPad | 4cbd0b713093 | WDA through Appium | 1 of 2 Clear drags after a 24-stroke scribble |\n| API 36 tablet emulator | 645ffd4c2fff (before #3036) | UiAutomator2 | 1 of 1 Clear drag after a 24-stroke scribble |\n\nIn one simulator iteration, a drag that began on the Clear button drew a line on the paper instead. That touch never reached Clear's responder.\n\n## What the diagnostic build showed\n\nA simulator build that logged `clearResponder`'s handlers recorded `grant`, `touchStart`, moves and `release` for every drag that reached Clear. Two of the five drags produced no Clear event at all. So the hold is not a missing `onResponderRelease` on a gesture Clear owned. It looks like an earlier gesture's `active` drag that never finished, or a touch the paper claimed while Clear still showed a held state. The release path that shows the hold is not identified yet.\n\n## Next steps\n\n1. Try it by finger on both devices: draw, then grab Clear at once and let go short of the ring and past it.\n2. Log `createClearGesture`'s `down` early return (`active !== null`) and the gesture's `accepts()` state alongside the paper's contact claims.\n3. Check whether `useClearGesture`'s raw second-finger path (`onTouchStart` when `touches.length >= 2`) can be entered by a paper contact the responder system still counts.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T03:24:15Z",
+    "updated_at": "2026-10-20T05:16:24Z",
+    "closed_at": "2026-10-20T05:16:24Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3037",
+    "display_title": "Clear can stay held after the finger lifts (scripted drags right after a stroke)"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3037#issuecomment-6283957897",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3041, merged into codex/native-migration as 2a37becf4116ee5a5bdcca22327316d0bc9d5af6. The Clear button is now `box-only`, so it alone owns a press's touch while the face swaps its icon. Before, the swap replaced the native views a touch had landed on, and that touch's moves and lift were lost. A simulator build that logged the responder showed one lost lift per press before the fix, and a complete grant, press, release and end for every tap after it. Three quick taps show the tap-run coachmark on the slice's iPhone simulator and on RN web. Android was not driven; it is on the owner's session checklist.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6283957897,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:52.905Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2895",
+    "title": "Grey out disabled Flat tiles on iOS like shipping",
+    "issue_number": 2895,
+    "body": "**What:** on iOS, a disabled tile in Flat style shows a white rounded face with a full-colour glyph. Shipping shows a grey wash. It happens at a cold start in Flat as well as after a style switch.\n\n**Likely cause:** the disabled treatment uses a CSS `grayscale`/`contrast` filter, which React Native on iOS does not apply. It was found in PR #2893's device pass (`/tmp/splotch-2886/ios-rn-flat-coldstart.png` on the build host).\n\n**Where:** the Flat (`bare`) skin of `RsdIconButton` in `experiments/native-architecture/src/rsdDrawing/`, compared with shipping's disabled Flat tile styles.\n\n**Done when:**\n- A disabled Flat tile on iOS matches shipping's look, with no runtime filter: a pre-desaturated tint or equivalent.\n- Android still matches.\n- A renderer test pins the native disabled Flat style.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T20:49:05Z",
+    "updated_at": "2026-10-14T22:17:35Z",
+    "closed_at": "2026-10-14T22:17:35Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2895",
+    "display_title": "Grey out disabled Flat tiles on iOS like shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2895#issuecomment-6179729991",
+      "body": "Fixed by #2902, merged into `codex/native-migration`. On native, a disabled Flat tile now applies shipping's `grayscale(1) contrast(0.55) brightness(1.2)` directly to the tile's colours (icon, spinner, AI badge) instead of a runtime `filter`, which iOS RN partly ignores. The disabled Undo glyph reads #A3A3A3 in both apps on iOS and Android. The iOS Flat menu selection outline is tracked in #2900.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6179729991,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,3049 @@
+[
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      }
+    ],
+    "number": 3182,
+    "title": "RN parity protocol mapping check references a retired test at the go/no-go freeze",
+    "url": "https://github.com/KyleMit/Splotch/issues/3182"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      }
+    ],
+    "number": 3148,
+    "title": "Epic: retire SvelteKit and Capacitor before merging the RN migration into main",
+    "url": "https://github.com/KyleMit/Splotch/issues/3148"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 3142,
+    "title": "RN Android: action buttons lose their icons in the smallest split-screen pane",
+    "url": "https://github.com/KyleMit/Splotch/issues/3142"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 3122,
+    "title": "RN iPadOS: after a resized window is maximized, the palette slides under the status bar until rotation",
+    "url": "https://github.com/KyleMit/Splotch/issues/3122"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 3121,
+    "title": "RN iPadOS: in a resized window the window controls cover the first palette swatch",
+    "url": "https://github.com/KyleMit/Splotch/issues/3121"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 3091,
+    "title": "Investigate cloud compute and device options for parallel web, Android and iOS builds and testing",
+    "url": "https://github.com/KyleMit/Splotch/issues/3091"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 3084,
+    "title": "Build native probe apps on GitHub Actions instead of the developer Mac",
+    "url": "https://github.com/KyleMit/Splotch/issues/3084"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 3011,
+    "title": "Hydrate the RN web drawing screen in tiers so drawing goes live first",
+    "url": "https://github.com/KyleMit/Splotch/issues/3011"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 3007,
+    "title": "After RN cutover, serve every web page from one prerendered RN web app and retire SvelteKit",
+    "url": "https://github.com/KyleMit/Splotch/issues/3007"
+  },
+  {
+    "labels": [],
+    "number": 2985,
+    "title": "Keep native dialog titles, Settings choices and picker labels readable at maximum OS font",
+    "url": "https://github.com/KyleMit/Splotch/issues/2985"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACs4y0Hg",
+        "name": "in-progress",
+        "description": "Claimed by a ship-issue or ship-campaign session; excluded from pickup until the issue closes",
+        "color": "d93f0b"
+      }
+    ],
+    "number": 2978,
+    "title": "Verify complete RN device parity against independently sourced shipping comparators",
+    "url": "https://github.com/KyleMit/Splotch/issues/2978"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 2880,
+    "title": "Keep the selected swatch ring after closing Settings",
+    "url": "https://github.com/KyleMit/Splotch/issues/2880"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      }
+    ],
+    "number": 2868,
+    "title": "Keep the landscape palette's last swatch clear of the bottom safe-area inset",
+    "url": "https://github.com/KyleMit/Splotch/issues/2868"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 2841,
+    "title": "Render the Settings hub and sidebar rows in Quicksand",
+    "url": "https://github.com/KyleMit/Splotch/issues/2841"
+  },
+  {
+    "labels": [],
+    "number": 2696,
+    "title": "Retire the guarded node-forge local patch and advisory exception",
+    "url": "https://github.com/KyleMit/Splotch/issues/2696"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACs4y0Hg",
+        "name": "in-progress",
+        "description": "Claimed by a ship-issue or ship-campaign session; excluded from pickup until the issue closes",
+        "color": "d93f0b"
+      }
+    ],
+    "number": 2690,
+    "title": "Epic: Migrate Splotch to React Native and React Native Web",
+    "url": "https://github.com/KyleMit/Splotch/issues/2690"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      }
+    ],
+    "number": 2650,
+    "title": "Code-smell burndown campaign, 2026-10-03 overnight: everything outside web/",
+    "url": "https://github.com/KyleMit/Splotch/issues/2650"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1YviQ",
+        "name": "type:security",
+        "description": "Access, admin, privacy, or security hardening",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 2648,
+    "title": "Remove the braces GHSA-vfj7-8cjw-p6xm audit exception once braces 3.0.4 ships",
+    "url": "https://github.com/KyleMit/Splotch/issues/2648"
+  },
+  {
+    "labels": [],
+    "number": 2615,
+    "title": "iPhone product performance improvement campaign",
+    "url": "https://github.com/KyleMit/Splotch/issues/2615"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 2608,
+    "title": "Make the dead-code gate catch production exports only tests import",
+    "url": "https://github.com/KyleMit/Splotch/issues/2608"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 2595,
+    "title": "Decide whether to delete the unused ruler skill-fork layer",
+    "url": "https://github.com/KyleMit/Splotch/issues/2595"
+  },
+  {
+    "labels": [],
+    "number": 2567,
+    "title": "Design polish: highlighter selection and outbound-link marks",
+    "url": "https://github.com/KyleMit/Splotch/issues/2567"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      }
+    ],
+    "number": 2562,
+    "title": "Design polish: feedback form prompts, controls, status, and optional drawing attachment",
+    "url": "https://github.com/KyleMit/Splotch/issues/2562"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2528,
+    "title": "Record the starting tool state in input recordings so replays start where the device did",
+    "url": "https://github.com/KyleMit/Splotch/issues/2528"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2527,
+    "title": "Make the Android emulator scripts target the emulator and dev server they started",
+    "url": "https://github.com/KyleMit/Splotch/issues/2527"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      }
+    ],
+    "number": 2467,
+    "title": "Code-smell burndown campaign, 2026-09-29 (8 hours)",
+    "url": "https://github.com/KyleMit/Splotch/issues/2467"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      }
+    ],
+    "number": 2465,
+    "title": "Test whether display: standalone launches without Chrome's bar flashing",
+    "url": "https://github.com/KyleMit/Splotch/issues/2465"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2464,
+    "title": "Find why the installed app loads its page twice during a launch",
+    "url": "https://github.com/KyleMit/Splotch/issues/2464"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      }
+    ],
+    "number": 2463,
+    "title": "Try moving the hidden drawer tools after the visible controls, and decide whether it is worth shipping",
+    "url": "https://github.com/KyleMit/Splotch/issues/2463"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      }
+    ],
+    "number": 2443,
+    "title": "Code-smell burndown campaign, 2026-09-28 (3 hours)",
+    "url": "https://github.com/KyleMit/Splotch/issues/2443"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      }
+    ],
+    "number": 2376,
+    "title": "Clean-code campaign: fix the findings of the 2026-09-27 principles review",
+    "url": "https://github.com/KyleMit/Splotch/issues/2376"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MCpg",
+        "name": "type:docs",
+        "description": "Documentation",
+        "color": "0075ca"
+      }
+    ],
+    "number": 2371,
+    "title": "Add a conceptual map before the architecture source inventory",
+    "url": "https://github.com/KyleMit/Splotch/issues/2371"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 2369,
+    "title": "Add a pre-posting checker for commit SHA links in PR text",
+    "url": "https://github.com/KyleMit/Splotch/issues/2369"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2340,
+    "title": "Attribute the Android native clear-drawing post-action max",
+    "url": "https://github.com/KyleMit/Splotch/issues/2340"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1W97w",
+        "name": "area:dark-mode",
+        "description": "Dark-mode theming and assets",
+        "color": "24292f"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2339,
+    "title": "Android web compact Night Mode toggle reads a three-beat frame past the ADR-0162 allowance",
+    "url": "https://github.com/KyleMit/Splotch/issues/2339"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2277,
+    "title": "Stabilize the iPad native landscape-dark coloring-picker witness",
+    "url": "https://github.com/KyleMit/Splotch/issues/2277"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2275,
+    "title": "Prove the untested iPad routes in the rig preflight",
+    "url": "https://github.com/KyleMit/Splotch/issues/2275"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8SA",
+        "name": "area:release",
+        "description": "Release and deployment automation",
+        "color": "9e6a03"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrinow",
+        "name": "triage:needs-human",
+        "description": "Blocked on human-only integration — external accounts, credentials, consoles, purchases",
+        "color": "f66a0a"
+      }
+    ],
+    "number": 2237,
+    "title": "Run the first ADR-0173 commit check on iPadOS 26.6",
+    "url": "https://github.com/KyleMit/Splotch/issues/2237"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2234,
+    "title": "Check whether the iPad native drawing-sounds toggle red reproduces",
+    "url": "https://github.com/KyleMit/Splotch/issues/2234"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2230,
+    "title": "Bring the AI waiting print's first frame under the gate on iPad native",
+    "url": "https://github.com/KyleMit/Splotch/issues/2230"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2228,
+    "title": "Remove the stall when the Magic brush is selected on iPad native",
+    "url": "https://github.com/KyleMit/Splotch/issues/2228"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2227,
+    "title": "Remove the stall when a selected coloring page starts its landing animation",
+    "url": "https://github.com/KyleMit/Splotch/issues/2227"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2226,
+    "title": "Remove the expensive frame when a dialog closes after its exit animation",
+    "url": "https://github.com/KyleMit/Splotch/issues/2226"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1W97w",
+        "name": "area:dark-mode",
+        "description": "Dark-mode theming and assets",
+        "color": "24292f"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2225,
+    "title": "Bring the theme-switch crossfade under the action gate",
+    "url": "https://github.com/KyleMit/Splotch/issues/2225"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 2224,
+    "title": "Find why iPad Safari's frame beat sometimes reads 120 Hz",
+    "url": "https://github.com/KyleMit/Splotch/issues/2224"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 2211,
+    "title": "Let an unattended campaign capture the iPad web action sweep over a secure origin",
+    "url": "https://github.com/KyleMit/Splotch/issues/2211"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      }
+    ],
+    "number": 2210,
+    "title": "September 2026 performance campaign 2",
+    "url": "https://github.com/KyleMit/Splotch/issues/2210"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ5w",
+        "name": "type:test",
+        "description": "Test coverage or CI test infrastructure",
+        "color": "bfd4f2"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 2151,
+    "title": "Track the three E2E failures the 2026-09-22 flake hunt saw exactly once",
+    "url": "https://github.com/KyleMit/Splotch/issues/2151"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ5w",
+        "name": "type:test",
+        "description": "Test coverage or CI test infrastructure",
+        "color": "bfd4f2"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 2150,
+    "title": "Record the two E2E specs that fail deterministically in the cloud container and pass in CI",
+    "url": "https://github.com/KyleMit/Splotch/issues/2150"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ5w",
+        "name": "type:test",
+        "description": "Test coverage or CI test infrastructure",
+        "color": "bfd4f2"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 2149,
+    "title": "Chase the parental gate that closes mid-solve on the bundled privacy page in the cloud container",
+    "url": "https://github.com/KyleMit/Splotch/issues/2149"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ5w",
+        "name": "type:test",
+        "description": "Test coverage or CI test infrastructure",
+        "color": "bfd4f2"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 2148,
+    "title": "Chase the privacy-route Parent Center pane that never reports itself settled in the cloud container",
+    "url": "https://github.com/KyleMit/Splotch/issues/2148"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 2096,
+    "title": "Color-blind friendly palette mode: spike findings and proposed per-deficiency grids",
+    "url": "https://github.com/KyleMit/Splotch/issues/2096"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 2094,
+    "title": "Add a High contrast mode across web, iOS, and Android",
+    "url": "https://github.com/KyleMit/Splotch/issues/2094"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 2090,
+    "title": "Accessibility: settings section, calm and contrast modes, motor and handedness accommodations",
+    "url": "https://github.com/KyleMit/Splotch/issues/2090"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 2089,
+    "title": "Add an opt-in RUM debug route in a separate, non-shipping diagnostic build",
+    "url": "https://github.com/KyleMit/Splotch/issues/2089"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 1884,
+    "title": "Investigate the undo button re-arming after the tiled history is exhausted",
+    "url": "https://github.com/KyleMit/Splotch/issues/1884"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACs4y0Hg",
+        "name": "in-progress",
+        "description": "Claimed by a ship-issue or ship-campaign session; excluded from pickup until the issue closes",
+        "color": "d93f0b"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 1870,
+    "title": "Re-run performance captures for each animation retuned in the motion pass",
+    "url": "https://github.com/KyleMit/Splotch/issues/1870"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 1624,
+    "title": "Adopt Node 26 when it reaches LTS",
+    "url": "https://github.com/KyleMit/Splotch/issues/1624"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACs61IdQ",
+        "name": "type:audit",
+        "description": "Audit-skill provenance marker that fix-audits burns down; may coexist with a substantive type:*",
+        "color": "cc317c"
+      }
+    ],
+    "number": 1583,
+    "title": "Route free-generation settlement in the synchronous generate-image path through the job context the background path already uses",
+    "url": "https://github.com/KyleMit/Splotch/issues/1583"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      }
+    ],
+    "number": 1567,
+    "title": "September 2026 performance campaign",
+    "url": "https://github.com/KyleMit/Splotch/issues/1567"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 1554,
+    "title": "Reproduce the safe-area matrix iphone-notch-44 landscape-right retried pass",
+    "url": "https://github.com/KyleMit/Splotch/issues/1554"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrinOw",
+        "name": "triage:easy-win",
+        "description": "Fully automatable, no clear downside beyond implementation cost",
+        "color": "2da44e"
+      }
+    ],
+    "number": 1528,
+    "title": "The ADR-0138 capture evidence corpus is ~30x its own budget — audit the promotion path",
+    "url": "https://github.com/KyleMit/Splotch/issues/1528"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1QHgA",
+        "name": "area:asset-gen",
+        "description": "Asset-generation image pipeline (tools/asset-gen)",
+        "color": "e99695"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 1525,
+    "title": "Move tools/asset-gen/ideas-exploration out of the production repo into an archive",
+    "url": "https://github.com/KyleMit/Splotch/issues/1525"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      }
+    ],
+    "number": 1524,
+    "title": "Coloring-page thumbnails render broken in the Android native build",
+    "url": "https://github.com/KyleMit/Splotch/issues/1524"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1YviQ",
+        "name": "type:security",
+        "description": "Access, admin, privacy, or security hardening",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Yvjg",
+        "name": "area:admin-security",
+        "description": "Admin console, access codes, quotas, ops",
+        "color": "a63b72"
+      }
+    ],
+    "number": 1451,
+    "title": "Enforce an entropy floor on managed access codes",
+    "url": "https://github.com/KyleMit/Splotch/issues/1451"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 1450,
+    "title": "Decide whether a drawing should survive a reload or crash",
+    "url": "https://github.com/KyleMit/Splotch/issues/1450"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 1442,
+    "title": "Add a quality reference skill routing to docs/QUALITY.md",
+    "url": "https://github.com/KyleMit/Splotch/issues/1442"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8SA",
+        "name": "area:release",
+        "description": "Release and deployment automation",
+        "color": "9e6a03"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      }
+    ],
+    "number": 1441,
+    "title": "Read Play Console vitals and Xcode Organizer crash data",
+    "url": "https://github.com/KyleMit/Splotch/issues/1441"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZAGw",
+        "name": "type:perf",
+        "description": "Performance / responsiveness",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 1440,
+    "title": "Read CrUX field data for splotch.art",
+    "url": "https://github.com/KyleMit/Splotch/issues/1440"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MCpg",
+        "name": "type:docs",
+        "description": "Documentation",
+        "color": "0075ca"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACsM6y4Q",
+        "name": "reviewed",
+        "description": "Review pass complete — ready for the project ToDo queue",
+        "color": "1f883d"
+      }
+    ],
+    "number": 1437,
+    "title": "Write the child wellbeing commitment",
+    "url": "https://github.com/KyleMit/Splotch/issues/1437"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1YviQ",
+        "name": "type:security",
+        "description": "Access, admin, privacy, or security hardening",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      }
+    ],
+    "number": 1435,
+    "title": "Enable CodeQL and secret scanning",
+    "url": "https://github.com/KyleMit/Splotch/issues/1435"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MCpg",
+        "name": "type:docs",
+        "description": "Documentation",
+        "color": "0075ca"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACsM6y4Q",
+        "name": "reviewed",
+        "description": "Review pass complete — ready for the project ToDo queue",
+        "color": "1f883d"
+      }
+    ],
+    "number": 1430,
+    "title": "Publish an accessibility statement",
+    "url": "https://github.com/KyleMit/Splotch/issues/1430"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      }
+    ],
+    "number": 1427,
+    "title": "Quality campaign: close the gaps behind docs/QUALITY.md",
+    "url": "https://github.com/KyleMit/Splotch/issues/1427"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      }
+    ],
+    "number": 1425,
+    "title": "Keep @types/node aligned with the supported Node major",
+    "url": "https://github.com/KyleMit/Splotch/issues/1425"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      }
+    ],
+    "number": 1386,
+    "title": "Suppress Chrome's pull-to-refresh indicator on the drawing route",
+    "url": "https://github.com/KyleMit/Splotch/issues/1386"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      }
+    ],
+    "number": 1313,
+    "title": "Notch Band fails to paint on most Android cold starts — layout.safeArea keeps a stale zero",
+    "url": "https://github.com/KyleMit/Splotch/issues/1313"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 1312,
+    "title": "iPad paints a Notch Band with no cutout — iPadOS 26 reports a 32px top inset, clearing the 30px threshold",
+    "url": "https://github.com/KyleMit/Splotch/issues/1312"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      }
+    ],
+    "number": 1194,
+    "title": "Restore the drawing when undo follows a blank landscape rotation on iOS",
+    "url": "https://github.com/KyleMit/Splotch/issues/1194"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrindg",
+        "name": "triage:needs-device",
+        "description": "Needs hands on a physical device to verify — exact steps live in an issue comment",
+        "color": "1f6feb"
+      }
+    ],
+    "number": 1103,
+    "title": "Reject forearm-sized contact patches on drawing chrome",
+    "url": "https://github.com/KyleMit/Splotch/issues/1103"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8SA",
+        "name": "area:release",
+        "description": "Release and deployment automation",
+        "color": "9e6a03"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrinOw",
+        "name": "triage:easy-win",
+        "description": "Fully automatable, no clear downside beyond implementation cost",
+        "color": "2da44e"
+      }
+    ],
+    "number": 1098,
+    "title": "Embed build provenance in native release artifacts and refuse same-version staleness at publish",
+    "url": "https://github.com/KyleMit/Splotch/issues/1098"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1YviQ",
+        "name": "type:security",
+        "description": "Access, admin, privacy, or security hardening",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Yvjg",
+        "name": "area:admin-security",
+        "description": "Admin console, access codes, quotas, ops",
+        "color": "a63b72"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 1097,
+    "title": "Durable daily budgets for managed access codes (and durable oracle limits)",
+    "url": "https://github.com/KyleMit/Splotch/issues/1097"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrinow",
+        "name": "triage:needs-human",
+        "description": "Blocked on human-only integration — external accounts, credentials, consoles, purchases",
+        "color": "f66a0a"
+      }
+    ],
+    "number": 1077,
+    "title": "Make the Codex Cloud UI invoke the committed setup scripts instead of holding a copy of them",
+    "url": "https://github.com/KyleMit/Splotch/issues/1077"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACsM6y4Q",
+        "name": "reviewed",
+        "description": "Review pass complete — ready for the project ToDo queue",
+        "color": "1f883d"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 1020,
+    "title": "Run a UI harmonization pass to standardize the design language across all surfaces",
+    "url": "https://github.com/KyleMit/Splotch/issues/1020"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Yvjg",
+        "name": "area:admin-security",
+        "description": "Admin console, access codes, quotas, ops",
+        "color": "a63b72"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACsM6y4Q",
+        "name": "reviewed",
+        "description": "Review pass complete — ready for the project ToDo queue",
+        "color": "1f883d"
+      }
+    ],
+    "number": 883,
+    "title": "Add a local AI-report triage flow that ends in a red-team commit",
+    "url": "https://github.com/KyleMit/Splotch/issues/883"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEaQ",
+        "name": "priority:high",
+        "description": "Do soon",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACvP7weA",
+        "name": "area:store-launch",
+        "description": "Blocks App Store / Play submission — kids-audience compliance, store policy, review readiness",
+        "color": "b83280"
+      }
+    ],
+    "number": 851,
+    "title": "Store launch: App Store + Play submission readiness",
+    "url": "https://github.com/KyleMit/Splotch/issues/851"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1QHgA",
+        "name": "area:asset-gen",
+        "description": "Asset-generation image pipeline (tools/asset-gen)",
+        "color": "e99695"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 837,
+    "title": "Ratify or revert two judgement calls left in place by the audit burndowns",
+    "url": "https://github.com/KyleMit/Splotch/issues/837"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5DA",
+        "name": "type:bug",
+        "description": "Something isn't working as intended",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      }
+    ],
+    "number": 828,
+    "title": "Brief flash of \"sporadic tiling\" mid-page while loading the PWA on Android Chrome",
+    "url": "https://github.com/KyleMit/Splotch/issues/828"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1QHgA",
+        "name": "area:asset-gen",
+        "description": "Asset-generation image pipeline (tools/asset-gen)",
+        "color": "e99695"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      }
+    ],
+    "number": 795,
+    "title": "Expand the coloring-book catalog: queued pages for six shipped books, three new sections",
+    "url": "https://github.com/KyleMit/Splotch/issues/795"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwrinow",
+        "name": "triage:needs-human",
+        "description": "Blocked on human-only integration — external accounts, credentials, consoles, purchases",
+        "color": "f66a0a"
+      }
+    ],
+    "number": 690,
+    "title": "Apply to the BrowserStack open-source program for real-device Safari perf runs",
+    "url": "https://github.com/KyleMit/Splotch/issues/690"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ5w",
+        "name": "type:test",
+        "description": "Test coverage or CI test infrastructure",
+        "color": "bfd4f2"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZJ6w",
+        "name": "area:ci-testing",
+        "description": "CI pipeline and test infrastructure",
+        "color": "168f6c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MElg",
+        "name": "priority:medium",
+        "description": "Normal priority",
+        "color": "fbca04"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACsM6y4Q",
+        "name": "reviewed",
+        "description": "Review pass complete — ready for the project ToDo queue",
+        "color": "1f883d"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 688,
+    "title": "Capture perf on emulated hardware on release tags and keep a committed trend history",
+    "url": "https://github.com/KyleMit/Splotch/issues/688"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr2MEuQ",
+        "name": "priority:low",
+        "description": "Nice to have, no rush",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 602,
+    "title": "Adopt TypeScript 7 once typescript-eslint and svelte-check support it",
+    "url": "https://github.com/KyleMit/Splotch/issues/602"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACs61IdQ",
+        "name": "type:audit",
+        "description": "Audit-skill provenance marker that fix-audits burns down; may coexist with a substantive type:*",
+        "color": "cc317c"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 570,
+    "title": "Rework the hand-maintained `COLOR_ICONS` allowlist (build-time generation vs split list)",
+    "url": "https://github.com/KyleMit/Splotch/issues/570"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 563,
+    "title": "Add a \"Surprise Me\" coloring mode — hidden page revealed by the magic brush",
+    "url": "https://github.com/KyleMit/Splotch/issues/563"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr6HTrQ",
+        "name": "user-report",
+        "description": "Filed from the in-app Report form (Settings → About)",
+        "color": "0e8a16"
+      }
+    ],
+    "number": 324,
+    "title": "[Feature] I want to be able to pin my favorite colors to the top",
+    "url": "https://github.com/KyleMit/Splotch/issues/324"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1QHgA",
+        "name": "area:asset-gen",
+        "description": "Asset-generation image pipeline (tools/asset-gen)",
+        "color": "e99695"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 264,
+    "title": "Upscale / resolution audit vs device DPR",
+    "url": "https://github.com/KyleMit/Splotch/issues/264"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      }
+    ],
+    "number": 251,
+    "title": "Add new cover photo and throw it through the ringer again",
+    "url": "https://github.com/KyleMit/Splotch/issues/251"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 248,
+    "title": "Versioned API Capabilities for Old Native Apps",
+    "url": "https://github.com/KyleMit/Splotch/issues/248"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1QHgA",
+        "name": "area:asset-gen",
+        "description": "Asset-generation image pipeline (tools/asset-gen)",
+        "color": "e99695"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 247,
+    "title": "Asset Provenance and Derived-Asset Freshness",
+    "url": "https://github.com/KyleMit/Splotch/issues/247"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8SA",
+        "name": "area:release",
+        "description": "Release and deployment automation",
+        "color": "9e6a03"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 241,
+    "title": "Fastlane store-deploy automation",
+    "url": "https://github.com/KyleMit/Splotch/issues/241"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1ZRWQ",
+        "name": "area:infra",
+        "description": "Dev tooling, dependencies, repo infrastructure",
+        "color": "5a6570"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 234,
+    "title": "Document icon source + move toward hand-drawn icons",
+    "url": "https://github.com/KyleMit/Splotch/issues/234"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8RA",
+        "name": "type:chore",
+        "description": "Tooling, build, deps, refactor — no user-facing feature",
+        "color": "c2e0c6"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Y8SA",
+        "name": "area:release",
+        "description": "Release and deployment automation",
+        "color": "9e6a03"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 222,
+    "title": "Pre-Tag Release Candidate Gate",
+    "url": "https://github.com/KyleMit/Splotch/issues/222"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1YviQ",
+        "name": "type:security",
+        "description": "Access, admin, privacy, or security hardening",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Yvjg",
+        "name": "area:admin-security",
+        "description": "Admin console, access codes, quotas, ops",
+        "color": "a63b72"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 220,
+    "title": "Expiring, Per-Device Admin Sessions",
+    "url": "https://github.com/KyleMit/Splotch/issues/220"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vqaw",
+        "name": "needs-adr",
+        "description": "Needs an architectural decision record before or alongside implementation",
+        "color": "d876e3"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1YviQ",
+        "name": "type:security",
+        "description": "Access, admin, privacy, or security hardening",
+        "color": "b60205"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Yvjg",
+        "name": "area:admin-security",
+        "description": "Admin console, access codes, quotas, ops",
+        "color": "a63b72"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACwriuSw",
+        "name": "triage:needs-decision",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment",
+        "color": "bf3989"
+      }
+    ],
+    "number": 215,
+    "title": "First-Class AI Access Grants",
+    "url": "https://github.com/KyleMit/Splotch/issues/215"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 206,
+    "title": "Native download links + /about marketing page",
+    "url": "https://github.com/KyleMit/Splotch/issues/206"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 205,
+    "title": "\"Check for updates\" button + version display",
+    "url": "https://github.com/KyleMit/Splotch/issues/205"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1W97w",
+        "name": "area:dark-mode",
+        "description": "Dark-mode theming and assets",
+        "color": "24292f"
+      }
+    ],
+    "number": 202,
+    "title": "Dark-mode-aware AI generation",
+    "url": "https://github.com/KyleMit/Splotch/issues/202"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      }
+    ],
+    "number": 199,
+    "title": "Warn when screenshot save is blocked",
+    "url": "https://github.com/KyleMit/Splotch/issues/199"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Zfgw",
+        "name": "area:native",
+        "description": "Android / iOS / Capacitor",
+        "color": "006b75"
+      }
+    ],
+    "number": 193,
+    "title": "iPhone top/bottom layout efficiency + notch band",
+    "url": "https://github.com/KyleMit/Splotch/issues/193"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1W97w",
+        "name": "area:dark-mode",
+        "description": "Dark-mode theming and assets",
+        "color": "24292f"
+      }
+    ],
+    "number": 188,
+    "title": "Paper Playground",
+    "url": "https://github.com/KyleMit/Splotch/issues/188"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 183,
+    "title": "Resizable color palette tied to button size",
+    "url": "https://github.com/KyleMit/Splotch/issues/183"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      }
+    ],
+    "number": 181,
+    "title": "Tiny Tweaks AI Mode",
+    "url": "https://github.com/KyleMit/Splotch/issues/181"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      }
+    ],
+    "number": 180,
+    "title": "Immediate AI retry on failure",
+    "url": "https://github.com/KyleMit/Splotch/issues/180"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      }
+    ],
+    "number": 178,
+    "title": "Richer AI loading experience",
+    "url": "https://github.com/KyleMit/Splotch/issues/178"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P5Dw",
+        "name": "area:ux",
+        "description": "Layout, polish, responsiveness",
+        "color": "d4c5f9"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACucpCyA",
+        "name": "area:settings",
+        "description": "Settings modal and controls",
+        "color": "0052cc"
+      }
+    ],
+    "number": 177,
+    "title": "Left-handed layout flip",
+    "url": "https://github.com/KyleMit/Splotch/issues/177"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Vkfg",
+        "name": "area:ai-art",
+        "description": "AI image generation, styles, prompts",
+        "color": "8250df"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      }
+    ],
+    "number": 174,
+    "title": "Photo → coloring page",
+    "url": "https://github.com/KyleMit/Splotch/issues/174"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1Wsfg",
+        "name": "area:coloring-book",
+        "description": "Coloring-book pages, packs, and workflow",
+        "color": "6f42c1"
+      }
+    ],
+    "number": 168,
+    "title": "Tap-to-fill (paint bucket)",
+    "url": "https://github.com/KyleMit/Splotch/issues/168"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIQ",
+        "name": "type:feature",
+        "description": "New user-facing capability",
+        "color": "1d76db"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1PhIw",
+        "name": "area:drawing",
+        "description": "Canvas, brushes, tools, drawing engine",
+        "color": "5319e7"
+      },
+      {
+        "id": "LA_kwDOQ9lQis8AAAACr1P3MQ",
+        "name": "needs-scoping",
+        "description": "Rough spec — investigate and firm up (often an ADR) before significant work",
+        "color": "fef2c0"
+      }
+    ],
+    "number": 167,
+    "title": "Recent and Favorite Custom Colors",
+    "url": "https://github.com/KyleMit/Splotch/issues/167"
+  }
+]

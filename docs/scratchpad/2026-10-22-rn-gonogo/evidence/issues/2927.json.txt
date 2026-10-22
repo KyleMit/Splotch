@@ -1,0 +1,105 @@
+{
+  "observedAt": "2026-10-22T16:51:59.926Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2927",
+    "title": "Prove RN iOS background coloring publication after simulator client identity rejection",
+    "issue_number": 2927,
+    "body": "Refs #2914 and #2690.\n\nThe iOS coloring downloader builds, but background publication is still unproven on the assigned iPhone 17 Pro Max simulator (iOS 26.5). Its real native job persisted Dinosaur with `nextFileIndex: 0`; no book was published during the bounded native run.\n\nThe system log gives a specific failure: `nsurlsessiond` reports `client bundle identifier (null)` and rejects the probe process because it has no bundle ID. Both background sessions then report `NSCocoaErrorDomain Code=4097` connecting to `com.apple.nsurlsessiond`; creation of the first download task fails with `NSURLErrorDomain Code=-1`.\n\nThe unsigned Release artifact was linker-signed as `Identifier=HelloWorld`, with Info.plist unbound. A separate ad-hoc signed copy verified `Identifier=art.splotch.migration.probe`, bound Info.plist entries, and sealed resources; reinstalling only that probe copy produced the same null-client-ID rejection. Ad-hoc signing alone did not fix it. The cause remains unresolved; this does not establish a shipping or production iOS defect. No system service was restarted and no shipping app data was changed.\n\nComplete this proof by identifying and correcting the simulator client/runtime preparation or candidate fault, then running the unchanged intended background URLSession path: observe a real in-flight job, send the app Home, and verify a newly published book contains all 74 expected files with exact byte counts and SHA-256 digests. Also preserve the shipping Low Data Mode policy and relaunch continuation. Do not substitute a foreground session or claim parity from source guards alone.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 3,
+    "created_at": "2026-10-15T05:33:40Z",
+    "updated_at": "2026-10-17T00:44:18Z",
+    "closed_at": "2026-10-17T00:44:21Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2927",
+    "display_title": "Prove RN iOS background coloring publication after simulator client identity rejection"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2927#issuecomment-6212827777",
+      "body": "Preparation for the remaining runtime proof: Apple DTS explicitly recommends testing background URLSession transfers on a real device, launching from Home rather than Xcode, without a debugger; Simulator suspend/resume can differ, and force quit is not a valid background-relaunch test. Primary source: https://developer.apple.com/forums/thread/14855.\n\nThe existing local development identity and wildcard development profile cover the approved physical iPad and the separate art.splotch.migration.probe bundle ID. No new identity, account, provisioning profile, paid service, or store signing is needed for the planned probe. The next serialized native run will use that existing development signing and the unchanged background downloader, observe an actual in-flight job before Home, and verify all expected published bytes/digests plus continuation and Low Data Mode policy. It will not attach a debugger, restart system services, or touch the retained art.splotch.app install.\n\nThis preparation does not establish a simulator root cause or successful download. The earlier ad-hoc copy already failed, so signing alone is not claimed as the fix. No product change has been made; issue #2927 stays open until the real runtime proof is complete.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6212827777,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2927#issuecomment-6214259048",
+      "body": "PR #2963 is merged into codex/native-migration at fa070230603174b270429fcbfc87d8f96eee4bcd, from checked head 571e0bf64e2fb452e3ab01e6dba12285d1c156c8. Issue #2927 stays open for the assigned iOS 26.5 simulator's client-identity preparation. Actual 74-file background publication is proved on the physical iPad and, below, a fresh iOS 27 simulator. Physical observations below belong to the normally compiled Release artifact from a04486d7b9314e565f27fb3d808e201a08520c51; the final source differs only by a Swift compatibility explanation and a publication-integrity test assertion.\n\nThe fresh candidate pass had a real pending boundary: after enabling at 14:26:37.990976 UTC, native reads found a new Dinosaur job at index 0, zero staged files and zero installed markers. Automated Home returned at 14:26:38.309672. At 14:26:39.399856 the probe was verified in background with SpringBoard active; the immediate native file list still showed zero staged files / zero markers / a pending job. At 14:27:28.470520–29.923814, before any foreground return, the probe was suspended before and after copying, SpringBoard remained active, a new installed marker existed and the job was gone. Worker and root independently checked all 74 real catalog files / 3,722,731 bytes, every length and SHA-256, the exact marker and identity revision. This establishes newly published background data, without inferring exact completion time or all-seven-book background queuing.\n\nThe unchanged-source control 320f6e65c7f05d03537eb40b581a4a9708e5b248 qualified foreground transfer for seven extra books: 518 files / 22,964,406 verified bytes. A separate empty-library in-flight control entered background at index 4 and reached only 15/74 after 2,352.239 seconds, still suspended with SpringBoard foreground and zero installed markers. This is measured slow suspended progress, not an arbitrary deadline failure. The native owner enqueued one task at a time; that pattern is consistent with Apple's documented [background-session scheduling guidance](https://developer.apple.com/documentation/foundation/downloading-files-in-the-background). Exact OS resume-limiter attribution remains an inference.\n\nThe candidate enqueues missing tasks for one book in the same two sessions, reconciles retained tasks and out-of-order completion, reuses verified stages and re-verifies every file before publication. Discretionary scheduling, constrained-network exclusion, metered opt-in, cancellation and storage checks remain intact. Seven focused files / 107 checks, types, lint and formatting pass. The real-store incomplete-book test fails at its intended assertion when production per-file verification is removed, then passes after byte-exact restoration. This guards publication integrity, not Swift scheduling.\n\nThe normal embedded-bundle physical Release compiled successfully and passed strict/deep signature verification with the existing development profile. Only art.splotch.migration.probe was updated. Proper owned-worktree CocoaPods regeneration changed a local path-derived podspec checksum and dictionary ordering only; inspected dependency versions/signing objects are unchanged, and these local generated files are excluded from the pushed two-file source diff. Private operator data is excluded too.\n\nThe independent worker qualified a host-only Home transition twice through Appium's background route. Hardware Home APIs returned success without a verified transition; complete accessibility-tree reads added about ten seconds to the cue. The critical fresh pass avoided that read. No further human gesture, USB reset or borrowed-service restart was needed. Borrowed Appium, the root-owned tunnel and retained art.splotch.app remain preserved; unqualified/wrong-device video takes remain excluded.\n\nFor continuation, issue `POST /session/<current-owned-id>/appium/app/background` with `{\"seconds\":-1}` directly after the pending-job snapshot, then qualify actual SpringBoard foreground and probe app state before attributing background progress. Acknowledgment is not a state transition. Re-prove the observer session first; an expired session must not be reused. Use this host-only sequence rather than another human Home/readiness cue, and keep full accessibility-tree reads out of the transition bracket.\n\nThe earlier mixed legacy-job candidate take is preserved separately: 73 verified staged files were observed while suspended, but only the contiguous frontier of 15 was read before Home. Its actual pre-Home stage count was not captured, so individual transfer timing cannot be attributed from that take. Turning Coloring off canceled that job while retaining unpublished stages. The existing Remove control is disabled with zero installed books; canceled stock stages were privately preserved and only the named RN probe's transfers directory was removed through the installed AFC primitive. The empty root was verified with policy bytes unchanged. Drawings, settings and retained shipping data were untouched.\n\nReal same-candidate relaunch continuation passes: a fresh index-0 job persisted under the same token while the verified process was nonrunning after SIGTERM; relaunch produced a new PID and resumed to 70 files before Home. The resulting complete book passed all 74 length/SHA-256 and exact marker/identity checks independently in worker and root. Publication may have occurred during Home transition, so this is a continuation result; the earlier pass separately supplies the strict background boundary. A later passive suspended/SpringBoard snapshot contains Dinosaur and Creatures, both independently verified: 148 files / 8,186,990 bytes, exact catalog markers and identities. This is an aggregate observation, not an all-seven-book claim.\n\nFinal head 571e0bf64e2fb452e3ab01e6dba12285d1c156c8 passes all 15 local Quality checks, six Browserless tiers, the 16-case platform control and native-web startup at 870,797 / 870,798 bytes, with 131 precache entries / 6,425,096 bytes. The full local 1,170-case browser suite belongs to a04486d7b9314e565f27fb3d808e201a08520c51; all eight final-head CI browser shards also pass. Exact final CI has 19 terminal checks: 15 successes and four intentional PR-excluded skips, including successful ordinary-web and Capacitor-static release smokes. Closing references are empty. All four review threads are answered and resolved. Both independent Claude rounds used one conversation; the final round found no surviving defect or unverified item. The reviewer withdrew the proposed stale-task-state race after real Foundation controls demonstrated the retained task object's live state, and independently passed the platform controls and inspected the four private stroke comparisons. The conversation is ended; no third round or budget reset. The private operator edit remains preserved. The worktree is retained because it holds local generated native inputs and the private edit.\n\nThe Low Data Mode ordinary-setting control is complete. The original current-network OFF setting was recorded and restored exactly. With ON typed-verified, a new token stayed at zero staged files and zero markers for a 60-second suspended observation and immediately before OFF. The probe never foregrounded during the setting restoration. A later passive copy found the newly installed Dinosaur book; worker and root independently verified all 74 files, exact marker and byte-identical original-job identity. No constrained-path flag was exposed, and no after-OFF in-flight token read was captured. This is behavior consistent with policy, without claiming direct constrained-path proof, uninterrupted token observation or exact completion latency from uncalibrated device/host clocks.\n\nThe existing Instruments/Appium measurement path now qualifies on the exact physical iPad and current probe: a completed system-level Animation Hitches recording exited 0, exported successfully and contains 24 probe-attributed updates matched to 24 display-frame lifetime rows, plus strictly probe-tagged CPU samples. One actual visible stroke was verified and undone, then prior Coloring ON, cooldown 2 and SpringBoard were restored. The process-targeted attempt failed before input; a separate incomplete recording was stopped prematurely during legitimate finalization and is excluded. The corrected recording finalized in about 72 seconds without that cutoff. This calibration is not a drawing-cost or finger-to-ink result. Four physical drawing controls completed in idle / active / active / idle order with the same requested Purple stroke and 15-second recording limit; all recorders exited 0. Root and worker inspected one continuous visible stroke in each. Both active takes show real stock-book progress across the input-request bracket, and both final copies independently verify all seven books / 518 files / 22,964,406 bytes, exact markers and identity revisions. A middle job read raced publication in one take and is excluded from same-token claims. Four test strokes were undone; Coloring ON, mobile-data OFF, cooldown 2 and actual Home were restored. The active windows include Settings/UI/native-read work and device clock resolution is insufficient for precise contact-window alignment. This supports drawing during transfer, without an isolated drawing-cost or latency verdict. The first 15.000 seconds per trace contains statistical CPU sample weights of 2,366 / 9,882 / 9,100 / 2,371 ms in idle/active/active/idle order. Derived RN hitch counts are 5 / 10 / 19 / 5, with total durations 45.86 / 100.06 / 175.10 / 41.69 ms. Root independently recomputed these quantities from the strictly process-attributed selected rows. Higher active work and hitch observations remain explicit; sample weights are statistical quantities, and the active UI/installation work prevents isolated queue/drawing-cost or favorable performance claims. All four test strokes were undone and exact prior probe settings / Home were restored. These observations were included in both completed independent review rounds; they do not settle the remaining performance acceptance.\n\nThe historical simulator4097 report remains unqualified because its original raw process/domain/runtime/lifecycle record was not recovered. Fresh controlled runs now supply their own complete first-launch records: the independent worker created fresh same-model simulators on iOS 26.5 (23F77) and 27.0 (24A434), established no-auto-launch observers with Appium log capture disabled, then started owned app/daemon logging before each first plain launch. Both installed copies match the same sealed Release artifact byte-for-byte, built with iphonesimulator27.0 SDK. Its Hermes payload matches B2 b2d4e1c681a3b78b723c04e3937d17d75eb7dbe2, and all five download owners are byte-identical to reviewed 571e0bf64e2fb452e3ab01e6dba12285d1c156c8. The original artifact was unchanged; no entitlement, service or source adjustment was made between runtime arms.\n\nOn 26.5 the live daemon rejected the first probe process because its XPC client bundle identifier was `(null)`; the app logged NSCocoaErrorDomain/4097 before Home. Both background-session names were nonempty. LaunchServices registered the correct bundle, the daemon remained alive, and a plain process relaunch repeated the rejection. The job persisted across termination but changed token after relaunch; continuation did not pass in this arm. Verified SpringBoard/background state 3 was first observed 11.6 seconds after Home acknowledgment, with zero staged files and no publication through the bounded observation. Acknowledgment alone is excluded from Home proof.\n\nOn 27 the same artifact's daemon resolved the correct client identity. The initial job had zero of 74 stages; at the first qualified SpringBoard/background-state-3 snapshot it had 71 staged files / 3,357,773 bytes and no installed marker. A new publication appeared about two seconds later, before any foreground return. Worker and root independently verified all 74 files / 3,722,731 bytes, every length and digest, exact marker/identity and identity revision. The strict claim is remaining transfer and new publication after verified Home; state 3 does not establish suspension. This establishes an artifact/runtime difference, not its underlying cause or the missing historical failure's cause. A normally Xcode-generated simulator signing/build control on the assigned 26.5 runtime remains the next specific preparation check. Both owned simulators, observers, loggers and ports were closed; retained apps and borrowed services were untouched. Whole-catalog system wake, force-quit behavior and isolated drawing cost are not established by these observations; final campaign acceptance retains its separate limits.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6214259048,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2927#issuecomment-6227507066",
+      "body": "Closing under the user's 2026-10-16 acceptance decision. PR #2963 is merged; newly completed background publication is verified on the physical iPad and a fresh iOS 27 simulator, with the detailed integrity and lifecycle controls above. Accepted limitation: the iOS 26.5 simulator's nsurlsessiond null-client-ID rejection is a simulator runtime limitation whose cause remains unproven. No further 26.5 investigation is planned. Final campaign performance acceptance remains separate on #2690.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6227507066,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

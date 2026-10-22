@@ -1,0 +1,17 @@
+UTC 2026-10-22T16:49:06.269481+00:00
+CWD /workspace/rn-freeze
+COMMIT fffeed1fe4116112bb10297a180ac552f9754046
+RUN COUNT 1
+COMMAND git --version && node --version && npm --version && python3 --version && gh --version && git rev-parse HEAD origin/main origin/codex/native-migration v1.6.0^{} && git status --short
+git version 2.52.0
+v24.19.0
+11.9.0
+Python 3.12.14
+gh version 2.46.0 (2025-01-13 Debian 2.46.0-3)
+https://github.com/cli/cli/releases/tag/v2.46.0
+fffeed1fe4116112bb10297a180ac552f9754046
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4
+fffeed1fe4116112bb10297a180ac552f9754046
+d8b86469f63c57a06a9de45664a42eea15b99eb0
+
+EXIT 0

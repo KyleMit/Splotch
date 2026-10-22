@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:51:49.601Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2874",
+    "title": "Show the palette and keep drawing smooth in the native Flat toolbar style",
+    "issue_number": 2874,
+    "body": "**What:** on the Galaxy S21 FE (release build of `codex/native-migration` @ 316834ecc) with Button style **Flat**:\n- **No visible swatches.** The palette bar shows blank paper with only the margin rules. The swatches still take taps underneath. This reproduces after a cold start.\n  - Likely cause: the opaque `RsdRailGlass` `PaperTexture` fill renders above the swatches on native (`NativeScrollAreas.tsx` ~L156, `RsdBareGlass.tsx`, from #2873).\n- **Heavy jank while drawing.** About 18% janky frames against shipping Flat's ~2.35%. Frame times are p50/p90 13/18–20 ms, slow draw commands are 7× higher, and RN produces 15% fewer frames.\n  - Likely cost, inferred and not profiled: the rail paper plus the `mixBlendMode` margin rules forcing offscreen compositing.\n\n**Evidence:** `/tmp/splotch-native-android/g-p-01-drawing.png` and `/tmp/splotch-native-android/perf/` on the build host (native Android pass, 2026-10-14).\n\n**Done when:**\n- Flat on a physical Android device shows the swatches.\n- Galaxy Flat jank is within shipping's range under the same 12-stroke gfxinfo script.\n- A renderer test fails if the rail paper covers the swatches.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-14T12:58:55Z",
+    "updated_at": "2026-10-14T22:21:07Z",
+    "closed_at": "2026-10-14T22:21:07Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2874",
+    "display_title": "Show the palette and keep drawing smooth in the native Flat toolbar style"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2874#issuecomment-6175583002",
+      "body": "#2887 is merged into `codex/native-migration`. The Flat swatches show on Android and iOS: the palette plate is `position: relative`, so Fabric mounts it above the rail glass. Flat jank on the Galaxy went from about 19% to 3.5% after pre-mixing the margin rules' `mixBlendMode`, which forced a full-screen offscreen layer every frame. Shipping Flat runs 2.1–2.4%. The ~30 slow-UI-thread frames per run that remain are shared with Raised, so this issue stays open until #2875's fix brings both styles to shipping's level.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6175583002,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2874#issuecomment-6179792282",
+      "body": "Done, via #2887 and #2903, both merged into `codex/native-migration`.\n\n- **Swatches:** they show on Android and iOS (#2887).\n- **Flat jank:** #2887 removed the margin rules' `mixBlendMode` offscreen layer, which took Flat from about 19% janky frames to 3.5%. #2903 then removed the cost shared with Raised.\n\n**Galaxy, same alternating 12-stroke script:**\n\n| | RN | Shipping |\n| --- | --- | --- |\n| Flat | 1.21% | 2.17% |\n\nA renderer test fails if the rail paper covers the swatches. The Flat ink fade under the panes is tracked in #2904.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6179792282,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

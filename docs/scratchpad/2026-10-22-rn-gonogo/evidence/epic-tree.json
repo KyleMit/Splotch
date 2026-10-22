@@ -1,0 +1,2380 @@
+{
+  "repository": "KyleMit/Splotch",
+  "root": {
+    "number": 2690,
+    "title": "Epic: Migrate Splotch to React Native and React Native Web"
+  },
+  "parents": [
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2690,
+      "count": 92
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2749,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2750,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2751,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2752,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2753,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2754,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2755,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2756,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2757,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2758,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2759,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2760,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2761,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2762,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2763,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2764,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2765,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2773,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2775,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2779,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2785,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2789,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2793,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2794,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2796,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2799,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2801,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2802,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2806,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2807,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2808,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2809,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2810,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2811,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2812,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2813,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2814,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2815,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2816,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2817,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2818,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2819,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2820,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2821,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2822,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2823,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2824,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2825,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2826,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2827,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2828,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2829,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2830,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2831,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2835,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2837,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2843,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2844,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2847,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2857,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2859,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2866,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2870,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2874,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2875,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2876,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2877,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2878,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2879,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2883,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2886,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2894,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2895,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2896,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2900,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2904,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2905,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2908,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2911,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2912,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2913,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2914,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2915,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2916,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2917,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2918,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2924,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2930,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2927,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2931,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2978,
+      "count": 33
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3148,
+      "count": 14
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 2985,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3008,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3014,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3015,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3016,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3017,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3018,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3019,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3020,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3021,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3022,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3023,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3024,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3025,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3026,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3027,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3035,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3037,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3062,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3063,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3066,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3068,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3069,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3071,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3072,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3073,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3074,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3075,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3076,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3077,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3078,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3079,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3083,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3151,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3152,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3153,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3154,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3155,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3156,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3157,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3158,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3159,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3160,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3161,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3162,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3163,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 3164,
+      "count": 0
+    }
+  ],
+  "children": [
+    {
+      "number": 2749,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Bound native ink rendering cost as a drawing grows",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:perf", "area:native", "priority:high", "area:drawing-engine"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2749"
+    },
+    {
+      "number": 2750,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Pick one native drawing core and delete the other",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:native", "priority:high", "area:drawing-engine"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2750"
+    },
+    {
+      "number": 2751,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Fix held-PNG recovery hitting its decode deadline on Android cold launch",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2751"
+    },
+    {
+      "number": 2752,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Build and run the native beta on the iOS simulator",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2752"
+    },
+    {
+      "number": 2753,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Give the native drawing screen an icon toolbar and swatch palette",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2753"
+    },
+    {
+      "number": 2754,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Add drag-to-clear with page-turn, clear sound and haptics to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2754"
+    },
+    {
+      "number": 2755,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Save native pictures to the device photo library",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2755"
+    },
+    {
+      "number": 2756,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the AI waiting experience to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:medium", "area:ai"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2756"
+    },
+    {
+      "number": 2757,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Confirm Android system Back before leaving native Splotch",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2757"
+    },
+    {
+      "number": 2758,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Add the orientation lock to native settings",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:medium", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2758"
+    },
+    {
+      "number": 2759,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Verify native Crayon against the crayon ADRs on phone and tablet",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:native", "priority:medium", "area:crayon"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2759"
+    },
+    {
+      "number": 2760,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Make the RN web build installable and offline",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2760"
+    },
+    {
+      "number": 2761,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the on-screen Parental Gate keypad to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:parent-center", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2761"
+    },
+    {
+      "number": 2762,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port AI invite links to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:low", "area:ai"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2762"
+    },
+    {
+      "number": 2763,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Add accessibility and What's New sections to native settings",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:low", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2763"
+    },
+    {
+      "number": 2764,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port touch halos, drawing sound variety and Pencil double-tap to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:drawing", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2764"
+    },
+    {
+      "number": 2765,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Fix the first native stroke after launch drawing only a dot",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high", "area:drawing-engine"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2765"
+    },
+    {
+      "number": 2773,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the shipping drawing layout on native: full-bleed paper, edge controls and drawer",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2773"
+    },
+    {
+      "number": 2775,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Fit the native paper to the screen so phones in portrait get a full-height page",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:high", "area:drawing-engine"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2775"
+    },
+    {
+      "number": 2779,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Hide the RN web install banner while the drawer is open",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2779"
+    },
+    {
+      "number": 2785,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Use tall coloring-page art on portrait native paper",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:coloring-book", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2785"
+    },
+    {
+      "number": 2789,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep a failed Parent Center save pending when the What's New stamp flushes",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:parent-center", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2789"
+    },
+    {
+      "number": 2793,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Use the shipping font stack for RN web body text",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2793"
+    },
+    {
+      "number": 2794,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep book Magic fill joins opaque when the SVG paper is drawn small",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:coloring-book", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2794"
+    },
+    {
+      "number": 2796,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Let parents turn off native Pencil double-tap",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:drawing", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2796"
+    },
+    {
+      "number": 2799,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Persist native Pencil detection without losing it or a failed Parent Center save",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:parent-center", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2799"
+    },
+    {
+      "number": 2801,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Draw native touch halos without a React render per frame",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:perf", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2801"
+    },
+    {
+      "number": 2802,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Use Splotch's launcher icon and splash in the native app",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2802"
+    },
+    {
+      "number": 2806,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Open the native app full-screen on iPadOS 26 like the shipping app",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2806"
+    },
+    {
+      "number": 2807,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the full shipping design token set to the native app",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2807"
+    },
+    {
+      "number": 2808,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the full shipping icon registry, SectionIcon and SplotchyIcon to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2808"
+    },
+    {
+      "number": 2809,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the shipping modal frame and DialogHeader to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2809"
+    },
+    {
+      "number": 2810,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the shipping Button and icon-button skins to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2810"
+    },
+    {
+      "number": 2811,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port ToggleSwitch, ToggleRow, setting cards and hub rows to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2811"
+    },
+    {
+      "number": 2812,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the shipping SegmentedPicker and Slider to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2812"
+    },
+    {
+      "number": 2813,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the small shipping design primitives to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2813"
+    },
+    {
+      "number": 2814,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native drawing screen frame and palette to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2814"
+    },
+    {
+      "number": 2815,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native Clear Button rest state to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2815"
+    },
+    {
+      "number": 2816,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native Actions Panel to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2816"
+    },
+    {
+      "number": 2817,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the Brush and Stroke Width flyouts and remove the Drawing tools sheet",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2817"
+    },
+    {
+      "number": 2818,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the shipping hexagon Color Picker to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2818"
+    },
+    {
+      "number": 2819,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native Coloring Book Picker to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2819"
+    },
+    {
+      "number": 2820,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the polaroid save flight and Save Failure Banner to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2820"
+    },
+    {
+      "number": 2821,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native Install Banner to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2821"
+    },
+    {
+      "number": 2822,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native Settings phone shell and hub to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2822"
+    },
+    {
+      "number": 2823,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the Settings wide (tablet) and compact (landscape phone) shells to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2823"
+    },
+    {
+      "number": 2824,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the Appearance, Sound and Accessibility settings sections to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2824"
+    },
+    {
+      "number": 2825,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the Tool Drawer, Coloring and Saving settings sections to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2825"
+    },
+    {
+      "number": 2826,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native Parent Center and Parental Gate to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2826"
+    },
+    {
+      "number": 2827,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the AI Art settings section to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2827"
+    },
+    {
+      "number": 2828,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native AI Style Prompt and AI Result to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2828"
+    },
+    {
+      "number": 2829,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match Feedback, Install guide, What's New and About to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2829"
+    },
+    {
+      "number": 2830,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the native edge states to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2830"
+    },
+    {
+      "number": 2831,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Smooth native strokes the way shipping does when input is sparse",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high", "area:drawing-engine"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2831"
+    },
+    {
+      "number": 2835,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Bring the RN web startup bundle within the shipping startup budget",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:perf", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2835"
+    },
+    {
+      "number": 2837,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Draw shipping's keyboard focus ring on RN web controls",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2837"
+    },
+    {
+      "number": 2843,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Discover RSD selection tests by pattern instead of hand-kept lists",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2843"
+    },
+    {
+      "number": 2844,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Close the remaining RN web startup gap to the shipping budget",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:perf", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2844"
+    },
+    {
+      "number": 2847,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Pass style explicitly through RsdPressable on web",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2847"
+    },
+    {
+      "number": 2857,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Stop React Native Web's dialog pointer-events rule overriding RSD pointerEvents none",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2857"
+    },
+    {
+      "number": 2859,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Stop native-crayon-phase timing out at 5 s under full test:tools load",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2859"
+    },
+    {
+      "number": 2866,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Export the native saved picture at shipping's paper colour and resolution",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2866"
+    },
+    {
+      "number": 2870,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Accept progressive JPEG AI results in the native app",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2870"
+    },
+    {
+      "number": 2874,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Show the palette and keep drawing smooth in the native Flat toolbar style",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2874"
+    },
+    {
+      "number": 2875,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Bring native Raised drawing jank back to its pre-parity level on Android",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:perf", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2875"
+    },
+    {
+      "number": 2876,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Make the native app full-screen and keep its edge drags off system gestures on Android",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2876"
+    },
+    {
+      "number": 2877,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match shipping's native status bar and notch band colours",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2877"
+    },
+    {
+      "number": 2878,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Close the native visual gaps found in the device side-by-sides",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2878"
+    },
+    {
+      "number": 2879,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Silence the native runtime warnings seen in the device passes",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2879"
+    },
+    {
+      "number": 2883,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Start the native app on shipping's default brush colour",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2883"
+    },
+    {
+      "number": 2886,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep the native drawer tiles at full strength after switching Button style",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2886"
+    },
+    {
+      "number": 2894,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Remember the native Tool Drawer's open state across launches",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2894"
+    },
+    {
+      "number": 2895,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Grey out disabled Flat tiles on iOS like shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2895"
+    },
+    {
+      "number": 2896,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Remove the white strip under the native Flat toolbar",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2896"
+    },
+    {
+      "number": 2900,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep native chrome at full strength behind dialogs and draw the iOS Flat menu selection outline",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2900"
+    },
+    {
+      "number": 2904,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Fade native ink under the Flat drawer panes like shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2904"
+    },
+    {
+      "number": 2905,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep a Flat-adopted drawing unlifted after switching to Raised natively",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2905"
+    },
+    {
+      "number": 2908,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Ink the first native stroke after closing Settings or clearing the page",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2908"
+    },
+    {
+      "number": 2911,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Bring the native AI Art flow's logic to shipping parity",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2911"
+    },
+    {
+      "number": 2912,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep native chrome and paper responsive the way shipping does",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2912"
+    },
+    {
+      "number": 2913,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port shipping's paper presentation and picture lifecycle rules to native",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2913"
+    },
+    {
+      "number": 2914,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match shipping's coloring pack download behaviour natively",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2914"
+    },
+    {
+      "number": 2915,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Bring native Settings and Parent Center logic to shipping parity",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2915"
+    },
+    {
+      "number": 2916,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port the missing native platform features from shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2916"
+    },
+    {
+      "number": 2917,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match shipping's chrome motion, palette and accessibility names natively",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2917"
+    },
+    {
+      "number": 2918,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Delete dead native screens and fix RN tests that assert the opposite of shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2918"
+    },
+    {
+      "number": 2924,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Re-adopt the RN paper extent on large resizes without changing existing ink",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2924"
+    },
+    {
+      "number": 2930,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN native Clear drag still lacks shipping’s bubble ladder and cancel unwind",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": [],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2930"
+    },
+    {
+      "number": 2927,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Prove RN iOS background coloring publication after simulator client identity rejection",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2927"
+    },
+    {
+      "number": 2931,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN Settings: keep hub labels visible at native 2× text zoom (X39)",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["in-progress"],
+      "assignees": ["KyleMit"],
+      "url": "https://github.com/KyleMit/Splotch/issues/2931"
+    },
+    {
+      "number": 2978,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Verify complete RN device parity against independently sourced shipping comparators",
+      "state": "open",
+      "stateReason": null,
+      "labels": ["area:native", "in-progress"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2978"
+    },
+    {
+      "number": 3148,
+      "repository": "KyleMit/Splotch",
+      "parent": 2690,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Epic: retire SvelteKit and Capacitor before merging the RN migration into main",
+      "state": "open",
+      "stateReason": null,
+      "labels": ["type:chore", "area:infra", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3148"
+    },
+    {
+      "number": 2985,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Keep native dialog titles, Settings choices and picker labels readable at maximum OS font",
+      "state": "open",
+      "stateReason": null,
+      "labels": [],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/2985"
+    },
+    {
+      "number": 3008,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Show and report the derived web version on RN web, as shipping web does",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3008"
+    },
+    {
+      "number": 3014,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Download the seven extra coloring books on RN web, as shipping does",
+      "state": "closed",
+      "stateReason": "not_planned",
+      "labels": ["type:bug", "area:coloring-book", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3014"
+    },
+    {
+      "number": 3015,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Let the child keep drawing while an AI picture is minimized on RN web",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:bug", "area:ai-art", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3015"
+    },
+    {
+      "number": 3016,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Remove legacy plaintext AI credentials on RN web's first launch",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:ai-art", "type:security", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3016"
+    },
+    {
+      "number": 3017,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Ship a hash-based Content-Security-Policy with the RN web document",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:security", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3017"
+    },
+    {
+      "number": 3018,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Return focus to the AI button or drawer toggle when the AI result closes on RN web",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3018"
+    },
+    {
+      "number": 3019,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Stop RN web drawing a line across a mouse that idles and resumes far away",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3019"
+    },
+    {
+      "number": 3020,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Show the eraser bubble and hide the cursor while erasing with a mouse on RN web",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3020"
+    },
+    {
+      "number": 3021,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Hide the RN web install banner while an AI picture is minimized",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3021"
+    },
+    {
+      "number": 3022,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Match the RN web install banner's position, line breaks and focus order to shipping",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3022"
+    },
+    {
+      "number": 3023,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Request persistent storage after saving an AI key on RN web",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3023"
+    },
+    {
+      "number": 3024,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Apply the server's \"free creations used up\" answer on RN",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3024"
+    },
+    {
+      "number": 3025,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Bound or drop the AI pictures RN web keeps in IndexedDB",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3025"
+    },
+    {
+      "number": 3026,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Fix RN web's information and not-found pages: back label, links, forced colors and no-JS",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3026"
+    },
+    {
+      "number": 3027,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Close RN web's minor parity gaps from the WEB-1 and AI-1 browser run",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:low"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3027"
+    },
+    {
+      "number": 3035,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "iPad: clearing a crayon drawing freezes the app and gets it killed for memory",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3035"
+    },
+    {
+      "number": 3037,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Clear can stay held after the finger lifts (scripted drags right after a stroke)",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3037"
+    },
+    {
+      "number": 3062,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: settings and other stores verify files before Expo SDK 58's async write lands",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "priority:high", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3062"
+    },
+    {
+      "number": 3063,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: AI uploads fail before sending because React Native's Blob rejects bytes",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3063"
+    },
+    {
+      "number": 3066,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: every PNG AI result is rejected because of its C2PA caBX chunk",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3066"
+    },
+    {
+      "number": 3068,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN iOS: empty keychain slots read as undefined, so every AI credential save fails",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3068"
+    },
+    {
+      "number": 3069,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN iOS: the AI journal never finds its own attempt folders, so no picture is sent",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3069"
+    },
+    {
+      "number": 3071,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: a stroke started right after a rail swatch tap draws nothing until the finger lifts",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3071"
+    },
+    {
+      "number": 3072,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN Android: the Clear button sometimes stalls mid-page before returning home",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3072"
+    },
+    {
+      "number": 3073,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: make the Undo fly-away visible, especially on Android",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:drawing", "type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3073"
+    },
+    {
+      "number": 3074,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN Android: a resting palm cancels the stroke under the finger",
+      "state": "closed",
+      "stateReason": "not_planned",
+      "labels": ["area:drawing", "type:bug", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3074"
+    },
+    {
+      "number": 3075,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN Android: the AI loading card breaks at a large system font scale",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ai-art", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3075"
+    },
+    {
+      "number": 3076,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: keep the AI key field visible above the on-screen keyboard",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3076"
+    },
+    {
+      "number": 3077,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: Settings flashes when a 3-way choice is saved",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:native", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3077"
+    },
+    {
+      "number": 3078,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: the first tap on a Parent Center option after scrolling is sometimes lost",
+      "state": "closed",
+      "stateReason": "not_planned",
+      "labels": ["type:bug", "area:native", "area:settings"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3078"
+    },
+    {
+      "number": 3079,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "RN: give the grown-up check's Settings › Parent Center footer room and centred icons",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "area:ux", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3079"
+    },
+    {
+      "number": 3083,
+      "repository": "KyleMit/Splotch",
+      "parent": 2978,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Verify JS-only RN fixes on devices without a native rebuild",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:infra", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3083"
+    },
+    {
+      "number": 3151,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Record the step-7 ADR: Splotch is one React Native app",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:infra", "type:docs", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3151"
+    },
+    {
+      "number": 3152,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Serve /api without @sveltejs/kit and host the function on plain Node locally",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:infra", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3152"
+    },
+    {
+      "number": 3153,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Run Playwright against the RN web export",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3153"
+    },
+    {
+      "number": 3154,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port or retire SvelteKit E2E specs, group A (a11y to engine-pointer-recovery)",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3154"
+    },
+    {
+      "number": 3155,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port or retire SvelteKit E2E specs, group B (engine-resize to install-banner-layout)",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3155"
+    },
+    {
+      "number": 3156,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Port or retire SvelteKit E2E specs, group C (install-banner to web-back)",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3156"
+    },
+    {
+      "number": 3157,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Run the Lighthouse page-load gate against the RN web export",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3157"
+    },
+    {
+      "number": 3158,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Build, version and sign the RN apps for release",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:release", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3158"
+    },
+    {
+      "number": 3159,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Compile and smoke-test the RN native apps in CI",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3159"
+    },
+    {
+      "number": 3160,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Retire the SvelteKit and Capacitor performance harness",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:ci-testing", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3160"
+    },
+    {
+      "number": 3161,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Delete the SvelteKit web app",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:infra", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3161"
+    },
+    {
+      "number": 3162,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Delete the Capacitor shell",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:infra", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3162"
+    },
+    {
+      "number": 3163,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Promote the RN app to the repo root and dissolve web/",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:infra", "area:native", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3163"
+    },
+    {
+      "number": 3164,
+      "repository": "KyleMit/Splotch",
+      "parent": 3148,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Reconcile docs, skills, rules and ADRs with the RN-only repo",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:infra", "type:docs", "priority:high"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/3164"
+    }
+  ],
+  "duplicates": []
+}

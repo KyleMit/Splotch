@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:14.680Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3021",
+    "title": "Hide the RN web install banner while an AI picture is minimized",
+    "issue_number": 3021,
+    "body": "## What\n\nWith the install banner earned (Android Chrome, three strokes) and an AI picture minimized to its polaroid, RN web keeps the install banner on screen. Shipping hides it while the minimized AI chip is up, and while a save-failure banner is up.\n\n## Why\n\nLedger rows B0308 and L0210 (the historical ledger marked this suppression \"not ported\"). The banner competes with the polaroid for the child's attention and for the bottom of the paper.\n\n## Where\n\n`experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx`: the banner's `hidden` is `drawerOpen || bannerHeld`, and `bannerHeld` does not include `aiMinimized` (computed a few lines later) or a save failure. Shipping's predicate is in `web/src/lib/components/InstallBanner.svelte`.\n\n## Repro (rn-web, Chromium, Android profile)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export with a fixture `/api/*` (generate-image held).\n2. Turn AI on, draw three strokes, and confirm the install banner shows.\n3. Expand the drawer, tap Create AI image, pick a style, tap \"Keep drawing while you wait\", and collapse the drawer.\n4. Expected: banner hidden. Actual: banner shown beside the polaroid.\n\nEvidence: AI-1 record, cell `ai-install-banner-suppression` (`docs/scratchpad/2026-10-18-device-parity/results/ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`). The banner sits on the first-paint path that #3006 changed; re-run there first.\n\n## Done when\n\n- The banner is hidden while an AI picture is minimized and while the save-failure banner is up, and returns afterwards, as on shipping.\n- AI-1 cell `ai-install-banner-suppression` matches.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:15:58Z",
+    "updated_at": "2026-10-20T06:24:41Z",
+    "closed_at": "2026-10-20T06:24:41Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3021",
+    "display_title": "Hide the RN web install banner while an AI picture is minimized"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3021#issuecomment-6284823045",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3046, merged into codex/native-migration as 418b4f99bc75b7078c8e20566b54a5ce04d955c6. The RN install banner now waits while an AI picture is minimized and while a save-failure banner is up, as shipping's InstallBanner visible predicate does. A parting message already on screen stays to its end, a defect Codex's review found and the fix covers.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6284823045,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

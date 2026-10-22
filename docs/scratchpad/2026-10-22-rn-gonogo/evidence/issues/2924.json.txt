@@ -1,0 +1,105 @@
+{
+  "observedAt": "2026-10-22T16:51:59.875Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2924",
+    "title": "Re-adopt the RN paper extent on large resizes without changing existing ink",
+    "issue_number": 2924,
+    "body": "X11 still differs for a large window resize at the paper's original orientation. Shipping `paperPresentationFor` returns `adopt`; the RN `paperPresentation.policyFrame` maps that result to contain-fit.\n\nFor example, an occupied paper adopted at 400×800 CSS pixels, resized without rotation or a toolbar change to an 800×1000 viewport, is re-adopted by shipping. RN instead presents the old paper as 500×1000 at x=150. The large-resize difference is separate from the fixed floating Flat palette, retained screen position, small system-bar crop, Clear frame and erase-to-blank behavior.\n\nThe candidate's point coordinates, stroke widths, grain and export grid derive from its fixed paper reference. A view stretch or repeated point remapping would change the drawing. The follow-up needs a paper-reference/renderer contract that can change the extent while preserving existing ink at the same origin and scale, including Undo, contact mapping, coloring/Magic alignment and export.\n\nDone when an actual two-sided regression pins shipping's `adopt` result and RN matches it without stretching or repeatedly rewriting stored points; verify desktop/Split View resizing and rotation back to the original orientation. Include device/browser pairs and a failing negative control.\n\nTracked from #2913 and #2690. This is a remaining parity defect, not an accepted product difference.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 3,
+    "created_at": "2026-10-15T03:11:27Z",
+    "updated_at": "2026-10-18T02:55:00Z",
+    "closed_at": "2026-10-17T00:44:16Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2924",
+    "display_title": "Re-adopt the RN paper extent on large resizes without changing existing ink"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2924#issuecomment-6213331457",
+      "body": "PR #2964 merged into codex/native-migration as daa176fd74faaad00e53066abed2f1048c2261b6, from checked head b2d4e1c681a3b78b723c04e3937d17d75eb7dbe2. Main is untouched.\n\nThe source correction now carries the adopted runtime extent through drawing, input, Undo, grain, outlines/Magic and capture without rewriting stored points or changing storage schemas. Checkpoints retain their actual bounded CSS/device raster and uniformly inverted placement. All three confirmed first-round findings are corrected and resolved; the resumed second/final Claude review found no new defect, passed 105 targeted tests, inspected actual private media and recommended merging.\n\nExact-head validation passes all 15 Quality checks, six Browserless tiers, 1,170 E2E cases, unchanged native-web budgets (863,453 / 870,798 startup bytes; 131 entries / 6,433,766 precache bytes), and all 19 expected terminal CI checks (15 success, four intentional PR WebKit skips). Seven causal reversions fail on intended assertions and restore source byte-for-byte.\n\nFresh browser pairs in both themes match shipping's larger adopted area, exposed-area input, one Undo, landscape fit and portrait return; both actual downloads are 1600×1850. Twenty alternating eraser/crayon checkpoints per theme preserve the exact selected original Purple mask. The additional no-pre-cycle-Save context passes too, but its capture chunk was already demanded before explicit cycles, so no unloaded-first-Fixed claim is made.\n\nFresh Android arm64, development-signed physical iOS arm64 and universal simulator Release builds pass. Both physical probes pass grown-paper erase-to-blank detection and eraser/Clear Undo with preserved original ink. Android reads back its own new 1080×2016 PNG with correct placement; SVG/Skia edge masks differ by five pixels. iPad has an own-process successful PhotoKit callback; Photos pixel readback and actual saved PNG dimensions remain unverified. The current iPad window control is 744×636→1366×1024, with full bounds/defaults/blank stock state restored; its exact fullscreen-mode bit is unqualified. Available physical windows do not recreate the old over-budget numeric fixture. Historical held-pointer and rotation observations retain their original artifact qualification. Private media stays private; retained shipping installs are untouched.\n\nThe source fix is merged. This issue remains open for its two-app split-screen acceptance. A read-only OS query confirms the physical iPad runs iPadOS 26.5. Apple documents a Windowed Apps arrangement with two apps side by side and a central resize bar; that is the concrete remaining control for this OS. [Apple Support](https://support.apple.com/en-us/125309). The earlier single-window freeform resize is not relabeled as this two-app run, and no additional device input or acceptance pass is claimed here. The remaining final device/window/performance acceptance stays on #2690.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6213331457,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2924#issuecomment-6227505781",
+      "body": "Closing under the user's 2026-10-16 acceptance decision. PR #2964 is merged; desktop and physical iPad freeform window resizing, preserved ink/Undo and rotation return are verified in the preceding evidence. Accepted limitation: literal two-app Split View has not been demonstrated. One cheap Split View attempt remains in the final campaign sweep; its result will be reported on #2690 and will not reopen this issue.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6227505781,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2924#issuecomment-6244932645",
+      "body": "The one owed cheap literal two-app Split View attempt is dispositioned as a limitation. On the fresh owned 13-inch iOS27 simulator, the RN Probe was foreground, Safari activation was requested, and the workflow stopped at its foreground-admission guard before any multitasking-menu or Split View selection. The rejected app identity was not retained; a later restoration read observed Safari and restored the Probe. No two-app Split View layout was qualified, and no freeform resize is relabeled as Split View. Existing accepted freeform/rotation evidence and this issue's closed state remain as recorded. All new media stayed private; no retained shipping install was driven.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6244932645,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

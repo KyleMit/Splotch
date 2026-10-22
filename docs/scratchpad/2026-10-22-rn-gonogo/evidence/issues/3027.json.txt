@@ -1,0 +1,215 @@
+{
+  "observedAt": "2026-10-22T16:52:17.103Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3027",
+    "title": "Close RN web's minor parity gaps from the WEB-1 and AI-1 browser run",
+    "issue_number": 3027,
+    "body": "## What\n\nThe 2026-10-19 WEB-1 and AI-1 Chromium run found these small RN web differences from shipping. Each fails the plan's \"same states, storage and network effects\" rule but has little user impact, so they share one issue.\n\n- [x] **Extra reload while an update applies (B0313, L0204).** At the hidden edge with a blank canvas, RN navigates `/`, `/`, `?v=…`, `?v=…`, `/`; shipping does the same without the first extra `/`. Reproduced in 2 of 2 runs (`sw-update-lifecycle`).\n- [x] **Grant refetched after reconnect (B0315).** After `offline` then `online`, RN requests `/api/free-generation-grant` again even though the last one succeeded; shipping does not (`ai-offline-button`).\n- [x] **Two fingers counted as two strokes (L0006).** One two-finger contact plus one stroke earns the install banner on RN; shipping needs a third stroke (`install-gate-multitouch`).\n- [x] **Unknown path offline (L0205).** With the worker installed and the network off, `/no-such-page` shows Chrome's \"No internet\" page on RN and the app's not-found page on shipping. RN's worker answers only the five app paths and keeps no runtime pages cache (`sw-repeat-visit-and-offline`).\n- [x] **AI calls go cross-origin from every host (L0160).** RN web calls `https://splotch.art/api/*` with an `Origin` header wherever it is served, branch previews included; shipping calls its own origin.\n- [x] **AI error card 8 px higher (L0167).** Close and Try again sit 8 px higher, and the Report a problem strip 8 px lower, than shipping's at 390x844 (`ai-retry-then-success`).\n- [x] **Page title.** The drawing tab is titled \"Splotch\" against shipping's \"Splotch - Drawing for Kids\" (`boot-head`).\n- [x] **Intermittent offline boot after a deploy (E0328), unconfirmed.** In the first take of `sw-stale-launch`, RN failed to boot offline after a simulated deploy: two precached resources answered `net::ERR_FAILED`, then `__d is not defined`. 13 isolated reruns all booted, and one of them dropped a stylesheet. Shipping: 0 failures in 10. Needs a quiet-host repeat before it is treated as real.\n\n## Where\n\nEvidence for each item is in the cells named above: `docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` and `ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`. All were observed at 00fcc5c78d1031873db1a214301c008daa4bd080, before #3006.\n\n## Done when\n\nEach item is fixed, or recorded by the owner as an accepted difference, and its WEB-1 or AI-1 cell is re-run.\n\nRefs #2978\n\n\n\n\n\n\n\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 8,
+    "created_at": "2026-10-19T20:18:07Z",
+    "updated_at": "2026-10-21T07:59:58Z",
+    "closed_at": "2026-10-21T07:59:58Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3027",
+    "display_title": "Close RN web's minor parity gaps from the WEB-1 and AI-1 browser run"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6285155839",
+      "body": "The **Page title** item is fixed by #3051, merged into `codex/native-migration` as 0f9e7c52afd69a4ad2b8e18a22a182c2224198b5. The export now titles the app shell and `404.html` with shipping's `HOME_CARD.title`.\n\n**Rerun.** The WEB-1 cell `boot-head` was rerun on rn-web-chromium against an export that includes the fix. It reads the title \"Splotch - Drawing for Kids\", web-prod's value. The rerun note is in the WEB-1 record (#3052). I ticked the item.\n\nThe other seven items stay open.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6285155839,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6286211890",
+      "body": "The **Two fingers counted as two strokes (L0006)** item is fixed by #3057, merged into `codex/native-migration` as 2fcc9287b83ceb09053b955c655cf9a7e7f929c1.\n\n**Fix.** RN now counts once per stroke group, as shipping's `commitStrokeGroup` does. It used to count once per finger.\n\n**Rerun.** WEB-1 `install-gate-multitouch` was rerun on rn-web-chromium:\n\n* after the two-finger stroke, no banner;\n* after one more stroke, still none;\n* after a third, the banner shows.\n\nThese are web-prod's recorded values. L0006 has a `PROTOCOL_RERUN` row, and I ticked the item.\n\nThe \"Grant refetched after reconnect (B0315)\" item is in review as #3058.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6286211890,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6286419754",
+      "body": "The **Grant refetched after reconnect (B0315)** item is fixed by #3058, merged into `codex/native-migration` as bf66a866f84785c6a368dd80a4f6b326a89aee6e.\n\n**Fix.** RN reads the free allowance when AI is turned on. On a reconnect it reads again only when no allowance is known, as shipping's `followEligibility` does.\n\n**Rerun.** AI-1 `ai-offline-button` was rerun on rn-web-chromium with the record's `/api` fixture, so no generation was charged. After the reconnect it made 0 grant requests, web-prod's value; before, it made 1. B0315's ledger row stays `blocked` on its iOS network-conditions target, so this comment and #3058 carry the rerun. I ticked the item.\n\nThe \"Unknown path offline (L0205)\" item is in review as #3060.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6286419754,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6286755126",
+      "body": "The **Unknown path offline (L0205)** item is fixed by #3060, merged into `codex/native-migration` as 00176a4aae8d8c082058824ea0c5a32b448445ea.\n\n**Fix.** The worker keeps its timeout route for the five app paths. It adds a network-only route for every other page except `/admin`, which falls back to the precached shell only when the network fails. Offline, an unknown path therefore shows the not-found page. Online, the host's answer, 404 included, passes through, and a slow page is waited for rather than replaced.\n\n**Rerun.** WEB-1 `sw-repeat-visit-and-offline` was rerun on rn-web-chromium. Offline, `/no-such-page` shows \"This page wandered off\", web-prod's recorded value. L0205 has a `PROTOCOL_RERUN` row, and I ticked the item.\n\n**Still open:**\n\n* the extra reload while an update applies (B0313, L0204);\n* AI calls going cross-origin (L0160);\n* the AI error card offset (L0167);\n* the unconfirmed offline boot after a deploy (E0328).\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6286755126,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6303785940",
+      "body": "The **Extra reload while an update applies (B0313, L0204)** item was a harness artifact, not an RN defect. #3100 (merged into `codex/native-migration` as c6b7bac937713829ad498ab9b3138619bf122226) pins it; no app code changed.\n\n* The WEB-1 cell `sw-update-lifecycle` counted navigations with Playwright's `framenavigated`, which fires for document loads and for same-document history writes alike.\n* Recorded separately (CDP `Page.frameNavigated` vs `Page.navigatedWithinDocument`), both arms load exactly the same two documents: the reload `/`, then the cache-bust `?v=…`.\n* The extra `/` is one in-place `history.replaceState` from RN's browser-back owner (`src/product/browserBack.ts`) stamping its marker after the reload. It adds no history entry, makes no fetch and doesn't traverse. SvelteKit skips it because it reuses `sveltekit:history` across a reload; on a fresh load shipping stamps too.\n* The worker, `SKIP_WAITING`/`clients.claim`, the #3006 first frame and the `createPWAUpdates` wiring behave as shipping's.\n\nThe harness now records `documentLoads` and `sameDocumentWrites` beside `navigations`. Rerun on rn-web-chromium: `documentLoads` rn-web [`/`, `?v`], web-prod [`/`, `?v`]. A new test in `tools/tests/beta-browser-back.test.mjs` pins the reload stamp as exactly one in-place replace, no push, no back. Item ticked.\n\nStill open here: AI calls cross-origin (L0160, settled by the same-origin cutover hosting in #3095), the AI error card offset (L0167, in progress), and the intermittent offline boot (E0328, a quiet-host repeat later tonight).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303785940,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6303953193",
+      "body": "The **AI error card 8 px higher (L0167)** item is fixed by #3101, merged into `codex/native-migration` as 3fe2fd9819151dc97fa40bcaf7740f19b1df5e58.\n\nThe card was 16 px taller than shipping's. Because it's centred, that showed as Close and Try again 8 px higher and the Report a problem strip 8 px lower. `RsdAiErrorCard` always mounted a wrapper with a `space4` top margin for its children, and it always receives `<RsdAiProblemStatus>`, which is truthy even when it renders nothing. Shipping puts that margin on `.ai-image-report`, which exists only once a report has an outcome. The wrapper is gone, and the status carries its own margin.\n\n**Rerun.** AI-1 `ai-retry-then-success` on rn-web-chromium at 390x844, with the record's `/api` fixture (no generation charged): Close top 265 → 273, Try again 452 → 460, Report a problem 553 → 545, all now equal to web-prod. At 412x915, 820x1180 and 1024x768 the card height goes from 296 to 280 and nothing else moves. Startup bytes unchanged.\n\nItem ticked. Still open: AI calls cross-origin (L0160, settled by the same-origin cutover hosting in #3095), and the intermittent offline boot (E0328, a quiet-host repeat).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303953193,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6304273849",
+      "body": "The **Intermittent offline boot after a deploy (E0328)** item did not reproduce on a quiet host, so it's ticked with no code change.\n\n**Quiet-host repeat** of WEB-1 `sw-stale-launch` at `codex/native-migration` 3fe2fd9819151dc97fa40bcaf7740f19b1df5e58, each run started with the 1-minute load average below 8 (range 1.30–7.56):\n\n* **rn-web: 20 of 20 booted offline after the simulated deploy**, and in all 20 a stroke drawn offline inked the paper. 0 `ERR_FAILED`, 0 page errors, 0 dropped stylesheets. The only failed requests were the two expected offline misses (`/version.json` and a coloring cover thumb, `ERR_INTERNET_DISCONNECTED`). The worker was active and in control afterwards.\n* Since #3006 the RN document inlines its CSS (no `<link rel=stylesheet>`), so the earlier dropped stylesheet can't recur in that form.\n* The first-take failure (two `ERR_FAILED`, then `__d is not defined`) predates #3006 and didn't recur in 20 runs.\n\n**A note on the baseline, not filed.** The recorded \"shipping 0 failures in 10\" counted only paper visibility, which a prerendered or server-rendered page passes even when its app is dead. With an added check that one offline stroke changes pixels, web-prod built from `main` drew nothing in 10 of 10 first offline launches after a deploy: \"Failed to fetch dynamically imported module …/entry/start…js\" (8 runs) or \"Unable to preload CSS …\" (2 runs), while the same worker served that file 5 s later and a second offline reload booted cleanly. That's shipping code, which the owner said gets no issues because it's removed after the migration; it's recorded here only so the cell's baseline isn't read as a pass. The ink-check counter goes into the campaign's batch ledger PR so the cell measures a live app rather than a visible page.\n\nStill open on this issue: AI calls cross-origin (L0160), which the same-origin cutover hosting designed in #3095 settles.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6304273849,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3027#issuecomment-6311062386",
+      "body": "The last item, **AI calls go cross-origin (L0160)**, is settled by #3130 (step 7a of #3007), merged into `codex/native-migration` as f0e72ab15d53a8026876ac86eefad85368b526fb. Netlify now publishes the RN web export with `/api/*` on the same-origin function, and RN web's AI client calls the relative `aiPath` (native keeps `https://splotch.art`). Feedback went relative in #3113, and pack downloads already used `location.origin`. The web documents' CSP `connect-src` is `'self' blob:`. A Chromium run against a local `netlify serve` saw every `/api` request stay same-origin. Every item on this issue is now ticked.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6311062386,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

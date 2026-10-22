@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:24.500Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3076",
+    "title": "RN: keep the AI key field visible above the on-screen keyboard",
+    "issue_number": 3076,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20, on the Galaxy:\n\n> \"android - when I go to type in an API key and the keyboard scrolls in on the bottom, it occludes the text box. Can we make sure that stays visible even when the on screen keyboard flys in.\"\n\nOn the iPad, in landscape, the same field ends up only just above the keyboard.\n\n## Where\n\nLocated by reading the code; this is an unverified hypothesis.\n\n* `experiments/native-architecture/src/rsdDrawing/RsdAiKeyManager.tsx`, `KeyEntry`: the key `html.input` has no focus handler and no scroll-into-view.\n* Settings is an RN `Modal` with `statusBarTranslucent` and `navigationBarTranslucent` (`ModalShellContent.tsx`), and the AI card has a fixed height (`AI_SECTION_CARD_HEIGHT_PX`, `modalGeometry.ts`).\n* The scroller (`RsdScrollCue.tsx`) is a `ScrollView` with no keyboard handling. No `KeyboardAvoidingView` or `Keyboard` listener exists in `src`.\n* `AndroidManifest.xml` sets `adjustResize`, but `gradle.properties` turns `edgeToEdgeEnabled` on.\n\n## Likely cause\n\nUnder edge-to-edge and a translucent modal window, `adjustResize` no longer shrinks the content, and nothing in the app reacts to the keyboard.\n\n## Done when\n\nOn the Galaxy and the iPad, focusing the API key field keeps the field and its Save button visible above the keyboard in both orientations.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "area:settings",
+        "color": "0052cc",
+        "description": "Settings modal and controls"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-20T14:58:26Z",
+    "updated_at": "2026-10-21T02:21:36Z",
+    "closed_at": "2026-10-20T18:30:27Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3076",
+    "display_title": "RN: keep the AI key field visible above the on-screen keyboard"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3076#issuecomment-6298199724",
+      "body": "Fixed by #3087, merged into `codex/native-migration` as 404d697ef9ba83cc2533d6395cfedd57c24ad31e.\n\nDialog cards now lift above the on-screen keyboard just enough to keep the focused field 16 px clear of it. The lift follows focus to another field while the keyboard is up, and the card settles back when the keyboard hides.\n\nGalaxy, Release build, checked on that head:\n\n* Settings › AI Art: tapping the key field lifted the card, so the field and Save sat above the keyboard.\n* Hiding the keyboard returned the card to centre.\n* Settings reopened centred afterwards.\n\nThe iPad hasn't been rechecked on this head.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6298199724,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3076#issuecomment-6306410887",
+      "body": "iPad recheck: **pass**, on a Release build of `codex/native-migration` at b236d639160459eecd60900926c759af5d4ae080 (landscape, scripted through WebDriverAgent).\n\n* Settings › AI Art, with the on-screen keyboard up: the card lifted from 132 pt to 95 pt from the top. The OpenAI API Key field and Save sat fully above the keyboard, the field's bottom edge about 19 pt clear of it.\n* Keyboard dismissed: the card returned to centre (132 pt from the top of a 1024 pt screen, the same as before focus).\n* Settings closed and reopened: the card opened centred, at 132 pt.\n* A dummy value was typed and cleared. No key was saved.\n\nOne caveat about the driver, not the app: on this iPad a scripted tap focuses the field (its focus ring shows) without raising the software keyboard. The shipping reference build's Feedback text box behaves the same way, so this is the device's keyboard state under XCUITest. The keyboard came up once text was typed into the field, and that is the state checked above.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6306410887,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

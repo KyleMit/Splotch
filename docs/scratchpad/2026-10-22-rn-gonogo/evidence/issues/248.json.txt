@@ -1,0 +1,136 @@
+{
+  "observedAt": "2026-10-22T16:54:35.517Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/248",
+    "title": "Versioned API Capabilities for Old Native Apps",
+    "issue_number": 248,
+    "body": "**Brief.** Installed native releases can outlive several hosted API revisions, but requests carry no\nclient contract version and the server exposes no capability negotiation.\n\n**Rough implementation.** Add a small client wrapper around `apiUrl()` that sends app version,\nplatform, and API version headers. Publish a capability/compatibility response and define a support\nwindow before changing response shapes. An unsupported client can hide AI or show a parent-facing\nupdate message instead of falling into a generic error.\n\n---\n_Migrated from IDEAS.md → Native / mobile_",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "needs-adr",
+        "color": "d876e3",
+        "description": "Needs an architectural decision record before or alongside implementation"
+      },
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "triage:needs-decision",
+        "color": "bf3989",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 4,
+    "created_at": "2026-07-15T13:52:22Z",
+    "updated_at": "2026-10-01T12:47:54Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/248",
+    "display_title": "Versioned API Capabilities for Old Native Apps"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/248#issuecomment-5311426818",
+      "body": "Re-verified 2026-08-16: nothing here exists yet — `apiUrl()` adds no headers, and there is no capability endpoint or client-version handling anywhere under `web/src/routes/api/` or in `docs/API.md`. The open decision is how much to build now, given no breaking API change is currently planned. Options, ranked:\n\n1. **Ship identifying headers now, negotiation later (recommended).** A thin wrapper (or fetch defaults) sending app version + platform on native API calls — the values already exist as build defines (`__APP_VERSION__`, `__IS_CAPACITOR__`). The server ignores them today. This half is time-sensitive in a way the rest is not: headers cannot be retrofitted onto already-installed apps, so every release without them permanently reduces the future server's ability to distinguish or gracefully degrade old clients. Small, decision-free-ish, testable in the existing API smoke.\n2. **Do nothing until an incompatible change is proposed.** Zero cost now, but by then the installed base has no version signal at all and the only lever left is breaking old apps or supporting old shapes forever.\n3. **Full capability negotiation + support-window policy now.** A capabilities response, a defined support window, and client-side update messaging. Speculative surface with no current consumer — the repo convention argues against building it before a caller exists.\n\nRecommendation: adopt 1 now; record the support-window policy as an ADR when the first incompatible change is actually proposed (2→3 upgrade path stays open either way).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5311426818,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/248#issuecomment-5770731947",
+      "body": "**Decision brief.** Spiked option 1 from the 2026-08-16 comment on `claude/spike-248-client-version-headers` (359813b66a3d1905d4204a442b754abf69742f5e): `apiFetch()` / `apiClientHeaders()` send `X-Splotch-Version` (the ADR-0030 build version) and `X-Splotch-Platform` on all 7 `/api/*` call sites, `hooks.server.ts` admits both to the CORS allow-list (without that the native preflight fails before any route runs), and a new `readClientContext()` validates them to a closed shape with the `apiHandler` 500 log line as the one real consumer. 15 files, +183/−26; unit 224/224, `test:api:smoke` 40/40, deployed-contract test 40/40 after its fixture (the third copy of the allow-list string) learned the names, `npm run check` clean. Cost: the three JSON POSTs that were simple requests now preflight once a day per client. No response changes.\n\n**Recommendation: advance option 1 now;** record the support-window policy as an ADR when the first incompatible change is proposed. The names are the only irreversible part, since a store build sends them forever.\n\nBrief: https://claude.ai/artifact/P94uv1v4rAeR6crNxhMe3k\nSpike: `claude/spike-248-client-version-headers`\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5770731947,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/248#issuecomment-5931736389",
+      "body": "# Decision brief: should installed apps start telling the API which build they are, before anything needs to know?\n\n_Full text of the brief, so it lives here. Spike branch `claude/spike-248-client-version-headers` (359813b66a3d1905d4204a442b754abf69742f5e); evidence is the diff, 224 unit tests, the API contract smoke, and the deployed-contract test. Artifact copy: https://claude.ai/artifact/P94uv1v4rAeR6crNxhMe3k_\n\n> **Recommendation: advance, option A.** Ship the two identifying headers now and build nothing else. Headers cannot be retrofitted onto apps already installed, so every store release without them is a cohort the server can never tell apart from the next one. The negotiation half has no consumer today and can wait for the first incompatible change.\n>\n> **The one question only you can answer:** are `X-Splotch-Version` and `X-Splotch-Platform` the names you want on the wire forever? Once a store build sends them they cannot be renamed, only added to.\n\n## What is actually being decided\n\nToday a request from the native app carries nothing that says which release sent it. `apiUrl()` adds no headers; no endpoint reads a client version; no `/api/capabilities` exists. The choice is how much of the compatibility machinery to build now, when no incompatible API change is proposed: only the client's half (identify yourself), all of it (identify, negotiate, and show a parent-facing \"please update\"), or none until a break forces the question.\n\nPrior verdicts: ADR-0010 states the constraint (\"version skew between the app and the hosted API must be managed through backward compatibility\") and ADR-0064 paid for it once, keeping a legacy multipart branch alive because the server cannot tell which installed clients still send it. The 2026-08-16 comment above ranks the same three options and picks A; this brief checked it against the code and agrees. The issue still carries `needs-adr`, which is right for either A or C, because both put a wire contract in place.\n\n## What is at stake\n\n- **Child, today (nothing).** No option changes a single response.\n- **Child, at the first breaking change (the future failure).** Without a version signal, an old app hitting a changed endpoint gets the generic error card and a retry button that will never work. With headers the server can degrade that client deliberately; with full negotiation the app can hide AI or explain itself. Only the \"please update\" copy needs option C.\n- **Old app versions (irreversible).** Every release shipped before the headers exist stays anonymous for its whole life. After they exist, \"no header\" itself identifies that pre-header cohort, which is exactly what ADR-0064's multipart shim needs to know when it can be retired.\n- **Parent (nothing today).** No new permission, no new data category. Version and platform are not identifiers; the app already sends `X-Installation-Id` for free grants. The compliance ledger's \"no tracking\" posture does not move.\n- **Maintainer, option A (small).** 15 files, +183 / −26, most of it tests and docs. Three copies of the CORS allow-list string to keep in step (the hook, the smoke expectation, the deployed-contract fixture), which the existing tests already catch.\n- **Maintainer, option C (a policy to honour).** A support-window rule that every future release has to respect, plus copy and a UI state for a client that has aged out. Estimated 250–350 lines across about 8 files, and a real ADR.\n\n**How hard to undo:** the server side is trivially reversible. The client side is not: a header shipped in a store build is sent by that build forever, so the names are the one irreversible choice. **Cost of not deciding today:** nothing breaks, but the next store release goes out anonymous, and there is no way back for that cohort.\n\n## The real options\n\n**A · Identify now, negotiate later** (the spike). Every `/api/*` call carries `X-Splotch-Version` (the ADR-0030 build version: a store semver from native, the per-commit form from the web) and `X-Splotch-Platform` (`android` | `ios` | `web`). The server validates both to a closed shape and, today, uses them for one thing: the `apiHandler` 500 log line names the client build.\n- For: time-sensitive in a way the rest is not, since the value is in the installed base, not the server; no behaviour change, every existing test passed after a one-line fixture update; makes ADR-0064's shim retirement measurable from the function log.\n- Against: a custom header turns the two JSON verify POSTs and the report POST into preflighted requests (one extra OPTIONS per endpoint per day per client, cached by the existing 86400 s max-age); the only server consumer is a log line, so the \"no speculative surface\" rule is satisfied narrowly; commits the header names.\n\n**B · Nothing until an incompatible change is proposed.** Keep managing skew the ADR-0064 way: the server accepts every shape it ever accepted.\n- For: zero cost now, and no incompatible change is on the roadmap; the app has shipped compat shims before without needing a version signal.\n- Against: when the change comes, the installed base is anonymous and the only levers are \"break old apps\" or \"support old shapes forever\"; each shim stays forever because nobody can tell when its last client left.\n\n**C · Full negotiation now.** Option A plus a `GET /api/capabilities` response, a per-platform minimum supported version, a client store that reads it at boot, and a parent-facing update notice that replaces the generic AI error for an aged-out build.\n- For: the child never sees a dead retry button and the parent sees why; decides the support-window policy while nothing is burning.\n- Against: speculative surface with no caller, which the repo convention argues against; an extra boot-time request on the drawing route, the one path the app protects most; a policy chosen without a concrete change to shape it.\n\n**Left out on purpose:** a versioned URL prefix (`/api/v2/`). It lets the server evolve, but it cannot identify the clients already installed, which is the half that expires. It stays available on top of A whenever a v2 is actually needed.\n\n## What stays the same, what differs\n\n| Same either way | |\n| --- | --- |\n| Every response today | Byte-identical; no endpoint branches on the headers |\n| Auth, rate limits, CORS origin | Unchanged; the wildcard origin and per-request credentials stay as ADR-0007 has them |\n| Privacy posture | No identifier added; nothing new for the store questionnaires |\n| Rollback on the server | Revert one commit |\n\n| | A · headers now | B · nothing | C · full negotiation |\n| --- | --- | --- | --- |\n| What the next store build sends | Version + platform, forever | Nothing, forever | Version + platform, forever |\n| Diff | 15 files, +183 / −26 (built) | 0 | ≈ 8 more files, +250–350 (estimate) |\n| Extra requests | One preflight per endpoint per day for the three POSTs that were \"simple\" before | None | A, plus one capabilities GET per boot |\n| What an aged-out app sees at the first break | Whatever the server chooses per version; the app itself still shows the generic error | The generic error, undifferentiated | A parent-facing update notice |\n| ADR | Short: the header contract and the no-header cohort meaning | None | Full: support window, capability shape, client gate |\n| Reversible? | Server yes; client names no | n/a | Server yes; client names and boot request no |\n\n## What the spike showed\n\nOne commit on the branch, pushed. It is option A complete enough to review, not polished.\n\n| File | Change |\n| --- | --- |\n| `web/src/lib/apiHeaders.ts` | The two header names, beside the existing five |\n| `web/src/lib/api.ts` | `apiClientHeaders()` and `apiFetch(path, init)`; call-site headers win on collision |\n| 6 call sites | `ReportForm`, `AiImageReport` (×2), `aiCredential`, `freeGenerations`, `aiImage` (generate + result poll). The poll keeps its URL builder and spreads the headers. |\n| `web/src/hooks.server.ts` | Both names in `Access-Control-Allow-Headers`. Without this the native apps' preflight fails before any route runs. |\n| `web/src/lib/server/clientContext.ts` (new) | `readClientContext()`: version must match the ADR-0030 shape, platform must be one of three; anything else, including no header, reads as unidentified. 4 unit cases. |\n| `web/src/lib/server/http.ts` | The 500 log line carries `ios/1.6.0`-style client context. 2 unit cases. |\n| `tools/api-smoke/…` (×2), `docs/API.md` | Contract expectation, fixture, and a \"Client identification\" paragraph |\n\n| Result | |\n| --- | --- |\n| **224 / 224** | Unit tests across the API routes, server helpers, and the five client modules, including the 6 new cases |\n| **40 / 40** | `npm run test:api:smoke`: preflight carries the new allow-list, every existing case unchanged |\n| **40 / 40** | Deployed-contract test, after its fake-server fixture learned the two names. That fixture is the third copy of the string; it failed first, which is the drift guard working. |\n| **clean** | `npm run check` and ESLint on every touched file |\n\nNot exercised by the spike: a real cross-origin preflight from a WebView (the smoke sends the OPTIONS itself), and the web bundle's chunk layout after `api.ts` gained an import of `$lib/platform`. The startup-bundle spec pins the save pipeline, coloring packs, and deferred icons, none of which this touches, but a full E2E run before merging is the honest check.\n\n## Cost to finish, and after\n\n| | A | C (on top of A) |\n| --- | --- | --- |\n| From spike to mergeable | A short ADR (the contract, and that \"no header\" means a pre-1.7 client), one privacy-posture line in `docs/MOBILE/native.md`, a full E2E run, review. Two to three hours. | The capabilities route and its policy module, a client store and boot read, the update notice with copy through the design skill, an API doc section, a smoke case, the full ADR. One to two days, as an estimate. |\n| Ongoing | Keep the three allow-list strings in step (tests catch drift). Nothing else until a break is proposed. | A minimum-version table to update on every release, and a promise to parents that the notice keeps. |\n| Land in | The next store release, whatever it is; the value starts accruing then | A release that also carries the first incompatible change, or it is dead weight until then |\n\n## Recommendation\n\n**Advance option A.** Its value lives in apps that are not installed yet, and every release without it is gone for good; its cost is one afternoon and one preflight a day.\n\n**Cost accepted:** committing two header names, and a server-side reader whose only consumer is a log line until a real change arrives.\n\n**What would change my mind:** a decision that native releases will always ship in lockstep with a server change that keeps the old shape forever, which is option B stated as policy. Or a concrete incompatible change already on the roadmap, which would make C the right size.\n\n**First step:** confirm the header names, then take the spike branch to a PR with the short ADR; record the support-window policy in an ADR only when the first incompatible change is proposed.\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931736389,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/248#issuecomment-5931789568",
+      "body": "Spike branch is attached as closed draft PR #2583 so it stays reachable from here. It is option A complete enough to review; the brief above lists what it still needs before it could merge.\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931789568,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

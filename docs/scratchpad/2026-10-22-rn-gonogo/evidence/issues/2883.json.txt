@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:52.841Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2883",
+    "title": "Start the native app on shipping's default brush colour",
+    "issue_number": 2883,
+    "body": "**What:** the React Native candidate restores the last-picked brush colour at launch. The shipping app always starts on Purple.\n\nThis shows on Android as a status-bar difference: both apps tint the status bar with the selected colour, so after a restart RN shows the previous colour while shipping shows purple. It was found while checking #2877 (PR #2882).\n\n**Where:**\n- RN: the saved settings that carry `selectedColor` in `experiments/native-architecture/src/`, and where they are restored at launch.\n- Shipping: the drawing-state initialisation in `web/src/lib/state/`, which does not persist the brush colour.\n\n**Done when:** a cold start of the RN app selects shipping's default colour, whatever was picked before. A test pins the start colour to shipping's default by importing it.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T18:16:33Z",
+    "updated_at": "2026-10-14T21:00:54Z",
+    "closed_at": "2026-10-14T21:00:54Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2883",
+    "display_title": "Start the native app on shipping's default brush colour"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2883#issuecomment-6178396430",
+      "body": "Fixed by #2892, merged into `codex/native-migration`. The RN brush colour and custom colours are now session-only, as in shipping, so every launch starts on Purple. Settings schema 16 drops the stored paint. A test imports shipping's `DEFAULT_STROKE_COLOR`. The drawer-open persistence gap found along the way is #2894.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6178396430,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

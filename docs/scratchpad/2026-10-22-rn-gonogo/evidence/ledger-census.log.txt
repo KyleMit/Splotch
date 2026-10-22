@@ -1,0 +1,250 @@
+UTC 2026-10-22T16:50:10.361885+00:00
+CWD /workspace/rn-freeze
+COMMIT fffeed1fe4116112bb10297a180ac552f9754046
+RUN COUNT 1
+COMMAND python3 /workspace/rn-desk/docs/scratchpad/2026-10-22-rn-gonogo/evidence/measure-desk.py --ledgers /workspace/rn-freeze
+{
+  "file": "docs/scratchpad/2026-10-14-rn-parity-ledger/logic-ledger.csv",
+  "rows": 275,
+  "counts": {
+    "class": {
+      "ported without guard": 66,
+      "ported with drift guard": 118,
+      "imported": 27,
+      "not needed on RN": 38,
+      "missing": 26
+    }
+  }
+}
+{
+  "file": "docs/scratchpad/2026-10-14-rn-parity-ledger/behaviour-inventory.csv",
+  "rows": 355,
+  "counts": {
+    "evidence": {
+      "RN test or code": 263,
+      "none found": 92
+    },
+    "differ": {
+      "N": 145,
+      "Y \u2014 RN samples one point per touch event, drops moves <1 paper unit": 1,
+      "N native; Y-risk RN-web (no touch-action:none / gesture preventDefault on paper)": 1,
+      "Y \u2014 no guard; OS-cancelled touch commits its partial ink (contactResponder.interrupt)": 1,
+      "Y \u2014 no debounce": 1,
+      "N native (UIKit); possible on RN-web": 1,
+      "N native": 1,
+      "Y \u2014 off-paper samples clamp to the paper edge (line drawn along the edge)": 1,
+      "N native; Y-risk RN-web Safari": 1,
+      "Y \u2014 RN ends the stroke on any geometry refresh; the still-down finger stops drawing": 1,
+      "Y \u2014 RN renderer fault shows Error Screen + Retry": 1,
+      "N (except erase-to-blank keeps RN paper locked)": 1,
+      "Y \u2014 RN always contain-fits \u2192 shrunk, lifted sheet (matches reported Flat\u2192Raised lift)": 1,
+      "Y \u2014 RN refuses touches until brush prefs, sound settings, draft and ink readiness load": 1,
+      "Y \u2014 no-op on RN iOS/Android (hardware keyboard); RN-web (RSD) blocked during a stroke, busy/preparing, any product modal, or with empty history": 1,
+      "Y": 7,
+      "Y \u2014 missing": 1,
+      "Y \u2014 RN refuses silently": 1,
+      "Y \u2014 refused until lift": 1,
+      "Y \u2014 50 steps, shrinking with picture size": 1,
+      "Y \u2014 1000 strokes / 100k points then \"This picture is full\" banner": 1,
+      "N (RN blank threshold stricter)": 1,
+      "Y \u2014 RN refuses input (and dims chrome) until fill/ink ready": 1,
+      "N (minor constant diffs; no 64-move checkpoint)": 1,
+      "Y \u2014 deterministic, narrower rainbow family, first is always index 0": 1,
+      "Y \u2014 RN always records it (\"Undo brings your picture back\")": 1,
+      "Y \u2014 RN art appears/disappears instantly": 1,
+      "N (storage keys differ \u2192 upgrade resets)": 1,
+      "Y (minor) \u2014 RN shows Pen + dimmed chrome until async load": 1,
+      "Y \u2014 RN re-themes semantic Black to white on dark": 1,
+      "Y \u2014 native: chrome presses rejected while the paper holds the responder; web: stroke continues in old colour": 1,
+      "partial \u2014 RN eraser bubble per contact, no hover bubble": 1,
+      "likely Y": 1,
+      "Y (minor)": 1,
+      "partial Y \u2014 RN cancels a capture on appearance change and refuses mid-stroke": 1,
+      "other slice; partial": 1,
+      "not-needed (harness/perf)": 1,
+      "Y \u2014 RN restores the last picture": 1,
+      "N for the selected ink; **Y** for already-drawn ink (D16)": 1,
+      "**Y** on the RN bar (D12)": 1,
+      "**Y** (D10)": 5,
+      "N for swatches; **Y** for the bar's More colors (D2)": 1,
+      "**Y** on the RN bar (D2)": 1,
+      "**Y** (D1)": 3,
+      "**Y** with custom paints (D1); **Y** on iPad landscape with a bottom inset (D11)": 1,
+      "N (two-finger case differs, low)": 1,
+      "**Y** (D5)": 4,
+      "**Y** (D3)": 4,
+      "not-needed-on-RN (WebView-only iPadOS Scribble)": 1,
+      "unclear (the RN menu selects ink but never a custom swatch)": 1,
+      "**Y** (D21; AI slice)": 1,
+      "N (no Escape on RN native)": 1,
+      "**Y** (D4)": 3,
+      "N on relaunch; **Y** on upgrade (D15)": 2,
+      "N (RN refuses mid-stroke, low)": 1,
+      "**Y** (D7)": 4,
+      "**Y** (D20)": 1,
+      "**Y** (RN shows bare paper until settings load; low)": 1,
+      "N for scaling; **Y** for the ceiling (D21)": 1,
+      "**Y** (low; `RsdActionsPanel.tsx:58` keeps the flyout state)": 1,
+      "**Y** (D13)": 1,
+      "**Y** on iOS and Android (D14)": 1,
+      "**Y** on native (no panes); **Y** on web for halo order and stale panes (low)": 1,
+      "**Y** (D2)": 2,
+      "N (native volume capped above 50: D19)": 1,
+      "N (RN flies a sheet for an erased-blank page, low)": 1,
+      "unclear": 1,
+      "**Y** (D4, D6)": 1,
+      "**Y** (low)": 1,
+      "**Y** (D6)": 2,
+      "**Y** (D8)": 1,
+      "N (starts later on RN)": 1,
+      "**Y** (D9)": 5,
+      "outside this slice": 1,
+      "N (weak)": 12,
+      "**Y** (D14)": 1,
+      "Y (strategy; perf not UX)": 1,
+      "Y (perf)": 1,
+      "Y (weak)": 8,
+      "**Y** (web-only)": 2,
+      "**Y** (D11)": 1,
+      "N (storage format differs, D12)": 1,
+      "N (RN forgets last side on Auto; invisible)": 1,
+      "partial **Y**: RN error never clears (D8a)": 1,
+      "**Y** (D8c)": 1,
+      "partial **Y** (D8b)": 1,
+      "N (150 ms delay absent)": 1,
+      "N (D12)": 1,
+      "**Y**": 22,
+      "N (but rows differ, D6)": 1,
+      "Y: no persisted hint, shows 10 until grant": 1,
+      "Y: RN never hides it": 1,
+      "N (web); native: RN adds dormant universal-link capture, shipping ignores": 1,
+      "Y (\u00a72)": 1,
+      "Y (RN write reads old record first and fails)": 1,
+      "Y: RN 1x PNG": 1,
+      "N (minor dial restart)": 1,
+      "N in session; Y after background / Parent Center (polaroid gone, gate again)": 1,
+      "Y: RN restores pending runs and undismissed results after relaunch": 1,
+      "N (web chosen-folder caption missing)": 1,
+      "Y: drawing copy resolution; toggle-after-arrival saves": 1,
+      "Y: RN holds up to 20 min": 1,
+      "N, but the report send can differ (next row)": 1,
+      "Y: CSRF without Origin; unknown => no retry": 1,
+      "? (not checked)": 1,
+      "**Y**: RN needs the picker opened every session": 1,
+      "**Y**: RN treats it as metered and waits forever": 1,
+      "**Y**: RN ignores 2g": 1,
+      "**Y**: RN still inventories and shows counts": 1,
+      "**Y**: RN keeps the page and stays off across relaunches": 1,
+      "mostly N; RN chip may lack a thumbnail": 1,
+      "**Y?** iOS RN filter support unverified": 1,
+      "**Y** (bytes, MB shown)": 1,
+      "**Y** (missing)": 3,
+      "N (RN also hides under pickers and modals)": 1,
+      "**Y**: RN routes renderer errors to Error Screen and Start over blanks the draft": 1,
+      "**Y** (web)": 1,
+      "**Y**: RN turns sound, coloring and AI off": 1,
+      "slight": 1,
+      "**Y**: RN returns to the hub": 1,
+      "**Y**: RN backgrounds the app": 1,
+      "**Y** (RN web)": 1,
+      "**Y** on native": 4,
+      "N (RN re-gates live)": 1,
+      "**Y** on native (RN portrait)": 1,
+      "N (fixed)": 1,
+      "N (activity); Modal windows partly (Android 11, IME)": 1,
+      "**Y**: RN uses the section heading on phone subpages": 1,
+      "**Y**: \"More colors\", \"Purple paint\", \"Black paint\"": 1,
+      "**Y**: RN radio/aria-checked in a named group": 1,
+      "**Y**: RN fixed 130": 1,
+      "N (imported rule)": 1,
+      "**Y**: cues absent on RN": 1,
+      "**Y** (speed units, stillness fade, first-stroke latency)": 1,
+      "**Y** on native above 50%": 1,
+      "**Y**: RN playsInSilentMode=true": 1
+    },
+    "likely": {
+      "N": 186,
+      "Y": 151,
+      "partial": 13,
+      "?": 5
+    }
+  }
+}
+{
+  "file": "docs/scratchpad/2026-10-14-rn-parity-ledger/shipping-e2e-behaviours.csv",
+  "rows": 787,
+  "counts": {}
+}
+{
+  "file": "docs/scratchpad/2026-10-18-device-parity/protocol-mapping.csv",
+  "rows": 1541,
+  "counts": {
+    "status": {
+      "unverified": 1344,
+      "blocked": 17,
+      "settled": 20,
+      "out-of-scope": 136,
+      "verified": 24
+    },
+    "classification": {
+      "protocol": 1232,
+      "physical-only": 128,
+      "settled": 20,
+      "out-of-scope": 136,
+      "automated-test": 25
+    },
+    "evidence": {
+      "": 1465,
+      "results/ac-1-2026-10-19.md": 29,
+      "results/ai-1-web-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3015": 4,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3022": 2,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3019": 2,
+      "results/ds2-slice-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3012": 3,
+      "results/ds2-slice-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3013": 2,
+      "results/key1-slice-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3031": 2,
+      "results/ai-1-web-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3024": 2,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3014": 6,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3021": 2,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3027": 5,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3020": 2,
+      "results/ai-1-web-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3025": 2,
+      "results/ai-1-web-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3016": 1,
+      "results/ac-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3008": 1,
+      "results/ai-1-web-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3027": 1,
+      "results/web-1-2026-10-19.md": 1,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3026": 4,
+      "results/ai-1-web-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3018": 2,
+      "results/web-1-2026-10-19.md;https://github.com/KyleMit/Splotch/issues/3017": 3
+    }
+  }
+}
+{
+  "file": "docs/scratchpad/2026-10-18-device-parity/requirements.csv",
+  "rows": 1541,
+  "counts": {
+    "status": {
+      "pending": 1537,
+      "explicitly accepted difference": 4
+    },
+    "evidence": {
+      "[]": 1541
+    }
+  }
+}
+{
+  "file": "docs/scratchpad/2026-10-18-device-parity/acceptance-subcells.csv",
+  "rows": 4798,
+  "counts": {
+    "status": {
+      "pending": 4627,
+      "stale/invalidated": 140,
+      "blocked": 30,
+      "explicitly accepted difference": 1
+    },
+    "evidence": {
+      "[]": 4798
+    }
+  }
+}
+
+EXIT 0

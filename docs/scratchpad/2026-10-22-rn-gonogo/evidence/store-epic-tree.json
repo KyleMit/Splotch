@@ -1,0 +1,254 @@
+{
+  "repository": "KyleMit/Splotch",
+  "root": {
+    "number": 851,
+    "title": "Store launch: App Store + Play submission readiness"
+  },
+  "parents": [
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 851,
+      "count": 12
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 844,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 845,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 599,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 847,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 848,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 849,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 850,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 846,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 596,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 708,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 244,
+      "count": 0
+    },
+    {
+      "repository": "KyleMit/Splotch",
+      "number": 1521,
+      "count": 0
+    }
+  ],
+  "children": [
+    {
+      "number": 844,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Gate the remaining ungated data-out operations (feedback submit, key entry, AI toggles)",
+      "state": "closed",
+      "stateReason": "not_planned",
+      "labels": [
+        "type:feature",
+        "area:native",
+        "priority:high",
+        "area:settings",
+        "area:store-launch"
+      ],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/844"
+    },
+    {
+      "number": 845,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Resolve the AI provider's terms conflict — Gemini's API forbids child-directed use",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": [
+        "area:ai-art",
+        "needs-adr",
+        "type:security",
+        "area:native",
+        "priority:high",
+        "area:store-launch"
+      ],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/845"
+    },
+    {
+      "number": 599,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "A BYO Gemini key never unhides the magic-image button",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:bug", "priority:high", "area:ai", "area:store-launch"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/599"
+    },
+    {
+      "number": 847,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Stop publishing in-app feedback to the public issue tracker",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["area:parent-center", "type:security", "priority:high", "area:store-launch"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/847"
+    },
+    {
+      "number": 848,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Add a report path on AI-generated images, and answer the AI content-rating questions",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:feature", "area:ai-art", "needs-adr", "priority:high", "area:store-launch"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/848"
+    },
+    {
+      "number": 849,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Decide how BYOK survives store review, or drop it",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["needs-scoping", "area:ai-art", "type:chore", "area:native", "area:store-launch"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/849"
+    },
+    {
+      "number": 850,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Verify the iPad orientation lock against Split View before submitting",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": [
+        "needs-scoping",
+        "type:bug",
+        "area:ux",
+        "area:native",
+        "priority:low",
+        "area:store-launch"
+      ],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/850"
+    },
+    {
+      "number": 846,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Audit /privacy against current shipped data practices",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": [
+        "area:native",
+        "type:docs",
+        "priority:high",
+        "reviewed",
+        "area:store-launch",
+        "triage:easy-win"
+      ],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/846"
+    },
+    {
+      "number": 596,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Add a native-bundle boundary test asserting web-only modules stay out of the CAPACITOR build",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:test", "area:ci-testing", "area:native", "priority:medium"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/596"
+    },
+    {
+      "number": 708,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Decide how to reduce parental-gate surface from `target=\"_blank\"` links in the native bundle",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["needs-scoping", "area:ux", "type:chore", "area:native"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/708"
+    },
+    {
+      "number": 244,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "More store screenshots + fun store shots",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": ["type:chore", "area:native", "area:store-launch"],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/244"
+    },
+    {
+      "number": 1521,
+      "repository": "KyleMit/Splotch",
+      "parent": 851,
+      "parentRepository": "KyleMit/Splotch",
+      "title": "Register art.splotch.app and its signing keys for Android developer verification (deadline 2026-09-30)",
+      "state": "closed",
+      "stateReason": "completed",
+      "labels": [
+        "type:chore",
+        "area:native",
+        "priority:high",
+        "area:store-launch",
+        "triage:needs-human"
+      ],
+      "assignees": [],
+      "url": "https://github.com/KyleMit/Splotch/issues/1521"
+    }
+  ],
+  "duplicates": []
+}
