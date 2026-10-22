@@ -189,6 +189,29 @@ ones least likely to reach it.
   the user may not be present for, and silently downgrading to a same-vendor subagent would be worse
   than either. The skill names the trade-off and offers both, rather than choosing.
 
+## 2026-10-22: deletion coverage and final evidence
+
+The RN cutover (#3148, implementation PRs #3176 and #3177) showed that filenames and direct imports
+cannot decide a test's fate. Deleted Svelte wrappers had retained PWA factories and server handlers
+behind them; mixed tests borrowed retired expected values while exercising live behavior. Surviving
+callback titles hid removed assertions, and synthetic old-path parser fixtures were still useful.
+The testing guide owns the callback-level retained-owner audit, reached conditionally from
+implementation. Independent byte fixtures preserve exact native crayon contracts that qualitative
+replacements missed under seeded dither/shade/seed faults. This is a deletion workflow, not a
+universal test-authoring checklist.
+
+Root promotion also broke historical Git-tree inputs when current paths were substituted into old
+refs, while a retained SVG CLI succeeded without scanning anything. PR #3177 repaired these with
+old/new-ref fixtures and a nonempty installed-surface scan, independently confirmed in its second
+review. The guide therefore distinguishes current roots from historical trees and asks for a real
+CLI exercise. An empty retired directory masked another guard failure until the rival's clean
+worktree exposed it; local filesystem leftovers are not tracked inputs.
+
+Tracked-file guards initially omitted unstaged evidence, and a later receipt generator rewrote
+already-formatted JSON in PR #3178. The shipping order is generation, formatting, staging, then
+final guards; outputs added afterward repeat that gate. A prose-matching test would only ratify the
+wording, so no such test was added.
+
 ## Unvalidated
 
 The skill has not yet been run end to end. The pieces are individually exercised, but the seams —

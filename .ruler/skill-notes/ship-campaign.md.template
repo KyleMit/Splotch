@@ -281,6 +281,47 @@ skill note has the run record. Four changes to this skill came from it:
   runs, while a background Bash command's completion did wake the session. The preflight's usage
   bullet now asks what wakes the run at a reset.
 
+## 2026-10-22: RN cutover campaign (#3148)
+
+The owner requested six workflow heals after the campaign's issue units, separately reviewed. The
+non-default trunk exposed two assumptions that had been safe on `main`: GitHub did not auto-close
+issues, and there was no push CI to backstop an unrelated local integration trial. The runbook and
+its standing authorization now agree on manual closure of queued issues only after verified merge,
+followed by claim/assignee cleanup and reread. PR-only bases require exact gated-base equality or a
+surveyed catch-up and fresh CI; the integration-trial shortcut remains for trunks with post-merge
+CI. Treating every non-default trunk as PR-only would also be wrong, so preflight records the
+actual jobs rather than inferring them from the branch name.
+
+Blanket hot-file ownership serialized otherwise independent deletion lanes. Explicit grants to
+separate `package.json` script blocks worked, while dependency blocks and lockfiles needed coherent
+ownership. A later broad replacement hit homonymous keys in both `scripts` and `scripts-info`, so
+the grants name sections and keys, and the composed diff is reviewed. Whole-file generators and
+formatters can still make block sharing unsafe. This does not grant multiple Git writers in one
+checkout.
+
+Shared scratch PR-body files were overwritten, and lanes silently exceeded their declared sets to
+repair doc-reference gates. Unique scratch paths and a brief's explicit repair-grant policy prevent
+both surprises; a gate failure is evidence to request a grant, not authority to take one. Briefs
+also need the applicable ADRs before they prescribe verification: one asked for native UI flows
+despite ADR-0120's launch-and-paint boundary. The failed `gh issue comment --json` followed by
+`|| true` belonged beside the comment-writing workflow, not in a universal shell ban.
+
+Other accepted observations live at their own entry points: deletion/relocation coverage in the
+testing guide and `ship-issue`; evidence generation/format/staging order in `ship-issue`; empty
+nested Ruler directories and same-checkout mutating-check scheduling in the generation instructions;
+native tool schema discovery in the GitHub instructions. Unit #3164's browserless scan read a
+temporarily removed direct-provider package while Quality ran `ruler:check`. The isolated and final
+serialized tool runs passed; unrelated receipt failures were separate. Separate CI checkouts do not
+share this filesystem race.
+
+Dropped candidates: index-lock causes were unproved; the filesystem fixture fix was routine;
+formatter friction already has the documented npm-script/installed-tool route and does not prove a
+package-manager default; ADR context checks already belong to reconciliation. The review publisher's
+HTTP 422 had an observed marked-review adoption recovery but no durable server detail establishing
+its cause. No automatic retry or trust-wrapper repair is justified, and operational recovery is
+never permission to route around an outcome denial. Existing explicit human grants are reused;
+their presence does not guarantee a later approval verdict.
+
 ## Open questions
 
 * The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign

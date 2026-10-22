@@ -20,21 +20,29 @@ current:
    * the **exports and contracts it will change**: renamed or deleted identifiers, changed
      signatures, changed defaults, and new lint rules or conventions.
 
-   The map lives in the ledger, one row per unit.
+   The map lives in the ledger, one row per unit. Give every lane a unique scratch directory and
+   lane-specific PR-body and evidence filenames; no shared mutable scratch file. Each checkout has
+   one Git writer, even when source blocks are shared.
 2. **Admission.** A unit launches only when all of these hold:
-   * **Its file set is disjoint** from every in-flight unit's set.
+   * **Its edit set is disjoint** from every in-flight unit's set, including any scoped shared-file
+     grants below.
    * **No dependency either way.** It doesn't import a module another in-flight unit changes the
      contract of, and no in-flight unit imports one it will change. Check the import lines of both
      sides' files, and follow re-exporting barrels. For example, a unit that changes
      `storageKeys.ts` is coupled to one that imports `$lib/storage`, which re-exports it.
-   * **Hot shared files have one holder.** `docs/ARCHITECTURE.md`, `eslint.config.js`,
+   * **Hot shared files need explicit ownership.** `docs/ARCHITECTURE.md`, `eslint.config.js`,
      `package.json` and its lockfile, and the `.ruler/` sources and their generated output collide
-     even across unrelated work. Each is held by at most one unit at a time. A unit that needs one
-     waits, or leaves that edit as a drafted leftover.
-   * **Predict implicit holders.** A unit that grows or shrinks any `tools/` file listed in
-     `TOOLS_GRANDFATHERED_MAX_LINES` holds `eslint.config.js`, because it moves that file's cap. A
-     unit that adds an npm script holds `package.json`. Each such edit turns every other lane's
-     catch-up survey `coupled`, which costs that lane a real merge and a full CI round.
+     even across unrelated work. Prefer one holder when formatting, generation or semantic coupling
+     rewrites the whole file. Otherwise record explicit disjoint line/block grants in the map and
+     briefs, with stable section/key boundaries (for example, named `scripts` keys separately from
+     `scripts-info`). Coordinate dependency blocks and lockfile generation under one owner; a
+     scripts grant does not grant dependencies or the lockfile. Review the composed diff before
+     gating it. A unit without a safe grant waits or leaves that edit as a drafted leftover.
+   * **Predict implicit grants.** A unit that grows or shrinks any `tools/` file listed in
+     `TOOLS_GRANDFATHERED_MAX_LINES` needs the affected `eslint.config.js` cap block. A unit that
+     adds an npm script needs its `package.json` script and help entries. Grant these under the same
+     ownership rules. Each such edit turns every other lane's catch-up survey `coupled`, which costs
+     that lane a real merge and a full CI round.
 
    A unit whose file set can't be predicted from its spec runs alone, as in the serial loop.
 3. **The merges.** The orchestrator performs every merge itself, one at a time, so no two merges can
@@ -43,9 +51,11 @@ current:
    "Merging".
 4. **Broadcasts.** After every merge, it sends each still-running unit anything that changes that
    unit's assumptions: a renamed identifier, a new lint rule or guard, a moved budget pin or cap, a
-   new convention. The unit applies it before it reports ready. A unit that finds it needs a file
-   outside its declared set stops that part and reports it. The orchestrator grants the file if it's
-   free, or the part becomes a leftover.
+   new convention. The unit applies it before it reports ready. Each brief states whether narrow
+   out-of-set doc/reference-gate repairs are already granted, naming their allowed files or blocks.
+   A unit needing any other out-of-set edit stops that part and requests a grant with the path,
+   block and reason. The orchestrator checks ownership, records and broadcasts the grant before the
+   edit; an unavailable grant becomes a leftover. A failing gate alone grants no ownership.
 
 ## The per-unit merge gate
 
@@ -89,6 +99,11 @@ caught up past the change.
 round per move; later moves are the orchestrator's to cover, with an integration trial or a resume
 (below).
 
+When the base has PR-only CI, every later move still requires the worker's survey of the exact
+incoming SHA, catch-up merge, push and fresh CI. The orchestrator merges only when the fresh base
+tip equals the reported gated base; the local-trial shortcuts below apply only to bases with
+post-merge CI.
+
 ## Merging
 
 The orchestrator handles ready PRs one at a time:
@@ -105,12 +120,13 @@ The orchestrator handles ready PRs one at a time:
    `gh pr merge <n> --merge --delete-branch --match-head-commit <head>`, then verify it from live
    state (the live-state check in `ship-campaign` step 2). The `--match-head-commit` flag refuses a
    PR whose head moved after its gate.
-4. If `main` moved, run an integration trial (below), or resume that worker with the new `main`
-   commit. A resumed worker repeats the gate against it, and the orchestrator moves on to the next
-   ready PR. When the survey says `unrelated`, the worker may run a local trial merge of the
-   surveyed commit (`git merge --no-commit --no-ff <sha>`, then `npm run check`, `npm run lint`, and
-   its targeted tests) instead of a CI round. It then aborts the trial and reports ready against the
-   new commit. A second consecutive move takes the CI round.
+4. If `main` moved and has no post-merge CI, resume the worker for the full gate against that exact
+   incoming commit and wait for fresh CI. Otherwise run an integration trial (below), or resume that
+   worker with the new `main` commit. A resumed worker repeats the gate against it, and the
+   orchestrator moves on to the next ready PR. When the survey says `unrelated`, the worker may run
+   a local trial merge of the surveyed commit (`git merge --no-commit --no-ff <sha>`, then
+   `npm run check`, `npm run lint`, and its targeted tests) instead of a CI round. It then aborts
+   the trial and reports ready against the new commit. A second consecutive move takes the CI round.
 
 **When a Workflow agent performs the merge**, launch its workflow in the turn the user's explicit
 merge approval started, never in one a task notification or timer started. The harness relays only
@@ -123,11 +139,11 @@ although that PR had a rival review, green CI and a clean local trial. That the 
 caused the refusal is likely but unproven, since two merges passed without it. A refusal pauses the
 queue either way (`ship-campaign`, "Invocation and authority").
 
-**The integration trial.** When `main` has moved under one or more ready PRs, the orchestrator can
-gate them itself instead of resuming each worker:
+**The integration trial.** Only on a base with post-merge CI, when `main` has moved under one or
+more ready PRs, the orchestrator can gate them itself instead of resuming each worker:
 
 1. Survey each PR's head against the current `origin/main`. Only PRs whose verdict is `unrelated`
-   join the trial; admission already keeps their file sets and contracts disjoint from each other.
+   join the trial; admission already keeps their edit sets and contracts disjoint from each other.
 2. In a scratch worktree at that `origin/main`, merge the joining heads, then run `npm run check`,
    `npm run lint`, and `npm run test:browserless` once, plus what each PR's own gate needs beyond
    that tier: its targeted tests (Playwright specs included), and `npm run build:site` when it
@@ -161,13 +177,14 @@ green PRs for a few minutes. The priority PR then merges against the `main` its 
 extra CI round.
 
 Because the orchestrator is a single process, nothing merges between its fetch and its merge except
-work outside the campaign. The post-merge CI run on `main` is the backstop for that. Leave each
-lane's worktree and local branch in place after its merge; the remote branch goes with the merge's
-`--delete-branch`. The auto-mode classifier flagged both ways of removing lanes inside a campaign:
-an orchestrator's end-of-campaign batch removal of its own clean lane worktrees (2026-09-30), and a
-merge agent's `git worktree remove --force` plus `git branch -D` of an already-merged lane
-("[Irreversible Local Destruction]", 2026-10-04). The morning report lists the lanes for
-`prune-git-workspace`.
+work outside the campaign. Where applicable, post-merge CI is the backstop for that. A PR-only base
+instead requires fresh PR CI against the exact gated base and tip equality at merge time, with a
+full gate after every base move. Leave each lane's worktree and local branch in place after its
+merge; the remote branch goes with the merge's `--delete-branch`. The auto-mode classifier flagged
+both ways of removing lanes inside a campaign: an orchestrator's end-of-campaign batch removal of
+its own clean lane worktrees (2026-09-30), and a merge agent's `git worktree remove --force` plus
+`git branch -D` of an already-merged lane ("[Irreversible Local Destruction]", 2026-10-04). The
+morning report lists the lanes for `prune-git-workspace`.
 
 A lane's rebuildable build output is different, and goes after its merge. Lanes that build natively
 leave DerivedData, Gradle output and extracted builds behind; on 2026-10-21 they grew the shared

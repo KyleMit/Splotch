@@ -47,6 +47,12 @@ provider tree read-only, run it with host/escalated write access from the first 
 mid-pass can interrupt restoration of a registered direct-provider package; if a retry reports a
 missing direct-provider source, restore that exact tracked path before running Ruler again.
 
+Apply and check temporarily remove and restore direct-provider directories. In one checkout,
+serialize them against file scanners and the full browserless mirror, including when invoked by
+`check:quality`; separate CI checkouts do not share this race. When retiring nested instructions,
+remove the empty nested `.ruler/` directory as well as its source and generated siblings, then run
+apply followed by check to verify stable output without orphan instructions.
+
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
 source. For a registered direct package, edit its selected `.claude/` or `.agents/` package and note

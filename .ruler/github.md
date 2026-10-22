@@ -5,6 +5,10 @@ For every GitHub task, **use the native GitHub skill and its MCP/app tools first
 host's macOS Keychain-backed `gh` credentials, so `gh` authentication failures there are expected;
 never try to repair them by re-authenticating from the sandbox.
 
+Discover a native tool's invocation schema from its metadata before calling it; Codex exposes the
+complete declarations in `ALL_TOOLS`. Never invoke a mutation with empty arguments to learn its
+schema. Supply a complete request for the already-authorized repository and destination.
+
 When `gh` is needed from a scratch directory outside this checkout, pass `-R KyleMit/Splotch` and
 verify any expected downloaded files exist. For long-running work, open a draft PR early, commit
 reviewable steps as they finish, and keep the reasoning in a committed note so progress survives a

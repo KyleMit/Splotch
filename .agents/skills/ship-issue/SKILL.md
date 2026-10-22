@@ -94,7 +94,12 @@ pick ships the wrong software — is a blocked unit in either mode.
   for tests. Reading the skill costs less than a review round spent on a convention you invented.
 * **Verify what you touched.** Code: `npm run check` plus the tests covering the edit, with a new or
   updated test whenever the change is a feature or a bug fix. Docs, skills, or rules: re-read the
-  surrounding section, and run `npm run ruler:apply` if you edited anything under `.ruler/**`.
+  surrounding section, and run `npm run ruler:apply` if you edited anything under `.ruler/**`. For
+  deletion or relocation work, follow the testing guide's
+  [retained-coverage audit](../../../docs/TESTING.md#retiring-or-relocating-code) before removing
+  tests. Finish receipt/evidence generation, format the resulting files, and stage the final file
+  set before the final tracked-file and format guards. Regenerated or newly added evidence after
+  those guards must be staged and checked again.
 * **Commit and push.** Put `Fixes #<NN>` in the commit body when an issue exists, so the merge
   closes it. Closing does not remove labels; autonomous mode retires the claim in step 5, while
   default mode hands that post-merge action to the user in step 4.
@@ -201,11 +206,13 @@ successful no-op. Closing an issue never implies label removal. If cleanup fails
 separately from the successful merge, with the exact issue and remaining label; do not retry the
 merge or sweep other issues' labels.
 
-Then watch the post-merge-only jobs on the verified merge SHA, waiting for the expected applicable
+Then watch any applicable post-merge-only jobs on the verified merge SHA, waiting for the expected
 set to register and finish as in `drive-pr-to-mergeable` step 5. The merge is their first and only
-chance to run and their failures land on `main`. If one goes red, say so immediately and offer the
-revert; do not start a fix pass under the same authorization, which covered shipping this unit, not
-repairing trunk.
+chance to run and their failures land on the base. A calling campaign that records a PR-only base
+instead requires its exact-gated-base and fresh-PR-CI proof; do not wait for a push run that cannot
+register. If a post-merge job goes red, say so immediately and offer the revert; do not start a fix
+pass under this unit's authorization. A campaign's separate trunk-repair authority and roll-forward
+rule still apply when it is the caller.
 
 Close the report with: the issue or task shipped, the branch and PR URL, what each review round
 found and how it was resolved, CI status, the merge commit (copied from command output, never

@@ -39,10 +39,18 @@ The input names the queue and, optionally, a deadline:
   [`references/performance.md`](references/performance.md) before preflight. Apply the profile
   yourself when any queued unit needs the device rig or is a performance cluster, even if the caller
   did not name it; otherwise never load that file.
-* **`parallel=<n>`** — up to `n` file-disjoint units in flight at once, with this session as the
+* **`parallel=<n>`** — up to `n` independent units in flight at once, with this session as the
   orchestrator: it owns the ownership map, admission, every merge, and the post-merge broadcasts.
   Read [`references/parallel.md`](references/parallel.md) before preflight, and never load it
   otherwise. Without it, the loop below is strictly one unit at a time.
+
+**Campaign base.** `main` is the default. When the user names another trunk, read `main` below and
+in the delegated shipping skills as that branch: branch from its fresh remote tip, target every PR
+at it, and survey with `--base=<branch>`. Record the base and its applicable PR and post-merge CI
+jobs during preflight. If the base has no post-merge CI, merge only while its fresh remote tip
+equals the exact base commit covered by the PR's green CI. A moved base requires a survey, a merge
+of the exact surveyed incoming SHA, a push, and fresh CI on that head; a local integration trial
+cannot replace it. Bases with post-merge jobs retain their ordinary push-CI verification.
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
@@ -51,11 +59,11 @@ user's own words), comment on queued issues and their epic, and ship two kinds o
 **free-form unit**: a trunk-repair PR that fixes `main` forward after it turns red during the
 campaign (step 4), and a gate-repair PR for a check proven broken on its own base (step 3). It does
 **not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
-a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
-work outside the queue and those two exceptions. Carry this block verbatim, followed by the user's
-quoted approvals from step 1, into every unit's instructions: an unattended unit must never have to
-infer its authority, and a runner that sees "never merge" anywhere in its instructions will refuse
-the merge.
+a shared branch, closing an issue except a queued issue after its verified merge (through `Fixes` or
+the non-default-base manual closure below), filing new issues, or touching work outside the queue
+and those two exceptions. Carry this block verbatim, followed by the user's quoted approvals from
+step 1, into every unit's instructions: an unattended unit must never have to infer its authority,
+and a runner that sees "never merge" anywhere in its instructions will refuse the merge.
 
 This workflow scope does not replace explicit consent for sending private material to an external
 destination, and no approval quote guarantees a future classifier verdict. Step 1 records the
@@ -139,10 +147,13 @@ fix done before declaring the campaign started.
   `npm run run-claude:policy:check`, which also verifies the `gh`, push, and merge approval rules.
   An unattended run whose rival bridge is missing reviews nothing and merges nothing.
 * **Prove the merge path.** `gh auth status`, and `gh --version` at or above the release
-  `ship-issue` step 5 requires. The latest `main` commit's CI is green; a red trunk fails every
-  unit's gate. Carry the consent quotes above into the ledger and each unit. If the user says that
-  PRs should stay open, run every unit as step 3's reviewer-outage downgrade does: `ship-issue`'s
-  default mode, verified as an open, mergeable PR rather than a merge.
+  `ship-issue` step 5 requires. On a base with post-merge CI, its latest applicable runs are green;
+  a red trunk fails every unit's gate. On a PR-only base, verify the previous merge's reviewed-head
+  and gated-base provenance; every candidate must satisfy exact-gated-base equality and fresh PR CI
+  before merging, rather than waiting for a push run. Carry the consent quotes above into the ledger
+  and each unit. If the user says that PRs should stay open, run every unit as step 3's
+  reviewer-outage downgrade does: `ship-issue`'s default mode, verified as an open, mergeable PR
+  rather than a merge.
 * **Usage windows.** Every agent the campaign runs draws on one account usage limit, and reaching it
   ends them all at once. Read the plan's usage windows (through the host's usage tool when it has
   one), agree two thresholds with the user — one where no new unit or agent launches, one where the
@@ -170,6 +181,10 @@ the session's scratch directory, outside the repository. It is a view, not the t
 issue, and label state are authoritative, and a resumed campaign re-derives the ledger from them
 rather than trusting it.
 
+When writing ledger or issue comments through the CLI fallback, `gh issue comment` has no `--json`
+option. Check its exit code and returned URL, then re-read the live comment; do not hide a failed
+publication with `|| true`.
+
 ## 2. The per-unit loop
 
 For each unit, finish every step before starting the next:
@@ -191,22 +206,28 @@ For each unit, finish every step before starting the next:
      the campaign's own authorization. Once handed over, an adopted draft still needs a survey
      before its catch-up, a fresh rival review, and a CI round on its new head. The peer's old gates
      cover none of that.
-3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
-   cluster, a trunk repair, a gate repair), `ship-issue mode=autonomous` with the unit's written
-   spec in place of an issue number — with the authorization block, the assigned port, and the
-   issues other sessions are working on (so the unit stays off their files). When the runner
-   supports subagents, give each unit a **fresh implementer subagent** with only that context, and
-   resume the same subagent for that unit's own repairs. A long campaign run inline compacts its
-   context repeatedly and loses what the early units learned; a fresh context per unit carries only
-   what the unit needs.
+3. **Ship it.** Read the applicable ADRs before writing the unit's brief, including the constraints
+   on its verification (ADR-0120 keeps native smokes to launch and paint). Run
+   `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance cluster, a trunk
+   repair, a gate repair), `ship-issue mode=autonomous` with the unit's written spec in place of an
+   issue number — with the authorization block, campaign base, CI model, post-merge closure rule,
+   assigned port, and the issues other sessions are working on (so the unit stays off their files).
+   When the runner supports subagents, give each unit a **fresh implementer subagent** with only
+   that context, and resume the same subagent for that unit's own repairs. A long campaign run
+   inline compacts its context repeatedly and loses what the early units learned; a fresh context
+   per unit carries only what the unit needs.
 4. **Verify from live state, never from the unit's report.** The PR reads merged; its merge commit
-   is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
-   that SHA registered and finished green; and, for an issue unit, the issue is closed and
-   `in-progress` is gone. The post-merge jobs, per merge, are the standard jobs of the push `Tests`
-   run. `ship-issue` assigns the issue when it claims it and does not unassign it, so remove that
-   assignee here and re-read the issue to confirm. A free-form unit has no issue to check; its PR
-   body carries the spec, and the ledger records it. Copy every SHA from command output. A report
-   and the API disagreeing is itself a finding for the morning report.
+   is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); and any applicable
+   post-merge jobs on that SHA registered and finished green. On `main`, these include the standard
+   jobs of the push `Tests` run. For a base with PR-only CI, verify the exact-gated-base rule above
+   at merge time instead of waiting for a push run that cannot register. For an issue unit targeting
+   a non-default base, explicitly close the queued issue after verifying the merge, with a comment
+   naming the PR and full verified merge SHA; GitHub does not auto-close it there. Then remove
+   `in-progress` and the assignee, and re-read the issue to confirm closure and both removals. On
+   the default base, verify automatic closure and perform the same claim/assignee cleanup; an
+   unexpectedly open issue follows `ship-issue`'s unclosed-issue rule. A free-form unit has no issue
+   to check; its PR body carries the spec, and the ledger records it. Copy every SHA from command
+   output. A report and the API disagreeing is itself a finding for the morning report.
 5. **Update the ledger** and continue.
 
 **A unit that stops before opening a PR is skipped.** `ship-issue` stops without a PR when the work
@@ -294,8 +315,10 @@ defect it introduced, and a revert would throw away reviewed work to hide it. In
    a flaky test gets its cause repaired with a negative control that still fails for the defect the
    test exists to catch, never a skip, a retry wrapper, or a loosened assertion. An infrastructure
    failure gets one rerun and, if it persists, becomes a queue-wide blocker.
-4. **Resume** once the post-merge jobs on the repair's merge SHA finish green, and record the red,
-   its classification, and the repair PR in the ledger and the morning report.
+4. **Resume** once applicable post-merge jobs on the repair's merge SHA finish green. A PR-only base
+   instead requires the repair's fresh PR CI and verified merge at its exact gated base; no push run
+   can register there. Record the red, its classification, and the repair PR in the ledger and the
+   morning report.
 
 A trunk repair that exhausts the unit budget in step 3 is a queue-wide blocker: `main` stays red, so
 write the morning report and stop.
