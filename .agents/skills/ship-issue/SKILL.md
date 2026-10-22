@@ -169,6 +169,11 @@ with the PR open and the failed condition named.
   verify the new head before merging.
 * **A rival review actually ran and posted** at least round one. A skipped, failed, or
   same-vendor-substituted review withdraws the merge authority (step 4).
+* **A calling campaign's PR-only base still equals the gated base.** Record the exact base SHA from
+  the candidate's catch-up merge parent or merge-base when pushing it for CI, rather than rereading
+  a moving remote ref after CI. Immediately before merging, fetch the base and require its tip to
+  equal that recorded SHA. If it moved, survey it, merge the exact surveyed incoming SHA, push and
+  wait for fresh PR CI, then repeat this equality check. No local trial replaces that CI round.
 * **Nothing on the blocker list happened** — no test weakened, no protection bypassed, no decision
   that crossed a security boundary.
 
@@ -178,7 +183,7 @@ linked worktree, first confirm GitHub CLI is 2.99.0 or newer; that is the releas
 report the installed version and required upgrade — do not route around the missing safety.
 
 ```bash
-gh pr merge <n> --merge --delete-branch
+gh pr merge <n> --merge --delete-branch --match-head-commit <verified-head>
 ```
 
 After fetching and verifying the merge, detach this worktree at `origin/main`, then delete any local

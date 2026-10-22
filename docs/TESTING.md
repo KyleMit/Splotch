@@ -49,8 +49,9 @@ Synthetic fixture paths naming retired files do not make a parser or reporter ob
 Preserve retained behavior with live contracts or independent expected fixtures. When exact bytes
 are the contract, capture base-derived fixtures or digests, including rendered output samples where
 applicable; qualitative checks do not replace byte parity. Seed meaningful faults in the retained
-implementation to prove the successor guards fail, following the negative-control guidance below. Do
-not weaken a passing expectation to accommodate the move.
+implementation to prove the successor guards fail, following
+[A regression test must fail against the old code](#a-regression-test-must-fail-against-the-old-code).
+Do not weaken a passing expectation to accommodate the move.
 
 Separate current-root paths from paths resolved inside historical Git trees: an old ref needs that
 ref's layout. Exercise retained CLIs against their intended inputs, with old/new-ref fixtures when

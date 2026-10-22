@@ -121,12 +121,13 @@ The orchestrator handles ready PRs one at a time:
    state (the live-state check in `ship-campaign` step 2). The `--match-head-commit` flag refuses a
    PR whose head moved after its gate.
 4. If `main` moved and has no post-merge CI, resume the worker for the full gate against that exact
-   incoming commit and wait for fresh CI. Otherwise run an integration trial (below), or resume that
-   worker with the new `main` commit. A resumed worker repeats the gate against it, and the
-   orchestrator moves on to the next ready PR. When the survey says `unrelated`, the worker may run
-   a local trial merge of the surveyed commit (`git merge --no-commit --no-ff <sha>`, then
-   `npm run check`, `npm run lint`, and its targeted tests) instead of a CI round. It then aborts
-   the trial and reports ready against the new commit. A second consecutive move takes the CI round.
+   incoming commit and wait for fresh CI; the `unrelated` local trial below does not apply.
+   Otherwise run an integration trial (below), or resume that worker with the new `main` commit. A
+   resumed worker repeats the gate against it, and the orchestrator moves on to the next ready PR.
+   When the survey says `unrelated`, the worker may run a local trial merge of the surveyed commit
+   (`git merge --no-commit --no-ff <sha>`, then `npm run check`, `npm run lint`, and its targeted
+   tests) instead of a CI round. It then aborts the trial and reports ready against the new commit.
+   A second consecutive move takes the CI round.
 
 **When a Workflow agent performs the merge**, launch its workflow in the turn the user's explicit
 merge approval started, never in one a task notification or timer started. The harness relays only
