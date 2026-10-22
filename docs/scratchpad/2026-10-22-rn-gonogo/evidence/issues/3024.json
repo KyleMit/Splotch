@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:16.243Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3024",
+    "title": "Apply the server's \"free creations used up\" answer on RN",
+    "issue_number": 3024,
+    "body": "## What\n\nWhen `/api/generate-image` answers `403 { ok: false, code: \"FREE_GRANT_EXHAUSTED\", remaining: 0, … }` (the response from `exhaustedGrant()` in `web/src/routes/api/generate-image/+server.ts`), both arms close the card and open Settings › AI Art.\n\nShipping then applies the answer:\n- AI Art says \"Your 10 free AI creations are used up. Add your own OpenAI API key to keep creating.\";\n- it scrolls to the key field;\n- the drawer button becomes \"Set up AI image\".\n\nRN web keeps the stale allowance:\n- AI Art still says \"10 free AI creations left. No setup is needed.\";\n- the drawer button still reads \"Create AI image, 10 free left\".\n\n## Why\n\nLedger rows B0277 and L0155. After the server has refused, RN invites the child to tap again, and every tap sends another doomed request and bounces back to Settings.\n\n## Where\n\n`experiments/native-architecture/src/ai/transport.ts` (`generationReply` maps `FREE_GRANT_EXHAUSTED` to `reason: 'exhausted'`) and `ai/session.ts` / `product/useAiAvailability.ts`. The exhausted failure has to update the free-generation state the badge and AI Art read. Shipping: `web/src/lib/state/freeGenerations.svelte.ts`.\n\n## Repro (rn-web, Chromium, iPhone-sized touch profile)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export.\n2. Use a fixture `/api/*` where the grant answers `{ ok: true, remaining: 10, limit: 10 }` and generate-image answers the 403 above.\n3. Turn AI on with Customize AI Style off, draw, and tap Create AI image.\n4. Expected: AI Art says the free creations are used up, and the drawer shows Set up AI image. Actual: \"10 free AI creations left\", and \"Create AI image, 10 free left\".\n\nEvidence: AI-1 record, cell `ai-exhausted-mid-run` (`docs/scratchpad/2026-10-18-device-parity/results/ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- An exhausted answer sets the free count to 0 everywhere it shows, as shipping does, on RN web and native.\n- AI-1 cell `ai-exhausted-mid-run` matches.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:17:38Z",
+    "updated_at": "2026-10-20T06:49:06Z",
+    "closed_at": "2026-10-20T06:49:06Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3024",
+    "display_title": "Apply the server's \"free creations used up\" answer on RN"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3024#issuecomment-6285153149",
+      "body": "Fixed by #3047, merged into `codex/native-migration` as 6f845cb33fb52f00570d8d85ac325719a8ee5734.\n\n**Rerun.** The AI-1 cell `ai-exhausted-mid-run` was rerun on rn-web-chromium against an export that includes the fix. The record's `/api` fixture answered every request, so no generation was charged. The fixture's 403 `FREE_GRANT_EXHAUSTED` closes the card and opens AI Art. AI Art says the 10 free creations are used up, and the wand reads \"Set up AI image\". Both match web-prod's recorded values. The rerun note and the `PROTOCOL_RERUN` rows for B0277 and L0155 are in #3052.\n\n**Native.** The fix is in the shared product owner (`session.ts`, `generationController`, `createDrawingProduct`), which native and web both run. `native-ai-flow-owner.test.mjs` drives that owner directly. No simulator or emulator run checked it, and B0277 and L0155 stay unverified until AI-1 covers their native targets.\n\n**Review.** Codex reviewed #3047 twice. Its round-2 findings (a race between a grant and a later answer, a policy change, and the sources of zero) were fixed after round 2. The fixes were not re-reviewed, because PRs here get at most two rounds.\n\n**Not covered here.** On this path, focus lands on the AI Art heading on rn-web and on Settings' Back button on web-prod. That difference was also present on 2026-10-19. No row covers it, and it is not filed.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6285153149,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

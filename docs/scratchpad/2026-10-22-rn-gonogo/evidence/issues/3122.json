@@ -1,0 +1,51 @@
+{
+  "observedAt": "2026-10-22T16:54:35.245Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3122",
+    "title": "RN iPadOS: after a resized window is maximized, the palette slides under the status bar until rotation",
+    "issue_number": 3122,
+    "body": "Part of #2978. Found during the 2026-10-21 iOS bug hunt: Release build of `codex/native-migration` at 7eca9e4f8007026fbfa9ef5f78274da59d74ae2a. Reproduced twice on a fresh iPad Pro 13-inch (M5) simulator (iPadOS 26.5, portrait) and once on the physical iPad Pro 12.9-inch (iPadOS 26, landscape).\n\n## What happens\n\nAfter the app is put in a window and then maximized again with the window's **Zoom** control, the drawing screen loses its top safe-area inset. The palette moves up under the status bar, and the clock and date are drawn over the first swatches. The coloured status band above the palette is gone. It stays that way until the device is rotated.\n\n**Repro:**\n\n1. Launch the app full-screen on an iPad running iPadOS 26. Note where the palette starts.\n2. Drag the bottom-right resize grabber to make a window.\n3. Tap the window controls in the top-left corner, then tap **Zoom** (green) to fill the screen again.\n\n* **Actual:** the palette starts at the very top. The `Purple` button's frame moves from y = 40 to y = 18 points (simulator, portrait), and from 44 to 22 points (physical iPad, landscape). The status bar text overlaps the first swatches. Opening and closing Settings does not fix it. Rotating to landscape and back does.\n* **Expected:** after Zoom, the layout matches a fresh full-screen launch: the palette below the status bar with its status band.\n\nIt reproduced three times on the simulator (twice right after a fresh launch) and once on the physical iPad, each time with the window dragged out to the middle of the screen. It is not every cycle: in one launch where the first window was a narrow one against the top edge, opened with Settings on screen, that cycle and a later mid-screen one both returned to the correct inset.\n\n## Shipping does the same\n\nA simulator build of the shipping (Capacitor) app from the same commit, bundle `art.splotch.app.baseline`, behaves the same way. After window → Zoom, its palette also sits under the status bar text. Both a WebView's `env(safe-area-inset-top)` and React Native's insets lose the top inset. That points at the inset iPadOS reports after Zoom rather than at RN code. A fix may need to read the status bar or window-controls geometry directly, or the issue may come down to an OS limitation. This is not an RN regression.\n\n## Likely cause (unverified)\n\nThe safe-area insets the drawing layout reads are not updated when the window returns to full screen. Rotation recomputes them. The frame change from window to full screen may not reach whatever the layout subscribes to (`react-native-safe-area-context` or the app's own `rsd-window-insets` reader).\n\n## Done when\n\nOn iPadOS 26, window → Zoom returns the palette and status band to their full-screen positions without a rotation, in portrait and landscape. Check on the simulator and on the physical iPad.\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-21T06:22:08Z",
+    "updated_at": "2026-10-21T06:30:43Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3122",
+    "display_title": "RN iPadOS: after a resized window is maximized, the palette slides under the status bar until rotation"
+  },
+  "comments": []
+}

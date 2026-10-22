@@ -1,0 +1,46 @@
+{
+  "observedAt": "2026-10-22T16:54:35.252Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3011",
+    "title": "Hydrate the RN web drawing screen in tiers so drawing goes live first",
+    "issue_number": 3011,
+    "body": "## What\n\nMake the React Native web export's drawing screen go live in tiers instead of all at once, in the owner's order:\n\n0. everything visible;\n1. the drawing engine, as soon as possible;\n2. palette, brushes, stroke width and Undo;\n3. Clear, drawer, coloring book and AI;\n4. the settings cog and parent gate, last.\n\nToday one whole-tree hydration makes every tier live together.\n\n## Why\n\nThe prerendered first frame (#3006, ADR-0180) paints at 724 ms on a throttled phone, but the drawing engine listens only at about 2,642 ms and the controls at 2,519 ms. Until then the shell answers touches with a burst and a \"not yet\" wiggle. Tiering would let a child draw sooner.\n\n## How much it can buy (measured for ADR-0180)\n\nThe entry chunk's source map (`docs/scratchpad/2026-10-19-rn-web-static-first-paint/results/early-input/entry-attribution.json`) bounds it:\n\n| Part | Bytes |\n| --- | ---: |\n| Libraries that must load before anything hydrates (React DOM, React Native Web, React, Expo runtime, others) | about 390,000 |\n| Drawing engine | 100,093 |\n| Drawing chrome (palette, actions panel, Clear, drawer) | 122,111 |\n| Product, settings and the library | 75,576 |\n| Platform seams | 27,517 |\n| Other app code | 25,029 |\n\n- **What tier 1 needs.** A tier-1 chunk needs the libraries, the engine and most of the seams: about 70% of the entry's bytes.\n- **The gain.** At Slow 4G throughput that brings the engine forward by about 0.3 s, not to first paint.\n- **The floor.** The libraries alone take about 0.5 s to arrive.\n\n## Where\n\n- **Hydration split.** Suspense boundaries with lazy chunks around each tier, in `experiments/native-architecture/src/` (the drawing screen's tree).\n- **Per-tier release.** Per-tier stamps like `data-controls-live` (`src/platform/firstFrameControls.web.ts`, `src/platform/firstFrameContract.ts`). The boot script's guard in `tools/migration/prerender-native-web.mjs` can then release each tier as it goes live. React event replay is not needed and was never verified with React Native Web's pressables.\n- **Startup caps.** `tools/migration/check-native-web-startup.mjs` holds the first-paint and core-controls caps (ADR-0179, ADR-0180). A tier split changes what each cap counts.\n\n## Done when\n\n- **Earlier drawing.** On the ADR-0180 phone measurement (devtools throttling, first visit, quiet host, median of three), a finger on the paper becomes ink measurably earlier than 2,642 ms. Each tier's live time is recorded.\n- **Nothing regresses.** First paint, LCP and the pixel identity of the prerendered frame are unchanged. Both startup caps pass.\n- **The design is recorded.** An ADR amending ADR-0180 records the built design, written with the implementation.\n\nNot started: the owner deferred it on 2026-10-19 (\"Tiers issue, keep Node\"), when ADR-0180 became Active for what is built.\n\nRefs #2690\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:perf",
+        "color": "fbca04",
+        "description": "Performance / responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-19T19:17:19Z",
+    "updated_at": "2026-10-19T19:17:19Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3011",
+    "display_title": "Hydrate the RN web drawing screen in tiers so drawing goes live first"
+  },
+  "comments": []
+}

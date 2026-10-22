@@ -1,0 +1,115 @@
+{
+  "observedAt": "2026-10-22T16:51:21.115Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2765",
+    "title": "Fix the first native stroke after launch drawing only a dot",
+    "issue_number": 2765,
+    "body": "**What:** On the iOS simulator, the first stroke on the paper after launch records only its starting dot. Every later stroke draws in full. This happens whether or not something else on screen was tapped first, so the cause is the first paper stroke, not the first touch.\n\n**Why:** It is the first thing a child does with the app.\n\n**Evidence:** Three identical Maestro swipes after a clean launch draw a dot, then two full lines (`claude/native-ios-sim`). The surface's `disabled` inputs (busy, sheets, menu, sound status, recovery generation) stay unchanged through the first stroke, so the cut is inside the input path, not a disable. Not yet checked on Android or web.\n\n**Where:** `experiments/native-architecture/src/drawing/contactResponder.ts` (grant/start batching and `pendingGrant`), `drawing/DrawingSurface.tsx` (`canStart`, paper geometry refresh on first contact).\n\n**Done when:** the first stroke after a cold launch draws in full on iOS, Android and web, covered by a mounted test that drives a first stroke through the responder.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      },
+      {
+        "name": "area:drawing-engine",
+        "color": "ededed",
+        "description": null
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 3,
+    "created_at": "2026-10-13T02:28:51Z",
+    "updated_at": "2026-10-13T07:27:02Z",
+    "closed_at": "2026-10-13T07:27:02Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2765",
+    "display_title": "Fix the first native stroke after launch drawing only a dot"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2765#issuecomment-6136976321",
+      "body": "On the physical Galaxy S21 FE (Android 16, release APK), the first stroke after a cold launch draws in full via `adb shell input swipe`. So far this reproduces only on the iOS simulator under Maestro's XCUITest input. Check it on a physical iPad before fixing; it may be specific to synthesized input.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6136976321,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2765#issuecomment-6139496794",
+      "body": "No longer reproduces with the Skia ink renderer (#2771). On the iOS simulator Release build from that branch, the same Maestro flow (clean launch, then three identical swipes) drew all three strokes in full on two consecutive runs; the SVG build drew a dot first every time. This closes when #2771 merges.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6139496794,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2765#issuecomment-6140544331",
+      "body": "Fixed by the Skia renderer in #2771: on the iOS simulator the first stroke after a clean launch draws in full (two runs of the three-swipe Maestro flow, and the merged-layout save flow).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6140544331,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

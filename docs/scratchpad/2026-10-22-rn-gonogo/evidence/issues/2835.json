@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:43.812Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2835",
+    "title": "Bring the RN web startup bundle within the shipping startup budget",
+    "issue_number": 2835,
+    "body": "**What:** The RN web export's entry chunk is 5,162,251 bytes (`_expo/static/js/web/index-*.js`, built from `codex/native-migration` at the #2804 merge). The shipping web app holds its startup JS plus CSS to `MAX_STARTUP_JS_CSS_BYTES` (525,000, in `tools/check-bundle-budgets.mjs`), about 10x less. About 38% of the entry chunk (1,976,961 bytes) is inlined base64 images: 38 webp, 10 png and 1 svg, mostly the bundled Farm book art and crayon tiles. The rest is app, React Native Web and library code in one chunk.\n\nIf the RN web build replaces the shipping PWA, first load on a phone or tablet over a slow network gets much slower. The shipping budget exists because of measured startup cost; see the \"startup path is a budget\" coding standard.\n\n**Where:**\n- `experiments/native-architecture` web build (`tools/migration/build-native-web.mjs`, Metro web config)\n- `src/drawing/bundledFarm/`, `bundledBookAssets.ts`\n- `crayonTiles`\n- `check-native-web-precache.mjs` (asset placement)\n- `tools/check-bundle-budgets.mjs`\n\n**Done when:**\n- Images load as separate assets, not inline data URIs. The bundled book can still be precached for offline use, without blocking first paint.\n- The startup path is split so first paint needs only the drawing screen.\n- A startup-bytes check guards the RN web export, with its cap derived from or justified against `MAX_STARTUP_JS_CSS_BYTES`.\n- The issue reports a Lighthouse or throttled first-paint comparison against shipping (the `audit-page-load` skill).\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:perf",
+        "color": "fbca04",
+        "description": "Performance / responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T15:02:00Z",
+    "updated_at": "2026-10-13T16:58:31Z",
+    "closed_at": "2026-10-13T16:58:31Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2835",
+    "display_title": "Bring the RN web startup bundle within the shipping startup budget"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2835#issuecomment-6150775540",
+      "body": "Shipped in #2846. Remaining gap: #2844.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6150775540,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

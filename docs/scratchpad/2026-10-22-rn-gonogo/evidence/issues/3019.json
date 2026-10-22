@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:14.671Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3019",
+    "title": "Stop RN web drawing a line across a mouse that idles and resumes far away",
+    "issue_number": 3019,
+    "body": "## What\n\nOn RN web, with the mouse button held, the pointer idles, then the next sample arrives far away. RN connects the two points with a straight segment. Shipping web treats the far sample after the gap as a new contact and draws no connecting line.\n\n## Why\n\nLedger rows B0009 and E0272. A dropped or coalesced pointer stream draws a long stray line across the child's picture. The historical ledger marked this as \"possible on RN-web\"; this run confirms it.\n\n## Where\n\nThe RN web stroke input path, `experiments/native-architecture/src/drawing/PaperInputView.web.tsx` and the contact responder. Shipping's equivalent is the dropped-pointer recovery in `web/src/lib/drawing/engine.ts`, covered by `web/tests/engine-pointer-recovery.spec.ts`.\n\n## Repro (rn-web, Chromium, desktop mouse)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export. Open `/` at 1280x800.\n2. On the paper, press the mouse at (20 %, 30 %) and move in 10 steps to (30 %, 35 %).\n3. Hold still for 1.5 s.\n4. Move once to (80 %, 70 %), then a few steps to (85 %, 72 %), and release.\n5. Expected (shipping): the paper at (50 %, 50 %) is untouched. Actual (RN): a line crosses it.\n\nEvidence: WEB-1 record, cell `engine-idle-gap-jump`, with captures `shots/engine-idle-gap-*.webp` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on branch `claude/rn-web-parity-cloud`). The drawing path changed in #3006; re-run there before fixing.\n\n## Done when\n\n- A far sample after an idle gap with the button held starts a new segment, or is dropped, as shipping does, and no connecting line is drawn.\n- WEB-1 cell `engine-idle-gap-jump` matches.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-19T20:15:38Z",
+    "updated_at": "2026-10-20T22:37:55Z",
+    "closed_at": "2026-10-20T22:37:55Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3019",
+    "display_title": "Stop RN web drawing a line across a mouse that idles and resumes far away"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3019#issuecomment-6293566907",
+      "body": "**Owner decision, 2026-10-20.**\n\nThe question was whether RN should match shipping, where a far sample after an idle gap starts a new stroke and draws no line. The owner answered:\n\n> \"whatever is better - doesn't have to match shipping.  If the shipping is a bug, don't hold ourselves to it on the re-implementation.  if shipping is better, obviously pick it.\"\n\nShipping is better here. A straight line across the picture from a resting mouse is the bug, so RN takes shipping's behavior: the far sample after the idle gap starts a new stroke, with Undo grouping as shipping has it, and no stray line.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293566907,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3019#issuecomment-6303344586",
+      "body": "Fixed by #3093, merged into `codex/native-migration` as 78225a2e299a6e8cf3d425ed20328eed1b985fa2.\n\nOn RN web a held mouse that rests and then reports a sample far away now starts a new stroke instead of drawing a line across the picture. RN calls shipping's own `pointerWasResumed` with shipping's `POINTER_RESUME_GAP_MS` and `POINTER_RESUME_JUMP_RATIO`, imported from `web/src/lib/drawing/strokeMath.ts`, so the thresholds can't drift. The resumed stroke stays in the same Undo group, as shipping groups it, and a resumed crayon stroke takes the next grain seed and closes its glaze group. The rule sits on the shared contact path; real finger and pen input on native can't meet both thresholds, so native behaviour is unchanged for live input.\n\n**Rerun.** WEB-1 `engine-idle-gap-jump` on rn-web-chromium: before, `connectingLine: true`; after, `connectingLine: false` with undoDepth 1, web-prod's recorded values. Ledger rows B0009 and E0272 get their rerun recorded in the campaign's batch ledger PR.\n\nThe PR was gated against ebfc7dd5; the orchestrator covered the move to 6f1e85e8 with a local integration trial (check, lint, the RSD tier, test:browserless, native:web:build: first paint 45,628/47,052, core controls 822,240/827,535).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303344586,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

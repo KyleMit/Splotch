@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:30.766Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3154",
+    "title": "Port or retire SvelteKit E2E specs, group A (a11y to engine-pointer-recovery)",
+    "issue_number": 3154,
+    "body": "**Depends on:** #3153\n\n## What\n\nDecide each SvelteKit E2E spec in group A (41 specs, `a11y.spec.ts` through `engine-pointer-recovery.spec.ts` in `web/tests/`) under the spec-by-spec rule below:\n\n- **Port it** into the RN web Playwright suite (from the harness sub-issue) when it tests behaviour the RN app has and nothing else covers it. Other coverage includes the ~280 RN Vitest and mounted RSD tests in `tools/tests` and `tools/migration/tests`, the `postnative:web:build` checks, and the page budgets.\n- **Otherwise delete it** with a recorded reason: \"covered by <test path>\", or \"Svelte-only: <why the RN app has no such behaviour>\".\n\nThen delete the group's SvelteKit specs, their snapshots, and any helper in `web/tests/` that only this group used. Put new shared helpers in a group-local helper file, not the suite's common fixtures, so the three groups never edit the same file. Commit the disposition table, one row per spec with its outcome and reason, as `docs/scratchpad/2026-10-21-rn-e2e-dispositions/group-a.md`.\n\n## Specs\n\n- `a11y.spec.ts`\n- `actions-panel-layout.spec.ts`\n- `admin-login.spec.ts`\n- `admin.spec.ts`\n- `ai-error.spec.ts`\n- `ai-minimize.spec.ts`\n- `ai-report.spec.ts`\n- `ai-result-a11y.spec.ts`\n- `ai-result-disclosure.spec.ts`\n- `ai-result-layout.spec.ts`\n- `ai-result.spec.ts`\n- `bare-toolbar-bundle.spec.ts`\n- `bare-toolbar-paper.spec.ts`\n- `bare-toolbar.spec.ts`\n- `beta.spec.ts`\n- `brand-mark.spec.ts`\n- `brush-ring.spec.ts`\n- `button-states.spec.ts`\n- `capacitor-safe-area.spec.ts`\n- `changelog.spec.ts`\n- `clear-ring.spec.ts`\n- `clear-tutorial.spec.ts`\n- `coloring-pack-download-gate.spec.ts`\n- `coloring-pack-download.spec.ts`\n- `csp.spec.ts`\n- `design-foundations.spec.ts`\n- `design-navigation.spec.ts`\n- `design.spec.ts`\n- `dialog-undo.spec.ts`\n- `drawing-motion-clear.spec.ts`\n- `drawing-motion.spec.ts`\n- `drawing-work-counters.spec.ts`\n- `early-boot.spec.ts`\n- `engine-crayon.spec.ts`\n- `engine-edge-swipe.spec.ts`\n- `engine-eraser.spec.ts`\n- `engine-export.spec.ts`\n- `engine-fallback-replay.spec.ts`\n- `engine-layout-resize.spec.ts`\n- `engine-lifecycle.spec.ts`\n- `engine-pointer-recovery.spec.ts`\n\n## Done when\n\n- None of this group's specs remain in `web/tests/`.\n- Every ported behaviour passes in the RN web suite in CI.\n- The disposition table covers every spec above.\n- Each ported spec's PR notes a negative control: the spec fails against a deliberately broken export.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:test",
+        "color": "bfd4f2",
+        "description": "Test coverage or CI test infrastructure"
+      },
+      {
+        "name": "area:ci-testing",
+        "color": "168f6c",
+        "description": "CI pipeline and test infrastructure"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-21T17:52:26Z",
+    "updated_at": "2026-10-22T00:16:29Z",
+    "closed_at": "2026-10-22T00:16:28Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3154",
+    "display_title": "Port or retire SvelteKit E2E specs, group A (a11y to engine-pointer-recovery)"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3154#issuecomment-6329506158",
+      "body": "Merged in #3173 (merge commit 01e13ba6bfd3d33e3307eef9984f74c1990bb088) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base. Five RN gaps found while porting are parked for the owner; see the disposition table in the PR.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6329506158,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

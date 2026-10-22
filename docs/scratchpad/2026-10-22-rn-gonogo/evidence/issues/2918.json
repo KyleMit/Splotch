@@ -1,0 +1,110 @@
+{
+  "observedAt": "2026-10-22T16:51:59.875Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2918",
+    "title": "Delete dead native screens and fix RN tests that assert the opposite of shipping",
+    "issue_number": 2918,
+    "body": "**What:** the parity ledger found:\n- 27 RN test files that mount the unreachable legacy `DrawingScreen.tsx` or dead AI views. The live app is `ProbeApp` → `RsdDrawingScreen`.\n- At least 18 RN tests that assert the opposite of shipping's behaviour.\n\nTests on dead code prove nothing about the shipped candidate, and inverted tests lock in divergence.\n\n**Done when:**\n- The unreachable screens and views are deleted, and their tests are retargeted to the live tree or deleted.\n- Each inverted test is fixed to shipping's behaviour (with the code), or, if the behaviour is a pending product decision, marked and filed.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) §1.2. Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 3,
+    "created_at": "2026-10-15T00:12:15Z",
+    "updated_at": "2026-10-15T21:52:32Z",
+    "closed_at": "2026-10-15T21:52:32Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2918",
+    "display_title": "Delete dead native screens and fix RN tests that assert the opposite of shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2918#issuecomment-6183939634",
+      "body": "Cleanup merged in #2925 at e3140fb3cd70591c056dc05f5fd224b46089fa1d after two independent review rounds and green exact-head CI. It removes 33 unreachable native source files, deletes duplicate legacy UI tests, and retargets retained behavior checks to canonical RSD/real owners. The live native restart tests are retained; an actual failed-write negative control catches a stale drawing returning after restart.\n\nLocal gates: 58 RSD files/630 tests, 527 tools files/10,709 tests, check/lint/dead/native types/transform/format, web export/precache integrity. Startup 862,132 → 859,656 bytes.\n\nThe inverse-behavior assertions that depend on product changes remain assigned to #2911–#2917 rather than being changed ahead of those fixes. Auto-Save Clear is next in #2923; fresh-launch AI tests move with #2911; drawing restoration/caps/Undo move with #2913. Issue #2918 stays open until the remaining product-linked assertions are reconciled.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6183939634,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2918#issuecomment-6192604248",
+      "body": "Reconciled the ledger’s exact §1.2 list against the current live tree and pending feature PRs. The heading says “at least 18,” but it names 16 files; no extra targets were invented.\n\nThe 27 dead-tree test files were removed in #2925. Live shipping-pinned replacements cover denied/failed Photos with Clear still proceeding, gallery publication, internal Privacy/Changelog, feedback server reasons without cooldown, service-worker registration, notch contrast and the AI attempt cap. Chrome’s mid-stroke/contact replacements await #2933; the fixed palette set awaits #2935; background-download and stable picker-inventory replacements await #2934. Those three PRs must land before this issue is completed.\n\nThree existing policies have a stated accepted reason: Black ink re-themes under ADR-0178/X46; landscape palette trim subtracts the bottom inset under the campaign’s locked Decisions; malformed-record validation remains paired with the explicitly approved, grown-up-gated reset in #2922. These assertions must not be reversed to satisfy the older ledger.\n\nThree stale WHY comments naming the deleted Photos mounted test are being retargeted to `rsd-native-save-to-photos.test.mjs` in the Chrome branch. Native runtime proof for Chrome remains separate from source and renderer checks. This issue stays open.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6192604248,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2918#issuecomment-6203045053",
+      "body": "The remaining prerequisites are merged into `codex/native-migration`: Chrome/contact admission in #2933, the canonical palette in #2935, and background downloads plus stable opening picker inventory in #2934. The integrated tip is 47b6e8bbe44a23c7767f8491a36bb5d9ba624908.\n\nThe exact ledger §1.2 list is reconciled: it names 16 files in 15 bullets, despite the “at least 18” heading. The dead screens/views and their legacy mounted tests were removed or retargeted in #2925; no live source or test still references the deleted drawing harness or AI views.\n\nThe live replacements pin shipping behavior for:\n\n- Canonical palette swatches, chrome/contact admission, and full-strength but inert chrome behind dialogs.\n- Clear proceeding after denied/failed Auto-Save, Android gallery publication on API 24/28/29/30/35, internal ungated Privacy/Changelog, and feedback server reasons without a cooldown.\n- Native download completion/publication while drawing or backgrounded, stable opening coloring-book inventory, post-paint idle service-worker registration, notch contrast, and completed AI attempts continuing past the old cap.\n\nThe three accepted policies remain explicit: Black ink re-themes under ADR-0178/X46; landscape trim subtracts the bottom inset under the campaign’s locked decision; strict malformed-record validation has the approved grown-up-gated recovery reset from #2922. The six-entry internal recent-paint model is retained; it no longer defines the visible palette set.\n\nThe last prerequisite’s final source passed Quality, 538 tools files/10,916 tests, 68 RSD files/746 tests, shipping unit/SSR tiers, formatting and native-web export/startup/precache gates before its reviewed, CI-green merge. This completes the dead-code and inverted-assertion scope. Remaining motion, accessibility, device parity and performance work continues under #2917/#2690; iOS background relaunch proof remains tracked in #2927.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6203045053,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

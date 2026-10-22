@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:15.017Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3022",
+    "title": "Match the RN web install banner's position, line breaks and focus order to shipping",
+    "issue_number": 3022,
+    "body": "## What\n\nThe RN web install banner matches shipping in states, copy and timing. It differs in three layout details:\n\n1. **Position.** The card sits 4 px higher than shipping's at 412x915 (Android), 390x844 (iPhone) and 320x568. Example: card top at y 687 vs 691. The plan's tolerance is 2 px.\n2. **Line breaks.** At 412 px the heading breaks as \"Add Splotch to your home / screen\", against shipping's \"Add Splotch to your / home screen\". The subtitle breaks \"… just like a real / app\" against \"… just like a / real app\". At 390 px the breaks match.\n3. **Focus order.** In the stacked phone layout RN writes the Not now (close) button before How?/Install in the DOM, so Tab and screen readers reach close first. Shipping keeps the call to action first and places close visually with CSS order. The source comment in `RsdInstallBanner.tsx` says this was forced by React Native having no flex `order`.\n\n## Why\n\nLedger rows T2-25 and E0529 fail the plan's comparison rule on the 4 px offset and the moved line breaks. The focus order is an accessibility difference on an adult-facing control.\n\n## Where\n\n`experiments/native-architecture/src/rsdDrawing/RsdInstallBanner.tsx` (`installDockInsets`, `InstallCard`) and `RsdInstallText.tsx`. Shipping: `web/src/lib/components/InstallBanner.svelte`.\n\n## Repro (rn-web, Chromium)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export.\n2. Use the Android profile (412x915, touch, Android Chrome user agent) and draw three strokes.\n3. Compare the banner card's box, each text run's line breaks, and the DOM order of its buttons with shipping at the same viewport.\n\nEvidence: WEB-1 record, cells `install-android`, `install-iphone-rotate` and `install-preview-forced-colors` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on branch `claude/rn-web-parity-cloud`). The banner sits on the first-paint path that #3006 changed; re-run there first.\n\n## Done when\n\n- The card's edges are within 2 px of shipping's at 412, 390 and 320 px wide, and the text breaks at the same words.\n- The call to action precedes Not now in focus order. Or the owner records the reversed order as an accepted difference.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-19T20:16:08Z",
+    "updated_at": "2026-10-20T22:32:15Z",
+    "closed_at": "2026-10-20T22:32:15Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3022",
+    "display_title": "Match the RN web install banner's position, line breaks and focus order to shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3022#issuecomment-6293568378",
+      "body": "**Owner decision, 2026-10-20.** The owner chose \"Fix it\": RN web's install banner should match shipping, with Install before Not now in the keyboard and screen-reader order, plus shipping's position and line breaks.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293568378,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3022#issuecomment-6303253019",
+      "body": "Fixed by #3094, merged into `codex/native-migration` as 6f1e85e81048071a754537402f2a71e68556e2d4.\n\n* **Focus order:** How?/Install now precedes Not now in the DOM in the phone and wide layouts; on phones the close is pinned to the end of the first row.\n* **Position:** the dock now sizes its corners at the fixed 48 px corner button (shipping's `--corner-button-size`) instead of max(Button Size, 52), which removed the 4 px offset.\n* **Line breaks:** the copy uses `text-wrap: pretty`, as shipping's `.install-copy` does (the StyleX type patch gained `'pretty'`).\n\n**Rerun.** WEB-1 `install-android`, `install-iphone-rotate` and `install-preview-forced-colors` on rn-web-chromium: every card edge is 0 px from web-prod's recorded values in all six views, every line breaks at the same words, and the call to action comes before Not now everywhere. The collapsed How? pill at 844x390 is 92 px against 94 px, within the 2 px tolerance and unchanged by this PR. Ledger rows T2-25 and E0529 get their rerun recorded in the campaign's batch ledger PR.\n\nStartup bytes: first paint 45,601 to 45,628 (cap 47,052), core controls 821,371 to 821,206 (cap 827,535).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303253019,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+UTC 2026-10-22T16:50:10.261561+00:00
+CWD /workspace/shipping-v160
+COMMIT d8b86469f63c57a06a9de45664a42eea15b99eb0
+RUN COUNT 1
+COMMAND python3 /workspace/rn-desk/docs/scratchpad/2026-10-22-rn-gonogo/evidence/measure-desk.py /workspace/shipping-v160
+{
+  "path": "/workspace/shipping-v160",
+  "commit": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+  "groups": {
+    "tooling/agent": {
+      "files": 1968,
+      "lines": 233025,
+      "bytes": 81604933
+    },
+    "other/assets/config": {
+      "files": 1660,
+      "lines": 467725,
+      "bytes": 527117105
+    },
+    "native-project": {
+      "files": 113,
+      "lines": 2255,
+      "bytes": 7931871
+    },
+    "docs/evidence": {
+      "files": 1355,
+      "lines": 221818,
+      "bytes": 99400524
+    },
+    "app": {
+      "files": 478,
+      "lines": 54830,
+      "bytes": 2204613
+    },
+    "tests": {
+      "files": 550,
+      "lines": 97581,
+      "bytes": 5993284
+    }
+  },
+  "runtime": {
+    "direct": 21,
+    "reachable_name_versions": 517,
+    "transitive_name_versions": 496,
+    "peer_snapshots": 517,
+    "unresolved": [],
+    "direct_pins": {
+      "@aparajita/capacitor-secure-storage": "8.0.0",
+      "@capacitor-community/media": "9.1.0(@capacitor/core@8.5.1)",
+      "@capacitor/core": "8.5.1",
+      "@capacitor/device": "8.0.3(@capacitor/core@8.5.1)",
+      "@capacitor/haptics": "8.0.2(@capacitor/core@8.5.1)",
+      "@capacitor/network": "8.0.1(@capacitor/core@8.5.1)",
+      "@capacitor/preferences": "8.0.1(@capacitor/core@8.5.1)",
+      "@capacitor/screen-orientation": "8.0.1(@capacitor/core@8.5.1)",
+      "@capacitor/status-bar": "8.0.3(@capacitor/core@8.5.1)",
+      "@fontsource-variable/quicksand": "5.3.0",
+      "@netlify/blobs": "11.0.2(supports-color@7.2.0)",
+      "@sveltejs/adapter-netlify": "6.0.4(@sveltejs/kit@2.70.3(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)))(svelte@5.57.0(@typescript-eslint/types@8.69.0))(typescript@6.0.3)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)))",
+      "@sveltejs/adapter-static": "3.0.10(@sveltejs/kit@2.70.3(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)))(svelte@5.57.0(@typescript-eslint/types@8.69.0))(typescript@6.0.3)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)))",
+      "@sveltejs/kit": "2.70.3(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)))(svelte@5.57.0(@typescript-eslint/types@8.69.0))(typescript@6.0.3)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))",
+      "@sveltejs/vite-plugin-svelte": "7.3.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))",
+      "idb": "8.0.3",
+      "marked": "18.0.11",
+      "openai": "7.8.0(ws@8.21.3)(zod@4.4.3)",
+      "svelte": "5.57.0(@typescript-eslint/types@8.69.0)",
+      "vite": "8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)",
+      "vite-plugin-pwa": "1.3.0(supports-color@7.2.0)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))(workbox-build@7.4.1(supports-color@7.2.0))(workbox-window@7.4.1)"
+    },
+    "dot_zero": [
+      "@aparajita/capacitor-secure-storage@8.0.0",
+      "@capacitor-community/media@9.1.0",
+      "@capacitor/app@8.1.0",
+      "@envelop/instrumentation@1.0.0",
+      "@fontsource-variable/quicksand@5.3.0",
+      "@isaacs/cliui@9.0.0",
+      "@jridgewell/sourcemap-codec@1.6.0",
+      "@netlify/runtime-utils@3.0.0",
+      "@opentelemetry/api-logs@0.221.0",
+      "@opentelemetry/context-async-hooks@2.10.0",
+      "@opentelemetry/core@2.10.0",
+      "@opentelemetry/instrumentation@0.221.0",
+      "@opentelemetry/resources@2.10.0",
+      "@opentelemetry/sdk-trace-base@2.10.0",
+      "@opentelemetry/sdk-trace-node@2.10.0",
+      "@opentelemetry/sdk-trace@2.10.0",
+      "@opentelemetry/semantic-conventions@1.43.0",
+      "@oxc-project/types@0.147.0",
+      "@rollup/plugin-babel@6.1.0",
+      "@rollup/plugin-terser@1.0.0",
+      "@rollup/pluginutils@5.4.0",
+      "@standard-schema/spec@1.1.0",
+      "@sveltejs/vite-plugin-svelte@7.3.0",
+      "@types/cookie@0.6.0",
+      "@typescript-eslint/types@8.69.0",
+      "@whatwg-node/server@0.11.0",
+      "acorn@8.18.0",
+      "ajv@8.20.0",
+      "async-function@1.0.0",
+      "at-least-node@1.0.0",
+      "axobject-query@4.1.0",
+      "callsite@1.0.0",
+      "chokidar@5.0.0",
+      "convert-source-map@2.0.0",
+      "cookie@0.6.0",
+      "core-js-compat@3.49.0",
+      "crypto-random-string@2.0.0",
+      "dot-prop@9.0.0",
+      "env-paths@3.0.0",
+      "es-abstract-get@1.0.0",
+      "es-errors@1.3.0",
+      "es-set-tostringtag@2.1.0",
+      "escalade@3.2.0",
+      "eta@4.6.0",
+      "fast-json-stable-stringify@2.1.0",
+      "fdir@6.5.0",
+      "fs-extra@9.1.0",
+      "function.prototype.name@1.2.0",
+      "get-intrinsic@1.3.0",
+      "get-symbol-description@1.1.0",
+      "glob@11.1.0",
+      "gopd@1.2.0",
+      "has-bigints@1.1.0",
+      "has-flag@4.0.0",
+      "has-proto@1.2.0",
+      "has-symbols@1.1.0",
+      "internal-slot@1.1.0",
+      "is-bigint@1.1.0",
+      "is-date-object@1.1.0",
+      "is-document.all@1.0.0",
+      "is-module@1.0.0",
+      "is-regexp@1.0.0",
+      "isexe@2.0.0",
+      "jiti@2.7.0",
+      "js-tokens@4.0.0",
+      "jsesc@3.1.0",
+      "json-schema-traverse@1.0.0",
+      "leven@3.1.0",
+      "lightningcss-android-arm64@1.33.0",
+      "lightningcss-darwin-arm64@1.33.0",
+      "lightningcss-darwin-x64@1.33.0",
+      "lightningcss-freebsd-x64@1.33.0",
+      "lightningcss-linux-arm-gnueabihf@1.33.0",
+      "lightningcss-linux-arm64-gnu@1.33.0",
+      "lightningcss-linux-arm64-musl@1.33.0",
+      "lightningcss-linux-x64-gnu@1.33.0",
+      "lightningcss-linux-x64-musl@1.33.0",
+      "lightningcss-win32-arm64-msvc@1.33.0",
+      "lightningcss-win32-x64-msvc@1.33.0",
+      "lightningcss@1.33.0",
+      "locate-character@3.0.0",
+      "lodash.sortby@4.7.0",
+      "math-intrinsics@1.1.0",
+      "openai@7.8.0",
+      "parse-gitignore@2.0.0",
+      "possible-typed-array-names@1.1.0",
+      "pretty-bytes@5.6.0",
+      "regexpu-core@6.4.0",
+      "regjsgen@0.8.0",
+      "safe-push-apply@1.0.0",
+      "safe-regex-test@1.1.0",
+      "set-proto@1.0.0",
+      "shebang-command@2.0.0",
+      "shebang-regex@3.0.0",
+      "signal-exit@4.1.0",
+      "stop-iteration-iterator@1.1.0",
+      "stringify-object@3.3.0",
+      "stubborn-fs@2.0.0",
+      "supports-color@7.2.0",
+      "supports-preserve-symlinks-flag@1.0.0",
+      "svelte@5.57.0",
+      "temp-dir@2.0.0",
+      "tempy@0.6.0",
+      "terser@5.48.0",
+      "type-fest@0.16.0",
+      "type-fest@4.41.0",
+      "unbox-primitive@1.1.0",
+      "undici-types@6.21.0",
+      "unicode-match-property-ecmascript@2.0.0",
+      "unicode-property-aliases-ecmascript@2.2.0",
+      "unique-string@2.0.0",
+      "upath@1.2.0",
+      "urlpattern-polyfill@10.1.0",
+      "vite-plugin-pwa@1.3.0",
+      "whatwg-url@7.1.0",
+      "yaml@2.9.0"
+    ]
+  },
+  "patches": [],
+  "native": {
+    "spm": [
+      {
+        "file": "ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+        "pins": [
+          {
+            "identity": "capacitor-swift-pm",
+            "kind": "remoteSourceControl",
+            "location": "https://github.com/ionic-team/capacitor-swift-pm.git",
+            "state": {
+              "revision": "6afa7424fd2fcd8ca1e577478e8a00af284b7e82",
+              "version": "8.5.1"
+            }
+          },
+          {
+            "identity": "keychain-swift",
+            "kind": "remoteSourceControl",
+            "location": "https://github.com/evgenyneu/keychain-swift.git",
+            "state": {
+              "revision": "265806607b45687a3d646e4c9837c31c90f202e8",
+              "version": "21.0.0"
+            }
+          },
+          {
+            "identity": "sdwebimage",
+            "kind": "remoteSourceControl",
+            "location": "https://github.com/SDWebImage/SDWebImage.git",
+            "state": {
+              "revision": "2de3a496eaf6df9a1312862adcfd54acd73c39c0",
+              "version": "5.21.7"
+            }
+          }
+        ]
+      }
+    ],
+    "gradle_declarations": {
+      "android/app/build.gradle": [
+        "implementation fileTree(include: ['*.jar'], dir: 'libs')",
+        "implementation \"androidx.appcompat:appcompat:$androidxAppCompatVersion\"",
+        "implementation \"androidx.core:core-splashscreen:$coreSplashScreenVersion\"",
+        "implementation \"androidx.work:work-runtime:2.11.2\"",
+        "implementation project(':capacitor-android')",
+        "implementation project(':capacitor-cordova-android-plugins')"
+      ],
+      "android/app/capacitor.build.gradle": [
+        "implementation project(':aparajita-capacitor-secure-storage')",
+        "implementation project(':capacitor-community-media')",
+        "implementation project(':capacitor-device')",
+        "implementation project(':capacitor-haptics')",
+        "implementation project(':capacitor-network')",
+        "implementation project(':capacitor-preferences')",
+        "implementation project(':capacitor-screen-orientation')",
+        "implementation project(':capacitor-status-bar')"
+      ],
+      "android/build.gradle": [
+        "classpath 'com.android.tools.build:gradle:8.13.0'"
+      ],
+      "android/capacitor.settings.gradle": [],
+      "android/settings.gradle": [],
+      "android/variables.gradle": []
+    }
+  }
+}
+
+EXIT 0

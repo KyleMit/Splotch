@@ -1,0 +1,543 @@
+UTC 2026-10-22T16:53:49.335214+00:00
+CWD /workspace/rn-freeze
+COMMIT fffeed1fe4116112bb10297a180ac552f9754046
+RUN COUNT 1
+COMMAND cat src/keepPicture.ts src/platform/unsavedPictures.ts src/platform/aiRecoveryStorage.native.ts; rg -n 'splotch-pictures|splotch-settings|format|version|legacy|abandon' src/platform/durableAiStorage.ts src/platform/settings.ts src/drawing/model.ts src/serialization* src/platform/legacy* 2>/dev/null; cat docs/migration/CONTRACT.md | head -110; cat tools/release/lib/native-app.mjs
+import { Platform } from 'react-native';
+import type { Drawing } from './drawing/model';
+import type { DrawingSurfaceHandle, ExportedPaper } from './drawing/DrawingSurface';
+import { pictureSave } from './platform/pictureSave';
+import {
+  isUnsaved,
+  type PictureSaveOutcome,
+  type PictureSaveOptions,
+  type SaveOs,
+  type UnsavedOutcome,
+} from './export/pictureSave';
+import type { PictureFormat } from './export/pictureFilename';
+
+export function saveOs(): SaveOs {
+  if (Platform.OS === 'web') return 'web';
+  return Platform.OS === 'android' ? 'android' : 'ios';
+}
+
+export async function capturePicture(
+  drawing: Drawing,
+  surface: DrawingSurfaceHandle | null
+): Promise<ExportedPaper | null> {
+  try {
+    return (await surface?.exportPng(drawing)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function savePicture(
+  pngBase64: string,
+  format?: PictureFormat,
+  options?: PictureSaveOptions
+): Promise<PictureSaveOutcome> {
+  try {
+    return await pictureSave.save(pngBase64, format, options);
+  } catch {
+    return 'failed';
+  }
+}
+
+export function saveClearedPicture(
+  pngBase64: string | null,
+  reportFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void
+) {
+  if (!pngBase64) {
+    reportFailure('failed', null);
+    return;
+  }
+  void savePicture(pngBase64).then((outcome) => {
+    if (isUnsaved(outcome)) reportFailure(outcome, pngBase64);
+  });
+}
+import type { UnsavedPictureStore } from '../export/saveFailure';
+import { readUnsavedPictures } from '../export/unsavedPictures';
+
+const DIRECTORY = 'splotch-unsaved-pictures-v1';
+const REVISION = /^held-(\d+)\.json$/;
+const RETAINED_REVISIONS = 2;
+
+async function files() {
+  const { Directory, File, Paths } = await import('expo-file-system');
+  const owner = new Directory(Paths.document, DIRECTORY);
+  owner.create({ intermediates: true, idempotent: true });
+  const previous = owner
+    .list()
+    .flatMap((item) => {
+      if (!(item instanceof File)) return [];
+      const match = REVISION.exec(item.name);
+      if (!match) return [];
+      const revision = Number(match[1]);
+      if (!Number.isSafeInteger(revision) || revision < 1) return [];
+      return [{ file: item, revision }];
+    })
+    .sort((a, b) => b.revision - a.revision);
+  return { owner, previous, File };
+}
+
+export const unsavedPictureStore: UnsavedPictureStore = {
+  async read() {
+    const file = (await files()).previous[0]?.file;
+    return file ? readUnsavedPictures(JSON.parse(await file.text())) : null;
+  },
+  async write(pictures) {
+    const { owner, previous, File } = await files();
+    const revision = (previous[0]?.revision ?? 0) + 1;
+    if (!Number.isSafeInteger(revision))
+      throw new Error('Unsaved picture revisions are exhausted.');
+    const snapshot = JSON.stringify(pictures);
+    const pending = new File(owner, `held-${revision}.pending`);
+    if (pending.exists) pending.delete();
+    pending.create();
+    await pending.write(snapshot);
+    if ((await pending.text()) !== snapshot)
+      throw new Error('Unsaved picture write was incomplete.');
+    const committed = new File(owner, `held-${revision}.json`);
+    await pending.move(committed);
+    if ((await committed.text()) !== snapshot)
+      throw new Error('Unsaved picture write could not be verified.');
+    for (const old of previous.slice(RETAINED_REVISIONS - 1)) {
+      try {
+        old.file.delete();
+      } catch {
+        /* A verified revision owns the held pictures. */
+      }
+    }
+  },
+};
+import { File } from 'expo-file-system';
+import type { AiRecoveryStorage, AiRecoveryRequestReceipt } from '../ai/journal';
+import { bytesBase64 } from '../ai/base64';
+import { MAX_UPLOAD_BYTES } from '../ai/contract';
+import { RECOVERY_PROTOCOL } from '../ai/recoveryContract';
+import { recoveryDigest } from '../ai/recoveryDigest';
+import {
+  invalidRecovery,
+  checkedRecoveryCredential,
+  checkedRecoveryAdmission,
+  checkedRecoveryDelivery,
+  checkedRecoveryAck,
+  checkedRecoveryTerminal,
+  verifyRecoveryRequestIdentity,
+} from '../ai/recoveryRequest';
+import { admitAiImage } from './aiImage';
+import { exact, parseRecoveryRequestReceipt } from './nativeAiReceipt';
+import type { RecoveryReceiptOwner } from './recoveryReceiptOwner';
+
+export type RecoveryStorageOperation =
+  | 'prepareRecoverySendFromHeld'
+  | 'markRecoverySubmission'
+  | 'readRecoveryUpload'
+  | 'recordRecoveryAdmission'
+  | 'recordRecoveryTerminal'
+  | 'retainRecoveryResult'
+  | 'recordAck'
+  | 'readRecoveryAttempt';
+type Operation = (
+  kind: RecoveryStorageOperation,
+  payload: object
+) => Promise<Record<string, unknown>>;
+type Run = <T>(kind: RecoveryStorageOperation, work: () => Promise<T>) => Promise<T>;
+export async function verifyNativeRecoveryResult(receipt: AiRecoveryRequestReceipt): Promise<void> {
+  const picture = receipt.journal.result;
+  if (!picture) return;
+  const file = new File(picture.uri);
+  if (!picture.uri.startsWith('file:') || !file.exists || file.size !== receipt.resultLength)
+    invalidRecovery();
+  const bytes = new Uint8Array(await file.bytes());
+  if (bytes.length !== receipt.resultLength || recoveryDigest(bytes) !== receipt.resultDigest)
+    invalidRecovery();
+  await admitAiImage(bytes, picture.mime);
+}
+class NativeRecoveryStorage implements AiRecoveryStorage {
+  constructor(
+    private readonly operation: Operation,
+    private readonly run: Run,
+    private readonly owner: RecoveryReceiptOwner
+  ) {}
+  private async request(
+    value: Record<string, unknown>,
+    id: number
+  ): Promise<AiRecoveryRequestReceipt> {
+    exact(value, ['receipt']);
+    const receipt = parseRecoveryRequestReceipt(value.receipt);
+    if (receipt.journal.id !== id) invalidRecovery();
+    await verifyRecoveryRequestIdentity(receipt);
+    return this.owner.request(receipt);
+  }
+  prepareRecoverySendFromHeld(
+    ...[source, id, createdAt, credential]: Parameters<
+      AiRecoveryStorage['prepareRecoverySendFromHeld']
+    >
+  ) {
+    return this.run('prepareRecoverySendFromHeld', async () => {
+      const selector = this.owner.current(source);
+      const pinnedCredential = checkedRecoveryCredential(credential);
+      if (
+        !Number.isSafeInteger(id) ||
+        id <= source.journal.id ||
+        !Number.isSafeInteger(createdAt) ||
+        createdAt <= source.journal.createdAt
+      )
+        invalidRecovery();
+      const receipt = await this.request(
+        await this.operation('prepareRecoverySendFromHeld', {
+          source: selector,
+          id,
+          createdAt,
+          credential: pinnedCredential,
+        }),
+        id
+      );
+      if (
+        receipt.nonce === source.nonce ||
+        receipt.journal.id !== id ||
+        receipt.journal.createdAt !== createdAt ||
+        receipt.journal.originalId !== source.journal.originalId ||
+        receipt.journal.style !== source.journal.style ||
+        receipt.originalDigest !== source.originalDigest ||
+        receipt.inputDigest !== source.inputDigest ||
+        receipt.inputLength !== source.inputLength ||
+        receipt.recovery.state !== 'prepared' ||
+        JSON.stringify(receipt.recovery.sourceHeld) !== JSON.stringify(selector) ||
+        JSON.stringify(receipt.recovery.credential) !== JSON.stringify(pinnedCredential)
+      )
+        invalidRecovery();
+      return receipt;
+    });
+  }
+  markRecoverySubmission(receipt: AiRecoveryRequestReceipt) {
+    return this.run('markRecoverySubmission', async () => {
+      if (
+        receipt.recovery.state !== 'prepared' &&
+        receipt.recovery.state !== 'submission-uncertain'
+      )
+        invalidRecovery();
+      const next = await this.request(
+        await this.operation('markRecoverySubmission', this.owner.current(receipt)),
+        receipt.journal.id
+      );
+      if (next.recovery.state !== 'submission-uncertain') invalidRecovery();
+      return next;
+    });
+  }
+  readRecoveryUpload(receipt: AiRecoveryRequestReceipt) {
+    return this.run('readRecoveryUpload', async () => {
+      if (receipt.recovery.state !== 'submission-uncertain') invalidRecovery();
+      const value = await this.operation('readRecoveryUpload', this.owner.current(receipt));
+      exact(value, ['receipt', 'upload']);
+      const next = this.owner.request(value.receipt);
+      await verifyRecoveryRequestIdentity(next);
+      if (
+        JSON.stringify(next) !== JSON.stringify(receipt) ||
+        typeof value.upload !== 'string' ||
+        value.upload.length > Math.ceil(MAX_UPLOAD_BYTES / 3) * 4 ||
+        value.upload.length % 4 !== 0 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(value.upload)
+      )
+        invalidRecovery();
+      const bytes = Uint8Array.from(atob(value.upload), (part) => part.charCodeAt(0));
+      if (
+        bytes.length !== next.inputLength ||
+        bytesBase64(bytes) !== value.upload ||
+        recoveryDigest(bytes) !== next.inputDigest
+      )
+        invalidRecovery();
+      await admitAiImage(bytes, 'image/png', 'original');
+      return new Uint8Array(bytes);
+    });
+  }
+  recordRecoveryAdmission(
+    ...[receipt, status]: Parameters<AiRecoveryStorage['recordRecoveryAdmission']>
+  ) {
+    return this.run('recordRecoveryAdmission', async () => {
+      const admitted = checkedRecoveryAdmission(receipt, status);
+      const next = await this.request(
+        await this.operation('recordRecoveryAdmission', {
+          ...this.owner.current(receipt),
+          status: {
+            ...admitted,
+            protocol: RECOVERY_PROTOCOL,
+            headerExpiresAt: String(admitted.expiresAt),
+          },
+        }),
+        receipt.journal.id
+      );
+      if (
+        next.recovery.expiry.kind !== 'known' ||
+        next.recovery.expiry.expiresAt !== admitted.expiresAt
+      )
+        invalidRecovery();
+      return next;
+    });
+  }
+  recordRecoveryTerminal(
+    ...[receipt, confirmation]: Parameters<AiRecoveryStorage['recordRecoveryTerminal']>
+  ) {
+    return this.run('recordRecoveryTerminal', async () => {
+      const checked = checkedRecoveryTerminal(receipt, confirmation);
+      const next = await this.request(
+        await this.operation('recordRecoveryTerminal', {
+          ...this.owner.current(receipt),
+          confirmation: checked,
+        }),
+        receipt.journal.id
+      );
+      if (
+        next.recovery.state !== 'terminal' ||
+        next.recovery.outcome !== checked.body.outcome ||
+        next.recovery.expiry.kind !== 'known' ||
+        next.recovery.expiry.expiresAt !== checked.body.expiresAt
+      )
+        invalidRecovery();
+      return next;
+    });
+  }
+  retainRecoveryResult(
+    ...[receipt, raw, bytes]: Parameters<AiRecoveryStorage['retainRecoveryResult']>
+  ) {
+    const ownedBytes = new Uint8Array(bytes);
+    return this.run('retainRecoveryResult', async () => {
+      const delivery = checkedRecoveryDelivery(receipt, raw);
+      if (ownedBytes.length !== delivery.length || recoveryDigest(ownedBytes) !== delivery.digest)
+        invalidRecovery();
+      await admitAiImage(ownedBytes, delivery.mime);
+      const next = await this.request(
+        await this.operation('retainRecoveryResult', {
+          ...this.owner.current(receipt),
+          delivery,
+          bytes: bytesBase64(ownedBytes),
+        }),
+        receipt.journal.id
+      );
+      if (
+        (next.recovery.state !== 'retained' && next.recovery.state !== 'acknowledged') ||
+        !next.journal.result ||
+        !('delivery' in next.recovery) ||
+        JSON.stringify(next.recovery.delivery) !== JSON.stringify(delivery)
+      )
+        invalidRecovery();
+      await verifyNativeRecoveryResult(next);
+      return Object.freeze({ picture: next.journal.result, receipt: next });
+    });
+  }
+  recordAck(...[receipt, confirmation]: Parameters<AiRecoveryStorage['recordAck']>) {
+    return this.run('recordAck', async () => {
+      const checked = checkedRecoveryAck(receipt, confirmation);
+      await verifyNativeRecoveryResult(receipt);
+      const next = await this.request(
+        await this.operation('recordAck', {
+          ...this.owner.current(receipt),
+          confirmation: checked,
+        }),
+        receipt.journal.id
+      );
+      if (next.recovery.state !== 'acknowledged') invalidRecovery();
+      await verifyNativeRecoveryResult(next);
+      return next;
+    });
+  }
+  readRecoveryAttempt(id: number) {
+    return this.run('readRecoveryAttempt', async () => {
+      if (!Number.isSafeInteger(id) || id < 1) invalidRecovery();
+      const value = await this.operation('readRecoveryAttempt', { id });
+      exact(value, ['receipt']);
+      if (value.receipt === null) {
+        this.owner.absent(id);
+        return null;
+      }
+      const receipt = this.owner.admit(value.receipt);
+      if (receipt.journal.id !== id) invalidRecovery();
+      if (receipt.kind === 'recovery-request') {
+        await verifyRecoveryRequestIdentity(receipt);
+        await verifyNativeRecoveryResult(receipt);
+      }
+      return receipt;
+    });
+  }
+}
+export function createNativeRecoveryStorage(
+  operation: Operation,
+  run: Run,
+  owner: RecoveryReceiptOwner
+): AiRecoveryStorage {
+  const storage = new NativeRecoveryStorage(operation, run, owner);
+  return {
+    prepareRecoverySendFromHeld: (...args) => storage.prepareRecoverySendFromHeld(...args),
+    markRecoverySubmission: (...args) => storage.markRecoverySubmission(...args),
+    readRecoveryUpload: (...args) => storage.readRecoveryUpload(...args),
+    recordRecoveryAdmission: (...args) => storage.recordRecoveryAdmission(...args),
+    recordRecoveryTerminal: (...args) => storage.recordRecoveryTerminal(...args),
+    retainRecoveryResult: (...args) => storage.retainRecoveryResult(...args),
+    recordAck: (...args) => storage.recordAck(...args),
+    readRecoveryAttempt: (...args) => storage.readRecoveryAttempt(...args),
+  };
+}
+src/platform/legacyAiCredentials.web.ts:7:  STORAGE_KEYS.legacyAiUserApiKey,
+src/platform/legacyAiCredentials.web.ts:8:  STORAGE_KEYS.legacyAiAccessToken,
+src/platform/legacyAiCredentials.ts:2:// storage is out of their reach, so only the web build has legacy keys to remove
+src/platform/legacyAiCredentials.ts:3:// (legacyAiCredentials.web.ts).
+src/drawing/model.ts:47:// Version 8 is version 7 whose strokes may carry ops; version 7 strokes never do. A version-5
+src/drawing/model.ts:48:// picture's strokes carry ops only while it is open: its saved format has none (drawingFormat.ts).
+src/drawing/model.ts:51:    | Readonly<{ version: 5 }>
+src/drawing/model.ts:52:    | Readonly<{ version: 7; paper: DrawingPaper }>
+src/drawing/model.ts:53:    | Readonly<{ version: 8; paper: DrawingPaper }>
+src/drawing/model.ts:90:): Extract<Drawing, { version: 8 }> {
+src/drawing/model.ts:91:  return { version: 8, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
+src/drawing/model.ts:145:  // A version-5 picture stays version 5; its new strokes keep their ops while it is open, so
+src/drawing/model.ts:146:  // they replay as they were drawn. Only an imported picture is version 5; a session starts at 8.
+src/drawing/model.ts:147:  if (drawing.version === 5) {
+src/drawing/model.ts:148:    if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
+src/drawing/model.ts:169:    version: 8,
+src/platform/durableAiStorage.ts:155:    a.version === b.version &&
+src/platform/durableAiStorage.ts:166:function legacyFiles() {
+src/platform/durableAiStorage.ts:184:      recoveryRestart.legacy();
+src/platform/durableAiStorage.ts:313:      recoveryRestart.legacy();
+src/platform/durableAiStorage.ts:319:      const file = legacyFiles()
+src/platform/durableAiStorage.ts:328:          !legacyFiles().some(
+src/platform/durableAiStorage.ts:335:        return Object.freeze({ kind: 'legacy' as const, journal: Object.freeze(journal) });
+src/platform/durableAiStorage.ts:337:      const original = new File(Paths.document, 'splotch-pictures', journal.originalId + '.json');
+src/platform/durableAiStorage.ts:385:      for (const file of legacyFiles()) {
+# Migration contract
+
+> **Correction, 2026-10-18.** This document is history, with two corrections to what it says about
+> the framework and parity. The framework is React Native (Expo, React Native new architecture),
+> with native ink rendered through `@shopify/react-native-skia`
+> ([ADR-0178](../adrs/0178-native-ink-renders-through-skia.md)) and the React Native web startup
+> path split by platform ([ADR-0179](../adrs/0179-rn-web-startup-path-splits-by-platform.md)).
+> Visual and behavioral parity with the shipping app is required: match shipping behavior by
+> default, and record each settled difference as a decision. The React Native app remains a
+> candidate under evaluation: the go/no-go decision is deferred and nothing is cut over. Below, the
+> statements that no framework is selected and the waiver of old-UI parity, including the "Old UI
+> layout and flows" row, no longer hold; the retirement of legacy data transfer stands.
+
+## Scope and decision status
+
+Select the drawing product architecture across web, Android, and iOS through the Codex/Claude pair,
+and replace UI and client behavior where the selected design requires it. The registered retention
+outcomes may retain the current Svelte/Capacitor product; report that as retention rather than a
+completed UI replacement. Deliver the complete new drawing product, hosted API contracts, and
+substantive drawing fidelity. Keep the current product runnable until each target is ready. Retain
+SvelteKit/Netlify for hosted APIs, admin, and informational routes unless a concrete requirement
+warrants a separately reviewed change; see
+[ADR-0001](../adrs/0001-sveltekit-dual-adapter-strategy.md).
+
+### Authoritative fresh-start scope
+
+On 2026-10-08 the maintainer gave this direct instruction:
+
+> A fresh start is acceptable for the roughly ten beta users. Prioritize the new drawing product
+> rather than legacy settings/data migration or old-app UI parity. Retain reliable new-app
+> saving/exporting, permissions, lifecycle, security and release quality. Reconcile the
+> authoritative contract accordingly. No framework is selected. [Superseded 2026-10-18 on the
+> framework and old-app UI parity; see the correction note at the top.]
+
+This scope applies to the full campaign: web browser tabs and installed PWAs, Android and iOS.
+Public hosting does not create a platform exception or establish a separate non-beta audience beyond
+the maintainer's stated roughly ten beta users. It replaces earlier mandatory legacy-transfer
+requirements in the migration documents; it does not waive parity with the shipping app, which the
+correction note at the top requires. Historical source inventories, failed attempts, accepted units
+and review provenance retain their original identities and claim limits. Retirement is a scope
+disposition, not a passing validation result or permission to change the shipping app before target
+cutover.
+
+In the remaining rules, continuity means applicable new-app data/lifecycle reliability and native
+update installability. Fidelity and visual semantics retain substantive drawing/output requirements;
+they do not require copying old chrome. Matched comparisons still use equivalent required content
+and workloads, and a concrete product change must be reviewed before changing their fixtures.
+
+| Requirement                                                                                                   | Current disposition                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Legacy settings, preferences, secure credentials, held pictures, installed packs and native admin credentials | Import and preservation are retired requirements for the fresh-start transition. No source-by-source data fixture, old WebView reader, credential hardening transaction or old held-picture import is required solely to transfer beta data.                                                                    |
+| Legacy download jobs and background sessions                                                                  | Preservation and successor mapping are retired. A same-identity replacement must still stop or safely reconcile surviving work so stale callbacks, files or sessions cannot corrupt the new app or bypass its policies.                                                                                         |
+| Old UI layout and flows                                                                                       | Exact sections, layout, choreography, settings choices and interaction paths are design references. The new product may choose different UI and flows without reproducing old UI parity.                                                                                                                        |
+| Substantive product capabilities                                                                              | Full drawing fidelity, crayon/Magic, input, history/undo, coloring, ordering, audio and applicable full-product functions remain in the acceptance inventory. A concrete feature change needs a pair-reviewed product decision and an explicit inventory disposition; fresh start is no blanket feature waiver. |
+| New-app data and services                                                                                     | Reliable saves/exports, exact failed-save recovery, permissions, secure credentials, offline behavior, lifecycle, accessibility and failure handling remain required for the selected product. Later updates protect data created by that product.                                                              |
+| Hosted web/API/admin                                                                                          | Applicable startup, CSP, PWA, browser, navigation, admin and server contracts remain. Supported installed clients retain their API/CORS contracts while they depend on them.                                                                                                                                    |
+| Native distribution                                                                                           | Existing app identity, signing lineage, monotonic release versions, supported floors, channel installability, privacy and release quality remain required. Same-identity updates may initialize fresh app data; clean installs alone do not prove update installability.                                        |
+| Architecture and evidence                                                                                     | React Native is the framework under evaluation (ADR-0178, ADR-0179); go/no-go is deferred. Fair alternatives, source/toolchain security, calibrated matched comparisons, burden rules, physical final gates, independent review and exact-head release evidence remain required.                                |
+
+The next product milestone is an observable drawing candidate: runnable paper, real ink, controls,
+undo and exported output, with exact source and claim limits. Follow it with full fidelity and
+service slices, matched foundation evidence, integrated tuning and target release gates. Legacy-only
+transfer work is not a prerequisite. Existing source-acceptance dependencies still apply to the
+units that consume them; scope reconciliation does not accept a pending unit. Physical hardware
+gates comparison and release, rather than ordinary feature construction and development builds.
+
+### Functional development priority
+
+The maintainer's course correction effective 2026-10-09 03:00 UTC prioritizes useful native product
+construction with running feedback. The development checkpoint is an installable phone build within
+48 hours, by 2026-10-11 03:00 UTC. If a phone or signing requirement prevents installation, record
+the concrete blocker and provide a runnable emulator/simulator build, local demonstration and
+substantial implemented source. A time target does not establish delivery or acceptance.
+
+Build the next working feature before expanding qualification. Start with drawing, color and brush
+controls, undo, clear, PNG export and basic local save/reopen. Continue through substantive
+crayon/Magic, coloring, history/page operations, settings/audio and reliable services. Keep drawing,
+history, UI, storage and platform responsibilities clear; resolve real needs without speculative
+abstraction. Maintain a short feature inventory with exact source and observed running behavior.
+
+Upfront validation addresses concrete build, correctness or security requirements needed for the
+next feature. Use supported development workflows and already trusted inputs where practical. Name
+any remaining blocker, its specific risk and shortest bounded resolution. Exhaustive source
+materialization qualification, optimized builds on both OSes, complete performance instrumentation
+and matched physical comparisons are not prerequisites to ordinary development. Preserve prior
+attempts and their limitations; defer work that does not unblock the next running feature.
+
+Keep the shipping app runnable and experiments isolated. Development observations do not select a
+framework, pass Phase 1, authorize production ownership changes or complete the campaign. Full
+fidelity, fair alternatives, applicable web/API/admin contracts, source/dependency security,
+integrated tuning, physical performance gates, signing/channel updates and final independent
+Codex/Claude review remain required for reviewed cutover or valid retention. Original reviewer
+identities, consumed rounds and remaining budgets persist; changing the sequence grants no new
+review capacity and does not reopen an exhausted unit.
+
+### Abandoned credential security
+
+Fresh initialization on every target must not expose or reactivate known abandoned sensitive
+credentials, or indefinitely leave them under weaker protection. Name the affected credential
+locations and protections, then remove/invalidate applicable abandoned entries or retain them only
+behind a reviewed protection/risk disposition. Prove interrupted cleanup and late restoration cannot
+expose or reactivate them; failures need a safe, explicit outcome. Keep installation allowance
+identity and server authorization intact.
+
+This is a narrow security requirement, not legacy credential transfer or data parity. It does not
+reopen the old source-by-source transfer matrix, full L0 import workload or iOS reader work, and it
+does not require broad deletion of isolated inert drawings or coloring-pack data. Retained inert
+data alone does not establish a new secret exposure. Any additional deletion requirement needs a
+concrete affected security or lifecycle boundary and a reviewed disposition.
+
+// The React Native app the stores ship: its identity, and where its native projects and
+// release artifacts live, as paths relative to the repository root. The native projects
+// declare the identity themselves (applicationId in android/app/build.gradle,
+// PRODUCT_BUNDLE_IDENTIFIER in the Xcode project); tools/release/tests/native-app.test.mjs
+// fails when either drifts from these values.
+import { join } from 'node:path';
+
+// The installed store app. Only a store build carries it (build-native-release.mjs).
+export const STORE_APP_ID = 'art.splotch.app';
+// Every other build, Release included, so a local install never replaces the store copy.
+export const DEV_APP_ID = `${STORE_APP_ID}.dev`;
+
+export const NATIVE_APP_DIR = join('.');
+export const ANDROID_PROJECT_DIR = join(NATIVE_APP_DIR, 'android');
+export const IOS_PROJECT_DIR = join(NATIVE_APP_DIR, 'ios');
+export const IOS_PROJECT_NAME = 'Splotch';
+
+const ANDROID_OUTPUTS = join(ANDROID_PROJECT_DIR, 'app', 'build', 'outputs');
+export const RELEASE_AAB = join(ANDROID_OUTPUTS, 'bundle', 'release', 'app-release.aab');
+export const RELEASE_APK = join(ANDROID_OUTPUTS, 'apk', 'release', 'app-release.apk');
+
+const IOS_BUILD = join(IOS_PROJECT_DIR, 'build');
+export const RELEASE_ARCHIVE = join(IOS_BUILD, `${IOS_PROJECT_NAME}.xcarchive`);
+export const RELEASE_IPA_DIR = join(IOS_BUILD, 'ipa');
+export const RELEASE_IPA = join(RELEASE_IPA_DIR, `${IOS_PROJECT_NAME}.ipa`);
+
+EXIT 0

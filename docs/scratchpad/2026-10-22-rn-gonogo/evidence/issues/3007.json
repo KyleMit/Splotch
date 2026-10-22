@@ -1,0 +1,194 @@
+{
+  "observedAt": "2026-10-22T16:54:35.451Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3007",
+    "title": "After RN cutover, serve every web page from one prerendered RN web app and retire SvelteKit",
+    "issue_number": 3007,
+    "body": "## What\n\nAfter the React Native cutover, make one web app render every page Splotch serves: the drawing screen and its child pages. All pages share one route table and one way to prerender at build time. SSG is the default; SSR only where a page needs per-request data. Then move the hosted API off SvelteKit and remove SvelteKit.\n\nOwner direction (2026-10-19, in the RN perf campaign session for #2978): \"I don't think we need super complicated routing, but I'd like a single web app to be responsible for rendering the main and child pages and a consistent way we can work on makings those SSG or SSR (preferably SSG).\"\n\n## When\n\n**Only after cutover.** The current migration work stays focused on a shippable RN drawing product on every target. In the owner's words: \"this initial campaign can be wholly focused on getting a shippable drawing product in RN across all targets - because if we can't do that, then we never need to worry about doing the /privacy page either because won't cutover to it.\"\n\nThe owner wants the ADR written with the implementation, not before.\n\n## Why\n\nThe draft `docs/migration/WEB-CONTRACT.md` (\"Retained hosted boundaries\") keeps SvelteKit and Netlify serving everything on the web that isn't the drawing product. No ADR records that as a decision. After cutover it leaves two web stacks:\n- `/privacy`, `/changelog` and `/feedback` exist both as RN screens (`experiments/native-architecture/src/information/appPages.ts`) and as SvelteKit pages.\n- How the RN web build and the SvelteKit routes share one origin is an open question in the contract (ledger row X64).\n\n## Where\n\nSizes are from `codex/native-migration` on 2026-10-19 and exclude tests.\n\n| Surface | Today | Target |\n| --- | --- | --- |\n| `/` drawing screen | RN web export; build-time prerender in progress (PR #3006, proposed ADR-0180) | Unchanged; its prerender becomes the shared mechanism |\n| `/privacy`, `/changelog` | SvelteKit, about 1.6k lines; RN copies exist | RN web, prerendered |\n| `/feedback` and its server action | SvelteKit, about 0.4k lines; RN copy exists | RN web page that posts to an API function |\n| `/beta`, `/android-beta`, `/ios-beta` | SvelteKit, about 0.3k lines | RN web or static pages, prerendered |\n| `/admin` console | SvelteKit, about 1.4k lines; unlinked (ADR-0101) | An unlinked RN web page, keeping the bearer-session contract (ADR-0016) |\n| `/design` styleguide | SvelteKit, about 0.5k lines | Rebuilt against the RN tokens, or retired |\n| `/dev/*` harnesses | SvelteKit, about 4.0k lines | Retired with the Svelte engine; equivalents only where still used (notch harness, store frames, share cards) |\n| `/api/*` + `web/src/lib/server` | SvelteKit endpoints, about 1.4k + 8.2k lines; mostly framework-free TypeScript | Plain Netlify Functions |\n\n**Routing stays simple.** Extend the hand-rolled page table in `appPages.ts`, which uses `history.pushState` on web (`platform/appPath.web.ts`) and in-memory state on native. Don't adopt Expo Router.\n- On Expo SDK 58, an empty Router app exported 1,096,771 startup bytes with Expo's tree shaking, against 320,430 for a plain `registerRootComponent` app. That is about 145 KB more brotli before any app code.\n- Most of it is `expo-router` itself (429 KB), including its built-in copy of React Navigation with bottom tabs, even in an app with no tabs. Measured in a scratch project for #2978.\n\n**The API port must not change anything on the wire.** Older installed Capacitor builds keep calling it. Preserve:\n- `docs/API.md`;\n- `web/src/lib/apiHeaders.ts`;\n- the CORS, CSP and cache behaviour in `web/src/hooks.server.ts`;\n- the legacy trusted origins in `web/svelte.config.js`;\n- the distinct admin cookie and bearer contracts.\n\n## Done when\n\n1. One route table in the RN web app lists every page above that is kept. Each page is prerendered at build time (SSG), or server-rendered with a recorded reason.\n2. An automated test loads each page with JavaScript blocked and finds its real content painted.\n3. `/api/*` runs as Netlify Functions:\n   - the API contract and smoke tiers (`npm run test:browserless`, `test:api:smoke`) pass against the functions;\n   - `docs/API.md` is unchanged on the wire;\n   - a pre-cutover Capacitor build still completes an AI generation and a report.\n4. SvelteKit, its adapter and the Svelte toolchain are gone from `web/` and `package.json`. `netlify.toml` routes every path to the new build or a function.\n5. An ADR records the architecture as built.\n\nRefs #2690\n",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:infra",
+        "color": "5a6570",
+        "description": "Dev tooling, dependencies, repo infrastructure"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 7,
+    "created_at": "2026-10-19T17:05:11Z",
+    "updated_at": "2026-10-21T13:09:11Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3007",
+    "display_title": "After RN cutover, serve every web page from one prerendered RN web app and retire SvelteKit"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6302441148",
+      "body": "**Technical design and a first proof step, held for review.**\n\n* Design note: [`docs/scratchpad/2026-10-20-rn-web-single-app/README.md`](https://github.com/KyleMit/Splotch/blob/claude/rn-web-3007-arch/docs/scratchpad/2026-10-20-rn-web-single-app/README.md). It is not an ADR; that waits for the implementation, as this issue asks.\n* Proof PR: #3095 into `codex/native-migration`. It is left open, not merged. It adds `npm run native:web:compose`, which assembles the cutover deploy: the SvelteKit build with the RN export laid over it at `/`. It is not wired into `netlify.toml`. The `/` startup caps are unchanged: first paint 45,601 / 47,052 and core controls 821,371 / 827,535, before and after.\n\nWhat a local Netlify-shaped rehearsal in Chromium showed:\n\n* **Hosting (X64).**\n  * Static files win over SvelteKit's catch-all function (`preferStatic`), so the RN shell answers `/`.\n  * SvelteKit's prerendered `/privacy`, `/changelog` and `/beta`, and its function for `/feedback`, `/admin`, `/api/*` and unknown paths, keep working.\n  * The RN page's `/api` calls reach the function on its own origin, which settles L0160 once the web build calls relative paths.\n* **The web build must drop SvelteKit's `/` route.** The Codex review found this. While the route exists, SvelteKit's client router keeps \"Back to drawing\" inside the shipping app. Without it, all nine links to `/` on those three pages load the RN document. The composer refuses a build that still has the route.\n* **Handoff.**\n  * An installed shipping worker served the RN document on the next launch.\n  * The RN worker installed and activated silently, and offline then booted RN.\n  * Shipping's `coloring-packs-*` and `pages*` caches are never deleted. That is plan step P2.\n* **No JavaScript.** `/` shows only Expo's \"enable JavaScript\" line; the SvelteKit pages are fine during the window.\n\nThe note has the end-state route table, `/admin` on the bearer API, `/api/*` as Netlify Functions with a wire-diff test, per-page budgets on one metric, a plan of PR-sized steps marked before and after cutover, and six decisions for the owner.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6302441148,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6304740625",
+      "body": "**Owner direction, 2026-10-20: this work now comes before cutover.**\n\n> \"when we cutover, I'd like to have routing solved and get rid of sveltekit by the time we pull in RN.  Let's solve that portion first.\n>\n> I'm really not too worried about the exact timing of the \"cutover\" piece.  We have like 10 real users total and the odds are they aren't online at any given time, and I have no SLA even if they were.  So let's be intentional about it, but we don't need big mitigation plans in place for the rollout or need to worry about any backward compatbility i.e. settings getting lost.\"\n\nWhat this changes:\n\n* The **When** section's \"Only after cutover\" no longer holds. One RN web app owns routing for every page, and SvelteKit's pages are retired before RN replaces shipping.\n* `/api/*` still moves to plain Netlify Functions with no change on the wire, because installed Capacitor builds keep calling it.\n* No rollout mitigation or backward compatibility is needed: no handoff from shipping's service worker or cache cleanup, and no preservation of stored settings.\n* The `/` startup caps still hold, and each secondary page gets its own measured budget.\n* #3095's cutover-window compose step (RN laid over SvelteKit) is probably superseded; its design note's end state is the plan to build from.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6304740625,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6305005643",
+      "body": "**The routing-first plan is merged** (#3095, as 33fdc0be025bcef2e0e31c1fc2d673a4ed963f36): [`docs/scratchpad/2026-10-20-rn-web-single-app/README.md`](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-20-rn-web-single-app/README.md). The RN-over-SvelteKit composer it first proposed is removed, and its rehearsal is kept as a short superseded record. Per the owner's direction, there's no worker handoff, no old-cache cleanup and no settings compatibility.\n\nSeven pre-cutover steps. Steps 1 and 2 are in progress tonight as separate lanes:\n\n1. One route table, a separate page entry with a Node render, `/privacy` prerendered with its no-JS spec and its own first-paint cap, and a guard that the drawing entry never reaches a page module.\n2. `/api/*` as plain Netlify Functions, with a wire-diff test against the SvelteKit handlers.\n3. `/changelog`, `/beta`, the not-found document, and `/`'s noscript.\n4. `/feedback` as an RN page.\n5. `/admin` as an unlinked RN page on the bearer API.\n6. `/design` and `/dev/*`.\n7. Remove SvelteKit. `netlify.toml` publishes the RN export with functions for `/api/*`, the API origin becomes relative, and the ADR gets written. That's the cutover-ready state; the store and app-identity switch stays the owner's.\n\n`/`'s caps are unchanged (first paint 47,052, core controls 827,535). Each secondary page gets its own measured cap.\n\n**Owner decisions still open**, with the note's recommendations:\n\n* `/design`: retire it (recommended), or rebuild it against the RN tokens.\n* `/admin` session: keep it in memory and retire the cookie form-action login (recommended), or persist it in `sessionStorage`.\n* Per-page first-paint caps: each page's own measurement plus ADR-0179 headroom, never above shipping's inline bytes (recommended), or a tighter fixed number.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6305005643,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6305887773",
+      "body": "**Step 2 done: `/api/*` now runs on plain Netlify Functions** (#3104, merged into `codex/native-migration` as b236d639160459eecd60900926c759af5d4ae080).\n\n* All eleven endpoints moved from `web/src/routes/api/` (deleted) into `web/src/lib/server/api/`. One function, `netlify/functions/api.ts`, serves them through a literal `config.path` list.\n* One wrapper, `apiFunction`, reproduces what SvelteKit and `hooks.server.ts` did, in their order: the CSRF 403 with the same trusted origins (the list now lives in `web/securityPolicy.ts`), the trailing-slash 308, `OPTIONS`, the 405 with `Allow`, CORS, `no-store`, `nosniff`, and `handleError`'s log line.\n* **Wire diff:** a 108-request corpus, recorded from the unchanged SvelteKit function, replays byte-identical through Netlify's real function bundle (`netlify functions:build`). Negative controls (a changed CORS header, disabled CSRF, per-endpoint bundles, a second function claiming an `/api` path) each fail it.\n* The SvelteKit catch-all's `excludedPath` lists the eleven paths, so the deploy doesn't rely on Netlify's undocumented ordering between two matching functions.\n\n**One deliberate departure from the design note:** the note says one function per endpoint. That would give each endpoint its own memory and so its own rate-limit buckets, splitting the per-IP guessing budget that verify-access-code, generate-image, generation-attempt and report-image share (ADR-0014). Codex caught this in review, so every endpoint runs from one function. Step 7's ADR should record it. Until steps 4 and 5 land, the SvelteKit `/admin` login and `/feedback` form actions still keep their budgets apart from their `/api` twins.\n\nStill for step 7: a Capacitor build completing a generation and a report against a deploy, which needs a deploy and AI budget.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6305887773,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6305936123",
+      "body": "**Owner decisions on #3007's three open questions, 2026-10-21** (given in the forked side session, relayed verbatim):\n\n1. **`/admin` sign-in.**\n   - The owner: \"I do not want to have to keep re-typing my admin password 1a is out. At least B vs C - what are the real tradeoffs. B seems simpler and I think a sufficiently good security posture. Accept unless there's strong argument for C\"\n   - Resolved: B, with the bearer session token kept in `localStorage`, so the owner signs in once per browser, as with today's 10-year cookie (`SESSION_MAX_AGE_S`). `sessionStorage` would ask again in every tab, which the owner ruled out.\n   - Not C (an HTTP-only cookie function), so there's one bearer auth path. The hash-based CSP (#3017) is the mitigation, and rotating the admin secret kills a leaked token.\n   - The cookie form-action login retires with SvelteKit.\n2. **`/design`.**\n   - The owner: \"yeah, i open it all the time - A is a must\".\n   - Resolved: `/design` is rebuilt on RN web from the shared tokens. It's web only, with no native route and no debug-build entry unless asked.\n3. **Page budgets.**\n   - The owner: \"I want to make sure we pre-render any standalone pages. I'm less focused on what the exact cap is after that point for interactive controls as long at the page loads quickly. You can literally just do a first pass and whatever the budget is, use that +10% and use that as the budget. And then if we want to do a performance spike later, we can ratchet it down. If there's a quick/easy way to ratchet, go for it, but we don't need to do it on the migration. Although that said, I'm not sure why we'd need *that* much JS on those pages. It's doing a lot less work than the main `/` drawing page. There are some interactive controls, but I wonder how much we should be able to tree shake down\"\n   - Resolved: every standalone page is prerendered (required). Each page's first-paint and interactive budgets are its first measured build plus 10%, held in the per-document startup checker; ratcheting down is later work. `/`'s caps are unchanged.\n   - Worth one measured build on the first page: whether a page entry that imports only React Strict DOM `html.*` components (no React Native primitives) avoids React Native Web, cutting the 323,984-byte floor toward React DOM alone. Unverified until measured.\n\nAll three plan questions are now answered. Step 1 (#3007's route table, page entry and `/privacy`) is in progress and applies the budget rule.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6305936123,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6310985913",
+      "body": "**Step 7, part (a) is ready, and part (b) needs your scope call.**\n\n**(a), #3130:**\n- Netlify now builds and publishes the React Native web export, and `netlify/functions/api.ts` serves every `/api` path.\n- The web build calls `/api` on its own origin (L0160).\n- Each page carries its link-preview card.\n- The export's packages install under `--prod`.\n- A new CI job builds the site from a production install and runs the Chromium checks on it: no-JS pages, the admin console and the safe-area matrix. Until now CI never built the RN web export.\n\nSvelteKit's code is still in the tree, but the deploy no longer uses it.\n\n**(b), removing SvelteKit, reaches past the pages.** The Capacitor shell builds from SvelteKit (`build:cap` → adapter-static → `web/build` → `android/`, `ios/`), and so does most of shipping's test and perf infrastructure. All of the following stop working on `codex/native-migration` once SvelteKit goes:\n\n| Depends on SvelteKit | Rough size |\n| --- | --- |\n| `build:cap`, the Capacitor projects, fastlane; CI `native-compile`, `android-deploy`, `ios-deploy`; the `build`, `cut-release` and `publish-artifacts` skills | ~130 files in `android/`, `ios/`, `fastlane/`, plus `tools/mobile` |\n| The Playwright E2E suite (8 shards), the Firefox and WebKit smokes, the worker sweep and the flaky digest | ~147 files in `web/tests` |\n| Lighthouse CI, the WebKit commit gates (fast, retry, full), the `perf:*` web targets (`/dev/engine`) | ~263 files in `tools/perf`, plus `tools/page-load` |\n| `app-driver` and the `gen:*` generators' capture stages, `page-inventory`, `redteam` | ~40 files in `tools/` |\n| The API smoke and `npm run dev`, both hosted on `vite dev` | `web/netlifyFunctionsHost.ts`, `tools/api-smoke` |\n| The SvelteKit app itself | 63 route files, ~130 Svelte components, most of `web/src/lib` (~960 files, part of it shared with RN and the functions) |\n\n**Options**\n\n- **A. Retire all of it with SvelteKit.**\n  - This branch can no longer build or release a Capacitor app. `main` still can until this branch merges, and from then on releases come from the RN apps.\n  - The API smoke moves to a plain Node host for the function, and the perf and run skills point at the RN probes.\n  - Several PRs, since it is thousands of files.\n- **B. Retire only what the deploy and RN no longer need.**\n  - Remove the web pages, the web-only specs and CI, and `vite-plugin-pwa`.\n  - Keep SvelteKit and adapter-static so `build:cap` and Capacitor releases keep working from this branch until the store switch.\n  - SvelteKit isn't fully gone, and the Svelte engine stays for the Capacitor app.\n- **C. Stop after (a).** The site is cutover-ready already: RN serves every page and functions serve `/api`. The removal waits for the store switch.\n\n**Recommendation: A, split into PRs.** \"Get rid of sveltekit by the time we pull in RN\" reads as covering the Capacitor shell: once RN is pulled in, the RN apps are what ship, and B only defers the same deletions while CI keeps running the E2E shards, smokes, Lighthouse and the WebKit gates against an app nobody will ship. A also removes the duplicated server plumbing. The API functions still import `json` and `error` from `@sveltejs/kit`, which keeps SvelteKit a production dependency today.\n\n**A's first PR:** the SvelteKit web app and everything that tests only it.\n- Delete `web/src/routes` (including the cookie form-action admin login), the Svelte components, engine and state only those routes reach (proven dead with knip and the import graph), `svelte.config.js`, `vite-plugin-pwa`, `svelte-check`, `app.html`, and the hooks.\n- Delete the shipping E2E specs, the smokes, Lighthouse, the WebKit gates and the worker sweep, along with their CI jobs.\n- Replace `@sveltejs/kit`'s `json`/`error` in `web/src/lib/server` behind the wire-diff test, and host the API smoke on Node.\n- Repoint the ledger rows that cite `web/src/routes/dev/` (B0013, B0155, L0095 → `web/src/lib/storeFrames/geometry.test.ts`; B0201, B0202, B0226 → `tools/migration/tests/rsd-native-settings-info.test.mjs`).\n- Update the docs and skills that describe SvelteKit, and write the step-7 ADR, superseding ADR-0001 and ADR-0024.\n\nUnder A, the Capacitor shell and the perf harness follow as their own PRs.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6310985913,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3007#issuecomment-6316868289",
+      "body": "**Owner decision on step 7(b) (2026-10-21), verbatim:**\n\n> \"in 3007, I want the simplest forward looking architecture. So if we went RN from the start, where would we land. If capacitor and SveltKit aren't on that list, let's rip em out. If they're really the best in class things for the use cases they're still serving, sure, fine, but I'm suspect of that and it'd take some proving.\"\n\n> \"Sounds like we need another campaign just to delete all the old stuff. That should be part of the cutover and done before merging in codex/native-migration into main\"\n\nThis settles option A, with a stricter test: a SvelteKit- or Capacitor-era piece stays only with written evidence that it's best in class for a use case the RN app still has. Tools like Playwright, Lighthouse, Vitest and fastlane are judged on their own merits and repointed, not deleted.\n\nThe work is tracked in #3148, which blocks merging `codex/native-migration` into `main`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6316868289,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

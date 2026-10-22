@@ -1,0 +1,4 @@
+Commit ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4; Node v24.19.0; gh 2.46.0; run count 1
+Command: npm --silent run show:epic-children -- 2690 --json
+Output: epic-tree.json
+EXIT 0

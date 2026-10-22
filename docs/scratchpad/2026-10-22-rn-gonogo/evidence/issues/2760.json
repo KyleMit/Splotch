@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:18.260Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2760",
+    "title": "Make the RN web build installable and offline",
+    "issue_number": 2760,
+    "body": "**What:** At cutover the RN web UI replaces the Svelte app at splotch.art. It needs the service worker, offline launch and the Install Banner/Guide the PWA has.\n\n**Where:** Svelte `web/src/lib/pwa/`, `InstallBanner.svelte`.\n\n**Done when:** the RN web build installs to the home screen and launches offline.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T01:45:35Z",
+    "updated_at": "2026-10-13T06:28:57Z",
+    "closed_at": "2026-10-13T06:28:57Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2760",
+    "display_title": "Make the RN web build installable and offline"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2760#issuecomment-6139696210",
+      "body": "Done in #2778 (merged into `codex/native-migration`). `npm run native:web:build` exports an installable PWA: shipping manifest, a content-addressed and integrity-pinned offline shell, a precache check, and the Install Banner/Guide. Cutover checklist: the host must serve the exported bytes unchanged, so no Netlify snippet injection on that deploy. Follow-up: #2779.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6139696210,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:06.883Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3014",
+    "title": "Download the seven extra coloring books on RN web, as shipping does",
+    "issue_number": 3014,
+    "body": "## What\n\nThe RN web export never downloads the seven extra coloring books. On desktop Chromium with default settings, after three strokes and with the coloring picker opened, it makes no request for any book file in 60 seconds. Settings › Coloring stays at \"0 of 7 extra books · 0.0 MB\".\n\nShipping web, same browser and settings, downloads all seven on idle after boot, with no strokes needed: 528 files, \"7 of 7 extra books · 23.0 MB, Every coloring book is ready offline\".\n\n## Why\n\n`experiments/native-architecture/OFFLINE-LIBRARY.md` says \"The app downloads the seven additional complete coloring books on its own, as shipping does.\" Today an RN web child only ever has the starter book, online or offline.\n\nThis also hides the connection policy. With no downloads at all, the unknown-connection rule (X19, B0285) and the Save-Data/2g/cellular block (B0286, X51, E0178) cannot be observed on RN web.\n\n## Where\n\n- `experiments/native-architecture/src/offlineLibrary/controller.ts`: `allowed()` needs `featureEnabled && state.enabled && engaged && !paused`, and `canStartTransfer()` also needs `consumers === 0`.\n- `offlineLibrary/deferredLibrary.ts`, `offlineLibrary/useOfflineLibrary.ts` and `useDrawingScreen.ts`. `setFeatureEnabled` is called from `setColoringBookEnabled`. Toggling Settings › Coloring › Coloring book off and on did not start downloads either.\n\nThe root cause was not diagnosed. These are the gates a fix should check first.\n\n## Repro (rn-web, Chromium)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080 (not re-run at d10d375c8, after #3006), run `npm run native:web:build`. Serve `experiments/native-architecture/dist/web` statically with an SPA fallback. The campaign used `docs/scratchpad/2026-10-18-device-parity/results/web/serve-rn-web.mjs` on branch `claude/rn-web-parity-cloud`.\n2. Route `https://splotch.art/coloring/**` to `web/static/coloring` so the downloads have something to fetch. The campaign did this as a labeled fixture.\n3. Open `/` at 1280x800, draw three strokes, open the Coloring books picker, and wait 60 s.\n4. Expected: requests for `/coloring/...` book files, and Settings › Coloring reaching 7 of 7. Actual: no requests, and 0 of 7.\n\nEvidence: the WEB-1 record, cell `coloring-connection-policy` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on that branch).\n\n## Done when\n\n- On desktop Chromium with default settings, RN web downloads the seven extra books on its own. Settings › Coloring shows 7 of 7, as shipping does.\n- Save-Data, `effectiveType` 2g and `type` cellular still block new downloads.\n- The WEB-1 cell `coloring-connection-policy` shows matching fetch behavior across its five connection shapes.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:coloring-book",
+        "color": "6f42c1",
+        "description": "Coloring-book pages, packs, and workflow"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "not_planned",
+    "comments": 2,
+    "created_at": "2026-10-19T20:14:47Z",
+    "updated_at": "2026-10-20T22:48:55Z",
+    "closed_at": "2026-10-20T22:48:55Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3014",
+    "display_title": "Download the seven extra coloring books on RN web, as shipping does"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3014#issuecomment-6302794913",
+      "body": "Diagnosis in PR #3097: there is no RN product defect at f4b3dc88018dbd0abb8a97a676edd229fc2fe739. RN web fetches book files from its own origin's `/coloring/**`, as shipping does. The WEB-1 harness's `serve-rn-web.mjs` answered those paths with its SPA fallback (`index.html`, status 200), so the first Dinosaurs file failed verification after one request, leaving Settings at 0 of 7. When the same export's host also serves `web/static/coloring`, an engaged fresh profile downloads all 518 book files (7 books × 74) and Settings reads 7 of 7 · 23.0 MB. Save-Data, 2g and cellular fetch no book file. Shipping also waits for three strokes or the picker on a first visit (`web/src/lib/boot/coloringPacks.ts`, issue #462), so the claim that it needs no strokes doesn't hold on a fresh profile. The PR adds the policy and engagement tests and documents the `/coloring/**` host requirement. It also has the five-shape rerun of the cell.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6302794913,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3014#issuecomment-6303517346",
+      "body": "Closed: no RN defect. Evidence is in #3097, merged into `codex/native-migration` as 0dbd673f05895d599ecd9e0981f0072a22cb9026, and in the diagnosis comment above.\n\n* **The symptom came from the test host.** RN web fetches book files from its own origin at `/coloring/**`, as shipping's `webStore.ts` does. The WEB-1 harness's static server answered those paths with its SPA fallback (`index.html`, status 200). The first file failed its byte-length check, the library went to `failed`, and nothing more was requested: exactly \"0 of 7 extra books\".\n* **With the real files served** at `/coloring/**` (a labelled fixture for the retained host), the same export downloads the full catalog: 518 requests, \"7 of 7 extra books · 23.0 MB\". Save-Data, 2g and cellular each make 0 extra-book requests.\n* **WEB-1 `coloring-connection-policy`** rerun on rn-web-chromium: extra-book fetch behaviour matches web-prod in all five connection shapes.\n* **First visit:** like shipping (`web/src/lib/boot/coloringPacks.ts`, #462), RN waits for three strokes or the coloring picker on a fresh profile, so the issue's \"no strokes needed\" doesn't hold for shipping either.\n\n#3097 adds the connection-policy and engagement tests (each with a negative control) and documents in `OFFLINE-LIBRARY.md` that whatever hosts the RN web export must serve `web/static/coloring` at `/coloring/**`. That requirement carries into the cutover hosting work (#3007, PR #3095).",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303517346,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

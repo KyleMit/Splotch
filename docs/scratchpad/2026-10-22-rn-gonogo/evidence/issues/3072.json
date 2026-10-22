@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:22.124Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3072",
+    "title": "RN Android: the Clear button sometimes stalls mid-page before returning home",
+    "issue_number": 3072,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20, on the Galaxy:\n\n> \"android - with a lot of drawings done, after dragging the trash can back and forth a bunch and releasing outside the clear accept zone, I did have one time out of 15 where the trash can froze in position in the middle of the page and took a while to float back to the corner\"\n\nThe owner confirmed it recovered on its own, with no crash.\n\n## Where\n\nLocated by reading the code; this is an unverified hypothesis.\n\n* `experiments/native-architecture/src/clear/useClearGesture.ts`: `letGo` and `goHome`, a native-driver `Animated.timing` on `values.drag` (`RETURN_HOME_MS`, `EASE_POP`).\n* `src/rsdDrawing/RsdClearControl.tsx`: the transform is rebuilt inline on every render with `Animated.add`, `multiply` and `interpolate`.\n* `src/clear/dragToClear.ts`: `finish` decides between cancel and commit.\n\n## Likely cause\n\n`letGo` changes `dragging`, `reached` and `ringShown` in the same moment it starts the native return. The re-render swaps in new animated nodes, which can intermittently stall the running native animation on Android Fabric. This is inferred, not confirmed.\n\n## Done when\n\n* A scripted release outside the accept zone, repeated at least 30 times with a full page of strokes, always returns home within `RETURN_HOME_MS` plus one frame on the Galaxy.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:58:17Z",
+    "updated_at": "2026-10-20T18:50:33Z",
+    "closed_at": "2026-10-20T18:50:32Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3072",
+    "display_title": "RN Android: the Clear button sometimes stalls mid-page before returning home"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3072#issuecomment-6298617518",
+      "body": "**Investigation and fix, 2026-10-20.** The fix is #3089, merged into `codex/native-migration` as fb7f3914bd0095373f26bd25598e3965230af612.\n\n## No stall in the release path\n\nThese ran on the Galaxy ([redacted-device-id]) with a Release build of 404d697ef9ba83cc2533d6395cfedd57c24ad31e that adds logging. The page held 190 crayon strokes, and the drags were driven through a virtual touchscreen.\n\n| Run | Releases | Result |\n| --- | ---: | --- |\n| Drags released short of the ring, drawing and dragging interleaved | 60 | Each release reached JS 3–12 ms after the lift. The return finished 505–517 ms after release: the 480 ms animation plus callback delivery. No main-looper message ran longer than 32 ms, while the logger's positive control (an app resume) logged 51 ms and 55 ms. |\n| The same drags, tracked on video | 15 | The button left the release point within about 12 ms of the lift and reached its corner about 200 ms later. |\n| Re-grabs while the button was still flying home | 48 | No stall of the button. |\n\n## What did look like the report\n\nEvery press counted toward the three-tap run that shows the coachmark, and presses that turned into drags counted too. Shipping does the same. So a third grab within a second of the last showed the coachmark instead of moving the button. A ghost trash can with a hand glides from the corner to the middle of the page, sits at the ring and fades, while the real button stays docked. In the re-grab video it sat still mid-page for 339 ms, and it appeared three times across 12 chains.\n\n#3089 makes a press that moves past the movement threshold end the run. Three plain taps still show the coachmark. On the Galaxy, the same 12 chains no longer showed it, and the three-tap control at the end did.\n\nThis departs from shipping under the owner's #3019 decision.\n\nIf the button itself still freezes, please reopen this issue and say whether a hand was drawn beside the trash can. A hand means it was the coachmark's ghost.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6298617518,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

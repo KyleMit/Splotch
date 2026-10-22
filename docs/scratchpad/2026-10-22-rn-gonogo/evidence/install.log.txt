@@ -1,0 +1,11 @@
+[ENOENT] ENOENT: no such file or directory, mkdir '/home/agent/.local/share/pnpm'
+
+pnpm: ENOENT: no such file or directory, mkdir '/home/agent/.local/share/pnpm'
+    at async Object.mkdir (node:internal/fs/promises:916:10)
+    at async createNewStoreController (file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:182735:5)
+    at async installDeps (file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:219786:17)
+    at async Object.handler5 (file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:220893:3)
+    at async file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:322592:19
+    at async main4 (file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:322560:30)
+    at async runPnpm (file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:322856:5)
+    at async file:///workspace/.cache/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs:322849:3

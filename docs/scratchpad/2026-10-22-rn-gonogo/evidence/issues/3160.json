@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:33.032Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3160",
+    "title": "Retire the SvelteKit and Capacitor performance harness",
+    "issue_number": 3160,
+    "body": "## What\n\nRetire the performance harness that measures the SvelteKit engine or Capacitor WebViews. The React Native perf path stays.\n\n**Delete:**\n- The WebKit commit gate jobs in `.github/workflows/test.yml`: fast, fresh-runner retry, failure report, and full. Also delete their scripts.\n- The `tools/perf` capture targets that drive `/dev/engine`, a SvelteKit `vite preview`, or a Capacitor WebView, with their `package.json` scripts and tests:\n  - `perf:web*`, `perf:build*`, `perf:serve`, `perf:device:serve`, `perf:android*`\n  - `perf:ios:*` bundled, XCUITest and WebKit targets\n  - the undo scenarios, `replay-input-recording`, and the engine probes\n\n**Keep**, along with any `tools/perf` module they still import:\n- `experiments/native-architecture/perf`\n- `src/drawing/perfProbe*` and `perfReplay`\n- `gen:native-replay-traces`\n- `tools/migration/probes/native-eraser`\n- `tools/device-parity`\n\nRecord each retired gate's reason in the PR, and name the RN perf evidence that remains.\n\n## Done when\n\n- No `package.json` script or CI job targets `/dev/engine`, a SvelteKit preview, or a Capacitor build for perf.\n- The RN perf scripts and their tests still pass.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:ci-testing",
+        "color": "168f6c",
+        "description": "CI pipeline and test infrastructure"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-21T17:52:41Z",
+    "updated_at": "2026-10-21T20:45:12Z",
+    "closed_at": "2026-10-21T20:45:10Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3160",
+    "display_title": "Retire the SvelteKit and Capacitor performance harness"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3160#issuecomment-6326158167",
+      "body": "Merged in #3169 (merge commit a09b2bffc06896c47da6bb7cc7b77be2532fe7b1) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6326158167,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

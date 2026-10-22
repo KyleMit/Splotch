@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:25.451Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2806",
+    "title": "Open the native app full-screen on iPadOS 26 like the shipping app",
+    "issue_number": 2806,
+    "body": "**What:** On the iPad Pro 12.9\" (iPadOS 26.5), the native app opens as a resizable window, both after a fresh install and on later launches. The shipping app opens full-screen. A toddler then gets a small floating drawing window until a grown-up maximizes it.\n\n**Where:**\n- The native `Info.plist` declares a `UIApplicationSceneManifest` (scene lifecycle, multiple scenes off). The shipping `Info.plist` has no scene manifest and uses `UIMainStoryboardFile`.\n- Neither app sets `UIRequiresFullScreen`.\n- Compare how iPadOS 26 chooses the initial window size for each. Apple's TN3192, on migrating from compatible multitasking mode, is a starting point.\n- Files: `experiments/native-architecture/ios/HelloWorld/Info.plist` and the app delegate or scene delegate.\n\n**Done when:** a fresh install of the native app opens full-screen on the iPad, the same as shipping, with a before/after iPad screenshot and a drift guard on whichever Info.plist key decides it.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:09:36Z",
+    "updated_at": "2026-10-15T00:54:29Z",
+    "closed_at": "2026-10-15T00:54:29Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2806",
+    "display_title": "Open the native app full-screen on iPadOS 26 like the shipping app"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2806#issuecomment-6181857458",
+      "body": "Not reproducible on a never-seen bundle id: both RN (with its scene manifest) and shipping 1.6.0 open full-screen on the iPad Pro 12.9\" (iPadOS 26.5) after a fresh install.\n\nThe windowed launch was iPadOS's per-bundle-id window memory. The probe app ran as iPhone-only before #2805. A test id reproduced it: install an iPhone-only build, then an iPad build over it, then uninstall and reinstall. Each time it stays in the small resizable window, because the memory survives uninstall.\n\nNo Info.plist key decides it, so no change. Keep the scene manifest, which iOS 27 requires under Expo's `ExpoAppSceneDelegate` (TN3187). The device-family regression is already guarded by `native-ios-device-family.test.mjs`. Evidence: `/tmp/splotch-ipad/2806-window-memory.png` on the build host.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6181857458,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

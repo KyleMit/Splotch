@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:41.916Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2829",
+    "title": "Match Feedback, Install guide, What's New and About to shipping",
+    "issue_number": 2829,
+    "body": "**Parity unit U23** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**Gaps (from the parity inventory):**\n\n| # | Surface | Shipping file(s) | RN file(s) | Severity | Gap | Shots |\n|---|---|---|---|---|---|---|\n| 42 | Install section / Install Guide | `settings/SetupInstructions.svelte`, app.css `.step-number`, `design/Disclosure.svelte` | `rsdDrawing/RsdInstallGuide.tsx`, `install/installCopy.ts`, `install/installPolicy.ts` | looks wrong | Steps are run-together paragraphs. Missing: the RuleLabel OS heading, the numbered step disclosures, and the \"Keep kids in the app\" (Guided Access / App Pinning) step. | `settings-install` |\n| 43 | Feedback section (Report form) | `settings/ReportForm.svelte`, `report/ReportFields.svelte`, `design/StatusMessage.svelte` | `rsdDrawing/RsdFeedbackSheet.tsx`, `feedback/*` | looks wrong | A separate full-screen sheet reached from Drawing tools, not from Settings. It has (1) chip type picker, (2) a \"0 / 4000 characters\" counter, (3) device details as a full-width button, (4) two long privacy paragraphs, (5) a \"Review feedback\" step and \"Close feedback\". It has no card, checkbox, or \"What will be sent?\" disclosure. | `settings-feedback` |\n| 44 | What's New (Updates) | `settings/WhatsNewSection.svelte`, `settings/CurrentReleaseNotes.svelte`, `ReleaseSectionHeading.svelte` | `rsdDrawing/RsdWhatsNewSection.tsx`, `settings/whatsNew.ts` | minor | Closest section. It lists every release instead of the current one plus a \"See all releases\" link. There are no New/Improved/Fixed icons, and bullets are typed \"•\" characters. | `settings-whats-new` |\n| 45 | About section | `settings/AboutSection.svelte`, `SplotchyIcon.svelte`, `design/ExternalMark.svelte` | `NativeDialog.tsx` (`about` case), `rsdDrawing/RsdInformationSection.tsx`, `information/content.ts` | looks wrong | One \"Help and about\" button opens long text pages. Missing: the Splotchy mark, the tagline, the Privacy Policy / GitHub links, and the version line. | `settings-about` |\n| 58 | Standalone pages linked from Settings (`/privacy`, `/changelog`) | `page/PageShell.svelte`, `page/RuleLabel.svelte`, `page/BrandMark.svelte`, `CrayonStrip.svelte`, `web/src/routes/privacy`, `web/src/routes/changelog` | `RsdInformationSection.tsx` (Help, Privacy and What's new text pages) | looks wrong | RN has in-app plain-text pages with no page shell, crayon-strip masthead or rule labels. | `settings-about` |\n\n**Done when:** the RN surface looks and behaves like shipping. The PR shows same-viewport, side-by-side screenshots (shipping web next to RN web) at phone 390x844 and tablet 1366x1024, in light and dark, plus the Android emulator. Every RN-only control in scope is removed or moved as listed. Existing behavior tests still pass, and new behavior has tests that fail without it.\n\n**Order:** Depends on the primitive issues (U1–U7) it needs; build on those components rather than one-off styles.\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\n**RN-only controls to remove or move** for this surface: see the epic list (https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6147912989).\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:32:19Z",
+    "updated_at": "2026-10-14T03:49:43Z",
+    "closed_at": "2026-10-14T03:49:43Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2829",
+    "display_title": "Match Feedback, Install guide, What's New and About to shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2829#issuecomment-6160459684",
+      "body": "Done in #2863, merged into `codex/native-migration`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6160459684,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

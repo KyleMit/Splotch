@@ -1,0 +1,51 @@
+{
+  "observedAt": "2026-10-22T16:54:35.351Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/851",
+    "title": "Store launch: App Store + Play submission readiness",
+    "issue_number": 851,
+    "body": "Tracking issue for everything that blocks submitting Splotch to the App Store and Google Play. Children's-audience compliance, store policy, and review readiness.\n\nThe work is attached below as **sub-issues** — GitHub tracks completion on this issue, so there's no checklist here to go stale. Everything also carries [`area:store-launch`](https://github.com/kylemit/splotch/issues?q=is%3Aissue+label%3Aarea%3Astore-launch) so it stays findable from search.\n\n## Where this came from\n\nAn adversarial pass over the shipped surfaces against current Play and App Review policy — reading the running code rather than the checklists in the `mobile` skill, which are unusually thorough and mostly hold up. Twelve findings, deduplicated across the two stores; six of them hit both.\n\n## Already fixed\n\nFour landed together on `claude/app-store-guidelines-dedup-eruayu`:\n\n- **Admin console is web-only and unlinked.** A five-tap gesture on the version string revealed a link to a token-minting console — the shape Play's Deceptive Behavior policy and App Review 2.3.1 are written against. The gesture, the persisted reveal flag, and the prerendered `/admin/native` page (which shipped inside both native bundles) are gone.\n- **Real build-time route exclusion.** A route's `prerender` flag drops only its HTML; its JS chunk still ships, so `/android-beta` put Google Play URLs inside the `.ipa` (App Review 2.3.10). `web/nativeExcludedRoutes.ts` blanks the module source, and `scripts/check-native-bundle.mjs` fails `build:cap` if a forbidden host survives.\n- **Trademarked coloring-book list removed.** `web/static/coloring/COLORING-BOOK.md` is served from `static/`, so it was copied into both native bundles; under a heading titled IP it named Frozen, Bluey, Paw Patrol, Spidey, Mickey Mouse, Disney Princesses and Gabby's Dollhouse. No branded artwork ever shipped, which made `store-assets/README.md`'s claim that the books \"include Bluey and Frozen pages\" both stale and misleading.\n- **iOS privacy manifest added.** No `PrivacyInfo.xcprivacy` existed, so upload would fail ITMS-91053 before review began.\n\n## Ordering\n\nTwo are upstream of most of the rest:\n\n- the **parental gate** contains the links-out, the key entry, the feedback form, and the BYOK flow in one change\n- the **provider decision** may remove the free-tier BYOK path entirely, which would moot part of the BYOK question\n\nThe **privacy reword** is downstream of nearly everything — the gate, the provider, the feedback destination, and whether reported images are retained all change what it has to say. Doing it last means bumping `LAST_UPDATED` once.\n\n## Submission-time steps (not code, so not sub-issues)\n\n- [ ] Supply a working, non-expiring **access code** in App Store Connect → App Review notes and Play Console → **App access**, with the exact steps to reach the AI feature. Without it the feature is untestable.\n- [ ] In review notes, state that the AI prompt is server-built from a closed style enum (`buildPromptForStyle` + `STYLE_SUFFIXES`) and the child never types free text — this bounds the input space in a way most AI apps' isn't, and it's the strongest argument available on the AI-content questions.\n- [ ] Answer both content-rating questionnaires from what actually ships, and confirm the Data safety form and the privacy nutrition label agree with `/privacy` and with `PrivacyInfo.xcprivacy`.\n- [ ] Re-check `store-assets/STORE-LISTING-IOS.md`'s pre-committed answers (\"Data not collected for everything\", \"no UGC sharing, no web access\") once the sub-issues land — several are currently false.\n\n## Related, not blocking\n\n- Issue 708 — reduce how many `target=\"_blank\"` links exist in the native bundle. Complementary to the gate: fewer links to gate.\n- Issue 596 — native-bundle boundary test. `scripts/check-native-bundle.mjs` now covers a slice of this (forbidden hosts in built output), so that issue should be narrowed rather than closed.\n- Issue 212 — \"Share a Masterpiece\" would *add* a sharing surface and re-open the 1.2 UGC questions this set is closing. Worth sequencing after launch.",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      },
+      {
+        "name": "area:store-launch",
+        "color": "b83280",
+        "description": "Blocks App Store / Play submission — kids-audience compliance, store policy, review readiness"
+      }
+    ],
+    "milestone": 1,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-08-07T10:05:40Z",
+    "updated_at": "2026-08-19T09:51:35Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/851",
+    "display_title": "Store launch: App Store + Play submission readiness"
+  },
+  "comments": []
+}

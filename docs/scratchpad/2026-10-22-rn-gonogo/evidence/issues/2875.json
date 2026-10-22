@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:51:50.755Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2875",
+    "title": "Bring native Raised drawing jank back to its pre-parity level on Android",
+    "issue_number": 2875,
+    "body": "**What:** RN Raised on the Galaxy S21 FE (120 Hz) has regressed since the UI parity port.\n\n| | Janky frames | Frame times (ms) |\n|---|---|---|\n| RN Raised, apps alternating | ~4.6–5.5% | p50 8–9 |\n| RN Raised, solo | 3.3–3.7% | |\n| RN before the parity port | ~1.5% | p50/p90 8/9 |\n| Shipping (steady) | ~2.35% | p50/p90 13/14 |\n\nRN still renders frames faster but drops more of them.\n\n**Method:** `dumpsys gfxinfo framestats` with 12 identical `input swipe` strokes, apps alternating. Raw data is on the build host in `/tmp/splotch-native-android/perf/`.\n\n**Candidate cause:** about 1,440 `Reanimated synchronouslyUpdateUIProps failed` warnings, via `react-native-svg` `VirtualView.setClientRect`, during transitions.\n\n**Done when:** RN Raised jank on the Galaxy is at or below shipping's under the same script, and the regressing change is identified by bisecting the merges since #2804.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:perf",
+        "color": "fbca04",
+        "description": "Performance / responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-14T12:58:57Z",
+    "updated_at": "2026-10-14T22:21:03Z",
+    "closed_at": "2026-10-14T22:21:03Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2875",
+    "display_title": "Bring native Raised drawing jank back to its pre-parity level on Android"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2875#issuecomment-6176944401",
+      "body": "#2890 is merged into `codex/native-migration`.\n\n**The regression was #2860.** Folding the stroke flag into `screen.disabled` disabled and re-mounted all the chrome at every stroke start and lift, and the new tile skin ran a 0.2 s opacity fade each time. The chrome also visibly faded mid-stroke, which shipping never does.\n\n**The fix keeps the chrome live.** Every opening or command now refuses to start mid-stroke on its own.\n\n**On the Galaxy, RN Raised went from 4.56% to 3.31% janky.** Shipping Raised measures about 1.9%; the 2.35% in this issue was a Flat figure. The remaining gap is RenderThread work (chrome shadows and a full-screen page-outline bitmap redrawn every frame). A follow-up perf unit is working on it, and this issue stays open until RN is at or below shipping in both styles.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6176944401,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2875#issuecomment-6179791200",
+      "body": "Done, via #2890 and #2903, both merged into `codex/native-migration`.\n\n- **Regression:** bisected to #2860. The stroke flag disabled and re-mounted all the chrome, with opacity fades. Fixed in #2890 (4.6% → 3.3%).\n- **Remaining per-frame cost:** fixed in #2903.\n  - Full-paper layers that nothing showed are no longer drawn.\n  - The ink is one `SkiaPictureView` picture per change, instead of a Canvas tree that redrew twice.\n  - A held halo clock keeps frames flowing while a finger is down, so skipped vsyncs no longer shorten the next frame's deadline.\n\n**Galaxy, same alternating 12-stroke script:**\n\n| | RN | Shipping |\n| --- | --- | --- |\n| Raised, block 1 | 1.48% | 1.84% |\n| Raised, block 2 | 1.32% | 1.75% |\n\n**Still behind shipping:** RN's ink updates at the JS thread's pace (about 88 Hz) against shipping's 120 Hz. Frames on vsyncs without a JS update repeat the same ink.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6179791200,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

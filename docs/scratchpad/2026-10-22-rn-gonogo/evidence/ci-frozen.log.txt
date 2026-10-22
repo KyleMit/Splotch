@@ -1,0 +1,939 @@
+UTC 2026-10-22T16:49:06.407156+00:00
+CWD /workspace/rn-freeze
+COMMIT fffeed1fe4116112bb10297a180ac552f9754046
+RUN COUNT 1
+COMMAND cat .github/workflows/test.yml .github/workflows/native-compile.yml .github/workflows/adr-integrity.yml; cat tools/device-parity/swap-js-bundle.mjs; cat tools/migration/rsd-drawing-vitest.config.mjs
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  # Pull requests collapse per ref, so a new push cancels the run it supersedes.
+  # Pushes get a per-commit group instead, so merges that land back to back
+  # each keep their own run on main rather than cancelling the earlier one.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      # Fast-fail the cheapest, most-common failure first: a formatting-only
+      # red PR should not wait through TypeScript + eslint to surface.
+      - name: Format check
+        run: npm run format:check
+
+      - name: Type check
+        run: npm run check
+
+      - name: Lint
+        run: npm run lint
+
+      # CSS lint (stylelint, stylelint.config.js): every hand-authored .css
+      # file in the repo, minus the generated and promoted
+      # output named in its ignoreFiles. The rule set is grown one measured
+      # rule at a time; ADR-0031 records the adopted set and the rejected
+      # candidates with their violation counts.
+      - name: CSS lint
+        run: npm run lint:css
+
+      # Drift guard: fails if any shipped SVG under web/ isn't SVGO-optimized
+      # (a new icon landed un-optimized). Fix with `npm run optimize:svg-assets`.
+      - name: SVG optimization check
+        run: npm run check:svg-assets
+
+      # Drift guard: every CLAUDE.md/AGENTS.md and the .claude/skills/ +
+      # .agents/skills/ trees are generated from .ruler/ (ADR-0058). Fails if a
+      # .ruler edit wasn't applied or a generated file was edited directly.
+      # Fix with `npm run ruler:apply` and commit.
+      - name: Agent-file drift
+        run: npm run ruler:check
+
+      # Drift guard: ideas-review.html is generated from the frozen exploration
+      # corpus. Fix with the documented build-review.mjs command and commit.
+      - name: Ideas review drift
+        run: npm run check:ideas-review
+
+      # Dead-code gate (knip): fails on unused files, exports, and exported
+      # types. Remove the dead symbol, or tag a deliberate seam /** @public */.
+      - name: Dead-code check
+        run: npm run lint:dead
+
+      # ADR-0070 dependency split: Netlify installs with --prod, so a package the
+      # deploy imports but package.json files under devDependencies breaks only
+      # the deploy, after merge. knip.production.json's entries are what the
+      # deploy executes.
+      - name: Production dependency check
+        run: npm run lint:deps:prod
+
+      # Asset byte-stability guard: fails if any committed art asset (coloring
+      # pages, style covers, fill-src raws) changed without regenerating
+      # tools/asset-gen/golden/asset-manifest.sha256 — turns silent binary churn
+      # into a reviewable text diff. Guards the invariant that a night-only fill
+      # pass leaves light-mode bytes untouched. Fix with `npm run gen:assets:manifest`.
+      - name: Asset manifest check
+        run: npm run check:assets:manifest
+
+      # Drift guard: every scrapbook/ collection dir must resolve to at least one
+      # linked entry page, so the index's "N collections" count always matches the
+      # cards it renders (md-only collections included, ADR-0059). Fix by adding an
+      # entry page/report or removing the empty dir.
+      - name: Scrapbook index check
+        run: npm run scrapbook:check
+
+      # High and critical advisories block the build; lower severities remain
+      # visible in the audit output without making the quality gate permanently red.
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
+
+  # No browser and no app build: everything here is browserless Node, so
+  # putting it in the e2e job would drag it through Playwright setup while
+  # every shard waits. Runner minutes are free on this public repo; wall clock
+  # isn't. `npm run test:browserless` runs these steps locally;
+  # tools/ci-mirror/tests/run-browserless-tests.test.mjs fails if the two drift.
+  browserless:
+    name: Browserless tests
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    # The native app's tool tiers put a green run at 5-8 minutes; 10 cut runs off mid-suite.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Run unit tests with coverage
+        run: npm run test:unit:coverage
+
+      - name: Run asset-pipeline tests
+        run: npm run test:asset-gen
+
+      - name: Run store-drawing pipeline tests
+        run: npm run test:store-drawings
+
+      - name: Run repo-script tests
+        run: npm run test:tools
+
+      # The RN candidate's drawing-screen tests mount through the released native react-strict-dom
+      # renderer, an alias test:tools cannot carry, so they run as their own tier.
+      - name: Run RSD native-renderer tests
+        run: npm run test:migration:rsd-selection
+
+      # The /api/* contract (CORS/preflight, admin auth, oracle shapes, the
+      # canonical error envelope) has no other per-PR coverage. The hosted
+      # deploy smoke (hosted-deploy-smoke.yml) checks the deployed contract
+      # against production daily, after merge. Self-contained: serves the
+      # function on its own throwaway plain Node host (no SvelteKit, no vite
+      # dev) on the smoke's default port, needs no browser and no model/Blobs
+      # credentials.
+      - name: API contract smoke
+        run: npm run test:api:smoke
+
+      - name: Test API generation and side-effect isolation
+        run: npm run test:api:smoke:test
+
+  # The deploy (netlify.toml) builds the React Native web export from a production-only install
+  # (PNPM_FLAGS = --prod, ADR-0070), so this job does too: a build package filed under
+  # devDependencies fails here rather than on Netlify. The deploy leaves out the checks that drive
+  # Chromium, since --prod installs no Playwright; this job adds the dev packages and runs the
+  # whole post-build hook over the same export.
+  native-web-build:
+    name: Native web build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+        with:
+          install: 'false'
+
+      - name: Install production dependencies
+        run: pnpm install --frozen-lockfile --prod
+
+      - name: Build the site from the production install
+        run: npm run build:site
+
+      # The export every RN web E2E shard and both engine smokes serve, built once here from the
+      # deploy's own install rather than once per job. The path is netlify.toml's publish
+      # directory; tools/migration/tests/native-ci-wiring.test.mjs holds the two together.
+      - name: Upload the export
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rn-web-export
+          path: dist/web/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Install development dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Check the export in Chromium
+        run: npm run postnative:web:build
+
+  # Lighthouse's scheduler-derived TBT and score are too noisy to gate on a
+  # shared runner. Three samples make the median resilient to one outlier; the
+  # stable FCP/LCP medians keep deliberately wide regression thresholds. It
+  # times the export the Native web build job uploaded, which tools/page-load/
+  # serves as the Netlify deploy does (headers, redirects, brotli, ETag
+  # revalidation) on a loopback host: a regression harness for the shipped
+  # bytes, not a claim that the numbers match the CDN's.
+  page-load-performance:
+    name: Page-load performance
+    needs: native-web-build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: dist/web/
+
+      - name: Run page-load performance gate
+        run: npm run test:lighthouse:ci -- --no-build --port=4197
+
+      - name: Upload Lighthouse reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-page-load
+          path: lighthouse-reports/ci/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # The React Native web export in Chromium: every spec of the RN Playwright suite (e2e/README.md),
+  # dealt across shards by Playwright's --shard. Each shard serves the export the Native web build
+  # job uploaded instead of building its own, so the suite tests the bytes the deploy would publish.
+  rn-web-e2e:
+    name: RN web E2E (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: native-web-build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      # strategy.job-total is the shard denominator, so shard must remain the only matrix axis
+      # with no include/exclude entries. workflow-hygiene.test.mjs enforces it.
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: dist/web/
+
+      - name: Run RN web E2E
+        run: npm run test:e2e -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          SPLOTCH_E2E_PREBUILT: 1
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          # The flaky digest finds this artifact by the job's name
+          # (REPORT_JOBS in tools/flaky-digest/lib/flaky-history.mjs).
+          name: playwright-report-rn-shard-${{ matrix.shard }}
+          # REPORT_FOLDER in e2e/playwright.config.ts. Drift-guarded by
+          # tools/tests/playwright-report-folder.test.mjs.
+          path: playwright-report/
+          if-no-files-found: error
+          retention-days: 7
+
+  api-ui-integration:
+    name: Real-handler UI integration
+    needs: native-web-build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-pnpm
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: dist/web/
+      - name: Drive UI through the isolated test API
+        run: npm run test:e2e:api -- --workers=1
+        env:
+          SPLOTCH_E2E_PORT: 5300
+          SPLOTCH_E2E_PREBUILT: 1
+      - name: Upload real-handler UI report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-real-api
+          path: playwright-report/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The RN suite's @smoke specs in Firefox: the app boots, draws, undoes and serves a page. Firefox
+  # needs none of WebKit's GStreamer/ffmpeg stack, so it runs in its own job beside WebKit's, on
+  # the export the Native web build job uploaded.
+  firefox-smoke:
+    name: Firefox smoke
+    needs: native-web-build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: firefox
+
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: dist/web/
+
+      - name: Run Firefox smoke
+        run: npm run test:firefox:smoke
+        env:
+          SPLOTCH_E2E_PREBUILT: 1
+          # Assert that the installed binary produced a Firefox project instead
+          # of letting Playwright silently drop the smoke from this job.
+          REQUIRE_FIREFOX: 1
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-firefox
+          path: playwright-report/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The RN suite's @smoke specs in WebKit. WebKit's apt dependencies are the
+  # expensive half of the Ubuntu browser install: WebKit adds the whole
+  # GStreamer/ffmpeg media stack (~110 packages / 60 MB) that Chromium doesn't
+  # need, and installing it lands on every run — setup-playwright's apt package
+  # cache takes the network out of that install, not the install itself. Paying
+  # it in its own job keeps it off every Chromium shard for a handful of tests.
+  # The alternative — hand-listing the subset of WebKit's libraries this app
+  # actually links against — was measured as the slower option and pins ~23 apt
+  # package names that churn across Ubuntu releases, which
+  # `playwright install-deps` tracks upstream for free.
+  webkit-smoke:
+    name: WebKit smoke
+    needs: native-web-build
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: webkit
+
+      - name: Download the export
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rn-web-export
+          path: dist/web/
+
+      - name: Run WebKit smoke
+        run: npm run test:webkit:smoke
+        env:
+          SPLOTCH_E2E_PREBUILT: 1
+          # Assert (not just assume) the WebKit project is in the run —
+          # e2e/playwright.config.ts throws if the binary is missing, so a bad
+          # cache or edited install line fails loudly instead of silently
+          # dropping WebKit coverage.
+          REQUIRE_WEBKIT: 1
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-webkit
+          # Same pinned folder as the shard reports above.
+          path: playwright-report/
+          if-no-files-found: error
+          retention-days: 7
+# Builds the React Native app's native projects on the pull requests that can
+# break them, so a Kotlin, Swift, C++, Gradle, CocoaPods or JavaScript bundling
+# error fails its own PR instead of the next release tag. Both are Release
+# builds, so each also bundles the JavaScript the way the store build embeds
+# it. The deploy smokes (android-deploy.yml, ios-deploy.yml) run on tags or dispatch
+# because booting an emulator or simulator is what costs; building does not
+# (ADR-0008's 2026-09-28 amendment).
+#
+# A separate path-filtered workflow rather than a job in test.yml: nothing
+# waits on it, so it adds no wall clock to a merge, and it never starts on a PR
+# that touches no build input. No branch rule requires it, so a PR it skips is
+# not left waiting on a check that will never report. macOS minutes are the
+# scarce ones, so the filter includes the app, native projects and compiler configuration,
+# and leaves out documentation no build reads.
+name: Native compile
+
+on:
+  workflow_dispatch:
+  # Both path lists are pinned by
+  # tools/mobile/tests/native-release-configurations.test.mjs against the
+  # inputs the build commands read.
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'perf/**'
+      - 'netlify/server/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'assets/**'
+      - 'app.json'
+      - 'babel.config.cjs'
+      - 'metro.config.cjs'
+      - 'postcss.config.mjs'
+      - 'tsconfig.json'
+      - 'tools/migration/*.cjs'
+      - 'tools/migration/*document-styles.mjs'
+      - '!**/*.md'
+      - 'src/lib/privacy/contents.ts'
+      - 'src/lib/privacy/sectionLink.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'patches/**'
+      - 'tools/mobile/api-origin.cjs'
+      - 'tools/mobile/verify-api-origin.mjs'
+      - 'tools/lib/proc.mjs'
+      - 'tools/release/build-native-release.mjs'
+      - 'tools/release/lib/native-app.mjs'
+      - '.github/actions/setup-pnpm/**'
+      - '.github/workflows/native-compile.yml'
+  # Main runs keep the Gradle and CocoaPods caches that pull requests restore
+  # from: a cache saved on a pull request is visible only to that pull request.
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'perf/**'
+      - 'netlify/server/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'assets/**'
+      - 'app.json'
+      - 'babel.config.cjs'
+      - 'metro.config.cjs'
+      - 'postcss.config.mjs'
+      - 'tsconfig.json'
+      - 'tools/migration/*.cjs'
+      - 'tools/migration/*document-styles.mjs'
+      - '!**/*.md'
+      - 'src/lib/privacy/contents.ts'
+      - 'src/lib/privacy/sectionLink.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'patches/**'
+      - 'tools/mobile/api-origin.cjs'
+      - 'tools/mobile/verify-api-origin.mjs'
+      - 'tools/lib/proc.mjs'
+      - 'tools/release/build-native-release.mjs'
+      - 'tools/release/lib/native-app.mjs'
+      - '.github/actions/setup-pnpm/**'
+      - '.github/workflows/native-compile.yml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android Release APK build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # After checkout, so the cache key hashes the committed Gradle files; before
+      # the install, so node_modules' own Gradle files stay out of it.
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - uses: ./.github/actions/setup-pnpm
+
+      # The .dev Release APK: the store build's R8, resource shrinking and
+      # embedded bundle, signed with the runner's debug key. One ABI, because
+      # the four the store ships compile the same C++ four times; the tagged
+      # deploy smoke builds all four.
+      - name: Build Android Release APK
+        env:
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a
+        run: npm run android:apk
+
+  ios:
+    name: iOS Release simulator build
+    runs-on: macos-latest
+    # The pod install and Release build take 20 to 30 minutes on a hosted runner.
+    timeout-minutes: 60
+    env:
+      # CocoaPods refuses to run under a non-UTF-8 locale.
+      LANG: en_US.UTF-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      # pod install downloads React Native's and Expo's prebuilt frameworks;
+      # Podfile.lock pins every one of them.
+      - name: Cache CocoaPods downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+
+      # The same store-identity, unsigned simulator build the iOS deploy smoke
+      # installs, so a compile failure here is the one that smoke would hit.
+      - name: Build iOS Release simulator app
+        run: npm run ios:simulator
+# Guards the mechanical identity and index invariants for docs/adrs/: each number
+# identifies one record permanently, each H1 agrees with its filename, and each
+# record has one canonical index entry while every local ADR link agrees with its
+# target. Two records sharing a number makes every "ADR-NNNN" reference ambiguous,
+# including references already written into merged records and commit messages
+# that cannot be rewritten.
+#
+# Deliberately NOT path-filtered, so it reports on every pull request and is safe
+# to mark required. A workflow skipped by a path filter leaves its check Pending
+# forever and blocks any pull request that does not match, which is why GitHub
+# advises against path filtering a required workflow. The check itself is
+# unconditional, so the job always runs and always reports.
+#
+# No setup-pnpm step: tools/adrs/check-adr-integrity.mjs imports only node: builtins,
+# its own siblings, and tools/lib/proc.mjs; the runner ships Node, so installing dependencies
+# would cost ~15s to change nothing (setup-pnpm measured at 14-20s in the Quality
+# job, against well under a second for the check itself). node is invoked directly
+# rather than through npm run for the same reason. The constraint that buys: this
+# script and its lib may use only APIs present in the runner image's default Node,
+# which is not the >=22.13 that package.json asks of contributors — anything
+# newer means adding setup-pnpm back and paying for it.
+name: ADR Integrity
+
+on:
+  pull_request:
+  merge_group:
+  workflow_dispatch: # allow ad-hoc runs (e.g. auditing ADR integrity on main)
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: adr-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integrity:
+    name: ADR numbers, headings, and index entries agree
+    runs-on: ubuntu-latest
+    # Bounds execution only. Time spent queued for a runner is not counted, so
+    # this never fires on a queue stall no matter how long that stall runs —
+    # only a wedge inside the job trips it. Sized to the work (a directory read
+    # plus two shallow git operations) rather than to a comfortable margin, so a
+    # wedge fails loudly instead of idling out a generous budget.
+    timeout-minutes: 2
+    env:
+      BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+    steps:
+      # Sparse rather than for speed — the job runs alongside a ~3.5min Tests job,
+      # so the few seconds saved reach nobody. It states what this check depends
+      # on, so a new dependency fails loudly here instead of working by accident:
+      # docs/adrs for the records themselves, tools/adrs for the checker, and
+      # tools/lib for the shared proc.mjs it imports.
+      #
+      # Paths only, no blob filter. The check needs real content on both sides —
+      # it reads every record's first line, and -M rename detection compares
+      # similarity across base and head — so filtering blobs would trade written
+      # bytes for lazy per-object fetches.
+      #
+      # Checkout blocks outside the runner, so its shorter step bound names a
+      # stalled connection before the whole check expires.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          sparse-checkout: |
+            docs/adrs
+            tools/adrs
+            tools/lib
+
+      # The base branch as it stands now, not as this run's merge commit
+      # remembers it: GitHub stops recomputing the merge ref once a pull request
+      # conflicts, and a workflow that checked out the head ref would see no
+      # base at all.
+      - name: Fetch the base branch
+        # Fetch is the other network-bound step, so its shorter bound identifies
+        # a stalled fetch before the whole check expires.
+        timeout-minutes: 1
+        run: |
+          git fetch --depth=1 origin \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      # Unconditional. Deciding whether to run costs more than running: the check
+      # is a directory read, while detecting whether docs/adrs/ changed needs a
+      # git diff. Skipping on "no ADR records changed" would also report success
+      # against a tree that already holds duplicates, which is the exact state a
+      # workflow_dispatch audit exists to find.
+      - name: Check ADR integrity
+        run: node tools/adrs/check-adr-integrity.mjs "--base=origin/${BASE_REF}"
+// Rebuilds only the React Native app's JavaScript and puts it into a Release build that a full
+// Gradle or Xcode build already produced, then installs that copy. A JS-only change reaches the
+// device in about a minute instead of a native rebuild (issue 3083). Native code, resources and
+// signing entitlements come unchanged from the base build, so a Kotlin or Swift change, or a new
+// Android image or sound, still needs the full build; the Android route refuses an asset the base
+// APK lacks.
+//
+// Android: the bundle replaces assets/index.android.bundle, then the APK is page-aligned and signed
+// again with the base build's keystore, so `adb install -r` keeps the app's data.
+// iOS: the bundle and its assets replace the .app's own, then the app is signed again with the
+// given identity, keeping the base build's entitlements and its embedded provisioning profile.
+import { spawnSync } from 'node:child_process';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
+import { fail, isMain, runMain } from '../lib/proc.mjs';
+import { ADB, ANDROID_HOME } from '../mobile/android/lib/android-toolchain.mjs';
+import { STORE_APP_ID } from '../release/lib/native-app.mjs';
+import { choiceFlag, parseFlags } from './lib/cli-flags.mjs';
+import {
+  APK_BUNDLE_ENTRY,
+  APP_DIR,
+  BUNDLE_NAME,
+  PLATFORMS,
+  apkResourceNames,
+  bundleArgs,
+  expoCliPath,
+  exportedAndroidResources,
+  hbcHeader,
+  hermescArgs,
+  hermescPath,
+  hermescVersion,
+  xcodeBuildEnv,
+} from './lib/js-bundle.mjs';
+
+// Uncompressed native libraries in the base APK sit on 16 KB pages; the copy keeps them there.
+const ANDROID_PAGE_ALIGN_KB = '16';
+const ZIP_ALIGN_BYTES = '4';
+// A Release bundle is about 10 MB, and `aapt2 dump resources` prints well past spawnSync's 1 MB
+// default.
+const OUTPUT_LIMIT_BYTES = 256 << 20;
+
+const FLAGS = {
+  platform: { type: 'string' },
+  base: { type: 'string' },
+  bundle: { type: 'string' },
+  out: { type: 'string' },
+  device: { type: 'string' },
+  keystore: { type: 'string' },
+  'key-alias': { type: 'string' },
+  'ks-pass': { type: 'string' },
+  'key-pass': { type: 'string' },
+  identity: { type: 'string' },
+};
+
+// apksigner's `file:` form names a path; `env:` and `pass:` pass through.
+const passwordSource = (value) =>
+  value?.startsWith('file:') ? `file:${resolve(value.slice('file:'.length))}` : value;
+
+export function parseSwapFlags(argv) {
+  const { values } = parseFlags(argv, {
+    options: FLAGS,
+    required: ['platform', 'base', 'bundle', 'out'],
+  });
+  const platform = choiceFlag(values, 'platform', PLATFORMS);
+  // The Play Store and App Store app. A swapped bundle never goes near it.
+  if (values.bundle === STORE_APP_ID) fail(`--bundle ${STORE_APP_ID} is the store app`);
+  const needed = platform === 'android' ? ['keystore', 'key-alias', 'ks-pass'] : ['identity'];
+  const missing = needed.filter((name) => values[name] === undefined);
+  if (missing.length) {
+    fail(`--platform=${platform} needs ${missing.map((name) => `--${name}`).join(', ')}`);
+  }
+  if (platform === 'ios' && process.platform !== 'darwin') fail('The iOS route needs macOS');
+  // Every path resolves against the caller's directory: the steps run from the app's.
+  const out = resolve(values.out);
+  if (existsSync(out) && readdirSync(out).length) {
+    fail(`--out ${out} already holds files; give each run its own directory`);
+  }
+  return {
+    platform,
+    base: resolve(values.base),
+    bundleId: values.bundle,
+    out,
+    device: values.device,
+    keystore: values.keystore === undefined ? undefined : resolve(values.keystore),
+    keyAlias: values['key-alias'],
+    ksPass: passwordSource(values['ks-pass']),
+    keyPass: passwordSource(values['key-pass'] ?? values['ks-pass']),
+    identity: values.identity,
+  };
+}
+
+function step(cmd, args, { cwd = APP_DIR, encoding = 'utf8', env = process.env } = {}) {
+  const result = spawnSync(cmd, args, { cwd, encoding, env, maxBuffer: OUTPUT_LIMIT_BYTES });
+  if (result.status !== 0) {
+    const reason = result.error ? `: ${result.error.message}` : '';
+    fail(`${cmd} ${args[0] ?? ''} failed (exit ${result.status})${reason}\n${result.stderr ?? ''}`);
+  }
+  return result.stdout;
+}
+
+function buildTool(name) {
+  const root = join(ANDROID_HOME, 'build-tools');
+  const versions = readdirSync(root).sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true })
+  );
+  if (!versions.length) fail(`No Android build-tools under ${root}`);
+  return join(root, versions.at(-1), name);
+}
+
+function appEntry(platform, { node, env }) {
+  const script = "require('expo/scripts/resolveAppEntry')";
+  return step(node, ['-e', script, APP_DIR, platform, 'absolute'], { env })
+    .trim()
+    .split('\n')
+    .at(-1);
+}
+
+// Gradle bundles in the environment it was started from; Xcode's phase also sources its env files
+// and runs NODE_BINARY. Exported for js-bundle.test.mjs, which pins that wiring.
+export function bundleEnvironment(platform) {
+  if (platform === 'android') return { node: process.execPath, env: process.env };
+  const env = xcodeBuildEnv();
+  return { node: env.NODE_BINARY || process.execPath, env };
+}
+
+// The JavaScript, bundled and compiled exactly as the base build's own bundle step does it.
+function compileBundle(platform, out) {
+  const js = join(out, 'js');
+  const assets = join(out, 'assets');
+  mkdirSync(js, { recursive: true });
+  mkdirSync(assets, { recursive: true });
+  const source = join(js, BUNDLE_NAME[platform]);
+  const started = Date.now();
+  const runtime = bundleEnvironment(platform);
+  const args = bundleArgs(platform, {
+    cli: expoCliPath(),
+    entry: appEntry(platform, runtime),
+    bundle: source,
+    assets,
+    sourcemap: `${source}.packager.map`,
+  });
+  step(runtime.node, args, { env: runtime.env });
+  const compiled = join(out, BUNDLE_NAME[platform]);
+  step(hermescPath(), hermescArgs(platform, { input: source, output: compiled }));
+  console.log(`bundled and compiled in ${Math.round((Date.now() - started) / 1000)} s`);
+  return { compiled, assets };
+}
+
+function checkBytecode(base, compiled) {
+  const was = hbcHeader(base);
+  const now = hbcHeader(readFileSync(compiled));
+  const compiler = hermescVersion(step(hermescPath(), ['-version']));
+  if (was.version !== compiler || now.version !== compiler) {
+    fail(`hermesc emits bytecode ${compiler}; the base build's bundle is ${was.version}`);
+  }
+  console.log(
+    now.sourceHash === was.sourceHash
+      ? 'JavaScript: the same as the base build'
+      : 'JavaScript: changed from the base build'
+  );
+}
+
+function baseBundleId({ platform, base }) {
+  if (platform === 'android') {
+    const badging = step(buildTool('aapt2'), ['dump', 'badging', base]);
+    return /^package: name='([^']+)'/m.exec(badging)?.[1];
+  }
+  const plist = join(base, 'Info.plist');
+  return step('plutil', ['-extract', 'CFBundleIdentifier', 'raw', '-o', '-', plist]).trim();
+}
+
+function swapAndroid(options, { compiled, assets }) {
+  const present = apkResourceNames(step(buildTool('aapt2'), ['dump', 'resources', options.base]));
+  const absent = exportedAndroidResources(assets).filter((name) => !present.has(name));
+  if (absent.length) {
+    fail(`The base APK lacks ${absent.join(', ')}; an added asset needs a full Gradle build`);
+  }
+  checkBytecode(
+    step('unzip', ['-p', options.base, APK_BUNDLE_ENTRY], { encoding: 'buffer' }),
+    compiled
+  );
+  return packageAndroid(options, compiled);
+}
+
+function packageAndroid(options, compiled) {
+  const stage = join(options.out, 'stage');
+  mkdirSync(join(stage, 'assets'), { recursive: true });
+  copyFileSync(compiled, join(stage, APK_BUNDLE_ENTRY));
+  const unaligned = join(options.out, 'unaligned.apk');
+  copyFileSync(options.base, unaligned);
+  // Stored, as the Gradle build stores it, so the runtime can map it without inflating.
+  step('zip', ['-0', '-X', unaligned, APK_BUNDLE_ENTRY], { cwd: stage });
+  const aligned = join(options.out, 'aligned.apk');
+  step(buildTool('zipalign'), [
+    '-P',
+    ANDROID_PAGE_ALIGN_KB,
+    '-f',
+    ZIP_ALIGN_BYTES,
+    unaligned,
+    aligned,
+  ]);
+  const apk = join(options.out, 'app-release-swapped.apk');
+  const signer = buildTool('apksigner');
+  step(signer, [
+    'sign',
+    '--ks',
+    options.keystore,
+    '--ks-key-alias',
+    options.keyAlias,
+    '--ks-pass',
+    options.ksPass,
+    '--key-pass',
+    options.keyPass,
+    '--out',
+    apk,
+    aligned,
+  ]);
+  step(signer, ['verify', apk]);
+  return apk;
+}
+
+function swapIos(options, { compiled, assets }) {
+  const app = join(options.out, basename(resolve(options.base)));
+  cpSync(options.base, app, { recursive: true, verbatimSymlinks: true });
+  checkBytecode(readFileSync(join(app, BUNDLE_NAME.ios)), compiled);
+  copyFileSync(compiled, join(app, BUNDLE_NAME.ios));
+  // iOS reads the bundle's images and sounds as plain files inside the app, so a changed or added
+  // asset travels with the swap.
+  cpSync(assets, app, { recursive: true });
+  step('codesign', [
+    '--force',
+    '--sign',
+    options.identity,
+    '--preserve-metadata=entitlements,requirements,flags',
+    '--timestamp=none',
+    app,
+  ]);
+  step('codesign', ['--verify', '--strict', app]);
+  return app;
+}
+
+function install(options, artifact) {
+  if (options.device === undefined) return;
+  if (options.platform === 'android') {
+    step(ADB, ['-s', options.device, 'install', '-r', artifact]);
+  } else {
+    step('xcrun', ['devicectl', 'device', 'install', 'app', '--device', options.device, artifact]);
+  }
+  console.log(`installed ${options.bundleId} on ${options.device}; relaunch the app to load it`);
+}
+
+export async function swapJsBundle(argv) {
+  const options = parseSwapFlags(argv);
+  const bundleId = baseBundleId(options);
+  if (bundleId !== options.bundleId) {
+    fail(`${options.base} is ${bundleId}, not --bundle ${options.bundleId}`);
+  }
+  mkdirSync(options.out, { recursive: true });
+  const built = compileBundle(options.platform, options.out);
+  const artifact =
+    options.platform === 'android' ? swapAndroid(options, built) : swapIos(options, built);
+  console.log(`swapped build: ${artifact}`);
+  install(options, artifact);
+}
+
+if (isMain(import.meta.url)) runMain(() => swapJsBundle(process.argv.slice(2)));
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { defineConfig } from 'vitest/config';
+import { RSD_NATIVE_RENDERER_TESTS } from './lib/rsd-drawing-checks.mjs';
+const require = createRequire(import.meta.url);
+const repoRoot = join(import.meta.dirname, '..', '..');
+const native = join(
+  dirname(require.resolve('react-strict-dom/package.json')),
+  'dist/native/index.js'
+);
+export default defineConfig({
+  root: join(repoRoot, 'tools'),
+  define: { __DEV__: 'false' },
+  resolve: { alias: [{ find: /^react-strict-dom$/, replacement: native }] },
+  test: {
+    environment: 'happy-dom',
+    include: [RSD_NATIVE_RENDERER_TESTS],
+    server: { deps: { inline: [/react-strict-dom/] } },
+  },
+});
+
+EXIT 0

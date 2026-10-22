@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:54.987Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2904",
+    "title": "Fade native ink under the Flat drawer panes like shipping",
+    "issue_number": 2904,
+    "body": "**What:** in Flat style, shipping fades strokes where they pass under the drawer and palette panes, on Android as well as iOS. The React Native candidate draws them at full strength. The Galaxy pair `/tmp/splotch-jank-final/galaxy-flat-mid-stroke.png` (build host, PR #2903) shows shipping's strokes fading toward the drawer column.\n\n**Background:** #2878 closed its \"Flat frosted panes\" item as not ported. A live native backdrop blur over the Skia ink would re-blur every frame ink lands behind the drawer, which is the per-frame cost #2903 removed. But shipping's Android WebView draws no backdrop blur, and the fade is still visible there. So at least the Android look is a fade, which a static overlay could reproduce cheaply: a paper-coloured gradient in a plain view, with no `mixBlendMode`, no view `opacity` on a large parent, and no offscreen layer.\n\n**Where:** shipping's Flat pane styles (`web/src`: the drawer/palette glass in bare style and its mask) and RN's `RsdBareGlass` / `RsdRailGlass`.\n\n**Done when:**\n- RN Flat fades ink under the panes like shipping in a side-by-side, on Android and iOS.\n- Galaxy Flat jank stays at or below shipping under the 12-stroke gfxinfo script.\n- A renderer test pins the overlay's style with no blend modes.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T22:12:05Z",
+    "updated_at": "2026-10-15T01:45:32Z",
+    "closed_at": "2026-10-15T01:45:32Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2904",
+    "display_title": "Fade native ink under the Flat drawer panes like shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2904#issuecomment-6182482565",
+      "body": "Fixed by #2909, merged into codex/native-migration at e097d56a5b08dc3154115207a50891f9ee3db0d5 after the final independent review and green CI. The static raster unites overlapping pane shapes before feathering; the exact reported alpha junction and seven-layout continuity suite pass, and the previous tile implementation fails the negative control. Startup remains +0 B. Fresh alternating Galaxy Flat jank is RN 1.46% / 1.36% / 1.37% versus shipping 1.94% / 2.27% / 2.27%. Android and iPhone decoded toggle recordings show no empty-pane flash. Matched shipping-left/RN-right screenshots and full validation are in the PR. Grain under panes remains in #2917; live blur stays deliberately excluded.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6182482565,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

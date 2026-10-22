@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:14.518Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3020",
+    "title": "Show the eraser bubble and hide the cursor while erasing with a mouse on RN web",
+    "issue_number": 3020,
+    "body": "## What\n\nWith the Eraser selected and a mouse hovering the paper, shipping web hides the cursor (`cursor: none`) and shows the round eraser bubble under the pointer. The bubble hides when the pointer leaves the paper or the brush changes. RN web shows the default arrow (`cursor: auto`) and no bubble.\n\n## Why\n\nLedger rows E0431 and L0032. Without the bubble, a desktop user can't see how much an eraser stroke will remove.\n\n## Where\n\nThe RN paper surface and brush state on web: `experiments/native-architecture/src/drawing/PaperInputView.web.tsx` and the eraser width preference. Shipping's equivalent is `web/src/lib/components/LiveSurface.svelte` and the eraser bubble in the palette/brush flow, covered by `web/tests/flows-palette-brush.spec.ts`.\n\n## Repro (rn-web, Chromium, desktop mouse)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export. Open `/` at 1280x800.\n2. Expand the drawer, open Brushes, pick Eraser, and collapse the drawer.\n3. Hover the middle of the paper.\n4. Expected: no cursor, and a circular bubble at the pointer. Actual: arrow cursor, no bubble.\n\nEvidence: WEB-1 record, cell `eraser-hover`, with captures `shots/eraser-hover-*.webp` (`docs/scratchpad/2026-10-18-device-parity/results/web-1-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- With a fine pointer and the Eraser selected, RN web hides the cursor over the paper and shows a bubble that tracks the pointer. The bubble hides on leave and on brush switch.\n- WEB-1 cell `eraser-hover` matches.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:15:51Z",
+    "updated_at": "2026-10-20T07:37:01Z",
+    "closed_at": "2026-10-20T07:37:01Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3020",
+    "display_title": "Show the eraser bubble and hide the cursor while erasing with a mouse on RN web"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3020#issuecomment-6285888772",
+      "body": "Fixed by #3053, merged into `codex/native-migration` as 148eebdf4240189cf6e8eb9ff92fb5ee14393cdc.\n\nWith a fine pointer and the Eraser selected, RN web now does what shipping does:\n\n* the cursor over the paper is hidden;\n* the eraser bubble follows a hovering mouse or pen, at most once a painted frame;\n* it hides on leaving the paper and on a brush switch;\n* with a drawing brush, the cursor is shipping's crosshair.\n\nA mouse or pen keeps one bubble from approach, through its press and lift, to departure. A finger draws with its own halo beside it.\n\n**Rerun.** WEB-1 `eraser-hover` was rerun on rn-web-chromium, on the PR's first head and again on its last. The cursor over the paper reads `none`. The captures show the bubble under the hovering mouse and nothing once it leaves, as web-prod's do. L0032 and E0431 return to unverified until WEB-1 covers their other browsers.\n\n**Review.** Codex found and confirmed six edge cases across an attempt cut short by model capacity and two rounds, and all six are fixed with tests and negative controls. The last fix (one bubble after a brush round-trip during a held stroke) was not re-reviewed, because both rounds were used.\n\n**Still different.** The paper's own computed `touch-action` reads `auto` where web-prod's canvas reads `none`. RN's page body sets `touch-action: none`, which also governs the paper.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6285888772,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "observedAt": "2026-10-22T16:51:14.535Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2749",
+    "title": "Bound native ink rendering cost as a drawing grows",
+    "issue_number": 2749,
+    "body": "**What:** Committed ink must stop costing more to render with every stroke.\n\n**Why:** In the RN beta every committed pen/Magic stroke stays a live `react-native-svg` node until a crayon/eraser checkpoint (format 6), and format 7 never flattens at all. Every pointer move triggers a React re-render of the whole uncheckpointed scene. Rendering cost is the reason for the migration.\n\n**Where:** `experiments/native-architecture/src/drawing/` — `DrawingSurface.tsx`, `RasterInk.tsx`, `checkpoints.ts`, `RecordedRasterInk7.tsx`, `contactResponder.ts`. The decision record for the renderer lands with this work.\n\n**Done when:** a long drawing (200+ strokes) on the physical Android phone and iPad keeps in-stroke frame time flat from the first stroke to the last.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:perf",
+        "color": "fbca04",
+        "description": "Performance / responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      },
+      {
+        "name": "area:drawing-engine",
+        "color": "ededed",
+        "description": null
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 4,
+    "created_at": "2026-10-13T01:45:04Z",
+    "updated_at": "2026-10-15T00:54:32Z",
+    "closed_at": "2026-10-15T00:54:32Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2749",
+    "display_title": "Bound native ink rendering cost as a drawing grows"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2749#issuecomment-6140544083",
+      "body": "The Skia renderer landed in #2771 (merged into `codex/native-migration`): committed ink flattens into one offscreen raster per ADR-0178. Leaving this open for its done-when: the long-drawing check on the physical Galaxy and the iPad, comparing the SVG baseline to Skia from 25 to 200 strokes. Both release APKs are built and ready.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6140544083,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2749#issuecomment-6146272821",
+      "body": "**Android: done.** Galaxy S21 FE at 120 Hz, release builds, Extra-thin pen. A 1-second probe stroke is measured with `dumpsys gfxinfo` after 25, 50, 100, 150 and 200 committed strokes.\n\n| Build | 25 strokes | 200 strokes |\n| --- | --- | --- |\n| Old RN SVG renderer (Medium pen, earlier run) | 3% janky, p50 9 ms | 83% janky, p50 24 ms |\n| RN Skia (ADR-0178) plus Skia halos (#2804) | 1.5%, p50 8 / p90 9 ms | 1.5%, p50 8 / p90 9 ms |\n| Shipping Capacitor 1.6.0, same strokes | 2.2%, p50 13 / p90 14 ms | 2.2%, p50 13 / p90 14 ms |\n\nIn-stroke frame time on Android stays flat from the first stroke to the last. This issue stays open for the iPad half of its done-when.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6146272821,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2749#issuecomment-6147680006",
+      "body": "**iPad attempt (2026-10-13): no usable data yet.** The RN build now runs as an iPad app (#2805) and draws on the iPad Pro 12.9\" (iPadOS 26.5). The measurement method was not trustworthy:\n- **Driver:** strokes came through WebDriverAgent (W3C pointer actions). It delivers touch moves far below 120 Hz, so the frame rate reflects input cadence, not render cost.\n- **Measurement:** `xctrace` Animation Hitches, attached with `--launch` so each checkpoint relaunches the app. At 25–200 strokes the probe windows held between 7 and 46 frames with no trend, and two probe screenshots were black, which looks like a capture artifact while `xctrace` held the app.\n- **Shipping:** WebKit composites in its GPU process, so the app's own surface swaps undercount frames. This method cannot score the shipping app.\n\nThe next attempt needs either a real-finger session (`perf:device:hand`) or frame stamps from inside the app. For reference, the committed deployment-target matrix (2026-09-26) has shipping Capacitor on this iPad at P95 15–16 ms for blank-paper Magic paint.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6147680006,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2749#issuecomment-6181858109",
+      "body": "**iPad half: done.** iPad Pro 12.9\" (5th gen, iPadOS 26.5), release builds, one app session with no relaunch. Probe: one 1-second stroke per checkpoint, pen, extra-thin. Measured with xctrace Animation Hitches attached to the running app, `--all-processes`, with WDA HTTP input at about 110–120 moves/s and one stroke per request.\n\n| Strokes | RN frame interval p50/p90 (ms) | RN commit→display (ms) | Shipping interval p50/p90 (ms) | Shipping commit→display (ms) |\n| --- | --- | --- | --- | --- |\n| 25 | 8.34 / 8.34 | 17.1 | 16.68 / 16.68 | 16.7 |\n| 50 | 8.34 / 16.68 | 17.0 | (capture failed) | — |\n| 100 | 8.34 / 8.34 | 17.1 | 16.68 / 16.68 | 16.7 |\n| 150 | 8.34 / 8.34 | 17.1 | 16.68 / 16.68 | 25.0 |\n| 200 | 8.34 / 8.34 | 17.2 | 16.68 / 16.68 | 25.0 |\n\n- **RN** holds 120 Hz with flat frame time from 25 to 200 strokes. There was one hitch, at 25.\n- **Shipping** runs at 60 Hz, since WebKit paces web content at 60 fps. Its commit-to-display time and input-to-display latency each rise by about a frame at 150 strokes and above (input-to-display from about 19–25 ms to about 32 ms).\n- **Caveats:** one run each; shipping was in its dark theme; the shipping 50-stroke point is missing.\n- **Android half:** already done above.\n\nEvidence: `/tmp/splotch-ipad/2749/RESULTS.txt` on the build host.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6181858109,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

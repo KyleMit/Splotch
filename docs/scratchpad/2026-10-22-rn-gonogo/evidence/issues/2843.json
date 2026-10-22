@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:51:45.027Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2843",
+    "title": "Discover RSD selection tests by pattern instead of hand-kept lists",
+    "issue_number": 2843,
+    "body": "**What:** Each new RSD test file in the native port has to be added by hand to four lists:\n- `tools/migration/lib/rsd-drawing-checks.mjs`\n- `tools/migration/rsd-drawing-vitest.config.mjs`\n- the exclusions in `tools/vitest.config.mjs`\n- `tools/tests/tool-specifier-resolution.test.mjs`\n\nOn 2026-10-13, three parallel primitive branches (#2838, #2840 and U7) all conflicted on those same lines as soon as the first one merged. Seventeen more parity units (U8–U24) will each add tests the same way.\n\n**Where:** the four files above, and `tools/migration/tests/`.\n\n**Done when:**\n- RSD selection tests are discovered by a naming pattern (for example `tools/migration/tests/rsd-native-*.test.mjs`), not hand-kept lists.\n- The tools tier excludes that same pattern.\n- The specifier-resolution check derives its set from the same source.\n- A guard fails if a test matching the pattern runs in neither tier, or in both.\n- Adding a new RSD test file touches only the test file.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T16:17:02Z",
+    "updated_at": "2026-10-14T03:49:52Z",
+    "closed_at": "2026-10-14T03:49:52Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2843",
+    "display_title": "Discover RSD selection tests by pattern instead of hand-kept lists"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2843#issuecomment-6160461368",
+      "body": "Done in #2855, merged into `codex/native-migration`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6160461368,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

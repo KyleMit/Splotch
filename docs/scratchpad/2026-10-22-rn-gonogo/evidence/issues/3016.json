@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:07.571Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3016",
+    "title": "Remove legacy plaintext AI credentials on RN web's first launch",
+    "issue_number": 3016,
+    "body": "## What\n\nOlder shipping web builds stored AI credentials in plaintext localStorage under `splotch-ai-user-api-key` and `splotch-ai-access-token`. When the RN web app launches over such a browser profile, it leaves both keys in place, readable by any script on the origin. Shipping web removes them on boot (it moves them into its encrypted vault).\n\n## Why\n\n`docs/migration/WEB-CONTRACT.md` requires abandoned-credential security on web and PWA fresh initialization. It must \"remove/invalidate known abandoned sensitive entries or retain them only behind a reviewed protection/risk disposition, without exposing or reactivating them\".\n\nNot migrating these keys is settled cutover data loss. Leaving the plaintext behind is not: an OpenAI API key stays in localStorage on every cut-over device.\n\n## Where\n\n- `experiments/native-architecture/src/ai/session.ts`, `ai/credentialLease.ts` and `platform/aiVault.web.ts` (ledger row L0154).\n- Shipping's handling: `web/src/lib/state/aiKey.ts` and `state/aiAccessToken.ts`. The key names come from `web/src/lib/storageKeys.ts` (`legacyAiUserApiKey`, `legacyAiAccessToken`).\n\n## Repro (rn-web, Chromium)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export.\n2. Before the first load, put `localStorage['splotch-ai-user-api-key'] = 'sk-proj-…'` and `localStorage['splotch-ai-access-token'] = 'legacy-access-code'` on the origin, as a shipping-era profile would have them.\n3. Load `/` and wait 3 s.\n4. Expected: both keys gone (shipping: none remain). Actual: both remain.\n\nEvidence: AI-1 record, cell `ai-legacy-plaintext-credentials` (`docs/scratchpad/2026-10-18-device-parity/results/ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- RN web's first launch deletes, or overwrites and deletes, both legacy plaintext keys without reading them into use. A reviewed disposition recorded in WEB-CONTRACT is the alternative.\n- A test seeds both keys and asserts they are gone after boot.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "type:security",
+        "color": "b60205",
+        "description": "Access, admin, privacy, or security hardening"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:15:14Z",
+    "updated_at": "2026-10-20T04:05:20Z",
+    "closed_at": "2026-10-20T04:05:20Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3016",
+    "display_title": "Remove legacy plaintext AI credentials on RN web's first launch"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3016#issuecomment-6283114439",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3038, merged into codex/native-migration as 826351e7aa016158fed0c912b7c1ec2bee2fa80b. On launch, the RN web entry removes both legacy plaintext AI credential keys, and a storage getter that throws leaves the launch running.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6283114439,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

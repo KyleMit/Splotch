@@ -1,0 +1,94 @@
+{
+  "observedAt": "2026-10-22T16:51:50.686Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2878",
+    "title": "Close the native visual gaps found in the device side-by-sides",
+    "issue_number": 2878,
+    "body": "These gaps came from the 2026-10-14 native passes. Release builds of `codex/native-migration` @ 316834ecc were compared against shipping on:\n- iPhone 17 Pro and iPad Pro 11 (iOS 26.5 simulators)\n- Galaxy S21 FE\n- the Android emulator\n\nPairs are on the build host in `/tmp/splotch-native-ios/pairs/` and `/tmp/splotch-native-android/`.\n\n- [ ] **Dialogs:** native dialogs only dim. Shipping blurs the canvas behind the colour picker, Settings, the gate and the AI Art sheet, on both platforms.\n- [ ] **iPad, gear and scrim:** the Settings gear stays above the modal scrim, undimmed.\n- [ ] **iPad landscape palette rail:** the colour-picker button covers about a third of the last swatch, and the rail ends short with a seam.\n- [ ] **iPad wide Settings:** after changing section, both sidebar labels render solid black instead of purple for the selected one and grey for the rest.\n- [ ] **Paper grain:** about a third of shipping's scale and a cooler tone, so the paper reads flat, especially in dark mode.\n- [ ] **Type:**\n  - Settings text is lighter weight on iPhone.\n  - On Android, text runs 5–10% larger with looser leading, so the hub fits one fewer row.\n  - The subtitle font differs.\n  - iPad segmented-control icons sit about 2 pt high.\n- [ ] **Back chevron:** sits in a lavender irregular blob. Shipping uses a neutral grey circle.\n- [ ] **Coloring picker:**\n  - The iPhone sheet is about 7 pt taller at each end.\n  - The header has a smaller top pad.\n  - The last row has no fade.\n  - With only the bundled book, RN skips the book list; shipping shows it.\n- [ ] **Flyout open:** shipping greys out the other drawer buttons; RN only lowers their opacity.\n- [ ] **Flat:** there are no frosted panes behind the drawer and flyouts on native. This is currently deliberate; decide whether to approximate them.\n- [ ] **AI Art:** \"AI Art choice saved.\" pokes out under the sheet and lingers on the Settings hub and the gate backdrop (`settings/parentSaves.ts` `AI_SAVE_COPY`).\n- [ ] **Small:**\n  - The selection ring shows a doubled arc on Android.\n  - The AI key lock icon touches its text.\n  - The gate's close button has no focus ring.\n  - Dark Settings on iPhone has no scroll indicator.\n\n**Done when:** each item matches shipping in a fresh native side-by-side, or is closed with a stated reason.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-14T12:59:02Z",
+    "updated_at": "2026-10-14T21:13:51Z",
+    "closed_at": "2026-10-14T21:13:51Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2878",
+    "display_title": "Close the native visual gaps found in the device side-by-sides"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2878#issuecomment-6176295914",
+      "body": "Progress: two slices merged into `codex/native-migration`.\n\n**#2888, drawing surface.** Fixed:\n- iPad landscape palette rail: it runs to the edge, and More colors no longer covers the last swatch.\n- Paper grain: now at shipping's scale. Native was tiling in device pixels.\n- Coloring picker: the height budget uses shipping's `trailingRowCutHeight`, and the last row has its fade.\n- Android selection ring: now a single arc.\n\nThe \"bundled book only\" item is not a gap. Shipping lists books only when two or more are installed, and RN follows the same rule.\n\n**#2889, Settings and type.** Fixed:\n- iPad sidebar label ink.\n- The Quicksand 500 face on iOS.\n- Hub rows: in the system face, as in shipping's WebView.\n- Android font padding: removed via a small RSD patch.\n- Segment icons on the iPad.\n- The AI key lock spacing.\n- The dark scroll indicator.\n\nThe back chevron already matches current shipping. The grey circle in the evidence came from the older v1.6.0 Android shipping build.\n\nThe overlay slice is still in progress: dialog blur, the gear above the scrim, flyout greying, Flat panes and the AI status.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6176295914,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2878#issuecomment-6178639544",
+      "body": "All items are resolved across three PRs merged into `codex/native-migration`: #2888 (drawing surface), #2889 (Settings and type) and #2897 (overlays). Each PR has shipping-vs-RN native pairs.\n\n- [x] **Dialogs:**\n  - iOS blurs behind dialogs with a UIKit effect scaled to shipping's `blur(4px)`, under shipping's 60% frosted dim.\n  - **Android: no blur, by design.** Shipping's Android WebView draws only the dim; the swatches behind the picker are sharp on the Galaxy and the emulator. RN matches that.\n  - **Plain dim:** iOS Reduce Transparency, and the coloring picker on touch screens, keep the plain dim as shipping does. (#2897)\n- [x] **iPad, gear and scrim:** the gear now sits under the scrim. (#2897)\n- [x] **iPad landscape palette rail:** the plate runs to the edge with shipping's end padding, More colors no longer covers the last swatch, and there is no seam. (#2888)\n- [x] **iPad wide Settings sidebar ink:** fixed. A native colour transition was dropping the inherited ink. (#2889)\n- [x] **Paper grain:** native tiled in device pixels and now tiles at shipping's CSS scale. Measured mean and standard deviation match in light and dark. (#2888)\n- [x] **Type:** (#2889)\n  - Quicksand 500 is bundled for iOS.\n  - Hub rows use the system face, as shipping's WebView buttons do.\n  - Android font padding is removed for RSD text.\n  - `system-ui` semibold renders on Android.\n  - The iPad segment icons are re-centred.\n- [x] **Back chevron:** no change. RN already matches current shipping's lavender blob (d8e507c27); the grey circle came from the older v1.6.0 Android shipping build.\n- [x] **Coloring picker:** (#2888)\n  - Height budget, header and last-row fade: fixed, using shipping's `trailingRowCutHeight`.\n  - \"Only the bundled book skips the list\": not a gap. Shipping lists books only when two or more are installed, and RN uses the same rule.\n- [x] **Flyout open:** greyed tiles paint through the `grayscale(1)` matrix on native. (#2897)\n- [x] **Flat frosted panes: closed, not ported.** Shipping's panes are a masked `backdrop-filter`. Native has no mask-image, so a live blur over the Skia ink would re-blur every frame ink lands behind the drawer, the per-frame cost #2874 and #2875 remove. Shipping's Android WebView draws no backdrop blur either.\n- [x] **AI Art status:** routine saves are announced from a visually hidden status region, as shipping shows nothing on success. A failed save stays visible with its retry. (#2897)\n- [x] **Small:**\n  - Android selection ring: single arc. (#2888)\n  - AI key lock spacing. (#2889)\n  - Gate close focus ring. (#2885)\n  - Dark scroll indicator on iPhone. (#2889)\n\nFollow-ups found along the way: #2894, #2895, #2896.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6178639544,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

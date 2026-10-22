@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:07.132Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3018",
+    "title": "Return focus to the AI button or drawer toggle when the AI result closes on RN web",
+    "issue_number": 3018,
+    "body": "## What\n\nClosing the AI result card on RN web drops keyboard focus to `<body>`. Shipping web puts it back where the parent can continue:\n- with the drawer open, on the AI button (\"Create AI image, 9 free left\");\n- with the drawer folded, on Expand controls.\n\n## Why\n\nLedger rows E0069 and E0070 (and the T1-12 acceptance row). A keyboard or switch user who closes the result loses their place and has to tab through the whole page again.\n\n## Where\n\nThe AI result dialog's close path: `experiments/native-architecture/src/rsdDrawing/RsdAiResult.tsx` and its modal wrapper. The drawer's AI button and toggle are the targets: `RsdActionsPanel.tsx` and the drawer dock.\n\n## Repro (rn-web, Chromium, iPhone-sized touch profile)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export. Answer `/api/*` from a fixture that returns a picture.\n2. Turn AI on with Customize AI Style off, draw a stroke, expand the drawer, and tap Create AI image.\n3. When the picture shows, activate Close, then read `document.activeElement`.\n4. Expected: the AI button. Actual: `body`.\n5. Repeat with the picture minimized (\"Keep drawing while you wait\"), the drawer collapsed, the polaroid opened, then Close.\n6. Expected: Expand controls. Actual: `body`.\n\nEvidence: AI-1 record, cell `ai-focus-after-close` (`docs/scratchpad/2026-10-18-device-parity/results/ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- Closing the result focuses the AI button with the drawer open, and the drawer toggle with it folded, as shipping does.\n- AI-1 cell `ai-focus-after-close` matches in both arms.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:15:30Z",
+    "updated_at": "2026-10-20T06:30:20Z",
+    "closed_at": "2026-10-20T06:30:20Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3018",
+    "display_title": "Return focus to the AI button or drawer toggle when the AI result closes on RN web"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3018#issuecomment-6284898261",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3050, merged into codex/native-migration as 2ca1fd83d930dc9631aebebc92b15e6c5bce1e62. Once the AI result card has left the page, RN web lands keyboard focus on the AI button, or on the drawer toggle while a folded drawer hides it, as shipping's returnFocusToLauncher does. Focus held elsewhere is left alone. On the RN web export in Chromium, closing a finished picture's card with the keyboard left focus on \"Create AI image, 10 free left\". The issue recorded body.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6284898261,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

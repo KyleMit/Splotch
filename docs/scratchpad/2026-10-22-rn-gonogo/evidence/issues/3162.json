@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:35.377Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3162",
+    "title": "Delete the Capacitor shell",
+    "issue_number": 3162,
+    "body": "**Depends on:** #3158 #3159\n\n## What\n\nDelete the Capacitor shell, once the RN apps release and compile in CI.\n\n- Remove the Capacitor native projects and config: root `android/`, `ios/` and `capacitor.config.json`.\n- Remove every `@capacitor/*` package and the Capacitor scripts (`build:cap`, `dev:cap`, `cap:*`, and the Capacitor `android:*` and `ios:*` scripts).\n- In `tools/mobile`, remove the Capacitor parts: `strip-static-assets`, `check-static-bundle`, and `check-app-ids`, which moves to the RN identity source.\n- Remove the `@capacitor/assets` pnpm override.\n- Re-justify `nodeLinker: hoisted` in `pnpm-workspace.yaml`, whose stated reason is `cap sync`. Keep it only if the RN native paths need it.\n- Store assets keep a generator if they need one.\n\n## Done when\n\n- No `@capacitor/*` package is in `package.json`.\n- Root `android/`, `ios/` and `capacitor.config.json` are gone.\n- CI is green, with the RN native jobs covering native.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:infra",
+        "color": "5a6570",
+        "description": "Dev tooling, dependencies, repo infrastructure"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-21T17:52:47Z",
+    "updated_at": "2026-10-21T23:33:39Z",
+    "closed_at": "2026-10-21T23:33:39Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3162",
+    "display_title": "Delete the Capacitor shell"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3162#issuecomment-6328929538",
+      "body": "Merged in #3175 (merge commit 399e7569c59be008e7474c44e5228b1543b40144) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base. The Capacitor plugin packages that `web/src` still imports leave with #3161.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6328929538,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

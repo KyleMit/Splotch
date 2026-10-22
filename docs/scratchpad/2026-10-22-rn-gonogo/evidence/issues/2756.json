@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:15.876Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2756",
+    "title": "Port the AI waiting experience to native",
+    "issue_number": 2756,
+    "body": "**What:** RN shows text status and a \"Check waiting picture\" button. Port the Waiting Polaroid, progress dial, confetti and minimize-and-return.\n\n**Where:** Svelte `AiWaitingPolaroid.svelte`, `AiDial.svelte`, `AiConfetti.svelte`, `AiResultStage.svelte`; RN `rsdDrawing/RsdAiSheet.tsx`.\n\n**Done when:** a generation shows the Polaroid and dial while waiting and celebrates the result.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      },
+      {
+        "name": "area:ai",
+        "color": "ededed",
+        "description": null
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T01:45:24Z",
+    "updated_at": "2026-10-13T05:23:17Z",
+    "closed_at": "2026-10-13T05:23:17Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2756",
+    "display_title": "Port the AI waiting experience to native"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2756#issuecomment-6138865925",
+      "body": "Done in #2774 (merged into `codex/native-migration`): Waiting Polaroid with the drawing, progress dial and confetti, arrival reveal, minimize-and-return through a corner print, reduce-motion handling.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6138865925,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

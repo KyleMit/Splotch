@@ -1,0 +1,157 @@
+{
+  "observedAt": "2026-10-22T16:54:35.472Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/222",
+    "title": "Pre-Tag Release Candidate Gate",
+    "issue_number": 222,
+    "body": "**Brief.** `scripts/release.mjs` commits, tags, and pushes before the tag-triggered native smoke\nworkflows run, so a bad native release is discovered after the release already exists.\n\n**Rough implementation.** Add `release:verify` to run quality checks, all local tests, web and\nnative builds, asset gates, version parity, and native smoke where the host supports it. Require a\nfresh successful verification receipt before the release script may tag, while retaining an explicit\nreviewed escape hatch for unavailable native toolchains.\n\n---\n_Migrated from IDEAS.md → Release & deployment_",
+    "state": "open",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "needs-adr",
+        "color": "d876e3",
+        "description": "Needs an architectural decision record before or alongside implementation"
+      },
+      {
+        "name": "type:chore",
+        "color": "c2e0c6",
+        "description": "Tooling, build, deps, refactor — no user-facing feature"
+      },
+      {
+        "name": "area:release",
+        "color": "9e6a03",
+        "description": "Release and deployment automation"
+      },
+      {
+        "name": "triage:needs-decision",
+        "color": "bf3989",
+        "description": "Blocked on a human decision — options and recommendation live in an issue comment"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 5,
+    "created_at": "2026-07-15T13:51:09Z",
+    "updated_at": "2026-10-01T12:48:17Z",
+    "closed_at": null,
+    "display_url": "https://github.com/KyleMit/Splotch/issues/222",
+    "display_title": "Pre-Tag Release Candidate Gate"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/222#issuecomment-5311425674",
+      "body": "Re-verified 2026-08-16. The landscape moved since filing: the script is now `tools/release/cut-release.mjs`, `npm run release` runs a `prerelease` hook (asset gates only), and — the bigger change — since ADR-0120 (commit d0c96f3b6d2f16b950cf4b270f5ec2bf4fcd0048) a failing tag-triggered native smoke auto-files or updates a GitHub issue, so a bad tag now announces itself instead of shipping unnoticed. What remains open is whether to gate *before* the tag at all, and how heavily. Options, ranked:\n\n1. **Cheap pre-tag gate (recommended).** `cut-release.mjs` refuses to tag unless HEAD matches `origin/main` and that commit's CI checks are green (one `gh api` call), optionally plus local `npm run check` + unit tests. Catches tagging a broken or stale main for seconds of cost; needs no native toolchain; keeps ADR-0077's phase model intact.\n2. **Status quo.** Post-tag gates now self-report (ADR-0120), the publish phase already refuses wrong artifacts, and a bad release can be superseded by a patch. Zero cost, but the public tag/Release still exists before any native verification.\n3. **Full `release:verify` receipt as originally filed** — quality checks, all tests, web + native builds, native smoke where the host supports it, with a reviewed escape hatch. Highest assurance, but tens of minutes per release, duplicates what the tag workflows now do and report, and the local native smoke proves little beyond what CI's own gates already catch.\n\nRecommendation: option 1, recorded as a small amendment to the release-flow ADRs. Option 3 no longer pays for itself post-ADR-0120.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5311425674,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/222#issuecomment-5770695137",
+      "body": "Decision brief (2026-09-22). `cut-release.mjs` still commits, tags, pushes, and opens the Release with no check that HEAD is the green tip of `origin/main`. The evidence that shapes the options: on the v1.6.0 tag, 2 of the 3 tag-triggered workflows went red (iOS smoke, issue #1734; the full WebKit gate, issue #1746), both for harness reasons, and both on gates that only run on tags, so a \"main is green\" gate could not have seen either. That yields a third option between the August comment's 1 and 3: the cheap gate plus an opt-in `--rehearse` that dispatches the three tag-only workflows against main and waits (about 13 min wall clock, measured from the v1.6.0 runs).\n\n**Recommendation: advance** the cheap gate (HEAD == origin/main, clean tree, every check run on HEAD green, one `gh api` call, `--unverified` as the reviewed escape hatch) as the default, with `--rehearse` opt-in. Cost is seconds; it closes the one failure class nothing else catches. The question only you can answer: when a rehearsal goes red for a harness reason, as both v1.6.0 reds did, should the release wait? That decides whether rehearse is on by default.\n\n* Brief: https://claude.ai/artifact/Bucbm2Wsxqw8Ce2Vb52CCx\n* Spike: `claude/spike-222-pre-tag-gate` at c43a81f702de (6 files, +297/−3; 114 release-tier tests passing; the live `gh` call is unexercised here because `gh` is absent in the cloud container)\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5770695137,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/222#issuecomment-5931680739",
+      "body": "Second decision brief (2026-09-22), from an independent verification of the spike above. The gate as pushed refuses every normal release: it treats any uncommitted path as a problem, but the cut-release skill writes `releases/<version>.md` and leaves it uncommitted for the script to sweep into the release commit. Reproduced against the pure verdict function with that one file dirty (`✗ working tree has 1 uncommitted path(s)`); the unit tests pass because none feeds a dirty release path in. Fix is to reuse `findStrayReleasePaths`. Smaller: `--rehearse` resolves each dispatched run with `gh run list --limit 1`, which can return the previous dispatch.\n\nWorth stating plainly: the cheap gate would not have caught either v1.6.0 red (iOS smoke, full WebKit gate), because those gates only run on tags. Only the rehearsal reaches them, at about 13 minutes of wall time per release.\n\n**Recommendation: advance** the cheap gate now, `--rehearse` opt-in; decide the default separately after the next tag. Spike to mergeable is about half a day.\n\n* Brief: https://claude.ai/artifact/YWLiCPxYmUAgWBz5UaTFsD\n* Spike: `claude/spike-222-pre-tag-gate` at c43a81f702ded7fb9b91b85800077fadb2a2b592 (6 files, +297/−3; 16 release-tier tests and ESLint pass; `gh` call unexercised in the cloud container)\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931680739,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/222#issuecomment-5931696013",
+      "body": "## Decision brief: should `npm run release` refuse to tag a stale or red main?\n\n**Verdict: Advance** the cheap gate by default, with `--rehearse` opt-in.\n\n**What is being decided.** What evidence, if any, the release script demands before it commits, tags, pushes, and opens the public GitHub Release: none (today), main's own CI verdict (seconds), or a rehearsal of the three tag-only gates (about 13 minutes).\n\n### What is at stake\n\n`tools/release/cut-release.mjs` bumps versions, commits, tags, pushes, and creates the GitHub Release in one unbroken run. Nothing checks that the commit under it is the tip of `origin/main` or that CI passed on it. The tag is public the moment it exists and resets the web patch counter (ADR-0030), so a tag on a stale or red commit is undone only by a patch release. The script is deliberately not transactional.\n\nSince ADR-0120 a red tag gate files or updates an issue. The latest release shows how much that helps:\n\n| Measured | Value |\n| --- | --- |\n| Tag-triggered workflows red on v1.6.0 | 2 of 3 (iOS smoke, full WebKit gate) |\n| Of those, product bugs | 0 (iOS smoke startup, fixed in PR 1753; instrumented build over the startup budget, issue 1746) |\n| Release tags 2026-01-20 to 2026-09-09 | 8, about one a month |\n| Slowest tag gate, wall clock | 12.4 min (iOS simulator smoke on macOS) |\n\nThe part that shapes every option: **a green main cannot see the three gates that only run on tags.** The Android deploy smoke, the iOS deploy smoke, and the full seven-scenario WebKit gate all trigger on `push: tags` plus `workflow_dispatch`. A pre-tag check that reads main's CI closes one hole (tagging a stale or red commit) and leaves the other (a tag-only gate failing for the first time on the tag) unless it dispatches those workflows itself.\n\nNot deciding costs nothing today.\n\n### The real options\n\n1. **Keep what we have.** Post-tag gates announce themselves (ADR-0120), the publish phase refuses wrong artifacts (ADR-0077), a bad release is superseded by a patch.\n2. **Cheap pre-tag gate (the spike).** Before touching a file, fetch `origin/main`, require HEAD to equal it on branch `main` with a clean tree, and read every check run on that commit through one `gh api` call. Any pending or failing run refuses the release. `--unverified` is the reviewed escape hatch and prints what it skipped.\n3. **Cheap gate plus a tag-gate rehearsal.** The same check, then `--rehearse` dispatches the three tag-only workflows against main and waits for all of them. The only pre-tag option that would have gone red on v1.6.0, and it would have blocked that release on two harness failures.\n\nLeft out: the full `release:verify` receipt as originally filed. Tens of minutes, needs the native toolchains (cannot run from a cloud session), duplicates what the tag workflows now run and report. The August comment already retired it.\n\n### Same either way\n\n| | Same either way |\n| --- | --- |\n| Three-phase flow | cut-release, build, publish-artifacts unchanged; artifact version verification unchanged |\n| Tag gates | Android and iOS smokes and the full WebKit gate still run on the tag and still file issues |\n| Dry run | `--dry-run` never touches git and never calls `gh` |\n| Rollback | Revert one commit in `tools/release/` |\n\n### Where they differ\n\n| | 1. Keep | 2. Cheap gate | 3. Gate + rehearse |\n| --- | --- | --- | --- |\n| Catches a stale or red main | No | Yes | Yes |\n| Catches a tag-only gate failure before the tag | No | No | Yes |\n| Added time per release | 0 | Seconds | About 13 min wall clock; roughly 9 Ubuntu + 14 macOS job-minutes (estimate from the v1.6.0 runs) |\n| Blocked by harness noise | Never | Only if main's own CI is red | Both v1.6.0 reds would have blocked it |\n| Files touched | 0 | 6 | 6 (same spike) |\n\n### Pros and cons\n\n* **Keep.** For: no release since ADR-0120 has shipped a product regression through a red gate. Against: nothing stops `npm run release` on a laptop three commits behind main.\n* **Cheap gate.** For: seconds of cost, no toolchain, works from a cloud session, turns \"did I pull?\" into a refusal instead of a patch release. Strongest argument against: it would not have changed any of the eight releases so far; the failures that happened were on tag-only gates.\n* **Gate plus rehearse.** For: the only option that meets the tag gates before the tag exists, at zero local toolchain cost. Against: 13 minutes per release, and on the evidence it blocks on harness failures more often than product ones.\n\n### What the spike showed\n\n* Branch `claude/spike-222-pre-tag-gate` at c43a81f702de: 6 files, +297/−3. A pure rules module, a `release:verify` entry point with `--rehearse`, the gate wired into `cut-release.mjs` before the version bump, tests.\n* Release-tier tests: 114 passing (16 new).\n* Not exercised: the live `gh api` call and the workflow dispatch; `gh` is absent in the cloud container, so the full path was shown refusing with `spawnSync gh ENOENT`.\n* Two things the thread had not mentioned: the gate must judge the *parent* of the release commit (the release commit does not exist yet and only changes release-owned paths), and the check-runs API sees GitHub Actions only; Netlify's deploy result is a commit status and is not consulted.\n\nOffline dry run of the rules against the Tests workflow's real job names:\n\n```\nRelease readiness for 56741af7e000\n\n  check runs: 11 (1 failing, 0 pending)\n  ✗ HEAD 56741af7e000 is not origin/main ffffffffffff — pull or push first\n  ✗ CI failed: WebKit commit gate (fast) (failure)\n\n  not covered until the tag exists: Android Deploy Smoke, iOS Deploy Smoke, WebKit commit gate (full)\n```\n\n### Cost to finish\n\nAbout half a day from spike to mergeable: replace the rehearsal's `gh run list --limit 1` lookup with a dispatch-time filter so it cannot pick up someone else's manual run, test the dispatch arguments, update the `cut-release` skill and `tools/release/README.md`, record the gate as an amendment to ADR-0077. Ongoing cost near zero: the gate names no job, so workflow renames do not drift it.\n\n### Recommendation\n\n**Advance option 2 as the default and ship `--rehearse` as opt-in.** The cheap gate closes the one failure nothing else catches for the price of one API call, while the tag-only gates already report on themselves. Cost accepted: a release still meets the Android, iOS, and full WebKit gates for the first time on the tag unless someone passes `--rehearse`. What would change this: one more release whose tag gate goes red for a product reason rather than a harness one. First step: merge the spike's rules module and gate, then cut v1.7.0 through it.\n\n**The one question only you can answer:** when a rehearsal on main goes red for a harness reason, as both v1.6.0 gates did, should the release wait for the harness fix? That decides whether `--rehearse` is on by default.\n\nRendered version: https://claude.ai/artifact/Bucbm2Wsxqw8Ce2Vb52CCx\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931696013,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/222#issuecomment-5931796727",
+      "body": "Spike preserved as a closed draft PR so the branch stays attached here: #2585 (`claude/spike-222-pre-tag-gate`).\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 5931796727,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

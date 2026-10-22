@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:19.052Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3066",
+    "title": "RN: every PNG AI result is rejected because of its C2PA caBX chunk",
+    "issue_number": 3066,
+    "body": "Part of #2978. Found while verifying the fix for #3063 on the Galaxy. With the upload fixed, the picture request reaches the server and is charged (free creations went from 9 to 8), but the app still shows \"Hmm, that didn't work\".\n\n## Cause\n\nThe provider's PNG results carry C2PA content credentials in a `caBX` chunk. A diagnostic build logged this result's chunk list:\n\n```\n'[diag-png]', 2746366, 'caBX:21877 IDAT:2724420 IEND:0'\nError: AI picture is incomplete, corrupt, too large or unsupported.  at metadata … at pngResultGrid\n```\n\nAll three result validators allow only `cHRM`, `gAMA`, `sRGB`, `sBIT`, `pHYs` and `PLTE` before the image data, so each one rejects every real PNG result:\n\n* JS: `experiments/native-architecture/src/ai/pngResult.ts`, `metadata()`\n* Kotlin: `SplotchAIEnvironment.kt`, `structure`\n* Swift: `SplotchAIEnvironment.swift`, `structure`\n\nThe server hands a finished result over only once. The next poll got `404 That creation is no longer available`, so the paid picture was lost.\n\nThe tests missed it because the committed provider fixtures (`web/tests/artifacts/ai-output-*.jpeg`) are re-encoded JPEGs. JPEG admission already accepts every APPn segment, which is where C2PA lives in a JPEG.\n\n## Done when\n\n* The three validators admit one `caBX` chunk before the image data, without interpreting it, within the existing metadata byte cap.\n* A drift guard pins the Kotlin and Swift chunk lists.\n* A free creation shows its picture on the Galaxy.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:06:09Z",
+    "updated_at": "2026-10-20T14:42:40Z",
+    "closed_at": "2026-10-20T14:42:40Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3066",
+    "display_title": "RN: every PNG AI result is rejected because of its C2PA caBX chunk"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3066#issuecomment-6293540957",
+      "body": "Fixed by #3067, merged as 0fdf890cf6565a2d581a2c7f0d8fc96cd7c843c9.\n\nVerified on both devices:\n\n* **Galaxy [redacted-device-id], Release:** a free Crayon result carrying `caBX:21877` was admitted and displayed.\n* **iPad, through the Swift validator:** a Watercolor result carrying `caBX:21877 IDAT:1849522 IEND:0` was admitted and displayed.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293540957,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

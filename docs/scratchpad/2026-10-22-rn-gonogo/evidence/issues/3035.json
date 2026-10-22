@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:17.892Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3035",
+    "title": "iPad: clearing a crayon drawing freezes the app and gets it killed for memory",
+    "issue_number": 3035,
+    "body": "Part of #2978 (crash hunt). Release-blocking: it is the crash the owner reported, reproduced on the physical iPad.\n\n## Signature\n\niOS jetsam memory kill, with no crash report written:\n\n```\nlaunchd: exited with exit reason (namespace: 1 code: 0x7) - JETSAM_REASON_MEMORY_PERPROCESSLIMIT\nSpringBoard: Process exited: <RBSProcessExitStatus| domain:jetsam(1) code:per-process-limit(7)>\n```\n\nSeconds before the kill, the system reclaims other long-idle apps (`JETSAM_REASON_MEMORY_LONGIDLE_EXIT`), and the screen stays frozen while it happens. That matches the owner's report: \"at first, screen froze and stayed there for ~5s and then app completely shut down and went to home screen\".\n\n## Repro\n\nOn a 12.9-inch iPad, Release build at 645ffd4c2fffa39b25bb04f077d514f457b2cece:\n\n1. Choose **Crayon**.\n2. Draw several strokes. 6 strokes are enough to see the spike; 24 reach the cap.\n3. Drag Clear past the ring and let go.\n\nFootprint (DVT sysmon, `physFootprint`) at the commit:\n\n| Cleared crayon strokes | Before | Peak | After |\n| ---: | ---: | ---: | --- |\n| 6 | 290 MB | 1,405 MB | 689 MB |\n| 6 | 460 MB | 1,254 MB | 674 MB |\n| 24 | 353 MB | 4,628 MB | 323 MB (the next touch interrupted it) |\n| 24 | | | killed: `per-process-limit` |\n\nControls: the same sequence with **Pen** peaks at 279 MB. Crayon strokes without a Clear peak at 263 MB.\n\n## Cause\n\nThe departing page that flies into the Clear button (`RsdClearUnderlay`'s `DepartingSheet`) draws the cleared drawing again through react-native-svg (`InkScene`). Each crayon pass is wrapped in `CrayonGlaze`, an SVG `<Filter>` (FeBlend with `BackgroundImage`, then FeComposite) whose filter region is the whole paper. The Time Profiler stack during the spike, on the main thread inside a Core Animation commit:\n\n```\n-[RNSVGSvgView drawRect:]\n  -[RNSVGRenderable renderTo:rect:] > -[RNSVGFilter applyFilter:backgroundImg:renderableBounds:canvasBounds:ctm:]\n    CI::MetalTextureManager::texture_for_CGImage > -[AGXG13GFamilyTexture replaceRegion:...]\n    CI::image_render_to_bitmap > CIMetalTextureGetBytes\n  CGDisplayListDrawInContextDelegate > ripc_DrawImage > RGBAf16_image (8 bytes per pixel)\n```\n\nEvery filtered group copies the full canvas through Core Image at half-float precision, so memory grows with the number of crayon passes times the paper's pixels. The main thread is held throughout, which is the freeze. Diagnostic logging confirmed `InkScene` renders the departing drawing (6 strokes, all crayon) three times at the commit instant. Native captures already avoid this path: `PictureCapture` uses the Skia layer's raster (`readyPlan`'s `ink`), so the departing sheet is the only native consumer of the crayon SVG scene.\n\nShipping flies a bitmap of the canvas (`web/src/lib/drawing/inkMotion.ts` `clear()`), never a vector re-render, which is why shipping never crashed here.\n\n## Fix direction\n\nOn native, fly a snapshot of the live Skia ink layer (the pixels already on screen) in the departing sheet instead of re-rendering the SVG scene. RN web keeps its SVG ink.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T02:32:11Z",
+    "updated_at": "2026-10-20T05:10:35Z",
+    "closed_at": "2026-10-20T05:10:35Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3035",
+    "display_title": "iPad: clearing a crayon drawing freezes the app and gets it killed for memory"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3035#issuecomment-6283885593",
+      "body": "The scenario reran to the bar on the physical iPad, so this closes.\n\n- **Build.** The fix is #3036, merged as f27c58f3aa7796c8463ab25893ef72ec626c93e6. The iPad ran its PR head, 4cbd0b7130933d89ca30c4828971c21b880c42d6, which has the same tree (5708e7e66d4937b8cdcb6d69402dbfceb4e85e53).\n- **The owner's gesture as a script (S1).** 12 Crayon strokes, then Clear dragged back and forth across the accept ring at 6 Hz for 3 s nominal, released past it, then 10 s idle.\n  - Alive in 6 of 6 RN runs and 6 of 6 runs of the v1.6.0 reference.\n- **The rest of the pre-registered matrix on the iPad is also alive on both arms:**\n  - S2, toddler scribble (2 runs each);\n  - S4, lifecycle under load (1 run of 2 cycles each);\n  - S5, a 300-stroke session (1 each);\n  - S6, audio collisions (2 each).\n  - One RN S2 run wrote a non-fatal `cpu_resource` report (\"Action taken: none\"); it is counted as alive.\n- **Exit records.** The iPad's unified log was collected after the matrix (from 03:30Z). It holds no `JETSAM_REASON_MEMORY_PERPROCESSLIMIT`, signal or watchdog exit for either app.\n- **Memory, for the record.**\n  - Before the fix, 6 Crayon strokes peaked at 1,254–1,405 MB, and 24 strokes reached 4,628 MB or were killed.\n  - After it, the same runs measured 359 and 396 MB.\n\nThe full crash-hunt record, with every target and both arms, is going into `docs/scratchpad/2026-10-18-device-parity/results/`.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6283885593,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

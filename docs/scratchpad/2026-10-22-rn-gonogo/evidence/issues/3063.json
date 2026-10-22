@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:18.698Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3063",
+    "title": "RN: AI uploads fail before sending because React Native's Blob rejects bytes",
+    "issue_number": 3063,
+    "body": "Part of #2978. Found by the owner on the Galaxy and reproduced with a diagnostic build at 58463f481acdb299a7fee629af5701d1110dfdb4.\n\n## What the owner saw\n\n> android - AI generation didn't work.\n\nThe card shows \"Hmm, that didn't work\", with nothing in the device log.\n\n## Cause\n\nThe native transport (`experiments/native-architecture/src/platform/ai.ts`, `aiTransport`) wraps the drawing's bytes in `new Blob([bytes.buffer])`. React Native's `BlobManager.createFromParts` rejects every `ArrayBuffer` and `ArrayBufferView` part. The upload throws before any request leaves the device:\n\n```\n'[diag-transport]', '/api/generate-image', \"Error: Creating blobs from 'ArrayBuffer' and 'ArrayBufferView' are not supported\"\n    at createFromParts … at Blob … at aiTransport\n```\n\n`requestAi` reports the throw as an unknown network failure, so the card offers Try again, and each retry fails the same way. RN's Blob is shared code, so iOS has the same failure; the owner could not reach it there because the key save failed first. No paid request is ever sent.\n\n`expo/fetch` takes a `Uint8Array` body directly (`RequestUtils.ts` normalizes `ArrayBuffer` and views). The Blob wrapper also gave it an empty `Content-Type` to override the request's own header with.\n\n## Done when\n\n* `aiTransport` passes the bytes to `expo/fetch` without a Blob, and a test fails if a native module builds a Blob from bytes again.\n* One free creation succeeds on the Galaxy and on the iPad.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T13:51:13Z",
+    "updated_at": "2026-10-20T14:42:37Z",
+    "closed_at": "2026-10-20T14:42:37Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3063",
+    "display_title": "RN: AI uploads fail before sending because React Native's Blob rejects bytes"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3063#issuecomment-6293540049",
+      "body": "Fixed by #3065, merged as d67a1afaed604cea42a572cdc4ad1b7af4e1bb38.\n\nVerified on both devices:\n\n* **Galaxy [redacted-device-id], Release:** with #3064 and #3067 merged locally (ccd185b08425d71fe736792dab7c442ece8f4c0e), a free Crayon creation reached the server, came back and displayed with Download and Report.\n* **iPad:** a free Watercolor creation did the same, once #3070's two iOS fixes were added.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293540049,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+UTC 2026-10-22T16:51:31.437441+00:00
+CWD /workspace/shipping-main
+COMMIT ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4
+RUN COUNT 1
+COMMAND java -version; cd android && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-deb13u1-Debian)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-deb13u1-Debian, mixed mode, sharing)
+Exception in thread "main" java.lang.RuntimeException: Could not create parent directory for lock file /home/agent/.gradle/wrapper/dists/gradle-9.6.0-all/dixtgvkfpkd48f03qv19we908/gradle-9.6.0-all.zip.lck
+	at org.gradle.wrapper.Install.createDist(SourceFile:22)
+	at org.gradle.wrapper.GradleWrapperMain.lambda$prepareWrapper$0(SourceFile:2)
+	at org.gradle.wrapper.GradleWrapperMain.main(SourceFile:2)
+
+EXIT 1

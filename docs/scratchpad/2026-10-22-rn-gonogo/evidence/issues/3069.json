@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:21.297Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3069",
+    "title": "RN iOS: the AI journal never finds its own attempt folders, so no picture is sent",
+    "issue_number": 3069,
+    "body": "Part of #2978. Found on the iPad while verifying #3068, with a diagnostic build at ccd185b08425d71fe736792dab7c442ece8f4c0e.\n\n## What happens\n\nWith credentials readable again, a free creation on the iPad still fails before anything is sent. The result card shows \"Still not working\".\n\n## Cause\n\n`SplotchAIJournal.swift`'s `readPreparedUpload` rejects with `AI storage was not confirmed. Nothing new was sent.` A diagnostic build that carried the failing line into the rejection logged this:\n\n```\n[diag readPreparedUpload AI_DURABILITY_UNAVAILABLE 719 journal line 719]\n```\n\nLine 719 is `try checked(attempts(root).contains(dir))`. Here `dir` is built as `root.appendingPathComponent(\"attempt-<id>\")`, but `attempts(root)` returns `FileManager.contentsOfDirectory(at:)` URLs, which differ on the device:\n\n```\nlisting     file:///private/var/mobile/Containers/Data/Application/<app>/Library/Application%20Support/splotch-ai-journal-v1/attempt-<id>/\nconstructed file:///var/mobile/Containers/Data/Application/<app>/Library/Application%20Support/splotch-ai-journal-v1/attempt-<id>\n```\n\nThe URLs differ in the `/private` prefix and the trailing slash, so URL equality never matches.\n\nThe same check guards `write`/`retain`, `commitRecoveryIntent`/`recordRecoveryStatus` and `sourceHeld`. The stored result URI check in `latest()` compares a listing-derived URL with one the journal wrote from the constructed form. Android's `File.equals` compares the constructed paths it lists, so only iOS fails.\n\n## Done when\n\n* `attempts()` returns each attempt as `root.appendingPathComponent(name)`, so every comparison sees the form the journal writes.\n* A source guard keeps it that way.\n* A free creation on the iPad shows its picture.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:36:38Z",
+    "updated_at": "2026-10-20T15:12:41Z",
+    "closed_at": "2026-10-20T15:12:41Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3069",
+    "display_title": "RN iOS: the AI journal never finds its own attempt folders, so no picture is sent"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3069#issuecomment-6294195179",
+      "body": "Fixed by #3070, merged as 29eb9e641c51fccc9f382d7c095e3cb37e783e16. Verified on the iPad (Release): AI Art showed \"10 free AI creations left\" instead of an unavailable allowance, a credential saved and read back, and a free Watercolor creation came back and displayed with Download and Report.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6294195179,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

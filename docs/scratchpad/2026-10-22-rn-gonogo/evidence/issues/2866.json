@@ -1,0 +1,63 @@
+{
+  "observedAt": "2026-10-22T16:51:48.758Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2866",
+    "title": "Export the native saved picture at shipping's paper colour and resolution",
+    "issue_number": 2866,
+    "body": "**What:** the React Native app's saved PNG differs from shipping's:\n- **Paper colour:** near-white (252,251,248) on RN vs the paper colour (237,240,238) on shipping.\n- **Size:** 519×1024 on RN vs 780×1538 on shipping, for the same 390×844 phone.\n\nThe saved picture shows inside the polaroid save flight, so RN's polaroid looks lighter than shipping's. Found while porting the flight (PR 2865).\n\n**Where:** the RN capture/export path (`keepPicture.ts`, `DrawingSurface` `capturePng`) vs shipping's screenshot export (`ScreenshotButton.svelte` and the export pipeline it calls).\n\n**Done when:** for the same drawing and viewport, RN's saved PNG matches shipping's paper colour and pixel dimensions in light and dark, and a test reads shipping's export parameters so the two cannot drift.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T22:42:52Z",
+    "updated_at": "2026-10-14T19:57:58Z",
+    "closed_at": "2026-10-14T19:57:58Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2866",
+    "display_title": "Export the native saved picture at shipping's paper colour and resolution"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2866#issuecomment-6177121718",
+      "body": "Fixed by #2891, merged into `codex/native-migration`. Native saves now match shipping's export size, max(DPR, 2) × the paper's CSS size, on web, iOS and Android. They also match shipping's paper: the paper colour plus grain tiled one texel per CSS pixel, light and dark. A test reads shipping's `currentExportScale`, `PAPER_COLORS`, grain asset and `paintExportPaper` order. Remaining: on Android the RN paper is 0.5 dp taller, because its top palette band ends slightly higher, so its export is 2 px taller.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6177121718,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

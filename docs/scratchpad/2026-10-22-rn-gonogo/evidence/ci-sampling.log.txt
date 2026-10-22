@@ -1,0 +1,17 @@
+Tool gh 2.46.0 + Python 3.12.14; run count 1 per command
+Read-only remote history; no candidate execution
+gh run list --repo KyleMit/Splotch --workflow 285690264 --limit 500 --json databaseId,headSha,headBranch,createdAt,startedAt,updatedAt,conclusion,status,url
+gh run list --repo KyleMit/Splotch --workflow 285690264 --created <2026-10-07 --limit 500 --json databaseId,headSha,headBranch,createdAt,startedAt,updatedAt,conclusion,status,url
+gh pr list --repo KyleMit/Splotch --base main --state merged --limit 25 --json number,headRefOid,headRefName,mergedAt,url
+gh pr list --repo KyleMit/Splotch --base codex/native-migration --state merged --limit 25 --json number,headRefOid,headRefName,mergedAt,url
+Output ci-samples.json
+{
+  "main": {
+    "count": 10,
+    "median_seconds": 327.0
+  },
+  "codex/native-migration": {
+    "count": 10,
+    "median_seconds": 771.5
+  }
+}

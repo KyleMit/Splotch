@@ -1,0 +1,4 @@
+2026-10-22 collection diagnostics; not candidate benchmark samples.
+GitHub CLI filename/event-filter Tests history probe returned zero runs. Numeric workflow ID 285690264 without event filter returned history; latest 500 alone did not reach recent merged main PRs. Added created <2026-10-07 window for those. Four sampler attempts overall: three incomplete and one final reported pass. Final exact commands/data in ci-sampling.log.txt and ci-samples.json.
+Native GitHub open-issues search returned an empty list inconsistent with known open #2690; CLI issue list supplied the broad cross-check.
+Rival wrapper install required XDG cache/data activation from .codex/cloud/start.md. Trusted refresh succeeded; local auth health and live question passed before PR review. Initial question used missing local main; retry pinned origin/codex/native-migration.

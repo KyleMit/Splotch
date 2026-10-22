@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:51:57.595Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2912",
+    "title": "Keep native chrome and paper responsive the way shipping does",
+    "issue_number": 2912,
+    "body": "**What:** RN locks or greys controls where shipping stays live.\n\n| ID | Difference | Sev | Status | Slice refs |\n| --- | --- | --- | --- | --- |\n| X4 | The paper's responder keeps every touch; chrome refuses while any contact is down; no stroke release on palette or Clear | H | Code-read; device | C-D3, E-D4 |\n| X25 | No launch dead zone on dialogs | H | Code-read; device | C-D5 |\n| X48 | Input hygiene: no colour debounce, edge-swipe guard or coalesced samples; off-paper draws along the edge; a layout change ends the stroke | M | Code-read | E-D6, E-D7, E-D8, P-29 |\n| X49 | Hardware keyboard undo and Escape no-op on native | M | Code-read | E-D12, P-30 |\n| X41 | Settings rows dim during every async save | M | Code-read | S-D11 |\n\n**Also in scope:**\n- **The rest of X5:** the toolbar still greys during save, clear and Settings writes. #2907 fixed only the dialog case.\n- **#2908:** the first strokes after closing Settings or after a Clear don't ink. It is likely the same lock or responder cause.\n\n**Done when:**\n- Each item matches shipping on the native targets (and on RN web where it applies), or the issue says why it stays different. Shipping is the spec.\n- Each fix has a test that reads or pins shipping's behaviour, with a negative control.\n- Visible changes come with shipping-vs-RN side-by-sides.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) (§3 per surface, §4 index; the slice files hold file:line evidence). Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-15T00:11:58Z",
+    "updated_at": "2026-10-15T20:55:47Z",
+    "closed_at": "2026-10-15T20:55:47Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2912",
+    "display_title": "Keep native chrome and paper responsive the way shipping does"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2912#issuecomment-6184283624",
+      "body": "The responsiveness portion is merged through #2923 at 1387fa712a0c00f624b9a8b94d4173c7180af950, after two independent review rounds and green CI on 86c0aee06a819a47bda41215c9c278b4c4f82cb5. Settings choices remain interactive during writes; Clear releases fresh ink before Photos finishes; Save coalesces overlapping captures and uses shipping's cooldown. The PR includes native Settings/drawer evidence and final-head web Clear comparisons with their limitations. X4, X48 and X49 continue in a follow-up, so this issue stays open. Issue #2908 also stays open with the unresolved pre-admission Android contact loss recorded separately.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6184283624,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2912#issuecomment-6202093409",
+      "body": "The remaining input/keyboard portion is merged through #2933 at db5d7468e124abbbd27de8c8b45c9a8eba95e2c6, after both substantive independent-review rounds and the complete green CI set on eb59d3b35c06decaacfe918413ac94ee7d256fe0. Combined with #2923, this delivers the listed responsiveness scope.\n\nPaper/chrome routing uses bounded geometry; finger debounce, edge admission, history packets, launch guards and focused-descendant native key dispatch have shipping-pinned regressions and prior-owner controls. Actual Galaxy ordinary and simultaneous-contact ink/Undo checks pass. The final native Settings Escape → touch-open Brushes → Escape sequence passes three of three times without Tab or focus repair, with matching shipping recordings. UIKit/Fabric finger input and Undo also pass on the iPhone simulator. The PR contains paired states, actual recordings, build provenance and precise coverage limits.\n\nIssue #2908 stays open independently: the prior 037 checkpoint still lost the first band in all five post-Settings trials, while shipping received all three bands in five of five. No first-stroke, stylus/coalesced-history, staggered held-contact or performance certification is implied by this closure; those native probe limits remain explicit for the final campaign sweep.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6202093409,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

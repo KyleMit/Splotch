@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:54.935Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2900",
+    "title": "Keep native chrome at full strength behind dialogs and draw the iOS Flat menu selection outline",
+    "issue_number": 2900,
+    "body": "**What:** two native visual gaps, found while fixing #2895.\n\n1. **Chrome washed out behind Settings.**\n   - With Settings (or another dialog) open, the RN candidate marks every drawer tile and palette swatch as disabled, so they render faded under the scrim. Shipping leaves the chrome at full strength behind the dim and blur.\n   - The pair is `/tmp/splotch-2895/ios-flat-settings-open.png` on the build host: the swatches are visibly paler in RN.\n   - This also caused #2886: the disabled fade ran while Settings was open.\n   - **Where:** `useDrawingScreen` folds `settings.sheetOpen` into `disabled`. Compare how shipping blocks input to the canvas and chrome while a dialog is open, without restyling them.\n2. **iOS Flat menus lose the selected outline.** In Flat style the selected option in a flyout menu loses its black outline on iOS, because the outline is drawn with a CSS `filter` that iOS RN ignores. Android draws it correctly. The `rsdDrawing/greyed.ts` / `paintedTile.ts` colour-matrix approach from #2897 and #2895 may apply.\n\n**Done when:**\n- With a dialog open, the RN chrome behind it looks like shipping's (full strength under the scrim), while input to it is still blocked.\n- The iOS Flat selected-option outline matches shipping.\n- Each has a renderer test with a negative control.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-14T22:07:40Z",
+    "updated_at": "2026-10-14T23:59:10Z",
+    "closed_at": "2026-10-14T23:59:10Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2900",
+    "display_title": "Keep native chrome at full strength behind dialogs and draw the iOS Flat menu selection outline"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2900#issuecomment-6181153789",
+      "body": "Fixed by #2907, merged into `codex/native-migration`. Behind dialogs, the chrome stays at full strength: `disabled` now means only a parked screen, and an `InertRegion` blocks presses while a dialog covers the screen. The iOS Flat menu selection outline is drawn with glyph silhouettes instead of a CSS filter.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6181153789,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

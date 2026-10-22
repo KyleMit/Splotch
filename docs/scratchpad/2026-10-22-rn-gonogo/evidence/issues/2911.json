@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:51:55.402Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2911",
+    "title": "Bring the native AI Art flow's logic to shipping parity",
+    "issue_number": 2911,
+    "body": "**What:** the RN AI flow diverges from shipping in ways that break AI over time or lose results. The worst is that AI stops for good after 32 generations.\n\n| ID | Difference | Sev | Status | Slice refs |\n| --- | --- | --- | --- | --- |\n| X2 | AI attempt journal capped at 32, never evicted, so AI stops | H | Verified | A-D1 |\n| X3 | AI reports multipart without Origin, so probably a 403, and no retry | H | Verified (prod check) | A-D5, A-D6 |\n| X14 | AI timeout / non-JSON / 502 holds AI for up to 20 min; past 240 s never resolves | H | Code-read | A-D3, A-D4 |\n| X15 | AI button not hidden offline; no connectivity state at all | H | Code-read | A-D7, P-19, C-D21 |\n| X28 | AI failure counter never resets; 429 refuses Try again; Try again re-captures the canvas | M | Code-read | A-D10, A-D11, A-D12 |\n| X29 | Background or Parent Center closes the AI card and the polaroid | M | Code-read | A-D13, S-D10 |\n| X30 | AI upload is a 1x PNG vs ≥2x (WebP where encodable); reports and auto-save use the 1x | M | Code-read | A-D9 |\n| X31 | Every AI original stored and never pruned (web `localStorage` up to 8 MB each) | M | Code-read | A-D16 |\n| X32 | No pinch-zoom on the AI result | M | Code-read | A-D15, E-D19 |\n| X40 | AI deep link ignored by the tablet Settings shell | M | Code-read | S-D14 |\n\n**Note:** X3 needs a production check that a multipart report without an Origin header is rejected by SvelteKit's CSRF check.\n\n**Done when:**\n- Each item matches shipping on the native targets (and on RN web where it applies), or the issue says why it stays different. Shipping is the spec.\n- Each fix has a test that reads or pins shipping's behaviour, with a negative control.\n- Visible changes come with shipping-vs-RN side-by-sides.\n\nEvidence: the [RN parity ledger](https://github.com/KyleMit/Splotch/blob/codex/native-migration/docs/scratchpad/2026-10-14-rn-parity-ledger/parity-ledger.md) (§3 per surface, §4 index; the slice files hold file:line evidence). Part of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-15T00:11:55Z",
+    "updated_at": "2026-10-15T04:41:01Z",
+    "closed_at": "2026-10-15T04:41:01Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2911",
+    "display_title": "Bring the native AI Art flow's logic to shipping parity"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2911#issuecomment-6182156474",
+      "body": "Confirmed X3 against production with empty, unauthenticated multipart requests: no Origin returns HTTP 403, “Cross-site POST form submissions are forbidden”; Origin capacitor://localhost and https://localhost both reach the API and return HTTP 400, “Installation grant unavailable”. No credentials or images were sent and no report was created. The in-progress fix sends the matching native Origin, shares shipping’s report reply parsing/copy, and makes failed reports explicitly retryable without a second gate while the original authorization remains valid. Reverting the fix produces five focused regression failures.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6182156474,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2911#issuecomment-6184565255",
+      "body": "Merged through #2926 at db1e0b8ce110fae723f1ca9892afa518bccaab37. This completes the generation/reporting cluster X2, X3, X14, X15, X28–X32 and X40: fresh AI launches, bounded attempt retention, shipping failures/retries and consent lifetime, native trusted Origin/connectivity, capture/upload quality, original retention, result pinch-zoom and wide Settings landing. The tablet-original admission bug found during actual web capture is fixed without widening the remote-result limit. Both native Release builds compile; local gates pass (RSD 641, tools 10,759); all 21 CI checks complete green or expected skip on 4f2a45dceea52496a75d7efb101d81750f0bf32d. Independent review round 1 found the polling-write failure, now fixed with actual negative controls; round 2 found no new defects. The PR contains 48 verified shipping/RN web pairs using mocked endpoints. Fresh native AI-result comparisons remain in the campaign final pass, pending the explicitly requested spending approval. The short-landscape confirmation reading-position gap is tracked under #2917 (comment 6184466018); it is not claimed as visual parity.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6184565255,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+UTC 2026-10-22T16:53:49.345345+00:00
+CWD /workspace/shipping-main
+COMMIT ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4
+RUN COUNT 1
+COMMAND rg -n 'indexedDB|DATABASE|held-|splotch-unsaved|splotch-pictures|splotch-candidate|Keychain' web/src/lib/storage* web/src/lib/drawing/*ersist* web/src/lib/drawing/*Picture* web/src/lib/secureStorage* 2>/dev/null; cat android/app/build.gradle; cat ios/App/CapApp-SPM/Package.swift
+web/src/lib/storageKeys.ts:54:  unsavedPicturesHeld: 'splotch-unsaved-pictures-held',
+web/src/lib/secureStorage.ts:13://    which stores them in the iOS Keychain / Android Keystore, both hardware-backed.
+web/src/lib/secureStorage.ts:15://    iCloud Keychain sync off (selectBackend pins both), so no sync or backup carries it
+web/src/lib/secureStorage.ts:32:// Keychain / Keystore / IndexedDB, so renaming it orphans their saved key on
+web/src/lib/secureStorage.ts:230:    const { SecureStorage, KeychainAccess } = await getPlugin();
+web/src/lib/secureStorage.ts:232:      // No iCloud Keychain sync and device-only access, passed on every write
+web/src/lib/secureStorage.ts:238:        SecureStorage.set(name, value, undefined, false, KeychainAccess.whenUnlockedThisDeviceOnly),
+web/src/lib/drawing/unsavedPictureStore.ts:27:const DB_NAME = 'splotch-unsaved-pictures';
+web/src/lib/drawing/unsavedPictureStore.test.ts:15:  STORAGE_KEYS: { unsavedPicturesHeld: 'splotch-unsaved-pictures-held' },
+web/src/lib/secureStorage.test.ts:16:// The iOS options each native write carried: sync and Keychain access.
+web/src/lib/secureStorage.test.ts:39:  KeychainAccess: (await importOriginal<typeof import('@aparajita/capacitor-secure-storage')>())
+web/src/lib/secureStorage.test.ts:40:    .KeychainAccess,
+web/src/lib/secureStorage.test.ts:272:  it('uses distinct named Keychain or Keystore slots for both credentials', async () => {
+web/src/lib/secureStorage.test.ts:286:  // A parent's key stays on this device: no iCloud Keychain sync, and an access
+web/src/lib/secureStorage.test.ts:289:  it('writes each Keychain item unsynced with device-only access', async () => {
+web/src/lib/secureStorage.test.ts:291:    const { KeychainAccess } = await vi.importActual<
+web/src/lib/secureStorage.test.ts:298:    const pinned = { sync: false, access: KeychainAccess.whenUnlockedThisDeviceOnly };
+apply plugin: 'com.android.application'
+
+// Release signing: credentials live in android/keystore.properties (git-ignored).
+// Without that file, release builds are simply left unsigned (debug builds unaffected).
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
+android {
+    namespace = "art.splotch.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile rootProject.file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+    defaultConfig {
+        applicationId "art.splotch.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 8
+        versionName "1.6.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    androidResources {
+        ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+    buildTypes {
+        release {
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            // R8 code shrinking/optimization/obfuscation + resource shrinking.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.core:core:$androidxCoreVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.work:work-runtime:2.11.2"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+// swift-tools-version: 5.9
+import PackageDescription
+
+// DO NOT MODIFY THIS FILE - managed by Capacitor CLI commands
+let package = Package(
+    name: "CapApp-SPM",
+    platforms: [.iOS(.v16)],
+    products: [
+        .library(
+            name: "CapApp-SPM",
+            targets: ["CapApp-SPM"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2"),
+        .package(name: "AparajitaCapacitorSecureStorage", path: "../../../node_modules/@aparajita/capacitor-secure-storage"),
+        .package(name: "CapacitorCommunityMedia", path: "../../../node_modules/@capacitor-community/media"),
+        .package(name: "CapacitorDevice", path: "../../../node_modules/@capacitor/device"),
+        .package(name: "CapacitorHaptics", path: "../../../node_modules/@capacitor/haptics"),
+        .package(name: "CapacitorNetwork", path: "../../../node_modules/@capacitor/network"),
+        .package(name: "CapacitorPreferences", path: "../../../node_modules/@capacitor/preferences"),
+        .package(name: "CapacitorScreenOrientation", path: "../../../node_modules/@capacitor/screen-orientation")
+    ],
+    targets: [
+        .target(
+            name: "CapApp-SPM",
+            dependencies: [
+                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+                .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "AparajitaCapacitorSecureStorage", package: "AparajitaCapacitorSecureStorage"),
+                .product(name: "CapacitorCommunityMedia", package: "CapacitorCommunityMedia"),
+                .product(name: "CapacitorDevice", package: "CapacitorDevice"),
+                .product(name: "CapacitorHaptics", package: "CapacitorHaptics"),
+                .product(name: "CapacitorNetwork", package: "CapacitorNetwork"),
+                .product(name: "CapacitorPreferences", package: "CapacitorPreferences"),
+                .product(name: "CapacitorScreenOrientation", package: "CapacitorScreenOrientation")
+            ]
+        )
+    ]
+)
+
+EXIT 0

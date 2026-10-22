@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:22.107Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3073",
+    "title": "RN: make the Undo fly-away visible, especially on Android",
+    "issue_number": 3073,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20:\n\n> \"android - when I hit undo, I'm not really seeing the animation where the previous stroke flies away. On iOS it's also pretty subtle an can probably be made more visible, but I'm barely seeing it on android if at all.\"\n\n## Where\n\nLocated by reading the code; this is an unverified hypothesis.\n\n* `experiments/native-architecture/src/drawing/UndoInkMotion.tsx`: progress is measured from `feedback.startedAt`, stamped at the press in `useUndoAction.ts`. Motion begins after two `requestAnimationFrame`s and seeks to the elapsed time.\n* `src/drawing/undoFeedback.ts` sets `UNDO_GHOST_MS` to 420.\n* `src/drawing/undoGhostGeometry.ts` sets `UNDO_GHOST_SCALE` (0.72), `UNDO_GHOST_DRIFT_FRACTION` (0.28) and `UNDO_GHOST_EASE`, a strong ease-out.\n* The ghost image is built first: `SkiaUndoGhost.tsx` `makeSkiaUndoGhost`, or `SvgUndoGhost.tsx` waiting on tiles.\n\n## Likely cause\n\nThe time spent building the ghost counts against the 420 ms, and the strong ease-out does most of its fade and shrink early. That stretch is skipped, so a slower Android frame shows almost nothing.\n\n## Done when\n\n* The fly-away is clearly visible on both devices: the full motion plays from first paint of the ghost, and its strength is compared with shipping side by side.\n* A capture shows the ghost on screen for the intended duration on the Galaxy.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:58:19Z",
+    "updated_at": "2026-10-20T18:03:22Z",
+    "closed_at": "2026-10-20T18:03:22Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3073",
+    "display_title": "RN: make the Undo fly-away visible, especially on Android"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3073#issuecomment-6297670971",
+      "body": "Fixed by #3088, merged as 7ad0461c3c4e3125bbc2691f83c993d7c47f6f17. The fly-away now starts the frame after the ghost paints, as shipping's `runWhenPainted` does. On the Galaxy (Release, measured from a screen recording), the undone stroke now fades on shipping's curve (1.00 → 0.76 → 0.57 → 0.42 → 0.29 → 0.21 → … over about 200 ms, with a faint tail to 420 ms). Before, it vanished in a single frame. Whether to make it stronger than shipping is open for the owner once they have seen it.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6297670971,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

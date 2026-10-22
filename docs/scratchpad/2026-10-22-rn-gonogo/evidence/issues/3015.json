@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:52:06.843Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3015",
+    "title": "Let the child keep drawing while an AI picture is minimized on RN web",
+    "issue_number": 3015,
+    "body": "## What\n\nOn RN web, \"Keep drawing while you wait\" minimizes the AI card to its polaroid. The child then cannot draw: a `[data-testid=\"rsd-paper-corner\"]` element covers the whole paper, with `pointer-events: auto`. On a 390x844 phone it measures 390x769 at y 75, exactly the paper's box. Strokes on the paper leave no ink and add no Undo step.\n\nShipping web, same steps, accepts strokes while the picture is being made: ink appears and Undo depth rises from 1 to 2.\n\n## Why\n\nKeeping the child drawing while the picture is made is the point of the minimized state: B0267, E0329, L0168 and the AI-1 acceptance row T1-12. Today the paper looks drawable but silently ignores every touch until the picture is opened again.\n\n## Where\n\nThe polaroid's paper-slot overlay: `experiments/native-architecture/src/rsdDrawing/RsdPaperSlot.tsx` and the `rsd-paper-corner` host, plus `ai/AiWaitingPolaroid.tsx`. The layer that hosts the polaroid should pass touches through everywhere except the polaroid itself.\n\n## Repro (rn-web, Chromium, iPhone-sized touch profile)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, run `npm run native:web:build`. Serve the export statically, and answer `/api/*` from a fixture: the generate-image reply is held, so the run stays in progress.\n2. Settings › AI Art › Create AI Images on, then close Settings and draw one stroke.\n3. Expand the drawer, tap Create AI image, then pick Sticker.\n4. Tap \"Keep drawing while you wait\".\n5. Draw a stroke across the middle of the paper.\n6. Expected: ink, and Undo depth 2. Actual: no ink, Undo depth 1. `document.elementFromPoint` at the paper's centre returns the `rsd-paper-corner` div.\n\nEvidence: AI-1 record, cells `ai-minimize-and-ready` and `ai-timeout` (`docs/scratchpad/2026-10-18-device-parity/results/ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`). Observed at 00fcc5c78; not re-run after #3006.\n\n## Done when\n\n- While an AI picture is minimized, strokes anywhere on the paper outside the polaroid ink and add Undo steps, as on shipping.\n- Tapping the polaroid still reopens the card.\n- AI-1 cell `ai-minimize-and-ready` shows the stroke drawn while minimized in both arms.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "area:drawing",
+        "color": "5319e7",
+        "description": "Canvas, brushes, tools, drawing engine"
+      },
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T20:15:01Z",
+    "updated_at": "2026-10-20T06:24:44Z",
+    "closed_at": "2026-10-20T06:24:44Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3015",
+    "display_title": "Let the child keep drawing while an AI picture is minimized on RN web"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3015#issuecomment-6284823567",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3049, merged into codex/native-migration as cbd94d9fd64c865b280e6d3cd98003e23fa02f71. The layer that pins the minimized AI polaroid over the paper now uses the pointerEvents prop rather than a style that react-native-web drops. On the RN web export in Chromium, the layer's own computed pointer-events is none, and a stroke under it adds ink while the picture is being made.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6284823567,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

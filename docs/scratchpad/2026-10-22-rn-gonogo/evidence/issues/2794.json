@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:23.170Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2794",
+    "title": "Keep book Magic fill joins opaque when the SVG paper is drawn small",
+    "issue_number": 2794,
+    "body": "**What:** On the RN web build (SVG ink), book Magic fills on tall pages can still show faint lighter lines where the letterbox bands meet the picture when the paper is presented much smaller than its semantic size. #2791 makes each band reach `BAND_UNDERLAP_UNITS` (2 paper units) under the picture, which keeps the joins opaque at 1:1. But at small presentation sizes 2 units shrink below a device pixel, and the antialiased edges become translucent again.\n\nThe rival review on #2791 measured:\n- **Chromium, DPR 1:** alpha 210 on rows 6 and 68 when the 567×1024 Cat sheet is rendered at 42×75. Neighboring rows are opaque.\n- **librsvg:** alpha 233 at 100×180.\n\nSkia (Android and iOS) stays opaque. The live drawing sheet renders 2 units as several device pixels, so the visible case is small renders such as thumbnails or a very small window.\n\n**Where:** `experiments/native-architecture/src/drawing/bookFill.ts` and `BundledBookArtwork.tsx`.\n\n**Done when:** joins stay opaque at reduced presentation sizes. Either paint an opaque underlay across the whole paper, or derive the overlap from the presentation scale. Add a reduced-size opacity test (for example 42×75 and 100×180) that fails on the current geometry.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:coloring-book",
+        "color": "6f42c1",
+        "description": "Coloring-book pages, packs, and workflow"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:low",
+        "color": "0e8a16",
+        "description": "Nice to have, no rush"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T10:07:29Z",
+    "updated_at": "2026-10-13T10:32:25Z",
+    "closed_at": "2026-10-13T10:32:25Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2794",
+    "display_title": "Keep book Magic fill joins opaque when the SVG paper is drawn small"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2794#issuecomment-6143605611",
+      "body": "Fixed in #2795.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6143605611,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

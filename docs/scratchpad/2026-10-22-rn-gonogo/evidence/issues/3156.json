@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:31.968Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3156",
+    "title": "Port or retire SvelteKit E2E specs, group C (install-banner to web-back)",
+    "issue_number": 3156,
+    "body": "**Depends on:** #3153\n\n## What\n\nDecide each SvelteKit E2E spec in group C (40 specs, `install-banner.spec.ts` through `web-back.spec.ts` in `web/tests/`) under the spec-by-spec rule below:\n\n- **Port it** into the RN web Playwright suite (from the harness sub-issue) when it tests behaviour the RN app has and nothing else covers it. Other coverage includes the ~280 RN Vitest and mounted RSD tests in `tools/tests` and `tools/migration/tests`, the `postnative:web:build` checks, and the page budgets.\n- **Otherwise delete it** with a recorded reason: \"covered by <test path>\", or \"Svelte-only: <why the RN app has no such behaviour>\".\n\nThen delete the group's SvelteKit specs, their snapshots, and any helper in `web/tests/` that only this group used. Put new shared helpers in a group-local helper file, not the suite's common fixtures, so the three groups never edit the same file. Commit the disposition table, one row per spec with its outcome and reason, as `docs/scratchpad/2026-10-21-rn-e2e-dispositions/group-c.md`.\n\n## Specs\n\n- `install-banner.spec.ts`\n- `install-preview.spec.ts`\n- `multitouch.spec.ts`\n- `orientation-lock-fullscreen.spec.ts`\n- `orientation-picker.spec.ts`\n- `page-footer.spec.ts`\n- `page-short-viewport.spec.ts`\n- `page.spec.ts`\n- `palette-trim.spec.ts`\n- `parent-center-design.spec.ts`\n- `phone-landscape-toolbar.spec.ts`\n- `picker-trim.spec.ts`\n- `privacy-parent-center.spec.ts`\n- `privacy.spec.ts`\n- `proof-sheet-history.spec.ts`\n- `pwa-registration.spec.ts`\n- `reduce-motion-scoped-cues.spec.ts`\n- `reduce-motion.spec.ts`\n- `safe-area-matrix.spec.ts`\n- `save-failure-announcement.spec.ts`\n- `scroll-cue.spec.ts`\n- `scrollbar-chrome.spec.ts`\n- `secure-storage-connection.spec.ts`\n- `secure-storage-hydration.spec.ts`\n- `settings-accessibility.spec.ts`\n- `settings-hub.spec.ts`\n- `settings-install.spec.ts`\n- `settings-mount.spec.ts`\n- `settings-phone-labels.spec.ts`\n- `settings-quick-toggles.spec.ts`\n- `settings-scroll-cue-opening.spec.ts`\n- `settings-shell.spec.ts`\n- `settings-toc.spec.ts`\n- `settings-whats-new-outline.spec.ts`\n- `settings-zoom.spec.ts`\n- `startup-bundle.spec.ts`\n- `store-drawing-replay.spec.ts`\n- `text-contrast.spec.ts`\n- `touch-targets.spec.ts`\n- `web-back.spec.ts`\n\n## Done when\n\n- None of this group's specs remain in `web/tests/`.\n- Every ported behaviour passes in the RN web suite in CI.\n- The disposition table covers every spec above.\n- Each ported spec's PR notes a negative control: the spec fails against a deliberately broken export.\n\n## Context\n\nPart of #3148, which retires SvelteKit and Capacitor before `codex/native-migration` merges into `main`. PRs for this issue target **`codex/native-migration`**, never `main`.\n\nOwner rulings from the campaign preflight (2026-10-21), which the step-7 ADR records:\n\n- **Home:** the React Native app moves to the repo root: one `package.json`, with its `android/` and `ios/` at the root.\n- **Release:** plain native scripts (Gradle `bundleRelease`, `xcodebuild` archive and export) against the RN projects, with manual store upload. No fastlane, no EAS.\n- **Identity:** the RN app takes the shipping `art.splotch.app` identity, upload key and team now. Local and debug builds carry a `.dev` suffix, so nothing installs over the store copies.\n- **E2E coverage, spec by spec:** port a SvelteKit spec when it tests behaviour the RN app has and nothing else covers it. Otherwise delete it with a recorded reason (\"covered by X\" or \"Svelte-only\").\n- **Tools kept and aimed at RN:** Vitest, Playwright (against the RN web export), Lighthouse and the page budgets, Maestro, Netlify and its one function.\n- **Tools retired:** the WebKit commit gates, the `tools/perf` web and Capacitor capture targets, `dev:netlify`, and `check-bundle-budgets`. The worker sweep and flaky digest stay only if the RN suite keeps the reporter they read.\n- **Budgets:** the `/` startup caps and `MAX_NATIVE_WEB_PAGE_BYTES` stay enforced throughout.\n- **No compatibility:** no backward compatibility or data migration.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:test",
+        "color": "bfd4f2",
+        "description": "Test coverage or CI test infrastructure"
+      },
+      {
+        "name": "area:ci-testing",
+        "color": "168f6c",
+        "description": "CI pipeline and test infrastructure"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-21T17:52:31Z",
+    "updated_at": "2026-10-21T23:16:26Z",
+    "closed_at": "2026-10-21T23:16:26Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3156",
+    "display_title": "Port or retire SvelteKit E2E specs, group C (install-banner to web-back)"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3156#issuecomment-6328691330",
+      "body": "Merged in #3174 (merge commit 11755bedca706a2dfc295e7c5ecf77abe6195091) into `codex/native-migration`. Closed by hand, because GitHub does not auto-close issues from a non-default base. Six RN gaps found while porting are parked for the owner; see the disposition table in the PR.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6328691330,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

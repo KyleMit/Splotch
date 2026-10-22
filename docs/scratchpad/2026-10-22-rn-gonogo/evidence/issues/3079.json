@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:26.329Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3079",
+    "title": "RN: give the grown-up check's Settings › Parent Center footer room and centred icons",
+    "issue_number": 3079,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20, on the iPad and the Galaxy:\n\n> \"android & ios - the icons in the grown ups dialog that say to manage these checks in settings > parent center and the chevron all need a little more room to breath. Add some padding between them and make sure they're vertically aligned.\"\n\n## Where\n\n* `experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx`, `GateManageFooter`, with the styles `footer`, `footerLead`, `footerPath`, `footerPlace` and `footerPlaceName` (`gap: dimensions.space1`). The icon size comes from `parentCenter/parentGateMetrics.ts` (`footerIcon`).\n\n## Likely cause\n\nLocated by reading the code; unverified. `footerPath` and `footerPlace` are `html.span`, which render as RN `Text` on native. There `display: flex`, `alignItems` and `gap` are ignored, and the icon sits on the text baseline. `RsdSegmentedPicker.tsx` documents the same trap. The \"›\" span has no spacing of its own.\n\n## Done when\n\nOn both devices, the gear icon, \"Settings\", the \"›\", the Parent Center icon and \"Parent Center\" are vertically centred on one line, with even, visibly larger gaps. A side-by-side screenshot is checked against shipping.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:58:30Z",
+    "updated_at": "2026-10-20T17:41:40Z",
+    "closed_at": "2026-10-20T17:41:40Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3079",
+    "display_title": "RN: give the grown-up check's Settings › Parent Center footer room and centred icons"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3079#issuecomment-6297253614",
+      "body": "Fixed by #3086, merged as 1203a9e1afb5681925a547333edbb7090c31ec1f. On the Galaxy (Release), font scale 1.0 shows the gear, Settings, the separator, the Parent Center icon and the name centred on one line, with 4 px between each icon and its name and 8 px either side of the separator. At font scale 2.0 the path breaks cleanly between Settings › and Parent Center, with nothing overlapping.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6297253614,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

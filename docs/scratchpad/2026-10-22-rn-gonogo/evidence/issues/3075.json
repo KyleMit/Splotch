@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:24.453Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3075",
+    "title": "RN Android: the AI loading card breaks at a large system font scale",
+    "issue_number": 3075,
+    "body": "Part of #2978. Owner on-device finding, 2026-10-20, on the Galaxy:\n\n> \"android - AI loading modal looks bad when android system text is enlarged\"\n\n## Where\n\nLocated by reading the code; this is an unverified hypothesis.\n\n* `experiments/native-architecture/src/rsdDrawing/RsdAiResultParts.tsx`: `RsdAiLoadingCaption` and `RsdAiKeepDrawing`, sized with `dimensions.fontSizeLg` and `fontSizeSm`. No `maxFontSizeMultiplier` appears anywhere in the AI modal.\n* `src/ai/aiResultGeometry.ts` budgets fixed `loadingCaptionHeight: 48` and `keepDrawingHeight: 48`, ignoring the font scale. The card is laid out in `RsdAiResult.tsx`.\n\n## Likely cause\n\nThe text grows uncapped with the system font scale while the card reserves fixed 48 px slots, so the caption and the pill wrap and overflow.\n\n## Done when\n\nAt Android font scale 2.0 (`adb shell settings put system font_scale 2.0`; restore 1.0 afterwards), the loading card fits its caption and its \"Keep drawing while you wait\" button without clipping or overlap. It is either capped the way shipping caps it, or the geometry budgets for the scale.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-20T14:58:24Z",
+    "updated_at": "2026-10-20T17:46:18Z",
+    "closed_at": "2026-10-20T17:46:18Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3075",
+    "display_title": "RN Android: the AI loading card breaks at a large system font scale"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3075#issuecomment-6297341285",
+      "body": "Fixed by #3085, merged as 166fdf203abb1e61731d354d0b784e5fd859463d. On the Galaxy (Release, font scale 2.0, restored to 1.0 afterwards), the waiting card keeps its two-line caption and its two centred lines of \"Keep drawing while you wait\" inside the card. The picture card's strip stays within the card's width, reading \"AI-generated / picture · Report\". The stage gives way to the measured heights; at normal text sizes the frame is unchanged. Seen at 2× but not in scope here: the style picker breaks \"Watercolor\" mid-word.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6297341285,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

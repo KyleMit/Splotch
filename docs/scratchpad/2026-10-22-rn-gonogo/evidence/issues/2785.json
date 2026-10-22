@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:23.441Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2785",
+    "title": "Use tall coloring-page art on portrait native paper",
+    "issue_number": 2785,
+    "body": "**What:** Native paper now takes the screen's shape (#2775), but native ships only the wide coloring art. On an upright phone a coloring page is a wide picture centered on a tall sheet, and Magic on book art reveals nothing in the empty bands above and below it.\n\n**Where:** check how the shipping app picks art per canvas orientation (its coloring overlay and pack variants), then compare with `experiments/native-architecture/src/drawing/bundledBookAssets.ts`, `src/offlineLibrary/` and `pageArtTransform`. See the ADR-0050 amendment.\n\n**Done when:** a portrait drawing on a coloring page uses the tall variant, if the shipping app has one, on web, Android and iOS, with Magic covering the page.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:coloring-book",
+        "color": "6f42c1",
+        "description": "Coloring-book pages, packs, and workflow"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T08:26:13Z",
+    "updated_at": "2026-10-13T10:09:28Z",
+    "closed_at": "2026-10-13T10:09:28Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2785",
+    "display_title": "Use tall coloring-page art on portrait native paper"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2785#issuecomment-6143221299",
+      "body": "Shipped in #2791. Reduced-size seam follow-up: #2794.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6143221299,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

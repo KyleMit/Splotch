@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:31.347Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2811",
+    "title": "Port ToggleSwitch, ToggleRow, setting cards and hub rows to native",
+    "issue_number": 2811,
+    "body": "**Parity unit U5** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**What to build:**\n\n| # | Primitive to build in RN | Shipping source | Tokens / specifics to port |\n|---|---|---|---|\n| P6 | `ToggleSwitch` + `ToggleRow` | `settings/ToggleSwitch.svelte`, `settings/ToggleRow.svelte` | **Switch:** 52×48 hit area; 32px pill track on `--control-track` with an inset `--icon-muted` ring, turning `--brand` when on. 26px white thumb slides 20px; optional 16px thumb icon.<br>**Row:** 20px icon + sm medium label + switch; help text sm `--text-soft` indented by `--setting-indent`. |\n| P9 | Setting card / group and `RuleLabel` | `SettingsModal.svelte` `.setting` / `.setting-group`, `settings/SectionBody.svelte`, `design/RuleLabel.svelte` | **Card:** `--surface-2`, `--radius-lg`, padding 12/16; groups 24px apart with `--setting-gap` inside.<br>**RuleLabel:** uppercase xs semibold with 0.14em tracking and a trailing hairline (`strong` variant: sm bold). |\n| P10 | `HubRow` (list row with icon) and `SidebarToc` row | `settings/HubList.svelte`, `nav/SidebarToc.svelte` | **Hub row:** `--surface-2` tile; 44px icon box with a 38px SectionIcon; md semibold title; sm `--text-soft` 2-line subtitle; 8px brand dot; optional hairline plus trailing ToggleSwitch.<br>**Sidebar row:** 44px; 3px `--brand` rail and `--brand-wash` when active. |\n\n**Done when:** the primitive exists in `experiments/native-architecture` with light and dark values drift-guarded against the shipping source (imported or read by a test, never hand-copied). The PR includes a specimen screenshot next to the shipping `/design` styleguide rendering of the same primitive. No visible surface changes yet, except where a caller adopting the primitive is in this unit's scope.\n\n**Order:** after U1, U2.\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:high",
+        "color": "b60205",
+        "description": "Do soon"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:31:14Z",
+    "updated_at": "2026-10-13T16:27:41Z",
+    "closed_at": "2026-10-13T16:27:41Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2811",
+    "display_title": "Port ToggleSwitch, ToggleRow, setting cards and hub rows to native"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2811#issuecomment-6150213582",
+      "body": "Shipped in #2840.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6150213582,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

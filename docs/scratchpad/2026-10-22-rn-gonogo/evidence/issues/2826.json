@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:39.585Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2826",
+    "title": "Match the native Parent Center and Parental Gate to shipping",
+    "issue_number": 2826,
+    "body": "**Parity unit U20** of the native UI port. The RN app must match the shipping Svelte/Capacitor app.\n\n**Gaps (from the parity inventory):**\n\n| # | Surface | Shipping file(s) | RN file(s) | Severity | Gap | Shots |\n|---|---|---|---|---|---|---|\n| 41 | Parent Center section | `settings/ParentCenterSection.svelte`, `settings/ParentCenterLock.svelte` | `rsdDrawing/RsdParentCenterSection.tsx` (a separate modal), `parentCenter/parentPolicy.ts` | looks wrong | Plain radio chips under text labels. (1) No per-action cards, help lines, or wide matrix. (2) The \"Viewing external links\" policy is missing (4 vs 5). (3) No warning card for \"This check is off\". (4) No confirm card; the Never confirmation is inline text and buttons. (5) No footnotes. (6) No ParentCenterLock. (7) Reached from a drawer button and a \"Manage Parent Center\" button. | `parent-center`, `settings-parent-center-section` |\n| 46 | Parental Gate (Grown-Ups Only) | `ParentalGate.svelte`, `ParentalGateProblem.svelte`, `ParentalGateKeypad.svelte`, `ParentalGateManageFooter.svelte` | `rsdDrawing/RsdParentGateSheet.tsx`, `RsdParentGateKeypad.tsx`, `parentCenter/parentGate.ts`, `useParentGateMotion.ts` | looks wrong | The keypad grid and dashed answer dabs match. Differences: (1) a full-screen page, not a card; (2) no Splotchy mascot; (3) plain \"6 × 8\" text, not purple and blue paint-daub operands; (4) title case \"Grown-ups only\"; (5) \"Cancel challenge\" footer, not a close ✕; (6) no manage-checks footer and no success state. | `parental-gate` |\n| 47 | AI-launch gate | `ParentalGate.svelte` (same card) | `RsdAiSheet.tsx` (`RsdAiParentalGate`: \"AI answer\" input + \"Continue to AI\") | looks wrong | A second gate implementation inside the AI sheet, with a text field instead of the keypad card. Code review only. | (none) |\n\n**Done when:** the RN surface looks and behaves like shipping. The PR shows same-viewport, side-by-side screenshots (shipping web next to RN web) at phone 390x844 and tablet 1366x1024, in light and dark, plus the Android emulator. Every RN-only control in scope is removed or moved as listed. Existing behavior tests still pass, and new behavior has tests that fail without it.\n\n**Order:** Depends on the primitive issues (U1–U7) it needs; build on those components rather than one-off styles.\n\nShipping is the spec. Read the shipping component first, then match it. The `design` skill names the vocabulary. The parity inventory that produced this issue (2026-10-13) captured screenshot pairs in `/tmp/splotch-parity/` on the build host; regenerate any you need.\n\n**RN-only controls to remove or move** for this surface: see the epic list (https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6147912989).\n\nPart of #2690.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:feature",
+        "color": "1d76db",
+        "description": "New user-facing capability"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T14:32:10Z",
+    "updated_at": "2026-10-14T03:49:37Z",
+    "closed_at": "2026-10-14T03:49:37Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2826",
+    "display_title": "Match the native Parent Center and Parental Gate to shipping"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2826#issuecomment-6160458585",
+      "body": "Done in #2861, merged into `codex/native-migration`.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6160458585,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

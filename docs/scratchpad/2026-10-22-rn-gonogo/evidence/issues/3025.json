@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-22T16:52:17.045Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3025",
+    "title": "Bound or drop the AI pictures RN web keeps in IndexedDB",
+    "issue_number": 3025,
+    "body": "## What\n\nEach AI picture RN web makes is kept in IndexedDB (`splotch-beta-ai-jobs-v1`). After three pictures from a 112 KB fixture JPEG, the origin's `navigator.storage.estimate().usage` grows from 4 KB to 313 KB. Shipping web, same three pictures, keeps none: usage stays at 1 KB, and `splotch-secure` is its only database. Pruning was not observed in this run, which made only three pictures.\n\n## Why\n\nLedger rows X31 and L0146 (\"Every AI original stored and never pruned\"). Unbounded growth eats the origin quota that the offline coloring books and the service-worker caches share. Real outputs are larger than the fixture.\n\n## Where\n\n`experiments/native-architecture/src/platform/aiStorage.web.ts`, `aiStorageRecords.web.ts` and `aiRecoveryStorage.web.ts`, plus whatever retires a job once its picture is closed.\n\n## Repro (rn-web, Chromium)\n\n1. At 00fcc5c78d1031873db1a214301c008daa4bd080, build and serve the RN web export. Answer generate-image from a fixture with a 112 KB JPEG.\n2. Turn AI on with Customize AI Style off. Make and close three pictures.\n3. Compare `navigator.storage.estimate().usage` and `indexedDB.databases()` before and after.\n4. Expected (shipping): no growth. Actual (RN): about 309 KB more, in `splotch-beta-ai-jobs-v1`.\n\nEvidence: AI-1 record, cell `ai-originals-storage` (`docs/scratchpad/2026-10-18-device-parity/results/ai-1-web-2026-10-19.md` on branch `claude/rn-web-parity-cloud`).\n\n## Done when\n\n- Closed or saved AI pictures are released, or held under a stated cap with eviction.\n- A test makes N pictures and asserts the retained bytes stay bounded.\n\nRefs #2978",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ai-art",
+        "color": "8250df",
+        "description": "AI image generation, styles, prompts"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 2,
+    "created_at": "2026-10-19T20:17:45Z",
+    "updated_at": "2026-10-20T22:54:07Z",
+    "closed_at": "2026-10-20T22:54:07Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3025",
+    "display_title": "Bound or drop the AI pictures RN web keeps in IndexedDB"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3025#issuecomment-6293567297",
+      "body": "**Owner decision, 2026-10-20.** The owner chose \"Release when closed\":\n\n* RN web keeps an AI original in IndexedDB only while its picture is in progress or on screen, for crash recovery.\n* It deletes the original once the picture is closed or saved, as shipping keeps none.\n",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6293567297,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    },
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3025#issuecomment-6303599364",
+      "body": "Fixed by #3096, merged into `codex/native-migration` as 27c163b13ceec844d9f50c03d6c3ff745711e2ac, per the owner's \"Release when closed\" decision.\n\n* The AI session owns the lifecycle and asks storage to release the shown run when its card closes (Download and \"AI turned off\" both close it), after any journal write made while the card is closed, and when a picture is retained after its card already closed.\n* Storage rereads its own record and drops only a finished plain run. A failed release is caught: the card still closes and the next run replaces the record.\n* An open picture's record still survives a relaunch for a fresh storage instance. Note: the RN UI starts fresh on relaunch (since #2911, pinned by `native-ai-relaunch.test.mjs`) and doesn't restore an open picture; that behaviour is unchanged here.\n* Native holds at most one run and gets a no-op `release`; a real release would need a new Kotlin/Swift bridge operation.\n\n**Rerun.** AI-1 `ai-originals-storage` on rn-web-chromium with the record's `/api` fixture (no generations charged): `navigator.storage.estimate().usage` after three closed pictures went from 487,424 (base) to 294,912, flat across a reload; the stored record is 40 bytes after each close. Web-prod's arm wasn't run. Ledger rows X31 and L0146 get their rerun recorded in the campaign's batch ledger PR.\n\nCodex reviewed twice; each round found one real defect (a stale-journal close, and a close racing `retain`), both fixed with regression tests. The round-2 fix was not re-reviewed (two-round cap). Startup bytes unchanged.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6303599364,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

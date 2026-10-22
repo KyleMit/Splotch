@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-10-22T16:52:03.531Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/3008",
+    "title": "Show and report the derived web version on RN web, as shipping web does",
+    "issue_number": 3008,
+    "body": "Refs #2978 and #2690. Found during the AC-1 desk verification of ledger row L0161 (`appVersion.ts`) at 00fcc5c78d1031873db1a214301c008daa4bd080.\n\n## What\n\nOn RN web, every place that shows or sends the app version uses `FEEDBACK_APP_VERSION`, a literal `'1.6.0'` in `experiments/native-architecture/src/feedback/feedbackCopy.ts`. Shipping web uses `APP_VERSION` (`web/src/lib/appVersion.ts`), which the web build sets to `deriveWebVersion()` in `web/buildVersion.ts`: `major.minor.<commit count>`, such as production's 1.6.2682. Only the Capacitor build uses the bare `package.json` version.\n\nWhere they differ on web:\n\n| Surface | Shipping web | RN web |\n| --- | --- | --- |\n| About › Version | `AboutSection.svelte:31`, `APP_VERSION` | `RsdAboutSection.tsx:96`, `FEEDBACK_APP_VERSION` |\n| Compact Settings version line | `CompactShell.svelte:69` | `RsdSettingsCompact.tsx:159` |\n| Hub subtitle and What's New `contentStamp` | `settings/sections.ts:42,149` | `settings/settingsSections.ts:29,146`, `settings/whatsNewStamp.ts:7` |\n| Feedback report `app` field | `platform/deviceInfo.ts:51` | `platform/feedback.web.ts:23` |\n| AI problem report \"App version\" row | `ai/failureReport.ts:32` | `ai/problemReport.ts:57` |\n\nSo RN web shows \"Version 1.6.0\" where production shows 1.6.2682, and reports arriving from RN web carry the wrong version. The What's New dot also behaves differently: shipping web stamps each deploy's version, so the dot returns after an update; RN web's stamp stays the same until `package.json` changes.\n\nThe RN web export already computes the derived version. `tools/migration/build-native-web.mjs:230` calls `buildMetadataOncePerProcess({ isCapacitor: false })` and writes the result into `version.json` and the `WEB_VERSION_META_NAME` head tag, which `platform/pwaUpdates.web.ts` reads. Only the user-facing and reported copies ignore it.\n\n## Why\n\nVersion text in About, and the version in feedback and AI problem reports, are how a parent and the owner tell which build is running. RN web reports the wrong one.\n\n## Where\n\n`experiments/native-architecture/src/feedback/feedbackCopy.ts` and the consumers above. `tools/tests/native-feedback-contract.test.mjs:52` pins `FEEDBACK_APP_VERSION` to `package.json`. That matches shipping's Capacitor branch only, so the test passes while the web arm differs.\n\nA fix may need to touch `tools/migration/build-native-web.mjs`, which PR #3006 currently owns. Coordinate with it rather than editing that file in parallel.\n\n## Done when\n\n- [ ] RN web's About, compact Settings line, What's New stamp, feedback `app` field and AI problem report show the version the web export writes to `version.json`. Native builds keep the `package.json` version.\n- [ ] A two-sided test reads the web version from shipping's `deriveWebVersion`/`buildMetadataOncePerProcess` path, not from a literal, and fails when RN web falls back to the package version.\n- [ ] Ledger row L0161 is re-run under AC-1 against the fixing head.\n\nNo product code was changed by the session that found this.",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "area:settings",
+        "color": "0052cc",
+        "description": "Settings modal and controls"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-19T17:46:59Z",
+    "updated_at": "2026-10-20T05:56:20Z",
+    "closed_at": "2026-10-20T05:56:20Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/3008",
+    "display_title": "Show and report the derived web version on RN web, as shipping web does"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/3008#issuecomment-6284447495",
+      "body": "Fixed by https://github.com/KyleMit/Splotch/pull/3044, merged into codex/native-migration as eafc9503bc86bbc6b6ad2514d1449f64d2ac84f0. RN web now shows and reports the version the export writes from deriveWebVersion: About, the compact Settings line, the hub subtitle, the What's New stamp, the feedback report and the AI problem report. Natively it keeps package.json's version. In headless Chromium the export showed Version 1.6.3821 in the hub and About. The What's New stamp also accepts deriveWebVersion's major.minor.0+<sha> fallback, a defect Codex's review found. L0161 moved to AC1_FIXED and stays unverified until AC-1 reruns.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6284447495,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

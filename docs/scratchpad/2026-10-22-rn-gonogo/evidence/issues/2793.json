@@ -1,0 +1,73 @@
+{
+  "observedAt": "2026-10-22T16:51:23.174Z",
+  "tool": "github_fetch_issue + github_fetch_issue_comments (all pages); connector API, version not exposed",
+  "runCount": 1,
+  "issue": {
+    "url": "https://github.com/KyleMit/Splotch/issues/2793",
+    "title": "Use the shipping font stack for RN web body text",
+    "issue_number": 2793,
+    "body": "**What:** On the React Native web build, text that isn't inside a control (`html.p`, `html.h2` and `html.span` from react-strict-dom) renders in the browser's default serif font. This covers the install banner's heading and steps, the settings and Parent Center prose, and the coloring-book picker labels. Buttons render sans-serif. The shipping app sets `font-family: var(--font-family)` on `body` in `web/src/app.css`, taken from `web/src/tokens.css`. Nothing in `experiments/native-architecture` sets any font family.\n\nVisible in the install-banner screenshots on #2792: the banner heading and steps are serif, while \"Hide\" and \"Not now\" are sans.\n\n**Where:** the RN web document root or the shared react-strict-dom tokens (`experiments/native-architecture/src/rsdDrawing/tokens.css.ts`). The shipping stack leads with `'Quicksand Variable'`, a bundled web font, so the shipping Capacitor app shows Quicksand on Android and iOS as well. The RN app shows Roboto and San Francisco there, so native needs the font bundled too (for example through expo-font), along with every `Text`.\n\n**Done when:** RN web body text and native text use the shipping app's font stack (Quicksand first), drift-guarded against `web/src/tokens.css`, with a before/after screenshot.\n\nPart of #2690.\n",
+    "state": "closed",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "type:bug",
+        "color": "d73a4a",
+        "description": "Something isn't working as intended"
+      },
+      {
+        "name": "area:ux",
+        "color": "d4c5f9",
+        "description": "Layout, polish, responsiveness"
+      },
+      {
+        "name": "area:native",
+        "color": "006b75",
+        "description": "Android / iOS / Capacitor"
+      },
+      {
+        "name": "priority:medium",
+        "color": "fbca04",
+        "description": "Normal priority"
+      }
+    ],
+    "milestone": null,
+    "state_reason": "completed",
+    "comments": 1,
+    "created_at": "2026-10-13T09:59:16Z",
+    "updated_at": "2026-10-13T11:04:17Z",
+    "closed_at": "2026-10-13T11:04:17Z",
+    "display_url": "https://github.com/KyleMit/Splotch/issues/2793",
+    "display_title": "Use the shipping font stack for RN web body text"
+  },
+  "comments": [
+    {
+      "url": "https://github.com/KyleMit/Splotch/issues/2793#issuecomment-6144131315",
+      "body": "Shipped in #2798.",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "id": 6144131315,
+      "pull_request_review_id": null,
+      "in_reply_to_id": null,
+      "created_at": null,
+      "updated_at": null,
+      "review": null,
+      "side": null,
+      "line": null,
+      "start_line": null,
+      "path": null
+    }
+  ]
+}

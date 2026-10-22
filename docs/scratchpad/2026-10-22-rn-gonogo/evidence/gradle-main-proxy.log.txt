@@ -1,0 +1,37 @@
+UTC 2026-10-22T16:56:05.631140+00:00
+CWD /workspace/shipping-main
+COMMIT ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4
+RUN COUNT 1
+COMMAND GRADLE_USER_HOME=/workspace/.cache/gradle GRADLE_OPTS="-Dhttps.proxyHost=proxy -Dhttps.proxyPort=8080 -Dhttp.proxyHost=proxy -Dhttp.proxyPort=8080" ./android/gradlew -p android :app:dependencies --configuration releaseRuntimeClasspath --console=plain --no-daemon
+Fetching distribution.
+Downloading https://services.gradle.org/distributions/gradle-9.6.0-all.zip
+......................10%.......................20%.......................30%.......................40%.......................50%.......................60%......................70%.......................80%.......................90%.......................100%
+
+Welcome to Gradle 9.6.0!
+
+Here are the highlights of this release:
+ - Improved Configuration Cache hit rates
+ - Additional CLI rendering options
+ - Important project hierarchy lookup deprecations
+
+For more details see https://docs.gradle.org/9.6.0/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+[Incubating] Problems report is available at: file:///workspace/shipping-main/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Configuring project with invalid directory
+  Configuring project ':aparajita-capacitor-secure-storage' without an existing directory is not allowed. The configured projectDirectory '/workspace/shipping-main/node_modules/@aparajita/capacitor-secure-storage/android' does not exist, can't be written to or is not a directory.
+    For more information, please refer to https://docs.gradle.org/9.6.0/userguide/multi_project_builds.html#include_existing_projects_only.
+    Possible solution: Make sure the project directory exists and is writable.
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 12s
+
+EXIT 1
