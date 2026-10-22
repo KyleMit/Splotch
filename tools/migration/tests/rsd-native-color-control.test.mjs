@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host, expandControls } from './rsd-native-selection-host.mjs';
@@ -13,11 +11,8 @@ import {
   COLOR_MENU_SWATCH_PX,
   colorMenuLabels,
 } from '../../../experiments/native-architecture/src/rsdDrawing/colorMenuLayout.ts';
-import {
-  COLOR_ICON_PX,
-  FOLD_TAP_TRAVEL_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorButton.tsx';
-import { COLOR_OPTION_PRESS_SCALE } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorMenu.tsx';
+import { FOLD_TAP_TRAVEL_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorButton.tsx';
+
 import {
   EDGE_INSET_PX,
   PHONE_TOOLBAR_BUTTON_PX,
@@ -33,10 +28,6 @@ import {
   LANDSCAPE_FIRST_TRIM_RANK,
   landscapeTrimRank,
 } from '../../../web/src/lib/landscapeToolbar.ts';
-import { PHONE_LANDSCAPE_QUERY } from '../../../web/src/lib/breakpoints.ts';
-
-const REPOSITORY = join(import.meta.dirname, '../../..');
-const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
 // A phone held sideways, short of the tablet floor, and the portrait phone.
 const LANDSCAPE_PHONE = { width: 740, height: 360 };
 const PORTRAIT_PHONE = { width: 390, height: 844 };
@@ -61,11 +52,6 @@ const touch = (pageX, pageY) => ({ nativeEvent: { pageX, pageY } });
 it.each([PORTRAIT_PHONE, { width: 1024, height: 768 }])(
   'gives the palette plate shipping focus-preserving pointer-down at %o',
   async (window) => {
-    const palette = read('web/src/lib/components/ColorPalette.svelte');
-    const shippingDown = palette.match(/function handlePaletteDown\([^)]*\) \{([^}]+)\}/);
-    expect(shippingDown).not.toBeNull();
-    expect(shippingDown[1]).toContain('e.preventDefault();');
-    expect(shippingDown[1]).not.toContain('e.stopPropagation();');
     viewport(window);
     await mountToolbar(toolbarScreen());
     const plate = records.props.findLast((props) => props.testID === 'rsd-palette-plate');
@@ -96,21 +82,6 @@ describe('the landscape phone Color Button and Color Menu', () => {
     expect(COLOR_MENU_PADDING_PX).toBe(COLOR_MENU_GEOMETRY.paddingPx);
     expect(COLOR_MENU_FIRST_TRIM_RANK).toBe(LANDSCAPE_FIRST_TRIM_RANK);
     expect(COLOR_MENU_LABELS).toEqual(LANDSCAPE_COLORS.map(({ label }) => label));
-    const menu = read('web/src/lib/components/ColorMenu.svelte');
-    expect(menu).toContain(`var(--action-btn-size) - ${COLOR_MENU_EDGE_ROOM_PX}px`);
-    expect(menu).toMatch(
-      new RegExp(`\\.color-option:active \\{\\s*transform: scale\\(${COLOR_OPTION_PRESS_SCALE}\\);`)
-    );
-    expect(read('web/src/app.css')).toMatch(
-      new RegExp(`\\.color-icon \\{\\s*width: ${COLOR_ICON_PX}px;\\s*height: ${COLOR_ICON_PX}px;`)
-    );
-    expect(read('web/src/lib/actions/colorFoldGesture.ts')).toContain(
-      `const TAP_TRAVEL_PX = ${FOLD_TAP_TRAVEL_PX};`
-    );
-    expect(read('web/src/lib/components/ColorControl.svelte')).toContain(
-      '<Icon name="ink-splotch" class="color-icon" />'
-    );
-    expect(PHONE_LANDSCAPE_QUERY).toContain('(max-height: 599.98px)');
   });
 
   it('trims the menu by the same ladder as shipping, rung for rung', () => {
@@ -159,9 +130,6 @@ describe('the landscape phone Color Button and Color Menu', () => {
   });
 
   it('opens a swatch flyout whose pick loads the ink and closes it', async () => {
-    const shipping = read('web/src/lib/components/ColorMenu.svelte');
-    expect(shipping).toContain('aria-pressed={ringed}');
-    expect(shipping).toContain('aria-pressed={customRinged}');
     viewport(LANDSCAPE_PHONE);
     const screen = toolbarScreen({ brush: 'pen' });
     await mountToolbar(screen);

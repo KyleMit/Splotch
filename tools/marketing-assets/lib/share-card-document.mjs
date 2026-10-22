@@ -42,7 +42,7 @@ const MARK_PATH = '/assets/splotchy.svg';
 
 export const SHARE_CARD_FILES = {
   ...quicksandFiles(),
-  [PAPER_PATH]: join(ROOT, 'web/src/lib/assets/handmade-paper.webp'),
+  [PAPER_PATH]: join(ROOT, 'experiments/native-architecture/assets/paper/handmade-paper.webp'),
   [MARK_PATH]: join(ROOT, 'web/src/lib/icons/splotchy.svg'),
 };
 

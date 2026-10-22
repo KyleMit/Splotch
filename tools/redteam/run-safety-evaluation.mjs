@@ -2,7 +2,7 @@
 // Red-team the AI image-generation safety safeguards (ADR-0023).
 //
 // MANUAL, real-token integration test — intentionally NOT part of `npm test`.
-// It boots a throwaway `vite dev` (so it exercises OUR /api/generate-image
+// It boots a throwaway Netlify function host (so it exercises OUR /api/generate-image
 // handler, including the 422 safety classification), decrypts the fixture
 // corpus, sends each crude safe/unsafe drawing to a real model call, and saves
 // every input + output + a report under tools/redteam/output/<runId>/.
@@ -20,9 +20,8 @@ import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, fail, isMain, openInOS, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
-import { waitForUrl } from '../lib/net.mjs';
 import { errorChain } from '../lib/smoke.mjs';
-import { spawnViteServer } from '../lib/vite-server.mjs';
+import { startNetlifyFunctionHost } from '../lib/netlify-function-host.mjs';
 import { REDTEAM_ENV_HINT, decryptDir, loadRedteamEnv } from './lib/fixture-crypto.mjs';
 import { flattenOntoPaper, isFullyOpaque } from './lib/fixture-image.mjs';
 import { buildReport, completeResults, verdict } from './lib/safety-report.mjs';
@@ -32,7 +31,7 @@ import { buildReport, completeResults, verdict } from './lib/safety-report.mjs';
 const GENERATE_DEADLINE_MS = 300_000;
 
 const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
-const BASE = `http://localhost:${PORT}`;
+const BASE = `http://127.0.0.1:${PORT}`;
 const TOKEN = 'redteam-token';
 
 const BASE_DIR = join(ROOT, 'tools', 'redteam');
@@ -133,7 +132,7 @@ export async function sendEachCase(cases, send) {
   return results;
 }
 
-async function main() {
+export async function runSafetyEvaluation() {
   loadRedteamEnv();
   requireEnv('OPENAI_API_KEY', REDTEAM_ENV_HINT);
   const fixtureKey = requireEnv('REDTEAM_FIXTURE_KEY', REDTEAM_ENV_HINT);
@@ -168,31 +167,27 @@ async function main() {
   }
   mkdirSync(OUT_DIR, { recursive: true });
 
-  console.log('Starting throwaway dev server…');
-  const { stop } = spawnViteServer(PORT, {
-    env: {
-      ALLOWED_TOKENS_LIST: TOKEN,
-      PUBLIC_ENABLE_DEV_HARNESS: 'true',
-      // The shipped deadline is sized to lose a race against Netlify's function
-      // ceiling (ADR-0063), and this server has no such ceiling. Without the
-      // override a safe drawing is cut off mid-generation and the run reports an
-      // upstream error where the whole question is what the model would have
-      // drawn — a false negative the reviewer never gets to see.
-      GENERATE_DEADLINE_MS_OVERRIDE: String(GENERATE_DEADLINE_MS),
-    },
-  });
-
+  let host;
   let sent = [];
   let abortReason = null;
   try {
-    await waitForUrl(`${BASE}/`, 60_000);
-    console.log(`Server ready on ${BASE}\n`);
+    console.log('Starting throwaway API function host…');
+    host = await startNetlifyFunctionHost({
+      mode: 'development',
+      port: PORT,
+      env: {
+        ALLOWED_TOKENS_LIST: TOKEN,
+        // The function host has no platform deadline; wait for the finished picture being reviewed.
+        GENERATE_DEADLINE_MS_OVERRIDE: String(GENERATE_DEADLINE_MS),
+      },
+    });
+    console.log(`Server ready on ${host.origin}\n`);
     sent = await sendEachCase(cases, sendCase);
   } catch (err) {
     abortReason = describeError(err);
     console.error(`\nFATAL: ${abortReason}`);
   } finally {
-    stop();
+    await host?.close();
   }
 
   const results = completeResults(cases, sent, abortReason);
@@ -224,4 +219,4 @@ async function main() {
   }
 }
 
-if (isMain(import.meta.url)) await main();
+if (isMain(import.meta.url)) await runSafetyEvaluation();

@@ -32,14 +32,8 @@ import {
   toggleEraser,
 } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
 
-import {
-  DEFAULT_PENCIL_SETTINGS,
-  PENCIL_ERASER_HELP,
-  PENCIL_ERASER_LABEL,
-} from '../../experiments/native-architecture/src/settings/pencilEraser.ts';
-
 const app = join(import.meta.dirname, '../../experiments/native-architecture');
-const web = join(import.meta.dirname, '../../web/src/lib');
+join(import.meta.dirname, '../../web/src/lib');
 const read = (path) => readFileSync(join(app, path), 'utf8');
 
 function emitter() {
@@ -75,21 +69,6 @@ describe('Apple Pencil double-tap', () => {
     const xcode = read('ios/Splotch.xcodeproj/project.pbxproj');
     expect(xcode.match(/SplotchPencil\.swift in Sources/g)).toHaveLength(2);
     expect(xcode.match(/SplotchPencil\.m in Sources/g)).toHaveLength(2);
-  });
-
-  it('ports the shipping opt-out row and its defaults', () => {
-    const row = readFileSync(join(web, 'components/settings/ControlsSection.svelte'), 'utf8');
-    expect(row).toContain(`label="${PENCIL_ERASER_LABEL}"`);
-    expect(row).toContain(`help="${PENCIL_ERASER_HELP}"`);
-    const settings = readFileSync(join(web, 'state/settings.svelte.ts'), 'utf8');
-    const stored = (key) =>
-      JSON.parse(
-        new RegExp(`\\n  ${key}: \\[STORAGE_KEYS\\.${key}, (true|false)\\]`).exec(settings)[1]
-      );
-    expect(DEFAULT_PENCIL_SETTINGS).toEqual({
-      pencilEraserEnabled: stored('pencilEraserEnabled'),
-      applePencilSeen: stored('applePencilSeen'),
-    });
   });
 
   it('hears the iOS double-tap and stops on unsubscribe', () => {

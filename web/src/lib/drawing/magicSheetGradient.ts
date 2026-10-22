@@ -44,30 +44,3 @@ export function createRainbowGradient(rand: () => number = Math.random): Rainbow
   }
   return { angle, stops };
 }
-
-type GradientContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-
-// Fill the sheet with a gradient whose line spans the whole canvas at spec.angle,
-// so every stroke position on the canvas samples a colour along the rainbow.
-export function paintRainbowGradient(
-  context: GradientContext,
-  width: number,
-  height: number,
-  spec: RainbowGradient
-) {
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const half =
-    (Math.abs(Math.cos(spec.angle)) * width + Math.abs(Math.sin(spec.angle)) * height) / 2;
-  const deltaX = Math.cos(spec.angle) * half;
-  const deltaY = Math.sin(spec.angle) * half;
-  const gradient = context.createLinearGradient(
-    centerX - deltaX,
-    centerY - deltaY,
-    centerX + deltaX,
-    centerY + deltaY
-  );
-  for (const stop of spec.stops) gradient.addColorStop(stop.offset, stop.color);
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, width, height);
-}

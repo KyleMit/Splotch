@@ -18,10 +18,10 @@ import { styles as controlStyles } from './controls';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
 
 // AiImagePrompt.svelte's cover literals; native-ai-flow-geometry.test.mjs reads them back.
-export const AI_STYLE_THUMB_BORDER_PX = 3;
-export const AI_STYLE_THUMB_GAP_PX = 6;
-export const AI_STYLE_HOVER_LIFT_PX = 2;
-export const AI_STYLE_PRESSED_SCALE = 0.97;
+const AI_STYLE_THUMB_BORDER_PX = 3;
+const AI_STYLE_THUMB_GAP_PX = 6;
+const AI_STYLE_HOVER_LIFT_PX = 2;
+const AI_STYLE_PRESSED_SCALE = 0.97;
 // The cutout cover's sticker shadow, drawn around its silhouette rather than baked into the art.
 export const AI_STYLE_CUTOUT_SHADOW = 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28))';
 

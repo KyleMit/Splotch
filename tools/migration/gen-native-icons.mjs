@@ -3,12 +3,15 @@ import { basename } from 'node:path';
 import { format, resolveConfig } from 'prettier';
 import { iconTokenEntries } from '../../web/src/lib/design/iconTokens.ts';
 import { brand, themes, toCssVarName } from '../../web/src/lib/design/tokens.ts';
-import { NON_RENDERABLE_ICONS, iconNameFromPath } from '../../web/src/lib/components/iconTypes.ts';
+import {
+  COLOR_ICONS,
+  NON_RENDERABLE_ICONS,
+  iconNameFromPath,
+} from '../../web/src/lib/components/iconTypes.ts';
 import { ROOT, isMain } from '../lib/proc.mjs';
 
 const ICON_DIR = `${ROOT}/web/src/lib/icons/`;
 const DEFERRED_SUBDIR = 'deferred/';
-const SHIPPING_ICON_COMPONENT = `${ROOT}/web/src/lib/components/Icon.svelte`;
 const NATIVE_ICON_DIR = `${ROOT}/experiments/native-architecture/src/rsdDrawing/`;
 export const NATIVE_ICONS_TARGET = `${NATIVE_ICON_DIR}icons.generated.ts`;
 export const NATIVE_DEFERRED_ICONS_TARGET = `${NATIVE_ICON_DIR}icons.deferred.generated.ts`;
@@ -45,9 +48,6 @@ const STYLE_ATTRIBUTE = /style="([^"]*)"/g;
 const VAR_REFERENCE = /^var\((--[a-z0-9-]+),(#[0-9a-f]{3,8})\)$/;
 const TAG = /<[a-zA-Z][^>]*>/g;
 const ATTRIBUTE_NAME = /\s([a-zA-Z:-]+)="/g;
-const COLOR_ICON_SET = /export const COLOR_ICONS = new Set<CommonIconName>\(\[([\s\S]*?)\]\);/;
-const LINE_COMMENT = /\/\/.*$/gm;
-const QUOTED_NAME = /'([a-z0-9-]+)'/g;
 
 // Every icon <Icon> renders, by name: the eager set beside the deferred subdirectory, without
 // the structural icons iconTypes.ts excludes.
@@ -61,15 +61,6 @@ export function shippingIconFiles(iconDir = ICON_DIR) {
     files
       .map((file) => [iconNameFromPath(file), file])
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-  );
-}
-
-// Icon.svelte's COLOR_ICONS: the icons the shipping app never re-inks with --icon-ink.
-export function shippingColorIcons(source = readFileSync(SHIPPING_ICON_COMPONENT, 'utf8')) {
-  const block = COLOR_ICON_SET.exec(source)?.[1];
-  if (!block) throw new Error('Icon.svelte no longer declares COLOR_ICONS as a literal set.');
-  return new Set(
-    [...block.replace(LINE_COMMENT, '').matchAll(QUOTED_NAME)].map((match) => match[1])
   );
 }
 
@@ -177,7 +168,7 @@ function header(source) {
 export function nativeIconModules({
   startup = NATIVE_STARTUP_ICONS,
   iconDir = ICON_DIR,
-  colorIcons = shippingColorIcons(),
+  colorIcons = COLOR_ICONS,
 } = {}) {
   if (NON_RENDERABLE_ICONS.length !== 1 || NON_RENDERABLE_ICONS[0] !== SPLOTCHY)
     throw new Error('SectionIcon dispatch only knows splotchy; port the new structural icon.');

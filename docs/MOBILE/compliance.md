@@ -16,7 +16,9 @@ decision, and update this ledger in the same change when a policy or a mitigatio
 
 Every specifically implemented guideline, and whether each store requires it. "Required" cites the
 store's own rule; "Defensive" means Splotch implements it although that store does not demand it for
-this app's shape.
+this app's shape. These are the recorded policy decisions, not a fresh policy review. Historical
+Svelte/Capacitor enforcement is labeled where it retired; current RN implementation references do
+not imply the old whole-bundle scanner still runs.
 
 | What Splotch implements                                                       | iOS (App Store)                       | Android (Google Play)                     | Decided in                                                                        |
 | ----------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
@@ -31,7 +33,7 @@ this app's shape.
 | No hidden or privileged surfaces (admin console web-only, unlinked)           | Required — 2.3.1                      | Required — Deceptive Behavior             | ADR-0101                                                                          |
 | Business model answered for the 2.1(b) probe (no IAP, BYOK, free codes)       | Required — 2.1(b)                     | N/A                                       | Submission c730ff1d; `ios.md` review notes                                        |
 | China mainland storefront deselected (deep-synthesis permitting)              | Required — 5 Legal (China)            | N/A                                       | Submission c730ff1d                                                               |
-| No other-platform references inside the iOS binary                            | Required — 2.3.10                     | N/A                                       | ADR-0112; `web/nativeExcludedRoutes.ts` + bundle guard                            |
+| No other-platform references inside the iOS binary                            | Required — 2.3.10                     | N/A                                       | ADR-0112; the retired Capacitor route-exclusion list + bundle guard               |
 | iOS privacy manifest (`PrivacyInfo.xcprivacy`)                                | Required — ITMS-91053 upload gate     | N/A                                       | `ios/Splotch/PrivacyInfo.xcprivacy`                                               |
 | Data-disclosure agreement across manifest, labels, forms, and `/privacy`      | Required — nutrition label            | Required — Data safety form               | Consistency chain (below); issue 846                                              |
 | AI provider whose terms permit child-directed use                             | Required — 5.1.4 (COPPA conduct)      | Required — Families APIs/SDKs + User Data | ADR-0113, ADR-0114; issue 845                                                     |
@@ -57,14 +59,19 @@ the BYOK area are inside this rule's blast radius; so is any analytics or ads SD
 ships none.
 
 **Decisions.** ADR-0094 established operation-boundary gates — never a gate on Settings as a whole —
-with per-feature `always`/`session`/`never` policies. Store builds arm every gate to `always` at
-build time (`CAPACITOR=true` is the signal); the web build ships them off (commit
-d0fc837e9db15db3379ed1785cce685211f54fdb). Native iOS keeps `never` visible but unavailable for
-external links precisely because of this guideline (`isParentalGateModeAvailable`,
-`web/src/lib/state/parentalGate.svelte.ts`). Links gate through the `parentalGateLink` action
-(native privacy links landed in 4bc0073426317c83d7805fffb8d0e551dda114cd). Issue 844 (open) finishes
-the job: putting the AI, feedback, and about *areas* — not just their links — behind the gate, which
-makes the BYOK panel the "designated area" this guideline names.
+with per-feature `always`/`session`/`never` policies. Native defaults arm every gate to `always` at
+the native defaults in `experiments/native-architecture/src/platform/parentDefaults.ts`; the web
+defaults leave them off (commit d0fc837e9db15db3379ed1785cce685211f54fdb). Native iOS keeps `never`
+visible but unavailable for external links precisely because of this guideline
+(`isParentModeAvailable`, `experiments/native-architecture/src/parentCenter/parentPolicy.ts`). The
+original native privacy-link fix used Svelte's parental-link action (landed in
+4bc0073426317c83d7805fffb8d0e551dda114cd); that action retired. RN link handoff requests
+`externalLinks` from the product gate in
+`experiments/native-architecture/src/rsdDrawing/RsdSettingsRoute.tsx` and
+`experiments/native-architecture/src/rsdDrawing/RsdInformationPage.tsx`, checks the returned proof,
+and opens an external URL inside the solving tap. Privacy and feedback navigation remain internal.
+Issue 844 (open) finishes the job: putting the AI, feedback, and about *areas* — not just their
+links — behind the gate, which makes the BYOK panel the "designated area" this guideline names.
 
 ### 1.2 Safety — User-Generated Content
 
@@ -106,9 +113,9 @@ digital content without in-app purchase, and asked for Splotch's business model 
 submission c730ff1d-1a03-40cf-831d-2804513a1830 (reviewed 2026-09-12, version 1.6.0 build 8).
 Splotch configures no in-app purchase items at all, so nothing under the literal guideline applies;
 what draws the question is the BYOK panel, which states that a key is billed to the parent's own
-OpenAI account (`web/src/lib/components/settings/AiKeyManager.svelte`) and that OpenAI requires
-billing set up on that account (its how-to,
-`web/src/lib/components/settings/OpenAiKeyHowTo.svelte`).
+OpenAI account (`experiments/native-architecture/src/rsdDrawing/RsdAiKeyManager.tsx`) and that
+OpenAI requires billing set up on that account (its how-to,
+`experiments/native-architecture/src/rsdDrawing/RsdAiKeyManager.tsx`).
 
 **Decisions.** Answer from the shape 3.1.1 already established rather than change the app. Splotch
 sells nothing through any channel and takes no revenue or affiliate share; the drawing app is free
@@ -128,11 +135,14 @@ front instead of waiting to be asked. If a follow-up escalates from an informati
 **Impact.** The former five-tap-on-version-string reveal of the `/admin` token console was exactly
 this shape, inside a children's app.
 
-**Decisions.** ADR-0101: the admin console is web-only and unlinked — the gesture, the persisted
-reveal flag, and the prerendered `/admin/native` page are gone; `/admin` is in
-`NATIVE_EXCLUDED_ROUTES`, and the Capacitor build's bundle guard (removed with the Capacitor shell)
-failed the build if console copy (sentinels derived from `AdminConsole.svelte` placeholders, so the
-guard couldn't pass vacuously) survived into built output.
+**Decisions.** ADR-0101: the admin console is web-only and unlinked. The old reveal gesture,
+persisted flag and native admin page were removed. The former Capacitor route-exclusion list and
+whole-bundle sentinel scan enforced that static export; both retired with that build. RN's admin is
+a separate browser document/entry under `experiments/native-architecture/src/pageDocument/admin/`,
+declared by `experiments/native-architecture/src/information/unlinkedDocuments.ts`. The
+drawing/native route owner does not route to it. `tools/tests/native-web-admin-document.test.mjs`
+checks the web artifact, session and worker contracts; it is not the retired native whole-bundle
+string scan.
 
 ### 2.3.8 Metadata age-appropriateness
 
@@ -148,15 +158,16 @@ questionnaire answers and pins "confirm ASC calculates 4+ before opting into Kid
 > "Don't include names, icons, or imagery of other mobile platforms or alternative app marketplaces
 > in your app or metadata, unless there is specific, approved interactive functionality."
 
-**Impact.** The `/beta` page carries Google Play opt-in URLs; a route's `prerender` flag drops only
-its HTML while the JS chunk still ships, so those strings were landing inside the `.ipa` where a
-reviewer's string scan finds them.
+**Impact.** The old Svelte `/beta` page carried Play opt-in URLs in an iOS JavaScript chunk even
+when its HTML was excluded. That historical leak explains the build-boundary decision.
 
-**Decisions.** `web/nativeExcludedRoutes.ts` stubs the route modules at build time
-(`NATIVE_EXCLUDED_ROUTES`: `beta`, `android-beta`, `ios-beta`, `admin`, `feedback`), and the
-Capacitor build's bundle guard (removed with the Capacitor shell) scanned built output for
-`FORBIDDEN_NATIVE_HOSTS` by host — the unit the guideline is about. ADR-0112 records the tabbed
-`/beta` consolidation (ed186a02dbdb69b0804ffc6f8882c89791abfa1d).
+**Decisions.** The former Capacitor route-exclusion list stubbed route modules and its whole-bundle
+scan rejected forbidden hosts. Both retired. In RN, `/beta` is a document-only web page declared in
+`experiments/native-architecture/src/information/appPages.ts`; the native/drawing route table never
+opens it. `tools/tests/native-web-page-documents.beta-not-found.test.mjs` checks that split. This
+route/import boundary is current enforcement, not a claim that the old host-string scanner still
+inspects the native binary. ADR-0112 records the tabbed `/beta` consolidation
+(ed186a02dbdb69b0804ffc6f8882c89791abfa1d).
 
 ### 3.1.1 In-App Purchase
 
@@ -220,23 +231,26 @@ it.
 
 **Impact / decisions.** `/privacy` is live at splotch.art/privacy, bundled into both native builds,
 and linked from the listing. "Easily accessible" is the half a bundled file does not satisfy on its
-own, so the Capacitor build's bundle guard (removed with the Capacitor shell) enforced both:
-`requiredNativePageProblems` failed the build if `privacy.html` was missing from the static export,
-and `requiredNativePageLinkProblems` failed it if nothing in the shipped bundle linked to `/privacy`
-— the in-app path is Settings → About → Privacy Policy. ADR-0120 records why that is a build-time
-assertion rather than a step in the native smoke. Consent is structured as adult action: the App
-Store build requires its grown-up check before each AI generation by default, including the
-ten-creation free allowance; the feedback device snapshot is opt-in and off-by-default; and image
-reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
-gate protects action boundaries and is not itself legal consent.
+own. Historically the Capacitor guard checked that the static privacy document existed and that the
+bundle linked to it; that guard retired. RN renders privacy through its information-page components,
+reached by Settings → About → Privacy Policy. Current navigation/content checks include
+`tools/tests/native-privacy-links.test.mjs` and
+`tools/migration/tests/rsd-native-privacy-navigation.test.mjs`. The web export's readable-document
+check is separate (`tools/migration/check-native-web-pages-without-js.mjs`). ADR-0120 explains why
+native smoke stays a boot check rather than a navigation journey. Consent is structured as adult
+action: the App Store build requires its grown-up check before each AI generation by default,
+including the ten-creation free allowance; the feedback device snapshot is opt-in and
+off-by-default; and image reports require an explicit gated confirmation that names the evidence
+being sent (ADR-0104). The gate protects action boundaries and is not itself legal consent.
 
 **Stored AI credentials stay on the device, on every platform.** A saved access code or OpenAI key
-is an iOS Keychain item written `whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, both
-passed on every write in `web/src/lib/secureStorage.ts`, so no sync or backup carries it to another
-device. That matches Android, where `android:allowBackup="false"` keeps it out of cloud backup. The
-user chose this on 2026-09-28 so one plain sentence in `/privacy` holds everywhere; iCloud Keychain
-sync and backup-portable storage were considered and not adopted. Current iOS may keep a Keychain
-item after the app is deleted, which Apple does not guarantee, so no copy promises deletion.
+is an iOS Keychain item written `whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, as
+declared by `experiments/native-architecture/ios/Splotch/SplotchAIEnvironment.swift`, so no sync or
+backup carries it to another device. That matches Android, where `android:allowBackup="false"` keeps
+it out of cloud backup. The user chose this on 2026-09-28 so one plain sentence in `/privacy` holds
+everywhere; iCloud Keychain sync and backup-portable storage were considered and not adopted.
+Current iOS may keep a Keychain item after the app is deleted, which Apple does not guarantee, so no
+copy promises deletion.
 
 ### 5.1.4 Kids
 
@@ -306,7 +320,7 @@ Responses API path refused a red-team fixture the images endpoint rendered.
 
 **Impact / decisions.** The multiplication-keypad gate (ADR-0094) is the adult-action mechanism in
 front of every personal-information exchange: AI generation, image/refusal reports, and feedback
-submission. Android store builds arm all five gate policies to `always` by default. Because the
+submission. Native Android defaults arm all five gate policies to `always` by default. Because the
 mechanism has to be one a child cannot realistically complete, it is built to resist random tapping
 (an explicit check key, wrong answers for tapping past the answer, escalating lockouts). A seeded
 tapping simulation holds the chance of tapping through in two minutes under 1.5%; the chance keeps
@@ -340,8 +354,8 @@ form.
 **Impact / decisions.** No ads or analytics SDKs ship at all, which satisfies the self-certified
 list vacuously. No AI SDK ships in the APK either: the OpenAI call happens server-side behind the
 `AiImageProvider` seam (ADR-0047, ADR-0113) — the client talks only to Splotch's own API, on BYOK
-runs included (`web/src/lib/ai/credentials.ts` sends the key to `/api/generate-image`; the server
-uses it for that one request and never stores it).
+runs included (the transport in `experiments/native-architecture/src/ai/transport.ts` sends the key
+to `/api/generate-image`; the server uses it for that one request and never stores it).
 
 ### Payments policy
 
@@ -376,8 +390,9 @@ free-form prompts no.
 > "Your app's functionality should be reasonably clear to users; don't include any hidden, dormant,
 > or undocumented features within your app."
 
-**Impact / decisions.** Same finding and fix as Apple 2.3.1: the hidden admin-console reveal is
-gone, the console is web-only and unlinked (ADR-0101), and the bundle guard enforces it per build.
+**Impact / decisions.** Same finding and fix as Apple 2.3.1: the hidden admin-console reveal is gone
+and the console is web-only and unlinked (ADR-0101). The old Capacitor bundle guard retired; the
+current RN web document and native route boundary are described under Apple 2.3.1 above.
 
 ### User Data policy — third-party AI integrations
 
@@ -453,21 +468,20 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 | BYOK how-to reworded as configuration                                                                         | Issue 849; c2ee6446e3a294cd4a55cfc148f37f1f01c8dc04                                                                                                                 |
 | 2.1(b) business-model answer written down; China mainland storefront deselected                               | Submission c730ff1d-1a03-40cf-831d-2804513a1830, reviewed 2026-09-12                                                                                                |
 
-**Enforced by tests:** `web/src/lib/state/parentalGate.svelte.test.ts`,
-`web/src/lib/state/parentalGate.mash.test.ts`, `web/src/lib/state/parentalGate.lockout.test.ts`,
+**Current checks:** the RN parent-policy and mounted gate tests under `tools/migration/tests`, plus
 `e2e/specs/grown-ups-gate.spec.ts`, `e2e/specs/parent-center.spec.ts`,
-`e2e/specs/ai-report.spec.ts`, `web/src/nativeExcludedRoutes.test.ts`, `e2e/specs/admin.spec.ts`,
-`e2e/specs/feedback-page.spec.ts`, `e2e/specs/beta.spec.ts`.
+`e2e/specs/ai-report.spec.ts`, `e2e/specs/admin.spec.ts`, `e2e/specs/feedback-page.spec.ts` and
+`e2e/specs/beta.spec.ts`. The Svelte gate and route-exclusion tests retired with their subjects.
 
 **Machine-checked consistency.** `tools/mobile/privacy-permission-inventory.json` declares the
 permissions, data categories, ephemeral-by-default / 30-day-on-confirmed-report boundary, and
 production outbound-host classes. The tools-tier drift guards compare it with the Android manifest,
 iOS usage strings and privacy manifest, the ASC nutrition label, the Play Data safety form,
-implementation constants and call sites, the scheduled purge functions' cadences, and
-`web/src/routes/privacy/+page.svelte`. The store forms remain human-submitted from their checklists.
-Live retention statements in ADR-0104 and ADR-0115, and the Markdown copies of the human-review
-window and of each purge cadence, are included in the drift guard; the remaining ADR detail is
-design provenance rather than another declaration to keep aligned by hand.
+implementation constants and call sites, the scheduled purge functions' cadences, and the RN privacy
+document. The store forms remain human-submitted from their checklists. Live retention statements in
+ADR-0104 and ADR-0115, and the Markdown copies of the human-review window and of each purge cadence,
+are included in the drift guard; the remaining ADR detail is design provenance rather than another
+declaration to keep aligned by hand.
 
 ## Open items
 

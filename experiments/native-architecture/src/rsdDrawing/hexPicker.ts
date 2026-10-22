@@ -14,8 +14,8 @@ import { isCustomColor, type CustomColor } from '../drawing/palette';
 // ColorPicker.svelte literals no shared module exports. rsd-native-color-picker.test.mjs reads each one
 // back out of that component and hexSnapGesture.ts and fails when one diverges.
 // Each trim step hides the next row (or column) in its list, 1-based from the light (or red) end.
-export const HEX_ROW_TRIM_ORDER = [2, 4, 6, 8, 3, 7] as const;
-export const HEX_COLUMN_TRIM_ORDER = [2, 4, 6, 8, 3, 7, 5] as const;
+const HEX_ROW_TRIM_ORDER = [2, 4, 6, 8, 3, 7] as const;
+const HEX_COLUMN_TRIM_ORDER = [2, 4, 6, 8, 3, 7, 5] as const;
 // Roomy windows, both sides at least LARGE_TABLET_MIN_SIDE_PX, grow every hexagon by this factor.
 export const HEX_ROOMY_SCALE = 1.3;
 // A press in the gap between hexagons still snaps to the nearest one within half a hexagon's

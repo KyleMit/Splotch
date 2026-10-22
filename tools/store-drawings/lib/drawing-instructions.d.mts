@@ -1,6 +1,5 @@
-import type { Page } from '@playwright/test';
+import type { StrokeSize } from '../../../web/src/lib/drawing/strokeSettings';
 import type { PaletteLabel } from '../../../web/src/lib/palette';
-import type { StrokeSize } from '../../../web/src/lib/state/strokeWidth.svelte';
 
 export interface InstructionBox {
   height: number;
@@ -16,9 +15,13 @@ export interface InstructionScene {
   width: number;
 }
 
-export function drawInstructionScene(
-  page: Page,
-  box: InstructionBox,
+export function fitInstructionScene(
   scene: InstructionScene,
-  options?: { brush?: 'crayon' | 'magic' | 'pen'; replay?: 'engine' | 'pointer' }
-): Promise<void>;
+  box: Pick<InstructionBox, 'width' | 'height'>
+): { scale: number; x: number; y: number };
+
+export function sceneStrokePoints(
+  scene: InstructionScene,
+  box: Pick<InstructionBox, 'width' | 'height'>,
+  stroke: InstructionScene['strokes'][number]
+): { x: number; y: number }[];

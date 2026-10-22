@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
@@ -14,9 +12,9 @@ vi.mock(
 );
 
 const FORCED_COLORS = '(forced-colors: active)';
-const readShipping = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', path), 'utf8');
-const forcedRule = (source) => source.slice(source.indexOf('@media (forced-colors: active)'));
+const SYSTEM_INK = 'CanvasText';
+const FORCED_RULE_WIDTH_PX = 2;
+const FORCED_BLOB_BORDER_PX = 1;
 
 let forced;
 let listeners;
@@ -60,19 +58,16 @@ async function mountRule() {
 const rulePath = () => host.querySelector('[data-testid="release-squiggle"] path');
 
 it('draws the crayon divider as shipping’s straight system-ink line in forced colors', async () => {
-  const squiggle = forcedRule(readShipping('design/SquiggleRule.svelte'));
-  expect(squiggle).toContain('height: 0;');
-  const [, width, ink] = squiggle.match(/border-top: (\d+)px solid (\w+);/);
   await mountRule();
-  expect(rulePath().getAttribute('d')).toBe(`M0 ${Number(width) / 2} H48`);
-  expect(rulePath().getAttribute('stroke')).toBe(ink);
-  expect(rulePath().getAttribute('stroke-width')).toBe(width);
+  expect(rulePath().getAttribute('d')).toBe(`M0 ${FORCED_RULE_WIDTH_PX / 2} H48`);
+  expect(rulePath().getAttribute('stroke')).toBe(SYSTEM_INK);
+  expect(rulePath().getAttribute('stroke-width')).toBe(String(FORCED_RULE_WIDTH_PX));
   expect(records.props.findLast((props) => props.testID === 'release-squiggle').style).toEqual({
-    height: Number(width),
+    height: FORCED_RULE_WIDTH_PX,
   });
   await setForced(false);
   expect(rulePath().getAttribute('d')).toMatch(/^M0 4 Q6 0 12 4 T24 4/);
-  expect(rulePath().getAttribute('stroke')).not.toBe(ink);
+  expect(rulePath().getAttribute('stroke')).not.toBe(SYSTEM_INK);
 });
 
 async function mountSheet(theme) {
@@ -99,20 +94,17 @@ const paints = (disc) =>
 it.each(['light', 'dark'])(
   'draws the back-link disc in system colours in forced colors, %s',
   async (theme) => {
-    const backToTop = forcedRule(readShipping('page/BackToTopLink.svelte'));
-    const [, border, ink] = backToTop.match(/border: (\d+)px solid (\w+);/);
-    expect(backToTop).toContain(`fill: ${ink};`);
     const disc = await mountSheet(theme);
     await vi.waitFor(() => expect(disc().querySelector('g')).not.toBeNull());
     const [blob, edge] = disc().querySelectorAll(':scope > path');
     expect(blob.getAttribute('fill')).toBe('Canvas');
-    expect(edge.getAttribute('stroke')).toBe(ink);
-    expect(edge.getAttribute('stroke-width')).toBe(border);
-    expect(new Set(paints(disc()))).toEqual(new Set(['Canvas', 'none', ink]));
+    expect(edge.getAttribute('stroke')).toBe(SYSTEM_INK);
+    expect(edge.getAttribute('stroke-width')).toBe(String(FORCED_BLOB_BORDER_PX));
+    expect(new Set(paints(disc()))).toEqual(new Set(['Canvas', 'none', SYSTEM_INK]));
     await setForced(false);
     expect(disc().querySelector('path').getAttribute('fill')).toBe(
       DRAWING_THEMES[theme].brandSolid
     );
-    expect(paints(disc())).not.toContain(ink);
+    expect(paints(disc())).not.toContain(SYSTEM_INK);
   }
 );

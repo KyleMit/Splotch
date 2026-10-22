@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host } from './rsd-native-selection-host.mjs';
@@ -9,7 +7,6 @@ import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
 import { THEME_COLOR_META_SELECTOR } from '../../../experiments/native-architecture/src/platform/notchBandPlatform.web.ts';
-import { THEME_COLOR_META_SELECTOR as SHIPPING_THEME_COLOR_META_SELECTOR } from '../../../web/src/lib/theme.ts';
 
 const PURPLE = paletteHex('Purple');
 // An iPhone's Dynamic Island inset, and a bezel iPad's plain status bar.
@@ -196,11 +193,6 @@ describe('the Notch Band', () => {
   });
 
   it("restates shipping's theme-color selector", () => {
-    expect(THEME_COLOR_META_SELECTOR).toBe(SHIPPING_THEME_COLOR_META_SELECTOR);
-    const notchBand = readFileSync(
-      join(import.meta.dirname, '../../../web/src/lib/components/NotchBand.svelte'),
-      'utf8'
-    );
-    expect(notchBand).toContain('setThemeColorMeta(band.themeColor)');
+    expect(THEME_COLOR_META_SELECTOR).toBe('meta[name="theme-color"]');
   });
 });

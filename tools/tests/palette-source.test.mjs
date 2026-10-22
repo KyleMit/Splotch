@@ -20,17 +20,11 @@ const hexRegex = new RegExp(`#(?:${paletteHexes.join('|')})(?:[0-9a-fA-F]{2})?\\
 // palette.ts; anything new must migrate to an import or earn an entry.
 const ALLOWED = new Map(
   Object.entries({
-    // The --brand custom-property definition, and the light theme's
-    // --black-swatch-ink, --link-crayon and crayon hue properties imported by tokens.ts;
-    // CSS cannot import TS.
-    'web/src/tokens.css': 17,
     // BRAND_HEX seeds the design-token derivations beside the palette.
     'web/src/lib/design/tokens.ts': 1,
     // Static SVG icon depicting the palette swatches themselves; SVG fills
     // can't reference tokens.
     'web/src/lib/icons/more-colors.svg': 7,
-    // Plain-node app driver clicking the green swatch by its hex selector.
-    'tools/app-driver/run-driver-smoke-test.mjs': 1,
     // Scrapbook report chrome renders palette swatches; plain node can't
     // import TS.
     'tools/scrapbook/lib/scrapbook-chrome.mjs': 7,

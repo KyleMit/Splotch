@@ -1,0 +1,140 @@
+
+> splotch@1.6.0 check:quality
+> node tools/ci-mirror/run-quality-checks.mjs
+
+
+[1m$ npm run format:check[0m
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false
+
+
+[1m$ npm run check[0m
+
+> splotch@1.6.0 check
+> tsc --project web/tsconfig.json && npm run check:netlify && npm run check:migration:types && npm run check:e2e
+
+
+> splotch@1.6.0 check:netlify
+> tsc --project netlify/tsconfig.json
+
+
+> splotch@1.6.0 check:migration:types
+> tsc --noEmit -p experiments/native-architecture/tsconfig.json
+
+
+> splotch@1.6.0 check:e2e
+> tsc --project e2e/tsconfig.json
+
+
+[1m$ npm run lint[0m
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/Users/kylemit/.codex/worktrees/0714/Splotch/docs/scratchpad/2026-10-21-rn-config-sweep/repro/analyze.mjs
+  2:39  warning  'existsSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/kylemit/.codex/worktrees/0714/Splotch/docs/scratchpad/2026-10-21-rn-config-sweep/repro/contact-sheet.mjs
+  2:23  warning  'writeFileSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/kylemit/.codex/worktrees/0714/Splotch/experiments/native-architecture/src/ai/generationController.ts
+  10:26  warning  'AiResult' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)
+
+
+[1m$ npm run lint:css[0m
+
+> splotch@1.6.0 lint:css
+> stylelint "**/*.css"
+
+
+[1m$ npm run check:svg-assets[0m
+
+> splotch@1.6.0 check:svg-assets
+> node tools/optimize-svg-assets.mjs --check
+
+[optimize-svg-assets] 303 SVG(s) already optimal — nothing to do.
+
+[1m$ npm run ruler:check[0m
+
+> splotch@1.6.0 ruler:check
+> node tools/ruler/check-generated-files.mjs
+
+$ npm run ruler:apply
+
+> splotch@1.6.0 ruler:apply
+> node tools/ruler/apply-ruler.mjs
+
+$ ruler apply
+[ruler] Nested mode is experimental and may change in future releases.
+[ruler] Skills support is experimental and behavior may change in future releases.
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+Ruler apply completed successfully.
+$ /Users/kylemit/.nvm/versions/node/v24.16.0/bin/node /Users/kylemit/.codex/worktrees/0714/Splotch/tools/ruler/mirror-skill-notes.mjs
+[skill-notes] mirrored 17 file(s) to .claude/skill-notes and .agents/skill-notes
+$ /Users/kylemit/.nvm/versions/node/v24.16.0/bin/node /Users/kylemit/.codex/worktrees/0714/Splotch/tools/ruler/apply-skill-forks.mjs
+[skill-forks] applied 0 runner-specific skill(s) and 0 note(s)
+$ dprint fmt
+Formatted 44 files.
+[ruler:check] Generated agent files are in sync with .ruler/.
+
+[1m$ npm run check:ideas-review[0m
+
+> splotch@1.6.0 check:ideas-review
+> node tools/asset-gen/ideas-exploration/build-review.mjs --check
+
+[ideas-review] ideas-review.html is current.
+
+[1m$ npm run lint:dead[0m
+
+> splotch@1.6.0 lint:dead
+> knip --no-progress --include files,exports,types,duplicates
+
+
+[1m$ npm run lint:deps:prod[0m
+
+> splotch@1.6.0 lint:deps:prod
+> knip --config knip.production.json --production --strict --no-progress
+
+
+[1m$ npm run check:assets:manifest[0m
+
+> splotch@1.6.0 check:assets:manifest
+> node tools/asset-gen/gen-asset-manifest.mjs --check
+
+[asset-manifest] 1014 asset(s) match the manifest.
+
+[1m$ npm run scrapbook:check[0m
+
+> splotch@1.6.0 scrapbook:check
+> node tools/scrapbook/publish-scrapbook.mjs --check
+
+scrapbook: every collection resolves to a reachable entry page; index.html is current.
+
+[1m$ pnpm audit --audit-level=high[0m
+6 vulnerabilities found
+Severity: 4 moderate | 2 high (2 ignored)
+
+✓ Quality: all 12 checks passed

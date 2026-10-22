@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { getRingColor, isLightColor } from './colorRing';
-import { PALETTE_COLORS } from './state/colors.svelte';
+import { PALETTE_COLORS } from './palette';
 import { PICKER_DIM_BORDER } from './hexPickerLayout';
 
 describe('getRingColor', () => {

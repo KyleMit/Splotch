@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { act, createElement, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -10,8 +10,8 @@ import { useUndoAction } from '../../experiments/native-architecture/src/useUndo
 import {
   UNAVAILABLE_FLASH_KEYFRAMES,
   UNAVAILABLE_FLASH_MS,
-  UNAVAILABLE_GLOW_BRAND_SHARE,
   UNAVAILABLE_GLOW_FADE_SPREAD_PX,
+  UNAVAILABLE_GLOW_BRAND_SHARE,
   UNAVAILABLE_GLOW_SPREAD_PX,
   UNAVAILABLE_SHAKE_KEYFRAMES,
   UNAVAILABLE_SHAKE_MS,
@@ -37,87 +37,39 @@ vi.mock(
 );
 const { RsdUnavailableCue } =
   await import('../../experiments/native-architecture/src/rsdDrawing/RsdUnavailableCue.tsx');
-
-const css = readFileSync(join(import.meta.dirname, '../../web/src/app.css'), 'utf8').replace(
-  /\/\*[\s\S]*?\*\//g,
-  ''
-);
 const EASE_IN_OUT = [0.42, 0, 0.58, 1];
-
-function block(prelude) {
-  const start = css.indexOf(`${prelude} {`);
-  expect(start, prelude).toBeGreaterThanOrEqual(0);
-  let depth = 0;
-  for (let index = css.indexOf('{', start); index < css.length; index++) {
-    if (css[index] === '{') depth += 1;
-    if (css[index] === '}') depth -= 1;
-    if (depth === 0) return css.slice(css.indexOf('{', start) + 1, index);
-  }
-  throw new Error(`Unclosed ${prelude}`);
-}
-
-function keyframes(name) {
-  return [...block(`@keyframes ${name}`).matchAll(/([\d%,\s]+)\{([^}]*)\}/g)].flatMap(
-    ([, offsets, declarations]) =>
-      offsets
-        .split(',')
-        .map((offset) => offset.trim())
-        .filter(Boolean)
-        .map((offset) => ({ at: Number(offset.replace('%', '')) / 100, declarations }))
-  );
-}
 
 describe("the native unavailable cue against app.css's .action-unavailable", () => {
   it('shakes the shipping offsets and swings over the shake duration, ease-in-out between them', () => {
-    const animation = block('.action-unavailable').replace(/\s+/g, ' ');
-    expect(animation).toContain(`action-unavailable-shake ${UNAVAILABLE_SHAKE_MS}ms ease-in-out`);
-    const swings = keyframes('action-unavailable-shake').map(({ at, declarations }) => ({
-      at,
-      x: Number(declarations.match(/translateX\((-?[\d.]+)px\)/)[1]),
-      rotate: Number(declarations.match(/rotate\((-?[\d.]+)deg\)/)[1]),
-    }));
-    expect(
-      UNAVAILABLE_SHAKE_KEYFRAMES.slice(1, -1).map(({ easing: _, ...frame }) => frame)
-    ).toEqual(swings);
-    for (const frame of [UNAVAILABLE_SHAKE_KEYFRAMES[0], UNAVAILABLE_SHAKE_KEYFRAMES.at(-1)])
-      expect(frame).toMatchObject({ x: 0, rotate: 0 });
+    expect(UNAVAILABLE_SHAKE_MS).toBe(460);
+    expect(UNAVAILABLE_SHAKE_KEYFRAMES.map((frame) => [frame.at, frame.x, frame.rotate])).toEqual([
+      [0, 0, 0],
+      [0.14, -5, -3.2],
+      [0.32, 5, 3.2],
+      [0.52, -3, -1.8],
+      [0.7, 2, 1],
+      [0.86, -0.8, -0.4],
+      [1, 0, 0],
+    ]);
     for (const frame of UNAVAILABLE_SHAKE_KEYFRAMES.slice(0, -1))
       expect(frame.easing).toEqual(EASE_IN_OUT);
   });
 
   it('flashes the brand wash and glow ring over the flash duration, the glow spreading as it fades', () => {
-    const rule = block('.action-unavailable');
-    expect(rule.match(/--action-unavailable-flash-duration:\s*(\d+)ms/)[1]).toBe(
-      String(UNAVAILABLE_FLASH_MS)
-    );
-    expect(rule.replace(/\s+/g, ' ')).toContain(
-      'action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out'
-    );
-    const frames = keyframes('action-unavailable-flash');
-    const peaks = frames.filter(({ declarations }) => declarations.includes('opacity: 1'));
-    expect(peaks.map(({ at }) => at)).toEqual(
-      UNAVAILABLE_FLASH_KEYFRAMES.filter(({ lit }) => lit === 1).map(({ at }) => at)
-    );
-    const ring = (declarations) =>
-      declarations.match(/box-shadow:\s*0 0 0 (\d+)px color-mix\(in srgb, var\(--brand\) (\d+)%/);
-    const [, spread, share] = ring(peaks[0].declarations);
-    expect(Number(spread)).toBe(UNAVAILABLE_GLOW_SPREAD_PX);
-    expect(Number(share) / 100).toBe(UNAVAILABLE_GLOW_BRAND_SHARE);
-    const [, fadeSpread, fadeShare] = ring(frames.at(-1).declarations);
-    expect(frames.at(-1).at).toBe(1);
-    expect(Number(fadeSpread)).toBe(UNAVAILABLE_GLOW_FADE_SPREAD_PX);
-    expect(Number(fadeShare)).toBe(0);
-    expect(UNAVAILABLE_FLASH_KEYFRAMES.at(-1)).toMatchObject({
-      lit: 0,
-      glow: 0,
-      spreadPx: UNAVAILABLE_GLOW_FADE_SPREAD_PX,
-    });
-  });
-
-  it('keeps the flash alone under Reduce Motion', () => {
-    expect(block('.action-unavailable[data-start-reduced-motion]').replace(/\s+/g, ' ')).toContain(
-      'animation: action-unavailable-flash var(--action-unavailable-flash-duration)'
-    );
+    expect(UNAVAILABLE_FLASH_MS).toBe(520);
+    expect(UNAVAILABLE_GLOW_SPREAD_PX).toBe(10);
+    expect(UNAVAILABLE_GLOW_FADE_SPREAD_PX).toBe(16);
+    expect(UNAVAILABLE_GLOW_BRAND_SHARE).toBe(0.42);
+    expect(
+      UNAVAILABLE_FLASH_KEYFRAMES.map((frame) => [frame.at, frame.lit, frame.glow, frame.spreadPx])
+    ).toEqual([
+      [0, 0, 0, 10],
+      [0.12, 1, 1, 10],
+      [0.62, 1, 1, 10],
+      [1, 0, 0, 16],
+    ]);
+    for (const frame of UNAVAILABLE_FLASH_KEYFRAMES.slice(0, -1))
+      expect(frame.easing).toEqual(EASE_IN_OUT);
   });
 });
 

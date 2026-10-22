@@ -168,8 +168,9 @@ boundaries are judgment calls even though every total is exact.
 
 #### Drawing / canvas engine (21,232) — defined subdomains
 
-The drawing domain contains `lib/drawing/**` except the AI-generation and polaroid modules, plus
-`DrawingCanvas.svelte`, `LiveSurface.svelte`, `state/canvas.svelte.ts`, and `routes/dev/engine/**`.
+The drawing domain contains `lib/drawing/**` except the AI-generation and polaroid modules, plus the
+retired Svelte canvas components and development engine routes. These snapshot totals predate the
+RN-only cutover; regenerate and reconcile the map after root promotion (epic #3148).
 
 | Subdomain                                 |    LOC | Files |
 | ----------------------------------------- | -----: | ----: |

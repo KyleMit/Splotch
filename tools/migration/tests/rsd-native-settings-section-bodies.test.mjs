@@ -19,19 +19,13 @@ import {
   storedSettings,
 } from './rsd-native-settings-fixture.mjs';
 import { drawerTileSize as tileSize } from './rsd-native-toolbar-fixture.mjs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import {
-  APPEARANCE_ICONS,
-  APPEARANCE_LABEL_GAP_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdAppearanceSection.tsx';
-import { SOUND_SECTION_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSoundSection.tsx';
-import { SEE_THROUGH_CARD_SHADOW } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingCard.tsx';
+
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
@@ -170,23 +164,4 @@ it('chooses Flat buttons from the Appearance section and keeps the choice on reo
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Appearance');
   checkedRadio(option('Flat'));
-});
-
-const shippingSource = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', path), 'utf8');
-
-it('takes the section bodies’ spacing, glyphs and see-through lift from the shipping sources', () => {
-  const sound = shippingSource('settings/SoundSection.svelte');
-  const { sliderTop, sliderBottom, sourcesTop, sourcesHeadingBottom } = SOUND_SECTION_SPACING;
-  expect(sound).toContain(`.slider-setting {\n    margin: ${sliderTop}px 0 ${sliderBottom}px;`);
-  expect(sound).toContain(`.sound-sources {\n    margin-top: ${sourcesTop}px;`);
-  expect(sound).toContain(`h4.sources-heading) {\n    margin-bottom: ${sourcesHeadingBottom}px;`);
-  const appearance = shippingSource('settings/AppearanceSection.svelte');
-  for (const [theme, icon] of Object.entries(APPEARANCE_ICONS))
-    expect(appearance).toMatch(new RegExp(`value: '${theme}', label: '\\w+', icon: '${icon}'`));
-  expect(appearance).toContain(`margin-bottom: ${APPEARANCE_LABEL_GAP_PX}px;`);
-  const modal = shippingSource('SettingsModal.svelte');
-  expect(modal).toContain(
-    `box-shadow: ${SEE_THROUGH_CARD_SHADOW.replace('rgba(0, 0, 0, 0.16)', 'rgb(0 0 0 / 16%)')};`
-  );
 });

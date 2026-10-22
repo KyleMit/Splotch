@@ -43,7 +43,7 @@ orchestrator then pauses the queue and asks the user.
   `docs/audit-deferred/decisions/`. If a finding is wrong or already fixed, say so and ship nothing
   for it.
 * **Startup and hot path.**
-  * If you touch any module reachable at startup, run `npm run build`, which pins the startup
+  * If you touch any module reachable at startup, run `npm run build:site`, which pins the startup
     modulepreload count exactly. Report the count and the byte delta.
   * A runtime import from a startup module into a module that lazy code also imports can create a
     new startup chunk.
@@ -124,11 +124,9 @@ read goes out before the read's output does.
     text; a short local alias for a long constant keeps the line intact.
   * `__IS_CAPACITOR__` compiles to true in unit tests, so a rendered-output guard needs a
     `*.webSsr.test.ts` twin to cover the web build.
-* **Source-text guards:** tools drift guards read `web/src` text (type unions, constants, CSS). Run
-  `npm run test:tools` before changing a declaration they read. Likewise,
-  `web/src/lib/storageKeys.webOnly.test.ts` pins, per file, how often each known writer identifier
-  of a web-only storage key appears, plus the native guards' text, so editing one of those state
-  modules can fail it.
+* **Source-text guards:** tools drift guards read app and shared source text (type unions, constants
+  and styles). Run `npm run test:tools` before changing declarations they read, and preserve each
+  active guard's negative control when changing its subject.
 * **Docs:** a Markdown table pads every row to its longest cell (`docs/ARCHITECTURE.md`, the CI
   table in `docs/TESTING.md`), so a new widest cell re-pads the whole table. Keep edits shorter than
   the longest row. Resolve conflicts by taking `main`'s table and re-applying your rows in one edit.

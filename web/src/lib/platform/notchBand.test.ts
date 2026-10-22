@@ -1,8 +1,6 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from 'vitest';
-import { SystemBarsStyle, SystemBarType, type SystemBars } from '@capacitor/core';
+import { describe, it, expect } from 'vitest';
 import {
-  createStatusBarApplier,
   bandColor,
   hasNotch,
   statusBarStyleForBand,
@@ -14,7 +12,7 @@ import {
   NOTCH_INSET_THRESHOLD_PX,
   type NotchBandInput,
 } from './notchBand';
-import { PALETTE_COLORS } from '../state/colors.svelte';
+import { PALETTE_COLORS } from '../palette';
 import { PAPER_COLORS } from '../theme';
 
 // Representative insets: a clear notch vs. a bezel/status-bar device.
@@ -80,128 +78,6 @@ describe('statusBarStyleForBand', () => {
     for (const { hex } of PALETTE_COLORS) {
       expect(['DARK', 'LIGHT']).toContain(statusBarStyleForBand(hex));
     }
-  });
-});
-
-describe('createStatusBarApplier', () => {
-  const STYLE_ENUM = SystemBarsStyle;
-
-  function pluginModule(bar: Pick<typeof SystemBars, 'setStyle' | 'hide' | 'show'>) {
-    return { SystemBars: bar, SystemBarsStyle, SystemBarType };
-  }
-
-  function stubBar() {
-    return {
-      setStyle: vi.fn<(typeof SystemBars)['setStyle']>().mockResolvedValue(undefined),
-      hide: vi.fn<(typeof SystemBars)['hide']>().mockResolvedValue(undefined),
-      show: vi.fn<(typeof SystemBars)['show']>().mockResolvedValue(undefined),
-    };
-  }
-
-  it('translates DARK to the dark style enum value', () => {
-    const bar = stubBar();
-    createStatusBarApplier().apply('DARK', null, pluginModule(bar));
-    expect(bar.setStyle).toHaveBeenCalledWith({
-      style: STYLE_ENUM.Dark,
-      bar: SystemBarType.StatusBar,
-    });
-  });
-
-  it('translates LIGHT to the light style enum value', () => {
-    const bar = stubBar();
-    createStatusBarApplier().apply('LIGHT', null, pluginModule(bar));
-    expect(bar.setStyle).toHaveBeenCalledWith({
-      style: STYLE_ENUM.Light,
-      bar: SystemBarType.StatusBar,
-    });
-  });
-
-  it('makes no style call when style is null', () => {
-    const bar = stubBar();
-    createStatusBarApplier().apply(null, null, pluginModule(bar));
-    expect(bar.setStyle).not.toHaveBeenCalled();
-  });
-
-  it('hides the status bar when hidden is true', () => {
-    const bar = stubBar();
-    createStatusBarApplier().apply(null, true, pluginModule(bar));
-    expect(bar.hide).toHaveBeenCalledWith({ bar: SystemBarType.StatusBar });
-    expect(bar.show).not.toHaveBeenCalled();
-  });
-
-  // The state feeding this is recomputed on every active-colour change while
-  // the values almost never move, so an un-memoized applier pushes an identical
-  // value across the bridge on every palette tap.
-  it('dispatches nothing when the pair has not moved', () => {
-    const bar = stubBar();
-    const statusBar = createStatusBarApplier();
-
-    statusBar.apply('DARK', true, pluginModule(bar));
-    statusBar.apply('DARK', true, pluginModule(bar));
-    statusBar.apply('DARK', true, pluginModule(bar));
-
-    expect(bar.setStyle).toHaveBeenCalledTimes(1);
-    expect(bar.hide).toHaveBeenCalledTimes(1);
-  });
-
-  it('dispatches only the half that moved', () => {
-    const bar = stubBar();
-    const statusBar = createStatusBarApplier();
-
-    statusBar.apply('DARK', true, pluginModule(bar));
-    statusBar.apply('LIGHT', true, pluginModule(bar));
-
-    expect(bar.setStyle).toHaveBeenCalledTimes(2);
-    expect(bar.hide).toHaveBeenCalledTimes(1);
-  });
-
-  // The memo stops the app re-asserting, so a caller that suspects the platform
-  // reset the bar underneath it needs a way back to a clean slate.
-  it('re-asserts both values after forget', () => {
-    const bar = stubBar();
-    const statusBar = createStatusBarApplier();
-
-    statusBar.apply('DARK', true, pluginModule(bar));
-    statusBar.forget();
-    statusBar.apply('DARK', true, pluginModule(bar));
-
-    expect(bar.setStyle).toHaveBeenCalledTimes(2);
-    expect(bar.hide).toHaveBeenCalledTimes(2);
-  });
-
-  it('keeps each applier on its own memo', () => {
-    const bar = stubBar();
-
-    createStatusBarApplier().apply('DARK', true, pluginModule(bar));
-    createStatusBarApplier().apply('DARK', true, pluginModule(bar));
-
-    expect(bar.setStyle).toHaveBeenCalledTimes(2);
-  });
-
-  it('shows the status bar when hidden is false', () => {
-    const bar = stubBar();
-    createStatusBarApplier().apply(null, false, pluginModule(bar));
-    expect(bar.show).toHaveBeenCalledWith({ bar: SystemBarType.StatusBar });
-    expect(bar.hide).not.toHaveBeenCalled();
-  });
-
-  it('makes no visibility call when hidden is null', () => {
-    const bar = stubBar();
-    createStatusBarApplier().apply(null, null, pluginModule(bar));
-    expect(bar.hide).not.toHaveBeenCalled();
-    expect(bar.show).not.toHaveBeenCalled();
-  });
-
-  it('swallows a rejected setStyle call', async () => {
-    const bar = { ...stubBar(), setStyle: vi.fn().mockRejectedValue(new Error('nope')) };
-    expect(() => createStatusBarApplier().apply('DARK', null, pluginModule(bar))).not.toThrow();
-    await vi.waitFor(() => expect(bar.setStyle).toHaveBeenCalled());
-  });
-
-  it('swallows a rejected hide/show call', async () => {
-    const bar = { ...stubBar(), hide: vi.fn().mockRejectedValue(new Error('nope')) };
-    expect(() => createStatusBarApplier().apply(null, true, pluginModule(bar))).not.toThrow();
-    await vi.waitFor(() => expect(bar.hide).toHaveBeenCalled());
   });
 });
 

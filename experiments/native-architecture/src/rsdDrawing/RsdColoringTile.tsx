@@ -13,9 +13,9 @@ import { brandColors, colors, dimensions, motion } from './tokens.css';
 import { styles as controlStyles } from './controls';
 
 // ColoringTile.svelte's literals; rsd-native-coloring-picker.test.mjs reads them from shipping.
-export const TILE_BORDER_PX = 2;
-export const TILE_PRESSED_SCALE = 0.96;
-export const TILE_HOVER_LIFT_PX = 2;
+const TILE_BORDER_PX = 2;
+const TILE_PRESSED_SCALE = 0.96;
+const TILE_HOVER_LIFT_PX = 2;
 // Shipping mixes --brand 25% into transparent under a hovered tile.
 export const TILE_HOVER_SHADOW = `0 4px 12px ${rgba(DRAWING_BRAND, 0.25)}`;
 

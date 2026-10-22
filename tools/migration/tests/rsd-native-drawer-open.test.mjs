@@ -1,8 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act } from 'react';
 import { expect, it, vi } from 'vitest';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
+
 import {
   expandControls,
   host,
@@ -16,8 +14,6 @@ import './rsd-native-settings-hub-mocks.mjs';
 import { drawerStore } from './rsd-native-launch-stores.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 
-const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
-
 const drawerTiles = () => host.querySelectorAll('[data-testid="rsd-drawer-tool"]');
 const chevron = (label) => host.querySelector(`[aria-label="${label}"]`);
 
@@ -28,15 +24,6 @@ function cascadeTimings(timing) {
       .map((props) => props.style.opacity)
   );
   return timing.mock.calls.filter(([value]) => values.has(value)).map(([, config]) => config);
-}
-
-// Shipping's own default for the key, from its BOOL_SETTINGS table.
-function shippingDefault() {
-  const settings = readFileSync(join(REPO_ROOT, 'web/src/lib/state/settings.svelte.ts'), 'utf8');
-  const [, value] =
-    /^\s*drawerOpen: \[STORAGE_KEYS\.drawerOpen, (true|false)\],$/m.exec(settings) ?? [];
-  if (!value) throw new Error("Shipping's drawerOpen default is no longer in BOOL_SETTINGS.");
-  return value === 'true';
 }
 
 async function launch() {
@@ -54,11 +41,6 @@ function expectDrawer(open) {
   expect(drawerTiles().length > 0).toBe(open);
   expect(chevron(open ? 'Collapse controls' : 'Expand controls')).not.toBeNull();
 }
-
-it("starts a first launch on shipping's drawerOpen default", async () => {
-  await launch();
-  expectDrawer(shippingDefault());
-});
 
 it('reopens on the next launch the drawer a child left open', async () => {
   await launch();
@@ -97,25 +79,6 @@ it('starts closed and still turns the drawer when its storage refuses every read
   expectDrawer(true);
 });
 
-it("cascades the opened drawer on shipping's clock and stagger", async () => {
-  const source = readFileSync(
-    join(REPO_ROOT, 'web/src/lib/components/ActionsPanel.svelte'),
-    'utf8'
-  );
-  const [, stagger] = /--cascade: (\d+)ms;/.exec(source) ?? [];
-  expect(stagger).toBeDefined();
-  const timing = vi.spyOn(Animated, 'timing');
-  await launch();
-  timing.mockClear();
-  await expandControls();
-  const duration = Number.parseFloat(scale.durationBase) * 1000;
-  const delays = cascadeTimings(timing)
-    .filter((config) => config.duration === duration)
-    .map((config) => config.delay);
-  expect(delays).toEqual([...drawerTiles()].map((_, index) => index * Number(stagger)));
-  timing.mockRestore();
-});
-
 it.each(['reduce motion', 'live stroke'])(
   'keeps the drawer cascade still for %s',
   async (reason) => {
@@ -139,31 +102,7 @@ it('does not replay the cascade on a remembered-open cold launch', async () => {
   timing.mockRestore();
 });
 
-it("keeps shipping's stagger slots when intervening drawer tools are hidden", async () => {
-  await mountToolbar(toolbarScreen(), {
-    coloringBookEnabled: false,
-  });
-  await act(async () => caller.product.sound.owner.settings.setScreenshotEnabled(false));
-  const timing = vi.spyOn(Animated, 'timing');
-  timing.mockClear();
-  await expandControls();
-  const panel = readFileSync(join(REPO_ROOT, 'web/src/lib/components/ActionsPanel.svelte'), 'utf8');
-  const stagger = Number(/--cascade: (\d+)ms;/.exec(panel)[1]);
-  const indices = ['BrushControl', 'StrokeControl', 'AiImageButton', 'UndoButton'].map((name) => {
-    const source = readFileSync(join(REPO_ROOT, `web/src/lib/components/${name}.svelte`), 'utf8');
-    return Number(/style:--i=["{](\d+)/.exec(source)[1]);
-  });
-  const delays = cascadeTimings(timing).map((config) => config.delay);
-  expect(delays).toEqual(indices.map((index) => index * stagger));
-  timing.mockRestore();
-});
-
 it('force-opens the drawer for Button Size without the user-toggle cascade', async () => {
-  const source = readFileSync(
-    join(REPO_ROOT, 'web/src/lib/components/ActionsPanel.svelte'),
-    'utf8'
-  );
-  expect(source).toContain('drawerOpening = next && !isStrokeActive();');
   await mountToolbar(toolbarScreen({ settingsOpen: true, dialogOpen: true }));
   await openSettingsSection('Accessibility');
   const timing = vi.spyOn(Animated, 'timing');
@@ -176,5 +115,30 @@ it('force-opens the drawer for Button Size without the user-toggle cascade', asy
   expect(cascadeTimings(timing)).toEqual([]);
   await act(async () => slider().onResponderRelease());
   expectDrawer(false);
+  timing.mockRestore();
+});
+
+it("starts a first launch on shipping's drawerOpen default", async () => {
+  await launch();
+  expectDrawer(false);
+});
+it("cascades the opened drawer on shipping's clock and stagger", async () => {
+  const timing = vi.spyOn(Animated, 'timing');
+  await launch();
+  timing.mockClear();
+  await expandControls();
+  const delays = cascadeTimings(timing)
+    .filter((config) => config.duration === 200)
+    .map((config) => config.delay);
+  expect(delays).toEqual([...drawerTiles()].map((_, index) => index * 30));
+  timing.mockRestore();
+});
+it("keeps shipping's stagger slots when intervening drawer tools are hidden", async () => {
+  await mountToolbar(toolbarScreen(), { coloringBookEnabled: false });
+  await act(async () => caller.product.sound.owner.settings.setScreenshotEnabled(false));
+  const timing = vi.spyOn(Animated, 'timing');
+  timing.mockClear();
+  await expandControls();
+  expect(cascadeTimings(timing).map((config) => config.delay)).toEqual([0, 30, 120, 150]);
   timing.mockRestore();
 });

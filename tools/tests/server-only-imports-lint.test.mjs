@@ -37,19 +37,8 @@ const serverOnlyViolations = async (fixture, source) =>
     message.message.includes(SERVER_ONLY_MESSAGE)
   );
 
-const CLIENT_FILES = [
-  'web/src/lib/ai/probe.ts',
-  'web/src/lib/state/probe.svelte.ts',
-  'web/src/routes/probe/+page.ts',
-];
-
-const SERVER_FILES = [
-  'web/src/lib/server/ai/probe.ts',
-  'web/src/lib/server/api/probe.ts',
-  'web/src/routes/probe/+page.server.ts',
-  'web/src/hooks.server.ts',
-  'web/src/lib/ai/probe.test.ts',
-];
+const CLIENT_FILES = ['web/src/lib/ai/probe.ts'];
+const SERVER_FILES = ['web/src/lib/server/probe.ts', 'web/src/lib/probe.test.ts'];
 
 const SERVER_ONLY_IMPORTS = [
   "import sharp from 'sharp';",
@@ -64,15 +53,6 @@ describe('server-only packages stay behind the web/src server boundary', () => {
     it.each(SERVER_ONLY_IMPORTS)('rejects %s', async (source) => {
       expect(await serverOnlyViolations(fixture, source)).toHaveLength(1);
     });
-  });
-
-  it('rejects a server-only import in a Svelte component', async () => {
-    expect(
-      await serverOnlyViolations(
-        'web/src/lib/components/Probe.svelte',
-        '<script lang="ts">import sharp from \'sharp\';</script>'
-      )
-    ).toHaveLength(1);
   });
 
   describe.each(SERVER_FILES)('inside the server paths or a test (%s)', (fixture) => {
@@ -92,8 +72,6 @@ describe('server-only packages stay behind the web/src server boundary', () => {
 });
 
 const EXISTING_WEB_SRC_RESTRICTIONS = [
-  "import { writable } from 'svelte/store';",
-  "import { onDestroy } from 'svelte';",
   "import { chromium } from 'playwright';",
   "import { readFileSync } from 'fs';",
 ];

@@ -1,3 +1,0 @@
-export const LIVE_TILE_COLUMNS = 4;
-export const LIVE_TILE_ROWS = 5;
-export const LIVE_TILE_COUNT = LIVE_TILE_COLUMNS * LIVE_TILE_ROWS;

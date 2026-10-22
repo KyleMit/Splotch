@@ -4,7 +4,7 @@ import { caller, records, host, mount, expandControls } from './rsd-native-selec
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { PNG_TIMEOUT_MS } from '../../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
+import { saveFailureCopy } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import {
   photos,
@@ -133,25 +133,6 @@ describe('canonical Save screenshot to Photos', () => {
     },
     SAVE_TEST_TIMEOUT_MS
   );
-  it(
-    'words a refused permission exactly as the shipping banner does',
-    async () => {
-      records.os = 'ios';
-      photos.permission = 'denied';
-      await mountWith(SETTINGS_V9(false));
-      await click('Draw RSD fixture stroke');
-      const drawing = caller.liveScreen.history.drawing;
-      await save();
-      const shipping = saveFailureCopy('denied', 1, 'ios');
-      await settle(() => expect(host.textContent).toContain(shipping.detail));
-      expect(host.textContent).toContain(shipping.heading);
-      expect(host.textContent).not.toContain('Pictures');
-      expectNoModelCopies();
-      expect(caller.exportPng).toHaveBeenCalledWith(drawing);
-      expect(photos.created).toEqual([]);
-    },
-    SAVE_TEST_TIMEOUT_MS
-  );
 });
 describe('canonical Auto-Save on Delete', () => {
   it(
@@ -172,35 +153,6 @@ describe('canonical Auto-Save on Delete', () => {
       expect(caller.exportPng).toHaveBeenCalledWith(drawing);
       expectNoModelCopies();
       expect(host.textContent).not.toContain('saved');
-    },
-    SAVE_TEST_TIMEOUT_MS
-  );
-  it(
-    'clears the paper and reports the captured picture when Photos refuses it',
-    async () => {
-      photos.nativeOutcome = 'denied';
-      await mountWith(SETTINGS_V9(true));
-      await click('Draw RSD fixture stroke');
-      await clear();
-      const shipping = saveFailureCopy('denied', 1, 'android');
-      await settle(() => expect(host.textContent).toContain(shipping.detail));
-      expect(strokesOnPaper()).toBe(0);
-      expect(photos.created).toEqual([]);
-    },
-    SAVE_TEST_TIMEOUT_MS
-  );
-  it.each(['capture', 'photos'])(
-    'clears the paper after an Auto-Save on Delete %s failure and reports the failed save',
-    async (failure) => {
-      if (failure === 'capture')
-        caller.exportPng.mockRejectedValueOnce(new Error('capture failed'));
-      else photos.createError = new Error('Photos failed');
-      await mountWith(SETTINGS_V9(true));
-      await click('Draw RSD fixture stroke');
-      await clear();
-      const shipping = saveFailureCopy('failed', failure === 'capture' ? 0 : 1, 'android');
-      await settle(() => expect(host.textContent).toContain(shipping.detail));
-      expect(strokesOnPaper()).toBe(0);
     },
     SAVE_TEST_TIMEOUT_MS
   );
@@ -237,3 +189,53 @@ describe('canonical Auto-Save on Delete', () => {
     SAVE_TEST_TIMEOUT_MS
   );
 });
+
+it(
+  'reports a refused iOS permission without creating a saved copy',
+  async () => {
+    records.os = 'ios';
+    photos.permission = 'denied';
+    await mountWith(SETTINGS_V9(false));
+    await click('Draw RSD fixture stroke');
+    const drawing = caller.liveScreen.history.drawing;
+    await save();
+    const copy = saveFailureCopy('denied', 1, 'ios');
+    await settle(() => expect(host.textContent).toContain(copy.detail));
+    expect(host.textContent).toContain(copy.heading);
+    expect(host.textContent).not.toContain('Pictures');
+    expectNoModelCopies();
+    expect(caller.exportPng).toHaveBeenCalledWith(drawing);
+    expect(photos.created).toEqual([]);
+  },
+  SAVE_TEST_TIMEOUT_MS
+);
+
+it(
+  'clears the paper and reports the captured picture when Photos refuses it',
+  async () => {
+    photos.nativeOutcome = 'denied';
+    await mountWith(SETTINGS_V9(true));
+    await click('Draw RSD fixture stroke');
+    await clear();
+    const copy = saveFailureCopy('denied', 1, 'android');
+    await settle(() => expect(host.textContent).toContain(copy.detail));
+    expect(strokesOnPaper()).toBe(0);
+    expect(photos.created).toEqual([]);
+  },
+  SAVE_TEST_TIMEOUT_MS
+);
+
+it.each(['capture', 'photos'])(
+  'clears the paper after an Auto-Save on Delete %s failure and reports the failed save',
+  async (failure) => {
+    if (failure === 'capture') caller.exportPng.mockRejectedValueOnce(new Error('capture failed'));
+    else photos.createError = new Error('Photos failed');
+    await mountWith(SETTINGS_V9(true));
+    await click('Draw RSD fixture stroke');
+    await clear();
+    const copy = saveFailureCopy('failed', failure === 'capture' ? 0 : 1, 'android');
+    await settle(() => expect(host.textContent).toContain(copy.detail));
+    expect(strokesOnPaper()).toBe(0);
+  },
+  SAVE_TEST_TIMEOUT_MS
+);

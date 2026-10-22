@@ -21,7 +21,7 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = join(import.meta.dirname, '..', '..');
 
 const VITEST_ROOT_TEST_GLOB = '*.test.ts';
-const TSCONFIG_ROOT_TEST_GLOB = `./${VITEST_ROOT_TEST_GLOB}`;
+const TSCONFIG_ROOT_TEST_GLOB = '*.ts';
 
 const propertyInitializer = (object, name) => {
   const property = object.properties.find(
@@ -89,7 +89,7 @@ describe('web-root unit tests', () => {
     expect(testIncludeGlobs(source)).toEqual(['*.test.ts']);
   });
 
-  it('are type-checked by svelte-check', () => {
+  it('are type-checked by TypeScript', () => {
     expect(tsconfigIncludeGlobs()).toContain(TSCONFIG_ROOT_TEST_GLOB);
   });
 });

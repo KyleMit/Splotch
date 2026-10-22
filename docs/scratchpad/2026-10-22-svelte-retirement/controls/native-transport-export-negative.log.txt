@@ -1,0 +1,284 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-ai-transport.test.mjs tools/tests/native-picture-export.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+ ❯ |repo-tools| tests/native-ai-transport.test.mjs (32 tests | 4 failed) 64ms
+   ❯ strict native hosted AI contract (7)
+     × distinguishes empty pending polls and unavailable job reads from malformed starts 2ms
+     × honors Retry-After for polling and keeps server failures separate from safety 1ms
+   × answers a 429 throttle on a poll 1ms
+   × answers an unreadable job on a poll 0ms
+ ❯ |repo-tools| tests/native-picture-export.test.mjs (22 tests | 6 failed) 22ms
+   ❯ the saved picture keeps the shipping export contract (10)
+     × saves the expected grid and scale on a 2.625 display 7ms
+     × saves the expected grid and scale on a 3 display 1ms
+     × saves a canonical-sheet picture at one CSS pixel per unit on a 3x display 0ms
+   ❯ composing the saved picture on Android and iOS (4)
+     × paints the paper, the grain at the export scale, then the picture onto the exact grid 7ms
+   × exports the current extent at DPR 2.625 while retaining the first basis 0ms
+   × exports the current extent at DPR 3 while retaining the first basis 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-ai-transport.test.mjs > strict native hosted AI contract > distinguishes empty pending polls and unavailable job reads from malformed starts
+AssertionError: expected { kind: 'failure', …(3) } to deeply equal { kind: 'pending', delayMs: 3000 }
+
+- Expected
++ Received
+
+  {
+-   "delayMs": 3000,
+-   "kind": "pending",
++   "detail": "The server did not finish the picture.",
++   "kind": "failure",
++   "message": "That picture did not finish. Your original drawing is saved.",
++   "reason": "server",
+  }
+
+ ❯ tests/native-ai-transport.test.mjs:56:91
+     54|   );
+     55|   it('distinguishes empty pending polls and unavailable job reads from…
+     56|     expect(await parseAiResponse(new Response(null, { status: 202 }), …
+       |                                                                                           ^
+     57|       kind: 'pending',
+     58|       delayMs: 3000,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  |repo-tools| tests/native-ai-transport.test.mjs > strict native hosted AI contract > honors Retry-After for polling and keeps server failures separate from safety
+AssertionError: expected { kind: 'failure', …(4) } to deeply equal { kind: 'pending', delayMs: 12000 }
+
+- Expected
++ Received
+
+  {
+-   "delayMs": 12000,
+-   "kind": "pending",
++   "detail": "slow",
++   "kind": "failure",
++   "message": "Too many attempts. Please wait before trying again.",
++   "reason": "throttled",
++   "status": 429,
+  }
+
+ ❯ tests/native-ai-transport.test.mjs:102:7
+    100|         0
+    101|       )
+    102|     ).toEqual({ kind: 'pending', delayMs: 12000 });
+       |       ^
+    103|     expect(
+    104|       (
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  |repo-tools| tests/native-ai-transport.test.mjs > answers a 429 throttle on a poll
+AssertionError: expected { kind: 'failure', …(4) } to match object { kind: 'pending', delayMs: 5000 }
+(4 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "delayMs": 5000,
+-   "kind": "pending",
++   "kind": "failure",
+  }
+
+ ❯ tests/native-ai-transport.test.mjs:227:18
+    225| )('answers $label on a $phase', async ({ request, reply, expected }) =…
+    226|   const native = await parseAiResponse(reply(), request, signal(), 0);
+    227|   expect(native).toMatchObject(expected);
+       |                  ^
+    228|   expect(native.detail).toBe(expected.detail);
+    229| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  |repo-tools| tests/native-ai-transport.test.mjs > answers an unreadable job on a poll
+AssertionError: expected { kind: 'failure', …(4) } to match object { kind: 'pending', delayMs: 3000 }
+(4 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "delayMs": 3000,
+-   "kind": "pending",
++   "kind": "failure",
+  }
+
+ ❯ tests/native-ai-transport.test.mjs:227:18
+    225| )('answers $label on a $phase', async ({ request, reply, expected }) =…
+    226|   const native = await parseAiResponse(reply(), request, signal(), 0);
+    227|   expect(native).toMatchObject(expected);
+       |                  ^
+    228|   expect(native.detail).toBe(expected.detail);
+    229| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  |repo-tools| tests/native-picture-export.test.mjs > the saved picture keeps the shipping export contract > saves the expected grid and scale on a 2.625 display
+AssertionError: expected { …(3) } to match object { size: { width: 1024, …(1) }, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "scale": 2.625,
++   "scale": 2,
+    "size": {
+-     "height": 2019,
+-     "width": 1024,
++     "height": 1538,
++     "width": 780,
+    },
+  }
+
+ ❯ tests/native-picture-export.test.mjs:191:11
+    189|         expect(
+    190|           pictureExport(adoptPaper(css.width, css.height, ratio), 'lig…
+    191|         ).toMatchObject({
+       |           ^
+    192|           size: { width, height },
+    193|           scale,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  |repo-tools| tests/native-picture-export.test.mjs > the saved picture keeps the shipping export contract > saves the expected grid and scale on a 3 display
+AssertionError: expected { …(3) } to match object { size: { width: 1170, …(1) }, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "scale": 3,
++   "scale": 2,
+    "size": {
+-     "height": 2307,
+-     "width": 1170,
++     "height": 1538,
++     "width": 780,
+    },
+  }
+
+ ❯ tests/native-picture-export.test.mjs:191:11
+    189|         expect(
+    190|           pictureExport(adoptPaper(css.width, css.height, ratio), 'lig…
+    191|         ).toMatchObject({
+       |           ^
+    192|           size: { width, height },
+    193|           scale,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  |repo-tools| tests/native-picture-export.test.mjs > the saved picture keeps the shipping export contract > saves a canonical-sheet picture at one CSS pixel per unit on a 3x display
+AssertionError: expected { size: { width: 2048, …(1) }, …(2) } to match object { size: { width: 3072, …(1) }, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "scale": 3,
++   "scale": 2,
+    "size": {
+-     "height": 2304,
+-     "width": 3072,
++     "height": 1536,
++     "width": 2048,
+    },
+  }
+
+ ❯ tests/native-picture-export.test.mjs:200:52
+    198|
+    199|   it('saves a canonical-sheet picture at one CSS pixel per unit on a 3…
+    200|     expect(pictureExport(LEGACY_PAPER, 'dark', 3)).toMatchObject({
+       |                                                    ^
+    201|       size: { width: 3072, height: 2304 },
+    202|       scale: 3,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  |repo-tools| tests/native-picture-export.test.mjs > composing the saved picture on Android and iOS > paints the paper, the grain at the export scale, then the picture onto the exact grid
+AssertionError: expected [ [ 'scale', 2, 2 ] ] to deeply equal [ [ 'scale', 3, 3 ] ]
+
+- Expected
++ Received
+
+  [
+    [
+      "scale",
+-     3,
+-     3,
++     2,
++     2,
+    ],
+  ]
+
+ ❯ tests/native-picture-export.test.mjs:285:31
+    283|     const grain = skia.log.find(([key]) => key === 'shader')[1];
+    284|     expect(grain.args.slice(0, 2)).toEqual(['repeat', 'repeat']);
+    285|     expect(grain.args[4].ops).toEqual([['scale', 3, 3]]);
+       |                               ^
+    286|     expect(skia.log.filter(([key]) => !['fromURI', 'dispose'].includes…
+    287|       ['surface', width, height],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  |repo-tools| tests/native-picture-export.test.mjs > exports the current extent at DPR 2.625 while retaining the first basis
+AssertionError: expected { width: 1600, height: 2000 } to deeply equal { width: 2100, height: 2625 }
+
+- Expected
++ Received
+
+  {
+-   "height": 2625,
+-   "width": 2100,
++   "height": 2000,
++   "width": 1600,
+  }
+
+ ❯ tests/native-picture-export.test.mjs:360:85
+    358|   (ratio, width, height) => {
+    359|     const paper = adoptPaper(400, 800, 2);
+    360|     expect(pictureExport(paper, 'light', ratio, { width: 800, height: …
+       |                                                                                     ^
+    361|       width,
+    362|       height,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+ FAIL  |repo-tools| tests/native-picture-export.test.mjs > exports the current extent at DPR 3 while retaining the first basis
+AssertionError: expected { width: 1600, height: 2000 } to deeply equal { width: 2400, height: 3000 }
+
+- Expected
++ Received
+
+  {
+-   "height": 3000,
+-   "width": 2400,
++   "height": 2000,
++   "width": 1600,
+  }
+
+ ❯ tests/native-picture-export.test.mjs:360:85
+    358|   (ratio, width, height) => {
+    359|     const paper = adoptPaper(400, 800, 2);
+    360|     expect(pictureExport(paper, 'light', ratio, { width: 800, height: …
+       |                                                                                     ^
+    361|       width,
+    362|       height,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  10 failed | 44 passed (54)
+   Start at  21:00:39
+   Duration  542ms (environment 46%, transform 25%, tests 21%, import 8%, worker 1%)
+

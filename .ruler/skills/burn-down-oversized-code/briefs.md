@@ -58,12 +58,12 @@ Return: `verdict` (endorse | revise | reverse); `final_outcome`; `final_seams[]`
 >    `<file | function>`: a sentence-case imperative subject, a body saying what moved and why the
 >    seam is real, and the repo's co-author trailer.
 > 6. Gates — all of them, judged by exit code, fixed until green: `npm run check`; `npx eslint` and
->    `npx prettier --check` on touched files; `npm run lint:css` and `npm run lint:tokens` when a
->    `.svelte` or `.css` file changed; `npm run lint:dead`; `npm run test:unit`;
->    `npm run test:tools`; and `git grep` for every moved identifier and old path, updating
->    `tools/`, `docs/`, and `.ruler/` sources (then `npm run ruler:apply`). Other sessions share the
->    machine: re-run a failing file alone before believing a failure unrelated to your change. Use
->    no fixed ports and stop no process you did not start.
+>    `npx prettier --check` on touched files; `npm run lint:css` when a `.css` file changed;
+>    `npm run lint:dead`; `npm run test:unit`; `npm run test:tools`; and `git grep` for every moved
+>    identifier and old path, updating `tools/`, `docs/`, and `.ruler/` sources (then
+>    `npm run ruler:apply`). Other sessions share the machine: re-run a failing file alone before
+>    believing a failure unrelated to your change. Use no fixed ports and stop no process you did
+>    not start.
 > 7. Re-measure the unit and every unit in its file.
 
 Return: `status` (committed | declined | blocked); `branch`; `worktree` (absolute path); `shas[]`

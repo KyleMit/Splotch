@@ -36,9 +36,6 @@ export {
 export type {
   RecoveryFreeGenerationOperation,
   RecoveryFreeGenerationReservationReceipt,
-  RecoveryDailyFreeGenerationReceipt,
-  RecoveryFreeGenerationSettlementReceipt,
-  RecoveryFreeGenerationOutcome,
 } from './freeGenerationRecoveryReceipts';
 
 export async function getDailyFreeGenerationStatus(): Promise<{

@@ -67,10 +67,10 @@ nothing against the rival itself.
 ## The sandbox
 
 Measured with the model-free `codex sandbox` runner: a targeted Vitest file, `npm run check`, and
-`npm run build` pass inside the disposable worktree; writes to the home directory and the canonical
-checkout are refused; a commit fails because the worktree's gitdir lives under the canonical
-checkout's `.git`; DNS fails with the network off. The sandbox also writes anywhere under the
-rival's `TMPDIR`, and the handler's `TMPDIR` is where every session's spool lives — the first
+`npm run build:site` pass inside the disposable worktree; writes to the home directory and the
+canonical checkout are refused; a commit fails because the worktree's gitdir lives under the
+canonical checkout's `.git`; DNS fails with the network off. The sandbox also writes anywhere under
+the rival's `TMPDIR`, and the handler's `TMPDIR` is where every session's spool lives — the first
 sandboxed round's own review reproduced a request file written into a sibling session — so the
 launcher gives the rival a private `TMPDIR` inside its session, and the spool root is measured
 unwritable from there. `/tmp` itself stays writable, which is the spool root on a Linux host;

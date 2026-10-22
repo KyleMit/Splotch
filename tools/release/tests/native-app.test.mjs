@@ -138,15 +138,15 @@ const STORE_APP_ID_MENTIONS = [
   ['the Maestro smoke flow', '.maestro/smoke.yaml', /^appId:\s*([^\s#]+)\s*$/m],
   ['the documented Maestro appId', 'docs/TESTING.md', /^appId:\s*([^\s#]+)\s*$/m],
   [
-    'the installed-package troubleshooting target',
+    'the documented Android development build identity',
     'docs/MOBILE/android.md',
-    /a copy of\s+`([^`]+)`/,
+    /\*\*Native Release build\*\*: `npm run android:apk` builds the React Native app as\s*`([^`]+)`/,
     DEV_APP_ID,
   ],
   [
-    'the documented adb uninstall target',
-    'docs/MOBILE/android.md',
-    /^\s*adb -s <serial> uninstall ([^\s#]+)\s+# <serial> from adb:devices$/m,
+    'the documented physical-device development identity',
+    'docs/MOBILE/native.md',
+    /Physical-device development builds use `([^`]+)`/,
     DEV_APP_ID,
   ],
   [
@@ -160,11 +160,6 @@ const STORE_APP_ID_MENTIONS = [
     /^\* \[x\] Bundle ID `([^`]+)`, display name/m,
   ],
   ['the App Store Connect bundle ID', 'docs/MOBILE/ios.md', /bundle ID `([^`]+)`, SKU `splotch`/],
-  [
-    'the documented fastlane bundle ID',
-    'docs/MOBILE/native.md',
-    /iOS bundle ID `([^`]+)`, the Android package name/,
-  ],
 ];
 
 describe('every other place that names an app ID', () => {

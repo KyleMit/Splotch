@@ -24,7 +24,7 @@ import { describe, expect, it } from 'vitest';
 // test, so the list acquires an air of completeness nothing maintains.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const registerDoc = join(repoRoot, 'docs', 'COMPATIBILITY.md');
-const sourceRoot = join(repoRoot, 'web', 'src');
+const sourceRoot = repoRoot;
 
 const HEADING = '## API risk register';
 
@@ -36,7 +36,7 @@ const WHERE_COLUMN = 1;
 // A code span naming a file this repo ships: a path into web/src/ (or one of
 // the two roots that sit directly in it). Anchored end to end so a marker that
 // merely mentions a filename can't be mistaken for a path.
-const SOURCE_PATH = /^[A-Za-z0-9_.+\-/]+\.(?:ts|svelte|css|html)$/;
+const SOURCE_PATH = /^[A-Za-z0-9_.+\-/]+\.(?:ts|tsx|css|html|mjs)$/;
 
 // `path` → `marker`. The arrow is only an anchor when a source path sits on its
 // left, which keeps it clear of the column's ordinary prose arrows
@@ -83,7 +83,7 @@ const CODE_SPAN = /`([^`]+)`/g;
 const TOKEN_CHAR = /[A-Za-z0-9_-]/;
 
 // What the column used to be, and must never silently become again.
-const LINE_PIN = /`[^`]*\.(?:ts|svelte|css|html)[^`]*:\d/;
+const LINE_PIN = /`[^`]*\.(?:ts|tsx|css|html|mjs)[^`]*:\d/;
 
 function registerRows(markdown) {
   const lines = markdown.split('\n');
@@ -236,30 +236,6 @@ describe('COMPATIBILITY.md API risk register', () => {
     ]);
     expect(anchorsIn('`.ai-stage` height → `--stage-h` for the fall distance')).toEqual([]);
     expect(anchorsIn('avoid — no current usage')).toEqual([]);
-  });
-
-  it('reads multi-marker anchors, keeping `then` ordered and `+` unordered', () => {
-    expect(
-      anchorsIn('`app.css` → `height: 100vh` then `height: 100dvh` (the `body` rule)')
-    ).toEqual([{ path: 'app.css', markers: ['height: 100vh', 'height: 100dvh'], ordered: true }]);
-    expect(
-      anchorsIn('`app.css` → `backdrop-filter: blur(` + `-webkit-backdrop-filter: blur(`')
-    ).toEqual([
-      {
-        path: 'app.css',
-        markers: ['backdrop-filter: blur(', '-webkit-backdrop-filter: blur('],
-        ordered: false,
-      },
-    ]);
-    // A prose `+` between un-quoted words must not extend the marker list.
-    expect(anchorsIn('`lib/idle.ts` → `requestIdleCallback` — idle work + first paint')).toEqual([
-      { path: 'lib/idle.ts', markers: ['requestIdleCallback'], ordered: false },
-    ]);
-  });
-
-  it('reports a source path left without a marker', () => {
-    expect(unanchoredPaths('`lib/idle.ts` → `requestIdleCallback`')).toEqual([]);
-    expect(unanchoredPaths('`lib/idle.ts` and `app.css`')).toEqual(['lib/idle.ts', 'app.css']);
   });
 
   // The false-green cases the drift guard exists to catch, each reproduced

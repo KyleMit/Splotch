@@ -9,11 +9,11 @@ export const EXTERNAL_MARK_LABEL = '(opens outside Splotch)';
 
 // ExternalMark.svelte's blob and icon sizes, and the standalone mark's top-up of its host link's
 // gap. Exported for native-design-primitives-drift.test.mjs, which reads each from shipping.
-export const EXTERNAL_MARK_PX = {
+const EXTERNAL_MARK_PX = {
   inline: { blob: 16, icon: 9 },
   standalone: { blob: 22, icon: 12 },
 } as const;
-export const EXTERNAL_MARK_STANDALONE_GAP_PX = 2;
+const EXTERNAL_MARK_STANDALONE_GAP_PX = 2;
 
 const styles = css.create({
   mark: { userSelect: 'none', flexShrink: 0 },

@@ -42,12 +42,6 @@ describe('the web/src named-exports ban covers every file shape', () => {
     );
   });
 
-  it('rejects a default export in a rune module, where the Svelte block replaced the entry', async () => {
-    expect(
-      await namedExportViolations('web/src/lib/probe.svelte.ts', 'export default 1;')
-    ).toHaveLength(1);
-  });
-
   it('rejects a default export in a colocated unit test, where the Vitest block replaced the entry', async () => {
     expect(
       await namedExportViolations('web/src/lib/probe.test.ts', 'export default 1;')

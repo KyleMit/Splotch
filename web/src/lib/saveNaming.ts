@@ -11,15 +11,5 @@ export type SaveResult =
   | { status: 'photos' | 'downloads' | 'denied' | 'failed' }
   | { status: 'chosenFolder'; folderName: string };
 
-export type UnsavedStatus = Extract<SaveResult['status'], 'denied' | 'failed'>;
-
-export function isUnsavedStatus(status: unknown): status is UnsavedStatus {
-  return status === 'denied' || status === 'failed';
-}
-
-export function isUnsaved(result: SaveResult): result is { status: UnsavedStatus } {
-  return isUnsavedStatus(result.status);
-}
-
 export const DRAWING_BASENAME = 'splotch';
 export const AI_IMAGE_BASENAME = 'splotch-ai';

@@ -6,7 +6,7 @@ import { GENERAL_DESIGN_NOTES, surfaceDesignNote } from './page-inventory-design
 const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 3;
 export const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 5;
 export const PAGE_INVENTORY_REVIEW_CONTRACT = 'isolated-image-description-v1';
-export const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
+const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
 export const PAGE_INVENTORY_THEMES = [
   {
     id: 'light',
@@ -362,37 +362,6 @@ export function validateCritiqueEntries(entries, manifest, { allowPartial = fals
   return validated;
 }
 
-// A surface that renders a shared shell — the wide Settings hub opening on its
-// first section, or the compact landscape quick toggles every section collapses
-// into — captures byte-identically under more than one name. Each of those is
-// still its own review, because the reviewer also read a description naming the
-// surface it expected, and the same pixels mean different things against
-// different expectations. So the severities are kept apart and the sharing is
-// reported rather than reconciled.
-export function pixelIdenticalReviewGroups(captures, reviews) {
-  const groups = new Map();
-  for (const capture of captures) {
-    const review = reviews.get(capture.review_id);
-    if (!review) continue;
-    const groupKey = `${capture.sha256}--${capture.theme}`;
-    const group = groups.get(groupKey) ?? {
-      sha256: capture.sha256,
-      theme: capture.theme,
-      reviews: [],
-    };
-    group.reviews.push({ review_id: capture.review_id, severity: review.severity });
-    groups.set(groupKey, group);
-  }
-  return [...groups.values()]
-    .filter((group) => group.reviews.length > 1)
-    .map(({ sha256, theme, reviews: grouped }) => ({
-      sha256,
-      theme,
-      divergent: new Set(grouped.map((review) => review.severity)).size > 1,
-      reviews: grouped,
-    }));
-}
-
 export function readDesignCritique(path, manifest, options) {
   if (!path) return { entries: new Map(), reviewer: null };
   const document = readJson(path, 'design critique');
@@ -461,4 +430,28 @@ export function finalizeDesignCritique(manifest, entries, { allowPartial = false
     pixel_identical_groups: pixelIdenticalGroups,
     entries: orderedEntries,
   };
+}
+
+function pixelIdenticalReviewGroups(captures, reviews) {
+  const groups = new Map();
+  for (const capture of captures) {
+    const review = reviews.get(capture.review_id);
+    if (!review) continue;
+    const groupKey = `${capture.sha256}--${capture.theme}`;
+    const group = groups.get(groupKey) ?? {
+      sha256: capture.sha256,
+      theme: capture.theme,
+      reviews: [],
+    };
+    group.reviews.push({ review_id: capture.review_id, severity: review.severity });
+    groups.set(groupKey, group);
+  }
+  return [...groups.values()]
+    .filter((group) => group.reviews.length > 1)
+    .map(({ sha256, theme, reviews: grouped }) => ({
+      sha256,
+      theme,
+      divergent: new Set(grouped.map((review) => review.severity)).size > 1,
+      reviews: grouped,
+    }));
 }

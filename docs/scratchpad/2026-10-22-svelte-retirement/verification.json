@@ -1,0 +1,61 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "browserless": {
+    "exitCode": 0,
+    "SMOKE_PORT": 5347,
+    "unit": 1626,
+    "asset": 298,
+    "storeDrawing": 20,
+    "tools": 8077,
+    "mountedRn": 1043,
+    "apiSmokes": 46
+  },
+  "coverage": {
+    "statements": 74.43,
+    "branches": 74.78,
+    "functions": 77.03,
+    "lines": 75.82,
+    "thresholds": {
+      "statements": 74.4,
+      "branches": 74.7,
+      "functions": 77,
+      "lines": 75.8
+    }
+  },
+  "buildSite": {
+    "exitCode": 0,
+    "firstPaintBytes": 45665,
+    "firstPaintCapBytes": 47052,
+    "coreControlsBytes": 818694,
+    "coreControlsCapBytes": 827535,
+    "pageCapsUnchanged": true,
+    "precacheBytes": 6724849
+  },
+  "postnativeWebBuild": {
+    "exitCode": 0,
+    "noJavaScriptLayoutsPerPage": 8,
+    "adminApiBrowserFlows": "passed",
+    "safeAreaScenarios": 67,
+    "deviceProfiles": 20
+  },
+  "driver": {
+    "source": "run-splotch",
+    "syntheticInkedPixels": 3276,
+    "privacy": "passed",
+    "occupiedPortRefusedWithoutStoppingOwner": true,
+    "ownedProcessGroupStopped": true,
+    "physicalDeviceAccessed": false
+  },
+  "headExtraction": "head-extraction.json",
+  "negativeLogs": "The negative-control logs intentionally contain failed assertions from seeded faults. The final full browserless receipt above proves the restored sources pass.",
+  "quality": {
+    "exitCode": 0,
+    "checksPassed": 12,
+    "lintWarnings": 3,
+    "note": "All three warnings predate this unit; no lint errors. pnpm audit exits0 under the existing ignored-high policy."
+  },
+  "frozenInstall": {
+    "command": "pnpm install --frozen-lockfile",
+    "exitCode": 0
+  }
+}

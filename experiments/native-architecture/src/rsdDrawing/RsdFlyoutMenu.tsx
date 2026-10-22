@@ -6,8 +6,8 @@ import { useBareToolbar } from './toolbarSkin';
 
 // The app.css .flyout-menu values that no design token carries, kept local for the StyleX web
 // compile; tools/tests/native-button-chrome.test.mjs holds them to app.css.
-export const FLYOUT_MENU_PADDING_PX = 6;
-export const FLYOUT_MENU_GAP_PX = 6;
+const FLYOUT_MENU_PADDING_PX = 6;
+const FLYOUT_MENU_GAP_PX = 6;
 // A flat menu has no card: its options sit on the paper this far apart, with no padding.
 export const BARE_FLYOUT_MENU_GAP_PX = 4;
 

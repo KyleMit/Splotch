@@ -8,26 +8,26 @@ import { brandColors, colors, dimensions, fonts, motion } from './tokens.css';
 // Button.svelte's values that no design token carries. They stay in this module because the
 // StyleX web compile resolves only local constants and token files inside css.create;
 // tools/tests/native-button-chrome.test.mjs reads Button.svelte and fails on divergence.
-export const BUTTON_PRESS_SCALE = 0.96;
+const BUTTON_PRESS_SCALE = 0.96;
 // The large label's vertical padding, which keeps it centered in the 48px target.
-export const BUTTON_LG_PADDING_BLOCK_PX = 14;
-export const BUTTON_HERO_MIN_HEIGHT_PX = 56;
-export const BUTTON_HERO_GAP_PX = 10;
+const BUTTON_LG_PADDING_BLOCK_PX = 14;
+const BUTTON_HERO_MIN_HEIGHT_PX = 56;
+const BUTTON_HERO_GAP_PX = 10;
 // The outline variant's padding is its size's padding less its border, so every variant of one
 // size has the same outer box. React Native has no calc(), so the differences are kept here.
-export const BUTTON_OUTLINE_PADDING_PX = {
+const BUTTON_OUTLINE_PADDING_PX = {
   sm: { block: 7, inline: 15 },
   md: { block: 11, inline: 19 },
   lg: { block: 13, inline: 15 },
   hero: { block: 0, inline: 23 },
 } as const;
-export const BUSY_RING_SIZE_PX = 14;
-export const BUSY_RING_BORDER_PX = 2;
-export const BUSY_RING_OPACITY = 0.9;
-export const BUSY_RING_TURN_MS = 800;
+const BUSY_RING_SIZE_PX = 14;
+const BUSY_RING_BORDER_PX = 2;
+const BUSY_RING_OPACITY = 0.9;
+const BUSY_RING_TURN_MS = 800;
 // Shipping mixes --brand into transparent; React Native has no color-mix(), so the mix is
 // resolved against the unthemed brand hue.
-export const BRAND_HERO_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.4)';
+const BRAND_HERO_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.4)';
 
 // tools/migration/tests/rsd-native-button-chrome.test.mjs holds this list and each variant's
 // tokens to Button.svelte.

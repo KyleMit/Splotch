@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
-import { AI_OUTPUT_FIXTURES, aiOutputFor } from '../../web/tests/artifacts/ai-output-fixtures.ts';
+import { AI_OUTPUT_FIXTURES, aiOutputFor } from '../../e2e/fixtures/ai-output-fixtures.ts';
 import { IMAGE_SIZES } from '../../web/src/lib/server/ai/imageSize.ts';
 import { PAGE_INVENTORY_VIEWPORTS } from '../page-inventory/lib/page-inventory-report.mjs';
 

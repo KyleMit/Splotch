@@ -1,14 +1,10 @@
 ---
 paths:
-  - "web/tests/**"
   - "e2e/**"
   - "web/src/**/*.test.ts"
   - "web/*.test.ts"
-  - "web/playwright.config.ts"
-  - "web/playwright.shared.ts"
+  - "e2e/playwright.config.ts"
   - "web/vitest.config.ts"
-  - "web/vitest.webSsr.config.ts"
-  - "web/vitest-setup.ts"
   - ".maestro/**"
 ---
 
@@ -16,8 +12,8 @@ paths:
 
 * Three layers (ADR-0008): Vitest unit tests, colocated with their subject (`web/src/**/*.test.ts`
   for app modules, `web/*.test.ts` for build-time modules at the web root), Playwright E2E
-  (`tests/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared by
-  Android and iOS). Pick the lowest layer that can catch the regression.
+  (`e2e/specs/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared
+  by Android and iOS). Pick the lowest layer that can catch the regression.
 * Unit tests cover pure logic and state modules only; UI flows belong in Playwright. The Vitest
   environment is **happy-dom**, not jsdom (ADR-0009). Test files that need no DOM at all —
   `lib/server/**` and pure-logic modules — opt out with a `// @vitest-environment node` first line
@@ -26,20 +22,13 @@ paths:
 * `npm test` runs the CI test tiers described by the `test` entry in `package.json` and its
   `scripts-info` description; the native smoke tests (`test:android`, `test:ios`) are deliberately
   excluded because they require an emulator/simulator and native tooling.
-* Playwright builds the production artifact and serves it with `vite preview` by default; set
-  `DEV_SERVER=1` to iterate against `vite dev` instead.
-* The Playwright web server **declares** every private env var `web/src` reads, never inherits it —
-  `commonWebServer.env` in `playwright.shared.ts` supplies the known test credentials
-  (`ADMIN_ACCESS_TOKEN=test-admin-secret`, the managed access code), blanks `GITHUB_ISSUE_TOKEN` —
-  the value that forces `/api/report`'s graceful 503 — and sets `OPENAI_API_KEY` to a key that
-  cannot authenticate. That one is **non-blank on purpose**: with no key at all the managed-code
-  path 503s in `authorizeGenerationRequest` before the request guards the generate-image specs
-  assert. Vite gives that env precedence over `web/.env`, so a developer's real dotenv can't change
-  what a spec exercises or reaches. Add each new private var to that object (and to the one
-  `tools/api-smoke/run-local-contract.mjs` spawns its server with) —
-  `tools/tests/e2e-server-env.test.mjs` fails when either is missing a name. Both Playwright configs
-  disable server reuse and use Vite `strictPort`; `tests/global-setup.ts` also probes
-  `/api/verify-access-code` for a harness-only access code as defense in depth.
+* Playwright builds the RN production export and serves it through `e2e/server/serve.ts`, including
+  the real Netlify Function on the same origin. Set `SPLOTCH_E2E_PREBUILT=1` only after building
+  that checkout's current sources.
+* The Playwright host declares its complete environment in `e2e/server/serverEnv.ts`, including test
+  admin credentials, a managed access code and a model key that cannot authenticate. It reads no
+  dotenv file or shell credentials. Keep new private variables in this isolated environment and in
+  the API smoke's environment (`tools/api-smoke/run-local-contract.mjs`).
 * `e2e/specs/smoke.spec.ts` is the Firefox/WebKit critical-path subset (boot, stroke, Undo, the
   privacy page); the SvelteKit suite's own subset is retired. CI installs and requires one engine
   per smoke job; locally each project joins only when its binary is installed. Keep that spec free
@@ -59,10 +48,10 @@ paths:
   a side-effect-free module.
 * **A test that cannot fail is a lint error**, not something a reviewer has to notice:
   `npm run lint` scopes `@vitest/eslint-plugin` onto `**/*.test.{ts,mjs}` and
-  `web/src/**/*TestHarness.ts` and `eslint-plugin-playwright` onto `web/tests/**/*.spec.ts`, and
+  `web/src/**/*TestHarness.ts` and `eslint-plugin-playwright` onto `e2e/specs/**/*.spec.ts`, and
   rejects a body with no assertion, a committed `.only`, an unconditional skip, an `expect` that
   never reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first assertion), and
-  an assertion reachable only through a branch. The other `web/tests/**/*.ts` helper modules get
+  an assertion reachable only through a branch. The other `e2e/specs/**/*.ts` helper modules get
   only the three assertion-shape rules (`valid-expect`, `missing-playwright-await`,
   `valid-expect-in-promise`), since helpers are not tests. The branch rule shapes how a parametrized
   case is written: state the expectation as a value the table carries

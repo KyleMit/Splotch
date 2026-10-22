@@ -12,10 +12,7 @@ import {
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
-import { readFileSync } from 'node:fs';
-const WHITE_INK = /export const WHITE_INK = '([^']+)'/.exec(
-  readFileSync(new URL('../../web/src/lib/state/colors.svelte.ts', import.meta.url), 'utf8')
-)[1];
+
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
 vi.mock(
@@ -76,7 +73,7 @@ function strongInkPixels(image, theme) {
 }
 describe('semantic Black through resolved paint appearance', () => {
   it('projects canonical white only for semantic Black on dark paper and retains semantic IDs', () => {
-    expect(paintAppearance('Black', 'dark').hex).toBe(WHITE_INK);
+    expect(paintAppearance('Black', 'dark').hex).toBe('#ffffff');
     expect(paintAppearance('#0A0B10', 'dark').hex).toBe('#0A0B10');
     expect(paintAppearance('Blue', 'dark').glaze).toBe('darken');
     expect(paintHex('Black')).toBe('#0a0b10');

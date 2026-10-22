@@ -115,9 +115,8 @@ jobs:
             a detached HEAD on the merge ref, so there is no branch to infer
             from. The PR branch is already checked out in the working directory.
 
-            You are reviewing a Dependabot pull request on Splotch, a SvelteKit
-            drawing app for toddlers that ships to web (Netlify) and native
-            (Capacitor, Android + iOS).
+            You are reviewing a Dependabot pull request on Splotch, a React Native
+            drawing app for toddlers that ships to web (Netlify), Android, and iOS.
 
             Decide whether this bump is safe to merge, and post one comment with
             a clear verdict. You are advisory only — do not approve, merge, push

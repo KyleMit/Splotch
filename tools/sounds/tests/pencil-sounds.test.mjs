@@ -28,10 +28,10 @@ import { describeMp3 } from '../lib/mp3-stream.mjs';
 const MAX_SHIPPED_PENCIL_CLIP_BYTES = 100_000;
 
 const drawingSoundSource = readFileSync(
-  join(import.meta.dirname, '../../../web/src/lib/audio/drawingSound.ts'),
+  join(import.meta.dirname, '../../../experiments/native-architecture/src/audio/pencilSounds.ts'),
   'utf8'
 );
-const appPencilClipNames = [...drawingSoundSource.matchAll(/'\/sounds\/([^']+)'/g)]
+const appPencilClipNames = [...drawingSoundSource.matchAll(/from '\.\/([^']+)'/g)]
   .map((match) => match[1])
   .filter((name) => PENCIL_CLIP_PATTERN.test(name))
   .sort();

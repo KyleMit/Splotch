@@ -5,14 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import {
   BACK_BLOB_PX,
-  BACK_ICON_PX,
   CRAYON_LABELS,
   NOT_FOUND_COPY,
-  NOT_FOUND_MARK_PX,
-  NOT_FOUND_MARK_TURN_DEG,
-  PAGE_FRAMED_MAX_WIDTH_PX,
-  PAGE_GUTTER,
-  PAGE_SHEET_MAX_WIDTH_PX,
   RsdNotFoundPage,
   RsdPageSheet,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
@@ -28,43 +22,11 @@ import { DrawingAppearanceProvider } from '../../../experiments/native-architect
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8').replace(/\s+/g, ' ');
-const SHORT_NOT_FOUND_MARK_PX = Number(
-  read('web/src/lib/components/page/NotFoundPage.svelte')
-    .split(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`)[1]
-    .match(/width: (\d+)px/)[1]
-);
 
 describe("the web export's not-found page", () => {
   it('keeps the copy and literals NotFoundPage and PageShell declare', () => {
-    const page = read('web/src/lib/components/page/NotFoundPage.svelte');
-    expect(page).toContain(`<title>${NOT_FOUND_COPY.documentTitle}</title>`);
-    expect(page).toContain(`title="${NOT_FOUND_COPY.title}"`);
-    expect(page).toContain(`{#snippet lede()}${NOT_FOUND_COPY.lede}{/snippet}`);
-    for (const label of [
-      NOT_FOUND_COPY.startDrawing,
-      NOT_FOUND_COPY.changelog,
-      NOT_FOUND_COPY.privacy,
-    ])
-      expect(page).toContain(`>${label}</Button>`);
-    expect(page).toContain(
-      `width: ${NOT_FOUND_MARK_PX}px; height: ${NOT_FOUND_MARK_PX}px; transform: rotate(${NOT_FOUND_MARK_TURN_DEG}deg);`
-    );
     expect(read('web/src/lib/components/page/backLabel.ts')).toContain(
       `COLD_VISIT_LABEL: BackLabel = '${NOT_FOUND_COPY.startDrawing}';`
-    );
-    const shell = read('web/src/lib/components/page/PageShell.svelte');
-    const { minPx, viewportWidthPercent, maxPx } = PAGE_GUTTER;
-    expect(shell).toContain(
-      `--page-gutter: clamp(${minPx}px, ${viewportWidthPercent}vw, ${maxPx}px);`
-    );
-    expect(shell).toContain(`max-width: ${PAGE_SHEET_MAX_WIDTH_PX}px;`);
-    expect(shell).toContain(`@media (max-width: ${PAGE_FRAMED_MAX_WIDTH_PX}px)`);
-    const back = read('web/src/lib/components/page/BackLink.svelte');
-    expect(back).toContain(`width: ${BACK_BLOB_PX}px;`);
-    expect(back).toContain(`width: ${BACK_ICON_PX}px;`);
-    const strip = read('web/src/lib/components/CrayonStrip.svelte');
-    expect(strip).toContain(
-      `const CRAYON_LABELS: PaletteLabel[] = [ ${CRAYON_LABELS.map((label) => `'${label}',`).join(' ')} ];`
     );
   });
 
@@ -144,10 +106,6 @@ it.each([
   { width: NARROW_PHONE_MIN_WIDTH_PX, crayons: true },
   { width: 1024, crayons: true },
 ])('keeps shipping’s masthead decoration at width $width', async ({ width, crayons }) => {
-  const shell = read('web/src/lib/components/page/PageShell.svelte');
-  expect(shell).toContain(
-    `@media (max-width: ${NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX}px) { .brand :global(.crayons) { display: none; } }`
-  );
   records.dimensions = { width, height: 874, scale: 1, fontScale: 1 };
   await mount(pageTree('light', { backLabel: 'Back to drawing' }));
   const brand = pageParts().topbar.lastElementChild;
@@ -174,28 +132,6 @@ it.each(['ios', 'android'])(
     expect(sheetStyle(topbar.firstElementChild).flexShrink).toBe(0);
   }
 );
-
-it('pins the shipping short-height sheet, compact hero and optional lede disclosure', () => {
-  const shell = read('web/src/lib/components/page/PageShell.svelte');
-  const short = shell.slice(shell.lastIndexOf(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`));
-  expect(short).toContain('.sheet { padding: 0 var(--space-7) 36px; }');
-  expect(short).toContain('.topbar { padding: 10px 0; }');
-  expect(short).toContain('.hero { padding: var(--space-1) 0 var(--space-4); }');
-  expect(short).toContain(
-    'font-size: var(--font-size-xl); line-height: 1.2; letter-spacing: -0.01em;'
-  );
-  expect(shell).toContain('About this page');
-  expect(short).toContain('.lede-toggle { display: inline-flex; }');
-  expect(short).toContain('.lede.collapsed { display: none; }');
-  expect(short).toContain('.page { padding-left: 0; padding-right: 0; }');
-  expect(read('web/src/lib/components/page/NotFoundPage.svelte')).toContain(
-    'collapsibleLede={false}'
-  );
-  const back = read('web/src/lib/components/page/BackLink.svelte');
-  expect(back.slice(back.lastIndexOf(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`))).toContain(
-    '.back { margin-block: -10px; } .back-blob { width: 36px; height: 36px; }'
-  );
-});
 
 it.each(
   ['light', 'dark'].flatMap((theme) => [
@@ -373,33 +309,6 @@ it('keeps the not-found introduction expanded in the compact page shell', async 
 });
 
 it.each([
-  { height: SHORT_PAGE_HEIGHT_PX, mark: SHORT_NOT_FOUND_MARK_PX, gap: 'space4' },
-  { height: SHORT_PAGE_HEIGHT_PX + 1, mark: NOT_FOUND_MARK_PX, gap: 'space6' },
-])(
-  'uses shipping’s not-found mascot and body gap at height $height',
-  async ({ height, mark, gap }) => {
-    const shipping = read('web/src/lib/components/page/NotFoundPage.svelte');
-    const compact = shipping.slice(
-      shipping.lastIndexOf(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`)
-    );
-    expect(compact).toContain(
-      `width: ${SHORT_NOT_FOUND_MARK_PX}px; height: ${SHORT_NOT_FOUND_MARK_PX}px;`
-    );
-    expect(compact).toContain('gap: var(--space-4);');
-    records.dimensions = { width: 844, height, scale: 1, fontScale: 1 };
-    records.journalHostProps = true;
-    await mount(createElement(RsdNotFoundPage));
-    const body = host.querySelector('[data-testid="information-page-body"]').firstElementChild;
-    const mascot = body.firstElementChild.querySelector('svg');
-    expect(mascot.getAttribute('width')).toBe(String(mark));
-    expect(mascot.getAttribute('height')).toBe(String(mark));
-    expect(sheetStyle(body).gap).toBe(Number.parseFloat(scale[gap]));
-    expect(sheetStyle(body.firstElementChild).display).toBe('flex');
-    expect(read('web/src/lib/components/SplotchyIcon.svelte')).toContain('display: inline-flex;');
-  }
-);
-
-it.each([
   { width: PHONE_MAX_WIDTH_PX, basis: '100%' },
   { width: PHONE_MAX_WIDTH_PX + 1, basis: undefined },
 ])('retains the shipping not-found action row at width $width', async ({ width, basis }) => {
@@ -423,3 +332,21 @@ it.each([
   expect(title.style.getPropertyValue('text-wrap')).toBe('');
   expect(pageParts().lede.style.maxWidth).toBe('');
 });
+
+it.each([
+  { height: SHORT_PAGE_HEIGHT_PX, mark: 56, gap: 'space4' },
+  { height: SHORT_PAGE_HEIGHT_PX + 1, mark: 80, gap: 'space6' },
+])(
+  'uses shipping’s not-found mascot and body gap at height $height',
+  async ({ height, mark, gap }) => {
+    records.dimensions = { width: 844, height, scale: 1, fontScale: 1 };
+    records.journalHostProps = true;
+    await mount(createElement(RsdNotFoundPage));
+    const body = host.querySelector('[data-testid="information-page-body"]').firstElementChild;
+    const mascot = body.firstElementChild.querySelector('svg');
+    expect(mascot.getAttribute('width')).toBe(String(mark));
+    expect(mascot.getAttribute('height')).toBe(String(mark));
+    expect(sheetStyle(body).gap).toBe(Number.parseFloat(scale[gap]));
+    expect(sheetStyle(body.firstElementChild).display).toBe('flex');
+  }
+);

@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   caller,
   records,
@@ -27,20 +25,9 @@ import {
   REPORT_FORM_COPY,
 } from '../../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
 
+const TIGHT_FEEDBACK_WIDTH_PX = 400;
 const CHECKBOX = `${REPORT_FORM_COPY.includeDevice} ${REPORT_FORM_COPY.includeDeviceWhy}`;
 const BUG_FIELD = MESSAGE_PROMPT_BY_KIND.bug.label;
-const SHIPPING_REPORT_FIELDS = readFileSync(
-  join(import.meta.dirname, '../../../web/src/lib/components/report/ReportFields.svelte'),
-  'utf8'
-);
-const SHIPPING_FEEDBACK_PAGE = readFileSync(
-  join(import.meta.dirname, '../../../web/src/routes/feedback/+page.svelte'),
-  'utf8'
-);
-const SHIPPING_SETTINGS_REPORT = readFileSync(
-  join(import.meta.dirname, '../../../web/src/lib/components/settings/ReportForm.svelte'),
-  'utf8'
-);
 
 function node(label) {
   const found = host.querySelector(`[aria-label="${label}"]`);
@@ -129,7 +116,6 @@ function settingsScreen(appearance = 'light') {
 }
 
 it('drills into Feedback inside Settings, with the shipping form and none of the old sheet', async () => {
-  expect(SHIPPING_SETTINGS_REPORT).toContain('disabled={!message.trim()}');
   settingsScreen();
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Feedback');
@@ -158,13 +144,6 @@ it.each(
 )(
   'renders complete $appearance $presentation Feedback labels without a line clamp at $width px',
   async ({ width, appearance, presentation }) => {
-    const phoneRule = SHIPPING_REPORT_FIELDS.match(
-      /@media \(max-width: (\d+)px\) \{([\s\S]*?)\n {2}\}/
-    );
-    expect(phoneRule).not.toBeNull();
-    expect(phoneRule[2]).toContain('font-size: var(--font-size-xs);');
-    expect(phoneRule[2]).toContain('white-space: nowrap;');
-    const tight = width <= Number(phoneRule[1]);
     settingsScreen(appearance);
     records.os = 'android';
     records.scheme = appearance;
@@ -186,7 +165,7 @@ it.each(
       const text = records.props.findLast((props) => props.children === label);
       expect(text, label).toBeDefined();
       expect(text.style.fontSize, label).toBe(
-        Number.parseFloat(tight ? scale.fontSizeXs : scale.fontSizeSm)
+        Number.parseFloat(width <= TIGHT_FEEDBACK_WIDTH_PX ? scale.fontSizeXs : scale.fontSizeSm)
       );
       expect(text.numberOfLines, label).toBeUndefined();
       expect(text.ellipsizeMode, label).toBeUndefined();
@@ -198,11 +177,6 @@ it.each(
 it.each(REPORT_KINDS)(
   'keeps the empty standalone $value submit enabled while the real owner rejects its activation',
   async ({ value, label }) => {
-    const shippingSubmit = SHIPPING_FEEDBACK_PAGE.match(/<Button\b([^>]*\bclass="submit")>/);
-    expect(shippingSubmit).not.toBeNull();
-    expect(shippingSubmit[1]).not.toMatch(/\bdisabled\b/);
-    expect(shippingSubmit[1]).toContain('busy={submitting}');
-    expect(SHIPPING_REPORT_FIELDS).toMatch(/<textarea\b[^>]*\brequired\b/);
     settingsScreen();
     caller.screen.settingsOpen = false;
     caller.feedbackSend.mockReset();
@@ -309,10 +283,7 @@ it.each([
   },
 ])(
   'renders the shipping callout $part with its native $token face',
-  async ({ rule, token, weight, targets }) => {
-    const shippingRule = SHIPPING_FEEDBACK_PAGE.match(rule);
-    expect(shippingRule).not.toBeNull();
-    expect(shippingRule[1]).toContain(`font-weight: var(--font-weight-${token});`);
+  async ({ weight, targets }) => {
     settingsScreen();
     caller.screen.settingsOpen = false;
     records.journalHostProps = true;

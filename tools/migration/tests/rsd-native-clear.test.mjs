@@ -1,6 +1,5 @@
 import { caller, records, root, host } from './rsd-native-selection-host.mjs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { act, createElement, useSyncExternalStore } from 'react';
 import { clearLadderFrequency } from '../../../web/src/lib/audio/clearSoundNotes.ts';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -394,13 +393,6 @@ it.each([true, false])(
     expect(caller.screen.clear.mock.calls).toEqual([[saveOnDelete], [saveOnDelete]]);
   }
 );
-
-// The shipping dock (ClearButton.svelte) at rest: a red half-disc tab whose square edge runs 10px
-// off the right screen edge, 90px down and 60px tall in portrait, 48px down and 70px tall in
-// landscape, unless a taller safe-area top pushes it to 20px below that inset.
-const SHIPPING_REST_GRADIENT = /--clear-gradient-rest: ([^;]+);/.exec(
-  readFileSync(join(import.meta.dirname, '../../../web/src/tokens.css'), 'utf8')
-)[1];
 const byTestID = (testID) => flat(records.props.findLast((props) => props.testID === testID).style);
 const face = () => byTestID('rsd-clear-face');
 const lid = () => byTestID('rsd-clear-lid');
@@ -446,7 +438,7 @@ it.each([
   expect(face()).toMatchObject({
     width: dock.size,
     height: dock.size,
-    experimental_backgroundImage: SHIPPING_REST_GRADIENT,
+    experimental_backgroundImage: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
     boxShadow: '-4px 4px 20px rgba(0, 0, 0, 0.3)',
   });
   expect(corners(face())).toEqual([dock.size / 2, 0, 0, dock.size / 2]);
@@ -460,7 +452,7 @@ it('lifts into a round puck, turns alarm red past the ring and docks again on re
   await press();
   expect(corners(face())).toEqual([30, 30, 30, 30]);
   expect(face()).toMatchObject({
-    experimental_backgroundImage: SHIPPING_REST_GRADIENT,
+    experimental_backgroundImage: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
     boxShadow: '-6px 6px 30px rgba(0, 0, 0, 0.4)',
   });
   expect(lid().marginRight).toBe(0);

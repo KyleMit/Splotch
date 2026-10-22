@@ -1,5 +1,3 @@
-import { drawInstructionScene } from '../lib/drawing-instructions.mjs';
-
 const BALLOON_TALL = {
   width: 1087,
   height: 1447,
@@ -448,10 +446,6 @@ const BALLOON_TALL = {
   ]
 };
 
-export function drawBalloonTall(page, box, options) {
-  return drawInstructionScene(page, box, BALLOON_TALL, options);
-}
-
 const BOAT_TALL = {
   width: 1209,
   height: 1301,
@@ -885,10 +879,6 @@ const BOAT_TALL = {
     }
   ]
 };
-
-export function drawBoatTall(page, box, options) {
-  return drawInstructionScene(page, box, BOAT_TALL, options);
-}
 
 const DINOSAUR_WIDE = {
   width: 2265,
@@ -1653,10 +1643,6 @@ const DINOSAUR_WIDE = {
   ]
 };
 
-export function drawDinosaurWide(page, box, options) {
-  return drawInstructionScene(page, box, DINOSAUR_WIDE, options);
-}
-
 const HOME_WIDE = {
   width: 1536,
   height: 1024,
@@ -2325,10 +2311,6 @@ const HOME_WIDE = {
   ]
 };
 
-export function drawHomeWide(page, box, options) {
-  return drawInstructionScene(page, box, HOME_WIDE, options);
-}
-
 const HOUSE_TALL = {
   width: 1100,
   height: 1429,
@@ -2937,10 +2919,6 @@ const HOUSE_TALL = {
   ]
 };
 
-export function drawHouseTall(page, box, options) {
-  return drawInstructionScene(page, box, HOUSE_TALL, options);
-}
-
 const HOUSE_WIDE = {
   width: 1662,
   height: 946,
@@ -3303,10 +3281,6 @@ const HOUSE_WIDE = {
     }
   ]
 };
-
-export function drawHouseWide(page, box, options) {
-  return drawInstructionScene(page, box, HOUSE_WIDE, options);
-}
 
 const ISLAND_TALL = {
   width: 1090,
@@ -3679,20 +3653,6 @@ const ISLAND_TALL = {
       points: [759.75,1283.25,755.5,1286.5,750.75,1289.75,745.75,1292.5,740.5,1295,735.25,1297,729.5,1298.75,724,1300.25,718.25,1301.25,712.5,1301.75,706.75,1302,701,1301.75,695.25,1301.25,689.75,1300,684.25,1298.75,679,1296.75,673.75,1294.5,666,1290,658.5,1285,643.5,1275.25,633.25,1269.5,622.5,1265,611.25,1262,605.5,1260.75,599.75,1260.25,592,1260.25,584.25,1261,577,1262.75,570,1265.25,563,1268,556.25,1271.25,542.75,1278.5,529.25,1285.75,522.5,1289,515.5,1291.75,508.5,1294.25,501.25,1296,493.75,1296.75,486,1296.75,479,1295.75,472.5,1294.25,466,1292,460,1289.25,448,1282.5,436.5,1275.25,424.75,1268.25,418.75,1265,412.75,1262.25,406.25,1260.25,399.75,1258.5,393,1257.75,386,1257.75,378.5,1258.75,371.25,1260.25,364.25,1262.5,357.5,1265,344.25,1271.25,331.25,1278.25,318.25,1284.75,311.5,1287.75,304.75,1290.25,297.75,1292.25,290.75,1293.5,283.25,1294.25,275.5,1294.25,271,1293.5,266.5,1292.75,258.25,1290,250.25,1286.5,242.75,1282.25,228,1273,220.25,1268.5,212.25,1264.75,206,1262.5,199.75,1261,193.5,1260,187.25,1259.75,181,1259.75,174.75,1260.5,168.75,1261.75,162.75,1263.25,156.75,1265.25,151,1267.5,139.5,1273.5,128.75,1280.25,118.5,1288]
     }
   ]
-};
-
-export function drawIslandTall(page, box, options) {
-  return drawInstructionScene(page, box, ISLAND_TALL, options);
-}
-
-export const STORE_DRAWINGS = {
-  'balloon-tall': drawBalloonTall,
-  'boat-tall': drawBoatTall,
-  'dinosaur-wide': drawDinosaurWide,
-  'home-wide': drawHomeWide,
-  'house-tall': drawHouseTall,
-  'house-wide': drawHouseWide,
-  'island-tall': drawIslandTall,
 };
 
 export const STORE_DRAWING_SCENES = {

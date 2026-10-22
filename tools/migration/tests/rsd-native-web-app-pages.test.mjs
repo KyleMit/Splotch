@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
@@ -18,7 +16,7 @@ import {
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
 import releases from '../../../web/src/lib/releases.json';
-import { SECTIONS } from '../../../web/src/routes/privacy/contents.ts';
+import { SECTIONS } from '../../../web/src/lib/privacy/contents.ts';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
@@ -116,14 +114,8 @@ it.each(
     [SHORT_PAGE_HEIGHT_PX, SHORT_PAGE_HEIGHT_PX + 1].map((height) => ({ theme, height }))
   )
 )(
-  'keeps shipping’s browser text measure and wrapping at height $height in $theme',
+  'keeps browser text measure and wrapping at height $height in $theme',
   async ({ theme, height }) => {
-    const shipping = readFileSync(
-      join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
-      'utf8'
-    );
-    expect(shipping).toContain('--page-measure: 62ch;');
-    expect(shipping).toContain('text-wrap: balance;');
     records.os = 'web';
     records.dimensions = { width: 844, height, scale: 1, fontScale: 1 };
     await mount(
@@ -190,7 +182,7 @@ it.each([
   expect(host.querySelector(GATE_MODAL)).toBeNull();
 });
 
-it('renders the not-found actions as real links with shipping page leading', async () => {
+it('renders the not-found actions as real links with page leading', async () => {
   records.os = 'web';
   history.replaceState(null, '', '/unknown-page');
   useCaller();
@@ -202,12 +194,7 @@ it('renders the not-found actions as real links with shipping page leading', asy
     ['Changelog', '/changelog'],
     ['Privacy', '/privacy'],
   ]);
-  const shipping = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
-    'utf8'
-  );
-  const pageLeading = shipping.match(/line-height: ([\d.]+);/)[1];
-  for (const link of links) expect(link.style.lineHeight).toBe(pageLeading);
+  for (const link of links) expect(link.style.lineHeight).toBe('1.62');
 });
 
 it.each([
@@ -218,7 +205,7 @@ it.each([
   { label: 'middle click', button: 1 },
 ])(
   'leaves the browser in charge of $label on a not-found link',
-  async ({ label, ...modifiers }) => {
+  async ({ label: _label, ...modifiers }) => {
     records.os = 'web';
     history.replaceState(null, '', '/unknown-page');
     useCaller();
@@ -328,19 +315,30 @@ it('keeps the cold-visit label when the browser blocks session storage', async (
   }
 });
 
-it.each(['privacy', 'changelog', 'feedback'])(
-  'titles the browser tab for %s as the shipping page does',
-  async (page) => {
-    const shipping = readFileSync(
-      join(import.meta.dirname, `../../../web/src/routes/${page}/+page.svelte`),
-      'utf8'
-    );
-    records.os = 'web';
-    useCaller();
-    await loadAt(`/${page}`);
-    expect(document.title).toBe(shipping.match(/<title>(.+?)<\/title>/)[1]);
+it.each([
+  { page: 'privacy', title: 'Privacy Policy · Splotch' },
+  { page: 'changelog', title: 'Changelog · Splotch' },
+  { page: 'feedback', title: 'Send Feedback · Splotch' },
+])('titles the browser tab for $page', async ({ page, title }) => {
+  records.os = 'web';
+  useCaller();
+  await loadAt(`/${page}`);
+  expect(document.title).toBe(title);
+});
+
+it('gives the page inherited leading and pretty wrapping', async () => {
+  records.os = 'web';
+  useCaller();
+  await loadAt('/unknown-page');
+  const ancestors = [];
+  for (let node = host.querySelector('[role="heading"]'); node; node = node.parentElement) {
+    ancestors.push(node);
   }
-);
+  const page = ancestors.find((node) => node.style.lineHeight === '1.62');
+  expect(page).toBeDefined();
+  expect(page.style.getPropertyValue('text-wrap')).toBe('pretty');
+  expect(page.contains(host.querySelector('[aria-label="Splotch pages"]'))).toBe(true);
+});
 
 const pageAnchors = () =>
   [...host.querySelectorAll('a[href]')].map((link) => [
@@ -493,25 +491,6 @@ it('follows a contents entry in place, and leaves a modified click to the browse
   await act(async () => row().dispatchEvent(plain));
   expect(plain.defaultPrevented).toBe(true);
   expect(location.hash).toBe(`#${SECTIONS[2].id}`);
-});
-
-it('gives the page shipping’s inherited leading and pretty wrapping', async () => {
-  const shipping = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
-    'utf8'
-  );
-  expect(shipping).toContain('text-wrap: pretty;');
-  const pageLeading = shipping.match(/line-height: ([\d.]+);/)[1];
-  records.os = 'web';
-  useCaller();
-  await loadAt('/unknown-page');
-  const ancestors = [];
-  for (let node = host.querySelector('[role="heading"]'); node; node = node.parentElement)
-    ancestors.push(node);
-  const page = ancestors.find((node) => node.style.lineHeight === pageLeading);
-  expect(page).toBeDefined();
-  expect(page.style.getPropertyValue('text-wrap')).toBe('pretty');
-  expect(page.contains(host.querySelector('[aria-label="Splotch pages"]'))).toBe(true);
 });
 
 it('runs the footer’s release line as one paragraph, as shipping’s does', async () => {

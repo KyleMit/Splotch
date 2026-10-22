@@ -1,0 +1,68 @@
+
+> splotch@1.6.0 test:migration:rsd-selection
+> vitest run --config tools/migration/rsd-drawing-vitest.config.mjs tools/migration/tests/rsd-native-selection.test.mjs tools/migration/tests/rsd-native-web-app-pages.test.mjs --maxWorkers=1 --testNamePattern=names paint buttons|gives the page inherited
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-screen-orientation/build/ScreenOrientation.types.js" points to missing source files
+stderr | migration/tests/rsd-native-web-app-pages.test.mjs > gives the page inherited leading and pretty wrapping
+The tag <path> is unrecognized in this browser. If you meant to render a React component, start its name with an uppercase letter.
+Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?
+
+ ❯ migration/tests/rsd-native-web-app-pages.test.mjs (37 tests | 1 failed | 36 skipped) 58ms
+   × gives the page inherited leading and pretty wrapping 57ms
+ ❯ migration/tests/rsd-native-selection.test.mjs (17 tests | 1 failed | 15 skipped) 63ms
+   × names paint buttons at the native boundary in dark mode 30ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  migration/tests/rsd-native-selection.test.mjs > names paint buttons at the native boundary in dark mode
+AssertionError: expected [ 'Purple', 'Indigo', 'Blue', …(13) ] to deeply equal [ 'Purple', 'Indigo', 'Blue', …(13) ]
+
+- Expected
++ Received
+
+@@ -11,8 +11,8 @@
+    "Brown",
+    "Red",
+    "Pink",
+    "Magenta",
+    "Grey",
+-   "White",
++   "Black",
+    "Custom Color",
+  ]
+
+ ❯ migration/tests/rsd-native-selection.test.mjs:72:7
+     70|     expect(
+     71|       [...host.querySelectorAll('button')].map((node) => node.getAttri…
+     72|     ).toEqual(expected);
+       |       ^
+     73|     for (const label of expected) {
+     74|       const props = records.props.findLast((entry) => entry.accessibil…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  migration/tests/rsd-native-web-app-pages.test.mjs > gives the page inherited leading and pretty wrapping
+AssertionError: expected undefined to be defined
+ ❯ migration/tests/rsd-native-web-app-pages.test.mjs:338:16
+    336|   }
+    337|   const page = ancestors.find((node) => node.style.lineHeight === '1.6…
+    338|   expect(page).toBeDefined();
+       |                ^
+    339|   expect(page.style.getPropertyValue('text-wrap')).toBe('pretty');
+    340|   expect(page.contains(host.querySelector('[aria-label="Splotch pages"…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 1 passed | 51 skipped (54)
+   Start at  20:50:25
+   Duration  5.63s (transform 76%, import 16%, environment 6%, tests 2%)
+
+  Transform  transforming modules took 4.08s · 76% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+

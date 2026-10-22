@@ -7,14 +7,9 @@ import {
   generateModule,
   generateStoreDrawings,
 } from '../gen-pointer-instructions.mjs';
-import { softColorMetrics } from '../evaluate-drawing-fidelity.mjs';
-import {
-  fitInstructionScene,
-  sceneStrokeReplayPoints,
-  sceneStrokePoints,
-  strokeReplayPoints,
-} from '../lib/drawing-instructions.mjs';
-import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
+import { softColorMetrics } from '../lib/drawing-fidelity.mjs';
+import { fitInstructionScene, sceneStrokePoints } from '../lib/drawing-instructions.mjs';
+import { STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const drawingsRoot = join(repoRoot, 'tools/store-drawings/samples');
@@ -159,12 +154,15 @@ describe('store drawing conversion', () => {
     expect(readFileSync(generatedPath, 'utf8')).toBe(expected);
     expect(expected).not.toContain('.svg');
     expect(expected).not.toMatch(/\bd:\s*["']/);
-    expect(expected).toContain('page, box, options');
+    expect(expected).not.toMatch(/\bimport\b|\bfunction\b|drawInstructionScene/);
   });
 
-  it('exports a named function and scene for every generated drawing', () => {
-    expect(Object.keys(STORE_DRAWINGS)).toEqual(Object.keys(STORE_DRAWING_SCENES));
-    expect(Object.values(STORE_DRAWINGS).every((draw) => typeof draw === 'function')).toBe(true);
+  it('exports the full converted scene data for every drawing', () => {
+    const drawings = generateStoreDrawings(drawingsRoot);
+    expect(Object.keys(STORE_DRAWING_SCENES)).toEqual(drawings.map(({ key }) => key));
+    for (const { key, width, height, colors, strokes } of drawings) {
+      expect(STORE_DRAWING_SCENES[key]).toEqual({ width, height, colors, strokes });
+    }
   });
 });
 
@@ -176,7 +174,7 @@ describe('instruction scene fitting', () => {
     strokes: [{ color: 0, size: 3, points: [0, 0, 200, 100] }],
   };
 
-  it('contain-fits and centers source coordinates in the live canvas', () => {
+  it('contain-fits and centers source coordinates in the target box', () => {
     const box = { width: 300, height: 300 };
 
     expect(fitInstructionScene(scene, box)).toEqual({ scale: 1.5, x: 0, y: 75 });
@@ -184,36 +182,6 @@ describe('instruction scene fitting', () => {
       { x: 0, y: 75 },
       { x: 300, y: 225 },
     ]);
-  });
-
-  it('expands the same six samples and endpoint hold as pointer replay', () => {
-    expect(
-      strokeReplayPoints([
-        { x: 0, y: 0 },
-        { x: 6, y: 12 },
-      ])
-    ).toEqual([
-      { x: 0, y: 0 },
-      { x: 1, y: 2 },
-      { x: 2, y: 4 },
-      { x: 3, y: 6 },
-      { x: 4, y: 8 },
-      { x: 5, y: 10 },
-      { x: 6, y: 12 },
-      { x: 6, y: 12 },
-    ]);
-  });
-
-  it('preserves an inset scene box in canvas-local engine coordinates', () => {
-    const replay = sceneStrokeReplayPoints(
-      scene,
-      { x: 50, y: 100, width: 300, height: 300 },
-      { x: 10, y: 20 },
-      scene.strokes[0]
-    );
-
-    expect(replay[0]).toEqual({ x: 40, y: 155 });
-    expect(replay.at(-1)).toEqual({ x: 340, y: 305 });
   });
 });
 

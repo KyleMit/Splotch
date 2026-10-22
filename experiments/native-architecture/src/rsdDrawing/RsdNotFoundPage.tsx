@@ -59,13 +59,13 @@ export const CRAYON_LABELS: readonly PaletteLabel[] = [
   'Purple',
   'Pink',
 ];
-export const PAGE_SHEET_MAX_WIDTH_PX = 760;
-export const PAGE_GUTTER = { minPx: 20, viewportWidthPercent: 5, maxPx: 34 } as const;
+const PAGE_SHEET_MAX_WIDTH_PX = 760;
+const PAGE_GUTTER = { minPx: 20, viewportWidthPercent: 5, maxPx: 34 } as const;
 export const BACK_BLOB_PX = 44;
-export const BACK_ICON_PX = 24;
-export const NOT_FOUND_MARK_PX = 80;
+const BACK_ICON_PX = 24;
+const NOT_FOUND_MARK_PX = 80;
 const SHORT_NOT_FOUND_MARK_PX = 56;
-export const NOT_FOUND_MARK_TURN_DEG = -8;
+const NOT_FOUND_MARK_TURN_DEG = -8;
 const PERCENT = 100;
 const SHORT_PAGE_TOP_PX = 12;
 const SHORT_SHEET_GUTTER_PX = 32;

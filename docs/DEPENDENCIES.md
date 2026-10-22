@@ -11,257 +11,49 @@
 outside `package.json` (GitHub Actions, runtime-fetched CLIs, system toolchains — see the final
 section)
 
-**Removed since that refresh** (rows and sections dropped; the counts above are the dated snapshot
-and are not restated): `ws`, `marked` and `idb`, 2026-09-13 — each replaced by a platform capability
-or a small in-repo module. `@capacitor/status-bar` was removed on 2026-09-30; built-in
-`@capacitor/core` SystemBars owns native status-bar styling/visibility (ADR-0026's SystemBars
-amendment).
+**Cutover scope:** the assessments below preserve their dated external-health evidence for retained
+packages. SvelteKit, Svelte and Capacitor dependencies retired under ADR-0182; their rows and
+sections are removed. The root and app package manifests declare the current dependency set and
+build/runtime classification.
 
 ## Verdict summary
 
 Non-`keep` rows first.
 
-| Package                             | Prod/Dev | Verdict                            |
-| ----------------------------------- | -------- | ---------------------------------- |
-| capacitor-set-version               | dev      | **investigate replacement**        |
-| @capacitor/assets                   | dev      | **monitor** (dormant + vuln chain) |
-| fit-curve                           | dev      | **monitor** (dormant)              |
-| scripts-info                        | dev      | **monitor** (bus factor)           |
-| @aparajita/capacitor-secure-storage | prod     | keep                               |
-| @capacitor-community/media          | prod     | keep                               |
-| @capacitor/android                  | prod     | keep                               |
-| @capacitor/cli                      | prod     | keep                               |
-| @capacitor/core                     | prod     | keep                               |
-| @capacitor/device                   | prod     | keep                               |
-| @capacitor/haptics                  | prod     | keep                               |
-| @capacitor/ios                      | prod     | keep                               |
-| @capacitor/network                  | prod     | keep                               |
-| @capacitor/preferences              | prod     | keep                               |
-| @capacitor/screen-orientation       | prod     | keep                               |
-| @fontsource-variable/quicksand      | prod     | keep                               |
-| @google/genai                       | dev      | keep                               |
-| @netlify/blobs                      | prod     | keep                               |
-| @sveltejs/adapter-static            | prod     | keep                               |
-| @dprint/json                        | dev      | keep                               |
-| @dprint/markdown                    | dev      | keep                               |
-| @dprint/typescript                  | dev      | keep                               |
-| @eslint/js                          | dev      | keep                               |
-| @intellectronica/ruler              | dev      | keep                               |
-| @playwright/test                    | dev      | keep                               |
-| @resvg/resvg-js                     | dev      | keep                               |
-| @sveltejs/adapter-netlify           | dev      | keep                               |
-| @sveltejs/kit                       | dev      | keep                               |
-| @sveltejs/vite-plugin-svelte        | dev      | keep                               |
-| dprint                              | dev      | keep                               |
-| eslint                              | dev      | keep                               |
-| eslint-config-prettier              | dev      | keep                               |
-| eslint-plugin-svelte                | dev      | keep                               |
-| globals                             | dev      | keep                               |
-| happy-dom                           | dev      | keep                               |
-| prettier                            | dev      | keep                               |
-| prettier-plugin-svelte              | dev      | keep                               |
-| sharp                               | prod     | keep                               |
-| svelte                              | dev      | keep                               |
-| svelte-check                        | dev      | keep                               |
-| svgo                                | dev      | keep                               |
-| typescript                          | dev      | keep                               |
-| typescript-eslint                   | dev      | keep                               |
-| vite                                | dev      | keep                               |
-| vite-plugin-pwa                     | dev      | keep                               |
-| vitest                              | dev      | keep                               |
-
-**Backlog items filed:**
-
-* [`#332`](https://github.com/KyleMit/Splotch/issues/332) — `type:chore` + `area:infra` — *Replace
-  archived `capacitor-set-version` in the release script.* Upstream repo is archived (read-only,
-  last commit 2023-09-27, single maintainer); the package only edits native version numbers in
-  `tools/release/cut-release.mjs`. Investigation question: is a small in-repo helper (edit
-  `android/app/build.gradle` `versionName`/`versionCode` + iOS `MARKETING_VERSION`/
-  `CURRENT_PROJECT_VERSION`) cheaper to own than a dormant dependency?
+| Package                        | Prod/Dev | Verdict                  |
+| ------------------------------ | -------- | ------------------------ |
+| fit-curve                      | dev      | **monitor** (dormant)    |
+| scripts-info                   | dev      | **monitor** (bus factor) |
+| @fontsource-variable/quicksand | prod     | keep                     |
+| @google/genai                  | dev      | keep                     |
+| @netlify/blobs                 | prod     | keep                     |
+| @dprint/json                   | dev      | keep                     |
+| @dprint/markdown               | dev      | keep                     |
+| @dprint/typescript             | dev      | keep                     |
+| @eslint/js                     | dev      | keep                     |
+| @intellectronica/ruler         | dev      | keep                     |
+| @playwright/test               | dev      | keep                     |
+| @resvg/resvg-js                | dev      | keep                     |
+| dprint                         | dev      | keep                     |
+| eslint                         | dev      | keep                     |
+| eslint-config-prettier         | dev      | keep                     |
+| globals                        | dev      | keep                     |
+| happy-dom                      | dev      | keep                     |
+| prettier                       | dev      | keep                     |
+| sharp                          | prod     | keep                     |
+| svgo                           | dev      | keep                     |
+| typescript                     | dev      | keep                     |
+| typescript-eslint              | dev      | keep                     |
+| vite                           | dev      | keep                     |
+| vitest                         | dev      | keep                     |
 
 ## Direct dependencies — production
-
-### @aparajita/capacitor-secure-storage
-
-* **Version:** `^8.0.0` declared · 8.0.0 locked · prod
-* **Used for:** Keystore/Keychain-backed secure storage on native; wraps the access-code secret.
-  Used in `web/src/lib/secureStorage.ts` (+ test).
-* **Source:** npm ·
-  [github.com/aparajita/capacitor-secure-storage](https://github.com/aparajita/capacitor-secure-storage)
-  · published by Aparajita Fishman (ckgaparajita)
-* **License:** MIT
-* **Health** (checked 2026-07-17):
-  [167 stars](https://github.com/aparajita/capacitor-secure-storage) · latest 8.0.0 on 2026-02-10 ·
-  last push 2026-02-12 · 4 open issues · Capacitor-8-current
-* **Maintenance:** active — single dedicated maintainer, tracks Capacitor majors promptly
-* **Concerns:** single-maintainer bus factor, but small surface and current
-* **Alternatives:** `@capacitor/preferences` (not encrypted) if requirements soften; none needed now
-* **Verdict:** keep — encrypted-at-rest storage the app relies on; healthy and current
-
-### @capacitor-community/media
-
-* **Version:** `^9.1.0` declared · 9.1.0 locked · prod
-* **Used for:** Saving rendered drawings to the iOS photo library. Used in
-  `web/src/lib/drawing/imageSave.ts`. Android saves go through the app-local `PhotoLibrary` plugin
-  instead, because this plugin's Android albums live in app-specific storage that an uninstall
-  deletes (ADR-0037, 2026-09-13 amendment).
-* **Source:** npm ·
-  [github.com/capacitor-community/media](https://github.com/capacitor-community/media) · published
-  by the Capacitor Community org
-* **License:** MIT (npm metadata; GitHub reports no SPDX id)
-* **Health** (checked 2026-07-17): [135 stars](https://github.com/capacitor-community/media) ·
-  latest 9.1.0 on 2026-03-27 · last push 2026-03-27 · 6 open issues · tracks Capacitor 9 line
-* **Maintenance:** active — community-org backed, broad maintainer list
-* **Concerns:** community plugin (best-effort), but low open-issue count and current with Capacitor
-* **Alternatives:** `@capacitor/filesystem` + share sheet (would need re-adding — it was removed as
-  unused) if this stalls
-* **Verdict:** keep — the standard gallery-save plugin; healthy
-
-### @capacitor/android
-
-* **Version:** `^8.4.1` declared · 8.4.1 locked (latest 8.4.2) · prod
-* **Used for:** The Android native runtime for the Capacitor app (`android/` project).
-* **Source:** npm · [github.com/ionic-team/capacitor](https://github.com/ionic-team/capacitor) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): [16.1k stars](https://github.com/ionic-team/capacitor) · latest
-  8.4.2 on 2026-07-14 · last push 2026-07-14 · 108 open issues · frequent releases
-* **Maintenance:** active — org-backed, moves as a set with the other `@capacitor/*` cores
-* **Concerns:** none
-* **Alternatives:** none needed (moving off Capacitor is an ADR-0001 architecture decision, not a
-  dep swap)
-* **Verdict:** keep — core native runtime; healthy
-
-### @capacitor/cli
-
-* **Version:** `^8.4.1` declared · 8.4.1 locked (latest 8.4.2) · prod
-* **Used for:** `cap sync`/`cap open`/`cap run` — the native build/sync toolchain (`cap:*`,
-  `android:*`, `ios:*` scripts).
-* **Source:** npm · [github.com/ionic-team/capacitor](https://github.com/ionic-team/capacitor) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): [16.1k stars](https://github.com/ionic-team/capacitor) · latest
-  8.4.2 on 2026-07-14 · last push 2026-07-14 · frequent releases
-* **Maintenance:** active
-* **Concerns:** Bundles `tar@7.5.17`, flagged high by `npm audit` (path-traversal advisories, no
-  upstream fix); the CLI runs locally against trusted project files, so exposure is low. (The former
-  Windows gradlew patch was dropped with Windows dev support — ADR-0062.)
-* **Alternatives:** none needed
-* **Verdict:** keep — required native toolchain
-
-### @capacitor/core
-
-* **Version:** `^8.4.1` declared · 8.4.1 locked (latest 8.4.2) · prod
-* **Used for:** The Capacitor JS bridge every plugin imports (`Capacitor`, `registerPlugin`); the
-  native-branch runtime backbone.
-* **Source:** npm · [github.com/ionic-team/capacitor](https://github.com/ionic-team/capacitor) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): [16.1k stars](https://github.com/ionic-team/capacitor) · latest
-  8.4.2 on 2026-07-14 · last push 2026-07-14
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — core bridge; healthy
-
-### @capacitor/device
-
-* **Version:** `^8.0.3` declared · 8.0.3 locked · prod
-* **Used for:** Device/platform info on native (model, OS) for platform-conditional behavior.
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-plugins](https://github.com/ionic-team/capacitor-plugins) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): monorepo
-  [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.3 on 2026-07-15 · last
-  push 2026-07-16 · official plugins monorepo
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
-
-### @capacitor/haptics
-
-* **Version:** `^8.0.2` declared · 8.0.2 locked · prod
-* **Used for:** Haptic feedback on native interactions.
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-haptics](https://github.com/ionic-team/capacitor-haptics) ·
-  published by Ionic / OutSystems
-* **License:** MIT (npm; GitHub reports NOASSERTION on the license file)
-* **Health** (checked 2026-07-17): official split-out repo (0 stars — org-backed, not
-  traction-driven) · latest 8.0.2 on 2026-03-27 · last push 2026-06-30 · 8 open issues
-* **Maintenance:** active — org-backed official plugin
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
-
-### @capacitor/ios
-
-* **Version:** `^8.4.1` declared · 8.4.1 locked (latest 8.4.2) · prod
-* **Used for:** The iOS native runtime for the Capacitor app (`ios/` project).
-* **Source:** npm · [github.com/ionic-team/capacitor](https://github.com/ionic-team/capacitor) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): [16.1k stars](https://github.com/ionic-team/capacitor) · latest
-  8.4.2 on 2026-07-14 · last push 2026-07-14
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — core native runtime; healthy
-
-### @capacitor/network
-
-* **Version:** `^8.0.1` declared · 8.0.1 locked · prod
-* **Used for:** Online/offline status on native for network-aware UI.
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-plugins](https://github.com/ionic-team/capacitor-plugins) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): monorepo
-  [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.1 on 2026-02-12 ·
-  monorepo last push 2026-07-16
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
-
-### @capacitor/preferences
-
-* **Version:** `^8.0.1` declared · 8.0.1 locked · prod
-* **Used for:** Small key/value persistence on native (non-secret settings).
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-plugins](https://github.com/ionic-team/capacitor-plugins) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): monorepo
-  [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.1 on 2026-02-12 ·
-  monorepo last push 2026-07-16
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
-
-### @capacitor/screen-orientation
-
-* **Version:** `^8.0.1` declared · 8.0.1 locked · prod
-* **Used for:** Locking/reading orientation on native (the drawing surface is orientation-aware).
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-plugins](https://github.com/ionic-team/capacitor-plugins) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): monorepo
-  [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.1 on 2026-02-12 ·
-  monorepo last push 2026-07-16
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
 
 ### @fontsource-variable/quicksand
 
 * **Version:** `^5.2.10` declared · 5.2.10 locked · prod
 * **Used for:** Self-hosted Quicksand variable font (the app's UI typeface), imported in
-  `web/src/routes/+layout.svelte`.
+  `experiments/native-architecture/src/platform/shippingFont.web.tsx`.
 * **Source:** npm · [github.com/fontsource/font-files](https://github.com/fontsource/font-files) ·
   published by the Fontsource project
 * **License:** OFL-1.1 (the font); packaging MIT
@@ -307,48 +99,7 @@ Non-`keep` rows first.
 * **Alternatives:** none needed (tied to the Netlify hosting platform, ADR-0001)
 * **Verdict:** keep — platform storage SDK; healthy, advisory is transitive and pending upstream fix
 
-### @sveltejs/adapter-static
-
-* **Version:** `^3.0.10` declared · 3.0.10 locked · prod
-* **Used for:** Static export for the native build (`CAPACITOR=true`), swapped in
-  `web/svelte.config.js`. Listed as a prod dep because the native build pulls it.
-* **Source:** npm · [github.com/sveltejs/kit](https://github.com/sveltejs/kit) · published by the
-  Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): kit monorepo [20.7k stars](https://github.com/sveltejs/kit) ·
-  latest 3.0.10 on 2025-10-02 · monorepo last push 2026-07-17
-* **Maintenance:** active — moves as a set with `@sveltejs/kit`
-* **Concerns:** a **low** `npm audit` advisory inherited from kit's `cookie@0.6.0` (see kit entry);
-  fix is a kit bump, tracked by `burn-down-outdated-dependencies`
-* **Alternatives:** none needed
-* **Verdict:** keep — required for the native static target; healthy
-
 ## Direct dependencies — development
-
-### @capacitor/assets
-
-* **Version:** `^3.0.5` declared · 3.0.5 locked · dev
-* **Used for:** Generating native app icons and splash screens (`@capacitor/assets` CLI, run
-  occasionally when brand assets change).
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-assets](https://github.com/ionic-team/capacitor-assets) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): [583 stars](https://github.com/ionic-team/capacitor-assets) ·
-  latest 3.0.5 on 2024-03-29 (no release in ~2.3 years) · last push 2026-01-22 · 84 open issues
-* **Maintenance:** dormant — repo not archived and occasionally touched, but no published release
-  since early 2024 while issues accumulate
-* **Concerns:** **entangled** — `pnpm-workspace.yaml`'s `overrides` pins its transitive `sharp` to
-  the root `sharp` range (proxy-blocked libvips download in cloud sessions). It also bundles an
-  ancient `@capacitor/cli@5.7.8` and `@trapezedev/project@7.1.4`. Their formerly high-severity
-  `tar`/`minimatch` paths are lifted to patched releases by the scoped pnpm overrides and lockfile;
-  the 2026-08-27 audit reports no high or critical advisories. The dormant tool remains dev-only,
-  run locally by a trusted operator rather than in the shipped app or CI runtime.
-* **Alternatives:** hand-authoring the icon/splash set (they change rarely), or
-  `@trapezedev/configure` (same org, same staleness). No clearly-better maintained successor exists.
-* **Verdict:** monitor — keep for now (no viable replacement, low real risk), but watch for archival
-  or a new advisory; the `sharp` override must survive any bump, while the security lifts can leave
-  once the bundled parents resolve patched versions themselves
 
 ### @dprint/json
 
@@ -463,75 +214,6 @@ Non-`keep` rows first.
 * **Verdict:** keep — deterministic SVG rasterization is a core boundary of the tracer's metric
   contract
 
-### @sveltejs/adapter-netlify
-
-* **Version:** `^6.0.4` declared · 6.0.4 locked · dev
-* **Used for:** The web (SSR + `/api`) build target for splotch.art, swapped in
-  `web/svelte.config.js`.
-* **Source:** npm · [github.com/sveltejs/kit](https://github.com/sveltejs/kit) · published by the
-  Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): kit monorepo [20.7k stars](https://github.com/sveltejs/kit) ·
-  latest 6.0.4 on 2026-02-24 · monorepo last push 2026-07-17
-* **Maintenance:** active — moves as a set with kit
-* **Concerns:** inherits kit's **low** `cookie` advisory; bundles its own `esbuild` (install script)
-* **Alternatives:** none needed
-* **Verdict:** keep — required for the web target; healthy
-
-### @sveltejs/kit
-
-* **Version:** `^2.68.0` declared · 2.68.0 locked (latest 2.70.0) · dev
-* **Used for:** The application framework (routing, SSR, endpoints) — the whole `web/` app.
-* **Source:** npm · [github.com/sveltejs/kit](https://github.com/sveltejs/kit) · published by the
-  Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): [20.7k stars](https://github.com/sveltejs/kit) · latest 2.70.0 on
-  2026-07-17 · last push 2026-07-17 · 938 open issues (large active project)
-* **Maintenance:** active — core Svelte framework, near-daily activity
-* **Concerns:** a **low** `npm audit` advisory via `cookie@0.6.0` (OOB characters); fixed by a kit
-  bump — hand to `burn-down-outdated-dependencies`. Part of the coordinated Svelte/Vite upgrade set.
-* **Alternatives:** none needed (framework choice, ADR-0001)
-* **Verdict:** keep — the framework; healthy, one pending minor bump clears the advisory
-
-### @sveltejs/vite-plugin-svelte
-
-* **Version:** `^7.1.2` declared · 7.1.2 locked (latest 7.2.0) · dev
-* **Used for:** Svelte compilation inside Vite (`web/vite.config.ts` via kit).
-* **Source:** npm ·
-  [github.com/sveltejs/vite-plugin-svelte](https://github.com/sveltejs/vite-plugin-svelte) ·
-  published by the Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): [1k stars](https://github.com/sveltejs/vite-plugin-svelte) ·
-  latest 7.2.0 on 2026-07-07 · last push 2026-07-17 · 23 open issues
-* **Maintenance:** active — moves with the Svelte/Vite set
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — required Svelte/Vite glue; healthy
-
-### capacitor-set-version
-
-* **Version:** `^2.2.0` declared · 2.2.0 locked · dev
-* **Used for:** Bumping native app version numbers during release, in
-  `tools/release/cut-release.mjs`.
-* **Source:** npm ·
-  [github.com/HausennTechnologies/capacitor-set-version](https://github.com/HausennTechnologies/capacitor-set-version)
-  · published by David Krepsky (dkrepsky)
-* **License:** MIT
-* **Health** (checked 2026-07-17):
-  [35 stars](https://github.com/HausennTechnologies/capacitor-set-version) · latest 2.2.0 on
-  2023-09-27 (no release in ~2.8 years) · **repo archived (read-only)** · last commit 2023-09-27 ·
-  30 open issues
-* **Maintenance:** abandoned — upstream explicitly archived; issues frozen
-* **Concerns:** archived single-maintainer package on the release path; no security advisories
-  today, but no future fixes are possible, and it must keep parsing Capacitor's native project files
-  as those evolve
-* **Alternatives:** a small in-repo helper that edits `android/app/build.gradle`
-  (`versionName`/`versionCode`) and the iOS `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` — the same
-  two edits this package makes. Low effort, removes an abandoned dependency from the
-  release-critical path.
-* **Verdict:** investigate replacement — upstream is archived; scope the in-repo helper (proposed
-  backlog item above). Not urgent (release-only, not shipped), but the clearest replace candidate.
-
 ### dprint
 
 * **Version:** `^0.55.1` declared · 0.55.1 locked (latest 0.55.2) · dev
@@ -576,21 +258,6 @@ Non-`keep` rows first.
 * **Concerns:** none
 * **Alternatives:** none needed
 * **Verdict:** keep — lint/format interop; healthy
-
-### eslint-plugin-svelte
-
-* **Version:** `^3.19.0` declared · 3.19.0 locked (latest 3.20.0) · dev
-* **Used for:** Svelte-specific lint rules, imported in `eslint.config.js`.
-* **Source:** npm ·
-  [github.com/sveltejs/eslint-plugin-svelte](https://github.com/sveltejs/eslint-plugin-svelte) ·
-  published by the Svelte team / ota-meshi
-* **License:** MIT
-* **Health** (checked 2026-07-17): [399 stars](https://github.com/sveltejs/eslint-plugin-svelte) ·
-  latest 3.20.0 on 2026-06-26 · last push 2026-07-16 · 138 open issues
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — Svelte linting; healthy
 
 ### fit-curve
 
@@ -674,21 +341,6 @@ Non-`keep` rows first.
 * **Alternatives:** none needed
 * **Verdict:** keep — code formatter of record; healthy
 
-### prettier-plugin-svelte
-
-* **Version:** `^4.1.1` declared · 4.1.1 locked · dev
-* **Used for:** Prettier formatting for `.svelte` files.
-* **Source:** npm ·
-  [github.com/sveltejs/prettier-plugin-svelte](https://github.com/sveltejs/prettier-plugin-svelte) ·
-  published by the Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): [814 stars](https://github.com/sveltejs/prettier-plugin-svelte) ·
-  latest 4.1.1 on 2026-06-15 · last push 2026-06-15 · 54 open issues
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — Svelte formatting; healthy
-
 ### scripts-info
 
 * **Version:** `^1.0.5` declared · 1.0.5 locked · dev
@@ -721,34 +373,6 @@ Non-`keep` rows first.
 * **Concerns:** has an install script (prebuilt libvips binary).
 * **Alternatives:** none needed
 * **Verdict:** keep — core image processing and the override anchor; healthy
-
-### svelte
-
-* **Version:** `^5.56.4` declared · 5.56.4 locked (latest 5.56.6) · dev
-* **Used for:** The UI framework/compiler (runes-only, per repo conventions) — the whole app.
-* **Source:** npm · [github.com/sveltejs/svelte](https://github.com/sveltejs/svelte) · published by
-  the Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): [87.6k stars](https://github.com/sveltejs/svelte) · latest 5.56.6
-  on 2026-07-16 · last push 2026-07-16 · 1.1k open issues (large active project)
-* **Maintenance:** active — flagship framework, near-daily activity
-* **Concerns:** none — moves as a coordinated set with kit/vite-plugin-svelte
-* **Alternatives:** none needed (framework choice, ADR-0001)
-* **Verdict:** keep — the UI framework; healthy
-
-### svelte-check
-
-* **Version:** `^4.7.1` declared · 4.7.1 locked (latest 4.7.3) · dev
-* **Used for:** Type/diagnostic checking of Svelte + TS (`check`/`check:watch`).
-* **Source:** npm · [github.com/sveltejs/language-tools](https://github.com/sveltejs/language-tools)
-  · published by the Svelte team
-* **License:** MIT
-* **Health** (checked 2026-07-17): [1.4k stars](https://github.com/sveltejs/language-tools) · latest
-  4.7.3 on 2026-07-15 · last push 2026-07-15 · 278 open issues
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — the type-check gate; healthy
 
 ### svgo
 
@@ -801,7 +425,8 @@ Non-`keep` rows first.
 ### vite
 
 * **Version:** `^8.1.0` declared · 8.1.0 locked (latest 8.1.5) · dev
-* **Used for:** The build tool / dev server underpinning SvelteKit (`web/vite.config.ts`).
+* **Used for:** The config-free TypeScript loader for Netlify Functions in
+  `tools/lib/netlify-function-host.mjs`, plus Vitest tooling.
 * **Source:** npm · [github.com/vitejs/vite](https://github.com/vitejs/vite) · published by the Vite
   team (VoidZero)
 * **License:** MIT
@@ -811,21 +436,6 @@ Non-`keep` rows first.
 * **Concerns:** none — part of the coordinated Svelte/Vite upgrade set
 * **Alternatives:** none needed
 * **Verdict:** keep — the build tool; healthy
-
-### vite-plugin-pwa
-
-* **Version:** `^1.3.0` declared · 1.3.0 locked · dev
-* **Used for:** Service-worker / PWA manifest generation for the web target (`web/vite.config.ts`).
-* **Source:** npm ·
-  [github.com/vite-pwa/vite-plugin-pwa](https://github.com/vite-pwa/vite-plugin-pwa) · published by
-  the vite-pwa team (antfu et al.)
-* **License:** MIT
-* **Health** (checked 2026-07-17): [4.2k stars](https://github.com/vite-pwa/vite-plugin-pwa) ·
-  latest 1.3.0 on 2026-05-05 · last push 2026-05-05 · 184 open issues
-* **Maintenance:** active — reached 1.0; steady cadence
-* **Concerns:** none
-* **Alternatives:** hand-rolled service worker; none needed
-* **Verdict:** keep — PWA build support; healthy
 
 ### vitest
 
@@ -919,17 +529,10 @@ in `tools/ci-mirror/tests/run-quality-checks.test.mjs` parses them.
 
 19 advisories: **4 low, 9 moderate, 6 high, 0 critical**. Mapped transitive → direct parent:
 
-| Advisory (severity)                         | Transitive chain                                                                | Direct parent                         | Fix status                                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `tar` path traversal (**high**)             | `tar` ← `@capacitor/cli@8.4.1`; also `tar@6` ← bundled `@capacitor/cli@5.7.8`   | `@capacitor/cli`, `@capacitor/assets` | no upstream fix — dev/CLI-local, trusted files                                                 |
-| `minimatch` ReDoS (**high**)                | `minimatch@3/8` ← `@trapezedev/project` / bundled old cli ← `@capacitor/assets` | `@capacitor/assets`                   | no upstream fix — dev-only, dormant tool                                                       |
-| `replace` → `minimatch` (**high**)          | `replace` ← `@trapezedev/project` ← `@capacitor/assets`                         | `@capacitor/assets`                   | no upstream fix                                                                                |
-| `@trapezedev/project` (**high**)            | ← `@capacitor/assets`                                                           | `@capacitor/assets`                   | no upstream fix                                                                                |
-| `js-yaml` quadratic DoS (**moderate**)      | `js-yaml@3.14.2` ← `@intellectronica/ruler`                                     | `@intellectronica/ruler`              | fixable via ruler dep tree (dev-only, trusted YAML)                                            |
-| `uuid` bounds check (**moderate**)          | `uuid@7` ← `xcode` ← `@trapezedev/project` ← `@capacitor/assets`                | `@capacitor/assets`                   | no upstream fix                                                                                |
-| `xcode` → `uuid` (**moderate**)             | ← `@trapezedev/project` ← `@capacitor/assets`                                   | `@capacitor/assets`                   | no upstream fix                                                                                |
-| `@opentelemetry/*` memory (**moderate** ×5) | `@opentelemetry/core` ← `@netlify/otel` ← `@netlify/blobs`                      | `@netlify/blobs`                      | only fix offered is a semver-major *downgrade* to blobs 10.1.0 — not viable; wait for upstream |
-| `cookie` OOB chars (**low**)                | `cookie@0.6.0` ← `@sveltejs/kit`                                                | `@sveltejs/kit` (+ adapters)          | fixed by a kit minor bump → `burn-down-outdated-dependencies`                                  |
+| Advisory (severity)                         | Transitive chain                                           | Direct parent            | Fix status                                                                                     |
+| ------------------------------------------- | ---------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `js-yaml` quadratic DoS (**moderate**)      | `js-yaml@3.14.2` ← `@intellectronica/ruler`                | `@intellectronica/ruler` | fixable via ruler dep tree (dev-only, trusted YAML)                                            |
+| `@opentelemetry/*` memory (**moderate** ×5) | `@opentelemetry/core` ← `@netlify/otel` ← `@netlify/blobs` | `@netlify/blobs`         | only fix offered is a semver-major *downgrade* to blobs 10.1.0 — not viable; wait for upstream |
 
 **Takeaway:** the six high-severity advisories all originate from **`@capacitor/assets`** (dev-only,
 dormant, run locally) and **`@capacitor/cli`'s bundled `tar`** — none reach the shipped web/native
@@ -983,11 +586,9 @@ verifies (and `-- --check-latest` compares against upstream).
 
 ### Runtime-provisioned CLIs and local helpers (npm scripts, not in `package.json`)
 
-| Tool                           | Where                                           | Source / provisioning                                                                                                                      | Verdict                                                                                                   |
-| ------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `netlify-cli`                  | `dev:netlify` (`netlify dev --cwd web`)         | **global install** (`npm i -g netlify-cli`), deliberately not a project dep — `tools/check-netlify-cli.mjs` guards its presence/login/link | keep — kept out of the tree on purpose (heavy CLI); the guard documents the requirement                   |
-| Local port cleanup             | `dev:stop` (`node tools/stop-dev-servers.mjs`)  | repo-local script (replaced the unpinned `npx kill-port` fetch); SIGTERM → verify → SIGKILL → verify on the two dev ports                  | keep — runs project code without a registry lookup; `lsof` is the supported macOS/Linux system dependency |
-| Playwright browsers (Chromium) | `test.yml` (`.github/actions/setup-playwright`) | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI                    | keep — versioned by the npm package; the binaries are a separate download, not a separate dep             |
+| Tool                           | Where                                           | Source / provisioning                                                                                                   | Verdict                                                                                       |
+| ------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Playwright browsers (Chromium) | `test.yml` (`.github/actions/setup-playwright`) | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI | keep — versioned by the npm package; the binaries are a separate download, not a separate dep |
 
 ### System toolchains (native builds & tests — no npm range)
 

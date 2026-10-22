@@ -1,0 +1,241 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-focus-ring.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+stderr | tests/native-focus-ring.test.mjs
+Invalid style property of "direction". Did you mean "writingDirection"?
+
+ ❯ |repo-tools| tests/native-focus-ring.test.mjs (14 tests | 12 failed) 49ms
+   × matches focus tokens, inset, halo and blob radii in the web export stylesheet 8ms
+   × rings a design Button on its own box 6ms
+   × rings a corner icon button on its own box 2ms
+   × rings a segmented option on its own box 3ms
+   × rings a hub row on its own box 2ms
+   × rings the toggle switch track, not its taller hit area, as shipping rings ::before 3ms
+   × rings the slider track, the pill shipping rounds its focused slider to 2ms
+   × rings the device checkbox square around its box, not the whole labelled row 1ms
+   × draws the disclosure summary ring inside the panel that clips it 1ms
+   × rounds the dialog Back and Close rings to the blobs they paint 2ms
+   × rounds the floating close, the parental gate close, to its blob 1ms
+   × rings the docked Clear half-disc rather than its square host 2ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > matches focus tokens, inset, halo and blob radii in the web export stylesheet
+AssertionError: expected { outline: 'none', …(1) } to deeply equal { outline: '2px solid #ab71e1', …(1) }
+
+- Expected
++ Received
+
+  {
+-   "outline": "2px solid #ab71e1",
++   "outline": "none",
+    "outline-offset": "2px",
+  }
+
+ ❯ tests/native-focus-ring.test.mjs:196:46
+    194|
+    195| it('matches focus tokens, inset, halo and blob radii in the web export…
+    196|   expect(rule(RING_RULES, ':focus-visible')).toEqual({
+       |                                              ^
+    197|     outline: RING,
+    198|     'outline-offset': RING_OFFSET,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings a design Button on its own box
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings a corner icon button on its own box
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings a segmented option on its own box
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings a hub row on its own box
+AssertionError: expected null to match object { on: 'self', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "self",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:304:16
+    302|   await mount(render());
+    303|   const ring = ringOf(find());
+    304|   expect(ring).toMatchObject({ on: 'self', outline: RING, offset: RING…
+       |                ^
+    305| });
+    306|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings the toggle switch track, not its taller hit area, as shipping rings ::before
+AssertionError: expected null to match object { on: 'part', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "part",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:310:16
+    308|   await mount(h(RsdToggleSwitch, { id: 'sound', label: 'Sound', checke…
+    309|   const ring = ringOf(byLabel('Sound'));
+    310|   expect(ring).toMatchObject({ on: 'part', outline: RING, offset: RING…
+       |                ^
+    311|   expect(ring.element.getAttribute('data-testid')).toBe('toggle-switch…
+    312| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings the slider track, the pill shipping rounds its focused slider to
+AssertionError: expected null to match object { on: 'part', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "part",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:318:16
+    316|   const slider = document.querySelector('[role="slider"]');
+    317|   const ring = ringOf(slider);
+    318|   expect(ring).toMatchObject({ on: 'part', outline: RING, offset: RING…
+       |                ^
+    319|   expect(ring.element.parentElement).toBe(slider);
+    320| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings the device checkbox square around its box, not the whole labelled row
+AssertionError: expected null to match object { on: 'part', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "part",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:325:16
+    323|   await mount(h(DeviceCheckbox, { checked: false, onToggle: noop }));
+    324|   const ring = ringOf(document.querySelector('[role="checkbox"]'));
+    325|   expect(ring).toMatchObject({ on: 'part', outline: RING, offset: RING…
+       |                ^
+    326| });
+    327|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > draws the disclosure summary ring inside the panel that clips it
+AssertionError: expected null to match object { on: 'self', …(2) }
+
+- Expected:
+{
+  "offset": "-2px",
+  "on": "self",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:331:16
+    329|   await mount(h(RsdDisclosure, { summary: 'Install as App' }, h('p', n…
+    330|   const ring = ringOf(document.querySelector('[aria-expanded]'));
+    331|   expect(ring).toMatchObject({ on: 'self', outline: RING, offset: DISC…
+       |                ^
+    332| });
+    333|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rounds the dialog Back and Close rings to the blobs they paint
+AssertionError: Back: expected null to match object { on: 'self', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "self",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:341:25
+    339|   ]) {
+    340|     const ring = ringOf(byLabel(label));
+    341|     expect(ring, label).toMatchObject({ on: 'self', outline: RING, off…
+       |                         ^
+    342|     expect(ring.radius, label).toBe(parsedRadius(BLOB_RADII[shape]));
+    343|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rounds the floating close, the parental gate close, to its blob
+AssertionError: expected null to match object { on: 'self', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "self",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:349:16
+    347|   await mount(h(DialogHeader, { onClose: noop }));
+    348|   const ring = ringOf(byLabel('Close'));
+    349|   expect(ring).toMatchObject({ on: 'self', outline: RING, offset: RING…
+       |                ^
+    350|   expect(ring.radius).toBe(parsedRadius(BLOB_RADII.radiusBlob2));
+    351| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/12]⎯
+
+ FAIL  |repo-tools| tests/native-focus-ring.test.mjs > rings the docked Clear half-disc rather than its square host
+AssertionError: expected null to match object { on: 'part', …(2) }
+
+- Expected:
+{
+  "offset": "2px",
+  "on": "part",
+  "outline": "2px solid #ab71e1",
+}
+
++ Received:
+null
+
+ ❯ tests/native-focus-ring.test.mjs:379:16
+    377|   await mount(h(RsdClearOverlay, { control, disabled: false }));
+    378|   const ring = ringOf(byLabel('Clear drawing'));
+    379|   expect(ring).toMatchObject({ on: 'part', outline: RING, offset: RING…
+       |                ^
+    380|   expect(ring.element.getAttribute('data-testid')).toBe('rsd-clear-fac…
+    381| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/12]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  12 failed | 2 passed (14)
+   Start at  20:58:32
+   Duration  644ms (transform 48%, import 29%, environment 15%, tests 8%)
+

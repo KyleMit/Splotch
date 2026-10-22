@@ -17,11 +17,11 @@ interface Bounds {
 // pinchZoom.svelte.test.ts can unit-test the pure gesture math directly (incl.
 // edge cases like NaN) rather than only through createPinchZoom's pointer-event
 // surface.
-export const MIN_SCALE = 1;
-export const MAX_SCALE = 4;
+const MIN_SCALE = 1;
+const MAX_SCALE = 4;
 const IDENTITY_TRANSFORM: Transform = { scale: 1, x: 0, y: 0 };
 
-export function clampScale(scale: number): number {
+function clampScale(scale: number): number {
   if (!Number.isFinite(scale)) return MIN_SCALE;
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
 }
@@ -29,7 +29,7 @@ export function clampScale(scale: number): number {
 // Keep the scaled content covering the surface: it may never be dragged past an
 // edge, and at scale 1 the only legal offset is (0, 0) — so a stray one-finger
 // pan can't nudge an un-zoomed preview.
-export function clampTransform(t: Transform, bounds: Bounds): Transform {
+function clampTransform(t: Transform, bounds: Bounds): Transform {
   const scale = clampScale(t.scale);
   const minX = bounds.width * (1 - scale);
   const minY = bounds.height * (1 - scale);

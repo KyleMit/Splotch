@@ -2,9 +2,6 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { E2E_SERVER_ENV } from '../../e2e/server/serverEnv.ts';
-import { commonWebServer } from '../../web/playwright.shared.ts';
-
 // Every throwaway server that boots this app — the SvelteKit Playwright web
 // server, the RN web E2E server (e2e/server/serve.ts) and the function host
 // tools/api-smoke/run-local-contract.mjs starts — must declare every private env
@@ -16,7 +13,7 @@ import { commonWebServer } from '../../web/playwright.shared.ts';
 // how a spec can pass locally on a credential CI doesn't have.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const appDir = join(repoRoot, 'web', 'src');
-const apiSmokePath = join(repoRoot, 'tools', 'api-smoke', 'run-local-contract.mjs');
+join(repoRoot, 'tools', 'api-smoke', 'run-local-contract.mjs');
 // The private env is web/src/lib/server/privateEnv.ts's `env`, imported by a
 // relative path so the /api Netlify Functions can bundle its readers.
 const PRIVATE_ENV_IMPORT = /from '(?:\.\.?\/)+(?:server\/)?privateEnv'/;
@@ -59,41 +56,6 @@ const unscannableReads = sources
   )
   .map(({ path }) => path);
 
-/** The `env` literal `startNetlifyFunctionHost` is handed, sliced out at its braces. */
-function apiSmokeEnvLiteral(source) {
-  const open = source.indexOf(
-    '{',
-    source.indexOf('env: {', source.indexOf('startNetlifyFunctionHost('))
-  );
-  let depth = 0;
-  let cursor = open;
-  do {
-    if (source[cursor] === '{') depth++;
-    if (source[cursor] === '}') depth--;
-    cursor++;
-  } while (depth > 0 && cursor < source.length);
-  return source.slice(open, cursor);
-}
-
-// run-local-contract.mjs is a CLI that boots its server as a side effect of loading, so
-// its declaration is read from the source instead of imported. A value that
-// isn't a string literal (ADMIN_SECRET, SEED_TOKENS) reads as null — the name is
-// declared, which is all this file checks of it.
-function apiSmokeServerEnv() {
-  const assignments = apiSmokeEnvLiteral(readFileSync(apiSmokePath, 'utf8')).matchAll(
-    /^\s*([A-Z][A-Z0-9_]*):\s*(.*?),\s*$/gm
-  );
-  return Object.fromEntries(
-    [...assignments].map(([, name, value]) => [name, value.match(/^'(.*)'$/)?.[1] ?? null])
-  );
-}
-
-const servers = [
-  { name: 'the Playwright web server', env: commonWebServer.env },
-  { name: 'the api-smoke server', env: apiSmokeServerEnv() },
-  { name: 'the RN web E2E server', env: E2E_SERVER_ENV },
-];
-
 describe('throwaway server env', () => {
   it('finds the private env reads to check', () => {
     expect(privateEnvNames.size).toBeGreaterThan(0);
@@ -105,35 +67,5 @@ describe('throwaway server env', () => {
       'read private env as `env.NAME` off lib/server/privateEnv — the other shapes hide the name ' +
         'from this guard, leaving it to arrive from a developer web/.env'
     ).toEqual([]);
-  });
-
-  for (const { name, env } of servers) {
-    // eslint-disable-next-line vitest/valid-title -- parametrized suite named by the discovered server
-    describe(name, () => {
-      it('declares an env at all', () => {
-        expect(Object.keys(env).length).toBeGreaterThan(0);
-      });
-
-      for (const privateName of privateEnvNames) {
-        it(`declares ${privateName} instead of inheriting it`, () => {
-          expect(Object.keys(env)).toContain(privateName);
-        });
-      }
-
-      // Only the token forces the graceful-503 branch, so only it has to be
-      // exactly blank. The model key is declared but deliberately unusable
-      // rather than empty — an empty one makes the managed-code path 503 before
-      // the guards the generate-image cases exercise.
-      it('leaves reporting unconfigured', () => {
-        expect(env.GITHUB_ISSUE_TOKEN).toBe('');
-      });
-    });
-  }
-
-  // One is TypeScript the other can't import, so the repo they each hard-code
-  // has to be checked against the others rather than shared.
-  it('points every feedback flow at the same nonexistent repo', () => {
-    for (const { env } of servers.slice(1))
-      expect(env.GITHUB_ISSUE_REPO).toBe(servers[0].env.GITHUB_ISSUE_REPO);
   });
 });

@@ -1,0 +1,209 @@
+{
+  "install": [
+    {
+      "os": "ios",
+      "outsideSafari": false,
+      "steps": [
+        {
+          "text": "Tap the Share button {shareLocation}",
+          "bold": ["Share"]
+        },
+        {
+          "text": "Scroll and tap \"Add to Home Screen\"",
+          "bold": ["\"Add to Home Screen\""]
+        },
+        {
+          "text": "Tap \"Add\" in the top right",
+          "bold": ["\"Add\""]
+        },
+        {
+          "text": "Launch from your home screen for fullscreen mode",
+          "bold": []
+        }
+      ]
+    },
+    {
+      "os": "ios",
+      "outsideSafari": true,
+      "steps": [
+        {
+          "text": "Open this page in Safari — the steps below are Safari's",
+          "bold": ["Safari"]
+        },
+        {
+          "text": "Tap the Share button {shareLocation}",
+          "bold": ["Share"]
+        },
+        {
+          "text": "Scroll and tap \"Add to Home Screen\"",
+          "bold": ["\"Add to Home Screen\""]
+        },
+        {
+          "text": "Tap \"Add\" in the top right",
+          "bold": ["\"Add\""]
+        },
+        {
+          "text": "Launch from your home screen for fullscreen mode",
+          "bold": []
+        }
+      ]
+    },
+    {
+      "os": "android",
+      "outsideSafari": false,
+      "steps": [
+        {
+          "text": "Tap the menu (three dots)",
+          "bold": ["menu"]
+        },
+        {
+          "text": "Tap \"Install app\" or \"Add to Home screen\"",
+          "bold": ["\"Install app\"", "\"Add to Home screen\""]
+        },
+        {
+          "text": "Follow the prompts",
+          "bold": []
+        },
+        {
+          "text": "Launch from your home screen for fullscreen mode",
+          "bold": []
+        }
+      ]
+    },
+    {
+      "os": "desktop",
+      "outsideSafari": false,
+      "steps": [
+        {
+          "text": "In Chrome or Edge, click the install icon at the end of the address bar — or open the browser menu and choose \"Install Splotch\"",
+          "bold": ["install", "menu", "\"Install Splotch\""]
+        },
+        {
+          "text": "In Safari on macOS Sonoma or later, choose File → Add to Dock",
+          "bold": ["File → Add to Dock"]
+        },
+        {
+          "text": "Follow the prompts",
+          "bold": []
+        },
+        {
+          "text": "Launch it from your dock, desktop, or taskbar for fullscreen mode",
+          "bold": []
+        }
+      ]
+    }
+  ],
+  "lock": [
+    {
+      "os": "ios",
+      "steps": [
+        {
+          "text": "Go to Settings → Accessibility → Guided Access",
+          "bold": ["Settings → Accessibility → Guided Access"]
+        },
+        {
+          "text": "Turn on Guided Access",
+          "bold": ["Guided Access"]
+        },
+        {
+          "text": "Set a passcode",
+          "bold": []
+        },
+        {
+          "text": "Open Splotch and triple-click the side button",
+          "bold": []
+        },
+        {
+          "text": "Tap Start to lock the app",
+          "bold": ["Start"]
+        },
+        {
+          "text": "Triple-click and enter passcode to exit",
+          "bold": []
+        }
+      ]
+    },
+    {
+      "os": "android",
+      "steps": [
+        {
+          "text": "Go to Settings → Security → App Pinning",
+          "bold": ["Settings → Security → App Pinning"]
+        },
+        {
+          "text": "Turn on App Pinning",
+          "bold": ["App Pinning"]
+        },
+        {
+          "text": "Open Splotch and tap the Recent Apps button",
+          "bold": ["Recent Apps"]
+        },
+        {
+          "text": "Swipe up on Splotch and tap the Pin icon",
+          "bold": ["Pin"]
+        },
+        {
+          "text": "Tap Start to lock the app",
+          "bold": ["Start"]
+        },
+        {
+          "text": "Long-press Back + Recent Apps to exit",
+          "bold": []
+        }
+      ]
+    },
+    {
+      "os": "desktop",
+      "steps": [
+        {
+          "text": "Install Splotch above, so it opens in its own window with no tabs or address bar",
+          "bold": []
+        },
+        {
+          "text": "Put the browser in full screen — F11 on Windows and Linux, Control-Command-F on a Mac",
+          "bold": ["F11", "Control-Command-F"]
+        },
+        {
+          "text": "Stay nearby — a keyboard can leave the app at any time",
+          "bold": []
+        }
+      ]
+    }
+  ],
+  "exit": [
+    {
+      "os": "ios",
+      "steps": [
+        {
+          "text": "Triple-click the side button (or Home button)",
+          "bold": ["side button"]
+        },
+        {
+          "text": "Enter your Guided Access passcode",
+          "bold": []
+        },
+        {
+          "text": "Tap End in the top left",
+          "bold": ["End"]
+        }
+      ]
+    },
+    {
+      "os": "android",
+      "steps": [
+        {
+          "text": "Touch and hold Back + Recent Apps together",
+          "bold": ["Back", "Recent Apps"]
+        },
+        {
+          "text": "(or swipe up and hold, then tap Unpin)",
+          "bold": ["Unpin"]
+        },
+        {
+          "text": "Splotch is now unlocked",
+          "bold": []
+        }
+      ]
+    }
+  ]
+}

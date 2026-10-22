@@ -122,8 +122,8 @@ visibility acceptance is inferred from source or mounted-host tests.
 ## Design tokens
 
 `src/rsdDrawing/tokens.css.ts` is generated from the shipping design owner
-(`web/src/lib/design/tokens.ts`, plus the layout tokens `web/src/app.css` declares) by
-`tools/migration/lib/rsd-fixture-tokens.mjs`; never edit it by hand. Every group is a statically
+(`web/src/lib/design/tokens.ts`, plus the layout contract in `web/src/lib/design/layoutMetrics.ts`)
+by `tools/migration/lib/rsd-fixture-tokens.mjs`; never edit it by hand. Every group is a statically
 analyzable `css.defineVars`, so StyleX compiles it to custom properties on web and the RSD native
 runtime resolves the same variables on Android and iOS. Dark mode is the one `darkTheme` over
 `colors`, applied where the screen and dialog roots already apply it.
@@ -178,11 +178,10 @@ them yet; the screen units adopt them.
 * Values shipping writes as literals rather than tokens (press scales, the hero size, outline
   insets, the busy ring, the corner opacities, tile and flyout geometry, the `color-mix()` brand
   shadows resolved to `rgba()`) are exported beside each component, because the StyleX web compile
-  resolves only local constants and token files inside `css.create`.
-  `tools/migration/tests/rsd-native-button-chrome.test.mjs` reads `Button.svelte` and `app.css` and
-  fails when one diverges, including the variant list and each variant's fill, label, border, hover
-  and disabled tokens; `rsd-native-button.test.mjs` and `rsd-native-icon-button.test.mjs` mount
-  every variant, size and state through the released native renderer.
+  resolves only local constants and token files inside `css.create`. `rsd-native-button.test.mjs`
+  and `rsd-native-icon-button.test.mjs` mount every variant, size and state through the released
+  native renderer. Template comparisons to the retired Svelte components are no longer an
+  enforcement mechanism.
 
 ## Pickers and sliders
 
@@ -244,12 +243,9 @@ renderers drop the marks; what a hardware keyboard shows on Android or iOS is un
 
 ## Settings rows
 
-The Settings building blocks port the shipping components one to one: `RsdToggleSwitch` and
-`RsdToggleRow` (`settings/ToggleSwitch.svelte`, `ToggleRow.svelte`), `RsdSettingCard`,
-`RsdSettingGroup` and `RsdSettingSectionBody` (`SettingsModal.svelte`'s `.setting` and
-`.setting-group`), `RsdRuleLabel` (`design/RuleLabel.svelte`), `RsdHubRow`
-(`settings/HubList.svelte`) and `RsdSidebarRow` (`nav/SidebarToc.svelte`'s Settings rows), with the
-shared `RsdActivityDot`.
+The Settings building blocks are `RsdToggleSwitch`, `RsdToggleRow`, `RsdSettingCard`,
+`RsdSettingGroup`, `RsdSettingSectionBody`, `RsdRuleLabel`, `RsdHubRow`, `RsdSidebarRow` and the
+shared `RsdActivityDot`. They live beside their style owners in `src/rsdDrawing/`.
 
 The switch is the one platform split. On the web (`RsdToggleSwitch.web.tsx`) it is a
 `<button role="switch">` described by the row's help line through `aria-describedby`, its row label
@@ -344,15 +340,11 @@ native renderer.
 
 ## Design primitives
 
-`src/rsdDrawing/` ports the small shipping primitives in `web/src/lib/components/design/` and the
-`app.css` confirm card and step badge: `RsdDisclosure`, `RsdStatusMessage`, `RsdScrollCue`,
-`RsdVisuallyHidden`, `RsdExternalMark`, `RsdConfirmCard`, `RsdStepNumber`, and the `RsdTextField` /
-`RsdTextArea` input skin. They take their values from the generated tokens or the drift-guarded
-`DRAWING_THEMES` projection; component-level literals (the confirm card's 336px, the cue's 72px, the
-textarea's 88px) are exported beside each component and read back from the shipping source by
-`tools/tests/native-design-primitives-drift.test.mjs`.
-`tools/migration/tests/rsd-native-design-primitives.test.mjs` mounts each one through the released
-RSD native renderer and checks its accessibility props and resolved light and dark styles.
+`src/rsdDrawing/` owns `RsdDisclosure`, `RsdStatusMessage`, `RsdScrollCue`, `RsdVisuallyHidden`,
+`RsdExternalMark`, `RsdConfirmCard`, `RsdStepNumber`, `RsdTextField` and `RsdTextArea`. They consume
+shared generated tokens; measured component-specific values are named beside their component.
+Mounted tests exercise the RN primitives. Comparisons to the retired Svelte templates are no longer
+an enforcement mechanism.
 
 Where React Native differs:
 

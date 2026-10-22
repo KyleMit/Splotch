@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSoundSettings,
@@ -224,13 +223,6 @@ describe('persisted candidate drawing appearance', () => {
 
 describe('the Night Mode quick toggle', () => {
   it('writes the loosest preference that gives the look, as setResolvedTheme does', () => {
-    const shipping = readFileSync(
-      new URL('../../web/src/lib/state/appearance.svelte.ts', import.meta.url),
-      'utf8'
-    );
-    expect(shipping.replace(/\s+/g, ' ')).toContain(
-      "settings.setTheme( resolveTheme('system', appearance.systemDark) === wanted ? 'system' : wanted );"
-    );
     for (const system of ['light', 'dark'])
       for (const wanted of ['light', 'dark']) {
         const preference = quickToggleAppearance(wanted, system);

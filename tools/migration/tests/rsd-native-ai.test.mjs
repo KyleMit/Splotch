@@ -1,10 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { scale } from '../../../web/src/lib/design/tokens.ts';
 import { expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
-import { scale } from '../../../web/src/lib/design/tokens.ts';
+
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { currentExportScale } from '../../../web/src/lib/drawing/exportScale.ts';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
@@ -28,7 +26,6 @@ import {
   press,
   settle,
   GATED_FLOW_TIMEOUT_MS,
-  REVEAL_RAMP_WAIT_MS,
   POLL_WAIT_MS,
   POLL_TEST_TIMEOUT_MS,
   WAITING_LABEL,
@@ -43,6 +40,8 @@ import {
   sendDrawing,
   finishedPicture,
 } from './rsd-native-ai-fixture.mjs';
+
+const REVEAL_RAMP_WAIT_MS = 2000;
 
 it.each(['error', 'unavailable'])(
   'offers review after report errors and protects unavailable evidence (%s)',
@@ -95,11 +94,12 @@ it(
 );
 
 it.each([
-  ['moving', false],
-  ['calm', true],
+  { motion: 'moving', calm: false, pixelRatio: 1, exportScale: 2 },
+  { motion: 'calm', calm: true, pixelRatio: 3, exportScale: 3 },
 ])(
-  'shows the %s dial over the blurred drawing until the picture lands, then Download and the disclosure',
-  async (_, calm) => {
+  'shows the $motion dial over the blurred drawing until the picture lands, then Download and the disclosure',
+  async ({ calm, pixelRatio, exportScale }) => {
+    records.dimensions = { ...records.dimensions, scale: pixelRatio };
     records.reduceMotion = calm;
     const pending = Promise.withResolvers();
     reply(() => pending.promise);
@@ -107,9 +107,8 @@ it.each([
     await sendDrawing();
     await settle(() => expect(testId('ai-submitted-drawing')).not.toBeNull());
     const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
-    const scale = currentExportScale();
     expect(sent.source.uri).toBe(
-      `data:image/png;base64,${rgbaPng(1024 * scale, 768 * scale, 255).toString('base64')}`
+      `data:image/png;base64,${rgbaPng(1024 * exportScale, 768 * exportScale, 255).toString('base64')}`
     );
     expect(sent.blurRadius).toBeGreaterThan(2);
     expect(labelled('AI picture progress')).not.toBeNull();
@@ -344,62 +343,6 @@ it(
   GATED_FLOW_TIMEOUT_MS
 );
 
-// A space token one of AiErrorCard.svelte's rules declares for `property`, in px.
-function shippingErrorCardSpace(selector, property) {
-  const css = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/AiErrorCard.svelte'),
-    'utf8'
-  );
-  const body = css.slice(css.indexOf('<style>')).split(`${selector} {`)[1].split('}')[0];
-  const token = body.match(new RegExp(`${property}: var\\(--space-(\\d+)\\)`))[1];
-  return parseFloat(scale[`space${token}`]);
-}
-
-// Each child's [top, bottom] margin, as the native renderer committed it.
-function verticalMargins(card) {
-  return [...card.children].map((child) => {
-    const style = JSON.parse(child.getAttribute('data-committed-props')).style;
-    const side = (edge) => style[edge] ?? style.marginVertical ?? style.margin ?? 0;
-    return [side('marginTop'), side('marginBottom')];
-  });
-}
-
-// The error card stacks what shipping's AiErrorCard does and nothing more: the space above the
-// report outcome is the outcome's own, so the card reserves none until there is one (#3027,
-// L0167). Negative control: an outcome slot mounted with that margin while empty left the card
-// 16 px taller, its Close and Try again 8 px higher and its Report a problem strip 8 px lower.
-it(
-  'stacks the error card to shipping, keeping the report outcome space for an outcome',
-  async () => {
-    records.journalHostProps = true;
-    reply(() => new Response('{"ok":false,"error":"Upstream down"}', { status: 502 }));
-    caller.feedbackSend.mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
-    useCaller();
-    await sendDrawing();
-    await settle(() => expect(host.textContent).toContain("Hmm, that didn't work"));
-    const card = () =>
-      [...host.querySelectorAll('[role="heading"]')].find(
-        (node) => node.textContent === "Hmm, that didn't work"
-      ).parentElement;
-    const stack = [
-      [0, shippingErrorCardSpace('.ai-error-glyph', 'margin-bottom')],
-      [0, 0],
-      [shippingErrorCardSpace('.ai-error-card p.ai-error-body', 'margin-top'), 0],
-      [shippingErrorCardSpace('.ai-error-card :global(.ai-error-primary)', 'margin-top'), 0],
-    ];
-    expect(verticalMargins(card())).toEqual(stack);
-    await click('Report a problem');
-    await solve();
-    await press('Send report');
-    await settle(() => expect(host.textContent).toContain('Your problem report was sent'));
-    expect(verticalMargins(card())).toEqual([
-      ...stack,
-      [shippingErrorCardSpace('.ai-error-card :global(.ai-image-report)', 'margin-top'), 0],
-    ]);
-  },
-  GATED_FLOW_TIMEOUT_MS
-);
-
 // Shipping lands focus back on the AI button, or the drawer toggle, once the result card has
 // closed (#3018); RN web does it from the card's dismissal. Negative control: a dismissal that
 // skips the hand-back fails here.
@@ -457,6 +400,42 @@ it(
     expect([strip.style].flat(Infinity).some((style) => style?.marginTop !== undefined)).toBe(
       false
     );
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+function verticalMargins(card) {
+  return [...card.children].map((child) => {
+    const style = JSON.parse(child.getAttribute('data-committed-props')).style;
+    const side = (edge) => style[edge] ?? style.marginVertical ?? style.margin ?? 0;
+    return [side('marginTop'), side('marginBottom')];
+  });
+}
+it(
+  'stacks the error card to shipping, keeping the report outcome space for an outcome',
+  async () => {
+    records.journalHostProps = true;
+    reply(() => new Response('{"ok":false,"error":"Upstream down"}', { status: 502 }));
+    caller.feedbackSend.mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+    useCaller();
+    await sendDrawing();
+    await settle(() => expect(host.textContent).toContain("Hmm, that didn't work"));
+    const card = () =>
+      [...host.querySelectorAll('[role="heading"]')].find(
+        (node) => node.textContent === "Hmm, that didn't work"
+      ).parentElement;
+    const stack = [
+      [0, Number.parseFloat(scale.space4)],
+      [0, 0],
+      [Number.parseFloat(scale.space2), 0],
+      [Number.parseFloat(scale.space6), 0],
+    ];
+    expect(verticalMargins(card())).toEqual(stack);
+    await click('Report a problem');
+    await solve();
+    await press('Send report');
+    await settle(() => expect(host.textContent).toContain('Your problem report was sent'));
+    expect(verticalMargins(card())).toEqual([...stack, [Number.parseFloat(scale.space4), 0]]);
   },
   GATED_FLOW_TIMEOUT_MS
 );

@@ -91,13 +91,13 @@ function WaitingFooter(props: {
 
 // AiImageResult.svelte's polaroid send-off: the card tilts like a fresh print, holds, then sails
 // off to the bottom-left. native-ai-flow-geometry.test.mjs reads these back.
-export const SEND_OFF_TILT_DEG = -3;
-export const SEND_OFF_TILT_MS = 400;
-export const SEND_OFF_FLY_DELAY_MS = 900;
-export const SEND_OFF_FLY_MS = 850;
-export const SEND_OFF_CALM_FLY_DELAY_MS = 500;
-export const SEND_OFF_CALM_FLY_MS = 400;
-export const SEND_OFF_END = { x: -0.42, y: 0.48, scale: 0.12, rotateDeg: -28 } as const;
+const SEND_OFF_TILT_DEG = -3;
+const SEND_OFF_TILT_MS = 400;
+const SEND_OFF_FLY_DELAY_MS = 900;
+const SEND_OFF_FLY_MS = 850;
+const SEND_OFF_CALM_FLY_DELAY_MS = 500;
+const SEND_OFF_CALM_FLY_MS = 400;
+const SEND_OFF_END = { x: -0.42, y: 0.48, scale: 0.12, rotateDeg: -28 } as const;
 const EASE_POP = Easing.bezier(0.34, 1.56, 0.64, 1);
 const FLY_EASE = Easing.bezier(0.55, 0, 0.85, 0.2);
 const DEG = 'deg';

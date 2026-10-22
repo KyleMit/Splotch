@@ -1,0 +1,348 @@
+
+> splotch@1.6.0 test:browserless
+> node tools/ci-mirror/run-browserless-tests.mjs
+
+
+[1m$ npm run test:unit:coverage[0m
+
+> splotch@1.6.0 test:unit:coverage
+> vitest run --config web/vitest.config.ts --coverage
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/web
+      Coverage enabled with v8
+
+
+ Test Files  96 passed (96)
+      Tests  1626 passed (1626)
+   Start at  21:13:20
+   Duration  3.16s (tests 36%, environment 26%, transform 17%, import 11%, worker 10%)
+
+    Isolate  96 workers spawned · ~79ms startup each (spawn + environment, per file)
+             at least ~760ms faster with isolate: false — reuses workers across files instead of one per file
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   74.43 |    74.78 |   77.03 |   75.82 |                   
+ lib               |   60.61 |    39.48 |   71.17 |   59.41 |                   
+  appIdentity.ts   |       0 |      100 |     100 |       0 | 1                 
+  breakpoints.ts   |    90.9 |    66.66 |      50 |      90 | 25                
+  githubRepo.ts    |       0 |      100 |     100 |       0 | 1                 
+  ...neGeometry.ts |       0 |        0 |       0 |       0 | 10-298            
+  idle.ts          |   62.02 |    54.28 |    61.9 |   64.28 | ...76,106-107,147 
+  ...PromptCopy.ts |       0 |      100 |     100 |       0 | 4                 
+  ...apeToolbar.ts |       0 |      100 |       0 |       0 | 3-14              
+  ...nDurations.ts |       0 |      100 |     100 |       0 | 11-20             
+  palette.ts       |   93.33 |       50 |     100 |     100 | 53                
+  reportReply.ts   |       0 |        0 |       0 |       0 | 3-24              
+  saveNaming.ts    |       0 |      100 |     100 |       0 | 14-15             
+  storageKeys.ts   |       0 |      100 |     100 |       0 | 1                 
+  supportEmail.ts  |       0 |      100 |       0 |       0 | 10-20             
+ lib/actions       |   27.42 |    33.33 |      35 |   26.97 |                   
+  ...sumeWindow.ts |       0 |      100 |     100 |       0 | 9                 
+  ...arGeometry.ts |       0 |      100 |     100 |       0 | 1                 
+  ...oomGesture.ts |       0 |        0 |       0 |       0 | 22-130            
+  pinchZoom.ts     |       0 |        0 |       0 |       0 | 20-124            
+  ...terCapture.ts |       0 |      100 |       0 |       0 | 4-11              
+  scrollCue.ts     |   96.87 |       95 |     100 |     100 | 71                
+  textZoom.ts      |       0 |        0 |       0 |       0 | 1-14              
+ lib/ai            |   72.93 |    75.17 |   79.48 |   74.38 |                   
+  confettiField.ts |       0 |      100 |       0 |       0 | 6-58              
+  dialColors.ts    |       0 |      100 |       0 |       0 | 4-10              
+  ...ionAttempt.ts |   81.81 |    71.07 |      95 |   84.84 | ...24-360,377-378 
+  ...onFailures.ts |       0 |      100 |     100 |       0 | 4-11              
+  keyFormat.ts     |      50 |      100 |       0 |      60 | 31-35             
+  loadingCopy.ts   |       0 |      100 |     100 |       0 | 3-19              
+  prompt.ts        |     100 |       75 |     100 |     100 | 32                
+ lib/audio         |       0 |        0 |       0 |       0 |                   
+  ...SoundNotes.ts |       0 |        0 |       0 |       0 | 1-135             
+ lib/boot          |   81.08 |    83.33 |   54.54 |   90.62 |                   
+  ...tMenuGuard.ts |       0 |      100 |       0 |       0 | 3-5               
+  wakeLock.ts      |   93.54 |    83.33 |      75 |     100 | 17-20,35          
+ lib/coloringPacks |   91.66 |     87.5 |   83.33 |   95.45 |                   
+  assetResolver.ts |   91.66 |    66.66 |     100 |     100 | 5-18              
+  resolution.ts    |   88.88 |      100 |      50 |   88.88 | 43                
+ lib/components    |   67.64 |    33.33 |      60 |   65.62 |                   
+  ...alGeometry.ts |       0 |      100 |     100 |       0 | 7-8               
+  bannerMotion.ts  |       0 |      100 |     100 |       0 | 5-7               
+  flyoutMotion.ts  |       0 |      100 |       0 |       0 | 1-5               
+  iconTypes.ts     |       0 |        0 |       0 |       0 | 12-20             
+ lib/design        |   59.63 |    79.54 |   55.55 |   61.11 |                   
+  colorContrast.ts |   93.75 |    86.11 |     100 |     100 | 24,28,64,85-100   
+  iconTokens.ts    |     100 |       50 |     100 |     100 | 115               
+  layoutMetrics.ts |       0 |      100 |     100 |       0 | 1                 
+  tokenUsage.ts    |       0 |      100 |     100 |       0 | 9-92              
+  tokens.ts        |   93.33 |       75 |     100 |     100 | 38                
+  trimGeometry.ts  |       0 |        0 |       0 |       0 | 17-241            
+ lib/drawing       |   58.45 |    64.64 |   69.87 |   58.93 |                   
+  ...adEncoding.ts |      88 |    81.81 |     100 |    87.5 | 38-39,51          
+  canvasMeasure.ts |      90 |       85 |      90 |   94.28 | 118-119           
+  ...rSaveOwner.ts |       0 |        0 |       0 |       0 | 1-200             
+  ...eComposite.ts |   95.91 |    86.66 |     100 |     100 | 8,64              
+  ...etGradient.ts |       0 |        0 |       0 |       0 | 12-45             
+  paperView.ts     |   97.82 |    95.23 |    92.3 |   97.67 | 169               
+  ...idGeometry.ts |       0 |        0 |       0 |       0 | 4-24              
+  ...zeListener.ts |       0 |        0 |       0 |       0 | 1-26              
+  ...shotTiming.ts |       0 |      100 |     100 |       0 | 2-4               
+  strokeMath.ts    |   84.31 |      100 |   83.33 |   82.22 | 43-50             
+  ...keSettings.ts |       0 |      100 |       0 |       0 | 2-23              
+  undoHistory.ts   |       0 |      100 |     100 |       0 | 6                 
+ lib/platform      |   98.66 |    96.72 |     100 |     100 |                   
+  deviceReport.ts  |     100 |    93.33 |     100 |     100 | 68                
+  safeArea.ts      |    92.3 |       75 |     100 |     100 | 42                
+ lib/privacy       |       0 |        0 |       0 |       0 |                   
+  contents.ts      |       0 |      100 |     100 |       0 | 8-39              
+  sectionLink.ts   |       0 |        0 |       0 |       0 | 4-14              
+ lib/pwa           |    5.46 |        0 |   14.89 |    5.69 |                   
+  appShellRoute.ts |      75 |        0 |    87.5 |   71.42 | 23,52             
+  updates.ts       |       0 |        0 |       0 |       0 | 53-435            
+ ...safeAreaMatrix |   89.28 |    79.06 |     100 |   93.33 |                   
+  diagnostics.ts   |   85.36 |    78.04 |     100 |      90 | 143-146           
+ lib/server        |   89.41 |    84.82 |   93.93 |   91.48 |                   
+  apiCors.ts       |       0 |        0 |       0 |       0 | 29-49             
+  config.ts        |   85.71 |      100 |      80 |   85.71 | 10                
+  csrf.ts          |       0 |        0 |       0 |       0 | 9-22              
+  ...tionGrants.ts |   83.84 |    73.07 |     100 |   84.03 | ...33-134,181,201 
+  ...tionLedger.ts |   92.18 |       90 |     100 |    93.1 | 99,114,188,192    
+  ...onRecovery.ts |   82.82 |    68.51 |     100 |   87.77 | ...20,225,228,234 
+  ...ecoveryCas.ts |   93.33 |       95 |     100 |   91.66 | 50-52             
+  ...ryReceipts.ts |   79.48 |    83.48 |     100 |   82.35 | ...16,218,229,234 
+  ...Accounting.ts |   90.62 |    84.21 |      90 |   96.66 | 129               
+  ...ptDispatch.ts |   82.35 |       80 |     100 |   93.33 | 55                
+  ...ersistence.ts |   89.74 |    87.09 |     100 |   93.75 | 41,66             
+  ...emptPolicy.ts |     100 |       50 |     100 |     100 | 19                
+  ...Production.ts |       0 |        0 |       0 |       0 | 15-21             
+  ...emptRecord.ts |   86.74 |     87.2 |     100 |   93.42 | ...26,159,197,232 
+  ...mptRequest.ts |   95.83 |       92 |     100 |     100 | 38-41             
+  ...mptService.ts |    78.7 |    69.76 |   94.44 |   82.26 | ...81,394,418-419 
+  ...mptStorage.ts |   86.04 |    93.33 |   81.81 |   86.84 | 44,54-58,71       
+  ...temptSweep.ts |   79.24 |    79.41 |      80 |   81.25 | ...54-55,72-73,85 
+  ...ttemptWork.ts |      90 |    88.33 |     100 |    92.3 | 37,75,183,198     
+  ...emptWorker.ts |   88.23 |    79.54 |     100 |   89.83 | ...79,119,126,133 
+  ...onAttempts.ts |   84.53 |    80.92 |   86.36 |    92.4 | ...67-470,491-492 
+  ...horization.ts |   97.36 |    96.66 |     100 |   97.05 | 101               
+  ...onDelivery.ts |     100 |    93.75 |     100 |     100 | 50                
+  ...rationJobs.ts |   91.61 |    87.38 |   88.23 |   91.04 | ...66-367,378-379 
+  ...ationStart.ts |   89.13 |    66.66 |   71.42 |   90.47 | 54,69,97-98       
+  github.ts        |   93.75 |      100 |      80 |   92.85 | 22                
+  http.ts          |   98.68 |    93.47 |     100 |     100 | 44,124,149        
+  imageReport.ts   |    90.9 |    90.47 |   85.71 |   90.24 | 73,78,95,137      
+  ...horization.ts |   93.02 |    91.89 |     100 |   97.36 | 97                
+  ...eportStore.ts |   91.37 |       92 |      70 |   92.72 | 66-67,112-113     
+  rateLimitKeys.ts |   92.85 |      100 |   92.85 |   92.85 | 60                
+  report.ts        |   92.85 |    94.59 |     100 |    92.5 | 154,188-189       
+  reportToken.ts   |   94.44 |    91.66 |     100 |   95.55 | 108,133           
+  runtimeMode.ts   |       0 |      100 |     100 |       0 | 8                 
+  tokens.ts        |     100 |    92.42 |     100 |     100 | ...39,157,295,307 
+  usage.ts         |     100 |    83.33 |     100 |     100 | 35,66,84          
+  ...ordStorage.ts |     100 |    93.75 |     100 |     100 | 41,97             
+ lib/server/ai     |   95.89 |    87.24 |     100 |   96.08 |                   
+  ...roundPunch.ts |   92.91 |     80.3 |     100 |   92.45 | 173-186           
+  imageSize.ts     |   95.12 |    93.93 |     100 |   97.22 | 102               
+  openai.ts        |     100 |     90.9 |     100 |     100 | 85,162            
+  openaiSafety.ts  |     100 |    89.33 |     100 |     100 | ...23-140,165,208 
+ lib/server/api    |    71.7 |    69.86 |   57.14 |   74.86 |                   
+  adminLogin.ts    |       0 |        0 |       0 |       0 | 17-30             
+  adminStats.ts    |       0 |        0 |       0 |       0 | 31-57             
+  adminTokens.ts   |       0 |        0 |       0 |       0 | 44-115            
+  apiFunction.ts   |       0 |        0 |       0 |       0 | 36-139            
+  cspReport.ts     |   97.67 |    93.93 |     100 |     100 | 52,88             
+  generateImage.ts |   93.44 |    88.88 |     100 |    99.1 | 190               
+  ...ionAttempt.ts |       0 |      100 |     100 |       0 | 4-5               
+  ...tionResult.ts |     100 |    96.87 |     100 |     100 | 113               
+  report.ts        |      90 |    83.33 |     100 |     100 | 35                
+  reportImage.ts   |     100 |       75 |     100 |     100 | 37-51             
+  verifyKey.ts     |   88.88 |       80 |     100 |   93.75 | 65                
+ lib/state         |   97.08 |    92.59 |   96.72 |   97.84 |                   
+  books.ts         |    96.8 |    92.59 |   96.15 |   97.61 | 116,179           
+ lib/storeFrames   |   48.27 |       25 |   14.28 |   49.39 |                   
+  frameStyle.ts    |       0 |      100 |     100 |       0 | 8-81              
+  marks.ts         |       0 |        0 |       0 |       0 | 12-246            
+  pages.ts         |       0 |      100 |       0 |       0 | 26-70             
+  showcase.ts      |       0 |      100 |     100 |       0 | 35-94             
+  targets.ts       |    87.5 |       50 |     100 |     100 | 47                
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 74.43% ( 3674/4936 )
+Branches     : 74.78% ( 2201/2943 )
+Functions    : 77.03% ( 785/1019 )
+Lines        : 75.82% ( 3331/4393 )
+================================================================================
+
+[1m$ npm run test:asset-gen[0m
+
+> splotch@1.6.0 test:asset-gen
+> vitest run --config tools/asset-gen/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools/asset-gen
+
+
+ Test Files  33 passed (33)
+      Tests  298 passed (298)
+   Start at  21:13:23
+   Duration  17.40s (tests 97%, import 2%, transform 1%)
+
+
+[1m$ npm run test:store-drawings[0m
+
+> splotch@1.6.0 test:store-drawings
+> vitest run --config tools/store-drawings/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools/store-drawings
+
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  21:13:41
+   Duration  148ms (tests 43%, transform 41%, import 14%, worker 2%)
+
+
+[1m$ npm run test:tools[0m
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/index.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/Paths.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/Directory.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/ExpoFileSystem.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/index.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/global.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/EventEmitter.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/NativeModule.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/SharedObject.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/SharedRef.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/sweet/setUpJsLogger.fx.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/errors/CodedError.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/requireNativeModule.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/NativeModulesProxy.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/TurboModuleToExpoModuleProxy.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ensureNativeModulesAreInstalled.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/EventEmitter.js" points to missing source files
+RN_TASK_DECODER {"name":"actual Android sBIT producer","pngSha256":"bec2c1fceb86daff95c56e12ff12bdfc4f96727d7c6e32875fc224e152b3f9ec","grid":{"width":1024,"height":768},"status":"accepted","empty":false,"frameMs":16.666666666666668,"frames":0,"timerCalls":13,"taskCalls":13,"timersFired":0,"tasksFired":13,"timersCancelled":13,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":74.549375,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 0","pngSha256":"0d594f793f708cadd80118234a20551149956c51208186cde6aeb2f843d9b5f7","grid":{"width":1024,"height":768},"status":"accepted","empty":true,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":97.818917,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 3","pngSha256":"c89cc1bb73f3f5dcabbbd07ae7e484c40252a66391f6c63316ea2eec684a1095","grid":{"width":1024,"height":768},"status":"accepted","empty":true,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":76.622958,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 4","pngSha256":"d755fdd863d4c58862c0eb8fd3a205ce6aa89da3295b23ef4f9438de9660e640","grid":{"width":1024,"height":768},"status":"accepted","empty":false,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":62.879041,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+RN_TASK_DECODER {"name":"independent full-grid alpha 255","pngSha256":"92f0345244b7c4b1623857350b97f496662f55c9182e1af067f38ebf6aaaa72b","grid":{"width":1024,"height":768},"status":"accepted","empty":false,"frameMs":16.666666666666668,"frames":0,"timerCalls":12,"taskCalls":12,"timersFired":0,"tasksFired":12,"timersCancelled":12,"tasksCancelled":0,"peakTimers":1,"peakTasks":1,"elapsedVirtualMs":0,"pendingAfter":{"timers":0,"tasks":0},"realElapsedMs":58.004375,"scope":"Source-bound task/frame ordering model, no native execution or performance acceptance; idle tasks add no synthetic CPU latency."}
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-screen-orientation/build/ScreenOrientation.types.js" points to missing source files
+LEGAL_DYNAMIC_WORK_FENCE {"status":"resource-policy-refused","message":"Picture observation exceeded its synchronous work limit.","independentOracle":"Node inflateSync accepted 30-distance-code variant","header":{"HLIT":29,"HDIST":29,"HCLEN":15,"explicitLengths":316},"elapsedMs":2.187041999999991,"encodedCharacters":8278,"pngBytes":4140}
+
+ Test Files  494 passed (494)
+      Tests  8077 passed (8077)
+   Start at  21:13:41
+   Duration  52.94s (tests 86%, import 7%, environment 3%, transform 3%)
+
+    Isolate  494 workers spawned · ~102ms startup each (spawn + environment, per file)
+             at least ~5.47s faster with isolate: false — reuses workers across files instead of one per file
+
+
+[1m$ npm run test:migration:rsd-selection[0m
+
+> splotch@1.6.0 test:migration:rsd-selection
+> vitest run --config tools/migration/rsd-drawing-vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-screen-orientation/build/ScreenOrientation.types.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/index.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/Paths.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/Directory.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-file-system/build/ExpoFileSystem.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/index.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/global.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/EventEmitter.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/NativeModule.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/SharedObject.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ts-declarations/SharedRef.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/sweet/setUpJsLogger.fx.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/errors/CodedError.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/requireNativeModule.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/NativeModulesProxy.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/TurboModuleToExpoModuleProxy.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/ensureNativeModulesAreInstalled.js" points to missing source files
+Sourcemap for "/Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/expo-modules-core/build/EventEmitter.js" points to missing source files
+
+ Test Files  82 passed (82)
+      Tests  1043 passed (1043)
+   Start at  21:14:35
+   Duration  34.70s (tests 79%, import 9%, environment 7%, transform 5%)
+
+
+[1m$ npm run test:api:smoke[0m
+
+> splotch@1.6.0 test:api:smoke
+> node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/run-local-contract.mjs
+
+Starting the /api function host…
+Server ready on http://127.0.0.1:5347
+
+  ✓ login with wrong key → 403 {ok:false}
+  ✓ login with correct key → 200 {ok:true, session:<64-hex>}
+  ✓ tokens without auth → 401 {ok:false, error}
+  ✓ tokens with bad bearer → 401 {ok:false, error}
+  ✓ OPTIONS /api/* → 204 with the CORS set and no security headers
+  ✓ non-OPTIONS /api/* → CORS set stamped, nosniff present, document-only headers absent
+[tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ tokens GET → 200 {ok, tokens[], invites[]}
+  ✓ tokens GET → persistent:false on the local host
+  ✓ tokens POST adds a token
+[ai-usage] failed to delete usage: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ tokens DELETE removes the token
+  ✓ tokens POST malformed body → 400 {ok:false, error}
+  ✓ tokens POST oversized body → 413 {ok:false, error}
+  ✓ tokens POST chunked oversized body → clean no-store 413 without a socket reset
+  ✓ stats without auth → 401
+[ai-usage] Netlify Blobs unavailable, no usage stats: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ stats GET → 200 {ok, usageAvailable:false, codes[], in-memory freeGrantStats}
+  ✓ verify-access-code invalid → 200 {ok:false, error}
+  ✓ verify-access-code valid → 200 {ok:true, accessCode}
+  ✓ report empty message → 400 {ok:false, error}
+  ✓ report invalid kind → 400
+  ✓ report valid but no GITHUB_ISSUE_TOKEN → 503 {ok:false, error}
+  ✓ report with filled honeypot → answered exactly as the same payload without it
+  ✓ report throttled → 429 with Retry-After
+  ✓ report-image with private reporting unconfigured → 503 {ok:false, error}
+  ✓ report-image with a free installation id → not a credential rejection
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+  ✓ csp-report report-uri payload → 204
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"inline","directive":"style-src-attr","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+  ✓ csp-report Reporting-API payload → 204
+  ✓ csp-report non-report content type → 415
+  ✓ csp-report oversize body → 413
+  ✓ csp-report malformed JSON → dropped with 204
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5347/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+  ✓ csp-report throttled → 429 with Retry-After
+  ✓ generate-image with invalid token → 403 {ok:false, error}
+  ✓ generate-image with valid token but no image → 400 {ok:false, error}
+  ✓ generate-image oversized image → 413 {ok:false, error}
+  ✓ generate-image image with no Content-Type → 415 {ok:false, error}
+  ✓ generate-image legacy multipart invalid token → 403
+  ✓ generate-image legacy multipart valid token, bad type → 415 {ok:false, error}
+  ✓ generation-result malformed job id → 400 {ok:false, error}
+[generation-jobs] could not read the job store: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+  ✓ generation-result unknown job → 404, or 503 GENERATION_UNAVAILABLE, never a 500 crash
+  ✓ recovery v1 GET stays closed before qualification
+  ✓ recovery v1 POST stays closed before qualification
+  ✓ verify-key with no key → 400 {ok:false, error}
+  ✓ free-generation-grant fresh installation → 10 remaining
+  ✓ credential-free generation is authorized before image validation
+  ✓ throttled → 429 {ok:false, error} with Retry-After
+  ✓ generate-image invalid token while limited → shared 429
+  ✓ every non-OPTIONS /api/* response → Cache-Control: no-store
+
+46 passed, 0 failed
+
+✓ Browserless tests: all 6 checks passed

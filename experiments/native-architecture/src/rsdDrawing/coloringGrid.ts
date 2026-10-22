@@ -13,13 +13,13 @@ import {
 // ColoringBook.svelte's Book Grid and Coloring Page Grid. The shipping media queries read the
 // viewport, so each step here reads the window. rsd-native-coloring-picker.test.mjs reads every
 // value from the shipping source.
-export const BOOK_GRID_COLUMNS = { wide: 4, orphan: 3, tablet: 3, phone: 2, tallPortrait: 2 };
-export const BOOK_GRID_MAX_WIDTH_PX = 856;
+const BOOK_GRID_COLUMNS = { wide: 4, orphan: 3, tablet: 3, phone: 2, tallPortrait: 2 };
+const BOOK_GRID_MAX_WIDTH_PX = 856;
 // Below this width four covers would fall under the 140px cover floor.
-export const BOOK_GRID_FOUR_COLUMN_MIN_WIDTH_PX = 741;
+const BOOK_GRID_FOUR_COLUMN_MIN_WIDTH_PX = 741;
 // Width over height at or under 4:5 turns the wide four-column grid into two tall columns.
 export const BOOK_GRID_TALL_PORTRAIT_MAX_ASPECT = 4 / 5;
-export const BOOK_GRID_ROWS_IN_VIEW = 4;
+const BOOK_GRID_ROWS_IN_VIEW = 4;
 // Slack under the tall-portrait cap so a sub-pixel row cannot tip the last one past the fold.
 export const BOOK_GRID_FOLD_SLACK_PX = 16;
 export const PAGE_GRID_COLUMNS = { landscape: 2, portrait: 3, phonePortrait: 2 };

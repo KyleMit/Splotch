@@ -11,7 +11,7 @@ import { EASE_GLIDE } from './modalGeometry';
 
 // ColorControl.svelte's loaded-ink splotch and colorFoldGesture.ts's tap travel, which no shipping
 // module exports; rsd-native-color-control.test.mjs reads both sources and fails on divergence.
-export const COLOR_ICON_PX = 34;
+const COLOR_ICON_PX = 34;
 export const FOLD_TAP_TRAVEL_PX = 18;
 
 const MS_PER_SECOND = 1000;

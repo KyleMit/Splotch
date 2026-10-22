@@ -7,9 +7,7 @@
 # tools/ruler/tests/layout.test.mjs fails until the two lists match.
 default_agents = ["claude", "codex"]
 
-# Also process every nested <dir>/.ruler/ (web/src, web/tests, tools,
-# android, tools/asset-gen, tools/store-drawings, docs/handoff) into sibling
-# CLAUDE.md + AGENTS.md files.
+# Also process nested .ruler sources into sibling agent instruction files.
 nested = true
 
 # Generated files are committed, not ignored — drift is caught in CI instead.

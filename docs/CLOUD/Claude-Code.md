@@ -8,8 +8,8 @@ the network constraints that shape what's possible.
 
 A cloud session runs in an ephemeral, Anthropic-managed container: the repo is cloned fresh on start
 and the container is reclaimed after inactivity, so commit and push anything worth keeping.
-`pnpm install` + `npm run dev` work as usual — with one install-script caveat covered under "Getting
-dependencies ready" below.
+`pnpm install --frozen-lockfile` + `npm run build:site` work as usual — with one install-script
+caveat covered under "Getting dependencies ready" below.
 
 The constraint that matters here is **networking**:
 
@@ -85,11 +85,9 @@ the command (`timeout 600 …`), treat "moved to the background" as a decision p
 background task's output file rather than its reported exit code — that code belongs to the wrapper
 shell, so a SIGKILLed command can surface as `exit code 0`.
 
-The test suite is bounded independently of all of this, so a session cannot hang on it:
-`globalTimeout` in `web/playwright.shared.ts` ends a wedged run, and the harness probe in
-`web/tests/global-setup.ts` aborts rather than waiting on a server that never answers. Playwright's
-per-test timeout already covered a hanging *test*; those two cover the gaps around it — globalSetup,
-globalTeardown, and the webServer wait.
+The test suite is bounded by the timeouts in `e2e/playwright.config.ts`; the host starts on an
+explicit free port and serves only that checkout's RN export. See `e2e/README.md` for the isolated
+function environment and `SPLOTCH_E2E_PREBUILT` rules.
 
 ## Per-session branch + Netlify preview
 
@@ -160,8 +158,8 @@ slug convention (each non-alphanumeric character → `-`): `feature/undo-button`
 The branch deploy is served by **real Netlify** — the same CDN, HTTP/2, edge compression,
 `netlify.toml` headers, redirects, SSR function, and generated PWA service worker that `splotch.art`
 gets. That makes it the *only* place in a cloud session to verify behavior that exists **solely in
-production serving** and is absent from `npm run dev` / `vite preview` / `netlify dev` (which emit
-no CDN headers and no built service worker):
+production serving**. The local export host emulates headers and redirects, while Netlify still owns
+CDN behavior and hosted function configuration:
 
 * **Response headers** — the `Cache-Control` each `netlify.toml` `[[headers]]` rule sets (the
   week-long media folders, the immutable hashed root scripts, the no-cache `/sw.js`), security
@@ -420,50 +418,9 @@ broken.
 On Linux the spool root under `/tmp` stays writable to the sandboxed rival, the integrity exposure
 `tools/rival-agent/NOTES.md` accepted "if Linux ever matters"; a cloud session is where it now does.
 
-## Previewing the dev server on a phone
+## Previewing the app
 
-Because there's no inbound forwarding, viewing the running app on a phone needs an **outbound**
-tunnel — but the cloud egress is a TLS-terminating, HTTP-only MITM gateway (Anthropic's Envoy
-"Egress Gateway"), not the SNI pass-through we once assumed. That rules out **every** turnkey
-tunnel: Cloudflare's quick tunnel targets a non-443 edge, and ngrok dies on the gateway's cert
-pinning and ALPN re-origination. The full proof, the reproducible probe, and the list of dead ends
-are in [ADR-0021](../adrs/0021-cloud-session-tunneling.md) — **read it before trying any other
-tunnel here.**
-
-The one shape that works is a **self-hosted HTTP/WebSocket reverse tunnel**: a relay you run on a
-host you can allowlist, reached by a Go client that trusts the system CA. We use
-[chisel](https://github.com/jpillora/chisel) fronted by a [Fly.io](https://fly.io) relay (free
-`*.fly.dev` HTTPS).
-
-**Quick version** (ADR-0021 §7 has the complete, repeatable steps):
-
-1. **Server, once (your machine):** deploy chisel on Fly with the ADR's `Dockerfile` + `fly.toml`,
-   then `fly scale count 1` (exactly one machine — HA breaks the tunnel). Set the shared secret as a
-   Fly secret `AUTH`.
-2. **Env settings (Claude web env dialog — take effect next session):** allowlist `<app>.fly.dev`
-   and set `TUNNEL_AUTH` to the Fly `AUTH` (full config in
-   [`.claude/cloud/environment.example`](../../.claude/cloud/environment.example)).
-3. **Sandbox, each session — one command:**
-   ```bash
-   npm run dev:tunnel
-   ```
-   It starts `vite dev`, connects the chisel client, waits for the public URL to answer `200`, and
-   prints it. `Live: https://<app>.fly.dev` ⇒ open it on the phone.
-
-`dev:tunnel` defaults `TUNNEL_HOST` to the relay host and injects it into vite, so it runs plain
-`npm run dev` under the hood — **`--host` is not needed in the cloud** (no LAN; chisel forwards via
-localhost). The only thing the tunnel needs from vite is `server.allowedHosts`, which `TUNNEL_HOST`
-drives (`web/vite.config.ts`). Set `TUNNEL_HOST` in the env config too if you want a bare
-`npm run dev` to accept the tunnel host.
-
-> **One live tunnel at a time, and it's public while live.** The relay binds the reverse port once:
-> the *first* session to connect owns the URL; a second session's client just retries forever
-> (`server cannot listen on R:…`) and never serves — there is no priority. And while a tunnel is up,
-> `https://<app>.fly.dev` is reachable by anyone with the URL — chisel's `AUTH` gates *establishing*
-> the tunnel, not HTTP access to the served app (ADR-0021 §security). Don't leave tunnels running
-> unattended.
-
-> **Off-cloud this is all unnecessary** — on a machine with normal internet, any quick tunnel works
-> with no account and no allowlist, e.g. `cloudflared tunnel --url http://localhost:5173` or
-> `ngrok http 5173`. The cloud sandbox is the only hostile case; the chisel relay above exists
-> solely to satisfy its egress gateway.
+Use the `run-splotch` skill to build and inspect the RN export in the cloud browser. Keep the local
+host private: it uses isolated E2E credentials. Public phone previews use the verified Netlify
+branch-deploy URL described above. The Vite reverse-tunnel workflow retired with SvelteKit
+(ADR-0182); do not launch a retired development server or report a loopback URL as public.

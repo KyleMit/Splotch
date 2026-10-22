@@ -2,12 +2,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import {
   MAX_NATIVE_WEB_CORE_CONTROLS_BYTES,
   MAX_NATIVE_WEB_FIRST_PAINT_BYTES,
-  NATIVE_WEB_STARTUP_TARGET_BYTES,
-  REACT_NATIVE_WEB_FLOOR_BYTES,
   checkNativeWebStartup,
   INLINED_IMAGE_EXCEPTIONS,
   exceptedImagePayloads,
@@ -197,12 +194,6 @@ it('rejects a shell that loads a file the export lacks', () => {
   const { [ENTRY]: _missing, ...files } = FILES;
   expect(() => measureNativeWebStartup(exportFixture(files))).toThrow(
     `The app shell loads a missing file: ${ENTRY}`
-  );
-});
-
-it('derives its target from the shipping startup budget plus the React Native Web floor', () => {
-  expect(NATIVE_WEB_STARTUP_TARGET_BYTES).toBe(
-    MAX_STARTUP_JS_CSS_BYTES + REACT_NATIVE_WEB_FLOOR_BYTES
   );
 });
 

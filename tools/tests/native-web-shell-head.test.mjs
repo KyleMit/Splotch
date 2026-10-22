@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
@@ -9,7 +10,6 @@ import {
   bootAppSurfaceHeadTag,
   bootThemeHeadTags,
   withShippingTitle,
-  withShippingViewport,
 } from '../migration/build-native-web.mjs';
 import { bootAppearance } from '../../experiments/native-architecture/src/platform/bootAppearance.web.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
@@ -192,27 +192,6 @@ describe("the drawing surface's browser guards", () => {
     expect(document.documentElement.hasAttribute(APP_SURFACE_ATTRIBUTE)).toBe(false);
     expect(menu()).toBe(true);
   });
-
-  it("uses shipping's scoped touch, selection and callout locks", () => {
-    const shipping = readFileSync(join(import.meta.dirname, '../../web/src/app.css'), 'utf8');
-    const candidate = readFileSync(
-      join(import.meta.dirname, '../../experiments/native-architecture/src/strict.css'),
-      'utf8'
-    );
-    const selector = `:root[${APP_SURFACE_ATTRIBUTE}] body`;
-    const declarations = (source) => {
-      const body = source
-        .slice(source.indexOf(selector) + selector.length)
-        .match(/^\s*\{([^}]+)\}/)?.[1];
-      return body
-        ?.split(';')
-        .map((value) => value.trim())
-        .filter(Boolean)
-        .sort();
-    };
-    expect(declarations(shipping)).toBeDefined();
-    expect(declarations(candidate)).toEqual(declarations(shipping));
-  });
 });
 
 describe("the web shell's boot theme", () => {
@@ -245,31 +224,35 @@ describe("the web shell's boot theme", () => {
   });
 });
 
-describe("the web shell's viewport", () => {
-  it("takes shipping's viewport-fit=cover, so safe-area insets reach the Notch Band", () => {
-    const appHtml = readFileSync(join(import.meta.dirname, '../../web/src/app.html'), 'utf8');
-    const expo =
-      '<head><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" /></head>';
-    const shell = withShippingViewport(expo, appHtml);
-    expect(shell).toContain(
-      '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />'
-    );
-    expect(shell.match(/name="viewport"/g)).toHaveLength(1);
-    expect(() => withShippingViewport('<head></head>', appHtml)).toThrow();
-  });
-});
-
 // Shipping's drawing route titles its tab from the home card; the export replaces Expo's app-name
 // title with it (#3027). Negative control: a shell left with Expo's title fails here.
 describe("the web shell's title", () => {
   it("takes shipping's drawing-page title in place of Expo's app name", () => {
-    const route = readFileSync(
-      join(import.meta.dirname, '../../web/src/routes/+page.svelte'),
-      'utf8'
-    );
-    expect(route).toContain('<title>{HOME_CARD.title}</title>');
     const shell = withShippingTitle('<head><title>Splotch</title></head>');
     expect(shell).toBe(`<head><title>${HOME_CARD.title}</title></head>`);
     expect(() => withShippingTitle('<head></head>')).toThrow('no <title>');
   });
+});
+
+it('scopes touch, selection and callout locks to the app surface', () => {
+  const stylesheet = readFileSync(
+    join(import.meta.dirname, '../../experiments/native-architecture/src/strict.css'),
+    'utf8'
+  );
+  const selector = `:root[${APP_SURFACE_ATTRIBUTE}] body`;
+  const body = stylesheet
+    .slice(stylesheet.indexOf(selector) + selector.length)
+    .match(/^\s*\{([^}]+)\}/)?.[1];
+  const declarations = body
+    ?.split(';')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .sort();
+  expect(declarations).toEqual([
+    '-webkit-touch-callout: none',
+    '-webkit-user-select: none',
+    'overflow: hidden',
+    'touch-action: none',
+    'user-select: none',
+  ]);
 });

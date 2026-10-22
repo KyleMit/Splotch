@@ -222,7 +222,7 @@ const HYPOTHESES = [
 
 const VERDICT_LABEL = { confirmed: 'Held up', falsified: 'Wrong', overturned: 'Half right' };
 
-const RE_TUNE = `# 1. Build once. The sweep driver builds nothing, so this is the only build, and
+const RE_TUNE = `# Historical procedure from the retired SvelteKit worker study.\n# The build, sweep runner and workflow below are retired; this is archival evidence.\n\n# 1. Build once. The sweep driver builds nothing, so this is the only build, and
 #    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
 #    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\

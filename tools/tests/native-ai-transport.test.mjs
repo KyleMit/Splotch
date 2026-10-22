@@ -17,14 +17,8 @@ import {
 } from '../../experiments/native-architecture/src/ai/contract.ts';
 import { readFileSync } from 'node:fs';
 import { AI_UNFINISHED_MESSAGE } from '../../web/src/lib/ai/generationFailures.ts';
-import {
-  FREE_DAILY_LIMIT_EXHAUSTED_CODE,
-  FREE_GRANT_EXHAUSTED_CODE,
-  GENERATION_UNAVAILABLE_CODE,
-  THROTTLED_STATUS,
-} from '../../web/src/lib/ai/generationResult.ts';
+
 vi.mock('$lib/ai/generationResult', async () => import('../../web/src/lib/ai/generationResult.ts'));
-const { readAiImageResponse } = await import('../../web/src/lib/drawing/aiImageResponse.ts');
 const signal = () => new AbortController().signal;
 const start = { path: '/api/generate-image', method: 'POST', headers: {} };
 const poll = { ...start, path: '/api/generation-result', method: 'GET' };
@@ -143,11 +137,6 @@ it('pins native secure owner semantics and the namespaced app pseudonym without 
     ),
     'utf8'
   );
-  const shipping = readFileSync(
-    new URL('../../web/src/lib/state/freeGenerations.svelte.ts', import.meta.url),
-    'utf8'
-  );
-  expect(shipping).toContain("INSTALLATION_NAMESPACE = 'splotch-free-generation-v1'");
   expect(kotlin).toContain('splotch-free-generation-v1:');
   expect(swift).toContain('splotch-free-generation-v1:');
   expect(kotlin).toContain('context.noBackupFilesDir');
@@ -157,64 +146,86 @@ it('pins native secure owner semantics and the namespaced app pseudonym without 
   expect(swift).toContain('kSecAttrSynchronizable as String: false');
 });
 
-// What the child is shown next, in both apps' terms: shipping's readAiImageResponse plus
-// generateAiImage's handling of each kind, and the native reply plus its generation owner's.
-function shippingOutcome(response, polling) {
-  switch (response.kind) {
-    case 'pending':
-      return polling ? 'wait' : 'retry';
-    case 'throttled':
-      return polling ? 'wait' : 'retry';
-    case 'free-exhausted':
-    case 'free-unavailable':
-      return 'setup';
-    case 'error':
-      return 'retry';
-    default:
-      return response.kind;
-  }
-}
-function nativeOutcome(reply) {
-  if (reply.kind === 'pending') return 'wait';
-  if (reply.kind !== 'failure') return reply.kind;
-  if (reply.reason === 'exhausted' || reply.reason === 'unavailable') return 'setup';
-  return reply.reason === 'safety' ? 'safety' : 'retry';
-}
 const failure = (status, body) => () =>
   new Response(typeof body === 'string' ? body : JSON.stringify({ ok: false, ...body }), {
     status,
     headers: { 'Retry-After': '5' },
   });
-it.each([
-  ['a bare platform 502', failure(502, '<html>Bad gateway</html>')],
-  ['a 502 with the server error', failure(502, { error: 'Upstream down' })],
-  ['a 504 with no body', failure(504, '')],
-  ['a plain 503', failure(503, { error: 'Busy' })],
-  ['a 429 throttle', failure(429, { error: 'Slow down' })],
-  ['a 422 refusal', failure(422, { error: 'Refused' })],
-  ['a 400', failure(400, { error: 'Bad request' })],
-  ['a 404', failure(404, { error: 'Gone' })],
+const both = (reply) => ({ start: reply, poll: reply });
+const RESPONSE_CASES = [
+  [
+    'a bare platform 502',
+    failure(502, '<html>Bad gateway</html>'),
+    both({ kind: 'failure', reason: 'server', status: 502, detail: '<html>Bad gateway</html>' }),
+  ],
+  [
+    'a 502 with the server error',
+    failure(502, { error: 'Upstream down' }),
+    both({ kind: 'failure', reason: 'server', status: 502, detail: 'Upstream down' }),
+  ],
+  [
+    'a 504 with no body',
+    failure(504, ''),
+    both({ kind: 'failure', reason: 'server', status: 504, detail: '' }),
+  ],
+  [
+    'a plain 503',
+    failure(503, { error: 'Busy' }),
+    both({ kind: 'failure', reason: 'server', status: 503, detail: 'Busy' }),
+  ],
+  [
+    'a 429 throttle',
+    failure(429, { error: 'Slow down' }),
+    {
+      start: { kind: 'failure', reason: 'throttled', status: 429, detail: 'Slow down' },
+      poll: { kind: 'pending', delayMs: 5000 },
+    },
+  ],
+  [
+    'a 422 refusal',
+    failure(422, { error: 'Refused' }),
+    both({ kind: 'failure', reason: 'safety', status: 422, reportToken: null }),
+  ],
+  [
+    'a 400',
+    failure(400, { error: 'Bad request' }),
+    both({ kind: 'failure', reason: 'server', status: 400, detail: 'Bad request' }),
+  ],
+  [
+    'a 404',
+    failure(404, { error: 'Gone' }),
+    both({ kind: 'failure', reason: 'server', status: 404, detail: 'Gone' }),
+  ],
   [
     'an exhausted grant',
-    failure(403, { code: FREE_GRANT_EXHAUSTED_CODE, error: 'Used up', remaining: 0 }),
+    failure(403, { code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+    both({ kind: 'failure', reason: 'exhausted', status: 403, detail: 'Used up' }),
   ],
   [
     'a closed free day',
-    failure(503, { code: FREE_DAILY_LIMIT_EXHAUSTED_CODE, error: 'Not today' }),
+    failure(503, { code: 'FREE_DAILY_LIMIT_EXHAUSTED', error: 'Not today' }),
+    both({ kind: 'failure', reason: 'unavailable', status: 503, detail: 'Not today' }),
   ],
-  ['an unreadable job', failure(503, { code: GENERATION_UNAVAILABLE_CODE, error: 'Not now' })],
-])('answers %s as shipping does, on a start and on a poll', async (_, reply) => {
-  for (const request of [start, poll]) {
-    const polling = request === poll;
-    const shipping = await readAiImageResponse(reply());
-    const native = await parseAiResponse(reply(), request, signal(), 0);
-    expect(nativeOutcome(native)).toBe(shippingOutcome(shipping, polling));
-    const reported =
-      !polling && (shipping.kind === 'error' || shipping.kind === 'throttled')
-        ? { status: shipping.status ?? THROTTLED_STATUS, detail: shipping.detail }
-        : null;
-    expect(reported && { status: native.status, detail: native.detail }).toEqual(reported);
-  }
+  [
+    'an unreadable job',
+    failure(503, { code: 'GENERATION_UNAVAILABLE', error: 'Not now' }),
+    {
+      start: { kind: 'failure', reason: 'server', status: 503, detail: 'Not now' },
+      poll: { kind: 'pending', delayMs: 3000 },
+    },
+  ],
+];
+it.each(
+  RESPONSE_CASES.flatMap(([label, reply, expected]) =>
+    [
+      ['start', start],
+      ['poll', poll],
+    ].map(([phase, request]) => ({ label, phase, request, reply, expected: expected[phase] }))
+  )
+)('answers $label on a $phase', async ({ request, reply, expected }) => {
+  const native = await parseAiResponse(reply(), request, signal(), 0);
+  expect(native).toMatchObject(expected);
+  expect(native.detail).toBe(expected.detail);
 });
 
 it('admits the captured resized AI grid and rejects the original paper grid for those pixels', () => {

@@ -1,13 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement, useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caller, host, mount, records } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import {
-  ERROR_COPY_MAX_WIDTH_PX,
-  ERROR_DOTTIE_PX,
-  ERROR_RESTART_MIN_WIDTH_PX,
   ERROR_SCREEN_COPY,
   RsdCrashScreen,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
@@ -24,10 +19,6 @@ import {
 } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { inkedDrawing } from './rsd-native-clear-fixture.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-const SHIPPING_ERROR_SCREEN = readFileSync(
-  join(import.meta.dirname, '../../../web/src/lib/components/ErrorScreen.svelte'),
-  'utf8'
-);
 
 beforeEach(() => {
   vi.spyOn(Math, 'random').mockReturnValue(0.24);
@@ -62,18 +53,6 @@ describe("the drawing screen's Error Screen", () => {
       (props) => props.children?.[0] === ERROR_SCREEN_COPY.lines[0]
     );
     expect(flat(copy?.style)?.fontFamily).toMatch(/Quicksand/);
-  });
-
-  it('keeps the copy and literals ErrorScreen.svelte writes', () => {
-    const markup = SHIPPING_ERROR_SCREEN.replace(/\s+/g, ' ');
-    expect(markup).toContain(`<title>${ERROR_SCREEN_COPY.documentTitle}</title>`);
-    expect(markup).toContain(`<h1>${ERROR_SCREEN_COPY.title}</h1>`);
-    expect(markup).toContain(`<p>${ERROR_SCREEN_COPY.lines.join('<br />')}</p>`);
-    expect(markup).toMatch(new RegExp(`>${ERROR_SCREEN_COPY.restart}</button>`));
-    expect(markup).toContain(`const DOTTIE_SIZE_PX = ${ERROR_DOTTIE_PX};`);
-    expect(markup).toContain(`max-width: ${ERROR_COPY_MAX_WIDTH_PX}px;`);
-    expect(markup).toContain('dottie-stumped.svg');
-    expect(markup).toContain(`min-width: ${ERROR_RESTART_MIN_WIDTH_PX}px;`);
   });
 
   it('shows a renderer fault with the shipping fresh-drawing action rather than a renderer Retry', async () => {

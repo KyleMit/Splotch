@@ -9,22 +9,19 @@
 > package and note you intend to change; never manufacture a missing provider by copying another
 > one.
 
-Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
+Splotch is a drawing app for toddlers (2+). One Expo / React Native / React Strict DOM app ships
+Android, iOS and a prerendered web export (ADR-0182).
 
-* **Web** (`splotch.art`, Netlify): SSR + `/api/*` serverless functions + `/admin` console + PWA.
-* **Native** (Android + iOS): the React Native app in `experiments/native-architecture`, with no
-  server routes — the apps call the hosted API.
+* **Web** (`splotch.art`, Netlify): the static export, `/admin`, the PWA, and one Netlify Function
+  serving `/api/*`.
+* **Native** (Android + iOS): the React Native projects in `experiments/native-architecture`. Native
+  apps call the hosted API. Every non-store build uses `art.splotch.app.dev`.
 
-The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, build output); the
-shipping root `package.json`/`node_modules` and `tools/` stay at the repo root. This keeps
-netlify-cli's file watcher (run via `netlify dev --cwd web`) off the large native trees — see
-ADR-0024. The web toolchain runs with `cwd = web/` through `tools/run-web-tool.mjs`.
+The app lives in `experiments/native-architecture`; framework-free shared modules remain under
+`web/src/lib` until the root promotion in epic #3148. The root package and app share one pnpm lock
+and hoisted dependency tree. Dependency changes require SDK alignment and native script provenance
+review before installation (ADR-0119).
 
-The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
-(`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be
-build-time branches instead.
-
-The migration architecture check has one private development-only package at
-`experiments/native-architecture`, sharing the root pnpm lock and hoisted linker. It does not change
-shipping web/Capacitor ownership; dependency changes require SDK alignment and native script
-provenance review before installation (ADR-0119).
+Metro resolves platform modules by file extension (`.web.ts`, `.native.ts`, and platform-specific
+variants). Use that build-time boundary instead of adding runtime branches for code that only one
+platform needs (ADR-0179).

@@ -146,14 +146,6 @@ export function exitGuideSteps(os: LockOs) {
   return exitGuideStepParts(os).map(spokenInstallText);
 }
 
-export function installGuideSteps(
-  os: InstallDeviceOs,
-  shareLocation: string,
-  outsideSafari: boolean
-) {
-  return installGuideStepParts(os, shareLocation, outsideSafari).map(spokenInstallText);
-}
-
 export function lockGuideSteps(os: InstallDeviceOs) {
   return lockGuideStepParts(os).map(spokenInstallText);
 }

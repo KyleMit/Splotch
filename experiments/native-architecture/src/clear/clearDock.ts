@@ -5,13 +5,13 @@ import type { Point } from './dragToClear';
 // orientation. native-clear-projection.test.mjs reads each shipping literal back and fails on
 // divergence.
 export const CLEAR_DOCK_OVERHANG_PX = 10;
-export const CLEAR_DOCK_PORTRAIT_TOP_PX = 90;
+const CLEAR_DOCK_PORTRAIT_TOP_PX = 90;
 // Landscape docks below Android's immersive-mode reveal strip: a floor, or the safe-area top plus
 // this margin when the window reports a taller inset.
-export const CLEAR_DOCK_LANDSCAPE_TOP_FLOOR_PX = 48;
-export const CLEAR_DOCK_LANDSCAPE_TOP_MARGIN_PX = 20;
-export const CLEAR_DOCK_SIZE_PX = { portrait: 60, landscape: 70 } as const;
-export const CLEAR_ICON_SIZE_PX = { portrait: 38, landscape: 40 } as const;
+const CLEAR_DOCK_LANDSCAPE_TOP_FLOOR_PX = 48;
+const CLEAR_DOCK_LANDSCAPE_TOP_MARGIN_PX = 20;
+const CLEAR_DOCK_SIZE_PX = { portrait: 60, landscape: 70 } as const;
+const CLEAR_ICON_SIZE_PX = { portrait: 38, landscape: 40 } as const;
 
 type ClearDockOrientation = keyof typeof CLEAR_DOCK_SIZE_PX;
 

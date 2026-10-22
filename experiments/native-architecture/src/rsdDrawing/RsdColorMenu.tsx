@@ -26,7 +26,7 @@ import { useBareToolbar } from './toolbarSkin';
 
 // ColorMenu.svelte's press feedback; local for the StyleX web compile, and held to the shipping
 // rule by rsd-native-color-control.test.mjs.
-export const COLOR_OPTION_PRESS_SCALE = 0.9;
+const COLOR_OPTION_PRESS_SCALE = 0.9;
 
 // The shipping .color-option: a flat disc of paint with no shadow of its own, which a press sinks.
 // Ringed, a band of the menu's surface steps in from its edge under the Selection Ring.

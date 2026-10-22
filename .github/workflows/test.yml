@@ -23,23 +23,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # A compile smoke of the exact configuration Netlify ships: the artifact is
-  # discarded. Every other job builds with the dev-harness/profiling seams
-  # compiled in, so only this job proves the release bundle — where those
-  # branches dead-code-eliminate (ADR-0010, ADR-0083) — still builds.
-  release-build-smoke:
-    name: Release build smoke
-    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup-pnpm
-
-      - name: Build without profiling seams
-        run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build
-
   quality:
     name: Quality
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
@@ -51,17 +34,12 @@ jobs:
       - uses: ./.github/actions/setup-pnpm
 
       # Fast-fail the cheapest, most-common failure first: a formatting-only
-      # red PR should not wait through svelte-check + eslint to surface.
+      # red PR should not wait through TypeScript + eslint to surface.
       - name: Format check
         run: npm run format:check
 
       - name: Type check
         run: npm run check
-
-      # The React Native candidate in experiments/native-architecture is its own TypeScript
-      # project, which `npm run check` does not reach.
-      - name: Native candidate type check
-        run: npm run check:migration:types
 
       - name: Lint
         run: npm run lint
@@ -90,20 +68,6 @@ jobs:
       # corpus. Fix with the documented build-review.mjs command and commit.
       - name: Ideas review drift
         run: npm run check:ideas-review
-
-      # Drift guard: web/src/tokens.css is generated from the design-token
-      # source of truth in web/src/lib/design/tokens.ts (ADR-0071). Fails if a
-      # tokens.ts edit wasn't applied or the generated CSS was edited directly.
-      # Fix with `npm run gen:tokens` and commit.
-      - name: Design-token drift
-        run: npm run gen:tokens:check
-
-      # Token-style ratchet: component <style> blocks must use the design tokens
-      # (ADR-0071); the per-file allowlist of documented one-offs lives in
-      # tools/tokens/lint-token-styles.mjs. Fails on any new raw hex color or raw
-      # 2+-digit z-index.
-      - name: Token style lint
-        run: npm run lint:tokens
 
       # Dead-code gate (knip): fails on unused files, exports, and exported
       # types. Remove the dead symbol, or tag a deliberate seam /** @public */.
@@ -168,8 +132,7 @@ jobs:
         run: npm run test:tools
 
       # The RN candidate's drawing-screen tests mount through the released native react-strict-dom
-      # renderer, an alias test:tools cannot carry, so they run as their own tier. Its pre hook
-      # generates web/.svelte-kit, which the web/src modules those tests import need.
+      # renderer, an alias test:tools cannot carry, so they run as their own tier.
       - name: Run RSD native-renderer tests
         run: npm run test:migration:rsd-selection
 
@@ -298,7 +261,7 @@ jobs:
           path: experiments/native-architecture/dist/web/
 
       - name: Run RN web E2E
-        run: npm run test:e2e:rn -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: npm run test:e2e -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         env:
           SPLOTCH_E2E_PREBUILT: 1
 

@@ -1,0 +1,28 @@
+
+> splotch@1.6.0 postnative:web:build
+> node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-startup.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-pages-without-js.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-admin.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-safe-area.mjs
+
+[native-web-precache] 151 entries / 6724849 bytes; content-addressed app shell first; every entry integrity-pinned; 6 starter pages and 50 starter images precached off the startup path
+[native-web-startup] first paint 45665/47052 bytes (4211 inline JS and 41454 inline CSS bytes plus 0 files); core controls 818694/827535 bytes (2 files); startup path 864359 bytes; no inlined images
+[native-web-startup] privacy.html first paint 34509/36329 bytes (1732 inline JS and 32777 inline CSS bytes plus 0 files); page entry 789179/829600 bytes after it paints (2 files)
+[native-web-startup] changelog.html first paint 34726/36932 bytes (1732 inline JS and 32994 inline CSS bytes plus 0 files); page entry 789179/859290 bytes after it paints (2 files)
+[native-web-startup] feedback.html first paint 33575/36892 bytes (1732 inline JS and 31843 inline CSS bytes plus 0 files); page entry 789179/845661 bytes after it paints (2 files)
+[native-web-startup] beta.html first paint 35534/38443 bytes (2078 inline JS and 33456 inline CSS bytes plus 0 files); page entry 789179/859290 bytes after it paints (2 files)
+[native-web-startup] design.html first paint 45073/46979 bytes (1663 inline JS and 43410 inline CSS bytes plus 0 files); page entry 869624/954533 bytes after it paints (2 files)
+[native-web-startup] 404.html first paint 33547/36847 bytes (1732 inline JS and 31815 inline CSS bytes plus 0 files); page entry 789179/859290 bytes after it paints (2 files)
+[native-web-startup] admin.html first paint 18450/18780 bytes (1280 inline JS and 17170 inline CSS bytes plus 0 files); page entry 273677/288785 bytes after it paints (1 files)
+[native-web-pages] privacy.html reads in full without JavaScript in all 8 layouts and colour schemes: 0 links linked, 2 outside links named, not linked, and its section links followed into view, with 16 canonical section addresses opened into view
+[native-web-pages] changelog.html reads in full without JavaScript in all 8 layouts and colour schemes: 2 links linked, 0 outside links named, not linked, and its section links followed into view, with 8 canonical section addresses opened into view
+[native-web-pages] feedback.html reads in full without JavaScript in all 8 layouts and colour schemes: 0 links linked, 0 outside links named, not linked, with 8 canonical section addresses opened into view, and 4 script-only texts hidden
+[native-web-pages] beta.html reads in full without JavaScript in all 8 layouts and colour schemes: 7 links linked, 0 outside links named, not linked, and its section links followed into view, with 16 canonical section addresses opened into view
+[native-web-pages] design.html reads in full without JavaScript in all 8 layouts and colour schemes: 0 links linked, 0 outside links named, not linked, and its section links followed into view, with 8 canonical section addresses opened into view, and its sticky contents fits the window
+[native-web-pages] 404.html reads in full without JavaScript in all 8 layouts and colour schemes: 3 links linked, 0 outside links named, not linked, with 8 canonical section addresses opened into view
+[tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available
+[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available
+[ai-usage] USAGE_GRANT_ID_SECRET is unset; could not delete the usage record
+[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available
+[tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available
+[native-web-admin] /admin signs in on the local /api function, keeps its session across a reload, lists, adds and removes codes, reads its usage figures and free grants, forgets the session on a 401 and on sign-out; deployed, its same-origin bearer writes pass the CSRF guard; it reads without JavaScript and is noindex, and its masthead fits 320 px
+[native-web-safe-area] 67 scenarios across 20 device profiles: the insets reach the app, every drawing control's tap point is inside the claimable region, nothing scrolls, the Notch Band paints exactly diagnose()'s edges at their insets' depth, and the coloring picker clears the side insets

@@ -28,8 +28,8 @@ summary line that names each failed command.
 ## Prerequisites
 
 Installed dependencies (`pnpm install`). `test:browserless` ends with `test:api:smoke`, which starts
-a throwaway Vite dev server on `SMOKE_PORT`. In a concurrent worktree, set `SMOKE_PORT` to an unused
-port, for example `SMOKE_PORT=5287 npm run test:browserless`.
+a throwaway Netlify function host on `SMOKE_PORT`. In a concurrent worktree, set `SMOKE_PORT` to an
+unused port, for example `SMOKE_PORT=5287 npm run test:browserless`.
 
 ## Failure behavior
 

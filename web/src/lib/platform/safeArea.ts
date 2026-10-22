@@ -11,7 +11,7 @@ export interface SafeAreaInsets {
   left: number;
 }
 
-export const ZERO_INSETS: SafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+const ZERO_INSETS: SafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
 export type SafeAreaEdge = keyof SafeAreaInsets;
 
@@ -24,7 +24,7 @@ export const SAFE_AREA_EDGES: readonly SafeAreaEdge[] = ['top', 'right', 'bottom
 // offers and one Playwright alone can reach.
 // app.css is the other side of this agreement — safeAreaProperties.test.ts fails if the
 // stylesheet stops declaring one of these on :root.
-export const SAFE_AREA_PROPERTIES = {
+const SAFE_AREA_PROPERTIES = {
   top: '--safe-area-top',
   right: '--safe-area-right',
   bottom: '--safe-area-bottom',

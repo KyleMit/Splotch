@@ -32,8 +32,8 @@ const eslint = new ESLint({
 const VITEST_FIXTURE = 'tools/tests/seeded-defect.test.mjs';
 const WEB_SRC_VITEST_FIXTURE = 'web/src/lib/seeded-defect.test.ts';
 const VITEST_HARNESS_FIXTURE = 'web/src/lib/seededTestHarness.ts';
-const PLAYWRIGHT_FIXTURE = 'web/tests/seeded-defect.spec.ts';
-const PLAYWRIGHT_HELPER_FIXTURE = 'web/tests/seeded-helper.ts';
+const PLAYWRIGHT_FIXTURE = 'e2e/specs/seeded-defect.spec.ts';
+const PLAYWRIGHT_HELPER_FIXTURE = 'e2e/support/seeded-helper.ts';
 
 const rulesReportedFor = async (fixture, source) => {
   const [result] = await eslint.lintText(source, { filePath: join(repoRoot, fixture) });

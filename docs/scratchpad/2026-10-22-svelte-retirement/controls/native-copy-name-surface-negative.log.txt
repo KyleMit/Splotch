@@ -1,0 +1,263 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-photo-library.test.mjs tools/tests/native-saved-file-parity.test.mjs tools/tests/native-web-shell-head.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+ ❯ |repo-tools| tests/native-web-shell-head.test.mjs (12 tests | 1 failed) 171ms
+   × scopes touch, selection and callout locks to the app surface 3ms
+ ❯ |repo-tools| tests/native-photo-library.test.mjs (40 tests | 12 failed) 62ms
+   × words 2 unsaved pictures after denied on ios 3ms
+   × words 8 unsaved pictures after denied on ios 1ms
+   × words 2 unsaved pictures after denied on android 0ms
+   × words 8 unsaved pictures after denied on android 0ms
+   × words 2 unsaved pictures after denied on web 0ms
+   × words 8 unsaved pictures after denied on web 0ms
+   × words 2 unsaved pictures after failed on ios 0ms
+   × words 8 unsaved pictures after failed on ios 0ms
+   × words 2 unsaved pictures after failed on android 0ms
+   × words 8 unsaved pictures after failed on android 0ms
+   × words 2 unsaved pictures after failed on web 0ms
+   × words 8 unsaved pictures after failed on web 0ms
+ ❯ |repo-tools| tests/native-saved-file-parity.test.mjs (7 tests | 4 failed) 4ms
+   × stamps a drawing saved at Fri Jan 02 2026 03:04:05 GMT-0500 (Eastern Standard Time) in sortable local time 2ms
+   × gives a image/png picture its file extension 0ms
+   × gives a image/jpeg picture its file extension 0ms
+   × gives a image/webp picture its file extension 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 17 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 2 unsaved pictures after denied on ios
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "detail": "Splotch needs permission to add pictures to Photos. Turn it on in Settings, then try again.",
+-   "heading": "2 pictures weren't saved",
++   "heading": "Your picture wasn't saved",
+  }
+
+ ❯ tests/native-photo-library.test.mjs:193:47
+    191|   )
+    192| )('words $count unsaved pictures after $outcome on $os', ({ os, outcom…
+    193|   expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
+       |                                               ^
+    194| });
+    195|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/17]⎯
+
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 8 unsaved pictures after denied on ios
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "detail": "Splotch needs permission to add pictures to Photos. Turn it on in Settings, then try again.",
+-   "heading": "8 pictures weren't saved",
++   "heading": "Your picture wasn't saved",
+  }
+
+ ❯ tests/native-photo-library.test.mjs:193:47
+    191|   )
+    192| )('words $count unsaved pictures after $outcome on $os', ({ os, outcom…
+    193|   expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
+       |                                               ^
+    194| });
+    195|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/17]⎯
+
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 2 unsaved pictures after denied on android
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "detail": "Splotch needs storage permission to save to your gallery. Turn it on in Settings, then try again.",
+-   "heading": "2 pictures weren't saved",
++   "heading": "Your picture wasn't saved",
+  }
+
+ ❯ tests/native-photo-library.test.mjs:193:47
+    191|   )
+    192| )('words $count unsaved pictures after $outcome on $os', ({ os, outcom…
+    193|   expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
+       |                                               ^
+    194| });
+    195|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/17]⎯
+
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 8 unsaved pictures after denied on android
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "detail": "Splotch needs storage permission to save to your gallery. Turn it on in Settings, then try again.",
+-   "heading": "8 pictures weren't saved",
++   "heading": "Your picture wasn't saved",
+  }
+
+ ❯ tests/native-photo-library.test.mjs:193:47
+    191|   )
+    192| )('words $count unsaved pictures after $outcome on $os', ({ os, outcom…
+    193|   expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
+       |                                               ^
+    194| });
+    195|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/17]⎯
+
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 2 unsaved pictures after denied on web
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 2 unsaved pictures after failed on ios
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 2 unsaved pictures after failed on android
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 2 unsaved pictures after failed on web
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "detail": "Something went wrong while saving. Try again in a moment.",
+-   "heading": "2 pictures weren't saved",
++   "heading": "Your picture wasn't saved",
+  }
+
+ ❯ tests/native-photo-library.test.mjs:193:47
+    191|   )
+    192| )('words $count unsaved pictures after $outcome on $os', ({ os, outcom…
+    193|   expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
+       |                                               ^
+    194| });
+    195|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/17]⎯
+
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 8 unsaved pictures after denied on web
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 8 unsaved pictures after failed on ios
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 8 unsaved pictures after failed on android
+ FAIL  |repo-tools| tests/native-photo-library.test.mjs > words 8 unsaved pictures after failed on web
+AssertionError: expected { …(2) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "detail": "Something went wrong while saving. Try again in a moment.",
+-   "heading": "8 pictures weren't saved",
++   "heading": "Your picture wasn't saved",
+  }
+
+ ❯ tests/native-photo-library.test.mjs:193:47
+    191|   )
+    192| )('words $count unsaved pictures after $outcome on $os', ({ os, outcom…
+    193|   expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
+       |                                               ^
+    194| });
+    195|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/17]⎯
+
+ FAIL  |repo-tools| tests/native-saved-file-parity.test.mjs > stamps a drawing saved at Fri Jan 02 2026 03:04:05 GMT-0500 (Eastern Standard Time) in sortable local time
+AssertionError: expected 'splotch-2026-1-2_3-4-5.png' to be 'splotch-2026-01-02_03-04-05.png' // Object.is equality
+
+Expected: "splotch-2026-01-02_03-04-05.png"
+Received: "splotch-2026-1-2_3-4-5.png"
+
+ ❯ tests/native-saved-file-parity.test.mjs:23:35
+     21|   [new Date(1999, 11, 31, 0, 0, 0), 'splotch-1999-12-31_00-00-00.png'],
+     22| ])('stamps a drawing saved at %s in sortable local time', (moment, exp…
+     23|   expect(pictureFilename(moment)).toBe(expected);
+       |                                   ^
+     24| });
+     25|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/17]⎯
+
+ FAIL  |repo-tools| tests/native-saved-file-parity.test.mjs > gives a image/png picture its file extension
+AssertionError: expected 'splotch-2026-1-2_3-4-5.png' to be 'splotch-2026-01-02_03-04-05.png' // Object.is equality
+
+Expected: "splotch-2026-01-02_03-04-05.png"
+Received: "splotch-2026-1-2_3-4-5.png"
+
+ ❯ tests/native-saved-file-parity.test.mjs:33:57
+     31|   const moment = new Date(2026, 0, 2, 3, 4, 5);
+     32|   for (const baseName of [DRAWING_BASENAME, AI_IMAGE_BASENAME]) {
+     33|     expect(pictureFilename(moment, { baseName, mime })).toBe(
+       |                                                         ^
+     34|       `${baseName}-2026-01-02_03-04-05.${extension}`
+     35|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/17]⎯
+
+ FAIL  |repo-tools| tests/native-saved-file-parity.test.mjs > gives a image/jpeg picture its file extension
+AssertionError: expected 'splotch-2026-1-2_3-4-5.jpg' to be 'splotch-2026-01-02_03-04-05.jpg' // Object.is equality
+
+Expected: "splotch-2026-01-02_03-04-05.jpg"
+Received: "splotch-2026-1-2_3-4-5.jpg"
+
+ ❯ tests/native-saved-file-parity.test.mjs:33:57
+     31|   const moment = new Date(2026, 0, 2, 3, 4, 5);
+     32|   for (const baseName of [DRAWING_BASENAME, AI_IMAGE_BASENAME]) {
+     33|     expect(pictureFilename(moment, { baseName, mime })).toBe(
+       |                                                         ^
+     34|       `${baseName}-2026-01-02_03-04-05.${extension}`
+     35|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/17]⎯
+
+ FAIL  |repo-tools| tests/native-saved-file-parity.test.mjs > gives a image/webp picture its file extension
+AssertionError: expected 'splotch-2026-1-2_3-4-5.webp' to be 'splotch-2026-01-02_03-04-05.webp' // Object.is equality
+
+Expected: "splotch-2026-01-02_03-04-05.webp"
+Received: "splotch-2026-1-2_3-4-5.webp"
+
+ ❯ tests/native-saved-file-parity.test.mjs:33:57
+     31|   const moment = new Date(2026, 0, 2, 3, 4, 5);
+     32|   for (const baseName of [DRAWING_BASENAME, AI_IMAGE_BASENAME]) {
+     33|     expect(pictureFilename(moment, { baseName, mime })).toBe(
+       |                                                         ^
+     34|       `${baseName}-2026-01-02_03-04-05.${extension}`
+     35|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/17]⎯
+
+ FAIL  |repo-tools| tests/native-web-shell-head.test.mjs > scopes touch, selection and callout locks to the app surface
+AssertionError: expected [ '-webkit-touch-callout: none', …(4) ] to deeply equal [ '-webkit-touch-callout: none', …(4) ]
+
+- Expected
++ Received
+
+  [
+    "-webkit-touch-callout: none",
+    "-webkit-user-select: none",
+    "overflow: hidden",
+-   "touch-action: none",
++   "touch-action: auto",
+    "user-select: none",
+  ]
+
+ ❯ tests/native-web-shell-head.test.mjs:251:24
+    249|     .filter(Boolean)
+    250|     .sort();
+    251|   expect(declarations).toEqual([
+       |                        ^
+    252|     '-webkit-touch-callout: none',
+    253|     '-webkit-user-select: none',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/17]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  17 failed | 42 passed (59)
+   Start at  21:02:57
+   Duration  839ms (import 36%, tests 36%, transform 15%, environment 13%, worker 1%)
+

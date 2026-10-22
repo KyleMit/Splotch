@@ -1,6 +1,5 @@
 import { host, records } from './rsd-native-selection-host.mjs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { act } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { CLEAR_SHEET_DURATION_MS } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
@@ -20,9 +19,6 @@ afterEach(() => {
 });
 
 it('grains the cover and departing art, uncovering the next drawing before the flight ends', async () => {
-  expect(readFileSync(join(import.meta.dirname, '../../../web/src/app.css'), 'utf8')).toContain(
-    'background: var(--paper) var(--paper-texture) repeat;'
-  );
   vi.spyOn(Animated, 'timing').mockReturnValue({ start: vi.fn(), stop: vi.fn() });
   let finish;
   const drawing = { ...inkedDrawing(), pageId: 'sunshine' };

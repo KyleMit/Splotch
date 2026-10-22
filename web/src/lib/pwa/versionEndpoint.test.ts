@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+
 import { expect, it } from 'vitest';
 import { VERSION_JSON_PATH } from './versionEndpoint';
 
-const netlifyToml = readFileSync(resolve(process.cwd(), '..', 'netlify.toml'), 'utf8');
+const netlifyToml = readFileSync(new URL('../../../../netlify.toml', import.meta.url), 'utf8');
 
 it('applies the Netlify no-cache policy at VERSION_JSON_PATH', () => {
   const headerBlock = netlifyToml

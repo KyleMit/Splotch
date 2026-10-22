@@ -23,7 +23,7 @@ import { useBareToolbar } from './toolbarSkin';
 
 // Shipping presses a swatch down to this scale. Local because the StyleX web compile resolves only
 // local constants inside css.create; rsd-native-drawing-frame.test.mjs holds it to shipping.
-export const SWATCH_PRESS_SCALE = 0.9;
+const SWATCH_PRESS_SCALE = 0.9;
 
 // The shipping ColorSwatch: a raised disc of paint (or, for More colors, of the bar surface)
 // that a press sinks. Selected, a band of the bar surface steps in from the edge and a ring a

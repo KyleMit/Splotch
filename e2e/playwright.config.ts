@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { chromium, defineConfig, devices, firefox, webkit } from '@playwright/test';
 import { chromiumExecutablePath } from '../tools/lib/playwright.mjs';
 import { parseNumberFlag, TCP_PORT } from '../tools/lib/proc.mjs';
-import type { FlakyReporterOptions } from '../web/playwright-flaky-reporter.ts';
+import type { FlakyReporterOptions } from './playwright-flaky-reporter.ts';
 import { SMOKE } from './tags.ts';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..');
@@ -33,7 +33,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 export const REPORT_FOLDER = resolve(REPO_ROOT, 'playwright-report');
 
 // Shared with the SvelteKit suite while both run: one reporter, one flaky.json record shape.
-const FLAKY_REPORTER = resolve(REPO_ROOT, 'web', 'playwright-flaky-reporter.ts');
+const FLAKY_REPORTER = resolve(REPO_ROOT, 'e2e', 'playwright-flaky-reporter.ts');
 
 const SERVE_COMMAND = `node --experimental-strip-types --disable-warning=ExperimentalWarning e2e/server/serve.ts --port ${port}`;
 

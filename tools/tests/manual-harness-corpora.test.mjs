@@ -57,7 +57,6 @@ describe('model-eval corpus', () => {
     ['tools/model-eval/run-model-evaluation.mjs', 'BASE'],
     ['tools/model-eval/gen-model-fixtures.mjs', 'OUT'],
     ['tools/model-eval/gen-model-inputs.mjs', 'OUT'],
-    ['tools/model-eval/gen-crayon-inputs.mjs', 'OUT'],
   ].map(([file, name]) => ({ file, base: declaredBase(file, name) }));
   const samples = declaredBase('tools/model-eval/gen-model-fixtures.mjs', 'SAMPLES');
 

@@ -18,7 +18,6 @@ import { dirname, join, relative, sep } from 'node:path';
 import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../web/src/lib/breakpoints.ts';
 import {
   APP_PAGE_DOCUMENTS,
-  APP_PAGE_PATHS,
   documentPagePath,
 } from '../../experiments/native-architecture/src/information/appPages.ts';
 import {

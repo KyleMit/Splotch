@@ -35,12 +35,14 @@ and the same codebase ships as native Android and iOS apps.
 
 ```bash
 corepack enable pnpm   # once per machine; pnpm's version comes from package.json
-pnpm install
-npm run dev     # → http://localhost:5173
+pnpm install --frozen-lockfile
+npm run build:site
+node e2e/server/serve.ts --port 5330   # choose an unused port first
 ```
 
-That's genuinely it. For everything else — prerequisites, the dual web/native build, env vars,
-testing, deployment, and conventions — head to the [contributing guide](docs/CONTRIBUTING.md).
+This local host uses isolated test credentials. For prerequisites, native builds, environment
+variables, testing, deployment, and conventions — head to the
+[contributing guide](docs/CONTRIBUTING.md).
 
 ## Finding your way around
 

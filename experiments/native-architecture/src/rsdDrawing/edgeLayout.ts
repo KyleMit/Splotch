@@ -26,7 +26,7 @@ export const PHONE_TOOLBAR_GAP_PX = 10;
 export const DRAWER_TOGGLE_MARGIN_PX = 4;
 export const TABLET_MIN_SIDE_PX = 600;
 export const LARGE_TABLET_MIN_SIDE_PX = 1000;
-export const ACTION_BUTTON_BASE_PX = {
+const ACTION_BUTTON_BASE_PX = {
   phone: { landscape: 54, portrait: 50 },
   tablet: { landscape: 60, portrait: 55 },
   largeTablet: { landscape: 68, portrait: 62 },
@@ -34,19 +34,19 @@ export const ACTION_BUTTON_BASE_PX = {
 // What the row or column spends before its buttons share the rest: the Settings Button's reserve
 // plus the panel's inset, toggle margin and toggle in landscape; the clearance under the palette
 // bar plus the same chrome in portrait.
-export const LANDSCAPE_ROW_RESERVE_PX = 128;
+const LANDSCAPE_ROW_RESERVE_PX = 128;
 export const PORTRAIT_COLUMN_RESERVE_PX = 72;
 // The phone-landscape L: two four-slot legs of buttons capped at this size, the vertical leg
 // beside the drawer's first button and the row running right from the corner.
 export const PHONE_TOOLBAR_BUTTON_PX = 48;
-export const PHONE_TOOLBAR_LEG_SLOTS = 4;
-export const PHONE_TOOLBAR_VERTICAL_CHROME_PX = 94;
-export const PHONE_TOOLBAR_HORIZONTAL_CHROME_PX = 160;
-export const PHONE_TOOLBAR_PADDING_PX = 6;
+const PHONE_TOOLBAR_LEG_SLOTS = 4;
+const PHONE_TOOLBAR_VERTICAL_CHROME_PX = 94;
+const PHONE_TOOLBAR_HORIZONTAL_CHROME_PX = 160;
+const PHONE_TOOLBAR_PADDING_PX = 6;
 // A flyout opens this far from its trigger: above it on a landscape row, beside it otherwise, and
 // stacked upward on a portrait phone narrow enough for a row to run under Settings.
 export const FLYOUT_OFFSET_PX = 8;
-export const VERTICAL_FLYOUT_MAX_WIDTH_PX = 540;
+const VERTICAL_FLYOUT_MAX_WIDTH_PX = 540;
 
 const ICON_PADDING_SHARE = 6;
 

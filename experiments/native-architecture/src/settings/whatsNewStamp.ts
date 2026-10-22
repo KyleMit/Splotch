@@ -13,7 +13,3 @@ const VERSION_STAMP = /^\d+\.\d+\.\d+(?:\+[0-9a-f]+)?$/;
 export function isWhatsNewSeen(value: unknown): value is string | null {
   return value === null || (typeof value === 'string' && VERSION_STAMP.test(value));
 }
-
-export function whatsNewUnseen(seen: string | null) {
-  return seen !== WHATS_NEW_STAMP;
-}

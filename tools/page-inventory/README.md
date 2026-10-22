@@ -1,105 +1,77 @@
-# Page-inventory tooling
+# Page-inventory review tooling
 
-This capability captures Splotch's responsive UI, runs one isolated image review per capture,
-finalizes the manifest-bound checkpoints, and attaches the resulting critique to the scrapbook
-report. The capture manifest is the coverage authority; critique totals never substitute for it.
+This capability reviews the committed responsive UI captures, writes isolated image-review
+checkpoints, and finalizes a manifest-bound critique. The manifest is the coverage authority; review
+totals never substitute for it. The captures and HTML report preserve the former frontend's
+inventory rather than current React Native screenshots.
+
+The live capture and HTML feedback-attachment commands retired with SvelteKit. Existing images,
+manifest records, checkpoints, and critique JSON remain usable by the review and finalization tools.
 
 ## Entry points
 
-| Entry point                   | Public command                             | Purpose                                   |
-| ----------------------------- | ------------------------------------------ | ----------------------------------------- |
-| `capture-page-inventory.mjs`  | `npm run capture:page-inventory`           | Capture the complete inventory or a slice |
-| `run-inventory-critiques.mjs` | `npm run review:page-inventory`            | Run isolated image-only Codex reviews     |
-| `finalize-page-critique.mjs`  | `npm run finalize:page-inventory-critique` | Validate and merge review checkpoints     |
-| `attach-page-feedback.mjs`    | `npm run attach:page-inventory-feedback`   | Rebuild the report with current feedback  |
+| Entry point                   | Public command                             | Purpose                                              |
+| ----------------------------- | ------------------------------------------ | ---------------------------------------------------- |
+| `run-inventory-critiques.mjs` | `npm run review:page-inventory`            | Run isolated image-only reviews of recorded captures |
+| `finalize-page-critique.mjs`  | `npm run finalize:page-inventory-critique` | Validate and merge review checkpoints                |
 
-The verb-first command names intentionally spread this workflow across `capture:`, `review:`,
-`finalize:`, and `attach:` namespaces so each command states the action it performs. Run them in the
-order shown above.
+## Evidence prerequisites
 
-## Capture
+The default manifest is `scrapbook/page-inventory/capture-manifest.json`. Before reviewing, verify
+that each referenced image exists beside that manifest and its bytes match the recorded SHA-256. The
+helpers `readCaptureManifest` and `sha256File` in `lib/page-inventory-data.mjs` support that check;
+the critique's hash binding must describe the image actually reviewed.
 
-The capture command needs installed project dependencies and Playwright Chromium. It builds the
-production app, starts a local preview on port 4319 by default, and captures every declared surface
-at the canonical light/night viewport matrix. It does not call an external service.
-
-```sh
-npm run capture:page-inventory
-```
-
-A full run atomically replaces `scrapbook/page-inventory/` only after every capture passes its
-dimensions, visible-content, theme-difference, and duplicate-review guards. It writes the WebP
-assets, `capture-manifest.json`, and `index.html`. An existing `design-critique.json` is copied into
-the new output, but stale feedback remains detached from the report.
-
-Use repeatable filters for a bounded spot check:
-
-```sh
-npm run capture:page-inventory -- --surface controls/brush-menu --viewport iphone-13-mini --theme dark
-```
-
-Any `--surface`, `--viewport`, or `--theme` filter switches to spot-check mode. That mode writes
-under `.scrapbook-scratch/page-inventory-spot-check/`, records `spot-check-captures.json`, and never
-rewrites the keeper manifest or report. `--out` is deliberately restricted to the capability-owned
-full or spot-check tree because the selected output directory is replaced wholesale. Use `--port`
-when the default host port is occupied; `--critique FILE` applies only to a full capture.
+Restore missing recorded evidence from its matching snapshot. A missing or changed capture is not
+repaired by running the reviewer, and there is no retained capture command that produces a fresh
+React Native inventory. Keep a replacement capture set and its provenance separate from the
+preserved set.
 
 ## Review and finalize
 
-The review command requires a current capture manifest, network access, and an authenticated
-`claude` or `codex` installation on `PATH` — `lib/reviewer-runner.mjs` owns that seam and picks
-whichever is present, or takes `--runner`. Both get the same isolated-image contract; only delivery
-differs, since codex takes `--image` while Claude Code reads a per-review copy staged into the
-reviewer root it is confined to, and removed again once that review ends. It starts one fresh
-image-only process per capture and writes resumable checkpoints under
-`.scrapbook-scratch/page-inventory-critique/reviews/`. Existing checkpoints whose image and review
-description hashes still match are skipped.
+The review command requires installed dependencies, network access, and an authenticated `claude` or
+`codex` installation on `PATH`. `lib/reviewer-runner.mjs` selects the available runner or accepts
+`--runner`. Each capture gets one fresh image-only process with exactly its image and standalone
+manifest description. Codex receives `--image`; Claude reads a copy staged inside the isolated
+reviewer root and removed afterward.
 
 ```sh
-npm run review:page-inventory -- --limit 4
 npm run finalize:page-inventory-critique -- --status
+npm run review:page-inventory -- --limit 4
 npm run finalize:page-inventory-critique
 ```
 
-Use `--review-id`, `--concurrency`, `--model`, and `--effort` to bound or tune review work. Reviewer
-logs remain under the adjacent `logs/` directory. Each checkpoint records the runner and model that
-produced it, and the finalizer lifts that into the critique's `scope.reviewer` — the review contract
-names a process, not the thing that ran it, and two runners' severity distributions are not known to
-be comparable. It refuses a set whose checkpoints name more than one, since checkpoints outlive a
-run and a resume on a different machine would otherwise merge two instruments silently. The
-finalizer also rejects missing, duplicate, unknown, malformed, or stale checkpoints and writes
-`scrapbook/page-inventory/design-critique.json`. `--allow-partial` is limited to an explicit scratch
-`--out`; a partial critique cannot become the published keeper.
+Checkpoints live under `.scrapbook-scratch/page-inventory-critique/reviews/`, with reviewer logs in
+the adjacent `logs/` directory. Current checkpoints are skipped on resume. Use `--review-id`,
+`--concurrency`, `--runner`, `--model`, and `--effort` to select and bound review work; `--manifest`
+and `--work` select a different recorded inventory and checkpoint root.
 
-## Attach feedback
+Each checkpoint binds its image digest and review-description digest, and records the runner and
+model. The finalizer rejects missing, duplicate, unknown, malformed, or stale checkpoints, and also
+rejects a set mixing reviewers. It writes `scrapbook/page-inventory/design-critique.json` by
+default. `--allow-partial` requires an explicit scratch `--out`; a partial result cannot replace the
+keeper critique.
 
-Attach feedback without recapturing images:
+Finalization updates critique JSON only. The preserved HTML gallery is unchanged; there is no
+retained command here for attaching refreshed feedback to it. Read the JSON for a newly finalized
+assessment instead of assuming the gallery displays it.
 
-```sh
-npm run attach:page-inventory-feedback
-npm run scrapbook:check
-```
+## Maintenance
 
-The attach command verifies that the manifest covers the current surface inventory, every image is
-present, every SHA-256 still matches, and the critique is complete before rewriting only
-`scrapbook/page-inventory/index.html`. Pass `--critique FILE` to use a non-default complete
-critique.
+`lib/page-inventory-data.mjs` owns manifest/checkpoint validation,
+`lib/page-inventory-design-notes.mjs` preserves the review intent used to describe surfaces,
+`lib/page-inventory-capture.mjs` retains pure image-validation helpers, and
+`lib/page-inventory-report.mjs` retains viewport metadata and capture-path helpers. These libraries
+do not recreate the removed end-to-end capture or attachment workflow.
 
-## Failure behavior and maintenance
+The stored `review_description` is what a reviewer receives. Editing a design-note source alone does
+not update an existing manifest. Treat an approved rubric change as an explicit evidence revision,
+then re-review the affected manifest descriptions; never relabel old checkpoints as if they had seen
+a changed prompt.
 
-Invalid flags, unavailable prerequisites, capture failures, reviewer failures, and stale or
-incomplete review data produce diagnostics and a nonzero exit. Capture output is staged beside its
-destination and swapped only on success, so a failed capture keeps the previous inventory intact.
-Review failures keep completed checkpoints and logs so the same command can resume them.
-
-`lib/reviewer-runner.mjs` owns the reviewer runner seam, `lib/page-inventory-capture.mjs` owns image
-validation, `lib/page-inventory-data.mjs` owns manifest/checkpoint contracts,
-`lib/page-inventory-design-notes.mjs` owns reviewer-visible design intent, and
-`lib/page-inventory-report.mjs` owns viewport metadata and HTML rendering. Keep public flags, output
-paths, review IDs, hashes, and checkpoint schemas stable when maintaining the entry points.
-
-Run focused verification with:
+Reviewer failures retain completed checkpoints and logs so work can resume. Invalid flags,
+unavailable prerequisites, and stale or incomplete data exit nonzero. Focused checks:
 
 ```sh
-npm run test:tools -- tools/page-inventory/tests/page-inventory.test.mjs
+npm run test:tools -- tools/page-inventory/tests
 ```

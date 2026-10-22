@@ -1,33 +1,14 @@
-import {
-  existsSync,
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { Window } from 'happy-dom';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseReviewerOutput } from '../lib/reviewer-runner.mjs';
-import { writePageInventoryFeedback } from '../attach-page-feedback.mjs';
 import {
   CHECKPOINT_SCHEMA_VERSION,
   finalizePageInventoryCritique,
 } from '../finalize-page-critique.mjs';
-import {
-  allSurfaces,
-  discoverPageRoutes,
-  generateOutputAtomically,
-  generatePageInventory,
-  parsePageInventoryOptions,
-  SECTION_LANDED_BAND_PX,
-  selectSpotCheckItems,
-  settingsSectionRowSelector,
-} from '../capture-page-inventory.mjs';
 import {
   assertReviewerAvailable,
   reviewerArgs,
@@ -59,7 +40,6 @@ import {
   inventoryCaptureKey,
 } from '../lib/page-inventory-report.mjs';
 import { ROOT } from '../../lib/proc.mjs';
-import { SECTION_JUMP_INSET_PX } from '../../../web/src/lib/components/settings/paneScroll.ts';
 
 const fixtures = [];
 
@@ -82,67 +62,7 @@ function writeTexturedWebp(path, { width, height }) {
     .webp()
     .toFile(path);
 }
-
-const COMPONENTS = join(ROOT, 'web/src/lib/components');
-
-// A Svelte expression can contain `>` — an arrow function in an event handler —
-// so an opening tag ends at the first `>` outside braces, not the first one.
-function openingTagAround(source, index) {
-  const start = source.lastIndexOf('<', index);
-  let depth = 0;
-  for (let cursor = start; cursor < source.length; cursor += 1) {
-    if (source[cursor] === '{') depth += 1;
-    else if (source[cursor] === '}') depth -= 1;
-    else if (source[cursor] === '>' && depth === 0) return source.slice(start, cursor + 1);
-  }
-  throw new Error(`Unterminated opening tag at ${index}`);
-}
-
-// Every `{…}` value becomes a plain string so an HTML parser can take the tag;
-// the one under test becomes the id the selector asks for.
-function staticizeExpressions(tag, attribute, value) {
-  let html = '';
-  let cursor = 0;
-  while (cursor < tag.length) {
-    const open = tag.indexOf('{', cursor);
-    if (open === -1) return html + tag.slice(cursor);
-    let depth = 0;
-    let close = open;
-    while (close < tag.length) {
-      if (tag[close] === '{') depth += 1;
-      else if (tag[close] === '}' && (depth -= 1) === 0) break;
-      close += 1;
-    }
-    html += tag.slice(cursor, open);
-    html += html.endsWith(`${attribute}=`) ? `"${value}"` : '"expression"';
-    cursor = close + 1;
-  }
-  return html;
-}
-
-// Every element a component stamps `attribute` on, parsed out of the component
-// the app actually ships, so a selector can be matched against real markup.
-function markupElementsStamping(component, attribute, value) {
-  const source = readFileSync(join(COMPONENTS, component), 'utf8');
-  const { document } = new Window();
-  const elements = [];
-  for (
-    let anchor = source.indexOf(`${attribute}={`);
-    anchor !== -1;
-    anchor = source.indexOf(`${attribute}={`, anchor + 1)
-  ) {
-    const html = staticizeExpressions(openingTagAround(source, anchor), attribute, value);
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    const element = container.firstElementChild;
-    if (element?.getAttribute(attribute) !== value) {
-      throw new Error(`${component} did not parse into a ${attribute} element: ${html}`);
-    }
-    elements.push(element);
-  }
-  if (!elements.length) throw new Error(`${component} stamps no ${attribute} expression`);
-  return elements;
-}
+join(ROOT, 'web/src/lib/components');
 
 // Two flat halves, at 0 and at `peakLevel`, put each channel's standard
 // deviation at exactly half the level — a spread that can be placed either side
@@ -243,60 +163,6 @@ afterEach(() => {
   for (const root of fixtures.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-// The AI surfaces are driven to a state and then waited on by class, and a
-// screenshot of the wrong state never fails — only the wait does, after the
-// timeout, on a run nobody starts between UI changes. Moving the confirmation
-// into its own dialog renamed the class the harness waits for (5b6e4e5) and left
-// that surface uncapturable until the next full run, so the pair is held here
-// instead of by the run.
-describe('AI surface selectors', () => {
-  const COMPONENTS_DIR = join(ROOT, 'web/src/lib/components');
-  // Whole class tokens, never a substring of the rendered markup: renaming
-  // .ai-report-confirm back to .ai-report-confirmation would satisfy a substring
-  // search of this same source while the harness waited on a class no element
-  // carries. Both spellings a component paints one by — a static class attribute
-  // and a class: directive — count; an interpolated attribute is not a token
-  // this can read, and a surface driven by one would fail here rather than pass
-  // quietly.
-  const shippedClasses = new Set(
-    readdirSync(COMPONENTS_DIR)
-      .filter((name) => /^Ai[A-Z].*\.svelte$/.test(name))
-      .flatMap((name) => {
-        const source = readFileSync(join(COMPONENTS_DIR, name), 'utf8');
-        const attributes = [...source.matchAll(/class="([^"{]*)"/g)].flatMap(([, value]) =>
-          value.split(/\s+/)
-        );
-        const directives = [...source.matchAll(/class:([\w-]+)/g)].map(([, token]) => token);
-        return [...attributes, ...directives].filter(Boolean);
-      })
-  );
-
-  // Read out of the harness rather than restated, so a selector edited on either
-  // side has to still name a class the AI components paint.
-  const waitedOn = [
-    ...new Set(
-      [
-        ...readFileSync(
-          join(ROOT, 'tools/page-inventory/capture-page-inventory.mjs'),
-          'utf8'
-        ).matchAll(/locator\('([^']+)'\)/g),
-      ]
-        .map(([, selector]) => selector)
-        .filter((selector) => /(^|\.)(ai-|stage-img|dial\b)/.test(selector))
-    ),
-  ];
-
-  it('drives the AI surfaces by selector', () => {
-    expect(waitedOn.length).toBeGreaterThanOrEqual(4);
-  });
-
-  it.each(waitedOn)('waits on %s, which the AI components still paint', (selector) => {
-    for (const className of selector.split('.').slice(1)) {
-      expect([...shippedClasses]).toContain(className);
-    }
-  });
-});
-
 describe('page inventory output', () => {
   it('defines portrait and landscape variants for every canonical device', () => {
     expect(PAGE_INVENTORY_VIEWPORTS).toHaveLength(8);
@@ -336,28 +202,6 @@ describe('page inventory output', () => {
     expect(night.review_description).toContain('Ignore layout and responsive composition');
   });
 
-  it('omits the internal /dev harnesses the app still ships', () => {
-    expect(existsSync(join(ROOT, 'web/src/routes/dev/+page.svelte'))).toBe(true);
-    expect(discoverPageRoutes().filter((route) => route.startsWith('/dev'))).toEqual([]);
-    expect(allSurfaces().filter(({ id }) => id.startsWith('dev'))).toEqual([]);
-  });
-
-  // /beta is one route with two panels behind a platform picker, and every
-  // capture context carries an iPhone or iPad user agent, so the generic
-  // one-shot-per-route pass would photograph the iOS panel eight times and never
-  // review the Android one. Both panels earn their own surface, each deep-linked
-  // so the page's pre-paint stamp opens the tab the capture is named for.
-  it('captures each beta panel as its own surface rather than the bare route', () => {
-    expect(existsSync(join(ROOT, 'web/src/routes/beta/+page.svelte'))).toBe(true);
-    expect(discoverPageRoutes()).not.toContain('/beta');
-
-    const beta = allSurfaces().filter(({ id }) => id.startsWith('beta'));
-    expect(beta.map(({ id }) => id).sort()).toEqual(['beta-android', 'beta-ios']);
-    for (const panel of beta) {
-      expect(panel.source).toBe(`/beta?os=${panel.id.replace('beta-', '')}`);
-    }
-  });
-
   it('carries the general design notes and the per-surface note into every review input', () => {
     const item = inventoryItem({ group: 'controls', id: 'clear-coachmark' });
     const note = SURFACE_DESIGN_NOTES[designNoteKey('controls', 'clear-coachmark')];
@@ -392,18 +236,6 @@ describe('page inventory output', () => {
     expect(whatsNew.surface_intent).toContain(
       SURFACE_DESIGN_NOTES[designNoteKey('settings', 'settings-whatsnew')]
     );
-  });
-
-  it('keys every per-surface design note to a surface the inventory captures', () => {
-    const captured = new Set(allSurfaces().map((item) => designNoteKey(item.group, item.id)));
-    expect(Object.keys(SURFACE_DESIGN_NOTES).filter((key) => !captured.has(key))).toEqual([]);
-    expect(Object.keys(SURFACE_DESIGN_NOTES).length).toBeGreaterThan(0);
-  });
-
-  it('keys every group design note to a group the inventory captures', () => {
-    const captured = new Set(allSurfaces().map((item) => item.group));
-    expect(Object.keys(GROUP_DESIGN_NOTES).filter((key) => !captured.has(key))).toEqual([]);
-    expect(Object.keys(GROUP_DESIGN_NOTES).length).toBeGreaterThan(0);
   });
 
   it('rejects pixel-identical theme pairs for every surface', () => {
@@ -464,167 +296,6 @@ describe('page inventory output', () => {
     expect(new Set(sizes).size).toBe(PAGE_INVENTORY_VIEWPORTS.length);
   });
 
-  it('selects a spot-check subset and names the valid choices for a typo', () => {
-    const surfaces = allSurfaces();
-    expect(
-      selectSpotCheckItems(surfaces, ['controls/clear-coachmark', 'home'], '--surface', (item) => [
-        `${item.group}/${item.id}`,
-        item.id,
-      ]).map(({ id }) => id)
-    ).toEqual(['home', 'clear-coachmark']);
-    expect(selectSpotCheckItems(surfaces, [], '--surface', (item) => [item.id])).toHaveLength(
-      surfaces.length
-    );
-    expect(() =>
-      selectSpotCheckItems(PAGE_INVENTORY_THEMES, ['night'], '--theme', (theme) => [theme.id])
-    ).toThrow('--theme names nothing in this inventory: night. Choose from: light, dark');
-  });
-
-  it('refuses to write a filtered spot check into the committed scrapbook', async () => {
-    await expect(
-      generatePageInventory(['--surface', 'home', '--out', 'scrapbook/page-inventory'])
-    ).rejects.toThrow('must stay out of scrapbook/');
-    await expect(generatePageInventory(['--surface', 'dev-engine'])).rejects.toThrow(
-      '--surface names nothing in this inventory: dev-engine'
-    );
-  });
-
-  // The run replaces --out wholesale, so a target that owns anything else is a
-  // deletion the flags asked for by accident. Each of these resolves onto such a
-  // tree, and a spot check reaches the rename with its guard already satisfied.
-  it('refuses an --out that owns more than one run of output', async () => {
-    for (const out of ['scrapbook', 'scrapbook/page-inventory/..', '.', '..']) {
-      await expect(generatePageInventory(['--surface', 'home', '--out', out])).rejects.toThrow(
-        '--out is replaced wholesale'
-      );
-      await expect(generatePageInventory(['--out', out])).rejects.toThrow(
-        '--out is replaced wholesale'
-      );
-    }
-  });
-
-  // The tests below drive the parser rather than generatePageInventory, which
-  // builds the app and then replaces --out — so an accepted path can only be
-  // asserted here, and a refusal asserted here is one the run never reaches
-  // because the tests above prove the parser is what stops it.
-
-  // An --out anywhere outside the worktree used to clear every guard on a spot
-  // check: nothing there is the repo root, an ancestor of it, or inside
-  // scrapbook/, so the run reached the rename and deleted the named directory.
-  it('refuses an --out outside the repository', () => {
-    const outside = [
-      '/tmp',
-      '/private/tmp/splotch-page-inventory-probe',
-      '../splotch-page-inventory-probe',
-      homedir(),
-    ];
-    for (const out of outside) {
-      for (const argv of [
-        ['--out', out],
-        ['--surface', 'home', '--out', out],
-      ]) {
-        expect(() => parsePageInventoryOptions(argv)).toThrow('--out is replaced wholesale');
-        expect(() => parsePageInventoryOptions(argv)).toThrow(resolve(ROOT, out));
-      }
-    }
-  });
-
-  // A full run's only destination is the inventory it publishes. Every sibling
-  // collection in scrapbook/ is committed output owned by another tool, and the
-  // inventory's own assets/ is written as part of the directory above it.
-  it('refuses a full run --out on any directory but the published inventory', () => {
-    const siblings = readdirSync(join(ROOT, 'scrapbook'), { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && entry.name !== 'page-inventory')
-      .map((entry) => `scrapbook/${entry.name}`);
-    expect(siblings.length).toBeGreaterThan(0);
-    for (const out of [
-      ...siblings,
-      'scrapbook/page-inventory/assets',
-      '.scrapbook-scratch/page-inventory-spot-check',
-    ]) {
-      expect(() => parsePageInventoryOptions(['--out', out])).toThrow(
-        '--out is replaced wholesale'
-      );
-      expect(() => parsePageInventoryOptions(['--out', out])).toThrow(join(ROOT, out));
-    }
-  });
-
-  // A spot check writes scratch, but .scrapbook-scratch/ is not all its own: the
-  // critique checkpoints live beside it and are the resumable record of a review
-  // pass that costs hours of reviewer calls to rebuild.
-  it('refuses a spot check --out outside the scratch directory it owns', () => {
-    for (const out of [
-      '.scrapbook-scratch',
-      '.scrapbook-scratch/page-inventory-critique',
-      '.scrapbook-scratch/page-inventory-critique/reviews',
-    ]) {
-      const argv = ['--surface', 'home', '--out', out];
-      expect(() => parsePageInventoryOptions(argv)).toThrow('--out is replaced wholesale');
-      expect(() => parsePageInventoryOptions(argv)).toThrow(join(ROOT, out));
-    }
-  });
-
-  it('accepts the two directories this generator owns, whether or not they exist', () => {
-    const inventory = join(ROOT, 'scrapbook/page-inventory');
-    const scratch = join(ROOT, '.scrapbook-scratch/page-inventory-spot-check');
-    expect(parsePageInventoryOptions([]).out).toBe(inventory);
-    expect(parsePageInventoryOptions(['--out', 'scrapbook/page-inventory']).out).toBe(inventory);
-    expect(parsePageInventoryOptions(['--surface', 'home']).out).toBe(scratch);
-    expect(
-      parsePageInventoryOptions([
-        '--surface',
-        'home',
-        '--out',
-        '.scrapbook-scratch/page-inventory-spot-check',
-      ]).out
-    ).toBe(scratch);
-
-    // A run creates its own output directory, so a first run into a name that
-    // does not exist yet has to be accepted.
-    const unwritten = join(scratch, 'brush-menu-only');
-    expect(existsSync(unwritten)).toBe(false);
-    expect(parsePageInventoryOptions(['--surface', 'brush-menu', '--out', unwritten]).out).toBe(
-      unwritten
-    );
-  });
-
-  // The generator waits on this selector at every viewport, so a Settings shell
-  // that renames or re-tags its rows costs a multi-hour run rather than a test.
-  // Matching the selector against the row templates the app really ships is what
-  // makes that drift fail here — an assertion on the returned string could only
-  // restate the function. The wide pane's own section wrappers are matched too,
-  // because they carry the same attribute and must stay out of the selector.
-  it('matches the row template of both Settings shells and no other section element', () => {
-    const selector = settingsSectionRowSelector('appearance');
-    const matching = (component) =>
-      markupElementsStamping(component, 'data-section', 'appearance').filter((element) =>
-        element.matches(selector)
-      );
-
-    // The wide shell's rows come from the shared guide rail, whose other
-    // template is the anchor row /design and /changelog use.
-    expect(matching('nav/SidebarToc.svelte')).toHaveLength(1);
-    expect(matching('settings/HubList.svelte')).toHaveLength(1);
-    // The pane wrappers the section-landed wait reads, which are not rows.
-    expect(matching('settings/WideShell.svelte')).toHaveLength(0);
-  });
-
-  // The wide shell parks a jumped section below the pane's top edge — its own
-  // jump inset, or the pane's padding for the first section, which cannot scroll
-  // any higher. A capture that waits for the section flush against that edge
-  // waits forever, so the band has to clear whichever inset the shell uses.
-  it('waits within a band that covers where the wide shell parks a section', () => {
-    const shell = readFileSync(join(COMPONENTS, 'settings/WideShell.svelte'), 'utf8');
-    const panePaddingTopPx = Number(
-      /\.settings-pane\s*\{[^}]*?\bpadding:\s*(\d+)px/s.exec(shell)?.[1]
-    );
-
-    expect(SECTION_JUMP_INSET_PX).toBeGreaterThan(0);
-    expect(panePaddingTopPx).toBeGreaterThan(0);
-    expect(SECTION_JUMP_INSET_PX).toBeLessThan(SECTION_LANDED_BAND_PX);
-    expect(panePaddingTopPx).toBeLessThan(SECTION_LANDED_BAND_PX);
-  });
-
   it('passes exactly one description and one image to an ephemeral reviewer', () => {
     const capture = { review_description: 'Standalone description.' };
     const args = reviewerArgs({
@@ -682,105 +353,6 @@ describe('page inventory output', () => {
       }),
     ].join('\n');
     expect(parseReviewerOutput(stdout)).toEqual(response);
-  });
-
-  it('preserves the complete baseline and removes staging when generation fails', async () => {
-    const root = fixture();
-    const out = join(root, 'page-inventory');
-    mkdirSync(join(out, 'assets'), { recursive: true });
-    writeFileSync(join(out, 'index.html'), 'baseline report\n');
-    writeFileSync(join(out, 'assets', 'baseline.webp'), 'baseline snapshot\n');
-
-    await expect(
-      generateOutputAtomically(out, async (staging) => {
-        mkdirSync(join(staging, 'assets'));
-        writeFileSync(join(staging, 'assets', 'partial.webp'), 'partial snapshot\n');
-        throw new Error('capture failed');
-      })
-    ).rejects.toThrow('capture failed');
-
-    expect(readFileSync(join(out, 'index.html'), 'utf8')).toBe('baseline report\n');
-    expect(readFileSync(join(out, 'assets', 'baseline.webp'), 'utf8')).toBe('baseline snapshot\n');
-    expect(existsSync(join(out, 'assets', 'partial.webp'))).toBe(false);
-    expect(readdirSync(root)).toEqual(['page-inventory']);
-  });
-
-  it('writes the inventory without feedback when no critique is present', () => {
-    const out = join(fixture(), 'page-inventory');
-    const item = inventoryItem();
-    writeCaptures(out, item);
-
-    expect(writePageInventoryFeedback(out, undefined, [item])).toBe(0);
-
-    const html = readFileSync(join(out, 'index.html'), 'utf8');
-    expect(html).toContain('Drawing canvas');
-    expect(html).not.toContain('class="review"');
-    expect(html).not.toContain('data-facet="severity"');
-    expect(html).toContain('data-severity="unreviewed"');
-    expect(html).not.toContain('Reviewed by');
-    expect(html).not.toContain('Reviewer not recorded');
-  });
-
-  it.each([
-    {
-      reviewer: { runner: 'codex', model: 'gpt-6-astra' },
-      label: 'Reviewed by codex · gpt-6-astra',
-    },
-    {
-      reviewer: { runner: 'claude', model: '<model>&' },
-      label: 'Reviewed by claude · &lt;model&gt;&amp;',
-    },
-    { reviewer: undefined, label: 'Reviewer not recorded' },
-  ])('renders the recorded reviewer as escaped text: $label', ({ reviewer, label }) => {
-    const root = fixture();
-    const out = join(root, 'page-inventory');
-    const item = inventoryItem();
-    const manifest = writeCaptures(out, item);
-    const critique = join(root, 'design-critique.json');
-    writeFileSync(
-      critique,
-      JSON.stringify(finalizeDesignCritique(manifest, critiqueEntries(manifest), { reviewer }))
-    );
-
-    writePageInventoryFeedback(out, critique, [item]);
-
-    expect(readFileSync(join(out, 'index.html'), 'utf8')).toContain(
-      `<span class="chip">${label}</span>`
-    );
-  });
-
-  it('attaches complete hash-bound feedback without changing images', () => {
-    const root = fixture();
-    const out = join(root, 'page-inventory');
-    const item = inventoryItem();
-    const manifest = writeCaptures(out, item);
-    const entries = critiqueEntries(manifest);
-    const critique = join(root, 'design-critique.json');
-    writeFileSync(critique, JSON.stringify({ schema_version: CRITIQUE_SCHEMA_VERSION, entries }));
-    const firstImage = join(out, entries[0].image);
-    const originalImage = readFileSync(firstImage, 'utf8');
-
-    expect(writePageInventoryFeedback(out, critique, [item])).toBe(16);
-
-    const html = readFileSync(join(out, 'index.html'), 'utf8');
-    for (const severity of ['pass', 'low', 'medium', 'high']) {
-      expect(html).toContain(`class="shot severity-${severity}"`);
-      expect(html).toContain(`data-severity="${severity}"`);
-      expect(html).toContain(`data-facet="severity" value="${severity}"`);
-    }
-    expect(html).toContain('Filter by severity');
-    expect(html).toContain('<h4>Light mode</h4>');
-    expect(html).toContain('<h4>Night mode</h4>');
-    expect(html).toContain('<strong>Small iPhone</strong><span>812 × 375</span>');
-    expect(html).toContain('data-where="iPhone 13 mini · Portrait · 375 × 812 · light mode"');
-    expect(html).toContain('class="orientation-label">Landscape</p>');
-    expect(html).toContain('severity.size && !severity.has(d.severity)');
-    expect(html).toContain("surface.hidden = !surface.querySelector('.shot:not([hidden])')");
-    expect(html).toContain('Clear &lt;canvas&gt; &amp; controls.');
-    expect(html).toContain(
-      '<strong>Recommendation:</strong> Fix iphone-16-pro-max-landscape &lt;soon&gt;.'
-    );
-    expect(readFileSync(firstImage, 'utf8')).toBe(originalImage);
   });
 
   it('rejects missing, unknown, and stale feedback', () => {
@@ -1057,44 +629,5 @@ describe('page inventory output', () => {
     expect(() => readDesignCritique(critique, manifest)).toThrow(
       `schema_version must be ${CRITIQUE_SCHEMA_VERSION}`
     );
-  });
-
-  it('marks the shots of a shared shell as pixel-identical in the report', () => {
-    const root = fixture();
-    const out = join(root, 'page-inventory');
-    const items = [
-      inventoryItem({
-        group: 'settings',
-        id: 'settings-overview',
-        title: 'Settings',
-        description: 'The settings hub.',
-      }),
-      inventoryItem({
-        group: 'settings',
-        id: 'settings-appearance',
-        title: 'Appearance settings',
-        description: 'The appearance section.',
-      }),
-    ];
-    const manifest = writeSharedShellCaptures(out, items);
-    const entries = critiqueEntries(manifest);
-    const agreed = manifest.captures.slice(-2).map(({ review_id: reviewId }) => reviewId);
-    for (const entry of entries.filter(({ review_id: reviewId }) => agreed.includes(reviewId))) {
-      entry.severity = 'pass';
-      entry.recommendation = null;
-    }
-    const critique = join(root, 'design-critique.json');
-    writeFileSync(critique, JSON.stringify(finalizeDesignCritique(manifest, entries)));
-
-    expect(writePageInventoryFeedback(out, critique, items)).toBe(32);
-
-    const document = JSON.parse(readFileSync(critique, 'utf8'));
-    expect(document.summary).toMatchObject({
-      pixel_identical_groups: 16,
-      divergent_pixel_identical_groups: 15,
-    });
-    const html = readFileSync(join(out, 'index.html'), 'utf8');
-    expect(html).toContain('Pixel-identical to 1 other capture in this theme, judged differently.');
-    expect(html).toContain('Pixel-identical to 1 other capture in this theme.');
   });
 });

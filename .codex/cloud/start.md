@@ -37,37 +37,31 @@ Playwright package; setup also installs its Linux libraries. Native toolchains, 
 Netlify deployment, and hosted Blobs integration require separate setup. Firefox, WebKit, and
 visual-baseline parity have not been validated.
 
-Start the dev server in a managed terminal and retain its process handle:
+Build the RN web export before opening it:
 
-```bash
-SPLOTCH_DEV_PORT=$(npm --silent run show:free-port)
-npm run dev -- --host 127.0.0.1 --port "$SPLOTCH_DEV_PORT" --strictPort
+```sh
+npm run check
+npm run test:unit
+npm run build:site
+SPLOTCH_PREVIEW_PORT=$(npm --silent run show:free-port)
+node e2e/server/serve.ts --port "$SPLOTCH_PREVIEW_PORT"
 ```
 
-Use the selected port for readiness checks. Wait for `GET /` to return HTTP 200 with `drawingCanvas`
-in its HTML and for `GET /version.json` to return a nonempty JSON `version`. A port or PID alone
-does not prove readiness. Use local requests for validation; do not provide user-facing loopback
-preview links. On `EADDRINUSE`, select a new unused port; stop only a server this task started.
+Retain the server's process handle. The local host serves the export and the real Netlify Function
+under isolated credentials from `e2e/server/serverEnv.ts`; it reads no dotenv or model secrets. Use
+the selected port for readiness checks and inspect the drawing screen in a real browser. On
+`EADDRINUSE`, select another port. Stop only a server this task started, and never expose this test
+host as a public preview.
 
-Run `npm run check` and `npm run test:unit` sequentially before builds or browser tests. For a
-production web build during setup, leave `PUBLIC_ENABLE_DEV_HARNESS` and `PERF_MARKS` unset, use
-`node tools/run-web-tool.mjs vite build`, and then run `npm run postbuild`. This uses the committed
-generated sources and avoids prebuild generators that write tracked files. Test builds with
-`PUBLIC_ENABLE_DEV_HARNESS=true` intentionally retain debugging seams; production release checks
-must validate a separate build with that flag unset.
+For a representative browser check, let Playwright own its server:
 
-For a representative browser check:
-
-```bash
+```sh
 SPLOTCH_E2E_PORT=$(npm --silent run show:free-port)
-SPLOTCH_E2E_PORT="$SPLOTCH_E2E_PORT" npm run test:e2e:rn -- persistence.spec.ts --project=chromium --workers=1
+SPLOTCH_E2E_PORT="$SPLOTCH_E2E_PORT" npm run test:e2e -- persistence.spec.ts --project=chromium --workers=1
 ```
 
-The default Playwright path builds and serves the application with isolated test credentials. Avoid
-`DEV_SERVER=1` in this cloud environment. Set `SPLOTCH_E2E_PREBUILT=1` only immediately after this
-task built the matching app with `PUBLIC_ENABLE_DEV_HARNESS=true`; a saved build may be stale. Do
-not overlap SvelteKit sync, Vitest, type checks, dev servers, or builds with production browser
-tests in the same checkout.
+Use `SPLOTCH_E2E_PREBUILT=1` only immediately after building the same checkout. Do not run builds or
+mutating tests over an export while a browser check is reading it.
 
 For the local HTTP contract, stop this task's dev server, select
 `SPLOTCH_SMOKE_PORT=$(npm --silent run show:free-port)`, then run

@@ -6,8 +6,8 @@ path and which calls each endpoint's module in `web/src/lib/server/api/`. It is 
 endpoints share one instance's in-memory rate-limit buckets, as they did inside SvelteKit's single
 function: `verify-access-code`, `generate-image`, `generation-attempt` and `report-image` spend one
 per-IP failed-guess budget (see Rate limiting). On the web it's called same-origin; the native apps
-(a static export with no server) call the hosted endpoints cross-origin via `apiUrl()`
-(`web/src/lib/api.ts`, base injected at build time as `__NATIVE_API_BASE__`).
+call the hosted endpoints through the transport in
+`experiments/native-architecture/src/ai/transport.ts` and its platform adapter.
 
 **One wrapper:** the function is `apiFunction(...)` (`web/src/lib/server/api/apiFunction.ts`). The
 endpoints were SvelteKit routes until issue 3007, and installed native builds keep calling them, so
@@ -111,26 +111,26 @@ When a background worker is reachable, the response is then **`202`** with
 `{ ok: true, jobId, pollAfterMs }` and the picture is collected from `/api/generation-result`
 (ADR-0115). The ticket shape, the `202` and `422` statuses, and the poll's `GENERATION_UNAVAILABLE`
 code are declared once in `web/src/lib/ai/generationResult.ts`, which both generation routes and the
-client parser (`web/src/lib/drawing/aiImageResponse.ts`) import. The drawing is written to the job
-store for the handoff, because a background function's invocation body is capped in the low hundreds
-of KB, and the worker takes it in one read-and-delete. It is at rest for that handoff and no longer;
-the finished picture is at rest until the poll that hands it over deletes it. The request path
-stores those raw bytes without first base64-encoding them, and the drawing stays bytes through the
-provider seam; the single base64 encode happens inside the adapter, which needs it for the vendor's
-data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was never collected.
-The server still answers in-line wherever there is no worker (`vite dev`, whose function host serves
-no background function, or an unconfigured signing secret) and whenever the handoff fails with no
-worker owning the job (the job store could not take it, or the worker refused it), and a client that
-never sends the header always gets the synchronous shape. A generation slower than the synchronous
-deadline ends in the controlled `502` there, and the shipped model's slow tail reaches it
-(`docs/scratchpad/image-model-bakeoff-2026-09-10.md`). After a failed handoff the in-line call gets
-only what the request has left of that deadline, counted from when the handler began, so the
-reservations and the handoff both come out of it and a slow store is less likely to let the platform
-ceiling end the request first (ADR-0063); when too little is left for the model to answer at all,
-the model is not called and the answer is the same controlled `502`, with the free reservation
-released. A request without the header keeps the full deadline, its routine pre-work charged to
-ADR-0063's margin instead, so a slow store during that pre-work can still reach the platform
-ceiling.
+RN transport (`experiments/native-architecture/src/ai/transport.ts`) consume. The drawing is written
+to the job store for the handoff, because a background function's invocation body is capped in the
+low hundreds of KB, and the worker takes it in one read-and-delete. It is at rest for that handoff
+and no longer; the finished picture is at rest until the poll that hands it over deletes it. The
+request path stores those raw bytes without first base64-encoding them, and the drawing stays bytes
+through the provider seam; the single base64 encode happens inside the adapter, which needs it for
+the vendor's data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was
+never collected. The server still answers in-line wherever there is no worker (`vite dev`, whose
+function host serves no background function, or an unconfigured signing secret) and whenever the
+handoff fails with no worker owning the job (the job store could not take it, or the worker refused
+it), and a client that never sends the header always gets the synchronous shape. A generation slower
+than the synchronous deadline ends in the controlled `502` there, and the shipped model's slow tail
+reaches it (`docs/scratchpad/image-model-bakeoff-2026-09-10.md`). After a failed handoff the in-line
+call gets only what the request has left of that deadline, counted from when the handler began, so
+the reservations and the handoff both come out of it and a slow store is less likely to let the
+platform ceiling end the request first (ADR-0063); when too little is left for the model to answer
+at all, the model is not called and the answer is the same controlled `502`, with the free
+reservation released. A request without the header keeps the full deadline, its routine pre-work
+charged to ADR-0063's margin instead, so a slow store during that pre-work can still reach the
+platform ceiling.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -470,8 +470,8 @@ a 303 redirect, neither of which a JSON endpoint needs. Both doors hand the core
 kind or a message that is not text gets the same `400` at either one.
 
 The body below is declared once as `ReportRequestBody` in `web/src/lib/report.ts`: the in-app
-clients build it through `postFeedbackReport` (`web/src/lib/reportClient.ts`), and the core's
-`ReportInput` is keyed by it, so a renamed key fails to compile on both sides.
+clients send it through `experiments/native-architecture/src/feedback/feedbackTransport.ts`, and the
+core's `ReportInput` is keyed by it, so a renamed key fails to compile on both sides.
 
 ```json
 // request
@@ -514,12 +514,11 @@ issue passes its model-written refusal reason through the same seam.
 Privately reports either the AI result currently visible in `AiImageResult` or a safety refusal a
 parent believes is a false positive. This is a separate, credentialed endpoint because its multipart
 body carries child-created image content. It accepts the credential each of generation's three tiers
-can present, picked client-side by the shared `aiCredentialHeaders()`
-(`web/src/lib/ai/credentials.ts`): `X-Api-Key` (BYOK), `X-Access-Token` (managed invite), or — on
-the free tier, where the caller holds neither — `X-Installation-Id` **plus `X-Report-Token`**. A
-managed token must still be active; a BYO key is verified against the provider. Valid reports are
-limited to 3/hour per managed token, per BYO caller IP, or per free caller IP. Authorization runs
-before multipart parsing.
+can present, selected by `experiments/native-architecture/src/ai/reportTransport.ts`: `X-Api-Key`
+(BYOK), `X-Access-Token` (managed invite), or — on the free tier, where the caller holds neither —
+`X-Installation-Id` **plus `X-Report-Token`**. A managed token must still be active; a BYO key is
+verified against the provider. Valid reports are limited to 3/hour per managed token, per BYO caller
+IP, or per free caller IP. Authorization runs before multipart parsing.
 
 The free tier's credential is not generation's. An installation id is a client-generated 64-hex
 string, so accepting it alone would leave an endpoint that writes image blobs and opens private
@@ -548,8 +547,8 @@ style=<StyleName or empty>
 
 For compatibility with already-installed clients, an absent `kind` is treated as `picture`. The four
 field names are declared once as `IMAGE_REPORT_FORM_FIELDS` in `web/src/lib/imageReport.ts`, set by
-`postImageReport` (`web/src/lib/reportClient.ts`) and read by the route;
-`web/src/lib/reportClient.test.ts` sends the client's form through the real route handler.
+the RN report transport (`experiments/native-architecture/src/ai/reportTransport.ts`) and read by
+the route. The API smoke and `e2e/specs/ai-report.spec.ts` cover the live request boundary.
 
 The raw multipart body is capped before it is parsed, at the 4 MiB bundle limit plus a fixed budget
 for part headers and boundaries; over that the request is rejected with 413 and never buffered
@@ -880,15 +879,15 @@ persistence contract.
 
 ## Local development
 
-* `vite dev` and `vite preview` serve the `/api` function same-origin ahead of SvelteKit
-  (`web/netlifyFunctionsHost.ts`, which also loads `web/.env` under the shell's environment, as
-  Netlify hands a function the site's environment) — no CORS in play. `netlify dev` proxies `/api`
-  to that same host. The plugin shares its request adapter, and its preview's production loader,
-  with the SvelteKit-free host in `tools/lib/netlify-function-host.mjs`, which the API smoke and the
-  native admin check run on directly. Token mutations without Netlify Blobs credentials fall back to
-  an in-memory list (seeded from `ALLOWED_TOKENS_LIST`) that resets on restart.
-* Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
-  unset, every login fails (there is nothing to authenticate against).
-* E2E coverage lives in `e2e/specs/admin.spec.ts` and `tools/migration/check-native-web-admin.mjs`;
-  the Playwright web server starts with `ADMIN_ACCESS_TOKEN=test-admin-secret`
-  (`e2e/server/serverEnv.ts`).
+`tools/lib/netlify-function-host.mjs` loads the function on plain Node through a config-free Vite
+TypeScript loader. The API smoke and RN admin checks compose that host directly. The local RN site
+host in `e2e/server/serve.ts` serves the export and the real function on one origin with the
+complete isolated environment from `e2e/server/serverEnv.ts`. It reads no shell or dotenv
+credentials.
+
+Build with `npm run build:site`, select an unused port, and run
+`node e2e/server/serve.ts --port <port>`. Its managed access code and admin key are test
+credentials; the nonblank model key cannot authenticate. Keep this host local.
+
+Run `npm run test:api:smoke` with an explicit `SMOKE_PORT` for the HTTP contract. Browser coverage
+lives in `e2e/specs/admin.spec.ts` and `tools/migration/check-native-web-admin.mjs`.

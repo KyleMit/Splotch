@@ -1,19 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement } from 'react';
+import { saveFailureCopy } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import {
   BANNER_CLEAR_RESERVE_PX,
-  BANNER_DISMISS_OVERHANG_PX,
-  BANNER_LINE_HEIGHT,
-  BANNER_MASCOT_PX,
   BANNER_MAX_WIDTH_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
 import { useDrawingMessages } from '../../../experiments/native-architecture/src/drawingMessages.ts';
-import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import { DRAWING_SCALE } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
@@ -31,15 +26,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts',
     },
   },
 }));
-
-const REPOSITORY = join(import.meta.dirname, '../../..');
-const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
 const PICK_A_COLOR = 'Pick a color and draw.';
-
-function declaration(css, property) {
-  const values = [...css.matchAll(new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;]+);`, 'g'))];
-  return values.map(([, value]) => value.replace(/\s+/g, ' ').trim());
-}
 
 // Each banner is one card in the dock the banner stack pins over the paper.
 function bannerNodes() {
@@ -50,8 +37,6 @@ function banners() {
   return bannerNodes().map((node) => node.textContent);
 }
 
-// Every place a screen reader hears these words: the iOS announcements and the live regions that
-// web and Android speak from. A failure owns exactly one of each.
 function spoken(words) {
   const regions = [...host.querySelectorAll('[role="status"], [aria-live]')].filter((node) =>
     node.textContent.includes(words)
@@ -66,23 +51,6 @@ function spoken(words) {
 }
 
 describe('the Save Failure Banner on the drawing screen', () => {
-  it('keeps the Save Failure Banner literals SaveFailureBanner.svelte writes', () => {
-    const banner = /<style>([\s\S]*)<\/style>/
-      .exec(read('web/src/lib/components/SaveFailureBanner.svelte'))[1]
-      .replace(/\/\*[\s\S]*?\*\//g, '');
-    expect(declaration(banner, 'max-width')).toEqual([`${BANNER_MAX_WIDTH_PX}px`]);
-    expect(declaration(banner, 'width')).toContain(`${BANNER_MASCOT_PX}px`);
-    expect(declaration(banner, 'line-height')).toEqual([`${BANNER_LINE_HEIGHT}`]);
-    expect(declaration(banner, '--save-failure-clear-button-reserve')).toEqual([
-      `${BANNER_CLEAR_RESERVE_PX}px`,
-    ]);
-    expect(read('web/src/app.css')).toMatch(
-      new RegExp(
-        `\\.banner-dismiss \\{[^}]*margin: ${BANNER_DISMISS_OVERHANG_PX}px ${BANNER_DISMISS_OVERHANG_PX}px 0 0;`
-      )
-    );
-  });
-
   it('speaks routine notices from a hidden live region instead of a visible strip', async () => {
     await mountToolbar(toolbarScreen({ notice: PICK_A_COLOR, routineNotice: PICK_A_COLOR }));
     expect(records.viewports.some((props) => props.testID === 'rsd-drawing-status-viewport')).toBe(
@@ -180,7 +148,6 @@ describe('the Save Failure Banner on the drawing screen', () => {
         records.props.findLast((props) => props.testID === 'rsd-safe-area-frame')?.edges
       ).toContain('top');
       expect(records.announcements).toContain(`${refused.heading}. ${refused.detail}`);
-      // The refusal is the banner's to say; the save's own notice may not say it again.
       expect(spoken(refused.detail)).toEqual({ announced: 1, regions: 1 });
       await act(async () => host.querySelector('[aria-label="Dismiss"]').click());
       await vi.waitFor(() => expect(banners()).toEqual([]));

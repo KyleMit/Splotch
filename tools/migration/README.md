@@ -59,9 +59,9 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `ReactCommon` sources with the system `c++`; `rsd-native-paper-grain-rtl.test.mjs` asks the same
   binary whether the paper grain still covers the paper in RTL.
   `tools/migration/tests/rsd-native-button.test.mjs` and
-  `tools/migration/tests/rsd-native-icon-button.test.mjs` mount the button primitives, and
-  `tools/migration/tests/rsd-native-button-chrome.test.mjs` holds their untokened chrome values to
-  `Button.svelte` and `app.css`.
+  `tools/migration/tests/rsd-native-icon-button.test.mjs` mount the button primitives, and the
+  active mounted assertions cover behavior. The comparisons against Svelte templates retired with
+  those templates.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
   After the prerender it writes a Content-Security-Policy meta tag at the top of `index.html` and
   `404.html` (`lib/native-web-csp.mjs`): shipping's native meta policy from `web/securityPolicy.ts`,

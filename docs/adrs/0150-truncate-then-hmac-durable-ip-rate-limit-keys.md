@@ -55,9 +55,9 @@ Any durable limiter record derived from a client IP uses **truncate-then-HMAC**:
    application logs. Any non-identifying generation suffix needed for concurrency-safe expiry is
    part of the versioned key shape.
 5. Before the first durable IP-derived limiter ships, update the hosting paragraph in
-   `web/src/routes/privacy/+page.svelte` and any affected store disclosures. The page accurately
-   says today that addresses are held briefly in memory and not stored with counting records; a
-   durable prefix pseudonym requires it to disclose the new representation, purpose, and retention.
+   `web/src/lib/privacy/+page.svelte` and any affected store disclosures. The page accurately says
+   today that addresses are held briefly in memory and not stored with counting records; a durable
+   prefix pseudonym requires it to disclose the new representation, purpose, and retention.
 
 HMAC is pseudonymization, not anonymization. Anyone holding the secret and candidate addresses can
 reproduce identifiers, and equality within one limiter purpose remains observable. The dedicated

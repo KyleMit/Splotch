@@ -10,7 +10,8 @@ paths:
 # Server & API rules
 
 * Server code is web-only: it never ships in the native bundle. The apps call the hosted endpoints
-  via `apiUrl()` (`src/lib/api.ts`). Never import `src/lib/server/*` from client code.
+  through `experiments/native-architecture/src/platform/ai.ts` and its web counterpart. Never import
+  `web/src/lib/server/*` from client code.
 * `/api/*` sends `Access-Control-Allow-Origin: *` (ADR-0007). That wildcard is only safe because
   every endpoint is either gated by a credential the caller already holds or (the telemetry
   receivers `report`/`csp-report`) rate-limited and side-effect-bounded to log lines, and nothing
@@ -18,11 +19,10 @@ paths:
 * Every client-facing JSON error across `/api/*` is the one canonical `{ ok: false, error }` body,
   built by `fail(status, error, headers?)` in `src/lib/server/http.ts`. Wrap every `/api/*` handler
   export in its `apiHandler(...)` (lint-enforced by `API_HANDLER_WRAPPED` in `eslint.config.js`),
-  which converts every thrown failure into the same shape at the boundary — a SvelteKit `error(...)`
-  keeps its status and message; an unexpected non-HttpError becomes
-  `fail(500, GENERIC_ERROR_MESSAGE)` with the standard `[server error]` log line (the wrapper
-  bypasses `handleError`, so it carries that logging duty itself) — never let SvelteKit's
-  `{ message }` body reach a client. `csp-report` is the one exemption (deliberately bodyless
+  which converts every thrown failure into the same shape at the boundary — an `HttpError` keeps its
+  status and message; an unexpected non-HttpError becomes `fail(500, GENERIC_ERROR_MESSAGE)` with
+  the standard `[server error]` log line (the wrapper owns that logging duty) — never let a
+  different error body reach a client. `csp-report` is the one exemption (deliberately bodyless
   responses; browsers ignore them) and stays unwrapped.
 * Any unauthenticated oracle (login, code/key verification) must be rate-limited per IP via
   `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from

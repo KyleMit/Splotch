@@ -64,24 +64,21 @@ is the whole bill.
 | `run-model-evaluation.mjs` | `npm run model-eval`            | Run or resume the evaluation                   |
 | `gen-model-fixtures.mjs`   | `npm run model-eval:fixtures`   | Regenerate deterministic local input images    |
 | `gen-model-inputs.mjs`     | `npm run model-eval:gen-inputs` | Add model-authored input images                |
-| `gen-crayon-inputs.mjs`    | `npm run model-eval:gen-crayon` | Capture crayon-brush inputs from the live app  |
 | `run-prompt-adherence.mjs` | `npm run model-eval:adherence`  | Compare prompt variants on composition-keeping |
 
-All three commands need installed project dependencies, including the Playwright Chromium browser:
-the evaluation renders its report bundle in-page, and both generators rasterize their PNGs there.
-The evaluation needs an API key for each selected provider (`OPENAI_API_KEY`, `GEMINI_API_KEY`) and
-network access; the authored-input generator needs its author's key (`AUTHOR=openai` by default,
-`AUTHOR=gemini` to switch); fixture generation is deterministic and needs only the committed
-coloring assets. All three commands write only under this capability's `inputs/` or `output/`
-directories. If the report step fails after the calls land, rebuild it with `REPORT_FROM=<run dir>`
-instead of paying twice.
+These commands need installed project dependencies, including Playwright Chromium for report
+rendering and fixture rasterization. The evaluation needs an API key for each selected provider
+(`OPENAI_API_KEY`, `GEMINI_API_KEY`) and network access; the authored-input generator needs its
+author's key (`AUTHOR=openai` by default, `AUTHOR=gemini` to switch); fixture generation is
+deterministic and needs only the committed coloring assets. The commands write only under this
+capability's `inputs/` or `output/` directories. If the report step fails after the calls land,
+rebuild it with `REPORT_FROM=<run dir>` instead of paying twice.
 
 ## What's in git
 
 * The harness: `run-model-evaluation.mjs`, `gen-model-fixtures.mjs`, `gen-model-inputs.mjs`,
-  `gen-crayon-inputs.mjs`, `lib/model-eval.mjs` (variants, rates, corpus helpers, production-config
-  drift check), `lib/image-providers.mjs` (one normalized call per provider),
-  `lib/model-eval-report.mjs`.
+  `lib/model-eval.mjs` (variants, rates, corpus helpers, production-config drift check),
+  `lib/image-providers.mjs` (one normalized call per provider), `lib/model-eval-report.mjs`.
 * **`samples/` — the committed corpus sources.** A rerun of the authoring generator draws different
   art, so the art itself has to be kept; `inputs/` is generated from these and is gitignored in
   full. Most are **traced SVG** (Vectorizer.AI, one credit each): tracing the drawing beat storing
@@ -135,33 +132,32 @@ to make the old decision evidence useful. Do not archive layout-only report rebu
 
 `inputs/<category>__<name>__<aspect>.png`. The filename prefix is the category:
 
-| category           | what it mimics                                                                           |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| `coloring-outline` | a coloring page just opened / barely colored                                             |
-| `coloring-manual`  | a coloring page with palette-color regions scribbled in                                  |
-| `coloring-magic`   | a coloring page revealed with the magic brush (flat fill along strokes)                  |
-| `night`            | dark-mode: chalk line art on dark paper (+ night reveal / pen)                           |
-| `magic-plain`      | the magic brush on blank paper (rainbow revealed along strokes)                          |
-| `scribble-1color`  | a few sporadic strokes of a single palette color, toddler-placed                         |
-| `art-detail`       | freehand scenes at low / medium / high line counts                                       |
-| `safety`           | pretend-play boundary probe (toy sword) — should be allowed                              |
-| `gen`              | model-authored **filled** art — solid shapes and scribble fill                           |
-| `line`             | model-authored **stroke-only** art — open outlines, nothing filled                       |
-| `scribble`         | model-authored art with areas **coloured in** by visible back-and-forth passes           |
-| `mess`             | model-authored **degenerate** sessions — dots, tangles, pretend writing, crammed corners |
-| `crayon`           | the store scenes replayed in the **live app with the crayon**, captured off the canvas   |
-| `store`            | the authored store-screenshot scenes, rasterized onto paper — full multi-subject art     |
+| category           | what it mimics                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `coloring-outline` | a coloring page just opened / barely colored                                                |
+| `coloring-manual`  | a coloring page with palette-color regions scribbled in                                     |
+| `coloring-magic`   | a coloring page revealed with the magic brush (flat fill along strokes)                     |
+| `night`            | dark-mode: chalk line art on dark paper (+ night reveal / pen)                              |
+| `magic-plain`      | the magic brush on blank paper (rainbow revealed along strokes)                             |
+| `scribble-1color`  | a few sporadic strokes of a single palette color, toddler-placed                            |
+| `art-detail`       | freehand scenes at low / medium / high line counts                                          |
+| `safety`           | pretend-play boundary probe (toy sword) — should be allowed                                 |
+| `gen`              | model-authored **filled** art — solid shapes and scribble fill                              |
+| `line`             | model-authored **stroke-only** art — open outlines, nothing filled                          |
+| `scribble`         | model-authored art with areas **coloured in** by visible back-and-forth passes              |
+| `mess`             | model-authored **degenerate** sessions — dots, tangles, pretend writing, crammed corners    |
+| `crayon`           | preserved canvas captures of the store scenes drawn with the former frontend's crayon brush |
+| `store`            | the authored store-screenshot scenes, rasterized onto paper — full multi-subject art        |
 
 Inputs are built to match what `/api/generate-image` actually receives — a flattened canvas of the
 theme paper, real `web/static/coloring` line art, and the child's marks in the app's palette — so
 the models see production-representative pixels.
 
-`crayon` is the only category whose pixels come off the real canvas: `gen-crayon-inputs.mjs` replays
-the authored store scenes (`tools/store-drawings/`) in the running app with the crayon selected,
-hides the chrome, and screenshots the drawing surface. Nothing else in the corpus carries the app's
-actual crayon grain, and a prompt that reads that grain as "this is already a painting" can only be
-caught by an input that has it. The scenes are calibrated for the two store viewports, so the
-category is wide and tall only — there is no square crayon input.
+The `crayon` samples preserve real canvas pixels captured from the former frontend. Their grain is
+part of the evidence: a prompt can misread it as a finished painting or smooth it away. The live
+capture generator retired with SvelteKit; fixture generation still restores the committed crayon
+samples into `inputs/`. They are wide and tall only and do not establish the current React Native
+brush's output. A new native-brush comparison needs its own reviewed captures.
 
 `line` is the hardest category and the newest. With no color laid down, nothing anchors the model's
 palette or composition, so this is where embellishment shows up: `line__scribble` (a tangle with no

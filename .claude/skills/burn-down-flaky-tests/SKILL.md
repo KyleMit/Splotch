@@ -25,7 +25,7 @@ sample counts, executed-test counts, masked-flake counts, and every coverage war
 is unknown, never a clean run. Keep trunk and branch events separate; a branch's failure may belong
 to code that never reached `main`.
 
-Check `web/tests` for unconditional `.skip`, `.fixme`, or `.todo` and their reasons. The repo's
+Check `e2e/specs` for unconditional `.skip`, `.fixme`, or `.todo` and their reasons. The repo's
 vacuous-test lint rejects unconditional skips; conditional environment skips are not quarantine.
 
 ## 2. Triage from the highest event count down
@@ -40,11 +40,11 @@ For current failures, distinguish a product state a user can reach from a test-o
 state, and machine-capacity failure. A slow local run is not a flake by itself: reproduce at the
 same supported worker count with retries disabled. Get that count from
 `node -p "require('node:os').availableParallelism()"`; do not pool rates from different counts or
-machines. The full-suite driver
-`npm run test:e2e:sweep -- --workers=<count> --reps=3 --out=<scratch>` builds once and starts a
-fresh preview server for each rep, preventing a shared rate-limit window from manufacturing
-failures. It is host-exclusive; use an explicit free `SPLOTCH_E2E_PORT` and check no other worktree
-owns a full suite before starting. For one suspected spec, use a targeted
+machines. Run `npm run test:e2e -- --workers=<count> --retries=0` separately for each full-suite
+repetition, retaining each report and giving every invocation its own host and rate-limit state. The
+Svelte worker-sweep driver is retired. Each full suite is host-exclusive; use an explicit free
+`SPLOTCH_E2E_PORT` and check no other worktree owns a full suite before starting. For one suspected
+spec, use a targeted
 `npm run test:e2e -- <spec> -g "<title>" --workers=<count> --retries=0 --repeat-each=10` with an
 explicit port. Higher worker counts can amplify a race but do not become the comparison baseline.
 

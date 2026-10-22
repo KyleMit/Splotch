@@ -19,7 +19,7 @@ export const SETTLED_IN_STROKES = 3;
 // Strokes drawn past a shown banner, unanswered, before it hands off to Settings.
 export const STROKES_BEFORE_AUTO_CLEAR = 5;
 // Qualifying sessions after a dismissal at which the banner returns, once each.
-export const INSTALL_REPROMPT_SESSION_MILESTONES = [5, 10] as const;
+const INSTALL_REPROMPT_SESSION_MILESTONES = [5, 10] as const;
 // A launch in any of these display modes is already the installed app.
 export const APP_LIKE_DISPLAY_MODE_QUERIES = [
   '(display-mode: standalone)',

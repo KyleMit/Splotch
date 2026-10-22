@@ -3,18 +3,6 @@
   "workspaces": {
     ".": {
       "entry": [
-        "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}",
-        "web/src/hooks*.ts",
-        "web/svelte.config.js",
-        "web/src/lib/components/page/webPageParentCenter.ts",
-        "web/vite.config.ts",
-        "web/vitest.config.ts",
-        "web/vitest.webSsr.config.ts",
-        "web/vitest-setup.ts",
-        "web/defines.ts",
-        "web/playwright.config.ts",
-        "web/playwright.webkit-scratch.config.ts",
-        "web/tests/global-setup.ts",
         "web/src/**/*.test.ts",
         "web/*.test.ts",
         "e2e/playwright.config.ts",
@@ -35,16 +23,17 @@
         "tools/asset-gen/{coloring,style-covers,crayon-reference}/*.mjs",
         "tools/vectorize/*.mjs",
         "tools/vectorize/pilot/*.mjs",
-        "tools/asset-gen/tests/*.test.mjs"
+        "tools/asset-gen/tests/*.test.mjs",
+        "e2e/playwright-flaky-reporter.ts",
+        "web/vitest.config.ts"
       ],
       "project": [
-        "web/src/**/*.{ts,svelte}",
-        "web/tests/**/*.ts",
+        "web/src/**/*.ts",
         "web/*.ts",
         "e2e/**/*.ts",
         "netlify/**/*.ts",
         "tools/*.mjs",
-        "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,ci-mirror,code-map,device-parity,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,migration,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests,tokens}/**/*.mjs",
+        "tools/{adrs,api-smoke,audit-burndown,centerline-tracing,ci-mirror,code-map,device-parity,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,migration,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests}/**/*.mjs",
         "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
         "tools/vectorize/**/*.mjs"
       ],

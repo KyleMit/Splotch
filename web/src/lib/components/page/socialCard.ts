@@ -51,7 +51,6 @@ const SHARE_IMAGE_WIDTH_PX = 1920;
 const SHARE_IMAGE_HEIGHT_PX = 1080;
 
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 } as const;
-export const SHARE_CARD_PATH_PARAM = 'path';
 
 export const PAGE_SHARE_CARDS = {
   '/privacy': { name: 'Privacy', file: 'privacy.png', alt: 'Splotch Privacy' },
@@ -61,7 +60,6 @@ export const PAGE_SHARE_CARDS = {
 } as const;
 
 export type PageShareCardPath = keyof typeof PAGE_SHARE_CARDS;
-export type PageShareCard = (typeof PAGE_SHARE_CARDS)[PageShareCardPath] & typeof SHARE_CARD_SIZE;
 
 export function isPageShareCardPath(path: unknown): path is PageShareCardPath {
   return typeof path === 'string' && Object.hasOwn(PAGE_SHARE_CARDS, path);

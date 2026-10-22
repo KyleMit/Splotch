@@ -3,9 +3,9 @@ import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../../../../web/sr
 // AiImagePrompt.svelte's card at each of its viewport steps: the base phone card, the short
 // viewport that trims chrome, and the roomy and large-tablet steps that grow the covers.
 // native-ai-flow-geometry.test.mjs reads every value back out of the shipping stylesheet.
-export const AI_PROMPT_SHORT_MAX_HEIGHT_PX = 560;
-export const AI_PROMPT_NARROW_MAX_WIDTH_PX = 420;
-export const AI_PROMPT_COLUMNS = { narrow: 2, wide: 4 } as const;
+const AI_PROMPT_SHORT_MAX_HEIGHT_PX = 560;
+const AI_PROMPT_NARROW_MAX_WIDTH_PX = 420;
+const AI_PROMPT_COLUMNS = { narrow: 2, wide: 4 } as const;
 
 export type AiPromptStep = 'base' | 'short' | 'roomy' | 'large';
 

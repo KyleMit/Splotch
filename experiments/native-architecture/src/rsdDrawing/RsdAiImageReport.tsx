@@ -13,7 +13,7 @@ import { styles as controlStyles } from './controls';
 import { REPORT_RECEIVED_MESSAGE } from '../../../../web/src/lib/reportReply';
 
 // AiImageReport.svelte's thumbnail literals; native-ai-flow-geometry.test.mjs reads them back.
-export const REPORT_THUMB_SINGLE_MAX_PX = 144;
+const REPORT_THUMB_SINGLE_MAX_PX = 144;
 export const REPORT_THUMB_SHADOW = '0px 2px 8px rgba(0, 0, 0, 0.14)';
 const REPORT_THUMB_RADIUS_PX = 12;
 

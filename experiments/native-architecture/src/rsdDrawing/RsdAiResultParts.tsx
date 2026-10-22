@@ -13,15 +13,15 @@ import { styles as controlStyles } from './controls';
 
 // AiResultFooter.svelte, AiImageResult.svelte and AiResultDisclosure.svelte literals;
 // native-ai-flow-geometry.test.mjs reads them back.
-export const RESULT_PILL_PADDING_PX = 22;
-export const DOWNLOAD_ICON_PX = 18;
-export const DOWNLOAD_GAP_PX = 8;
-export const DOWNLOAD_PRESSED_SCALE = 0.95;
+const RESULT_PILL_PADDING_PX = 22;
+const DOWNLOAD_ICON_PX = 18;
+const DOWNLOAD_GAP_PX = 8;
+const DOWNLOAD_PRESSED_SCALE = 0.95;
 // Shipping mixes --brand 40% into transparent under the Download button.
 export const DOWNLOAD_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.4)';
-export const DISCLOSURE_PADDING_PX = 14;
-export const REPORT_FLAG_ICON_PX = 14;
-export const REPORT_FLAG_PRESSED_SCALE = 0.95;
+const DISCLOSURE_PADDING_PX = 14;
+const REPORT_FLAG_ICON_PX = 14;
+const REPORT_FLAG_PRESSED_SCALE = 0.95;
 
 // The caption under the dial while the picture is made.
 export function RsdAiLoadingCaption() {

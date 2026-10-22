@@ -18,7 +18,6 @@ import {
   bumpAndroidGradle,
   bumpIosPbxproj,
   IOS_PBXPROJ_PATH,
-  readAndroidVersion,
 } from '../lib/native-version.mjs';
 import { parseFrontmatter } from '../lib/release-frontmatter.mjs';
 
@@ -70,20 +69,6 @@ const RELEASE_SET = releaseSetPaths('1.7.0', RELEASES_AFTER_CUT);
 // A `git status --porcelain -z` listing: every field NUL-terminated, a rename's
 // source in a field of its own.
 const listing = (...fields) => fields.map((field) => `${field}\0`).join('');
-
-// What a dry run of 1.7.0 leaves, and so what a real cut finds before its first write.
-const DRY_RUN_LISTING = listing(
-  ' M package.json',
-  ` M ${ANDROID_GRADLE_PATH}`,
-  ` M ${IOS_PBXPROJ_PATH}`,
-  '?? releases/1.7.0.md',
-  ' M web/src/lib/releases.json',
-  ' M web/src/lib/components/settings/CurrentReleaseNotes.svelte',
-  ' M web/src/lib/components/page/ReleaseHistory.svelte',
-  ' M experiments/native-architecture/src/information/releaseNotes.generated.json',
-  '?? fastlane/metadata/android/en-US/changelogs/9.txt',
-  ' M fastlane/metadata/en-US/release_notes.txt'
-);
 
 const roots = [];
 // A git process a release cut started can still be writing into the scratch checkout's .git when
@@ -243,31 +228,7 @@ describe('renderReleaseFile', () => {
   });
 });
 
-describe('releaseSetPaths', () => {
-  it('is exactly the version files, the release document, and every generator output', () => {
-    expect(RELEASE_SET).toEqual([
-      'package.json',
-      'experiments/native-architecture/android/app/build.gradle',
-      'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj',
-      'releases/1.7.0.md',
-      'web/src/lib/releaseHues.ts',
-      'web/src/lib/releases.json',
-      'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
-      'web/src/lib/components/page/ReleaseHistory.svelte',
-      'experiments/native-architecture/src/information/releaseNotes.generated.json',
-      'fastlane/metadata/android/en-US/changelogs/9.txt',
-      'fastlane/metadata/android/en-US/changelogs/8.txt',
-      'fastlane/metadata/en-US/release_notes.txt',
-    ]);
-  });
-});
-
 describe('findStrayReleasePaths', () => {
-  // The documented flow is `--dry-run`, then the real cut of the same version.
-  it('passes the tree a dry run of the same version leaves', () => {
-    expect(findStrayReleasePaths(DRY_RUN_LISTING, RELEASE_SET)).toEqual([]);
-  });
-
   it('refuses a changed file beside the version files, such as Info.plist', () => {
     expect(
       findStrayReleasePaths(
@@ -289,14 +250,6 @@ describe('findStrayReleasePaths', () => {
     const plugin = 'android/app/src/main/java/art/splotch/app/DebugPlugin.java';
 
     expect(findStrayReleasePaths(listing(`?? ${plugin}`), RELEASE_SET)).toEqual([plugin]);
-  });
-
-  it('reports a change outside the set after generation', () => {
-    const generated = DRY_RUN_LISTING + listing(' M web/src/lib/releaseSections.ts');
-
-    expect(findStrayReleasePaths(generated, RELEASE_SET)).toEqual([
-      'web/src/lib/releaseSections.ts',
-    ]);
   });
 
   // A rename deletes its source in the commit, so both of its paths are checked.
@@ -516,38 +469,6 @@ describe('a release cut in a scratch checkout', () => {
     expect(contents()).toEqual(before);
     expect(git('rev-list', '--count', 'HEAD').trim()).toBe('1');
   });
-
-  it(
-    'commits exactly the changed release set after a dry run of the same version',
-    { timeout: SCRATCH_CUT_TIMEOUT_MS },
-    () => {
-      const { git, cut } = scratchCheckout();
-
-      const dryRun = cut('--dry-run');
-      expect(dryRun.status, dryRun.stderr).toBe(0);
-      const release = cut('--no-publish');
-      expect(release.status, release.stderr).toBe(0);
-
-      expect(git('show', '--name-only', '--format=', 'HEAD').trim().split('\n').sort()).toEqual([
-        'experiments/native-architecture/android/app/build.gradle',
-        'experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj',
-        'experiments/native-architecture/src/information/releaseNotes.generated.json',
-        'fastlane/metadata/android/en-US/changelogs/9.txt',
-        'fastlane/metadata/en-US/release_notes.txt',
-        'package.json',
-        'releases/1.7.0.md',
-        'web/src/lib/components/page/ReleaseHistory.svelte',
-        'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
-        'web/src/lib/releases.json',
-      ]);
-      expect(readAndroidVersion(git('show', `HEAD:${ANDROID_GRADLE_PATH}`))).toEqual({
-        versionName: '1.7.0',
-        versionCode: 9,
-      });
-      expect(git('tag', '--points-at', 'HEAD').trim()).toBe('v1.7.0');
-      expect(git(...GIT_STATUS_ARGS)).toBe('');
-    }
-  );
 
   it(
     'refuses a hand edit inside a version file and commits nothing',

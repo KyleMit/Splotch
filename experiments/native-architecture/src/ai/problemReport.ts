@@ -11,7 +11,7 @@ import { REPORT_RECEIVED_MESSAGE, reportFailureMessage } from '../../../../web/s
 
 // Shipping's failureReport.ts cap on the error message a problem report carries;
 // native-ai-problem-report.test.mjs reads it back.
-export const MAX_FAILURE_MESSAGE_LENGTH = 1000;
+const MAX_FAILURE_MESSAGE_LENGTH = 1000;
 // The kind a problem report files as, whose device opt-in follows `attachesDevice`.
 const PROBLEM_REPORT_KIND: ReportKind = 'bug';
 

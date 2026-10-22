@@ -1,227 +1,53 @@
 ---
 name: run-splotch
-description: Launch, run, and screenshot the Splotch web app to confirm a change works in the real running app (not just tests). Use when asked to run/start Splotch, open it in a browser, take a screenshot, draw on the canvas, or visually verify a UI change. Covers the / drawing app, /admin, and /privacy routes. For Android/iOS native builds use the `mobile` skill instead.
+description: Build, serve and screenshot the React Native web export to verify a change in the real app. Use when asked to run Splotch, open its web app, draw on the canvas or visually verify a UI change. For native builds use the mobile skill.
 ---
 
-# Run Splotch (web)
+# Run Splotch on the web
 
-Splotch is a SvelteKit web app (`/` drawing canvas, `/admin` console, `/privacy`). There is no
-`chromium-cli` on this project, so the driver is [`driver.mjs`](driver.mjs) — it launches a
-`vite dev` server, opens Playwright's bundled Chromium, optionally draws a stroke, and saves a
-screenshot. Playwright is already a devDependency; the same Chromium the E2E suite uses.
+Use the real RN export, served with Netlify's redirects, headers and the real API function. The
+[`driver.mjs`](driver.mjs) helper launches Playwright Chromium and owns the server it starts.
 
-**All paths below are relative to the repo root.**
+## Prepare the export
 
-## Prerequisites
-
-Deps + the Playwright Chromium binary (one-time):
-
-```bash
-pnpm install
+```sh
+pnpm install --frozen-lockfile
 npm run test:e2e:install
+npm run build:site
+npm --silent run show:free-port
 ```
 
-(On a Linux box you'd also need `npx playwright install-deps` for Chromium's system libs — not
-required on macOS, where this was verified.)
+The driver serves an existing export; rebuild after a source edit. Run only the Chromium install
+needed by the local check when browser installation cost matters. The full browser suite is
+host-exclusive; a focused screenshot uses an explicit free port and stops only its own server.
 
-## Run (agent path) — driver.mjs
+## Capture and inspect
 
-Launch the app, draw a stroke on the canvas, and screenshot the home route:
-
-```bash
-node .claude/skills/run-splotch/driver.mjs --port 5199 --route / --draw --out screenshots/splotch-home.png
+```sh
+node .ruler/skills/run-splotch/driver.mjs --port 5330 --route / --draw --out screenshots/splotch-home.png
+node .ruler/skills/run-splotch/driver.mjs --port 5330 --route /privacy --out screenshots/splotch-privacy.png
 ```
 
-Verify that `5199` is unused first, or replace it with another explicit unused port. Worktrees share
-the host network.
+Open each PNG and inspect it. The drawing command verifies that the gesture produces ink; a blank
+canvas is a failed check. For `/admin`, use the isolated credentials declared by
+`e2e/server/serverEnv.ts`. That host reads no shell or dotenv credentials, and its model key cannot
+authenticate. It is a local verification host, not a public deployment.
 
-Screenshot another route (no `--draw`):
+| Flag             | Effect                                                              |
+| ---------------- | ------------------------------------------------------------------- |
+| `--route <path>` | Export route, default `/`                                           |
+| `--draw`         | Draw and verify a stroke on `/` before capturing                    |
+| `--out <file>`   | Screenshot destination, default `screenshots/splotch.png`           |
+| `--headed`       | Show Chromium                                                       |
+| `--port <n>`     | Explicit port for the owned local host                              |
+| `--keep`         | Keep that host running and print its process-group shutdown command |
+| `--url <origin>` | Use an existing origin without owning or stopping it                |
 
-```bash
-node .claude/skills/run-splotch/driver.mjs --port 5199 --route /admin --out screenshots/splotch-admin.png
-```
+For a more involved state, keep the local host and use the actual public controls with Playwright.
+Reuse `e2e/support/app.ts` and `e2e/support/drawing.ts` readiness and drawing contracts. Avoid fixed
+sleeps and removed engine globals; the RN app has no Svelte development routes.
 
-The driver starts its own server, waits for the route to become interactive, writes the PNG, then
-tears the server down. **Open the PNG and look at it** — `screenshots/splotch-home.png` shows the
-color palette down the left, the Settings Button bottom-right, and (with `--draw`) a purple zig-zag
-stroke on the canvas. A blank canvas with no stroke means the draw flow regressed.
-
-Options (see the header of `driver.mjs`):
-
-| Flag              | Effect                                                                          |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `--route <path>`  | Route to open — `/`, `/admin`, `/privacy`, `/dev/engine` (default `/`)          |
-| `--draw`          | Drag a stroke across the canvas before the shot (route `/` only)                |
-| `--out <file>`    | Screenshot path (default `screenshots/splotch.png`)                             |
-| `--headed`        | Show the browser window instead of headless                                     |
-| `--keep`          | Leave the dev server running afterward and print its URL (it then logs nowhere) |
-| `--url <baseURL>` | Drive an already-running server instead of launching one                        |
-| `--port <n>`      | Dev server port (default `5199`)                                                |
-
-Output (`screenshots/`) is gitignored. **Write your shots there** (or another gitignored dir) — a
-PNG dropped elsewhere in the repo shows up as an untracked file and trips the stop-hook git check.
-
-## Capturing a specific tool / state (beyond a default stroke)
-
-`--draw` only drags one **default-pen** stroke. There is no flag to select a tool (magic brush,
-eraser), apply a coloring page, or draw a custom path — so to screenshot any other state you drive
-it with your own short Playwright script. Don't reinvent the driver's setup; **reuse its server**
-and copy its three non-obvious pieces:
-
-```bash
-# 1. Leave the driver's dev server running and note the URL it prints.
-node .claude/skills/run-splotch/driver.mjs --port 5199 --route / --keep
-```
-
-```js
-// 2. Your own script: connect to that server and drive the UI.
-import { existsSync, readdirSync } from 'node:fs';
-import { chromium } from 'playwright';
-
-// Cloud Chromium can drift from Playwright's pinned build, so a bare
-// chromium.launch() fails with "Executable doesn't exist". This is driver.mjs's
-// chromiumExecutablePath() inlined so the script runs verbatim: PLAYWRIGHT_CHROMIUM
-// wins; else the pinned build if present; else the newest chromium-<rev> under the
-// browsers path (the versioned dir — NOT the bare `chromium` entry). undefined =
-// let Playwright use its own pinned binary.
-function chromiumExecutablePath() {
-  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
-  try {
-    if (existsSync(chromium.executablePath())) return undefined;
-  } catch {}
-  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
-  try {
-    const builds = readdirSync(base)
-      .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
-    for (const build of builds) {
-      for (const sub of ['chrome-linux', 'chrome-linux64']) {
-        const p = `${base}/${build}/${sub}/chrome`;
-        if (existsSync(p)) return p;
-      }
-    }
-  } catch {}
-  return undefined;
-}
-
-const browser = await chromium.launch({ executablePath: chromiumExecutablePath() });
-const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-await page.goto('http://localhost:5199/', { waitUntil: 'commit' });
-
-// Readiness: the canvas is in the DOM before it's wired. Poll until the engine
-// changes the browser-default backing store and the CSS hit target has bounds.
-await page.waitForFunction(() => {
-  const c = document.getElementById('drawingCanvas');
-  if (!(c instanceof HTMLCanvasElement)) return false;
-  const rect = c.getBoundingClientRect();
-  return (c.width !== 300 || c.height !== 150) && rect.width > 0 && rect.height > 0;
-});
-
-// The tool buttons live in the COLLAPSED action drawer — expand it first.
-await page.locator('button[aria-label="Expand controls"]').click();
-await page.locator('#undoButton').waitFor({ state: 'visible' });
-
-// The brushes (pen, crayon, magic, eraser) live in the Brush Menu flyout:
-// open it via its trigger, then pick the entry (selection closes the menu).
-await page.locator('#brushButton').click();
-await page.locator('#magicBrushButton').click();
-```
-
-> **Save the script file inside the repo, not the session scratchpad.** Node resolves
-> `import ... 'playwright'` by walking up from the script's own directory, so a `.mjs` under the
-> session scratchpad (per `CLAUDE.md`'s temp-file rule) dies with
-> `ERR_MODULE_NOT_FOUND: Cannot find package 'playwright'`. Put it in the gitignored `screenshots/`
-> dir — inside the tree so imports resolve, and gitignored so the file doesn't trip the stop-hook
-> git check (same dir your shots go in). Delete it when done.
->
-> `NODE_PATH=…/node_modules` does **not** fix this for these scripts — `NODE_PATH` is a
-> CommonJS-only resolver hint and is ignored by the ESM `import` loader.
-
-To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a book and a page,
-and wait for `#coloringOverlay` to be visible. The retired SvelteKit suite's `applyFarmPage` helper
-was a worked example of all these steps.
-
-> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite', 'dev', …])` +
-> `server.kill('SIGTERM')` does **not** work: `npx` exits but the real `vite` keeps running, and
-> because its stdout is piped to your script the Node event loop never drains — the script hangs on
-> exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:
->
-> * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, record the process-group PID
->   it prints, and connect your own Playwright script with `--url`/`page.goto`. Your script should
->   only manage the *browser*, never the server. When done, stop only that recorded process group
->   with the printed `kill -- -<pid>` command.
-> * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
->   `tools/lib/vite-server.mjs` — it launches vite in a **detached process group** and its `stop()`
->   kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `release()` hands a
->   still-running server to the OS (what `--keep` does) so your script can exit without killing it.
->   If its strict-port start collides, choose another port; do not call `freePort`. **A server you
->   intend to release needs a durable OS sink on *both* streams — `'ignore'` or a file descriptor**,
->   because the alternatives fail in opposite directions: `'inherit'` hands the survivor a dup of
->   your own fd, so it holds your caller's pipe open and the command that ran you never returns,
->   while `'pipe'` is a handle `release()` must drop, and the survivor's next log line then dies of
->   EPIPE — a few HMR reloads on stdout, a single filesystem-allowlist 403 on stderr. `release()`
->   throws rather than accept anything else. `driver.mjs`'s `startServer` / `finishServer` are the
->   worked example — copy those, not a fresh `spawn`.
->
-> Either way, **reap only what this invocation spawned before ending**: close its browser and call
-> its recorded server handle's `stop()`, or stop the process group recorded by `--keep`. Never use
-> `npm run dev:stop`, `kill-port`, or another port-wide cleanup command. A leaked server reads as a
-> "task running for hours".
-
-## Run (human path)
-
-```bash
-npm run dev -- --port 5199 --strictPort
-```
-
-Replace `5199` with an explicit unused port. This serves no `/api/*` functions (image generation,
-admin auth). For those, `npm run dev:netlify` runs the fixed-port Netlify serverless workflow and is
-host-exclusive. Useless headless — it just waits for a browser.
-
-## Test / direct invocation
-
-* **Full E2E** (production build + Playwright, what CI runs): `npm run test:e2e`
-* **Unit / internal functions** (Vitest, happy-dom — for PRs that touch one module, not the UI):
-  `npm run test:unit`
-* **API contract smoke** (self-contained, no model/Blobs credentials): `npm run test:api:smoke`
-
-The `/dev/engine` route is an in-app harness for the drawing engine (gated behind
-`PUBLIC_ENABLE_DEV_HARNESS`, which the driver sets automatically).
-
-## Gotchas
-
-* **The canvas exists before it's interactive.** `#drawingCanvas` is in the prerendered DOM before
-  any script runs; the engine boots at module-evaluation time (before hydration, ADR-0072) and binds
-  the pointer listeners right after changing the backing store off its 300×150 browser default.
-  Production tiled mode deliberately uses a 1×1 input bitmap (ADR-0089), so a large bitmap is not a
-  readiness signal. Wait for a non-default backing size and positive CSS bounds, as the driver does,
-  before scripting a draw.
-* **Cold `vite dev` re-optimizes deps** on the first hit, briefly 504-ing modules and
-  auto-reloading. The driver *polls* for readiness instead of re-navigating (same trick as
-  `web/tests/global-setup.ts`); a plain `goto` + immediate screenshot can catch the transient error
-  page.
-* **Pass an explicit unused `--port`.** The fallback is 5199, but concurrent worktrees share the
-  host network. Use `--url` to drive a server you intentionally started elsewhere; a collision on
-  `--port` means choose another port and retry.
-* **The action drawer is collapsed by default**, so the tool buttons (brush menu, undo, coloring,
-  screenshot) aren't visible until you click `button[aria-label="Expand controls"]`. The eraser and
-  magic brush are entries in the Brush Menu flyout, another level down — a custom script that goes
-  straight for `#magicBrushButton` fails with "element is not visible": expand the drawer, click
-  `#brushButton`, then the entry (the E2E suite's `openDrawer` + `pickBrush` helpers do the same).
-* **Clearing the canvas is a drag gesture, not a click.** `#clearButton` is wired to `dragToClear` —
-  you have to press on it and drag past its accept threshold (`0.4 × min(innerWidth, innerHeight)`)
-  toward the screen center, then release. A plain `.click()` does nothing.
-* **`window.__engine` exists only on `/dev/engine`**, not on `/`. That harness (imperative
-  `clearCanvas`, `undo`, pixel readers) is the easy way to manipulate and assert engine state — but
-  on the main app you must drive the real UI instead.
-
-## Troubleshooting
-
-| Symptom                                                                                                  | Fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude-Code.md`.                                                                                                          |
-| `server never came up` / `dev server could not start`                                                    | Port collision or startup failure — select another explicit unused `--port` and retry; do not stop the existing listener                                                                                                                                                                                                                                                                                                                                                  |
-| `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- <spec>.spec.ts -g "<title>"` — `tools/run-web-tool.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. The positional arg is a path *pattern*, so a filename that no longer exists matches nothing and Playwright exits with `No tests found`. See the `testing` skill. |
+Stop a kept host using the exact process group the driver printed. On `EADDRINUSE`, select another
+free port. Never terminate an unrelated listener. Keep screenshots under the ignored `screenshots/`
+directory and attach the states required by the `pr-screenshots` skill when creating a visible UI
+PR.

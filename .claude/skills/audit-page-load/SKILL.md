@@ -84,11 +84,10 @@ you report or track, use production (or a branch preview) — nothing else is ac
 | **Branch preview** `<slug>--splotchy.netlify.app`                                                                             | `--url`                          | Production-accurate numbers for **unmerged** work (same Netlify serving). The way to measure a perf change before merge. In restricted preview mode only `feature/*` branches deploy — see [Claude Code Cloud § Two preview modes](../../../docs/CLOUD/Claude-Code.md#two-preview-modes--check-which-one-is-active) for how to get a preview. |
 | **Local export host** `npm run build:site` + `node --experimental-strip-types tools/page-load/serve-export.mjs --port <port>` | `--url http://127.0.0.1:<port>/` | Measuring the *export* in isolation (bytes, DOM count), and comparing two builds on one machine: it is the host the CI gate times, serving what Netlify serves with brotli and ETag revalidation. **Ignore its absolute LCP/network/score** — HTTP/1.1 on loopback with no CDN is not the public number.                                      |
 
-**Do not audit the dev server (`npm run dev`) for scores.** It serves hundreds of unbundled ES
-modules with the HMR client and dev-mode Svelte checks — that distorts the request graph, TBT and
-LCP structurally, not by a constant, so the numbers map to nothing shippable. (Real gotcha: an early
-local-preview run here reported LCP 5.4 s / Perf 73; the same build on production was LCP 1.9 s /
-Perf 91 — the preview's serving layer was the whole gap.)
+**Audit the production export for scores.** An unbundled development server with its HMR client
+distorts the request graph, TBT and LCP structurally, not by a constant, so the numbers map to
+nothing shippable. (Real gotcha: an early local-preview run here reported LCP 5.4 s / Perf 73; the
+same build on production was LCP 1.9 s / Perf 91 — the preview's serving layer was the whole gap.)
 
 For the *diagnostic* questions production is bad at, don't reach for the dev server — use the
 better-suited tool:

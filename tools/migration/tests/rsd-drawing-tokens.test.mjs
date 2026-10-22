@@ -1,3 +1,4 @@
+import { LAYOUT_METRICS } from '../../../web/src/lib/design/layoutMetrics.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -19,7 +20,14 @@ vi.mock('react-strict-dom', () => ({
 }));
 
 const actual = () => readFileSync(RSD_DRAWING_TOKENS_URL, 'utf8');
-const appCss = readFileSync(new URL('../../../web/src/app.css', import.meta.url), 'utf8');
+const appCss = Object.entries({
+  'touch-target-min': LAYOUT_METRICS.touchTargetMinPx,
+  'modal-gutter-min': LAYOUT_METRICS.modalGutterMinPx,
+  'setting-icon-size': LAYOUT_METRICS.settingIconSizePx,
+  'setting-icon-gap': LAYOUT_METRICS.settingIconGapPx,
+})
+  .map(([name, value]) => '--' + name + ': ' + value + 'px;')
+  .join('\n');
 // The color parser the installed React Native resolves, which Android and iOS styles pass through.
 const normalizeColor = createRequire(
   createRequire(import.meta.url).resolve('react-native/package.json')
@@ -373,14 +381,6 @@ it(
 it(
   'compiles the page Back link with the shipping unwrapped flex behavior',
   () => {
-    const shipping = readFileSync(
-      join(root, 'web/src/lib/components/page/BackLink.svelte'),
-      'utf8'
-    );
-    const back = shipping.match(/^\s*\.back\s*\{([^}]+)\}/m);
-    expect(back, 'Shipping Back link rule').not.toBeNull();
-    expect(back[1]).toContain('flex-shrink: 0;');
-    expect(back[1]).toContain('white-space: nowrap;');
     expect(
       computedWebStyles('src/rsdDrawing/RsdNotFoundPage.tsx', '{ back: styles.back }', [
         'flex-shrink',

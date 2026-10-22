@@ -1,6 +1,6 @@
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { RESIZE_SETTLE_MS } from '../../../web/src/lib/drawing/engineListeners.ts';
+import { RESIZE_SETTLE_MS } from '../../../web/src/lib/drawing/resizeListener.ts';
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import { flat } from './rsd-native-toolbar-fixture.mjs';

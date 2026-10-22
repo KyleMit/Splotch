@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement } from 'react';
+import { saveFailureCopy } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
+const REANNOUNCE_WAIT_MS = 2000;
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { FAILURE_REANNOUNCE_GAP_MS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingStatus.tsx';
+
 import {
   POLAROID_FADE_KEYFRAMES,
   POLAROID_SHOW_KEYFRAMES,
@@ -14,7 +14,6 @@ import {
   BANNER_EXIT_MS,
   BANNER_FLY_PX,
 } from '../../../web/src/lib/components/bannerMotion.ts';
-import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import {
   drag,
@@ -46,13 +45,8 @@ vi.mock('../../../experiments/native-architecture/src/platform/parentPlatform.ts
     return storePlatform.os;
   },
 }));
-
-const REPOSITORY = join(import.meta.dirname, '../../..');
-const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
 const SCREEN = { left: 0, top: 0, width: 402, height: 874 };
 const CAMERA = { left: 20, top: 700, width: 60, height: 60 };
-// Generous beside the component's gap between emptying the region and rewriting it.
-const REANNOUNCE_WAIT_MS = 2000;
 // A solved check's Unlocked! hold, then generous room for the dialog's exit on real timers.
 const DIALOG_EXIT_WAIT_MS = PARENT_GATE_SUCCESS_HOLD_MS + 2000;
 
@@ -209,6 +203,8 @@ describe('the save polaroid', () => {
     library.outcomes = ['failed'];
     await drawAndSave();
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
+    const copy = saveFailureCopy('failed', 1, 'ios');
+    expect(banners()).toEqual([`${copy.heading}${copy.detail}Try again`]);
     expect(overlay()).not.toBeNull();
     expect(timings).toContainEqual(expect.objectContaining({ toValue: 0, duration: 200 }));
   });
@@ -242,8 +238,6 @@ describe('the Save Failure Banner', () => {
     library.outcomes = ['failed'];
     await drawAndSave();
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
-    const copy = saveFailureCopy('failed', 1, 'ios');
-    expect(banners()).toEqual([`${copy.heading}${copy.detail}Try again`]);
     await click('[aria-label="Draw RSD fixture stroke"]');
     let settle;
     library.pending = new Promise((resolve) => (settle = resolve));
@@ -304,7 +298,7 @@ describe('the Save Failure Banner', () => {
   it('offers Open Settings behind the external links check for a refused permission on iOS', async () => {
     await refusedOnIos();
     const copy = saveFailureCopy('denied', 1, 'ios');
-    expect(banners()).toEqual([`${copy.heading}${copy.detail}Open SettingsTry again`]);
+    expect(banners()).toEqual([copy.heading + copy.detail + 'Open SettingsTry again']);
     await act(async () => button('Open Settings').click());
     expect(caller.product.owner.gate.getState()).toMatchObject({
       open: true,
@@ -360,7 +354,7 @@ describe('the Save Failure Banner', () => {
     await drawAndSave();
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
     const copy = saveFailureCopy('denied', 1, 'web');
-    expect(banners()).toEqual([`${copy.heading}${copy.detail}Try again`]);
+    expect(banners()).toEqual([copy.heading + copy.detail + 'Try again']);
   });
 
   // The banner's exit is held until the test lets it finish, as a real timing runs over frames.
@@ -433,20 +427,16 @@ describe('the Save Failure Banner', () => {
     );
     await vi.waitFor(() => expect(banners()).toEqual([]));
   });
-
-  it('announces a Try again that fails again by emptying the region before rewriting the same words', async () => {
+  it('announces the same failure again after a retry', async () => {
     library.outcomes = ['failed', 'failed'];
     await drawAndSave();
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
     const copy = saveFailureCopy('failed', 1, 'ios');
-    const words = `${copy.heading}. ${copy.detail}`;
+    const words = copy.heading + '. ' + copy.detail;
     const spoken = () => records.announcements.filter((text) => text === words).length;
     expect(spoken()).toBe(1);
     await act(async () => button('Try again').click());
     await vi.waitFor(() => expect(spoken()).toBe(2), { timeout: REANNOUNCE_WAIT_MS });
-    expect(read('web/src/lib/components/SaveFailureBanner.svelte')).toContain(
-      `const REANNOUNCE_GAP_MS = ${FAILURE_REANNOUNCE_GAP_MS};`
-    );
   });
 });
 

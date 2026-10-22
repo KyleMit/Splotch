@@ -131,10 +131,6 @@ it('binds drawing and modal shortcut receivers to the same native view and event
 });
 
 it("keeps shortcut capture visually transparent like shipping's window listener", () => {
-  const shipping = readFileSync(
-    resolve(import.meta.dirname, '../../web/src/lib/boot/undoShortcut.ts'),
-    'utf8'
-  );
   const android = readFileSync(
     resolve(
       import.meta.dirname,
@@ -147,8 +143,6 @@ it("keeps shortcut capture visually transparent like shipping's window listener"
     android.indexOf('class SplotchShortcutKeyboardManager')
   );
   const initialization = shortcut.match(/init \{([\s\S]*?)\n {2}\}/)?.[1];
-  expect(shipping).toContain("window.addEventListener('keydown', onKeyDown)");
-  expect(shipping).not.toMatch(/\.focus\(/);
   expect(initialization).toContain('isFocusable = true');
   expect(initialization).toContain('isFocusableInTouchMode = true');
   expect(initialization).toContain(
@@ -157,10 +151,6 @@ it("keeps shortcut capture visually transparent like shipping's window listener"
 });
 
 it('restores Android shortcut capture when a modal window returns', () => {
-  const shipping = readFileSync(
-    resolve(import.meta.dirname, '../../web/src/lib/actions/actionPanelEvents.ts'),
-    'utf8'
-  );
   const android = readFileSync(
     resolve(
       import.meta.dirname,
@@ -172,8 +162,6 @@ it('restores Android shortcut capture when a modal window returns', () => {
     android.indexOf('class ShortcutKeyboardView'),
     android.indexOf('class SplotchShortcutKeyboardManager')
   );
-  expect(shipping).toContain("document.addEventListener('keydown', escape)");
-  expect(shipping).toContain("if (event.key === 'Escape' && current.wrapper())");
   expect(shortcut).toContain('override fun onWindowFocusChanged(hasWindowFocus: Boolean)');
   expect(shortcut).toMatch(
     /super\.onWindowFocusChanged\(hasWindowFocus\)\s+if \(hasWindowFocus\) focusWhenAvailable\(\)/

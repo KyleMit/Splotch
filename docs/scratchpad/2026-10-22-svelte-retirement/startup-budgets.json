@@ -1,0 +1,9 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "unchanged": true,
+  "initializers": {
+    "MAX_NATIVE_WEB_CORE_CONTROLS_BYTES": "827_535",
+    "MAX_NATIVE_WEB_FIRST_PAINT_BYTES": "47_052",
+    "MAX_NATIVE_WEB_PAGE_BYTES": "{\n  privacy: { firstPaint: 36_329, pageEntry: 829_600 },\n  changelog: { firstPaint: 36_932, pageEntry: 859_290 },\n  feedback: { firstPaint: 36_892, pageEntry: 845_661 },\n  beta: { firstPaint: 38_443, pageEntry: 859_290 },\n  design: { firstPaint: 46_979, pageEntry: 954_533 },\n  notFound: { firstPaint: 36_847, pageEntry: 859_290 },\n  admin: { firstPaint: 18_780, pageEntry: 288_785 },\n}"
+  }
+}

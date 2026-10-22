@@ -35,8 +35,6 @@ const LIGHTEN_STEP = 38;
 const DARKEN_FACTOR = 0.9;
 // Whole pixels: a half-pixel ring or seam anti-aliases into a grey smear on
 // 1x desktop screens.
-export const SELECTION_RING_WIDTH_PX = 4;
-export const SELECTION_RING_GAP_PX = 4;
 
 // Compute a selection-ring color for a swatch: ~10% darker than the swatch so
 // the ring reads as a contrasting outline — but for very dark swatches (e.g.
@@ -52,10 +50,4 @@ export function getRingColor(color: string): string {
 
   const toHex = (v: number) => v.toString(16).padStart(2, '0');
   return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;
-}
-
-export function selectionRingShadow(ringColor: string, surfaceColor: string): string {
-  // The seam inherits the swatch's surface, so it stays legible on light, dark and bare paper;
-  // the trailing float shadow keeps the selected swatch's lift, themed like the resting one.
-  return `0 0 0 1px ${surfaceColor}, 0 0 0 ${SELECTION_RING_WIDTH_PX}px ${ringColor}, var(--float-shadow)`;
 }

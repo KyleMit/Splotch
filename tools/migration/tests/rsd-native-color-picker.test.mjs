@@ -1,20 +1,15 @@
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdColorPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorPicker.tsx';
 import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
 import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
 import {
-  HEX_COLUMN_TRIM_ORDER,
   HEX_DIM_KEYLINE,
   HEX_HOVER_BRIGHTNESS,
   HEX_HOVER_SCALE,
-  HEX_KEYLINE_INSET_PX,
   HEX_ROOMY_SCALE,
-  HEX_ROW_TRIM_ORDER,
-  HEX_SELECTED_INSET_PX,
   HEX_SELECTED_SHADE_PERCENT,
   HEX_SNAP_GAP_SLOP_PX,
   brighten,
@@ -27,29 +22,12 @@ import {
 import { mixSrgb } from '../../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
-import { LARGE_TABLET_MIN_SIDE_PX } from '../../../web/src/lib/breakpoints.ts';
+
 import {
   COLOR_FAMILIES,
   LANDSCAPE_ROWS,
   PORTRAIT_ROWS,
 } from '../../../web/src/lib/hexPickerLayout.ts';
-
-const shipping = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src/lib', path), 'utf8');
-const SHIPPING = shipping('components/ColorPicker.svelte');
-const SHIPPING_STYLE = SHIPPING.slice(SHIPPING.indexOf('<style>'));
-const SHIPPING_GESTURE = shipping('actions/hexSnapGesture.ts');
-
-function hiddenByLadder(axis, prefix) {
-  const blocks = [
-    ...SHIPPING_STYLE.matchAll(new RegExp(`@media \\(max-${axis}: [\\d.]+px\\) \\{([^@]*)`, 'g')),
-  ];
-  return blocks.map(([, body]) => {
-    const hidden = [...body.matchAll(new RegExp(`\\.${prefix}(\\d)\\s*\\{\\s*display: none`, 'g'))];
-    expect(hidden).toHaveLength(1);
-    return Number(hidden[0][1]);
-  });
-}
 
 function center(layout, color) {
   const cell = layout.cells.find((entry) => entry.color === color);
@@ -88,43 +66,6 @@ function touch(point, identifier = 1) {
   const contact = { identifier, pageX, pageY, locationX: point.x, locationY: point.y };
   return { nativeEvent: { ...contact, touches: [contact], changedTouches: [contact] } };
 }
-
-it('reads every ColorPicker.svelte literal the port carries back out of the shipping source', () => {
-  expect(hiddenByLadder('height', 'r')).toEqual([...HEX_ROW_TRIM_ORDER]);
-  expect(hiddenByLadder('width', 'c')).toEqual([...HEX_COLUMN_TRIM_ORDER]);
-  const roomy = SHIPPING_STYLE.match(
-    /@media \(min-width: (\d+)px\) and \(min-height: (\d+)px\) \{\s*\.picker \{\s*--hex-scale: ([\d.]+);/
-  );
-  expect(roomy.slice(1).map(Number)).toEqual([
-    LARGE_TABLET_MIN_SIDE_PX,
-    LARGE_TABLET_MIN_SIDE_PX,
-    HEX_ROOMY_SCALE,
-  ]);
-  expect(SHIPPING_STYLE).toContain(`--hex-hover-scale: ${HEX_HOVER_SCALE};`);
-  expect(SHIPPING_STYLE).toContain(`filter: brightness(${HEX_HOVER_BRIGHTNESS});`);
-  expect(SHIPPING_STYLE).toMatch(
-    new RegExp(`\\.hexagon\\.border-dim \\{\\s*background-color: ${HEX_DIM_KEYLINE};`)
-  );
-  expect(SHIPPING_STYLE).toMatch(
-    new RegExp(
-      `\\.hexagon\\.border::after,\\s*\\.hexagon\\.border-dim::after \\{\\s*inset: ${HEX_KEYLINE_INSET_PX}px;`
-    )
-  );
-  expect(SHIPPING_STYLE).toMatch(
-    new RegExp(
-      `\\.hexagon\\.selected \\{\\s*z-index: 1;\\s*background-color: color-mix\\(in srgb, var\\(--color\\), black ${HEX_SELECTED_SHADE_PERCENT}%\\);`
-    )
-  );
-  expect(SHIPPING_STYLE).toMatch(
-    new RegExp(`\\.hexagon\\.selected::after \\{\\s*inset: ${HEX_SELECTED_INSET_PX}px;`)
-  );
-  expect(SHIPPING_STYLE).toContain(
-    '--hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);'
-  );
-  expect(SHIPPING_GESTURE).toContain(`const HEX_SNAP_GAP_SLOP_PX = ${HEX_SNAP_GAP_SLOP_PX};`);
-  expect(SHIPPING).toContain('aria-label="Color Picker"');
-  expect(SHIPPING).toContain('if (e.detail === 0) selectColor(hex);');
-});
 
 it.each([
   [{ width: 390, height: 844 }, PORTRAIT_ROWS, [1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 5, 7, 9], 302, 509],

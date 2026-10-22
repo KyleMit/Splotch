@@ -9,7 +9,7 @@ import FlakyPassReporter, {
   flakyAnnotations,
   flakySummary,
   runIdentity,
-} from '../../web/playwright-flaky-reporter.ts';
+} from '../../e2e/playwright-flaky-reporter.ts';
 
 // The reporter that makes a retried pass visible on a green build (ADR-0078's
 // "retries hide the problem they compensate for"). All three outputs are

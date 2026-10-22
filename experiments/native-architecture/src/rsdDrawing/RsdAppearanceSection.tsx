@@ -18,12 +18,12 @@ import { colors, dimensions, fonts } from './tokens.css';
 
 // AppearanceSection.svelte's option glyphs and the label's gap above its picker;
 // native-settings-sections.test.mjs reads them from that source.
-export const APPEARANCE_ICONS: Record<AppearancePreference, NativeIconName> = {
+const APPEARANCE_ICONS: Record<AppearancePreference, NativeIconName> = {
   light: 'theme-light',
   dark: 'theme-dark',
   system: 'theme-auto',
 };
-export const APPEARANCE_LABEL_GAP_PX = 10;
+const APPEARANCE_LABEL_GAP_PX = 10;
 
 const styles = css.create({
   label: {

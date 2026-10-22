@@ -349,7 +349,7 @@ afterwards on the same starved machine, so the squaring flatters exactly the fai
 retried. Dropping to `1` on a point estimate whose interval spans 12.9% would be choosing a knob
 against a number the data does not support — the mistake this same section records above.
 
-What changes is that the debt stops being silent. `web/playwright-flaky-reporter.ts` turns every
+What changes is that the debt stops being silent. `e2e/playwright-flaky-reporter.ts` turns every
 retried pass into a GitHub Actions annotation plus a job-summary table, so "green, but only on
 attempt 2" is visible on the run page. That is the standing objection in the Consequences below —
 retries hiding what they compensate for — answered without pretending the rate is lower than it is.
@@ -458,7 +458,7 @@ without re-measuring. The shape (saturation near cores−1) should hold; the opt
 − **The CI setting leans on retries to stay cheap.** Choosing the fastest worker count on CI because
 retries absorb the flakes is a local optimisation that also hides accumulating flakiness — which is
 how the magic-brush tests reached the state they were in. *(Mitigated, not removed:
-`web/playwright-flaky-reporter.ts` annotates every retried pass, so the hiding is now visible. §4.)*
+`e2e/playwright-flaky-reporter.ts` annotates every retried pass, so the hiding is now visible. §4.)*
 
 \+ **The count is derived, so new hardware needs no edit** — but two edges are untested and stay
 untested until someone runs the suite on the machines that would settle them: SMT, and any core

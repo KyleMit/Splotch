@@ -148,7 +148,7 @@ not an implementation verdict.
 The default gates do not cover bespoke repository ratchets. For this repository use:
 
 ```bash
-CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'
+CHECK_CMD='npm run format:check && npm run check && npm run check:migration:rsd-drawing-tokens && npm run scrapbook:check'
 TEST_CMD='npm run test:unit && npm run test:tools'
 ```
 
@@ -194,7 +194,7 @@ must reach origin before an ephemeral environment can be reclaimed.
    ```bash
    AGENT_RUNNER=codex \
    BRANCH='<branch>' \
-   CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
+   CHECK_CMD='npm run format:check && npm run check && npm run check:migration:rsd-drawing-tokens && npm run scrapbook:check' \
    TEST_CMD='npm run test:unit && npm run test:tools' \
    npm run audit:preflight
    ```
@@ -270,7 +270,7 @@ must reach origin before an ephemeral environment can be reclaimed.
     AGENT_RUNNER=codex \
     BRANCH='<branch>' \
     MAX_HANDLED=5 \
-    CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
+    CHECK_CMD='npm run format:check && npm run check && npm run check:migration:rsd-drawing-tokens && npm run scrapbook:check' \
     TEST_CMD='npm run test:unit && npm run test:tools' \
     npm run audit:burndown:overnight -- 600
     ```

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AI_ACCESS_TOKEN_PARAM } from '../../../web/src/lib/inviteLink.ts';
@@ -21,8 +21,7 @@ import {
   BROWSER_BACK_STATE_KEY,
   createBrowserBack,
 } from '../../../experiments/native-architecture/src/product/browserBack.ts';
-
-const repoRoot = join(import.meta.dirname, '../../..');
+join(import.meta.dirname, '../../..');
 const ROUTER_STATE = { router: { index: 3 } };
 
 function invitePath(code, extra = '') {
@@ -224,11 +223,5 @@ describe('web launch invite capture', () => {
     back.setDrawingInk(true);
 
     expect(history.state[BROWSER_BACK_STATE_KEY].layers).toEqual([]);
-  });
-
-  it('warns with the shipping page warning text', () => {
-    const page = readFileSync(join(repoRoot, 'web/src/routes/+page.svelte'), 'utf8');
-    expect(page).toContain(`console.warn('${INVITE_SAVE_FAILED_WARNING}', err)`);
-    expect(page).toContain('captureAiAccessTokenFromUrl()');
   });
 });

@@ -1,77 +1,61 @@
-# Store drawing pointer-instruction design
+# Store drawing scene design
 
-## Why static pointer instructions
+The retained capability compiles centerline SVGs to static scene data. Its active commands and file
+ownership are in [README.md](README.md). This record preserves the reasoning behind that format and
+the former frontend's capture pipeline; its live replay, fidelity capture, and brush-review tooling
+retired with SvelteKit.
 
-Store screenshots need polished example drawings, but the screenshots are supposed to show the real
-Splotch canvas after ordinary drawing input. The authored examples arrived as centerline SVGs. Three
-ways to use them were considered:
+## Why static instructions
 
-* render or overlay the SVG at screenshot time, which would produce the desired pixels without
-  exercising Splotch's drawing engine;
-* parse the SVG every time store screenshots run and translate its curves into pointer input, which
-  would exercise the engine but leave SVG parsing and authoring files in the runtime workflow;
-* compile the SVGs once into static pointer instructions and replay only those instructions through
-  the live app.
+The original store captures needed polished examples drawn by the real application renderer.
+Authored centerline SVGs offered three approaches: overlay the SVG, parse it on every capture, or
+compile it once to numeric instructions for replay. Compilation kept SVG parsing and authoring files
+outside the capture runtime while preserving deterministic coordinates, colors, and width choices.
+Hand-authoring thousands of coordinates would have made iteration and fidelity review impractical.
 
-Hand-authoring thousands of pointer coordinates was also possible, but it would make fidelity and
-future iteration impractical. The source set contains cubic curves, varying widths, and colors that
-need deterministic mapping onto the controls Splotch actually offers.
+The generated catalog retains that useful boundary. `gen-pointer-instructions.mjs` accepts a narrow
+centerline subset, adaptively flattens cubic curves, quantizes coordinates, and emits dimensions,
+color selections, and stroke arrays under `STORE_DRAWING_SCENES`. Consumers need no source SVG or
+parser. The catalog carries data rather than browser callbacks.
 
-## Approach
+## Color and width calibration
 
-`tools/store-drawings/gen-pointer-instructions.mjs` is an offline compiler. It accepts a
-deliberately narrow centerline SVG subset (`M`, cubic `C`, and `Z`; round unfilled strokes),
-adaptively flattens the curves, and emits `tools/store-drawings/generated/store-drawings.mjs`. The
-generated module contains only static numeric pointer coordinates, selected Splotch width levels,
-and selectable color tokens. It exports named functions such as `drawHouseTall` and `drawHouseWide`;
-no generated drawing reads an SVG at runtime.
+Color selection considers the main palette and hex-grid shades in OKLab space. Candidate sets
+preserve the swatches available on both original store targets for each orientation. This documents
+the conversion's calibration; it is not a visibility assertion about the React Native controls.
 
-Color selection considers both the main palette and the hex-grid colors in OKLab space. Candidates
-are limited to swatches visible on both store targets for the drawing's orientation. Width selection
-scales against the measured portrait or landscape store canvases, then maps to one of the five real
-app levels per *chain* of joined same-color paths rather than per path — a chain holds one level
-while every member stays within one level of it, and splits where the traced width genuinely crosses
-a whole step.
+Widths are scaled against the recorded portrait or landscape drawing surfaces and mapped to the
+app's discrete size levels. Joined same-color paths are processed as a chain. One level serves the
+chain while each member stays within that level's reach; a genuine change across a full step splits
+the chain. The chosen level is nearest the run's length-weighted width.
 
-`tools/store-drawings/lib/drawing-instructions.mjs` fits the static coordinates within the canvas
-and owns two delivery paths. The default delegates every stroke to
-`tools/app-driver/lib/app-driver.mjs`: the driver changes colors and widths through visible controls
-and sends Playwright mouse down/move/up input to `#drawingCanvas`. The store hero selects
-`replay: 'engine'`, which expands the exact same six intermediate samples and held endpoint, then
-calls the dev-gated production engine once per stroke. Both paths therefore reach the same midpoint
-smoothing, tiled renderer, and history; neither paints a substitute canvas.
+Choosing a size per chain avoids shattering a line whose traced width hovers near a bucket boundary
+into a burst of dabs. Each dab's round cap had produced visible bulges. The compromise is slightly
+less local width accuracy against the traced source in exchange for continuous lines. Continuously
+varying traced widths remain approximations of discrete levels.
 
-Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
-replaying their shared pointer instructions. Magic skips stored color selections because the brush
-owns its rendered color. `tools/store-drawings/gen-brush-review.mjs` exercises those variants into a
-review-only gallery outside `store-assets/`.
+## Preserved geometry and metrics
 
-`tools/store-drawings/evaluate-drawing-fidelity.mjs` keeps conversion measurable. It compares
-equal-width source and generated centerlines, then captures the live tiled canvas after replay and
-compares both pixel coverage and RGB color with the static instructions and original SVG. The
-workflow and overlay interpretation are documented in `tools/store-drawings/README.md`.
+`lib/drawing-instructions.mjs` contain-fits a scene within a target box and scales its stroke
+coordinates. `lib/magic-scribbles.mjs` preserves deterministic row fills and spirals recorded for
+the Farm cat scene. Both are pure geometry helpers.
 
-## Tradeoffs
+`lib/drawing-fidelity.mjs` preserves color-aware soft intersection/union, precision, and recall. Its
+color comparison distinguishes identical silhouettes drawn in different colors, which a simple
+occupancy score would miss. The former evaluator also compared equal-width source and converted
+centerlines to separate geometry conversion loss from width and color choices.
 
-* \+ Store hero screenshots exercise the production renderer, history, and tiled canvas instead of
-  presenting imported art as if it had been drawn; the real final palette selection and app chrome
-  remain in the capture.
-* \+ Generated scenes remain usable after their SVG authoring inputs are removed; each named
-  function contains everything required for replay.
-* \+ The converter makes another authored SVG reproducible, and the two-stage evaluator
-  distinguishes conversion loss from live-input/rendering loss.
-* \+ Color and width compromises are explicit static choices rather than viewport-dependent runtime
-  guesses.
-* − The generated module is large, machine-authored data and is excluded from Prettier; generator
-  drift is enforced separately.
-* − Pointer-based fidelity evaluation and brush review remain slow by design. The release-capture
-  hero avoids that cost through its measured engine seam, while scenes whose subject is UI or
-  gesture behavior remain app-driver flows.
-* − SVGs outside the supported centerline subset must be simplified before conversion; failing on
-  unsupported surface is preferable to silently producing a different drawing.
-* − Splotch has fixed widths and no pressure input, so continuously varying source widths can only
-  be approximated by the nearest available level.
-* \+ Choosing that level per chain rather than per path keeps a line whose traced width hovers on a
-  bucket boundary from shattering into a burst of one-dab strokes. It costs a little width accuracy
-  against the traced art and removes the bulges that chatter rendered, since each dab drew its own
-  round cap.
+## Historical delivery and tradeoffs
+
+The SvelteKit pipeline delivered the static scenes either through visible controls and ordinary
+mouse input or through a development-gated engine seam that reproduced the same intermediate samples
+and held endpoint. The seam accelerated hero capture; the pointer path exercised input handling,
+smoothing, renderer, and history. Brush review reused the same scenes for Pen, Crayon, and Magic,
+and the live evaluator compared rendered pixels against both instructions and source art. Those
+application-specific paths no longer exist.
+
+The retained catalog remains large machine-authored data, excluded from Prettier and protected by a
+generator-drift check. Unsupported SVG constructs fail explicitly instead of silently producing a
+different drawing. Static choices make conversion reproducible, but they do not prove how a current
+brush renders. The marketing renderer separately composes the committed application captures;
+recompiling scene data never refreshes those screenshots.

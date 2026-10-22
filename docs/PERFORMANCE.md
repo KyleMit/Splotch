@@ -1,14 +1,88 @@
 # Splotch performance inventory
 
-*A reference compiled from the 2026-08-25/26 campaign sessions and re-verified against `main` at
-d905c9de (post-merge of stack #1365 and PR #1369). Three parts: the terminology the performance
-system speaks, the measurement/validation grids, and the full inventory of product-code performance
-mechanisms. Where history matters (a metric that was replaced, a check that was retired), the
-history is kept and the current state is marked.*
+Splotch's active performance surface is the React Native app and its web export (ADR-0182).
+`docs/PROFILING.md` owns the measurement workflow; the `profiling` skill routes to the in-app probe
+and replay instructions. The app remains in `experiments/native-architecture/` until root promotion.
 
----
+## Active measurements and gates
 
-## Part 1 — Terminology
+| Concern               | Instrument / enforcement                                      | Meaning                                                                          |
+| --------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Native drawing        | In-app contact-cohort probe and committed replay traces       | Per-cohort work and input-to-submission latency on the named device.             |
+| Replay validity       | Replay `emissionLateness`                                     | A replay delayed beyond a frame is discarded; it measures the hold.              |
+| Android presentation  | `gfxinfo framestats` and Perfetto                             | Platform timing and scheduling that supplement the probe.                        |
+| Web page load         | `npm run test:lighthouse:ci`, `tools/page-load/baseline.json` | Throttled FCP/LCP against the committed RN-export baseline.                      |
+| Drawing first paint   | `MAX_NATIVE_WEB_FIRST_PAINT_BYTES`                            | First-paint scripts/styles, including the prerendered shell's inline resources.  |
+| Drawing core controls | `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES`                          | Every script/style the interactive drawing controls await, counted once per URL. |
+| Other web documents   | `MAX_NATIVE_WEB_PAGE_BYTES`                                   | Per-page first-paint and entry budgets.                                          |
+| Offline export        | `tools/migration/check-native-web-precache.mjs`               | Integrity, complete precache and offline-shell contract.                         |
+
+The byte caps live in `tools/migration/check-native-web-startup.mjs` and run inside
+`npm run build:site`. First paint stays at **47,052 bytes** and core controls at **827,535 bytes**.
+The per-page registry owns its own caps; consuming headroom calls for a measured improvement, not an
+automatic increase. ADR-0179 and ADR-0180 record the cuts and why first paint and controls have
+separate waits.
+
+The probe's native implementation is
+`experiments/native-architecture/src/drawing/perfProbe.native.ts`; the plain module is a no-op for
+web and type checking. It is opt-in on a Release build. Build and launch details, field definitions
+and replay instructions live in `experiments/native-architecture/DEVELOPMENT.md`. A browser frame
+trace, a replay's delivery lateness and the time a picture was submitted answer different questions;
+none alone proves when ink reached the glass.
+
+## Active product mechanisms
+
+Paths in this section are relative to `experiments/native-architecture/src/`.
+
+* **Keep stroke updates local.** The drawing subtree owns live contact updates. Chrome props do not
+  change at contact start, move or lift merely to disable unrelated controls; commands enforce their
+  own mid-stroke checks. Mounted guards include
+  `tools/migration/tests/rsd-native-stroke-chrome-commits.test.mjs` and
+  `tools/tests/native-stroke-chrome-mounted.test.mjs`.
+* **Submit one Skia picture per ink change.** `drawing/skiaInkScene.ts` records committed ink
+  beneath the live stroke and hands a picture to the native view. Re-rendering a full Skia element
+  tree per sample had caused duplicate full-paper blits (ADR-0178);
+  `tools/tests/native-skia-ink-view.test.mjs` holds the presentation contract.
+* **Keep paper ancestors out of offscreen compositing.** A blend or partial opacity on a view
+  holding the paper can turn each stroke frame into a screen-sized extra pass. RSD's flat palette
+  pre-mixes its margin-rule ink; `tools/migration/tests/rsd-native-flat-palette.test.mjs` checks the
+  mounted ancestry and Fabric paint order.
+* **Preserve operation order and history.** `drawing/model.ts` carries per-stroke operation/frame
+  information and recognizes appended stroke prefixes. `drawing/checkpoints.ts` reuses verified
+  flattened prefixes while retaining the tail needed by the renderer. This is the RN model, not the
+  retired tiled Canvas 2D history.
+* **Defer product owners until after drawing paint.** `product/afterDrawingPaint.web.ts` waits for
+  paint and then schedules idle work. `product/productOwnersLoader.web.ts` and the page entry
+  boundaries keep AI, feedback and other on-demand work from becoming first-paint requirements.
+  Sharing a small module can still repartition chunks; judge the built output.
+* **Prerender a useful first frame.** `prerenderFirstFrame.tsx` and
+  `tools/migration/prerender-native-web.mjs` write the shell before its deferred interactive bundle
+  loads. They stamp the selected appearance without pulling all settings onto startup (ADR-0180).
+* **Keep the book as assets.** The bundled Farm book is present offline; browser artwork has its own
+  loading boundary rather than embedding every page in the initial script (ADR-0181).
+* **Keep save/export work at its own boundary.** `lazyExport.ts` and `export/` own picture save
+  work; the first-paint/control budgets measure the actual browser closure rather than assuming that
+  a source-level dynamic import always leaves every dependency deferred.
+* **Respect the device's rendering model.** RSD native layout, text, opacity and animation differ
+  from browser CSS. The RN rules in `docs/CODING-STANDARDS.md` identify the tested adapters and the
+  measured incidents that earned them.
+
+## Lessons retained from the retired harness
+
+The SvelteKit/Capacitor capture system retired in #3160. Its matrix and byte/frame observations are
+historical evidence, not scores or gates for the RN app. The original evidence lives under
+`scrapbook/performance/`, `perf-profiles/evidence/` and `docs/scratchpad/perf/`; the ADRs record
+measurement changes and rejected approaches. The former product inventory described a tiled Canvas
+2D renderer and its Svelte boot path, both removed by the cutover. It is available in Git history
+rather than presented here as a map of live code.
+
+The terminology and grids below preserve the useful measurement rationale from the 2026-08 campaign.
+Every threshold, verdict and target in those sections belongs to that retired harness. They do not
+impose a new RN performance budget. Useful general lessons remain: compare the same input and
+refresh regime, measure both sides of a threshold, record negative controls, distinguish work time
+from presentation latency, and refuse captures whose instrument cannot answer the question.
+
+## Historical measurement terminology
 
 **Frame / beat.** The display's steady frame rhythm — the expected gap between one frame and the
 next, like a metronome tick. A 60 Hz screen shows a new frame every ~16.7 ms (its beat); a 120 Hz
@@ -131,7 +205,7 @@ transport, the 60 Hz per-run-lottery pair, and the delivery-experiment corpora.
 
 ---
 
-## Part 2 — The measurement grids
+## Historical measurement grids
 
 ### 2a. Scoring metrics vs. the situations that broke them
 
@@ -153,7 +227,7 @@ transport, the 60 Hz per-run-lottery pair, and the delivery-experiment corpora.
 scores a mixed capture correctly, so the capture is refused rather than mis-scored. Segment-wise
 beat scoring is the known next rung if a boosted-mode (120 Hz iPad) row is ever wanted.*
 
-### 2b. Validity gates vs. bad-capture situations — current state
+### 2b. Validity gates vs. bad-capture situations — retired harness
 
 | Situation                                                      | Trusted touch | Density floor (≥ 0.9 mpf) | Gap p95 (≤ 25 ms) | Regime declared + matched | Mixed-regime refusal |
 | -------------------------------------------------------------- | ------------- | ------------------------- | ----------------- | ------------------------- | -------------------- |
@@ -176,354 +250,3 @@ freshness, instrument fingerprints, and the gesture-repeat/plan/refill contracts
 rather than input.*
 
 ---
-
-## Part 3 — Product-code performance mechanisms
-
-*The full sweep of `web/src` (two-agent fan-out, 2026-08-26), re-verified against `main` at
-d905c9de: the only product-code change since the sweep is the coachmark fix, added below as
-entry 87. Paths under `web/src/` unless noted.*
-
-### I. Boot & first paint
-
-1. **Prerendered home (SSG) + per-route render modes** — `/` ships as static HTML; server routes opt
-   out individually. `routes/+layout.ts:1`. *ADR-0040*
-2. **Pre-hydration state stamp** — inline `app.html` script reads localStorage before first paint
-   and stamps `<html>` attrs/CSS vars (theme, orientation, drawer, brush…) so returning users paint
-   correctly with zero hydration flash; explicitly never load-bearing for a new visitor.
-   `app.html:95-183`, drift-guarded by `app.html.test.ts`. *ADR-0040, ADR-0076*
-3. **Engine boots before hydration; components adopt it** — static side-effect import of
-   `drawing/earlyBoot` makes the canvas accept strokes before hydration's ~375 ms long task;
-   `DrawingCanvas` adopts the running engine. `routes/+page.svelte:2-7`, `engine.ts:1200-1219`.
-   *ADR-0072, ADR-0004*
-4. **All CSS inlined into the prerendered head** — `inlineStyleThreshold: Infinity` kills iPadOS
-   FOUC. `svelte.config.js`. *commit f6157766*
-5. **Build target = supported browser floor** — smaller output than lowest-common-denominator.
-   `vite.config.ts` + `browserTargets.ts`, guarded by `browserFloor.test.ts`.
-6. **Hover data-preloading** — `data-sveltekit-preload-data="hover"`. `app.html:187`.
-7. **Instrumentation dead-code-eliminated** — `__PERF_MARKS__`/`__DEV_HARNESS__` compile to literal
-   `false`; release scan rejects retained marks; dev work counters are null in production.
-   `vite.config.ts`, `tiledRenderer.ts:75`. *ADR-0010, ADR-0032*
-
-### II. The idle substrate
-
-8. **`scheduleIdle()` with cooperative fallback** — wraps `requestIdleCallback`; on Safari (no rIC)
-   approximates idleness (no pointer down, input quiet ≥ 300 ms, two consecutive rAFs within 25 ms)
-   so deferred work never lands inside a frame a child is drawing through. Substrate for most
-   deferrals below. `lib/idle.ts`. *commit 55eaff0e (PR #1124's physical-iPad idle gate)*
-
-### III. Lazy mounting & bundle boundaries
-
-9. **Boot-hidden overlay chunk + one-per-idle-slice mount pump** — eight boot-invisible dialogs in
-   one lazy chunk imported at idle, mounted one per slice; SettingsModal handed over early so a tap
-   can beat the queue. `lib/boot/bootHiddenOverlays.ts`, `components/overlayChunk.ts`. *ADR-0049*
-10. **Settings wide pane: staged mount/present/prewarm** — open constructs only above-the-fold
-    sections; the rest fills one per frame after the fly-in plus a breather frame; presentation
-    staged separately from layout so the open flip paints zero sections (33→17 ms P95 on iPad);
-    closed-state idle prewarm; close re-hides one per idle slice; watermark makes reopen free.
-    `settings/stagedSections.svelte.ts`, driven by `settings/WideShell.svelte`. *ADR-0049, issue
-    #910*
-11. **SettingsModal closed state is `visibility:hidden`, not `display:none`** — prewarm pays
-    style/layout up front; `showModal()` pays nothing. `SettingsModal.svelte:264-347`. *ADR-0049*
-12. **What's New blocks revealed one per rAF** — all-at-once measured 43–47 ms.
-    `settings/WhatsNewSection.svelte:21-45`. *ADR-0061*
-13. **Privacy page: idle parental gate, on-demand Settings modal** — lazy imports behind
-    single-flight. `routes/privacy/`.
-14. **Lazy ErrorScreen** — crash UI loads only when the boundary trips.
-    `routes/+layout.svelte:33-39`.
-15. **Save pipeline pinned off the startup bundle** — export compositor/screenshot/folder-save load
-    at press time; memoized self-resetting import promise. Enforced on the SvelteKit app by
-    `startup-bundle.spec.ts` (retired with ADR-0182); the React Native export's startup budgets are
-    `tools/migration/check-native-web-startup.mjs`. `tools/check-bundle-budgets.mjs` pins the web
-    and native release builds' modulepreload counts, so a new startup chunk of any size fails the
-    build. `ActionsPanel.svelte:64-330`. *issue #461*
-16. **Deliberately duplicated code at that bundle boundary** — `saveFolder.svelte.ts` inlines the
-    `showDirectoryPicker` predicate rather than importing it (one static edge would re-partition
-    Rollup's chunks); drift-guarded by `saveFolder.svelte.test.ts`. Same reason
-    `SCREENSHOT_BUTTON_ID` lives in `ui.svelte.ts`. *issue #461*
-17. **Coloring-pack I/O off the startup path** — manager/stores dynamic-imported from idle.
-    `lib/boot/coloringPacks.ts`. *ADR-0103*
-18. **Lazy Capacitor plugins, tree-shaken from web** — memoized self-resetting dynamic imports
-    behind literal `__IS_CAPACITOR__` (Preferences, Media, Device, ScreenOrientation, DeviceLock,
-    pencil-eraser — the last also idle-deferred). `lib/nativePlugin.ts:25-38`. *ADR-0013, ADR-0010*
-19. **Lazy IndexedDB wrapper + memoized connection** — `idbDatabase.ts` is reached only through a
-    dynamic import, so neither it nor an open connection is in the boot bundle; the promise
-    self-resets on rejection. `lib/idb.ts:16-36`, `lib/idbDatabase.ts`.
-20. **`createSingleFlight` / `createLatestRequest`** — overlapping async callers share one run; new
-    submits abort superseded fetches. `lib/singleFlight.ts`, `lib/latestRequest.ts`.
-
-### IV. Input hot path
-
-21. **Coalesced pointer-event replay** — the engine replays `getCoalescedEvents()` samples so fast
-    scribbles curve instead of chording. `drawing/engine.ts:930-947`. *ADR-0004 lineage*
-22. **Per-frame stroke raster queue** — pointermoves queue per pointer and rasterize once per frame
-    as one merged op (digitizer outruns display, 1.9–4.2 moves/painted frame); sync `flushAll()` on
-    lift. `drawing/strokeRasterQueue.ts`. *commit 087cd708*
-23. **Per-runtime crayon op granularity** — per-move ops on Safari (pays per path length) vs
-    per-frame merged in WKWebView (pays per op), branched at compile time.
-    `strokeRasterQueue.ts:34-101`. *issue #1236, commit 12e1c0b1*
-24. **Crayon merged-moves cap (backpressure)** — `CRAYON_MERGED_MOVES_CAP = 8` so a stall can't
-    merge a bbox spanning tiles the ink never touches. *commit 12e1c0b1*
-25. **Cached canvas rect** — the hot path maps through a cached rect + scales instead of
-    `getBoundingClientRect()` per move (forced reflow); refreshed on resize/scroll/orientation.
-    `drawing/canvasMeasure.ts`; also consumed by PointerHalos.
-26. **Trailing resize rebuild (web and native)** — `handleResize()` refreshes the cached canvas rect
-    immediately, then restarts the `RESIZE_SETTLE_MS` timer so backing wipe+repaint runs only after
-    layout settles. `drawing/engine.ts`. *ADR-0089*
-27. **Re-entry resync only when geometry moved** — visibility/resume compares viewport+angle before
-    paying the wipe. `resyncOnReentry()` in `drawing/engine.ts`. *ADR-0132*
-28. **No-allocation hot-path accessors** — non-cloning crayon parameter reads (runs 3×/op);
-    repo-wide rule: per-pointermove code must not allocate (`.claude/rules/svelte.md`).
-    `crayonBrush.ts:351-367`.
-29. **PointerHalos: ring moves coalesced to once per rAF** — pending positions in plain non-`$state`
-    records, latest wins; GPU-composited `translate3d`. `PointerHalos.svelte:74-121`. *commit
-    a1e5a2fc*
-30. **Shared layout store + 200 ms rotation settle hold** — one module-level listener set serves all
-    consumers; orientation events defer viewport sync (improved the issue-977 iPad profile);
-    per-field inset assignment avoids waking dependents on equal re-measures.
-    `state/layout.svelte.ts`. *commit 04169415*
-31. **Getter-function deriveds & deliberately untracked lets** — shared derived state recomputes per
-    call instead of always-on reactive graphs; timers/latches/memos are plain `let`s.
-    `state/appearance.svelte.ts` et al; policy in `web/src/CLAUDE.md`.
-
-### V. Tiled canvas & compositing
-
-32. **4×4 tiled live canvas; input canvas shrunk to a 1×1 px backing** — the visible paper is 16
-    tile canvases (each tile's two crayon preview-plane canvases stay hidden and unbacked in both
-    shipped builds, `crayonPassBuffer.ts:267-280`); the pointer-capturing canvas costs nothing to
-    composite. `drawing/liveTiles.ts`, `tiledRenderer.ts`, `engine.ts:154`. *ADR-0085, ADR-0089*
-33. **Per-op tile intersection culling** — only tiles a stroke's padded bbox touches pay render,
-    allocation, and undo capture. `tiledGeometry.ts`, `tiledRenderer.ts:280-311`. *ADR-0085*
-34. **Empty tiles absent from the compositor** — tiles start `hidden`, shown just before first
-    paint; removed 40–50 ms of theme switches compositing 48 transparent canvases.
-    `tiledRenderer.ts:269-278`. *ADR-0087*
-35. **Lazy tile backing allocation + one-tile-per-frame migration** on blank-canvas resize.
-    `tiledLayout.ts`. *commits 846acd60, 657d87b3*
-36. **Deferred hidden-tile clear (two presented frames)** — post-clear wipes never land in the
-    gesture's frames. `tiledSurfaces.ts:259-266`. *ADR-0086*
-37. **CSS-presented paper view + permanent `will-change: transform`** — rotation with ink never
-    repaints tiles; one CSS matrix presents the locked paper; spec-enforced
-    (`engine-rotation.spec.ts`). `LiveSurface.svelte`, `drawing/paperView.ts`. *ADR-0089*
-38. **Crayon live preview with nothing extra composited** — the web build restamps: each op restores
-    its padded rect from an offscreen "under" shadow and re-applies the glaze onto the ink tile. The
-    shadow is normally refreshed once per invalidation, just after finger-lift; a pass that opens
-    before that refresh captures it synchronously (`crayonPassBuffer.ts:667-674`). The native build
-    applies the glaze per op directly on the tile, with no pass buffer, preview plane, or blit.
-    `crayonPassBuffer.ts:139-149, 169-172`, `engine.ts:682-690`. *ADR-0147, ADR-0148* *(The earlier
-    `mix-blend-mode: darken` preview planes, ADR-0085, are retired from both builds.)*
-39. **Capped DPR (2×), fixed per session** — DPR-3 would cost 9× pixels for detail a finger can't
-    use. `engine.ts:170-176`. *ADR-0015*
-
-### VI. Undo / history
-
-40. **Tiled dirty-region snapshot undo** — per touched tile, first-touch pre-mutation snapshot;
-    dirty bounds unioned; `crop()` shrinks to the dirty rect at commit; undo is
-    `clearRect + drawImage`. `tiledUndoPatches.ts`. *ADR-0086; lineage 0066/0069/0074*
-41. **Byte-budgeted retention** — patch bytes bounded to 6 whole papers (min 2 commands), depth
-    cap 20. `tiledRenderer.ts:54-58, 233-249`. *ADR-0086; lineage ADR-0082*
-42. **Idle history fold** — commands beyond the undo window fold into raster base tiles, one per 1.5
-    s tick, never while pointers are active. `tiledRenderer.ts:330-359`. *ADR-0085; keyframe lineage
-    0033/0035*
-43. **Progressive clear capture** — clear hides tiles instantly, captures one tile's snapshot per
-    rAF; mutations settle affected tiles synchronously. `progressiveClearCapture.ts`. *ADR-0086
-    amendment*
-44. **Undo fast paths** — `wasEmpty` restores without repaint; the post-undo empty flag comes from
-    the record, not a pixel scan; `repaintDeferredToRestore` stops the paper-restore resize
-    repainting through the command being popped (the #1198 fix — 103→17 ms).
-    `tiledRenderer.ts:425-474`, `engine.ts:322-336`.
-45. **Magic-recode baseline/tail retention** — cloned base raster + folded vector tail let
-    theme/page recodes rebuild folded magic ink without retaining full history.
-    `tiledMagicRecode.ts`. *ADR-0121*
-
-### VII. Empty-canvas detection
-
-46. **Downscaled scratch-canvas scan** — a 0.25× copy on a persistent `willReadFrequently`
-    singleton, ~16× fewer pixels, keeps main canvases GPU-backed. `drawing/emptyScan.ts`.
-47. **Tile-level early exit** — hidden tiles skipped; short-circuits at the first inked tile.
-    `tiledRenderer.ts:506-510`.
-48. **Idle-deferred eraser empty scan** — the post-lift blank check (4.5–12.3 ms on Android vs 8.3
-    ms frames) waits 400 ms idle since it only gates button enablement. `idleEmptyScan.ts`. *commit
-    13ecc3a0*
-
-### VIII. Crayon caches & warm-up
-
-49. **Deterministic Float32Array tooth fields, idle-prebuilt** — per-texel wax texture fields built
-    once from fixed seeds, front-loaded via `scheduleIdle`. `crayonBrush.ts:236-322`. *ADR-0065*
-50. **LRU wax-tile cache** — colorized tiles per (color, pass), cap derived from palette size;
-    eviction also resets the pattern WeakMap (the issue-167 custom-color leak).
-    `crayonBrush.ts:409-522`.
-51. **Deadline-bounded tile warm-up** — color/brush selection warms wax tiles 8 rows per rAF under a
-    2 ms/frame budget; new color supersedes; a stroke that beats the warm builds synchronously.
-    `crayonBrush.ts:413-610`. *commits 62b076cd, ac7a0f39, b98e25d0*
-52. **Pattern caches + seedPhase memo** — CanvasPatterns per context then color+pass; a 1-entry memo
-    skips re-hashing for the ~6 identical calls per frame. `crayonBrush.ts:612-671`. *commit
-    cc00a8a7*
-53. **Pass buffer with device-px dirty bounds (web)** — each op restamps only its own padded rect,
-    and closing a pass clears only the pass's unioned dirty rect: "a flush stays proportional to the
-    pass, not the canvas." Native's per-op glaze keeps no pass buffer. `crayonPassBuffer.ts`.
-    *ADR-0068, ADR-0147*
-54. **Mirror by blit, not repaint** *(retired with the preview planes, ADR-0148)* — the preview
-    plane copied the op rect from the buffer, halving pattern fills per op. The code survives only
-    in the `'planes'` branch (`crayonPassBuffer.ts:640-663`), which no shipping build selects.
-    *commit ae674d71*
-55. **Checkpoint at 64 pointermoves** — bounds live buffer memory; counted in moves, not merged ops,
-    so frame-merging can't stretch a pass to double wax. `crayonPassBoundaries.ts:15-22, 101-111`.
-    *ADR-0085 trial 23*
-
-### IX. Magic brush
-
-56. **Offscreen sheet + per-context pattern cache** — one paper-sized reveal source; cached
-    no-repeat patterns (chosen over per-op mask and flat sample, all three measured).
-    `magicBrush.ts:87-114, 319-360`. *ADR-0043*
-57. **Per-tile pattern sub-regions** — each tile's pattern sources only its own sheet rectangle.
-    `magicBrush.ts:331-368`.
-58. **Worker-side sheet rasterization** — fills/gradients rasterize in a worker OffscreenCanvas
-    (fetch+decode off-thread), 15 s timeout, main-thread fallback. `magicSheetRasterClient.ts`,
-    `magicSheet.worker.ts`. *ADR-0091, ADR-0110*
-59. **Edge margins from source strips, never destination self-copy** — self-sampling the sheet
-    triggered WebKit's full-surface flush (~100 ms of the 1.1 s theme freeze).
-    `magicSheetEdges.ts:5-128`. *ADR-0087 trials 12–13*
-60. **Deferred sheet reallocation on resize**; **deferred color-sheet transfer** until line art
-    decodes (network priority to what the child sees first, 15 s self-heal); **lazy gradient pool,
-    held gradient**. `magicBrush.ts:303-310, 446-482`. *ADR-0087/0091/0121, ADR-0043*
-
-### X. Export / screenshot
-
-61. **On-demand export module + idle warm** — the compositor + ~226 ms paper-texture fetch pre-warm
-    at idle so the first save doesn't stall. `engine.ts:1288-1295, 1394-1429`, `exportDrawing.ts`.
-    *issue #461*
-62. **Frame-bound export: ImageBitmap capture + worker compose/encode** — no main-thread readback;
-    tiles transfer to a worker OffscreenCanvas; PNG via `convertToBlob`; the polaroid preview is a
-    worker-side downscale. `strokeSnapshot.ts`, `pngEncoder.worker.ts`, `tiledPngCompositor.ts`.
-    *ADR-0088*
-63. **Cached encoder-worker singleton** (15 s timeout, recreate on failure); **4 s screenshot
-    cooldown** (MobileSafari surface reclamation) + concurrent-tap coalescing +
-    snapshot-at-pointerdown; **1 s preview timeout**; **export scale floor 2× decoupled from live
-    DPR**. `pngEncoder.ts`, `screenshotTiming.ts`, `exportScale.ts`. *ADR-0088 + amendments*
-
-### XI. PWA / service worker / network caching
-
-64. **Deferred, stroke-gated SW registration** — the first visit registers only after 3 committed
-    strokes, then at idle; Save-Data skips entirely — precaching never saturates a slow connection
-    during first strokes. `vite.config.ts`, `pwa/updates.ts`, `routes/+page.svelte:79-87`,
-    `lib/boot/settledIn.svelte.ts:14-31`. *ADR-0022, issue #462*
-65. **Precache scoped to shell + starter book; NetworkFirst navigations, 5 s timeout** — stalled
-    loads fall back to cache instead of leaving a child waiting; `/` falls back to the precached
-    shell from the worker's own build. `vite.config.ts` workbox block, `pwa/appShellRoute.ts`.
-    *ADR-0022, ADR-0103*
-66. **Canvas-empty / hidden-page update lifecycle** — a new SW activates silently only when versions
-    match; reload fires only when hidden AND the canvas is blank; hourly/focus/visibility checks;
-    one cache-bust attempt per version. `pwa/updates.ts`. *ADR-0022*
-67. **Responsive-coloring SW route with canonical fallback**; **installed-pack CacheStorage-first
-    route**; **`version.json` per build**; **no SW at all in native builds**.
-    `pwa/coloringFallback.ts`, `pwa/coloringPackRoute.ts`. *ADR-0042/0045/0103/0022*
-68. **CORS preflight cached 24 h** (`Access-Control-Max-Age`). `hooks.server.ts:29-40`. *ADR-0007*
-69. **Netlify edge cache headers** — immutable year-long `_app/immutable`, week-long stable-filename
-    media (rename-on-change contract), `no-store` on `sw.js`/`version.json`, edge-level 308s and
-    static 404s that never invoke SSR. root `netlify.toml`. *ADR-0042, ADR-0022, ADR-0112*
-
-### XII. Coloring packs & images
-
-70. **Progressive background packs** — one starter book ships; the rest install book-by-book into
-    versioned CacheStorage with per-file SHA-256 + byte verification, completion markers, old-cache
-    deletion. `coloringPacks/`. *ADR-0103*
-71. **Per-file idle gating + network-condition gating** — every pack file's fetch waits for idle;
-    auto-downloads blocked on Save-Data/cellular/2g; pause/resume on online/visibility.
-    `webStore.ts`, `manager.ts`. *ADR-0103*
-72. **Capped shipped resolutions** — 1152 px max-edge fills, 240 px thumbs; responsive srcset tiers
-    with canonical fallback; native skips srcset. `state/books.ts:58-124`. *ADR-0045, ADR-0103*
-73. **Session-keyed image prefetch cache + cancellation** — detached `Image()` warms once per URL
-    per session; picking a page aborts every other in-flight warm so the chosen page gets the
-    bandwidth. `lib/imagePrefetch.ts`. *ADR-0045*
-74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages fetched
-    on tile hover and decoded on press, so mouse exploration does not decode every selector; the
-    *other orientation's* art at idle only after the picked page decodes.
-    `ColoringBook.svelte:70-97, 230-231`, `DrawingCanvas.svelte:253-272`. *ADR-0045*
-75. **Decode-gated overlay swap** — new line art decodes off-DOM (`img.decode()`,
-    `fetchPriority='high'`) and swaps by opacity only when ready; current art stays visible
-    meanwhile. The displayed image keeps `decoding="async"` so WebKit can rasterize the decoded
-    source at its paper-sized layout without blocking the selection frame. A 2026-09-04 physical
-    iPad Safari A/B (one warm-up plus three scored repeats) reduced landscape-light P95/max from
-    25/31 to 19/20 ms and landscape-dark from 29/30 to 19/21 ms; a preceding focused dark treatment
-    scored 22/31 ms. `DrawingCanvas.svelte:184-233, 299-311`,
-    `docs/scratchpad/perf/2026-09-04-issue-1569-async-overlay-decode.md`. *ADR-0087, commit
-    2392ee40*
-76. **`loading="lazy"`/`decoding="async"`** on grid tiles and AI imagery.
-
-### XIII. Fonts, audio, storage
-
-77. **Idle font warm-up, deliberately no preload** — the drawing route paints no text;
-    `document.fonts.load()` in the background; a measured `<link rel=preload>` alternative was
-    benchmarked and rejected. `routes/+layout.svelte:19-27`. *ADR-0075*
-78. **Two-stage sound preload** — the first pencil mp3 on the earliest boot path, other variants at
-    idle; per-URL promise memos + failed-URL sets. `audio/drawingSound.ts:57-126`.
-79. **Procedural clear-feedback audio** — synthesized resonances driven by drag distance instead of
-    an asset (length-independent, nothing to load). `audio/clearSound.ts`. *ADR-0131, ADR-0085*
-80. **Dual-layer storage: sync reads, fire-and-forget native mirror** — all reads synchronous (no
-    async flash at `$state` init); native writes mirror to Preferences un-awaited; **concurrent**
-    durable hydration. `lib/storage.ts`. *ADR-0005*
-81. **Persistent-storage request kept off the boot path** (would prompt Firefox at startup).
-    `lib/idb.ts:5-14`. *ADR-0128*
-
-### XIV. Cross-cutting
-
-82. **`will-change`/`contain` promotions** on animated overlay layers (polaroid, confetti, dial,
-    clear button, color sheet, paper views) and the scaling brush trigger — the LiveSurface one is
-    test-enforced.
-83. **rAF-throttled scrollspies + IntersectionObserver scroll cues** — no per-frame DOM measurement
-    on privacy/design/changelog/Settings scrolling. `actions/scrollCue.ts`,
-    `WideShell.svelte:232-250`. *issue #907*
-84. **One shared AI-progress rAF loop** — a single detached loop serves dial + polaroid; cancels
-    when settled. `state/aiProgress.svelte.ts`. *ADR-0116*
-85. **Tile/worker context recovery** — `contextlost` recovery scheduled on rAF, probed cheaply on
-    re-entry, repaint skipped when a resize will repaint anyway. `tiledContextRecovery.ts`.
-    *ADR-0132, ADR-0110*
-86. **WebP re-encode for AI uploads** — the PNG re-encoded to quality-tuned WebP (a fraction of the
-    bytes for flat-color art); capability probed once per session. `drawing/aiUploadEncoding.ts`.
-87. **Coachmark animations scoped to visibility** *(new, PR #1369)* — the drag-to-clear tutorial's
-    two infinite keyframe loops ran forever on their hidden base state (opacity/visibility don't
-    pause CSS animations), taxing every frame of every session — 72% of all Animation style
-    invalidations in an emulator trace. Now applied only under `.visible` (which also restarts them
-    from frame 0 on reveal), with base `opacity: 0` so a mid-cycle dismissal vanishes in place, and
-    reduced-motion overrides at matching specificity. Measured: 5,847 → 0 Animation invalidations;
-    emulator theme-flip post-p95 median 100.1 → 66.7 ms (n=3/arm). `ClearCoachmark.svelte`, pinned
-    by the SvelteKit suite's `clear-tutorial.spec.ts` (retired; the React Native coachmark is held
-    by `tools/migration/tests/rsd-native-clear.test.mjs`).
-88. **Action Drawer motion canceled before device rotation** — `orientationchange` clears an armed
-    drawer transition before the viewport breakpoint flips, so a stale motion marker cannot animate
-    the drawer's axis margins through the drawing's rotation frames. A physical Android Chrome
-    canonical A/B removed all drawer transition events from both with-ink directions and reduced
-    portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms. The reviewed implementation also
-    handles the standard Screen Orientation signal and releases a marker that starts no transition;
-    those post-capture hardenings await the final matrix recapture. `ActionsPanel.svelte`,
-    `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
-
-### Documented rejections — perf machinery deliberately absent
-
-* `desynchronized: true` canvas contexts (the Android overlay composites opaque black) — *ADR-0051*
-* Font `<link rel=preload>` (measured, no win) — *ADR-0075*
-* Auto SW registration at load (replaced by the stroke gate) — *ADR-0022*
-* Two resident theme images (the decoded-sibling gate instead) — *ADR-0087 trial 22*
-* Theme-image/sheet-snapshot caching (measured, no improvement) — *ADR-0087 trials 14–16*
-* Stroke simplification at commit (ADR-0036) — superseded outright by the tiled per-frame-op
-  architecture.
-
-### The shape of the whole
-
-Almost everything funnels through four ideas: **do it per frame, not per event** (raster queue,
-halos, section mounts, tile migration); **do it at idle, never while a finger is down** (the
-`scheduleIdle` substrate under ~15 mechanisms); **touch only what changed** (tiles, dirty rects,
-culling, the hidden-tile invariant); and **keep it off the startup bundle** (test-pinned
-boundaries). The one anti-pattern this inventory's own sweep later caught — an infinite animation on
-a hidden element — is the inverse of idea two, and its fix is entry 87.
-
-### Known open performance work (as of 2026-08-26)
-
-* **#1199, two remaining thirds**: the theme flip's multi-flush style-recalc cascade (several
-  full-document recalcs per toggle; a ~10× cold-vs-warm per-element anomaly) and the blank-canvas
-  live-tile churn on theme switch (hidden flips, backing reallocation, 1,268 layout insertions) —
-  both trace-attributed on the issue.
-* **#1322** — the campaign-end recapture and matrix regeneration, where the trust ledger, the
-  recalibrated gates, and the eraser column's supersession all land in the published matrix.
-* **#1632 / #1130** — device-bound rotation and Settings-frame cells; **#1344** — spread and
-  repeat-count measurement; **#1304** — the host-quiet measurement behind the trust ledger's one
-  permanently-unrecorded row.

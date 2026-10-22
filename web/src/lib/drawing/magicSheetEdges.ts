@@ -106,23 +106,3 @@ export function edgeMargins(
   pushRegion(fills, x.far, y.far);
   return fills;
 }
-
-// Fill the transparent letterbox margins of the drawn picture by extending its edge
-// colours outward, so a stroke in the margin reveals the colour of the nearest
-// picture edge instead of nothing — the child paints across the whole canvas with no
-// hard seam (fixes ADR-0043's "painting in the letterbox reveals nothing" edge, and
-// the rotation-lock margins around the fitted paper).
-export function extendSheetEdges(
-  g: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  W: number,
-  H: number,
-  ox: number,
-  oy: number,
-  bw: number,
-  bh: number
-) {
-  for (const fill of edgeMargins(W, H, ox, oy, bw, bh, image.naturalWidth, image.naturalHeight)) {
-    g.drawImage(image, fill.sx, fill.sy, fill.sw, fill.sh, fill.dx, fill.dy, fill.dw, fill.dh);
-  }
-}

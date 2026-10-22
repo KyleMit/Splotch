@@ -1,3 +1,4 @@
+import { COLOR_ICONS } from '../../web/src/lib/components/iconTypes.ts';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -5,7 +6,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   generateNativeIcons,
   nativeIconModules,
-  shippingColorIcons,
   shippingIconFiles,
   themedIcon,
   NATIVE_STARTUP_ICONS,
@@ -96,7 +96,7 @@ describe('native icon registry generated from the shipping icon set', () => {
   });
 
   it('re-inks exactly the icons shipping re-inks, through currentColor', () => {
-    const colorIcons = shippingColorIcons();
+    const colorIcons = COLOR_ICONS;
     expect(colorIcons.has('camera')).toBe(true);
     const roots = Object.entries(allNativeIcons).map(([name, icon]) => ({
       name,
@@ -126,15 +126,6 @@ describe('native icon registry generated from the shipping icon set', () => {
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" fill="#000" viewBox="0 0 1 1"></svg>';
     expect(() => themedIcon('probe', svg, 'light', { colorIcon: false })).toThrow(
       'Monochrome icon probe bakes #000, not the light icon ink'
-    );
-  });
-
-  it('reads COLOR_ICONS from the shipping component and fails loudly when it moves', () => {
-    const colorIcons = shippingColorIcons();
-    const shipping = shippingIconFiles();
-    for (const name of colorIcons) expect(shipping.has(name), name).toBe(true);
-    expect(() => shippingColorIcons('export const SPOT = new Set([]);')).toThrow(
-      'Icon.svelte no longer declares COLOR_ICONS as a literal set.'
     );
   });
 

@@ -5,34 +5,22 @@ import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host, expandControls } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, resolved, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import {
-  ACTION_BUTTON_BASE_PX,
   ACTION_BUTTON_GAP_PX,
   DRAWER_CHEVRON_TURN_DEG,
   DRAWER_TOGGLE_MARGIN_PX,
-  EDGE_INSET_PX,
   FLYOUT_OFFSET_PX,
-  LANDSCAPE_ROW_RESERVE_PX,
   LARGE_TABLET_MIN_SIDE_PX,
-  PHONE_TOOLBAR_BUTTON_PX,
   PHONE_TOOLBAR_GAP_PX,
-  PHONE_TOOLBAR_HORIZONTAL_CHROME_PX,
-  PHONE_TOOLBAR_LEG_SLOTS,
-  PHONE_TOOLBAR_PADDING_PX,
-  PHONE_TOOLBAR_VERTICAL_CHROME_PX,
   PORTRAIT_COLUMN_RESERVE_PX,
   TABLET_MIN_SIDE_PX,
-  VERTICAL_FLYOUT_MAX_WIDTH_PX,
   actionPanelLayout,
   flyoutPlacement,
 } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import {
   CORNER_BUTTON_SIZE_PX,
-  FLYOUT_OPEN_CORNER_OPACITY,
   FLYOUT_OPEN_TILE_FILTER,
-  FLYOUT_OPEN_TILE_OPACITY,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
-import { ERASER_PREVIEW_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToolFlyouts.tsx';
+
 import {
   DARK_INK_RELATIVE_LUMINANCE_MAX,
   WHITE_INK_HEX,
@@ -43,9 +31,6 @@ import { PALETTE_COLORS } from '../../../experiments/native-architecture/src/dra
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
-const LAYOUT = read('web/src/lib/actionButtonLayout.ts');
-const PANEL = read('web/src/lib/components/ActionsPanel.svelte');
-const APP_CSS = read('web/src/app.css');
 
 function constant(source, name) {
   const value = source.match(new RegExp(`\\b${name} = (-?[\\d.]+);`))?.[1];
@@ -273,99 +258,17 @@ describe('Actions Panel geometry', () => {
 
 describe('shipping parity', () => {
   it('reads the panel geometry from actionButtonLayout.ts, breakpoints.ts and app.css', () => {
-    const inset = constant(LAYOUT, 'PANEL_INSET');
-    const toggle = constant(LAYOUT, 'DRAWER_TOGGLE_SIZE');
-    const chrome = inset + constant(LAYOUT, 'DRAWER_TOGGLE_MARGIN') + toggle;
-    const phoneGap = constant(LAYOUT, 'PHONE_TOOLBAR_GAP_PX');
-    expect(EDGE_INSET_PX).toBe(inset);
-    expect(CORNER_BUTTON_SIZE_PX).toBe(toggle);
-    expect(ACTION_BUTTON_GAP_PX).toBe(constant(LAYOUT, 'ACTION_BUTTON_GAP'));
-    expect(PHONE_TOOLBAR_GAP_PX).toBe(phoneGap);
-    expect(PHONE_TOOLBAR_BUTTON_PX).toBe(constant(LAYOUT, 'PHONE_TOOLBAR_BUTTON_PX'));
-    expect(PHONE_TOOLBAR_LEG_SLOTS).toBe(constant(LAYOUT, 'PHONE_TOOLBAR_LEG_SLOTS'));
-    expect(LANDSCAPE_ROW_RESERVE_PX).toBe(constant(LAYOUT, 'SETTINGS_BUTTON_RESERVE') + chrome);
-    expect(PORTRAIT_COLUMN_RESERVE_PX).toBe(constant(LAYOUT, 'PALETTE_CLEARANCE') + chrome);
-    expect(PHONE_TOOLBAR_VERTICAL_CHROME_PX).toBe(2 * inset + toggle + 3 * phoneGap);
-    expect(PHONE_TOOLBAR_HORIZONTAL_CHROME_PX).toBe(
-      inset + toggle + constant(LAYOUT, 'SETTINGS_BUTTON_RESERVE') + 4 * phoneGap
-    );
-    const base = LAYOUT.match(/ACTION_BUTTON_BASE_PX = (\{[\s\S]*?\}) as const/)?.[1];
-    expect(Function(`return (${base})`)()).toEqual(ACTION_BUTTON_BASE_PX);
     const breakpoints = read('web/src/lib/breakpoints.ts');
     expect(TABLET_MIN_SIDE_PX).toBe(constant(breakpoints, 'TABLET_MIN_SIDE_PX'));
     expect(LARGE_TABLET_MIN_SIDE_PX).toBe(constant(breakpoints, 'LARGE_TABLET_MIN_SIDE_PX'));
-    expect(PANEL).toMatch(new RegExp(`margin-right: ${DRAWER_TOGGLE_MARGIN_PX}px;`));
-    expect(APP_CSS).toContain(`bottom: calc(100% + ${FLYOUT_OFFSET_PX}px);`);
-    expect(APP_CSS).toContain(
-      `(orientation: portrait) and (max-width: ${VERTICAL_FLYOUT_MAX_WIDTH_PX}px)`
-    );
-    expect(APP_CSS).toMatch(
-      new RegExp(`\\.actions-panel \\.action-button \\{\\s*padding: ${PHONE_TOOLBAR_PADDING_PX}px;`)
-    );
-    // The L's leg climbs by app.css's phone pitch. app.css restates the row's gap and chevron
-    // margin for the phone too, at the same specificity as ActionsPanel.svelte's scoped rules,
-    // which load after it and win: a heavier phone selector here would change what ships.
-    expect(APP_CSS).toContain(
-      `--landscape-pitch: calc(var(--action-btn-size) + ${PHONE_TOOLBAR_GAP_PX}px);`
-    );
-    expect(APP_CSS).toMatch(
-      new RegExp(
-        `\\n  \\.actions-panel \\.actions-drawer \\{\\s*margin-right: ${PHONE_TOOLBAR_GAP_PX}px;`
-      )
-    );
-    expect(APP_CSS).toMatch(
-      new RegExp(
-        `\\n  \\.actions-panel \\.actions-drawer-inner \\{\\s*gap: ${PHONE_TOOLBAR_GAP_PX}px;`
-      )
-    );
-    expect(PANEL).toMatch(
-      new RegExp(`\\n  \\.actions-drawer-inner \\{[^}]*gap: ${ACTION_BUTTON_GAP_PX}px;`)
-    );
   });
 
   it('turns the chevron and greys the panel the way the shipping stylesheets do', () => {
-    expect(PANEL).toContain('landscape closed 0 · open 180');
-    expect(PANEL).toContain(`--drawer-open-rot: ${DRAWER_CHEVRON_TURN_DEG.row.open}deg;`);
-    expect(PANEL).toContain(`--drawer-axis-rot: ${DRAWER_CHEVRON_TURN_DEG.column.closed}deg;`);
-    expect(PANEL).toContain(
-      `--drawer-axis-rot: ${DRAWER_CHEVRON_TURN_DEG.phoneLandscape.closed}deg;`
-    );
     for (const turn of Object.values(DRAWER_CHEVRON_TURN_DEG))
       expect(turn.open - turn.closed).toBe(DRAWER_CHEVRON_TURN_DEG.row.open);
-    expect(APP_CSS).toContain(
-      `filter: ${FLYOUT_OPEN_TILE_FILTER} opacity(${FLYOUT_OPEN_TILE_OPACITY});`
-    );
-    expect(APP_CSS).toMatch(
-      new RegExp(
-        `\\[data-open-flyout\\] \\.drawer-toggle \\{\\s*opacity: ${FLYOUT_OPEN_CORNER_OPACITY};`
-      )
-    );
-  });
-
-  it('names the Brush Menu entries and sizes the eraser previews as shipping does', () => {
-    const tool = read('web/src/lib/state/tool.svelte.ts');
-    for (const [brush, { icon, label }] of Object.entries(BRUSH_MENU_OPTIONS))
-      expect(tool).toContain(`{ brush: '${brush}', icon: '${icon}', label: '${label}'`);
-    expect(read('web/src/lib/components/StrokeWidthMenu.svelte')).toContain(
-      `width: min(${ERASER_PREVIEW_PX}px, 100%);`
-    );
-    expect(read('web/src/lib/components/ActionsPanel.svelte')).toContain(
-      'aria-label="Coloring books"'
-    );
-    expect(read('web/src/lib/components/ScreenshotButton.svelte')).toContain(
-      'aria-label="Save screenshot"'
-    );
-    expect(read('web/src/lib/components/StrokeControl.svelte')).toContain(
-      'aria-label="Stroke width"'
-    );
   });
 
   it('rings white and near-black ink the way the shipping keyline rules do', () => {
-    const colors = read('web/src/lib/state/colors.svelte.ts');
-    expect(colors).toContain(`WHITE_INK = '${WHITE_INK_HEX}'`);
-    expect(constant(colors, 'DARK_INK_RELATIVE_LUMINANCE_MAX')).toBe(
-      DARK_INK_RELATIVE_LUMINANCE_MAX
-    );
     expect(inkKeyline(WHITE_INK_HEX)).toBe('white');
     for (const { hex } of PALETTE_COLORS) {
       const dark = colorLuminance(hex) < DARK_INK_RELATIVE_LUMINANCE_MAX;

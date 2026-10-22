@@ -42,7 +42,3 @@ export const ORIENTATION_ANGLES = {
 export function isLandscape(orientation: Orientation): boolean {
   return orientation === 'landscape-left' || orientation === 'landscape-right';
 }
-
-export function isOrientation(value: string | null): value is Orientation {
-  return ORIENTATIONS.some((orientation) => orientation === value);
-}

@@ -1,0 +1,109 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-audio-projection.test.mjs tools/tests/native-ai-settings-drift.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/tools
+
+ ❯ |repo-tools| tests/native-audio-projection.test.mjs (31 tests | 1 failed) 293ms
+   ❯ candidate-owned audio and Settings projections (4)
+     × bundles every pencil take byte for byte and imports the complete set 4ms
+ ❯ |repo-tools| tests/native-ai-settings-drift.test.mjs (9 tests | 3 failed) 5ms
+   ❯ Settings › AI Art against shipping (9)
+     × explains an allowance of 0 free pictures without a saved credential 3ms
+     × explains an allowance of 1 free pictures without a saved credential 0ms
+     × explains an allowance of 3 free pictures without a saved credential 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| tests/native-ai-settings-drift.test.mjs > Settings › AI Art against shipping > explains an allowance of 0 free pictures without a saved credential
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "Your 10 free pictures are used up.",
++   "The first 10 pictures are free — nothing to set up, no card.",
+    "After that, use your own OpenAI key — saved on this device only.",
+  ]
+
+ ❯ tests/native-ai-settings-drift.test.mjs:35:48
+     33|     [FREE_LIMIT, 'The first 10 pictures are free — nothing to set up, …
+     34|   ])('explains an allowance of %s free pictures without a saved creden…
+     35|     expect(valuePropClaims('none', remaining)).toEqual([
+       |                                                ^
+     36|       claim,
+     37|       'After that, use your own OpenAI key — saved on this device only…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  |repo-tools| tests/native-ai-settings-drift.test.mjs > Settings › AI Art against shipping > explains an allowance of 1 free pictures without a saved credential
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "You have 1 free picture left — nothing to set up, no card.",
++   "The first 10 pictures are free — nothing to set up, no card.",
+    "After that, use your own OpenAI key — saved on this device only.",
+  ]
+
+ ❯ tests/native-ai-settings-drift.test.mjs:35:48
+     33|     [FREE_LIMIT, 'The first 10 pictures are free — nothing to set up, …
+     34|   ])('explains an allowance of %s free pictures without a saved creden…
+     35|     expect(valuePropClaims('none', remaining)).toEqual([
+       |                                                ^
+     36|       claim,
+     37|       'After that, use your own OpenAI key — saved on this device only…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  |repo-tools| tests/native-ai-settings-drift.test.mjs > Settings › AI Art against shipping > explains an allowance of 3 free pictures without a saved credential
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "You have 3 free pictures left — nothing to set up, no card.",
++   "The first 10 pictures are free — nothing to set up, no card.",
+    "After that, use your own OpenAI key — saved on this device only.",
+  ]
+
+ ❯ tests/native-ai-settings-drift.test.mjs:35:48
+     33|     [FREE_LIMIT, 'The first 10 pictures are free — nothing to set up, …
+     34|   ])('explains an allowance of %s free pictures without a saved creden…
+     35|     expect(valuePropClaims('none', remaining)).toEqual([
+       |                                                ^
+     36|       claim,
+     37|       'After that, use your own OpenAI key — saved on this device only…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  |repo-tools| tests/native-audio-projection.test.mjs > candidate-owned audio and Settings projections > bundles every pencil take byte for byte and imports the complete set
+AssertionError: expected [ Array(1) ] to have a length of 3 but got 1
+
+- Expected
++ Received
+
+- 3
++ 1
+
+ ❯ tests/native-audio-projection.test.mjs:53:27
+     51|       ).toBe(digest(readFileSync(join(root, 'web/static/sounds', name)…
+     52|     }
+     53|     expect(PENCIL_SOUNDS).toHaveLength(takeNames.length);
+       |                           ^
+     54|   });
+     55|   it('rejects changed MP3 bytes', () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  4 failed | 36 passed (40)
+   Start at  21:06:47
+   Duration  641ms (tests 55%, import 33%, transform 11%)
+

@@ -8,7 +8,7 @@ import { PARENT_GATE_KEYPAD_KEYS, type ParentGateKey } from '../parentCenter/par
 const KEY_PRESSED_SCALE = 0.92;
 const KEYS_PER_ROW = 3;
 
-export const PARENT_GATE_KEY_ICONS = { delete: 'backspace', submit: 'check' } as const;
+const PARENT_GATE_KEY_ICONS = { delete: 'backspace', submit: 'check' } as const;
 export const PARENT_GATE_KEY_LABELS = { delete: 'Delete', submit: 'Check answer' } as const;
 
 const KEY_ROWS = Array.from({ length: PARENT_GATE_KEYPAD_KEYS.length / KEYS_PER_ROW }, (_, row) =>

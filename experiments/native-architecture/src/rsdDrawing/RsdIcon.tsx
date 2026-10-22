@@ -10,7 +10,7 @@ import type { NativeIconName } from './icons.generated';
 export const EMPTY_ICON_MARKUP = '<svg xmlns="http://www.w3.org/2000/svg"/>';
 // The app.css .white-stroke / .dark-stroke keyline width in screen pixels;
 // tools/tests/native-button-chrome.test.mjs holds it to app.css.
-export const INK_KEYLINE_WIDTH_PX = 2;
+const INK_KEYLINE_WIDTH_PX = 2;
 
 const INK_PATH = /<path\b[^>]*\bfill="currentColor"[^>]*\/>/g;
 const VIEW_BOX = /viewBox="([^"]+)"/;

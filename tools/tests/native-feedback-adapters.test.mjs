@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { NETWORK_ERROR_MESSAGE } from '../../web/src/lib/latestRequest.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const host = vi.hoisted(() => ({
@@ -184,19 +183,6 @@ describe('actual native and web feedback adapters', () => {
       display: 'Browser tab',
       online: 'No',
     });
-  });
-  it('pins the pure OS-label copy to the shipping platform owner', () => {
-    const shipping = readFileSync(
-      new URL('../../web/src/lib/platform/index.ts', import.meta.url),
-      'utf8'
-    );
-    const native = readFileSync(
-      new URL('../../experiments/native-architecture/src/feedback/osLabel.ts', import.meta.url),
-      'utf8'
-    );
-    const fn = (source) =>
-      source.slice(source.indexOf('export function osLabelFromUserAgent(')).trim();
-    expect(fn(native)).toBe(fn(shipping).split('\n}')[0] + '\n}');
   });
   it('creates and verifies its own native policy file and round trips a deliberate parent choice', async () => {
     expect(await feedbackPolicyStorage.read()).toBeNull();
