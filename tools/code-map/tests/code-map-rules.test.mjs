@@ -80,7 +80,7 @@ describe('exclusion classes', () => {
     ['tools/store-drawings/samples/sun.svg', 'tools excluding asset-gen', 'store-drawings'],
     ['docs/scratchpad/perf/run/check.mjs', 'docs', 'scratchpad'],
     ['package.json', 'root', '(root)'],
-    ['src/ProbeApp.tsx', 'src', 'Routes / app shell / dev surfaces'],
+    ['src/ProbeApp.tsx', 'src', 'App shell / information pages'],
     ['docs/migration/evidence/native-topology-05/README.md', 'docs', 'migration'],
   ])('measures %s in %s / %s', (path, area, bucket) => {
     expect(classifyPath(path)).toEqual({ kind: 'measured', area, bucket });
@@ -91,41 +91,33 @@ describe('src domains', () => {
   it('files a co-located test and a test harness with the module they exercise', () => {
     expect(subjectOf('lib/storage.restore.integration.test.ts')).toBe('lib/storage');
     expect(subjectOf('lib/pwa/updatesTestHarness.ts')).toBe('lib/pwa/updates');
-    expect(subjectOf('routes/admin/+page.server.ts')).toBe('routes/admin/+page.server.ts');
+    expect(subjectOf('pageDocument/admin/adminContract.ts')).toBe(
+      'pageDocument/admin/adminContract'
+    );
     expect(subjectOf('app.css')).toBe('app.css');
   });
 
   it.each([
-    ['lib/drawing/crayonBrush.ts', 'Drawing / canvas engine', 'Stroke model & brush rendering'],
+    ['drawing/renderer.ts', 'Drawing / canvas engine', 'Native / web rendering, input & history'],
+    ['clear/dragToClear.ts', 'Drawing / canvas engine', 'Clear gesture & animation'],
     [
-      'lib/state/canvas.svelte.ts',
+      'lib/drawing/paperLayout.test.ts',
       'Drawing / canvas engine',
-      'Engine orchestration & canvas integration',
+      'Bundled coloring assets & paper layout',
     ],
-    [
-      'lib/drawing/aiImage.test.ts',
-      'AI image generation',
-      'Client pipeline, state & shared contracts',
-    ],
-    [
-      'lib/server/api/generateImage.ts',
-      'AI image generation',
-      'Server authorization, jobs, storage & endpoints',
-    ],
-    [
-      'lib/server/api/settlementTestHarness.ts',
-      'AI image generation',
-      'Server authorization, jobs, storage & endpoints',
-    ],
-    ['lib/server/api/adminTokens.ts', 'Admin console + token backend', null],
-    ['lib/server/api/report.ts', 'Server / API backend', null],
-    ['lib/components/AiDial.svelte', 'AI image generation', 'Generation, result & reporting UI'],
-    ['lib/state/tool.svelte.ts', 'App state (runes)', null],
-    ['lib/components/NewWidget.svelte', 'Core UI controls', null],
+    ['ai/generation.ts', 'AI image generation', 'Client transport, recovery & generation state'],
+    ['lib/ai/generationResult.ts', 'AI image generation', 'Shared contracts & progress geometry'],
+    ['rsdDrawing/RsdAiResult.tsx', 'AI image generation', 'Generation, result & reporting UI'],
+    ['pageDocument/admin/adminContract.ts', 'Web admin console', null],
+    ['settings/orientation.ts', 'Settings / parent center', null],
+    ['useSavePicture.ts', 'Storage / picture export', null],
+    ['useDrawingSound.ts', 'Audio', null],
+    ['drawingMessages.ts', 'Drawing / canvas engine', 'Native / web rendering, input & history'],
+    ['offlineLibrary/controller.ts', 'Coloring books + offline library', null],
+    ['rsdDrawing/RsdButton.tsx', 'Core UI controls', null],
     ['lib/brandNewHelper.ts', 'Focused utilities / generated app data', null],
-    ['tokens.css', 'Design system, styleguide + icons', null],
-    ['app.css', 'Routes / app shell / dev surfaces', null],
-    ['params/slug.ts', 'Routes / app shell / dev surfaces', null],
+    ['strict.css', 'Design system, styleguide + icons', null],
+    ['information/privacy.ts', 'App shell / information pages', null],
   ])('places %s in %s', (path, domain, subdomain) => {
     expect(webSrcDomainRuleOf(path).domain).toBe(domain);
     expect(subdomainOf(domain, path)).toBe(subdomain);

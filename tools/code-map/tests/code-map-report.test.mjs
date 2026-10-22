@@ -85,7 +85,7 @@ describe('renderAssignmentsTsv', () => {
     expect(rows).toContain('assets/static/favicon.ico\texcluded\tBinary media / archives\t\t\t');
     expect(rows.find((row) => row.startsWith('src/lib/drawing/engine.ts\t'))).toBe(
       'src/lib/drawing/engine.ts\tsrc\tDrawing / canvas engine\t' +
-        'Engine orchestration & canvas integration\t400\t/^lib\\/drawing\\//'
+        'Shared drawing geometry & retained primitives\t400\t/^lib\\/drawing\\//'
     );
   });
 });
