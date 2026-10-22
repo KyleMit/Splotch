@@ -36,11 +36,11 @@
 PASS free grant → generate → pending poll → image → report, without an OpenAI key
 [verify-key] rejected: 401 Incorrect API key provided
 [verify-key] unreachable: The key check ran out of time
-[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T12:53:39.484Z
-[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T12:53:40.986Z
-[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T12:53:42.490Z
-[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T12:53:43.991Z
-[ai-usage] credential=byok style=none outcome=refused at=2026-10-22T12:53:45.494Z
-[ai-usage] credential=managed style=Sticker outcome=succeeded at=2026-10-22T12:53:47.014Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:16:18.305Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:16:19.806Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:16:21.310Z
+[ai-usage] credential=byok style=none outcome=failed at=2026-10-22T14:16:22.813Z
+[ai-usage] credential=byok style=none outcome=refused at=2026-10-22T14:16:24.317Z
+[ai-usage] credential=managed style=Sticker outcome=succeeded at=2026-10-22T14:16:25.852Z
 PASS fake key checks, invalid key, provider rate limit/error/timeout, refusal and managed Sticker success
 PASS feedback/image-report sink records and exclusively test- scoped stores

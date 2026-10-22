@@ -1,0 +1,49 @@
+Command: npm run test:tools -- tools/mobile/tests/hosted-api-target-refresh.test.mjs
+Expected negative-control exit: 1
+Actual exit: 1
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/mobile/tests/hosted-api-target-refresh.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+stdout | mobile/tests/hosted-api-target-refresh.test.mjs > rejects a changed android target after the build before installing
+PASS hosted generation UI: android, emulator-5556, Release art.splotch.app.dev, https://test.splotch.art
+
+stdout | mobile/tests/hosted-api-target-refresh.test.mjs > rejects a changed ios target after the build before installing
+PASS hosted generation UI: ios, owned-simulator, Release art.splotch.app.dev, https://test.splotch.art
+
+ ❯ |repo-tools| mobile/tests/hosted-api-target-refresh.test.mjs (2 tests | 2 failed) 20ms
+   × rejects a changed android target after the build before installing 15ms
+   × rejects a changed ios target after the build before installing 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| mobile/tests/hosted-api-target-refresh.test.mjs > rejects a changed android target after the build before installing
+ FAIL  |repo-tools| mobile/tests/hosted-api-target-refresh.test.mjs > rejects a changed ios target after the build before installing
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+undefined
+
+ ❯ mobile/tests/hosted-api-target-refresh.test.mjs:45:84
+     43|       return built ? '0' : '1';
+     44|     });
+     45|     await expect(runHostedApiJourney(['--platform', platform, '--devic…
+       |                                                                                    ^
+     46|       platform === 'android' ? 'not an emulator' : 'explicit Android e…
+     47|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  10:14:51
+   Duration  127ms (transform 45%, tests 35%, import 18%, worker 3%)

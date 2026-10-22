@@ -1,0 +1,33 @@
+Command: npm run test:tools -- tools/api-smoke/tests/ui-integration-guards.test.mjs -t immutable copy
+Expected negative-control exit: 1
+Actual exit: 1
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/api-smoke/tests/ui-integration-guards.test.mjs -t immutable copy
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/00f5/Splotch/tools
+
+ ❯ |repo-tools| api-smoke/tests/ui-integration-guards.test.mjs (9 tests | 1 failed | 8 skipped) 4ms
+   ❯ real-handler UI lane boundaries (9)
+     × hands the host an immutable copy of the environment it validated 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |repo-tools| api-smoke/tests/ui-integration-guards.test.mjs > real-handler UI lane boundaries > hands the host an immutable copy of the environment it validated
+AssertionError: expected [Function] to throw an error
+ ❯ api-smoke/tests/ui-integration-guards.test.mjs:22:10
+     20|       expect(() => {
+     21|         environment.env.SPLOTCH_API_MODE = 'production';
+     22|       }).toThrow();
+       |          ^
+     23|     } finally {
+     24|       await environment.close();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 8 skipped (9)
+   Start at  10:14:51
+   Duration  118ms (import 62%, transform 26%, tests 9%, worker 3%)

@@ -3,7 +3,7 @@
 > node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/run-contract.mjs
 
 Starting the /api function host…
-Server ready on http://127.0.0.1:5301
+Server ready on http://127.0.0.1:5341
 
   ✓ login with wrong key → 403 {ok:false}
   ✓ login with correct key → 200 {ok:true, session:<64-hex>}
@@ -32,18 +32,18 @@ Server ready on http://127.0.0.1:5301
   ✓ report throttled → 429 with Retry-After
   ✓ report-image with private reporting unconfigured → 503 {ok:false, error}
   ✓ report-image with a free installation id → not a credential rejection
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
   ✓ csp-report report-uri payload → 204
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"inline","directive":"style-src-attr","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"inline","directive":"style-src-attr","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
   ✓ csp-report Reporting-API payload → 204
   ✓ csp-report non-report content type → 415
   ✓ csp-report oversize body → 413
   ✓ csp-report malformed JSON → dropped with 204
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
-[csp-report] {"documentURL":"http://127.0.0.1:5301/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
+[csp-report] {"documentURL":"http://127.0.0.1:5341/","blockedURL":"https://evil.example/x.js","directive":"script-src","disposition":"enforce","sourceFile":"","line":null,"column":null,"sample":""}
   ✓ csp-report throttled → 429 with Retry-After
   ✓ generate-image with invalid token → 403 {ok:false, error}
   ✓ generate-image with valid token but no image → 400 {ok:false, error}

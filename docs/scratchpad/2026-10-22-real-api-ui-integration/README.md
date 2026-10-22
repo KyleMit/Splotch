@@ -90,5 +90,18 @@ on `pr-assets` and linked in the PR.
 
 The production API smoke passed 46 checks. The test-mode API smoke, six real-handler browser checks
 and 14 retained focused browser checks passed. Type checks and lint passed; lint reported three
-pre-existing unused-import warnings. The full tools suite passed 8,225 checks across 506 files; the
+pre-existing unused-import warnings. The full tools suite passed 8,229 checks across 507 files; the
 native renderer suite passed 1,044 checks across 83 files. Their outputs are in `controls/`.
+
+## Independent review follow-up
+
+The first Claude review found three non-blocking issues, all addressed: the host receives the same
+validated, frozen environment as the Blobs setup; the native runner re-queries virtual-target state
+immediately before installation; and the focused reproduction command names `feedback-page.spec.ts`.
+The corrected filter lists 14 checks across two files.
+
+The environment mutation control fails without the freeze. Android replacement and iOS shutdown
+controls fail without the post-build recheck. Both deliberate source mutations returned exit 1, then
+restored the exact committed bytes. These checks use isolated local storage or mocked device
+commands; no further native generation or physical-device operation was needed for the runner-only
+review changes.
