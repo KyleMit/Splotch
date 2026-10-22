@@ -1,9 +1,6 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { currentExportScale } from '../../web/src/lib/drawing/exportScale.ts';
-import { paintExportPaper } from '../../web/src/lib/drawing/exportCompositor.ts';
 import { PAPER_COLORS } from '../../web/src/lib/theme.ts';
 import {
   adoptPaper,
@@ -91,30 +88,6 @@ vi.mock('@shopify/react-native-skia', () => {
   };
 });
 
-const REPOSITORY = join(import.meta.dirname, '../..');
-const read = (path) => readFileSync(join(REPOSITORY, path));
-// The display ratios a shipping export meets: a zoomed-out browser, desktop, the DPR-2 iPad and
-// browser, an Android phone's fractional ratio, and the DPR-3 iPhone.
-const PIXEL_RATIOS = [0.5, 1, 1.5, 2, 2.625, 3];
-// A phone's portrait paper, the DPR-3 iPhone's on its 1/3-point layout grid, an Android phone's
-// on its fractional grid, and a tablet's landscape paper.
-const PAPERS = [
-  { width: 390, height: 769 },
-  { width: 402, height: 787 + 2 / 3 },
-  { width: 411.4286, height: 805.7143 },
-  { width: 1366, height: 949.5 },
-];
-
-// The shipping engine's export grid (engine.ts): the paper's CSS rect backed at the render scale
-// (backingSizeOf), snapshotted back into CSS pixels at the export scale (snapshotStrokes).
-function shippingExportSize(css, pixelRatio) {
-  vi.stubGlobal('devicePixelRatio', pixelRatio);
-  const renderScale = Math.min(pixelRatio || 1, 2);
-  const scale = currentExportScale();
-  const side = (length) => Math.round((Math.round(length * renderScale) / renderScale) * scale);
-  return { size: { width: side(css.width), height: side(css.height) }, scale };
-}
-
 function recordingContext(log) {
   return new Proxy(
     {},
@@ -138,31 +111,96 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('the saved picture keeps the shipping export contract', () => {
-  it('pins the shipping engine lines the export grid is derived from', () => {
-    const engine = read('web/src/lib/drawing/engine.ts').toString();
-    expect(engine).toContain('const MAX_RENDER_SCALE = 2;');
-    expect(engine).toContain(
-      'renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);'
-    );
-    expect(engine).toContain(
-      'return { w: Math.round(rect.width * renderScale), h: Math.round(rect.height * renderScale) };'
-    );
-    expect(engine).toContain(
-      'const width = Math.round((paper.pxW / renderScale) * snapshotScale);'
-    );
-    expect(engine).toContain(
-      'const height = Math.round((paper.pxH / renderScale) * snapshotScale);'
-    );
-    expect(engine).toContain('const scale = currentExportScale();');
-  });
+const PAPERS = [
+  { width: 390, height: 769 },
+  { width: 402, height: 787 + 2 / 3 },
+  { width: 411.4286, height: 805.7143 },
+  { width: 1366, height: 949.5 },
+];
+const EXPORT_GRIDS = [
+  {
+    ratio: 0.5,
+    scale: 2,
+    grids: [
+      [780, 1540],
+      [804, 1576],
+      [824, 1612],
+      [2732, 1900],
+    ],
+  },
+  {
+    ratio: 1,
+    scale: 2,
+    grids: [
+      [780, 1538],
+      [804, 1576],
+      [822, 1612],
+      [2732, 1900],
+    ],
+  },
+  {
+    ratio: 1.5,
+    scale: 2,
+    grids: [
+      [780, 1539],
+      [804, 1576],
+      [823, 1612],
+      [2732, 1899],
+    ],
+  },
+  {
+    ratio: 2,
+    scale: 2,
+    grids: [
+      [780, 1538],
+      [804, 1575],
+      [823, 1611],
+      [2732, 1899],
+    ],
+  },
+  {
+    ratio: 2.625,
+    scale: 2.625,
+    grids: [
+      [1024, 2019],
+      [1055, 2067],
+      [1080, 2114],
+      [3586, 2492],
+    ],
+  },
+  {
+    ratio: 3,
+    scale: 3,
+    grids: [
+      [1170, 2307],
+      [1206, 2363],
+      [1235, 2417],
+      [4098, 2849],
+    ],
+  },
+];
 
-  it.each(PIXEL_RATIOS)('saves at the shipping grid and scale on a %sx display', (pixelRatio) => {
-    for (const css of PAPERS) {
-      const paper = adoptPaper(css.width, css.height, pixelRatio);
-      const shipping = shippingExportSize(css, pixelRatio);
-      expect(pictureExport(paper, 'light', pixelRatio)).toMatchObject(shipping);
+describe('the saved picture keeps the shipping export contract', () => {
+  it.each(EXPORT_GRIDS)(
+    'saves the expected grid and scale on a $ratio display',
+    ({ ratio, scale, grids }) => {
+      for (const [index, css] of PAPERS.entries()) {
+        const [width, height] = grids[index];
+        expect(
+          pictureExport(adoptPaper(css.width, css.height, ratio), 'light', ratio)
+        ).toMatchObject({
+          size: { width, height },
+          scale,
+        });
+      }
     }
+  );
+
+  it('saves a canonical-sheet picture at one CSS pixel per unit on a 3x display', () => {
+    expect(pictureExport(LEGACY_PAPER, 'dark', 3)).toMatchObject({
+      size: { width: 3072, height: 2304 },
+      scale: 3,
+    });
   });
 
   it('saves the 390x844 phone picture at the 780x1538 shipping grid', () => {
@@ -170,27 +208,8 @@ describe('the saved picture keeps the shipping export contract', () => {
     expect(pictureExport(paper, 'light', 1).size).toEqual({ width: 780, height: 1538 });
   });
 
-  it('saves a canonical-sheet picture at one CSS pixel per unit', () => {
-    vi.stubGlobal('devicePixelRatio', 3);
-    expect(pictureExport(LEGACY_PAPER, 'dark', 3)).toMatchObject({
-      size: { width: 1024 * currentExportScale(), height: 768 * currentExportScale() },
-      scale: currentExportScale(),
-    });
-  });
-
   it.each(['light', 'dark'])('paints the shipping %s paper color', (theme) => {
     expect(pictureExport(adoptPaper(390, 769, 1), theme, 1).paper).toBe(PAPER_COLORS[theme]);
-  });
-
-  it('bundles the very grain file the shipping export tiles', () => {
-    const exporter = read('web/src/lib/drawing/exportDrawing.ts').toString();
-    const [, texture] = exporter.match(/img\.src = '(\/icons\/[^']+\.webp)';/) ?? [];
-    expect(texture).toBe('/icons/handmade-paper.webp');
-    expect(
-      read('experiments/native-architecture/assets/paper/handmade-paper.webp').equals(
-        read(`web/static${texture}`)
-      )
-    ).toBe(true);
   });
 });
 
@@ -232,15 +251,19 @@ describe('composing the saved picture on the web', () => {
         ['set', 'imageSmoothingQuality', 'high'],
         ['drawImage', layer, 0, 0, 780, 1538],
       ]);
-      const shipping = [];
-      paintExportPaper(recordingContext(shipping), {
-        width: 390,
-        height: 769,
-        scale: 2,
-        paperColor: PAPER_COLORS[theme],
-        texture: grain,
-      });
-      expect(log.slice(drawn + 1)).toEqual(shipping);
+      expect(log.slice(drawn + 1)).toEqual([
+        ['set', 'imageSmoothingEnabled', true],
+        ['set', 'imageSmoothingQuality', 'high'],
+        ['setTransform', 2, 0, 0, 2, 0, 0],
+        ['set', 'globalCompositeOperation', 'destination-over'],
+        ['createPattern', grain, 'repeat'],
+        ['set', 'fillStyle', { pattern: grain, repeat: 'repeat' }],
+        ['fillRect', 0, 0, 390, 769],
+        ['set', 'fillStyle', PAPER_COLORS[theme]],
+        ['fillRect', 0, 0, 390, 769],
+        ['set', 'globalCompositeOperation', 'source-over'],
+        ['resetTransform'],
+      ]);
     }
   );
 });
@@ -323,15 +346,21 @@ describe('composing the saved picture on Android and iOS', () => {
     expect(skia.log.some(([key]) => key === 'fromURI')).toBe(false);
   });
 });
-
-it.each(PIXEL_RATIOS)(
+it.each([
+  [0.5, 1600, 2000],
+  [1, 1600, 2000],
+  [1.5, 1600, 2000],
+  [2, 1600, 2000],
+  [2.625, 2100, 2625],
+  [3, 2400, 3000],
+])(
   'exports the current extent at DPR %s while retaining the first basis',
-  (ratio) => {
+  (ratio, width, height) => {
     const paper = adoptPaper(400, 800, 2);
-    const extent = { width: 800, height: 1000 };
-    expect(pictureExport(paper, 'light', ratio, extent).size).toEqual(
-      shippingExportSize(extent, ratio).size
-    );
+    expect(pictureExport(paper, 'light', ratio, { width: 800, height: 1000 }).size).toEqual({
+      width,
+      height,
+    });
     expect(paper).toEqual({ kind: 'adopted', cssWidth: 400, cssHeight: 800, backingScale: 2 });
   }
 );

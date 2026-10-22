@@ -12,9 +12,9 @@ import { colors, dimensions } from './tokens.css';
 import { styles as controlStyles } from './controls';
 
 // AiImageReport.svelte's diagnostics literals; native-ai-problem-report.test.mjs reads them back.
-export const DIAGNOSTICS_LINE_HEIGHT = 1.7;
-export const DIAGNOSTICS_NOTE_LINE_HEIGHT = 1.4;
-export const DIAGNOSTICS_NOTE_BOTTOM_PX = 10;
+const DIAGNOSTICS_LINE_HEIGHT = 1.7;
+const DIAGNOSTICS_NOTE_LINE_HEIGHT = 1.4;
+const DIAGNOSTICS_NOTE_BOTTOM_PX = 10;
 
 // An outcome is on screen, so Report a problem gives way to its message.
 export function aiProblemSettled(problem: AiProblemState | null) {

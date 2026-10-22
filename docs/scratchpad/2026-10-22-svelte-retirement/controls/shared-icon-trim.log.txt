@@ -1,0 +1,8 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/web
+
+
+ Test Files  2 passed (2)
+      Tests  141 passed (141)
+   Start at  21:32:11
+   Duration  206ms (environment 63%, transform 28%, import 6%, tests 2%, worker 1%)

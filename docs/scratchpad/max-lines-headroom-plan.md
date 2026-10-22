@@ -18,7 +18,7 @@ recommendation below is the reviewer's final.
 | `web/src/lib/drawing/crayonBrush.ts`                         | 493 / 500 | split     | endorse  | 407       |
 | `web/src/lib/drawing/magicBrush.ts`                          | 493 / 500 | split     | endorse  | 353       |
 | `web/src/lib/storage.test.ts`                                | 492 / 500 | split     | endorse  | 337       |
-| `web/src/routes/privacy/+page.svelte`                        | 490 / 500 | split     | endorse  | 412       |
+| `web/src/lib/privacy/+page.svelte`                           | 490 / 500 | split     | endorse  | 412       |
 | `web/src/lib/drawing/tiledRenderer.test.ts`                  | 488 / 500 | split     | endorse  | 371       |
 | `web/tests/flows-undo-persistence.spec.ts`                   | 487 / 500 | split     | endorse  | 328       |
 | `web/src/lib/components/styleguide/ChromeSections.svelte`    | 486 / 500 | split     | endorse  | 295       |
@@ -1297,7 +1297,7 @@ tools/tests/test-file-placement.test.mjs.
    exempt from the shared-constant rule, but trim the copy to what the hydrate tests actually use
    rather than copying the full remove-failure and remove-hold machinery.
 
-## `web/src/routes/privacy/+page.svelte` (490 / 500)
+## `web/src/lib/privacy/+page.svelte` (490 / 500)
 
 **Reviewer (endorse):** I read the file and re-ran the count myself, and the plan holds up. ESLint
 max-lines reports 490 (cap 500).
@@ -1354,7 +1354,7 @@ needed for a single file.
 
 **Recommendation:**
 
-Split as proposed. Create `web/src/routes/privacy/PolicySummary.svelte`, a route-local sibling of
+Split as proposed. Create `web/src/lib/privacy/PolicySummary.svelte`, a route-local sibling of
 `contents.ts`, with one prop, `updated: string`. Move three things into it:
 
 * the RuleLabel-variant comment, `h2.short-version` and `ul.highlights` (the `{#each HIGHLIGHTS}`

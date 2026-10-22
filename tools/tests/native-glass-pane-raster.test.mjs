@@ -27,7 +27,10 @@ vi.mock('../../experiments/native-architecture/src/drawing/paperGrain.ts', () =>
   loadPaperGrain: async () => runtime.texture,
 }));
 
-const GRAIN = new URL('../../web/src/lib/assets/handmade-paper.webp', import.meta.url);
+const GRAIN = new URL(
+  '../../experiments/native-architecture/assets/paper/handmade-paper.webp',
+  import.meta.url
+);
 let grainPixels;
 beforeAll(async () => {
   const CanvasKitInit = runtime.require('canvaskit-wasm');

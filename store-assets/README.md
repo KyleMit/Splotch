@@ -1,6 +1,8 @@
 # Splotch — store assets (Google Play + Apple App Store)
 
-Generated assets for both store listings. Copy for the text fields:
+Committed artwork for both store listings. The application captures preserve the former frontend;
+frame rendering reuses those images. Review their fit to the React Native release before publishing.
+Copy for the text fields:
 
 * Google Play → [`STORE-LISTING-ANDROID.md`](./STORE-LISTING-ANDROID.md)
 * Apple App Store → [`STORE-LISTING-IOS.md`](./STORE-LISTING-IOS.md)
@@ -38,10 +40,9 @@ and benefit chips. Landscape puts the copy in a left column with the app frame f
 slot; portrait centers the copy in a zone above the frame, fully visible below. Page 4 is a composed
 doodle→masterpiece showcase read diagonally — doodle top-left, print bottom-right — joined by a
 stepping-stone connector (palette dots in, growing sparkles out); page 5 is the one dark-mode frame.
-Captures are driven in capture mode (`web/src/lib/storeCapture.ts`), which drops the wand button's
-free-generation count so no per-install number lands in a marketing shot. The design system —
-geometry, copy, marks, colors — is framework-free data in `web/src/lib/storeFrames/`, laid out as
-one self-contained HTML document per composition by
+The committed captures omit the install-specific generation count. Their capture automation retired
+with SvelteKit. The design system — geometry, copy, marks, colors — is framework-free data in
+`web/src/lib/storeFrames/`, laid out as one self-contained HTML document per composition by
 `tools/marketing-assets/lib/store-frame-document.mjs`.
 
 ## What each screenshot shows
@@ -68,44 +69,36 @@ Both stores accept a single orientation per device type:
 The 7" and 10" Play tablet images are intentionally identical — Play allows reusing them, and it
 satisfies both size specs (the generator copies tablet10 → tablet7).
 
-## Regenerating
+## Rendering frames from committed captures
 
-Screenshots are captured from the **real running app** (not mockups), so they always match what
-ships. From the repo root:
+From the repository root:
 
-```bash
+```sh
 npm run gen:store-assets
-```
-
-The script (`tools/marketing-assets/gen-store-assets.mjs`) needs a **production build** on port 4173
-— the coloring-pack manifest behind the 8-book grid only exists in a build, and the capture driver
-waits on the dev-harness seam — so it builds with `PUBLIC_ENABLE_DEV_HARNESS=true` and serves it
-with `vite preview` (it refuses a port something already holds; pass `--port` for an unused one). It
-then drives the app in headless Chromium at each target's capture size, writes each app capture to
-`captures/` (committed), and screenshots each composition's document at the exact store pixel sizes
-— the frames and the Play feature graphic are laid-out HTML, not composed rasters.
-
-Frame-only iteration (copy, layout, marks — nothing the app renders):
-
-```bash
 npm run gen:store-assets:frames
 ```
 
-re-renders every final from the committed captures in seconds, with no build, server or app.
+Both commands run `tools/marketing-assets/gen-store-assets.mjs`, which reads the selected PNGs under
+`captures/` and renders each composition's HTML at its store target's dimensions. They need
+installed dependencies and Playwright Chromium, with no application build or server. They do not
+change the captures. A full run also copies tablet10 frames to tablet7 and renders the feature
+graphic.
 
-Iterate on a subset with `--target` / `--page` substring filters, e.g.
-`npm run gen:store-assets -- --target tablet10 --page 03`.
+Narrow frame iteration with the `--target` and `--page` substring filters:
 
-One capture knowingly diverges from what the capture viewport would natively show, in order to
-*match* what real hardware shows: portrait captures run at 576 CSS px (for the ~1.6× marketing
-scale), where the books grid renders three columns — but every real phone is narrower than the app's
-520px two-column breakpoint (an iPhone 6.9" is 430 CSS pt, a typical Play phone ~411), so shipping
-devices render **two** columns. The tall iPhone capture injects a capture-only override re-stating
-the app's own tall-portrait two-column rule (unreachable at 576px because of its 741px width gate)
-to restore that real-device column count;
-`tools/marketing-assets/tests/books-grid-override.test.mjs` fails if the override ever drifts from
-the component's rule. The 16:9 Play phone slot lacks the height for four cover rows and keeps the
-capture-native 3/3/2 grid.
+```sh
+npm run gen:store-assets -- --target tablet10 --page 03
+```
+
+A missing selected capture fails before browser startup or output writes. Restore that committed
+image or provide a reviewed replacement with the dimensions `frameGeometry` requires. The retained
+command cannot recapture the current app; updating listing screenshots requires new release captures
+before re-rendering the frames.
+
+The original iPhone book-grid capture used a two-column override to reproduce the phone layout at
+its enlarged capture viewport; the Play phone capture preserved three columns. This explains the
+pixels in the committed set. The old override and live frontend checks retired with the capture
+pipeline.
 
 `icon-512.png` is `assets/icon.png` (the 1024² source) resized to 512².
 
@@ -114,15 +107,15 @@ capture-native 3/3/2 grid.
 * **Third-party IP kept out.** Every shipped coloring book is original work — no trademarked
   characters or franchises, in the packs themselves or in any doc that reaches the bundle. Keep it
   that way: a branded pack is an IP-rejection risk on both stores, and worse in a
-  children's-audience app. Note that anything under `web/static/` is copied into the web build and
-  both native bundles, so a planning doc parked there ships too.
+  children's-audience app. Note that anything under `web/static/` is copied into the web export, so
+  a planning doc parked there ships too.
 * **App icon transparency.** `icon-512.png` is a 24-bit PNG on a solid (white) background — accepted
-  by Play, which applies its own shape mask. iOS icons must not have alpha; `@capacitor/assets`
-  flattens them when generating the asset catalog. If you prefer a colored backdrop behind the "S",
-  regenerate the source and re-run.
+  by Play, which applies its own shape mask. Verify the native app's icon asset catalog and release
+  export separately. If you prefer a colored backdrop behind the "S", update the source and
+  regenerate the native app's icon assets.
 * **Screenshot claims must match the build.** Page 1's chips (Ages 2+, offline, open source) are
-  marketing claims, and page 5's Tool Drawer capture seeds a parent mid-curation (advanced controls
-  on, the Stroke width tool hidden, button size raised to match page 1's enlarged buttons).
+  marketing claims. The preserved page 5 capture shows a parent mid-curation (advanced controls on,
+  Stroke width hidden, enlarged buttons); verify those controls against the release build.
 * **Description must match the privacy declarations.** The full description mentions the optional AI
   upload; make sure that lines up with the Play Data safety form and the App Store privacy nutrition
   label (see the `mobile` skill).

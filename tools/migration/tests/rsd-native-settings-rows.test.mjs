@@ -4,11 +4,11 @@ import { html } from 'react-strict-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import {
-  SHIPPING,
-  SHIPPING_STRONG_TRACKING,
-  SHIPPING_THUMB_FACE,
-  SHIPPING_TRACKING,
-} from './rsd-settings-rows-shipping.mjs';
+  ROW,
+  ROW_STRONG_TRACKING,
+  ROW_THUMB_FACE,
+  ROW_TRACKING,
+} from './rsd-settings-row-contract.mjs';
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
@@ -192,22 +192,19 @@ describe('RsdToggleSwitch', () => {
     async (theme) => {
       await render(toggleSwitch(), { theme });
       const box = style(switchNode().parentElement);
-      expect([box.width, box.height]).toEqual([SHIPPING.switchWidth, SHIPPING.touchTargetMin]);
+      expect([box.width, box.height]).toEqual([ROW.switchWidth, ROW.touchTargetMin]);
       const track = style(byTestId('toggle-switch-track'));
-      const inset = (SHIPPING.touchTargetMin - SHIPPING.trackHeight) / 2;
+      const inset = (ROW.touchTargetMin - ROW.trackHeight) / 2;
       expect([track.top, track.bottom, track.left, track.right]).toEqual([inset, inset, 0, 0]);
       expect(track.backgroundColor).toBe(themes[theme].controlTrack);
       expect(track.borderColor).toBe(themes[theme].iconMuted);
       expect(track.borderWidth).toBe(px(scale.borderWidth));
       expect(track.borderRadius).toBe(px(scale.radiusPill));
       const thumb = style(byTestId('toggle-switch-thumb'));
-      expect([thumb.width, thumb.height]).toEqual([SHIPPING.thumb, SHIPPING.thumb]);
-      expect(thumb.backgroundColor).toBe(SHIPPING_THUMB_FACE);
+      expect([thumb.width, thumb.height]).toEqual([ROW.thumb, ROW.thumb]);
+      expect(thumb.backgroundColor).toBe(ROW_THUMB_FACE);
       const slot = style(byTestId('toggle-switch-slide').parentElement);
-      expect([slot.top, slot.left]).toEqual([
-        (SHIPPING.touchTargetMin - SHIPPING.thumb) / 2,
-        SHIPPING.thumbLeft,
-      ]);
+      expect([slot.top, slot.left]).toEqual([(ROW.touchTargetMin - ROW.thumb) / 2, ROW.thumbLeft]);
 
       await remount();
       await render(toggleSwitch({ checked: true }), { theme });
@@ -218,9 +215,7 @@ describe('RsdToggleSwitch', () => {
 
   it('slides the thumb on the UI thread over the shipping duration and curve', async () => {
     await render(toggleSwitch({ checked: true }));
-    expect(style(byTestId('toggle-switch-slide')).transform).toEqual([
-      { translateX: SHIPPING.slide },
-    ]);
+    expect(style(byTestId('toggle-switch-slide')).transform).toEqual([{ translateX: ROW.slide }]);
     native.timings.length = 0;
     await render(toggleSwitch({ checked: false }));
     expect(native.timings).toEqual([
@@ -232,7 +227,7 @@ describe('RsdToggleSwitch', () => {
       },
     ]);
     await render(toggleSwitch({ checked: true }));
-    expect(native.timings.at(-1)).toMatchObject({ toValue: SHIPPING.slide });
+    expect(native.timings.at(-1)).toMatchObject({ toValue: ROW.slide });
   });
 
   // React Native mirrors the slot's `left` inset to the trailing edge in a swapped RTL layout;
@@ -242,31 +237,31 @@ describe('RsdToggleSwitch', () => {
     await render(toggleSwitch({ checked }));
     const slot = style(byTestId('toggle-switch-slide').parentElement);
     const [{ translateX }] = style(byTestId('toggle-switch-slide')).transform;
-    const origin = native.rtl ? SHIPPING.switchWidth - slot.left - SHIPPING.thumb : slot.left;
-    return [origin + translateX, origin + translateX + SHIPPING.thumb];
+    const origin = native.rtl ? ROW.switchWidth - slot.left - ROW.thumb : slot.left;
+    return [origin + translateX, origin + translateX + ROW.thumb];
   }
 
   it('mirrors the thumb inside the track in a right-to-left layout', async () => {
     const ltr = [await thumbSpan(false), await thumbSpan(true)];
     native.rtl = true;
     const rtl = [await thumbSpan(false), await thumbSpan(true)];
-    const mirror = ([start, end]) => [SHIPPING.switchWidth - end, SHIPPING.switchWidth - start];
+    const mirror = ([start, end]) => [ROW.switchWidth - end, ROW.switchWidth - start];
     expect(rtl).toEqual(ltr.map(mirror));
     for (const [start, end] of [...ltr, ...rtl]) {
       expect(start).toBeGreaterThanOrEqual(0);
-      expect(end).toBeLessThanOrEqual(SHIPPING.switchWidth);
+      expect(end).toBeLessThanOrEqual(ROW.switchWidth);
     }
     native.timings.length = 0;
     await render(toggleSwitch({ checked: false }));
     await render(toggleSwitch({ checked: true }));
-    expect(native.timings.at(-1)).toMatchObject({ toValue: -SHIPPING.slide });
+    expect(native.timings.at(-1)).toMatchObject({ toValue: -ROW.slide });
   });
 
   it('lands the thumb without sliding under reduced motion', async () => {
     await render(toggleSwitch(), { reduceMotion: 'reduce' });
     native.timings.length = 0;
     await render(toggleSwitch({ checked: true }), { reduceMotion: 'reduce' });
-    expect(native.timings).toEqual([expect.objectContaining({ toValue: SHIPPING.slide })]);
+    expect(native.timings).toEqual([expect.objectContaining({ toValue: ROW.slide })]);
     expect(native.timings[0].duration).toBe(0);
   });
 
@@ -274,8 +269,8 @@ describe('RsdToggleSwitch', () => {
     await render(toggleSwitch({ thumbIcon: 'theme-dark' }));
     const glyph = byTestId('toggle-switch-thumb').querySelector('svg');
     expect([Number(glyph.getAttribute('width')), Number(glyph.getAttribute('height'))]).toEqual([
-      SHIPPING.glyph,
-      SHIPPING.glyph,
+      ROW.glyph,
+      ROW.glyph,
     ]);
   });
 });
@@ -324,9 +319,9 @@ describe('RsdToggleRow', () => {
     const row = byTestId('sound-toggle-row');
     expect(style(row)).toMatchObject({ flexDirection: 'row', justifyContent: 'space-between' });
     const labelHalf = row.firstElementChild;
-    expect(style(labelHalf).gap).toBe(SHIPPING.settingIconGap);
+    expect(style(labelHalf).gap).toBe(ROW.settingIconGap);
     const icon = labelHalf.querySelector('svg');
-    expect(Number(icon.getAttribute('width'))).toBe(SHIPPING.settingIcon);
+    expect(Number(icon.getAttribute('width'))).toBe(ROW.settingIcon);
     const label = style(labelHalf.querySelector('span'));
     expect(label).toMatchObject({
       color: themes[theme].text,
@@ -334,8 +329,8 @@ describe('RsdToggleRow', () => {
     });
     const help = style(byTestId('sound-toggle-help'));
     expect(help).toMatchObject({
-      marginTop: SHIPPING.helpGap,
-      marginLeft: SHIPPING.settingIcon + SHIPPING.settingIconGap,
+      marginTop: ROW.helpGap,
+      marginLeft: ROW.settingIcon + ROW.settingIconGap,
       color: themes[theme].textSoft,
       fontSize: px(scale.fontSizeSm),
     });
@@ -364,15 +359,15 @@ describe('setting cards and RsdRuleLabel', () => {
       ),
       { theme }
     );
-    expect(style(byTestId('setting-section-body')).gap).toBe(SHIPPING.groupGap);
+    expect(style(byTestId('setting-section-body')).gap).toBe(ROW.groupGap);
     expect(style(byTestId('setting-group')).gap).toBe(px(scale.space2));
     expect(style(byTestId('setting-card'))).toMatchObject({
       backgroundColor: themes[theme].surface2,
       borderRadius: px(scale.radiusLg),
-      paddingTop: SHIPPING.cardPaddingY,
-      paddingBottom: SHIPPING.cardPaddingY,
-      paddingLeft: SHIPPING.cardPaddingX,
-      paddingRight: SHIPPING.cardPaddingX,
+      paddingTop: ROW.cardPaddingY,
+      paddingBottom: ROW.cardPaddingY,
+      paddingLeft: ROW.cardPaddingX,
+      paddingRight: ROW.cardPaddingX,
     });
   });
 
@@ -382,7 +377,7 @@ describe('setting cards and RsdRuleLabel', () => {
     expect(style(byTestId('rule-label-heading'))).toMatchObject({
       color: themes[theme].labelInk,
       fontSize: xs,
-      letterSpacing: SHIPPING_TRACKING * xs,
+      letterSpacing: ROW_TRACKING * xs,
       textTransform: 'uppercase',
     });
     expect(style(byTestId('rule-label-hairline'))).toMatchObject({
@@ -395,7 +390,7 @@ describe('setting cards and RsdRuleLabel', () => {
     expect(style(byTestId('rule-label-heading'))).toMatchObject({
       color: themes[theme].text,
       fontSize: sm,
-      letterSpacing: SHIPPING_STRONG_TRACKING * sm,
+      letterSpacing: ROW_STRONG_TRACKING * sm,
     });
   });
 });
@@ -430,15 +425,15 @@ describe('RsdHubRow', () => {
         borderRadius: px(scale.radiusLg),
       });
       const icon = host.querySelector('svg');
-      expect(Number(icon.getAttribute('width'))).toBe(SHIPPING.hubIcon);
+      expect(Number(icon.getAttribute('width'))).toBe(ROW.hubIcon);
       expect(style(icon.parentElement)).toMatchObject({
-        width: SHIPPING.hubIconBox,
-        height: SHIPPING.hubIconBox,
+        width: ROW.hubIconBox,
+        height: ROW.hubIconBox,
       });
       const subtitle = byTestId('hub-subtitle');
-      expect(Number(subtitle.dataset.lines)).toBe(SHIPPING.hubLines);
+      expect(Number(subtitle.dataset.lines)).toBe(ROW.hubLines);
       expect(style(subtitle)).toMatchObject({ color: themes[theme].textSoft });
-      expect(style(subtitle.parentElement).gap).toBe(SHIPPING.hubTextGap);
+      expect(style(subtitle.parentElement).gap).toBe(ROW.hubTextGap);
     }
   );
 
@@ -453,9 +448,9 @@ describe('RsdHubRow', () => {
       opacity: 1,
       backgroundColor: brand.brand,
       borderColor: themes.light.surface2,
-      borderWidth: SHIPPING.dotRing,
-      width: SHIPPING.dot + 2 * SHIPPING.dotRing,
-      top: -(SHIPPING.dotOffset + SHIPPING.dotRing),
+      borderWidth: ROW.dotRing,
+      width: ROW.dot + 2 * ROW.dotRing,
+      top: -(ROW.dotOffset + ROW.dotRing),
     });
     expect(host.querySelector('[role="button"]').getAttribute('aria-label')).toBe(
       'Sound, Drawing sounds on, new'
@@ -475,10 +470,10 @@ describe('RsdHubRow', () => {
     expect(control.dataset.checked).toBe('true');
     expect(style(byTestId('hub-split'))).toMatchObject({
       width: px(scale.borderWidth),
-      height: SHIPPING.hubSplit,
+      height: ROW.hubSplit,
       backgroundColor: themes.light.border,
     });
-    expect(style(byTestId('hub-split').parentElement).gap).toBe(SHIPPING.hubActionGap);
+    expect(style(byTestId('hub-split').parentElement).gap).toBe(ROW.hubActionGap);
     await act(async () => control.click());
     expect(onToggle).toHaveBeenCalledWith(false);
   });
@@ -505,8 +500,8 @@ describe('RsdSidebarRow', () => {
       await render(sidebarRow(), { theme });
       const rest = style(byTestId('sidebar-row'));
       expect(rest).toMatchObject({
-        minHeight: SHIPPING.tocRow,
-        paddingTop: SHIPPING.tocPaddingY,
+        minHeight: ROW.tocRow,
+        paddingTop: ROW.tocPaddingY,
         borderLeftWidth: px(scale.borderWidth),
         borderLeftColor: themes[theme].border,
         paddingLeft: px(scale.space4),
@@ -516,9 +511,9 @@ describe('RsdSidebarRow', () => {
       await remount();
       await render(sidebarRow({ active: true }), { theme });
       expect(style(byTestId('sidebar-row'))).toMatchObject({
-        borderLeftWidth: SHIPPING.tocSegment,
+        borderLeftWidth: ROW.tocSegment,
         borderLeftColor: brand.brand,
-        paddingLeft: px(scale.space4) - SHIPPING.tocSegment + px(scale.borderWidth),
+        paddingLeft: px(scale.space4) - ROW.tocSegment + px(scale.borderWidth),
         backgroundColor: themes[theme].brandWash,
       });
       expect(labelInk()).toBe(themes[theme].brandText);
@@ -530,7 +525,7 @@ describe('RsdSidebarRow', () => {
     await render(sidebarRow({ unseen: true, onSelect }));
     const row = byTestId('sidebar-row');
     expect(row.getAttribute('aria-label')).toBe('Sound, new');
-    expect(Number(row.querySelector('svg').getAttribute('width'))).toBe(SHIPPING.tocIcon);
+    expect(Number(row.querySelector('svg').getAttribute('width'))).toBe(ROW.tocIcon);
     expect(style(byTestId('section-activity-dot'))).toMatchObject({
       opacity: 1,
       borderColor: themes.light.surface,

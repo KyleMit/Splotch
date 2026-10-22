@@ -11,9 +11,9 @@ import {
 // The shipping field skin (AiKeyManager's .access-code-input, ReportFields' .report-textarea):
 // padding 8/12 for a line, 10/12 for prose, and room for about four lines of a report. Exported
 // for native-design-primitives-drift.test.mjs, which reads each from shipping.
-export const TEXT_AREA_MIN_HEIGHT_PX = 88;
-export const TEXT_AREA_PADDING_BLOCK_PX = 10;
-export const TEXT_AREA_LINE_HEIGHT = 1.5;
+const TEXT_AREA_MIN_HEIGHT_PX = 88;
+const TEXT_AREA_PADDING_BLOCK_PX = 10;
+const TEXT_AREA_LINE_HEIGHT = 1.5;
 
 const themedStyles = createDrawingStyles((theme) =>
   StyleSheet.create({

@@ -11,18 +11,13 @@ import {
   CLEAR_CANCEL_NOTES,
   CLEAR_CANCEL_STEP_SEMITONES,
 } from '../../web/src/lib/audio/clearSoundNotes.ts';
-import {
-  BASE_SCRATCH_GAIN,
-  FULL_VOLUME_BACKING_PX_PER_MS,
-  GAIN_RAMP_S,
-  STOP_DECLICK_S,
-  TEARDOWN_SLACK_MS,
-} from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
+
 import { CLEAR_PAGE_TURN_ASSET_GAIN } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
 import { AUDIO_PLAYS_IN_SILENT_MODE as IOS_PLAYS_IN_SILENT_MODE } from '../../experiments/native-architecture/src/platform/audioSilentMode.ts';
 import { AUDIO_PLAYS_IN_SILENT_MODE as ANDROID_PLAYS_IN_SILENT_MODE } from '../../experiments/native-architecture/src/platform/audioSilentMode.android.ts';
 import { describeMp3 } from '../sounds/lib/mp3-stream.mjs';
 import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
+
 import { impactThreshold } from '../../experiments/native-architecture/src/platform/clearHaptics.ts';
 import { clearActivationProps as nativeActivation } from '../../experiments/native-architecture/src/platform/clearActivation.ts';
 import { clearActivationProps as webActivation } from '../../experiments/native-architecture/src/platform/clearActivation.web.ts';
@@ -34,29 +29,8 @@ import {
 import { SETTINGS_METRICS } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import { scale } from '../../web/src/lib/design/tokens.ts';
 const root = join(import.meta.dirname, '../..');
-const shippingAudio = readFileSync(join(root, 'web/src/lib/audio/drawingSound.ts'), 'utf8');
-const mapping = {
-  BASE_SCRATCH_GAIN,
-  FULL_VOLUME_SPEED: FULL_VOLUME_BACKING_PX_PER_MS,
-  GAIN_RAMP_S,
-  STOP_DECLICK_S,
-  TEARDOWN_SLACK_MS,
-};
-function assertScratchProjection(source) {
-  const projected = Object.fromEntries(
-    Object.keys(mapping).map((name) => {
-      const match = new RegExp(`const ${name} = ([0-9.]+);`).exec(source);
-      assert.ok(match, `Missing shipping scratch constant ${name}`);
-      return [name, Number(match[1])];
-    })
-  );
-  assert.deepEqual(mapping, projected);
-}
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const shippingSoundUrls = JSON.parse(
-  /const SOUND_URLS = (\[[^\]]*\]);/.exec(shippingAudio)[1].replaceAll("'", '"')
-);
-const takeNames = shippingSoundUrls.map((url) => url.split('/').at(-1));
+const takeNames = ['pencil-1.mp3', 'pencil-2.mp3', 'pencil-3.mp3'];
 const candidateTakes = readFileSync(
   join(root, 'experiments/native-architecture/src/audio/pencilSounds.ts'),
   'utf8'
@@ -66,24 +40,12 @@ const candidateAsset = readFileSync(
   join(root, 'experiments/native-architecture/src/audio/pencil-1.mp3')
 );
 describe('candidate-owned audio and Settings projections', () => {
-  it('pins the shared backing-pixel speed gain and timing literals', () => {
-    expect(() => assertScratchProjection(shippingAudio)).not.toThrow();
-  });
-  it('rejects a changed reused shipping gain literal', () => {
-    const changed = shippingAudio.replace(
-      'const BASE_SCRATCH_GAIN = 0.2;',
-      'const BASE_SCRATCH_GAIN = 0.9;'
-    );
-    expect(changed).not.toBe(shippingAudio);
-    expect(() => assertScratchProjection(changed)).toThrow();
-  });
   it('pins the bundled native clip to the reused portable MP3 bytes', () => {
     expect(digest(candidateAsset)).toBe(digest(shippingAsset));
   });
-  it('bundles every shipping pencil take byte for byte', () => {
-    expect(takeNames).toEqual(['pencil-1.mp3', 'pencil-2.mp3', 'pencil-3.mp3']);
+  it('bundles every pencil take byte for byte and imports the complete set', () => {
     for (const name of takeNames) {
-      expect(candidateTakes).toContain(`'./` + name);
+      expect(candidateTakes).toContain(`'./${name}'`);
       expect(
         digest(readFileSync(join(root, 'experiments/native-architecture/src/audio', name)))
       ).toBe(digest(readFileSync(join(root, 'web/static/sounds', name))));

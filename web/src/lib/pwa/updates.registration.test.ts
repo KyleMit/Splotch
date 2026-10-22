@@ -5,7 +5,7 @@
 // updates.activation.test.ts.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createPWAUpdates } from './updates.svelte';
+import { createPWAUpdates } from './updates';
 import {
   CURRENT_VERSION,
   makeRegistration,
@@ -14,8 +14,7 @@ import {
   stubServiceWorker,
 } from './updatesTestHarness';
 
-const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
+const canvasState = { canvasEmpty: true };
 
 // Controllable idle queue: registration must not fire until the test releases
 // the idle slot, so deferral itself is assertable.
@@ -39,11 +38,13 @@ vi.mock('$lib/idle', () => ({
 let pwaUpdates: ReturnType<typeof createPWAUpdates>;
 
 beforeEach(() => {
-  pwaUpdates = createPWAUpdates();
+  pwaUpdates = createPWAUpdates({
+    canvasEmpty: () => canvasState.canvasEmpty,
+    isDevelopment: () => import.meta.env.DEV,
+    appVersion: CURRENT_VERSION,
+  });
   canvasState.canvasEmpty = true;
 });
-
-// --- deferred service worker registration (issue #462) ---
 
 describe('deferred service worker registration', () => {
   const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -74,7 +75,7 @@ describe('deferred service worker registration', () => {
   });
 
   afterEach(() => {
-    delete navigator.connection;
+    Reflect.deleteProperty(navigator, 'connection');
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     (import.meta.env as Record<string, unknown>).DEV = true;

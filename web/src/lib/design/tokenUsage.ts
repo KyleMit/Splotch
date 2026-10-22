@@ -1,5 +1,5 @@
 import type { ThemeTokens } from './tokens';
-import type { brand, scale, zIndex } from './tokens';
+import type { brand, scale } from './tokens';
 
 // One "reach for it when…" rule per token, rendered beside each specimen on
 // /design (ADR-0097). Lives apart from tokens.ts so the styleguide is the only
@@ -87,28 +87,6 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
     'Quieter separators and disabled report ink on --scrim-pill, without opacity dimming.',
   scrimPill:
     'Dark disclosure glass outside the modal card, paired with on-scrim inks in both themes.',
-};
-
-export const zIndexUsage: Record<keyof typeof zIndex, string> = {
-  zToolbarPaper: 'Bare action glass panes, above ink and below controls.',
-  zPointerHalo: 'Brush ring and eraser footprint, above toolbar glass and below controls.',
-  zCanvasChrome: 'The floor of the shared root context — chrome that must clear the canvas layers.',
-  zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
-  zClearInk: 'The departing page above the clear wash, beneath the Clear Button it flies into.',
-  zCornerButton: 'The muted corner buttons (Settings Button).',
-  zPanel: 'The bottom dock and its Actions Panel drawer; each caps its own subtree.',
-  zFlyout: 'Orders the flyout inside .actions-panel only; its tie with --z-panel is inert.',
-  zBanner: 'The Install Banner inside the bottom dock, clear of the corner controls.',
-  zClearAcceptZone: 'The drag-accept ring, below the button it rings.',
-  zRailGlass:
-    'The Bare palette rail glass and its printed margin rules, covering the drag-accept ring and the clear flood like the Buttons palette surface.',
-  zClearButton: 'The Clear Button itself.',
-  zNotch: 'The safe-area Notch Band; its tie with --z-clear-button resolves by DOM order.',
-  zClearCoachmark: 'The tutorial ghost button, above the real one.',
-  zPalette: 'The Color Palette bar.',
-  zWaitingPolaroid:
-    'The AI Waiting Polaroid — the only way back into a minimized run, over the palette edge it is pinned beside.',
-  zPolaroid: 'The save-screenshot polaroid flight — the top of the chrome order.',
 };
 
 export const themeUsage: Record<keyof ThemeTokens, string> = {

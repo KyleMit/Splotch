@@ -20,15 +20,6 @@ export const MAX_REPORT_MESSAGE_LENGTH = 4000;
 
 export const REPORT_HONEYPOT_FIELD = 'hp';
 
-/** The `/feedback` form's field names, set by ReportFields.svelte and read by the page's form action. */
-export const REPORT_FORM_FIELDS = {
-  kind: 'kind',
-  message: 'message',
-  includeDevice: 'includeDevice',
-  device: 'device',
-  honeypot: REPORT_HONEYPOT_FIELD,
-} as const;
-
 export const REPORT_KINDS = [
   { value: 'bug', label: "Something's broken" },
   { value: 'feature', label: 'I have an idea' },

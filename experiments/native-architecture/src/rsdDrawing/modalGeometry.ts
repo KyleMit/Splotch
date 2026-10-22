@@ -41,7 +41,7 @@ const CONFIRM_MAX_WIDTH_PX = 336;
 const UA_DEFAULT_MEDIUM_FONT_SIZE_PX = 16;
 const CONFIRM_UA_BORDER_RESERVE_PX = 6;
 const CONFIRM_BLOCK_RESERVE_PX = 2 * UA_DEFAULT_MEDIUM_FONT_SIZE_PX + CONFIRM_UA_BORDER_RESERVE_PX;
-export const COLORING_MAX_WIDTH_PX = 920;
+const COLORING_MAX_WIDTH_PX = 920;
 // ColoringBook.svelte's content padding steps down on a phone and again on a narrow one; the
 // header row stands its own gap above the grid.
 export const COLORING_PHONE_MAX_WIDTH_PX = 520;

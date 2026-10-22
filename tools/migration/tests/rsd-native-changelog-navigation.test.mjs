@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
@@ -105,18 +103,6 @@ it('pins wide contents below the safe top and follows the reading band', async (
   expect(props('changelog-contents-rail').style.transform).toEqual([{ translateY: 848 }]);
   expect(nav.textContent).toContain(releases[1].dateLabel);
   expect(host.textContent).toContain(`That's every release since ${releases.at(-1).dateLabel}.`);
-});
-
-it('pins release tape, bullets and narrow-header geometry to the shipping page', () => {
-  const source = readFileSync(
-    join(import.meta.dirname, '../../../web/src/routes/changelog/+page.svelte'),
-    'utf8'
-  );
-  expect(source).toContain(`min-height: ${RELEASE_PAGE.lineHeight}em`);
-  expect(source).toContain(`width: ${RELEASE_PAGE.marker}px;`);
-  expect(source).toContain(`padding-left: ${RELEASE_PAGE.indent}px;`);
-  expect(source).toContain(`@media (max-width: ${RELEASE_PAGE.narrowHeader}px)`);
-  expect(source).toContain('clip-path: polygon(3% 0, 100% 8%, 97% 100%, 0 90%);');
 });
 
 it('pins the release contents below the safe top and fits its panel inside both safe edges', async () => {

@@ -23,40 +23,40 @@ import { brandColors, colors, dimensions, fonts, motion, shadows } from './token
 export const CORNER_BUTTON_SIZE_PX = 48;
 // Whole-button opacity over a full-ink glyph; idle is the floor that keeps the glyph above 3:1.
 export const CORNER_IDLE_OPACITY = 0.5;
-export const CORNER_HOVER_OPACITY = 0.7;
-export const CORNER_PRESSED_OPACITY = 1;
-export const ACTION_TILE_BORDER_PX = 2;
+const CORNER_HOVER_OPACITY = 0.7;
+const CORNER_PRESSED_OPACITY = 1;
+const ACTION_TILE_BORDER_PX = 2;
 export const ACTION_TILE_RADIUS_RATIO = 0.3;
 // The icon keeps a sixth of the face as padding on each side.
-export const ACTION_TILE_PADDING_SHARE = 6;
-export const ACTION_TILE_PRESS_SCALE = 0.95;
+const ACTION_TILE_PADDING_SHARE = 6;
+const ACTION_TILE_PRESS_SCALE = 0.95;
 // Deeper than the shared disabled opacity: a parked canvas control must not read as live.
 export const ACTION_TILE_DISABLED_OPACITY = 0.3;
 // While a Brush or Stroke Width menu is open, the panel's other tiles grey out and its chevron
 // fades further, so the open menu and the button it grew from read as the one live thing.
-export const FLYOUT_OPEN_TILE_OPACITY = 0.35;
+const FLYOUT_OPEN_TILE_OPACITY = 0.35;
 export const FLYOUT_OPEN_TILE_FILTER = 'grayscale(1)';
-export const FLYOUT_OPEN_CORNER_OPACITY = 0.2;
+const FLYOUT_OPEN_CORNER_OPACITY = 0.2;
 // Shipping mixes --brand into transparent; React Native has no color-mix(), so the mixes are
 // resolved against the unthemed brand hue.
-export const ACTION_TILE_HOVER_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.3)';
-export const BRAND_SELECTION_RING = '0 0 0 2px rgba(171, 113, 225, 0.35)';
+const ACTION_TILE_HOVER_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.3)';
+const BRAND_SELECTION_RING = '0 0 0 2px rgba(171, 113, 225, 0.35)';
 // An option's base never drops below this; its padding is the second value times Button Size.
-export const FLYOUT_OPTION_MIN_BASE_PX = 60;
-export const FLYOUT_OPTION_PADDING_PX = 7;
-export const FLYOUT_OPTION_PRESS_SCALE = 0.92;
+const FLYOUT_OPTION_MIN_BASE_PX = 60;
+const FLYOUT_OPTION_PADDING_PX = 7;
+const FLYOUT_OPTION_PRESS_SCALE = 0.92;
 // Black reads against every pen color and both papers.
-export const WHITE_INK_KEYLINE = '#000';
+const WHITE_INK_KEYLINE = '#000';
 // The flat (bare) Button style: ink printed on the paper with no face of its own. The icon keeps a
 // tenth of the button as padding; a press sinks it, an open menu's button and a hovered one lift,
 // and a parked one washes out instead of fading. A flat menu's selected option is outlined in the
 // strong text ink, one drop shadow this far out on each side (optionOutline.tsx).
 export const BARE_TILE_PADDING_SHARE = 10;
-export const BARE_TILE_PRESS_SCALE = 0.9;
-export const BARE_TILE_LIFT_SCALE = 1.08;
-export const BARE_TILE_DISABLED_FILTER = 'grayscale(1) contrast(0.55) brightness(1.2)';
+const BARE_TILE_PRESS_SCALE = 0.9;
+const BARE_TILE_LIFT_SCALE = 1.08;
+const BARE_TILE_DISABLED_FILTER = 'grayscale(1) contrast(0.55) brightness(1.2)';
 export const BARE_OPTION_OUTLINE_PX = 2;
-export const BARE_BADGE_RING_PX = 2;
+const BARE_BADGE_RING_PX = 2;
 
 // The shipping icon-button skins: .corner-button, the Actions Panel's .action-button tile and
 // .flyout-option. Hover is web-only, under (hover: hover), which React Native never matches. Every
@@ -226,13 +226,13 @@ const styles = css.create({
 
 // The AI Image Button's .free-count badge and its .loading spin; native-ai-flow-geometry.test.mjs
 // reads each back from AiImageButton.svelte and app.css.
-export const BADGE_OFFSET_PX = -4;
-export const BADGE_SIZE_PX = 20;
-export const BADGE_PADDING_PX = 5;
-export const BUSY_TURN_MS = 1000;
+const BADGE_OFFSET_PX = -4;
+const BADGE_SIZE_PX = 20;
+const BADGE_PADDING_PX = 5;
+const BUSY_TURN_MS = 1000;
 // The spin slows rather than stopping under Reduce Motion: it is the button's only sign that a
 // picture is still being made.
-export const CALM_BUSY_TURN_MS = 2400;
+const CALM_BUSY_TURN_MS = 2400;
 
 function SpinningIcon({
   size,

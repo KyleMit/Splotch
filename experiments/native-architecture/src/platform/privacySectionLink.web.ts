@@ -1,5 +1,5 @@
-import { SECTIONS, type SectionId } from '../../../../web/src/routes/privacy/contents';
-import { sectionUrl } from '../../../../web/src/routes/privacy/sectionLink';
+import { SECTIONS, type SectionId } from '../../../../web/src/lib/privacy/contents';
+import { sectionUrl } from '../../../../web/src/lib/privacy/sectionLink';
 
 export async function copyPrivacySection(id: SectionId) {
   if (!navigator.clipboard?.writeText) return false;

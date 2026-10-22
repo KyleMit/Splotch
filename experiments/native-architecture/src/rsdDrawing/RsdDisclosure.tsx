@@ -6,7 +6,7 @@ import { useReduceMotion } from '../drawing/useReduceMotion';
 
 // Disclosure.svelte turns its › a quarter turn to point at the open panel.
 // Exported for native-design-primitives-drift.test.mjs, which reads it from shipping.
-export const DISCLOSURE_OPEN_TURN = 'rotate(90deg)';
+const DISCLOSURE_OPEN_TURN = 'rotate(90deg)';
 
 type BoxStyle = ComponentProps<typeof html.div>['style'];
 type MarkStyle = ComponentProps<typeof html.span>['style'];

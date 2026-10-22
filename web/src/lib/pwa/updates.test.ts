@@ -3,7 +3,7 @@
 // silent activation and the hidden-edge reload — in updates.activation.test.ts.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createPWAUpdates } from './updates.svelte';
+import { createPWAUpdates } from './updates';
 import {
   CURRENT_VERSION,
   NEWER_VERSION,
@@ -15,8 +15,7 @@ import {
   stubServiceWorker,
 } from './updatesTestHarness';
 
-const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
+const canvasState = { canvasEmpty: true };
 
 // initPWAUpdates schedules repeat-visit registration at idle. These tests never
 // release that slot, so the mock keeps register() from firing after a test ends;
@@ -26,14 +25,16 @@ vi.mock('$lib/idle', () => ({ scheduleIdle: () => () => {} }));
 let pwaUpdates: ReturnType<typeof createPWAUpdates>;
 
 beforeEach(() => {
-  pwaUpdates = createPWAUpdates();
+  pwaUpdates = createPWAUpdates({
+    canvasEmpty: () => canvasState.canvasEmpty,
+    isDevelopment: () => import.meta.env.DEV,
+    appVersion: CURRENT_VERSION,
+  });
   // The mocked canvas state is one object for the file, and the mismatch guard
   // reads it, so the default belongs to every describe — the same placement
   // updates.activation.test.ts uses.
   canvasState.canvasEmpty = true;
 });
-
-// --- checkVersionMismatch ---
 
 describe('checkVersionMismatch', () => {
   let originalFetch: typeof fetch;
@@ -154,8 +155,6 @@ describe('checkVersionMismatch', () => {
   });
 });
 
-// --- initPWAUpdates: URL cleanup, cache-bust loop guard, lifecycle ---
-
 describe('initPWAUpdates', () => {
   let replaceStateSpy: ReturnType<typeof vi.spyOn>;
   let originalFetch: typeof fetch;
@@ -175,7 +174,7 @@ describe('initPWAUpdates', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
-    history.replaceState({ 'sveltekit:index': 7 }, '', '/');
+    history.replaceState({ entry: 7 }, '', '/');
     replaceStateSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
     // Prevent checkForUpdates / checkVersionMismatch from doing real work
     stubServiceWorker(undefined);

@@ -72,64 +72,6 @@ export function trailingRowCutHeight(m: RowCutMeasurements): number | null {
   return height >= m.viewportHeight * (1 - MAX_CUT_GIVEAWAY_FRACTION) ? height : null;
 }
 
-/** Shortens the grid's scrolling `<dialog>` ancestor so its fold cuts a row. */
-export function cutTrailingRow(node: HTMLElement) {
-  const scrollport = node.closest('dialog');
-  if (!scrollport) return;
-
-  // Layout offsets, never getBoundingClientRect: the picker flies in on a
-  // scaling transform, and the first observation lands mid-animation — box
-  // rectangles are scaled there, so every measurement would be taken against a
-  // dialog a fraction of its settled size.
-  function offsetWithinScrollport(element: HTMLElement) {
-    let top = 0;
-    for (let node: HTMLElement | null = element; node && node !== scrollport;) {
-      top += node.offsetTop;
-      node = node.offsetParent instanceof HTMLElement ? node.offsetParent : null;
-    }
-    return top;
-  }
-
-  function measure() {
-    if (!scrollport || !scrollport.open) return;
-    const firstTile = node.firstElementChild;
-    if (!(firstTile instanceof HTMLElement)) return;
-
-    // Measure against the natural height, not a cap left over from the last
-    // layout, or each pass would budget down from the previous pass's budget.
-    scrollport.style.removeProperty('max-height');
-
-    const rowGap = Number.parseFloat(getComputedStyle(node).rowGap) || 0;
-    const rowHeight = firstTile.offsetHeight;
-    const height = trailingRowCutHeight({
-      gridTop: offsetWithinScrollport(node),
-      rowHeight,
-      rowGap,
-      rowCount: Math.round((node.offsetHeight + rowGap) / (rowHeight + rowGap)),
-      viewportHeight: scrollport.clientHeight,
-      contentHeight: scrollport.scrollHeight,
-    });
-
-    if (height !== null) scrollport.style.maxHeight = `${height}px`;
-  }
-
-  const observer = new ResizeObserver(measure);
-  observer.observe(node);
-  // A viewport that changes height alone (split screen, a vertical window
-  // resize) resizes neither box: the grid's width follows the viewport's
-  // width, and the dialog's is pinned by the cut's own inline pixel cap, which
-  // then overrides the stylesheet's vh ceiling and runs the dialog off screen.
-  window.addEventListener('resize', measure);
-
-  return {
-    destroy() {
-      observer.disconnect();
-      window.removeEventListener('resize', measure);
-      scrollport.style.removeProperty('max-height');
-    },
-  };
-}
-
 /** An element with no layout box at all — the reading a closed `<dialog>`'s
  *  contents give, since it is `display: none`. */
 function unrendered(box: DOMRectReadOnly): boolean {
@@ -180,30 +122,6 @@ export function observeContentEnd(node: HTMLElement, onChange: (atEnd: boolean) 
     destroy() {
       intersection.disconnect();
       resize.disconnect();
-    },
-  };
-}
-
-/** Keeps scrollbar chrome outside a fade whose immediately preceding element
- *  sibling is its scrollport. Without that sibling there is nothing to measure. */
-export function excludeScrollportGutter(node: HTMLElement) {
-  const scrollport = node.previousElementSibling;
-  if (!(scrollport instanceof HTMLElement)) return;
-
-  const measure = () => {
-    node.style.right = `${scrollport.offsetWidth - scrollport.clientWidth - scrollport.clientLeft}px`;
-    node.style.bottom = `${scrollport.offsetHeight - scrollport.clientHeight - scrollport.clientTop}px`;
-  };
-  measure();
-
-  const observer = new ResizeObserver(measure);
-  observer.observe(scrollport);
-
-  return {
-    destroy() {
-      observer.disconnect();
-      node.style.removeProperty('right');
-      node.style.removeProperty('bottom');
     },
   };
 }

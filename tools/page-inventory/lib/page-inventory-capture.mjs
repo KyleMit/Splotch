@@ -13,11 +13,6 @@ import sharp from 'sharp';
 // too.
 const NEAR_UNIFORM_CHANNEL_STDDEV_LEVELS = 6;
 
-// A capture that fails validation is usually a lost frame — a viewport that had not
-// applied, an animation still resolving — so the same surface is prepared and shot
-// again before the run is declared broken.
-export const CAPTURE_ATTEMPTS = 3;
-
 export async function assertCaptureRendered(path, viewport) {
   const metadata = await sharp(path).metadata();
   if (

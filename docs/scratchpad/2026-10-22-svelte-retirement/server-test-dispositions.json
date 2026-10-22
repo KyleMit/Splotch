@@ -1,0 +1,471 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "files": [
+    {
+      "file": "web/src/lib/server/api/admin.wire.integration.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "returns the login success body",
+        "returns the login failure body",
+        "returns the canonical unauthorized body for a bad bearer",
+        "returns the token snapshot body",
+        "returns the mutation snapshot body without a second status read",
+        "reports a DELETE that matched no token as unchanged",
+        "returns a validation failure without its producer reason",
+        "returns a conflict failure without its producer reason",
+        "returns an unavailable failure as a 503 without its producer reason",
+        "reports the in-memory token fallback as non-persistent"
+      ],
+      "current_callback_titles": [
+        "returns the login success body",
+        "returns the login failure body",
+        "returns the canonical unauthorized body for a bad bearer",
+        "returns the token snapshot body",
+        "returns the mutation snapshot body without a second status read",
+        "reports a DELETE that matched no token as unchanged",
+        "returns a validation failure without its producer reason",
+        "returns a conflict failure without its producer reason",
+        "returns an unavailable failure as a 503 without its producer reason",
+        "reports the in-memory token fallback as non-persistent"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/api/adminStats.integration.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "refuses $name with the uniform 401 and reads no store",
+        "returns each listed code's tally and the grant figures from the stores",
+        "flags the tallies unavailable when the usage secret is unset",
+        "keeps the tallies when the grant store cannot be listed",
+        "reads a code named like an Object.prototype member as never used"
+      ],
+      "current_callback_titles": [
+        "refuses $name with the uniform 401 and reads no store",
+        "returns each listed code's tally and the grant figures from the stores",
+        "flags the tallies unavailable when the usage secret is unset",
+        "keeps the tallies when the grant store cannot be listed",
+        "reads a code named like an Object.prototype member as never used"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/api/generationResult.settlement.integration.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "holds the slot for the job rather than releasing it on the way out of the start",
+        "settles nothing while the job is still pending, however often it is polled",
+        "charges exactly one slot when the picture is collected",
+        "charges nothing more for a repeat collection after delivery",
+        "charges one slot when two polls collect the same picture at once",
+        "refunds the slot exactly once after %s",
+        "never refunds the daily provider-start ceiling after the model was called",
+        "records one failure when two polls collect the same refusal at once",
+        "cannot be redirected to settle against the installation a poll claims to be",
+        "settles nothing for a well-formed job id nobody was given",
+        "answers retryably and settles nothing while the job store is unreachable",
+        "returns the slot of a job nobody collects once its lease lapses, without charging it",
+        "charges a slow picture collected before its lease lapses",
+        "stops offering a slow picture once its lifetime from the start has passed",
+        "charges a picture collected at the last moment its job is on offer, even over a slow store",
+        "settles a failed handoff in the start request itself, exactly once",
+        "keeps polling after the worker accepts a handoff whose reply is lost",
+        "refunds a handoff that could not reach the worker when the in-line fallback is refused",
+        "reads on the client as a job the poll endpoint knows",
+        "refuses a dispatch with a forged ticket without touching the job or calling the model",
+        "refuses a genuine ticket replayed onto different work",
+        "answers 400 to %s without calling the model",
+        "records a signed dispatch that is not generation work as an error the poll refunds",
+        "takes the drawing out of the store before calling the model",
+        "answers 200 when the model throws, so the platform never re-bills the drawing",
+        "logs a failed job without its id, even when the store error names its key",
+        "logs an outcome the job store no longer takes, without the job id",
+        "answers 200 even when it cannot record the failure, leaving the slot to lapse",
+        "records a missing drawing as an error the poll refunds, without calling the model",
+        "keeps the first picture when the same valid dispatch reaches the worker twice",
+        "keeps an in-flight picture when a duplicate dispatch arrives before it finishes",
+        "refuses a platform retry once the ticket has lapsed, leaving the recorded picture intact",
+        "stays out when the poll cannot settle the collected picture",
+        "stays out when an in-line picture cannot be charged",
+        "stays out when an in-line refusal cannot be refunded",
+        "stays out when the reservation itself fails"
+      ],
+      "current_callback_titles": [
+        "holds the slot for the job rather than releasing it on the way out of the start",
+        "settles nothing while the job is still pending, however often it is polled",
+        "charges exactly one slot when the picture is collected",
+        "charges nothing more for a repeat collection after delivery",
+        "charges one slot when two polls collect the same picture at once",
+        "refunds the slot exactly once after %s",
+        "never refunds the daily provider-start ceiling after the model was called",
+        "records one failure when two polls collect the same refusal at once",
+        "cannot be redirected to settle against the installation a poll claims to be",
+        "settles nothing for a well-formed job id nobody was given",
+        "answers retryably and settles nothing while the job store is unreachable",
+        "returns the slot of a job nobody collects once its lease lapses, without charging it",
+        "charges a slow picture collected before its lease lapses",
+        "stops offering a slow picture once its lifetime from the start has passed",
+        "charges a picture collected at the last moment its job is on offer, even over a slow store",
+        "settles a failed handoff in the start request itself, exactly once",
+        "keeps polling after the worker accepts a handoff whose reply is lost",
+        "refunds a handoff that could not reach the worker when the in-line fallback is refused",
+        "reads on the client as a job the poll endpoint knows",
+        "refuses a dispatch with a forged ticket without touching the job or calling the model",
+        "refuses a genuine ticket replayed onto different work",
+        "answers 400 to %s without calling the model",
+        "records a signed dispatch that is not generation work as an error the poll refunds",
+        "takes the drawing out of the store before calling the model",
+        "answers 200 when the model throws, so the platform never re-bills the drawing",
+        "logs a failed job without its id, even when the store error names its key",
+        "logs an outcome the job store no longer takes, without the job id",
+        "answers 200 even when it cannot record the failure, leaving the slot to lapse",
+        "records a missing drawing as an error the poll refunds, without calling the model",
+        "keeps the first picture when the same valid dispatch reaches the worker twice",
+        "keeps an in-flight picture when a duplicate dispatch arrives before it finishes",
+        "refuses a platform retry once the ticket has lapsed, leaving the recorded picture intact",
+        "stays out when the poll cannot settle the collected picture",
+        "stays out when an in-line picture cannot be charged",
+        "stays out when an in-line refusal cannot be refunded",
+        "stays out when the reservation itself fails"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "The removed web drawing response parser/type is replaced with native parseAiResponse/AiReply; native ticket discriminant replaces started. All server/accounting/worker assertions remain."
+    },
+    {
+      "file": "web/src/lib/server/api/generationResult.settlement.storeFailure.integration.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "answers in-line and charges one slot when %s",
+        "refunds the slot exactly once when the in-line answer is a refusal"
+      ],
+      "current_callback_titles": [
+        "answers in-line and charges one slot when %s",
+        "refunds the slot exactly once when the in-line answer is a refusal"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "The removed web drawing response parser/type is replaced with native parseAiResponse/AiReply; native ticket discriminant replaces started. All server/accounting/worker assertions remain."
+    },
+    {
+      "file": "web/src/lib/server/api/settlementTestHarness.ts",
+      "disposition": "restored required test harness",
+      "original_callback_titles": [],
+      "current_callback_titles": [],
+      "baseline_assertions_preserved": true,
+      "adaptation": "The removed web drawing response parser/type is replaced with native parseAiResponse/AiReply; native ticket discriminant replaces started. All server/accounting/worker assertions remain."
+    },
+    {
+      "file": "web/src/lib/server/api/verifyAccessCode.integration.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "does not consume the shared budget across a burst of successful verifications",
+        "does not consume the shared budget while the allowlist cannot be read",
+        "throttles a burst of failed guesses from one IP before touching the allowlist"
+      ],
+      "current_callback_titles": [
+        "does not consume the shared budget across a burst of successful verifications",
+        "does not consume the shared budget while the allowlist cannot be read",
+        "throttles a burst of failed guesses from one IP before touching the allowlist"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/fixtures/freeGenerationGrants.fe59955b.ts.txt",
+      "disposition": "restored sealed historical fixture",
+      "original_callback_titles": [],
+      "current_callback_titles": [],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/freeGenerationRecovery.expiry.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "rejects a changed admission rather than shifting expiry or charging a second day",
+        "replays an already charged daily start across UTC midnight using its original date",
+        "refuses an uncharged first provider start after the original UTC day ends",
+        "replays a completed reservation and settlement after its lease expires",
+        "books abandonment once and cannot let a reclaimed slot count as another success",
+        "keeps the raw success count at ten when a legacy request spends a reclaimed recovery slot",
+        "settles an expired unstarted reservation as abandonment without requiring a daily start",
+        "rejects explicit abandonment before the lease expires without corrupting its receipt",
+        "does not record a success without a confirmed daily start",
+        "rejects a new daily charge for an operation already settled as failed",
+        "protects retained grant receipts at capacity and admits again after their horizon",
+        "rejects daily receipt overflow without evicting a retained refusal",
+        "fails loudly on malformed recovery fields even through a legacy writer",
+        "fails closed when a retained daily start disagrees with its charged counter",
+        "prevents a legacy completion from bypassing recovery settlement receipts",
+        "rejects $name without rewriting its shared grant record",
+        "rejects $name before replaying a settlement",
+        "rejects $name through recovery and legacy writers",
+        "rejects an extra outcome key before writing an otherwise valid settlement"
+      ],
+      "current_callback_titles": [
+        "rejects a changed admission rather than shifting expiry or charging a second day",
+        "replays an already charged daily start across UTC midnight using its original date",
+        "refuses an uncharged first provider start after the original UTC day ends",
+        "replays a completed reservation and settlement after its lease expires",
+        "books abandonment once and cannot let a reclaimed slot count as another success",
+        "keeps the raw success count at ten when a legacy request spends a reclaimed recovery slot",
+        "settles an expired unstarted reservation as abandonment without requiring a daily start",
+        "rejects explicit abandonment before the lease expires without corrupting its receipt",
+        "does not record a success without a confirmed daily start",
+        "rejects a new daily charge for an operation already settled as failed",
+        "protects retained grant receipts at capacity and admits again after their horizon",
+        "rejects daily receipt overflow without evicting a retained refusal",
+        "fails loudly on malformed recovery fields even through a legacy writer",
+        "fails closed when a retained daily start disagrees with its charged counter",
+        "prevents a legacy completion from bypassing recovery settlement receipts",
+        "rejects $name without rewriting its shared grant record",
+        "rejects $name before replaying a settlement",
+        "rejects $name through recovery and legacy writers",
+        "rejects an extra outcome key before writing an otherwise valid settlement"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/freeGenerationRollout.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "rejects a stale ETag without replacing data or advancing its ETag",
+        "rejects onlyIfNew for an existing record without replacing it",
+        "erases the daily map and charges the same pending operation again",
+        "erases a denied admission and admits that stable operation after a slot is freed",
+        "erases the first success settlement and loses stable reconciliation",
+        "reclaims the expired hold while erasing the stable abandonment proof",
+        "preserves the exact pending map through a legacy reserve and successful completion",
+        "preserves the exact daily map and replays the original daily charge without a write",
+        "preserves the exact denied map and the historical refusal after a slot is freed",
+        "preserves the exact settled map and returns the first success against a competing outcome",
+        "preserves immutable expiry timing and the exact abandonment map through another legacy mutation"
+      ],
+      "current_callback_titles": [
+        "rejects a stale ETag without replacing data or advancing its ETag",
+        "rejects onlyIfNew for an existing record without replacing it",
+        "erases the daily map and charges the same pending operation again",
+        "erases a denied admission and admits that stable operation after a slot is freed",
+        "erases the first success settlement and loses stable reconciliation",
+        "reclaims the expired hold while erasing the stable abandonment proof",
+        "preserves the exact pending map through a legacy reserve and successful completion",
+        "preserves the exact daily map and replays the original daily charge without a write",
+        "preserves the exact denied map and the historical refusal after a slot is freed",
+        "preserves the exact settled map and returns the first success against a competing outcome",
+        "preserves immutable expiry timing and the exact abandonment map through another legacy mutation"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/freeGenerationRolloutTestHarness.ts",
+      "disposition": "restored required test harness",
+      "original_callback_titles": [],
+      "current_callback_titles": [],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/generationAttemptService.terminal.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "reads authenticated original expiry metadata without bytes, settlement, cleanup or dispatch",
+        "cannot prove expiry from absent metadata, a read failure or another original credential",
+        "confirms immediate reconcile %s only after stable settlement and exact reread",
+        "returns the original checked %s proof from explicit duplicate raw admission",
+        "refuses a successful or malformed settlement return for a checked failure",
+        "withholds terminal proof when settlement or authoritative original outcome reread fails",
+        "rejects a malformed proof selector %s before touching the attempt",
+        "excludes capability and ACK from checked terminal negotiation",
+        "cannot open the production service latch with the terminal header"
+      ],
+      "current_callback_titles": [
+        "reads authenticated original expiry metadata without bytes, settlement, cleanup or dispatch",
+        "cannot prove expiry from absent metadata, a read failure or another original credential",
+        "confirms immediate reconcile %s only after stable settlement and exact reread",
+        "returns the original checked %s proof from explicit duplicate raw admission",
+        "refuses a successful or malformed settlement return for a checked failure",
+        "withholds terminal proof when settlement or authoritative original outcome reread fails",
+        "rejects a malformed proof selector %s before touching the attempt",
+        "excludes capability and ACK from checked terminal negotiation",
+        "cannot open the production service latch with the terminal header"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/nativeAi.wire.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "reads the authoritative grant and starts one raw PNG background job with canonical headers",
+        "surfaces actual free exhaustion without starting a background job or provider",
+        "collects through the actual result handler and distinguishes pending, unavailable, safety and delivered images",
+        "verifies fixture credentials through actual setup handlers and preserves unavailable key checks as unavailable"
+      ],
+      "current_callback_titles": [
+        "reads the authoritative grant and starts one raw PNG background job with canonical headers",
+        "surfaces actual free exhaustion without starting a background job or provider",
+        "collects through the actual result handler and distinguishes pending, unavailable, safety and delivered images",
+        "verifies fixture credentials through actual setup handlers and preserves unavailable key checks as unavailable",
+        "preserves an unreadable allowlist as an unavailable native credential check"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Original four wire callbacks restored intact; added unavailable access-code allowlist response test migrated from deleted old web verifyCredential.wire test."
+    },
+    {
+      "file": "web/src/lib/server/nativeFeedback.wire.test.ts",
+      "disposition": "restored runtime tests",
+      "original_callback_titles": [
+        "sends the exact reviewed bug body without credentials or images and files sanitized private support content",
+        "sends an idea without device details even after a previous opt-in",
+        "shows the actual route throttle text as an ordinary error without performing a support write",
+        "shows a safe error for the real handler failure without exposing its exception"
+      ],
+      "current_callback_titles": [
+        "sends the exact reviewed bug body without credentials or images and files sanitized private support content",
+        "sends an idea without device details even after a previous opt-in",
+        "shows the actual route throttle text as an ordinary error without performing a support write",
+        "shows a safe error for the real handler failure without exposing its exception"
+      ],
+      "baseline_assertions_preserved": true,
+      "adaptation": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/api/adminLogin.integration.test.ts",
+      "disposition": "ported retained API login coverage",
+      "original_source": "web/src/routes/admin/login.integration.test.ts",
+      "preserved": "Derived HMAC bearer session, per-IP wrong-guess budget, correct secret rejected after exhaustion, throttle before malformed JSON parse, bounded JSON body and independent IP budget.",
+      "retired": "Removed form-action serialization, cookies and second-front-door shared budget. No form shim or Svelte import."
+    }
+  ],
+  "removed_route_callbacks": [
+    {
+      "original_file": "web/src/routes/admin/login.integration.test.ts",
+      "original_title": "mints a derived bearer session at the JSON door",
+      "disposition": "ported",
+      "successor": {
+        "file": "web/src/lib/server/api/adminLogin.integration.test.ts",
+        "title": "mints a derived bearer session at the JSON endpoint"
+      }
+    },
+    {
+      "original_file": "web/src/routes/admin/login.integration.test.ts",
+      "original_title": "spends one shared budget per IP, whichever door the attempts came from",
+      "disposition": "JSON exhaustion preserved; removed form/API alternation retired",
+      "successor": {
+        "file": "web/src/lib/server/api/adminLogin.integration.test.ts",
+        "title": "answers 429 before parsing the body or accepting a correct secret after the budget is spent"
+      }
+    },
+    {
+      "original_file": "web/src/routes/admin/login.integration.test.ts",
+      "original_title": "answers 429 at the JSON endpoint before parsing the body",
+      "disposition": "ported",
+      "successor": {
+        "file": "web/src/lib/server/api/adminLogin.integration.test.ts",
+        "title": "answers 429 before parsing the body or accepting a correct secret after the budget is spent"
+      }
+    },
+    {
+      "original_file": "web/src/routes/admin/login.integration.test.ts",
+      "original_title": "answers 429 at the form action before parsing the form data",
+      "disposition": "retired: removed form action only"
+    },
+    {
+      "original_file": "web/src/routes/admin/login.integration.test.ts",
+      "original_title": "stops reading at the same body cap at both doors",
+      "disposition": "JSON cap preserved; removed form cap assertion retired",
+      "successor": {
+        "file": "web/src/lib/server/api/adminLogin.integration.test.ts",
+        "title": "stops reading an oversized JSON login body at the admin cap"
+      }
+    },
+    {
+      "original_file": "web/src/routes/admin/login.integration.test.ts",
+      "original_title": "leaves another IP its own full budget",
+      "disposition": "ported",
+      "successor": {
+        "file": "web/src/lib/server/api/adminLogin.integration.test.ts",
+        "title": "leaves another IP its own full login budget"
+      }
+    },
+    {
+      "original_file": "web/src/routes/feedback/reportBucket.integration.test.ts",
+      "original_title": "throttles the form once the JSON endpoint has spent the budget, keeping what was typed",
+      "disposition": "retired removed form/API cross-door behavior",
+      "rationale": "Both callbacks require removed feedback form action/redirect/form-values shape. The native app sends JSON to /api/report; there is one retained reporting front door. No form-compatible surface added.",
+      "retained_coverage": [
+        {
+          "file": "web/src/lib/server/nativeFeedback.wire.test.ts",
+          "title": "shows the actual route throttle text as an ordinary error without performing a support write"
+        },
+        {
+          "file": "web/src/lib/server/api/report.test.ts",
+          "title": "throttles a limited IP before reading the body"
+        },
+        {
+          "file": "web/src/lib/server/api/report.test.ts",
+          "title": "opens an issue for a valid submission"
+        },
+        {
+          "file": "web/src/lib/server/rateLimit.test.ts",
+          "title": "allows hits up to the limit, then blocks the next one"
+        },
+        {
+          "file": "web/src/lib/server/rateLimit.test.ts",
+          "title": "tracks each key independently"
+        }
+      ]
+    },
+    {
+      "original_file": "web/src/routes/feedback/reportBucket.integration.test.ts",
+      "original_title": "throttles the JSON endpoint once the form has spent the budget",
+      "disposition": "retired removed form/API cross-door behavior",
+      "rationale": "Both callbacks require removed feedback form action/redirect/form-values shape. The native app sends JSON to /api/report; there is one retained reporting front door. No form-compatible surface added.",
+      "retained_coverage": [
+        {
+          "file": "web/src/lib/server/nativeFeedback.wire.test.ts",
+          "title": "shows the actual route throttle text as an ordinary error without performing a support write"
+        },
+        {
+          "file": "web/src/lib/server/api/report.test.ts",
+          "title": "throttles a limited IP before reading the body"
+        },
+        {
+          "file": "web/src/lib/server/api/report.test.ts",
+          "title": "opens an issue for a valid submission"
+        },
+        {
+          "file": "web/src/lib/server/rateLimit.test.ts",
+          "title": "allows hits up to the limit, then blocks the next one"
+        },
+        {
+          "file": "web/src/lib/server/rateLimit.test.ts",
+          "title": "tracks each key independently"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "focused": "11files131tests passed, Vitest web config",
+    "format": "Prettier passed13TypeScriptfiles",
+    "lint": "scoped ESLint passed13TypeScriptfiles",
+    "negative_control": "SPLOTCH_ROLLOUT_PRESERVATION_WRITER=frozen-old correctly fails5preservation tests while6fixture/control tests pass; default writer11/11pass.",
+    "types": "web/tsconfig.json tsc passed after implementer fixed unrelated PWA teardown"
+  },
+  "production_seams": {
+    "file": "web/src/lib/server/generationJobs.ts",
+    "change": "Implementer restored export on existing GENERATION_JOB_STORE_NAME; value and runtime behavior unchanged."
+  },
+  "retained_historical_fixture": {
+    "file": "web/src/lib/server/fixtures/freeGenerationGrants.fe59955b.ts.txt",
+    "provenance": "Exact base bytes, enforced by SHA256 in restored harness; its old imports are resolved only by sealed VM test dependencies."
+  },
+  "non_test_retirement": {
+    "file": "web/src/lib/server/devHarness.ts",
+    "disposition": "Remains retired",
+    "rationale": "This production helper only gates removed server-rendered /dev routes via SvelteKit environment and error imports. It is not a server-test harness and no retained API or restored test imports it."
+  }
+}

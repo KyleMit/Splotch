@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Platform } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { Svg, Path } from '../platform/svg';
-import type { SECTIONS } from '../../../../web/src/routes/privacy/contents';
+import type { SECTIONS } from '../../../../web/src/lib/privacy/contents';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { RsdPressable } from './RsdPressable';

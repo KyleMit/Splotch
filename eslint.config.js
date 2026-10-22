@@ -1,7 +1,6 @@
 import { builtinModules } from 'node:module';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import svelte from 'eslint-plugin-svelte';
 import vitest from '@vitest/eslint-plugin';
 import playwright from 'eslint-plugin-playwright';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -32,26 +31,13 @@ const NODE_BUILTIN_IMPORT_RESTRICTIONS = builtinModules
 // slice of web/src spreads this, so the replace gotcha above can't silently drop an entry there.
 // tools/tests/server-only-imports-lint.test.mjs is the positive control.
 const WEB_SRC_IMPORT_RESTRICTIONS = [
-  {
-    name: 'svelte/store',
-    message: 'Use Svelte 5 runes ($state/$derived/$effect) instead of legacy stores (ADR-0002).',
-  },
-  {
-    name: 'svelte',
-    importNames: ['onDestroy'],
-    message: 'onDestroy runs during SSR — use an $effect cleanup (.claude/rules/svelte.md).',
-  },
   PLAYWRIGHT_IMPORT_RESTRICTION,
   // web/src does import node builtins (server modules, colocated unit tests), so the node:
   // protocol restriction has to ride along here too — root coverage alone would be replaced away.
   ...NODE_BUILTIN_IMPORT_RESTRICTIONS,
 ];
-// npm packages web/src may only use on the server. SvelteKit's own guard rejects a client import
-// of $lib/server, *.server.ts, and $env/*/private and prints the import chain, but it cannot know
-// an npm package is server-only: a client import of one of these fails at bundle time with an
-// obscure resolution error instead. Confining a shared importing module to lib/server/, rather
-// than a mixed directory like lib/ai/, also puts that module under SvelteKit's guard.
-// no-restricted-imports sees static import and re-export statements only, not import().
+// Shared client modules must not import server-only packages. The restriction covers static
+// imports and re-exports; server modules live under lib/server/.
 const SERVER_ONLY_PACKAGES = ['sharp', 'openai', '@netlify/blobs'];
 const SERVER_ONLY_PACKAGE_MESSAGE =
   'Server-only package: import it from a module under web/src/lib/server/ (or a +server.ts / *.server.ts file), and reach that module from server code only.';
@@ -69,13 +55,6 @@ const NAMED_EXPORTS_ONLY = {
   selector: 'ExportDefaultDeclaration',
   message:
     'web/src uses named exports only — a default export gets a new name at every import site.',
-};
-// An index signature on a Props interface erases type checking for every forwarded attribute;
-// svelte/elements ships the accurate types for `...rest` bags.
-const INDEX_SIGNATURE_PROP_BAG = {
-  selector: 'TSInterfaceDeclaration TSIndexSignature',
-  message:
-    'Extend HTMLAttributes<...> from svelte/elements instead of an index-signature prop bag.',
 };
 // Mixing the it()/test() vocabularies makes greps and reporter output lie about which tier a
 // test is in — Vitest files use it()/describe(), test() is the Playwright vocabulary.
@@ -131,30 +110,11 @@ const BLOBS_CONSISTENCY_EXPLICIT = [
   'CallExpression[callee.name="getStore"] > ObjectExpression.arguments:not(:has(> Property[key.name="consistency"][value.value=/^(strong|eventual)$/]))',
 ].map((selector) => ({ selector, message: BLOBS_CONSISTENCY_MESSAGE }));
 
-const HISTORY_STATE_MESSAGE =
-  "Preserve SvelteKit's navigation state with history.replaceState(history.state, '', url); do not add history entries directly.";
-const HISTORY_CALL =
-  ':matches([callee.object.name="history"], [callee.object.property.name="history"])';
-const PRESERVED_HISTORY_STATE = [
-  '[arguments.0.type="MemberExpression"][arguments.0.object.name="history"][arguments.0.property.name="state"]',
-  '[arguments.0.type="MemberExpression"][arguments.0.object.type="MemberExpression"][arguments.0.object.property.name="history"][arguments.0.property.name="state"]',
-];
-const HISTORY_STATE_MUTATION_RESTRICTIONS = [
-  {
-    selector: `CallExpression[callee.property.name="pushState"]${HISTORY_CALL}`,
-    message: HISTORY_STATE_MESSAGE,
-  },
-  {
-    selector: `CallExpression[callee.property.name="replaceState"]${HISTORY_CALL}${PRESERVED_HISTORY_STATE.map((state) => `:not(${state})`).join('')}`,
-    message: HISTORY_STATE_MESSAGE,
-  },
-];
-
 // The full no-restricted-syntax set for web/src, applied by the web/src block and recomposed by
 // every later block that adds selectors for a slice of it. Each set is merged here rather than into
 // its own web/src block, which would silently replace the rate-limit selectors (that actually
-// happened during evaluation). The Svelte and Vitest blocks replace this entry for their file
-// shapes, so each is followed by a web/src-scoped block that recomposes NAMED_EXPORTS_ONLY.
+// happened during evaluation). The Vitest block replaces this entry for its file shapes,
+// then a web/src-scoped block recomposes NAMED_EXPORTS_ONLY.
 const WEB_SRC_SYNTAX_RESTRICTIONS = [
   ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
     selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
@@ -163,12 +123,11 @@ const WEB_SRC_SYNTAX_RESTRICTIONS = [
   NAMED_EXPORTS_ONLY,
   ...STORAGE_SEAM_ONLY,
   ...MEDIA_QUERY_LITERAL,
-  ...HISTORY_STATE_MUTATION_RESTRICTIONS,
   ...BLOBS_CONSISTENCY_EXPLICIT,
 ];
 
 // Every /api method handler is exported as `apiHandler(...)` itself: an unwrapped one compiles and
-// passes its unit tests, which call the export directly, yet sends SvelteKit's { message } body
+// passes its unit tests, which call the export directly, yet sends a framework-shaped error body
 // to clients that parse { ok, error } and skips the [server error] log line. The rule is stated
 // in docs/API.md, .claude/rules/server-api.md, and apiHandler's doc comment; the positive control
 // is tools/tests/api-handler-lint.test.mjs. A handler is flagged unless its initializer is the
@@ -295,7 +254,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
 };
 
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
-// source is under web/. Type checking is owned by `npm run check` (svelte-check); ESLint runs
+// source is under web/. Type checking is owned by `npm run check`; ESLint runs
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
 // — it covers correctness/style rules and the project conventions, not type errors. The one
 // deliberate exception is no-floating-promises, run type-aware by two scoped blocks near the
@@ -329,13 +288,12 @@ export default tseslint.config(
   { linterOptions: { reportUnusedDisableDirectives: 'error' } },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...svelte.configs.recommended,
   {
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },
     rules: {
-      // TypeScript already resolves identifiers (including Svelte 5 runes and compile-time
+      // TypeScript already resolves identifiers (including compile-time
       // constants like __APP_VERSION__), so ESLint's own undefined/unused checks only add noise.
       'no-undef': 'off',
       'no-unused-vars': 'off',
@@ -345,8 +303,6 @@ export default tseslint.config(
       ],
       // Empty catch blocks are how the engine ignores best-effort pointer-capture calls.
       'no-empty': ['error', { allowEmptyCatch: true }],
-      // Internal route/static links don't use SvelteKit's resolve(); the app has no base path.
-      'svelte/no-navigation-without-resolve': 'off',
       'no-restricted-properties': [
         'error',
         { property: 'substr', message: 'Deprecated Annex B API — use slice().' },
@@ -370,15 +326,12 @@ export default tseslint.config(
     // empirically: candidate rules were run over the real repo and only kept where the code
     // already complied. Rejected candidates are recorded in ADR-0031 — don't re-litigate them
     // here without new evidence.
-    files: ['**/*.{ts,mts,mjs,js,svelte}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
+    files: ['**/*.{ts,mts,mjs,js}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
     plugins: { [DISABLE_DIRECTIVES_PLUGIN_NAME]: disableDirectivesPlugin },
     rules: {
       // A suppression names its rules and says why, and one that suppresses nothing fails —
-      // the eslint-disable counterpart of stylelint.config.js's disable reporting. Svelte
-      // template comments are parsed by eslint-plugin-svelte, whose own unused-directive check
-      // is opt-in.
+      // the eslint-disable counterpart of stylelint.config.js's disable reporting.
       [REQUIRE_DISABLE_REASON_RULE_ID]: 'error',
-      'svelte/comment-directive': ['error', { reportUnusedDisableDirectives: true }],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-var': 'error',
       'no-object-constructor': 'error',
@@ -419,7 +372,7 @@ export default tseslint.config(
       // hoisted second statement. disallowTypeAnnotations must stay false: inline
       // `import('...')` type annotations are load-bearing here (app.d.ts must not become a
       // module or `declare global` breaks; lazy-import typing; importActual type arguments).
-      // With verbatimModuleSyntax on (SvelteKit's tsconfig), an unmarked type-only import is
+      // With verbatimModuleSyntax on, an unmarked type-only import is
       // emitted as a real runtime import — this rule has teeth beyond style.
       '@typescript-eslint/consistent-type-imports': [
         'error',
@@ -432,22 +385,13 @@ export default tseslint.config(
     },
   },
   {
-    // NOT the svelte-flavoured globs: plain prefer-const reads `let x = $state()` as
-    // never-reassigned (hundreds of false positives), so .svelte / .svelte.ts / .svelte.js get
-    // the rune-aware svelte/prefer-const in the svelte-files block instead. This split is what
-    // makes the rule adoptable at all.
     files: ['**/*.{ts,mts,mjs,js}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
-    ignores: ['**/*.svelte.ts', '**/*.svelte.js'],
     rules: { 'prefer-const': 'error' },
   },
   {
     // Rate-limit bucket keys are a shared contract (ADR-0014): every producer must go through
     // the builders in src/lib/server/rateLimitKeys.ts, so an inline string key at a call site
-    // can silently fork (or collide with) a bucket. Placed BEFORE the svelte-files block on
-    // purpose: that block's no-restricted-syntax (index-signature ban) replaces this one for
-    // .svelte/.svelte.ts files, which is fine — rateLimit() is server-only and can't appear
-    // there. The Vitest block near the bottom likewise replaces this for *.test.ts files,
-    // where ad-hoc literal keys are the point.
+    // can silently fork (or collide with) a bucket. Unit tests can use literal keys as fixtures.
     files: ['web/src/**'],
     rules: { 'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS] },
   },
@@ -459,51 +403,6 @@ export default tseslint.config(
     ignores: [API_HANDLER_EXEMPT_ROUTE, '**/*.test.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS, ...API_HANDLER_WRAPPED],
-    },
-  },
-  {
-    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
-    languageOptions: {
-      parserOptions: { parser: tseslint.parser },
-    },
-    rules: {
-      // Misfires on `$bindable()` destructuring defaults, which read as unused assignments.
-      'no-useless-assignment': 'off',
-      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG],
-      // Rune-aware replacement for prefer-const (see the split-glob block above), plus the
-      // svelte-specific conventions the codebase already satisfied when ratified (ADR-0031).
-      'svelte/prefer-const': 'error',
-      'svelte/require-each-key': 'error',
-      'svelte/block-lang': ['error', { script: ['ts'] }],
-      'svelte/no-inspect': 'error',
-      'svelte/prefer-svelte-reactivity': 'error',
-      'svelte/no-dom-manipulating': 'error',
-      'svelte/no-useless-mustaches': 'error',
-      'svelte/no-useless-children-snippet': 'error',
-      'svelte/shorthand-attribute': 'error',
-      'svelte/shorthand-directive': 'error',
-      'svelte/html-self-closing': 'error',
-      'svelte/no-target-blank': 'error',
-      'svelte/valid-prop-names-in-kit-pages': 'error',
-      'svelte/prefer-writable-derived': 'error',
-      'svelte/no-top-level-browser-globals': 'error',
-    },
-  },
-  {
-    // The block above replaces no-restricted-syntax for every Svelte-flavoured file, which would
-    // silently exempt web/src ones from the named-exports ban — recompose the full effective set
-    // for that slice. (The rate-limit and Blobs selectors stay absent on purpose: rateLimit() and
-    // getStore() are server-only and can't appear in these files.)
-    files: ['web/src/**/*.svelte', 'web/src/**/*.svelte.ts', 'web/src/**/*.svelte.js'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        INDEX_SIGNATURE_PROP_BAG,
-        NAMED_EXPORTS_ONLY,
-        ...STORAGE_SEAM_ONLY,
-        ...MEDIA_QUERY_LITERAL,
-        ...HISTORY_STATE_MUTATION_RESTRICTIONS,
-      ],
     },
   },
   {
@@ -528,10 +427,9 @@ export default tseslint.config(
     },
   },
   {
-    // Project conventions (CLAUDE.md, ADR-0002): Svelte 5 runes only — no legacy stores.
     // Flat-config rule entries replace (not merge) across blocks, so this block must include
     // the shared repo-wide playwright restriction alongside its own paths.
-    files: ['web/src/**/*.{ts,svelte}'],
+    files: ['web/src/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { paths: WEB_SRC_IMPORT_RESTRICTIONS }],
     },
@@ -539,7 +437,7 @@ export default tseslint.config(
   {
     // Server-only packages stay behind the server boundary. Replaces the block above for
     // everything outside the server paths and tests, so it recomposes that block's full list.
-    files: ['web/src/**/*.{ts,svelte}'],
+    files: ['web/src/**/*.ts'],
     ignores: [
       'web/src/lib/server/**',
       'web/src/**/+server.ts',
@@ -569,7 +467,7 @@ export default tseslint.config(
     // "`as` is a boundary tool"). Scoped to shipped code: tests and the *TestHarness modules
     // use `!` as the idiomatic "the fixture guarantees it", and would carry ~420 disables.
     // ADR-0031 records the measured adoption.
-    files: ['web/src/**/*.{ts,svelte}'],
+    files: ['web/src/**/*.ts'],
     ignores: ['web/src/**/*.test.ts', 'web/src/**/*TestHarness.ts'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'error' },
   },
@@ -583,7 +481,6 @@ export default tseslint.config(
     // archive.
     files: [
       'web/src/**',
-      'web/tests/**',
       'e2e/**',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
@@ -591,36 +488,6 @@ export default tseslint.config(
     ignores: ['tools/store-drawings/generated/**', 'tools/asset-gen/ideas-exploration/**'],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
-    },
-  },
-  {
-    // Imperative-by-design engine facade (ADR-0004): canvas/input orchestration, brush-state
-    // projection, and export-before-clear sequencing stay colocated because extracting those thin
-    // seams only satisfies the counter. Focused renderer, surface, history, and geometry modules
-    // stay split out. The cap keeps ~75 lines of headroom so routine fixes fit; reaching it is the
-    // prompt to look for a real seam, not to shave lines.
-    files: ['web/src/lib/drawing/engine.ts'],
-    rules: {
-      'max-lines': ['error', { max: 1030, skipBlankLines: true, skipComments: true }],
-    },
-  },
-  {
-    // The tiled renderer's remaining core is command lifecycle plus the undo window's budget
-    // accounting; moving the budget into the per-command patch store would mix two lifetimes.
-    // Layout and patch restore already live in tiledLayout.ts and tiledUndoPatches.ts. The cap
-    // keeps ~75 lines of headroom over the file.
-    files: ['web/src/lib/drawing/tiledRenderer.ts'],
-    rules: {
-      'max-lines': ['error', { max: 516, skipBlankLines: true, skipComments: true }],
-    },
-  },
-  {
-    // composeExportPng's tiled-worker and compatibility paths share one mock and image-stub
-    // harness; splitting the suite by path duplicates that setup in two files instead of
-    // clarifying anything. The cap keeps ~75 lines of headroom over the file.
-    files: ['web/src/lib/drawing/exportDrawing.test.ts'],
-    rules: {
-      'max-lines': ['error', { max: 510, skipBlankLines: true, skipComments: true }],
     },
   },
   ...Object.entries(TOOLS_GRANDFATHERED_MAX_LINES).map(([path, max]) => ({
@@ -632,36 +499,12 @@ export default tseslint.config(
     // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly
     // gets a per-file cap below at its length + 25, with the WHY, rather than a counter-driven
     // split. Tests are excluded because they are mostly describe() callbacks.
-    files: [
-      'web/src/**/*.ts',
-      'web/src/**/*.svelte',
-      'experiments/native-architecture/src/**/*.{ts,tsx}',
-    ],
+    files: ['web/src/**/*.ts', 'experiments/native-architecture/src/**/*.{ts,tsx}'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'max-lines-per-function': [
         'error',
         { max: 125, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createParentalGate is one challenge state machine: its lockout, announcement, and handoff steps share one $state object and the timers dismissGate resets together; the pure policy and lockout logic already live at module scope and in parentalGateLockout.ts.
-    files: ['web/src/lib/state/parentalGate.svelte.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 276, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // dragToClear's pointer handlers share one gesture state machine (active drag, start point, clearReady, hold timer); the tap run, timers, and threshold classes already have their own homes, and splitting the handlers would thread that state through accessor bags.
-    files: ['web/src/lib/actions/dragToClear.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 214, skipBlankLines: true, skipComments: true, IIFEs: true },
       ],
     },
   },
@@ -672,96 +515,6 @@ export default tseslint.config(
       'max-lines-per-function': [
         'error',
         { max: 147, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createAiGeneration is one guarded transition per generation lifecycle event over a single $state object and run owner, plus its readonly getters; no part of it owns separate state.
-    files: ['web/src/lib/state/aiGeneration.svelte.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 142, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createSettings' length is its mutator table, one entry per persisted setting over one $state object; the field tables and the persisted-settings reader already live at module scope.
-    files: ['web/src/lib/state/settings.svelte.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 142, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // installWebBackHandler's dialog-stack and drawing-guard counters are written in one history callback and read in another, so splitting them would thread that state back through accessors.
-    files: ['web/src/lib/boot/webBackHandler.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 139, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // What remains in createInkMotion owns the overlay lifecycle and pending ink subtraction that undo, clear, and cancel share; its stateless helpers already live at module scope.
-    files: ['web/src/lib/drawing/inkMotion.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // toolbarGlassPanes' drawer strip and trigger read a dozen shared geometry locals; the corner controls, which depend only on the viewport, are already helpers.
-    files: ['web/src/lib/glassPanes.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createLayout's $state seed, readonly getters, and resize/rotation closures share one set of private state, media queries, and the rotation-settle timer.
-    files: ['web/src/lib/state/layout.svelte.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 137, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createInstall is the install-availability state machine (mode, installed, deferred prompt, listeners); the re-prompt schedule is already its own sub-factory.
-    files: ['web/src/lib/state/install.svelte.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 136, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createColoringPackDownloader's run loop, rerun queue, pause, and policy listeners share one controller and the stopped/paused/installing flags; the manifest cache is already its own loader.
-    files: ['web/src/lib/coloringPacks/manager.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 133, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    // createFreeGenerations' grant state, request ownership, and refresh triggers share one $state object; the grant fetch already lives at module scope.
-    files: ['web/src/lib/state/freeGenerations.svelte.ts'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 127, skipBlankLines: true, skipComments: true, IIFEs: true },
       ],
     },
   },
@@ -800,27 +553,9 @@ export default tseslint.config(
     },
   },
   {
-    // The seam itself is the one module allowed to touch localStorage — recompose everything the
-    // web/src block gives it, minus the ban it exists to satisfy.
-    files: ['web/src/lib/storage.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
-          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
-          message: RATE_LIMIT_MESSAGE,
-        })),
-        NAMED_EXPORTS_ONLY,
-        ...MEDIA_QUERY_LITERAL,
-        ...HISTORY_STATE_MUTATION_RESTRICTIONS,
-        ...BLOBS_CONSISTENCY_EXPLICIT,
-      ],
-    },
-  },
-  {
     // Playwright specs. Same vacuous-test guard as the Vitest block above, spelled in this
     // plugin's rule names; the two vocabularies never mix, so the globs stay disjoint.
-    files: ['web/tests/**/*.spec.ts', 'e2e/specs/**/*.spec.ts'],
+    files: ['e2e/specs/**/*.spec.ts'],
     plugins: { playwright },
     rules: {
       ...VACUOUS_TEST_RULES.playwright,
@@ -844,8 +579,8 @@ export default tseslint.config(
     // The shared E2E helpers hold the retrying opens every spec leans on, so a dropped await
     // inside one goes vacuous in every caller. expect-expect and no-conditional-expect judge a
     // test, and a helper is not one.
-    files: ['web/tests/**/*.ts', 'e2e/**/*.ts'],
-    ignores: ['web/tests/**/*.spec.ts', 'e2e/specs/**/*.spec.ts'],
+    files: ['e2e/**/*.ts'],
+    ignores: ['e2e/specs/**/*.spec.ts'],
     plugins: { playwright },
     rules: PLAYWRIGHT_ASSERTION_SHAPE_RULES,
   },
@@ -860,11 +595,7 @@ export default tseslint.config(
     // The type-aware exception to the fast non-type-aware design above: floating promises
     // in app code silently swallow rejections (a failed dynamic import, an unawaited native
     // call), and only a TS program can see a call's return type. Scoped to web/src TS so the
-    // project-service cost (~seconds) stays off tooling/scripts. .svelte components are NOT
-    // covered — a plain-TS project service resolves types imported from .svelte modules as
-    // `any`, producing structural false positives — so a floating promise in component markup
-    // (onclick={() => save()}) is out of this rule's reach; that gap is accepted, not an
-    // oversight.
+    // project-service cost stays off tooling/scripts.
     files: ['web/src/**/*.ts'],
     ignores: ['**/*.d.ts'],
     languageOptions: {

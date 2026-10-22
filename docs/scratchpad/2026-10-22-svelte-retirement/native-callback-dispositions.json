@@ -1,0 +1,1721 @@
+{
+  "source_enumeration": "Initial missing-title inventory of native test callbacks in the base-to-working-tree diff; every entry records original file/title/line for reconstruction with git show at base.",
+  "scope": "All171 original missing callback titles rechecked against actual bodies and called helpers. Oracle-only retired means the removed old-source assertion retires; original_operations explicitly identifies any real native work and rationale identifies retained counterparts where applicable. Dense source equivalence is distinguished from independent native contracts.",
+  "counts": {
+    "oracle-only retired": 110,
+    "restored": 32,
+    "renamed": 29
+  },
+  "callbacks": [
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "original_title": "dims with the shipping scrim, frosted where it can blur and plain where it cannot",
+      "original_line": 82,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses backdrop background/blur and reduced-transparency CSS against native scrim constants. The compared CSS owner is removed; no native modal is constructed by this callback."
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "original_title": "keeps the gutter, close disc and back blob at their shipping sizes",
+      "original_line": 94,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses modal gutter/control/back dimensions, border and pressed-scale CSS against imported constants. The assertions bind removed global/header CSS; the real modalFrame matrices and mounted control/focus checks are separate."
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "original_title": "caps Settings at its phone, landscape-phone and wide shell widths and heights",
+      "original_line": 148,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/modal-geometry.test.mjs",
+        "title": "caps Settings at its phone, landscape-phone and wide shell widths and heights",
+        "line": 70
+      },
+      "rationale": "Calls real modalFrame across phone, landscape phone, tablet and large tablet cases; fixed expected shell widths/heights/caps preserve geometry after CSS parsing retires."
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "original_title": "pads the Settings header and scroll as the shipping card does on narrow and roomy phones",
+      "original_line": 169,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/modal-geometry.test.mjs",
+        "title": "pads the Settings header and scroll as the shipping card does on narrow and roomy phones",
+        "line": 85
+      },
+      "rationale": "Calls real modalFrame on narrow/roomy phones and asserts fixed header/body padding and scroll geometry."
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "original_title": "sizes and pads the parental gate as shipping does on a %s",
+      "original_line": 187,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/modal-geometry.test.mjs",
+        "title": "sizes and pads the parental gate as shipping does on a %s",
+        "line": 95
+      },
+      "rationale": "Preserves real gate modalFrame layout across responsive steps against explicit width/height/padding expectations."
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "original_title": "sizes and pads the confirm card as shipping does",
+      "original_line": 202,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/modal-geometry.test.mjs",
+        "title": "sizes and pads the confirm card as shipping does",
+        "line": 103
+      },
+      "rationale": "Preserves real confirm modalFrame dimensions, padding and cap checks using explicit expected metrics."
+    },
+    {
+      "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+      "original_title": "projects every shipping token, light and dark, at its shipping value",
+      "original_line": 187,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+        "title": "projects every shipping token, light and dark, at its shipping value",
+        "line": 195
+      },
+      "rationale": "Preserves full token/theme/scale/brand projection against retained design tokens plus LAYOUT_METRICS-derived declaration fixture."
+    },
+    {
+      "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+      "original_title": "rejects %s that was not regenerated",
+      "original_line": 197,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+        "title": "rejects %s that was not regenerated",
+        "line": 205
+      },
+      "rationale": "Preserves token projection mutation negative controls; expected declarations come from retained owners and layout fixture."
+    },
+    {
+      "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+      "original_title": "rejects a projected token that is also listed as unprojected",
+      "original_line": 229,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+        "title": "rejects a projected token that is also listed as unprojected",
+        "line": 237
+      },
+      "rationale": "Preserves token projection/exception overlap negative control independently of removed app.css."
+    },
+    {
+      "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+      "original_title": "compiles the page Back link with the shipping unwrapped flex behavior",
+      "original_line": 373,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-drawing-tokens.test.mjs",
+        "title": "compiles the page Back link with the shipping unwrapped flex behavior",
+        "line": 381
+      },
+      "rationale": "Preserves actual compiled native Back-link display, flex shrink and nowrap contract; only deleted BackLink.svelte source reads retire."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-actions-panel.test.mjs",
+      "original_title": "names the Brush Menu entries and sizes the eraser previews as shipping does",
+      "original_line": 345,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches tool state and four Svelte controls for menu metadata, eraser width and aria-label strings. It does not press or render the native Brush Menu."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-ai.test.mjs",
+      "original_title": "shows the %s dial over the blurred drawing until the picture lands, then Download and the disclosure",
+      "original_line": 97,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-ai.test.mjs",
+        "title": "shows the $motion dial over the blurred drawing until the picture lands, then Download and the disclosure",
+        "line": 96
+      },
+      "rationale": "Preserved both pending-to-ready mounted flows; explicit DPR 1\u21922x and DPR 3\u21923x grids replace currentExportScale."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-ai.test.mjs",
+      "original_title": "stacks the error card to shipping, keeping the report outcome space for an outcome",
+      "original_line": 371,
+      "original_operations": "mounted native transition",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-ai.test.mjs",
+        "title": "stacks the error card to shipping, keeping the report outcome space for an outcome",
+        "line": 414
+      },
+      "rationale": "Preserves failing generation, native error-card child margin stack without an empty outcome slot, gated problem report send and added outcome margin, with fixed expected gaps."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-bare-toolbar.test.mjs",
+      "original_title": "fails when the shipping %s source changes %s",
+      "original_line": 189,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Mutates seven deleted app/paper/panes literals and compares shippingBare parser output to NATIVE_BARE constants. No native toolbar is rendered in the mutant checks."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-button-chrome.test.mjs",
+      "original_title": "holds every untokened chrome value to its shipping declaration",
+      "original_line": 256,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares the imported chrome constant record to shippingChrome's parsed Svelte/CSS declarations. It checks constant equivalence rather than activating a native control; the old declaration owner is removed."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-button-chrome.test.mjs",
+      "original_title": "fails when the shipping %s source changes %s",
+      "original_line": 260,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Changes button/app declarations and verifies shippingChrome no longer matches a selected imported constant. These negative controls validate the removed source-equivalence parser."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-button-chrome.test.mjs",
+      "original_title": "renders every shipping variant in its shipping tokens, resting, hovered and disabled",
+      "original_line": 380,
+      "original_operations": "mounted native rendering",
+      "disposition": "oracle-only retired",
+      "rationale": "nativePalette mounts all four native button variants in both themes resting and disabled; it also reads a hover token from native source. The resting/disabled matrix is already asserted by explicit VARIANT_FILL/PARKED mounted tests in rsd-native-button. The Svelte variant-union, parsed hover-token and source palette equality retire.",
+      "covered_by": [
+        {
+          "file": "tools/migration/tests/rsd-native-button.test.mjs",
+          "title": "paints the %s variant from the %s shipping theme as a named, semibold 48px button",
+          "line": 33
+        },
+        {
+          "file": "tools/migration/tests/rsd-native-button.test.mjs",
+          "title": "parks a disabled %s button on the neutral %s treatment with no press",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-button-chrome.test.mjs",
+      "original_title": "fails on %s in Button.svelte",
+      "original_line": 384,
+      "original_operations": "mounted native rendering plus source mutation",
+      "disposition": "oracle-only retired",
+      "rationale": "Each Svelte mutant calls nativePalette, which mounts all variants/themes/resting/disabled. Those native render assertions survive in rsd-native-button's explicit fill and parked tables; the mutants themselves only reject changed deleted Button.svelte declarations or its union.",
+      "covered_by": [
+        {
+          "file": "tools/migration/tests/rsd-native-button.test.mjs",
+          "title": "paints the %s variant from the %s shipping theme as a named, semibold 48px button",
+          "line": 33
+        },
+        {
+          "file": "tools/migration/tests/rsd-native-button.test.mjs",
+          "title": "parks a disabled %s button on the neutral %s treatment with no press",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-changelog-navigation.test.mjs",
+      "original_title": "pins release tape, bullets and narrow-header geometry to the shipping page",
+      "original_line": 110,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches the deleted Changelog route for marker size, indentation, line height, narrow-header threshold and tape clip path. It does not lay out or navigate the native page."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-chrome-behind-dialogs.test.mjs",
+      "original_title": "pins shipping page selection and clear after dialog retirement and one frame",
+      "original_line": 169,
+      "original_operations": "source ordering",
+      "disposition": "oracle-only retired",
+      "rationale": "Matches await-dialogRetired/nextFrame/action strings in removed ColoringBook.svelte. It does not perform selection or clear; retained native dialog/selection tests perform those transitions."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-color-picker.test.mjs",
+      "original_title": "reads every ColorPicker.svelte literal the port carries back out of the shipping source",
+      "original_line": 92,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "hiddenByLadder parses deleted ColorPicker CSS; the remaining assertions read roomy/hover/keyline/selected geometry, gesture constants and aria/keyboard markup. No native picker interaction occurs in this callback."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-coloring-picker.test.mjs",
+      "original_title": "pins the fixed opening inventory and navigation to shipping",
+      "original_line": 387,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed coloringPicker state for installed-book inventory and two-book navigation condition strings. It does not open or update the native inventory."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-coloring-picker.test.mjs",
+      "original_title": "sizes and pads the card as ColoringBook.svelte does",
+      "original_line": 420,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed ColoringBook card width/height caps, responsive padding and header declarations against native geometry constants. No modalFrame call or native card mount occurs here."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-coloring-picker.test.mjs",
+      "original_title": "holds tiles for the shipping launch guard and words Settings \u203a Coloring as shipping does",
+      "original_line": 530,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed launchGuard constants and Coloring section line-height/copy strings. It does not run the launch guard or load/remove native books."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+      "original_title": "starts a first launch on shipping's drawerOpen default",
+      "original_line": 58,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+        "title": "starts a first launch on shipping's drawerOpen default",
+        "line": 121
+      },
+      "rationale": "Preserves real first-launch native drawer state using explicit default and mounted toolbar assertions."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+      "original_title": "cascades the opened drawer on shipping's clock and stagger",
+      "original_line": 100,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+        "title": "cascades the opened drawer on shipping's clock and stagger",
+        "line": 125
+      },
+      "rationale": "Preserves mounted drawer opening, each tool cascade start/end pose, duration and stagger against explicit native expectations."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+      "original_title": "keeps shipping's stagger slots when intervening drawer tools are hidden",
+      "original_line": 142,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+        "title": "keeps shipping's stagger slots when intervening drawer tools are hidden",
+        "line": 136
+      },
+      "rationale": "Preserves mounted hidden-tool cases and fixed later-tool cascade slots/delays; removed markup slot discovery is replaced by explicit expected positions."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+      "original_title": "pads the column end as --palette-bottom does, centring More colors on the Brush Button",
+      "original_line": 123,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+        "title": "pads the column end by $clearancePx pixels for a $buttonPx pixel button over a $bottomInsetPx pixel inset",
+        "line": 98
+      },
+      "rationale": "Preserved four real columnEndClearance cases with expected 28/14/34/0 px, including clamp, without parsing retired CSS."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+      "original_title": "shows as many paints along a %s as the shipping %s ladder at every length",
+      "original_line": 159,
+      "original_operations": "native geometry computation",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+        "title": "shows the expected paint occupancy along a $axis at every length",
+        "line": 110
+      },
+      "rationale": "Preserves all 981 row lengths120..1100 and 641 column lengths600..1240 against fixed occupancy intervals independently of paletteSlots; expected colors count is fixed at15."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-error-screen.test.mjs",
+      "original_title": "keeps the copy and literals ErrorScreen.svelte writes",
+      "original_line": 67,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks deleted ErrorScreen title/body/restart/mascot/width strings against imported copy/constants. It does not render or restart the native Error Screen."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-failure-banner.test.mjs",
+      "original_title": "keeps the Save Failure Banner literals SaveFailureBanner.svelte writes",
+      "original_line": 69,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses deleted SaveFailureBanner/app CSS max width, mascot, leading, clear reserve and dismiss overhang. It does not mount a banner or exercise retry/dismissal."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-information-pages.test.mjs",
+      "original_title": "lays out the shipping footer at $width \u00d7 $height",
+      "original_line": 170,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-information-pages.test.mjs",
+        "title": "lays out the shipping footer at $width \u00d7 $height",
+        "line": 273
+      },
+      "rationale": "Preserves the three mounted footer viewport cases, real row spacing/wrapping and release content using fixed/retained expectations."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-not-found.test.mjs",
+      "original_title": "pins the shipping short-height sheet, compact hero and optional lede disclosure",
+      "original_line": 178,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches deleted PageShell/NotFound/BackLink short-height markup and media blocks. Native compact page, lede disclosure, back-link and mascot behavior are covered by retained/restored mounted callbacks."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-not-found.test.mjs",
+      "original_title": "uses shipping\u2019s not-found mascot and body gap at height $height",
+      "original_line": 375,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-not-found.test.mjs",
+        "title": "uses shipping\u2019s not-found mascot and body gap at height $height",
+        "line": 336
+      },
+      "rationale": "Preserves both compact/roomy mounted native not-found mascot image and body gap assertions with fixed expected geometry."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-parent-center-marks.test.mjs",
+      "original_title": "pins the keys, labels and icons to the shipping keypad",
+      "original_line": 16,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses deleted gate key literal order and keypad icon/label object source. It does not enter a native answer or generate native keypad layout."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-parent-center-marks.test.mjs",
+      "original_title": "draws the matrix radio marks at the shipping ring, edge and inset",
+      "original_line": 34,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses deleted Parent Center radio-mark width/border/inset declarations against PICKER_MARK_METRICS. It does not render or select the native policy matrix."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-flight.test.mjs",
+      "original_title": "announces a Try again that fails again by emptying the region before rewriting the same words",
+      "original_line": 437,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-save-flight.test.mjs",
+        "title": "announces the same failure again after a retry",
+        "line": 430
+      },
+      "rationale": "Preserves two identical announcements across a real retry. Only comparison with the deleted Svelte banner timing constant was removed."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-to-photos.test.mjs",
+      "original_title": "words a refused permission exactly as the shipping banner does",
+      "original_line": 136,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-save-to-photos.test.mjs",
+        "title": "reports a refused iOS permission without creating a saved copy",
+        "line": 193
+      },
+      "rationale": "Preserved denial transition, exact exported drawing, absent Photos writes and absence of app-model copies; uses retained native saveFailureCopy."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-to-photos.test.mjs",
+      "original_title": "clears the paper and reports the captured picture when Photos refuses it",
+      "original_line": 178,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-save-to-photos.test.mjs",
+        "title": "clears the paper and reports the captured picture when Photos refuses it",
+        "line": 213
+      },
+      "rationale": "Preserves native denied Photos autosave, clear completion and banner/captured-picture checks using retained saveFailureCopy."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-to-photos.test.mjs",
+      "original_title": "clears the paper after an Auto-Save on Delete %s failure and reports the failed save",
+      "original_line": 192,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-save-to-photos.test.mjs",
+        "title": "clears the paper after an Auto-Save on Delete %s failure and reports the failed save",
+        "line": 228
+      },
+      "rationale": "Preserves both capture and Photos failure transitions, paper clearing, absent saved copies and exact banner copy from retained native owner."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-segmented-picker.test.mjs",
+      "original_title": "assigns each painted part the colour token the shipping selector assigns it",
+      "original_line": 506,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks the old segmented-picker selector/property-to-token mapping and shadow declaration. Native part painting is independently asserted by retained mounted segment/chip/underline tests."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-segmented-picker.test.mjs",
+      "original_title": "ports the roving-radio rules case for case",
+      "original_line": 512,
+      "original_operations": "native keyboard computation",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-segmented-picker.test.mjs",
+        "title": "ports the roving-radio rules case for case",
+        "line": 167
+      },
+      "rationale": "Preserves seven key directions, six disabled layouts \u00d7three starts \u00d7two deltas, and four selected/unselected states against explicit next/tab index tables."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-selection.test.mjs",
+      "original_title": "uses shipping paint names at the native boundary in %s",
+      "original_line": 35,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-selection.test.mjs",
+        "title": "names paint buttons at the native boundary in %s mode",
+        "line": 32
+      },
+      "rationale": "Preserved mounted light/dark labels, Custom Color and native accessibility roles/states, using fixed expected labels."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+      "original_title": "pads the compact header as CompactShell does",
+      "original_line": 88,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+        "title": "pads the compact header as CompactShell does",
+        "line": 468
+      },
+      "rationale": "Preserves actual compact modalFrame header/body padding against explicit expected values, independent of deleted CompactShell CSS."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+      "original_title": "lays the wide split out as WideShell does",
+      "original_line": 100,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed WideShell split/pane/navigation padding, widths, gaps and shade CSS against WIDE_SHELL. It does not render or scroll the native pane."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+      "original_title": "sizes the quick toggles, their fade and the portrait note as CompactShell does",
+      "original_line": 118,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed CompactShell quick-toggle grid, scroll cue and portrait-note geometry against COMPACT_SHELL. It does not operate a quick toggle or mount the native compact shell."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+      "original_title": "stacks the orientation options below the track width OrientationPicker does",
+      "original_line": 140,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed OrientationPicker container query and column option literals. No native orientation choice is made or column layout measured here."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-section-bodies.test.mjs",
+      "original_title": "takes the section bodies\u2019 spacing, glyphs and see-through lift from the shipping sources",
+      "original_line": 178,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Reads removed sound/appearance/modal markup and CSS for section spacing, icons and see-through shadow. It does not render the section bodies."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-slider.test.mjs",
+      "original_title": "assigns each painted part the colour token the shipping selector assigns it",
+      "original_line": 295,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks old Slider selector color declarations against imported token names. Native themed track/thumb paint remains in mounted slider tests."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-slider.test.mjs",
+      "original_title": "holds every literal the port carries to the Svelte sources",
+      "original_line": 302,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Extracts old Slider snap/key/page constants, thumb/track/shadow/help/setting-icon CSS and value-text source. It does not drive native keyboard, gesture or value updates."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-tool-drawer-settings.test.mjs",
+      "original_title": "lists the drawing tools in the shipping order with their ids, labels and icons",
+      "original_line": 73,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed settings/tool state arrays to compare DRAWING_TOOLS ids, labels, icons and order. No native tool selection occurs here."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-tool-drawer-settings.test.mjs",
+      "original_title": "ports the Camera button row, the compact Tool drawer cell and both defaults",
+      "original_line": 83,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "toggleRow/rowProp parse removed Saving and CompactShell rows, then compare setting fallback source strings. No native Camera/Tool drawer switch is operated."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+      "original_title": "keeps shipping\u2019s browser text measure and wrapping at height $height in $theme",
+      "original_line": 114,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+        "title": "keeps browser text measure and wrapping at height $height in $theme",
+        "line": 112
+      },
+      "rationale": "Preserved mounted width/wrap and compact introduction interaction; only Svelte source text checks retired."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+      "original_title": "renders the not-found actions as real links with shipping page leading",
+      "original_line": 193,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+        "title": "renders the not-found actions as real links with page leading",
+        "line": 185
+      },
+      "rationale": "Preserved actual anchors/destinations and native line-height assertions without PageShell.svelte parsing."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+      "original_title": "titles the browser tab for %s as the shipping page does",
+      "original_line": 331,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+        "title": "titles the browser tab for $page",
+        "line": 318
+      },
+      "rationale": "Preserved browser document.title cases with explicit current page-title expectations."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+      "original_title": "gives the page shipping\u2019s inherited leading and pretty wrapping",
+      "original_line": 498,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-web-app-pages.test.mjs",
+        "title": "gives the page inherited leading and pretty wrapping",
+        "line": 329
+      },
+      "rationale": "Preserved compiled/current web style contract without Svelte expected source."
+    },
+    {
+      "file": "tools/tests/native-ai-flow-copy.test.mjs",
+      "original_title": "speaks the AI Result in the shipping templates\u2019 words",
+      "original_line": 39,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches deleted AI result/error/report templates for imported copy strings and result aria-label. It does not mount a result/error/report or make a request."
+    },
+    {
+      "file": "tools/tests/native-ai-flow-copy.test.mjs",
+      "original_title": "describes each report as the shipping confirmation does",
+      "original_line": 49,
+      "original_operations": "native copy computation plus source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Computes aiReportReceived('REF') and compares it to a sentence extracted from deleted AiImageReport markup; other assertions compare confirmation strings. The exact full received sentence with real report reference survives in mounted rsd-native-ai's gated report flow, so only the old template-equivalence oracle retires.",
+      "covered_by": [
+        {
+          "file": "tools/migration/tests/rsd-native-ai.test.mjs",
+          "title": "reports the picture from the disclosure behind the gate, on the confirm card",
+          "line": 172
+        }
+      ]
+    },
+    {
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "original_title": "holds the AI Style Prompt card to shipping at its %s step",
+      "original_line": 160,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses old responsive AI prompt CSS for each step and compares max dimensions, padding, grid/type and close inset constants. It does not call a native layout function or mount the prompt."
+    },
+    {
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "original_title": "sends the result off as the shipping polaroid flies",
+      "original_line": 417,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares native result send-off constants to removed result transform/animation strings, including reduced-motion duration. No animation evaluator or mounted native send-off is executed."
+    },
+    {
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "original_title": "badges and spins the AI Image Button and pins the waiting print where shipping does",
+      "original_line": 433,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses deleted AI button/spinner/waiting-print/sticker CSS and retry-limit source against imported native constants. It does not start generation, animate, or position a native polaroid."
+    },
+    {
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "original_title": "lays out the problem report diagnostics as shipping does",
+      "original_line": 469,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses deleted problem-report diagnostics line-height and note padding CSS. It does not gather or send native diagnostics."
+    },
+    {
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "original_title": "words the switches as shipping does",
+      "original_line": 57,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed AI settings copy-source declarations, including platform-specific auto-save strings. It does not toggle native preferences or save credentials."
+    },
+    {
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "original_title": "words the key manager's text as AiKeyManager.svelte does",
+      "original_line": 68,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares removed key-manager markup to imported settings/messages/storage text and a network-message identifier. No key validation/save/removal request occurs."
+    },
+    {
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "original_title": "words the explainer as AiValueProp.svelte does",
+      "original_line": 85,
+      "original_operations": "native copy computation plus source declarations",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-ai-settings-drift.test.mjs",
+        "title": "explains an allowance of %s free pictures without a saved credential",
+        "line": 29
+      },
+      "rationale": "Preserves real valuePropClaims none0/3/FREE_LIMIT branches and adds singular none1 against exact two-sentence expected outputs. Saved managed/byok claims remain explicitly mounted in rsd-native-ai-settings. Static copy/template-substring equality retires."
+    },
+    {
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "original_title": "words and links the how-to as OpenAiKeyHowTo.svelte does",
+      "original_line": 111,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares removed OpenAI how-to text and href/parentalGateLink markup to native copy/hosted-page source. It does not follow a link or solve a gate."
+    },
+    {
+      "file": "tools/tests/native-ai-transport.test.mjs",
+      "original_title": "answers %s as shipping does, on a start and on a poll",
+      "original_line": 188,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-ai-transport.test.mjs",
+        "title": "answers $label on a $phase",
+        "line": 218
+      },
+      "rationale": "Restored all eleven response cases on both start and poll against explicit per-phase native outcomes, including exact detail presence."
+    },
+    {
+      "file": "tools/tests/native-audio-projection.test.mjs",
+      "original_title": "pins the shared backing-pixel speed gain and timing literals",
+      "original_line": 69,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "assertScratchProjection parses five deleted drawingSound numeric declarations and compares them to imported native scratch constants. It does not load or play audio."
+    },
+    {
+      "file": "tools/tests/native-audio-projection.test.mjs",
+      "original_title": "rejects a changed reused shipping gain literal",
+      "original_line": 72,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Changes the old BASE_SCRATCH_GAIN declaration and expects the source projection assertion to reject it. This tests removed source equivalence, not native gain updates."
+    },
+    {
+      "file": "tools/tests/native-audio-projection.test.mjs",
+      "original_title": "bundles every shipping pencil take byte for byte",
+      "original_line": 83,
+      "original_operations": "retained asset boundary",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-audio-projection.test.mjs",
+        "title": "bundles every pencil take byte for byte and imports the complete set",
+        "line": 46
+      },
+      "rationale": "Preserves all three native/retained-web-static MP3 byte comparisons, exact native imports and PENCIL_SOUNDS count; the three-name inventory is explicit instead of parsed from removed drawingSound."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "pins every reused gesture, motion, coachmark, haptic and gain literal",
+      "original_line": 142,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "assertProjection parses old gesture/ink-motion/button/coachmark/CSS/haptic/sound literals and compares imported native constants. It does not begin a native clear gesture or playback."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "rejects a changed shipping %s",
+      "original_line": 146,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Mutates each old numeric projection and expects assertProjection to reject the changed source. No native gesture, timer or animation is driven."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "rejects a changed shipping page-turn curve, haptic or gain",
+      "original_line": 157,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Changes old page-turn curve, haptic duration, gain and coachmark animation strings, expecting parser rejection. Native clear/haptic/audio operations are separate surviving tests."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "keeps the coachmark wordless and hidden from assistive technology like the shipping one",
+      "original_line": 170,
+      "original_operations": "source-only markup parser",
+      "disposition": "oracle-only retired",
+      "rationale": "coachmarkCopy strips deleted Svelte markup, checks aria-hidden and rejects injected words/missing hidden attribute. It never mounts a native coachmark; the mutated artifacts are old markup only."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "pins the docked tab geometry, every finish and both accept ring inks",
+      "original_line": 463,
+      "original_operations": "native constant/source equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "assertDockProjection reads native source literals/imported dock constants and compares old face/ring/coachmark CSS geometry and finishes. It does not render or activate the native Clear control."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "rejects a changed shipping %s",
+      "original_line": 467,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "This duplicate-title callback mutates old PROJECTIONS numeric declarations and calls assertProjection. Its assertions validate the removed source parser, not dock rendering or clear transitions."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "rejects a shipping ring wash sized to the ring or a rest gradient no longer the token",
+      "original_line": 475,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Mutates old ring-wash gradient sizing and face/coachmark background text, then expects assertDockProjection rejection. No native radial wash is rendered."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "names the button exactly as the shipping Clear Button does",
+      "original_line": 498,
+      "original_operations": "source-only label parser",
+      "disposition": "oracle-only retired",
+      "rationale": "shippingClearLabel and nativeClearLabel read aria/accessibility label strings from source. They do not render or invoke native Clear; retained accessibility activation tests execute real behavior."
+    },
+    {
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "original_title": "rejects a renamed shipping or native label",
+      "original_line": 503,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Mutates shipping/native Clear label source strings and compares parser results. It validates the retired source-label parity guard, with no mounted label or activation."
+    },
+    {
+      "file": "tools/tests/native-crayon-grain.test.mjs",
+      "original_title": "matches the shipping field owner for every RGBA byte in both %s bands",
+      "original_line": 49,
+      "original_operations": "native pixels against old implementation",
+      "disposition": "renamed",
+      "rationale": "Exact native output is compared to independent fixed base-derived RGBA SHA256 fixtures for every pigment/band. Edge dither, shade and field-seed mutations must change those bytes; no deleted source is evaluated at test time.",
+      "successor": {
+        "file": "tools/tests/native-crayon-grain.test.mjs",
+        "title": "pins both unencoded RGBA bands for $hex"
+      }
+    },
+    {
+      "file": "tools/tests/native-crayon-grain.test.mjs",
+      "original_title": "contains the canonical phase for seed %s",
+      "original_line": 61,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-crayon-grain.test.mjs",
+        "title": "contains the canonical phase for seed %s",
+        "line": 26
+      },
+      "rationale": "Preserves native crayonPhase exact canonical x/y coordinates and bounds on both axes for all six seed values, using fixed expected coordinate tuples."
+    },
+    {
+      "file": "tools/tests/native-crayon-grain.test.mjs",
+      "original_title": "detects a changed field policy %s",
+      "original_line": 93,
+      "original_operations": "native mutation against old implementation",
+      "disposition": "restored",
+      "rationale": "Exact native output is compared to independent fixed base-derived RGBA SHA256 fixtures for every pigment/band. Edge dither, shade and field-seed mutations must change those bytes; no deleted source is evaluated at test time.",
+      "successor": {
+        "file": "tools/tests/native-crayon-grain.test.mjs",
+        "title": "detects a changed field policy %s"
+      }
+    },
+    {
+      "file": "tools/tests/native-crayon-phase.test.mjs",
+      "original_title": "keeps seed %s tooth across tile boundaries at both native failure heights",
+      "original_line": 247,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-crayon-phase.test.mjs",
+        "title": "keeps seed %s tooth across tile boundaries at both native failure heights",
+        "line": 130
+      },
+      "rationale": "Real RN raster output is checked against 48 independent base-derived raw core-pixel SHA256 fixtures across six seeds, two heights and four columns, as well as coverage bounds. A one-pixel native pattern-transform fault fails all six seed cases."
+    },
+    {
+      "file": "tools/tests/native-crayon-phase.test.mjs",
+      "original_title": "exhibits a shipping-field counterexample to the legacy coverage ceiling",
+      "original_line": 266,
+      "original_operations": "old renderer computation",
+      "disposition": "oracle-only retired",
+      "rationale": "Renders only shippingReference across six seeds/two heights to prove the old field exceeds a legacy coverage ceiling. It does not sample native output; the restored native seed/height no-blank matrix is a different explicitly retained contract."
+    },
+    {
+      "file": "tools/tests/native-crayon-phase.test.mjs",
+      "original_title": "rejects the %s negative control",
+      "original_line": 276,
+      "original_operations": "native raster plus old-reference mutation",
+      "disposition": "oracle-only retired",
+      "rationale": "Renders native artwork, compares its pixels to flat/phase-shifted old shippingReference variants, and expects inequality. The native render is real, but assertions only reject mutations of the removed reference implementation; native phase-change/buildup/clipping/coverage checks remain."
+    },
+    {
+      "file": "tools/tests/native-deferred-library.test.mjs",
+      "original_title": "pins the ordinary web network fallback and opt-out policy to shipping",
+      "original_line": 434,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed web manager/boot source for network/save-data/metered/engagement policy strings. It does not execute native deferred-download or network policy."
+    },
+    {
+      "file": "tools/tests/native-design-primitives-drift.test.mjs",
+      "original_title": "ports every shipping primitive literal the native primitives draw with",
+      "original_line": 170,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "primitiveParity compares native primitive constants and token arithmetic with parsed old confirm/step/disclosure/status/scroll/field declarations. It does not call React rendering or blobPath in this callback; native primitive behavior tests remain separately."
+    },
+    {
+      "file": "tools/tests/native-design-primitives-drift.test.mjs",
+      "original_title": "rejects a changed shipping %s",
+      "original_line": 174,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Changes ten old primitive declarations/copy fields and expects primitiveParity to reject them. No native primitive interaction occurs."
+    },
+    {
+      "file": "tools/tests/native-feedback-adapters.test.mjs",
+      "original_title": "pins the pure OS-label copy to the shipping platform owner",
+      "original_line": 188,
+      "original_operations": "source text equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Reads the native and removed web OS-label function source, trims their export bodies and compares strings. Runtime OS-label/request behavior is exercised by surviving adapter tests."
+    },
+    {
+      "file": "tools/tests/native-feedback-contract.test.mjs",
+      "original_title": "pins %s byte-for-byte except its isolated import",
+      "original_line": 28,
+      "original_operations": "source file equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "assertProjection compares candidate feedback source bytes to removed client files after an isolated import replacement. It does not execute feedback transport or parse real replies."
+    },
+    {
+      "file": "tools/tests/native-feedback-contract.test.mjs",
+      "original_title": "rejects a changed owning source in %s",
+      "original_line": 36,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Appends changed-owner text to each removed feedback file and expects source-projection rejection. It is a negative control for retired byte parity, not request behavior."
+    },
+    {
+      "file": "tools/tests/native-focus-ring.test.mjs",
+      "original_title": "rings %s on its own box",
+      "original_line": 334,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-focus-ring.test.mjs",
+        "title": "rings %s on its own box",
+        "line": 301
+      },
+      "rationale": "Preserves actual mounted/computed focus outline for all four button variants in both themes with explicit expected color/width/offset."
+    },
+    {
+      "file": "tools/tests/native-focus-ring.test.mjs",
+      "original_title": "rings the device checkbox square around its box, not the whole labelled row",
+      "original_line": 355,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-focus-ring.test.mjs",
+        "title": "rings the device checkbox square around its box, not the whole labelled row",
+        "line": 322
+      },
+      "rationale": "Preserves mounted checkbox focus geometry and ring location with fixed expected outline."
+    },
+    {
+      "file": "tools/tests/native-focus-ring.test.mjs",
+      "original_title": "draws the disclosure summary ring inside the panel that clips it",
+      "original_line": 361,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-focus-ring.test.mjs",
+        "title": "draws the disclosure summary ring inside the panel that clips it",
+        "line": 328
+      },
+      "rationale": "Preserves mounted focused disclosure inset ring and panel clipping contract using native expected CSS/token values."
+    },
+    {
+      "file": "tools/tests/native-focus-ring.test.mjs",
+      "original_title": "rounds the dialog Back and Close rings to the blobs they paint",
+      "original_line": 367,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-focus-ring.test.mjs",
+        "title": "rounds the dialog Back and Close rings to the blobs they paint",
+        "line": 334
+      },
+      "rationale": "Preserves mounted focused Back/Close ring rounding using retained blob geometry and explicit ring expectations."
+    },
+    {
+      "file": "tools/tests/native-focus-ring.test.mjs",
+      "original_title": "rounds the floating close, the parental gate close, to its blob",
+      "original_line": 379,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-focus-ring.test.mjs",
+        "title": "rounds the floating close, the parental gate close, to its blob",
+        "line": 346
+      },
+      "rationale": "Preserves mounted parental-gate floating-close focus ring/blob geometry with retained native expectations."
+    },
+    {
+      "file": "tools/tests/native-haptics-parity.test.mjs",
+      "original_title": "vibrates the web exactly as haptics.ts does",
+      "original_line": 44,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-haptics-parity.test.mjs",
+        "title": "vibrates the web for one accept-threshold pulse",
+        "line": 29
+      },
+      "rationale": "Preserved actual navigator.vibrate invocation, explicitly once with 15 ms; added absence-of-motor branch."
+    },
+    {
+      "file": "tools/tests/native-icon-recolor-parity.test.mjs",
+      "original_title": "opts exactly the COLOR_ICONS members out of the tint, as Icon.svelte does",
+      "original_line": 12,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed Icon.svelte wrapper class expression and compares it to the literal COLOR_ICONS classification expression. It does not recolor a native SVG."
+    },
+    {
+      "file": "tools/tests/native-icons.test.mjs",
+      "original_title": "reads COLOR_ICONS from the shipping component and fails loudly when it moves",
+      "original_line": 132,
+      "original_operations": "old-source parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Reads the deleted Icon.svelte COLOR_ICONS set and checks old icon inventory membership plus parser failure on missing declaration. It does not render native icons or test native registry entries."
+    },
+    {
+      "file": "tools/tests/native-ink-visibility.test.mjs",
+      "original_title": "waits as long as the shipping eraser scan does",
+      "original_line": 172,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses the removed eraser scan timeout and compares EMPTY_SCAN_IDLE_MS. It does not schedule or run a native visibility scan; those runtime cases remain."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "keeps the card, preview tile and copy geometry",
+      "original_line": 67,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed install-banner card/preview/copy CSS and image markup against native metric constants. It does not mount a native install card."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "keeps the hint and parting text geometry",
+      "original_line": 84,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed install mascot and hint/parting paragraph line-height CSS against native metric constants. It does not animate hints or parting text."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "keeps the light preview lift, as React Native reads it",
+      "original_line": 93,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Normalizes the removed preview box-shadow CSS spelling and compares a native constant. No native shadow is rendered or measured."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "keeps the brand CTA, its chevron and the dismiss offset",
+      "original_line": 101,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks old install CTA dimensions/press scale/chevron/dismiss CSS and hint aria-controls/id strings. It does not press or expand the native CTA."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "stacks the CTA under the copy at the same breakpoint",
+      "original_line": 120,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed banner portrait stacking media query, wrap and flex-basis CSS. It does not resize or lay out a native install banner."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "keeps the fade and shrink timings",
+      "original_line": 128,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches the removed install script for three fade/shrink duration constants. It does not run native exit timers or animation."
+    },
+    {
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "original_title": "detects a negative control: a swapped term icon is not found in the shipping markup",
+      "original_line": 161,
+      "original_operations": "old-source negative control",
+      "disposition": "oracle-only retired",
+      "rationale": "Asserts a swapped icon/text sequence is absent from old install markup. No native icon routing or install control runs."
+    },
+    {
+      "file": "tools/tests/native-install-guide-order.test.mjs",
+      "original_title": "lists the %s install steps (outside Safari: %s)",
+      "original_line": 73,
+      "original_operations": "native checklist computation",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-install-guide-order.test.mjs",
+        "title": "lists the $os install steps (outside Safari: $outsideSafari)",
+        "line": 23
+      },
+      "rationale": "Preserves the four native install checklist cases, normalized spoken text, order and bold runs against frozen referenceSteps.install data. Only old snippet extraction retires."
+    },
+    {
+      "file": "tools/tests/native-install-guide-order.test.mjs",
+      "original_title": "lists the %s lock steps",
+      "original_line": 85,
+      "original_operations": "native checklist computation",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-install-guide-order.test.mjs",
+        "title": "lists the $os lock steps",
+        "line": 31
+      },
+      "rationale": "Preserves native iOS/Android/desktop lock checklist text/order/bold runs against referenceSteps.lock fixed fixtures."
+    },
+    {
+      "file": "tools/tests/native-install-guide-order.test.mjs",
+      "original_title": "lists the %s steps out of an engaged lock",
+      "original_line": 91,
+      "original_operations": "native checklist computation",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-install-guide-order.test.mjs",
+        "title": "lists the $os steps out of an engaged lock",
+        "line": 34
+      },
+      "rationale": "Preserves native iOS/Android exit checklist text/order/bold runs against referenceSteps.exit fixed fixtures."
+    },
+    {
+      "file": "tools/tests/native-install-guide-order.test.mjs",
+      "original_title": "reads a non-empty checklist from every arm",
+      "original_line": 97,
+      "original_operations": "old-source parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses every old installSteps snippet arm and asserts more than two entries. It never calls native checklist generation; old snippet-parser completeness retires with the markup."
+    },
+    {
+      "file": "tools/tests/native-orientation-settings.test.mjs",
+      "original_title": "offers the shipping choices, order and labels",
+      "original_line": 185,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed OrientationPicker option literals/label and compares native choice order/labels. It does not run orientation switching or layout."
+    },
+    {
+      "file": "tools/tests/native-orientation-settings.test.mjs",
+      "original_title": "captions Auto with the shipping rotation-setting note",
+      "original_line": 199,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed Appearance markup for the native Auto rotation-setting note. No native rotation observation occurs."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "lists the shipping protections and modes in the shipping order",
+      "original_line": 59,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed gate feature/mode literal arrays and compares native data after local shippingFeature name mapping. It does not evaluate gate policy or solve a challenge."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "holds success and words a wrong answer as shipping does",
+      "original_line": 96,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks old success/error timing and wrong-answer message source declarations against native constants. It does not run timers or submit an answer."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "names and explains each protection as shipping does",
+      "original_line": 110,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Extracts old protection entries and compares native label/help strings. It does not render, select or unlock policies."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "labels the modes as shipping does",
+      "original_line": 118,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares native mode labels to deleted Parent Center source literals. It does not change native policy mode."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "carries the intro, the notes, the confirmation and the footnotes word for word",
+      "original_line": 123,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Strips old Parent Center markup and compares intro/warning/confirmation/footnote/source consequence strings. It does not open a confirmation or commit policy changes."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "locks the controls behind the ParentCenterLock copy",
+      "original_line": 141,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed ParentCenterLock markup for lock/unlock copy strings. It does not lock or unlock the native page."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "titles the card and its success as shipping does",
+      "original_line": 149,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed gate title/success/subtitle strings against native copy. It does not open or solve a native gate."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "points at Settings \u203a Parent Center from the footer",
+      "original_line": 161,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed footer text for the Settings/Parent Center location. It does not navigate to native Settings."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "sizes the %s keypad as shipping does",
+      "original_line": 239,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "stepValue parses old responsive keypad CSS and compares native key height/gap/icon/font metrics. It does not construct modalFrame or press keys."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "sizes the %s card, problem and footer as shipping does",
+      "original_line": 257,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "stepValue parses old gate/problem/footer CSS at four steps and compares native metrics. It does not execute native gate/card layout."
+    },
+    {
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "original_title": "builds the policy matrix from the shipping columns",
+      "original_line": 275,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed policy matrix CSS for copy/column widths and container breakpoint. It does not render or operate the native policy matrix."
+    },
+    {
+      "file": "tools/tests/native-parent-center.test.mjs",
+      "original_title": "reads the rule this suite ports from the shipping gate",
+      "original_line": 423,
+      "original_operations": "source ordering",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed gate state source for session-solved/reset conditions. It never executes those policy state transitions; current native gate tests do."
+    },
+    {
+      "file": "tools/tests/native-pencil-double-tap.test.mjs",
+      "original_title": "ports the shipping opt-out row and its defaults",
+      "original_line": 80,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed controls/settings literals for Pencil opt-out copy and two defaults. It does not receive a native Pencil event or toggle the setting."
+    },
+    {
+      "file": "tools/tests/native-photo-library.test.mjs",
+      "original_title": "words %s unsaved pictures with the shipping banner copy",
+      "original_line": 163,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-photo-library.test.mjs",
+        "title": "words $count unsaved pictures after $outcome on $os",
+        "line": 183
+      },
+      "rationale": "Restored native failure-copy table across OS, denied/failed outcome and picture counts with explicit heading/detail expectations."
+    },
+    {
+      "file": "tools/tests/native-photo-library.test.mjs",
+      "original_title": "ports the Auto-Save on Delete label, help, and default",
+      "original_line": 174,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses removed Saving/settings row text/default source. It does not invoke native Photos, autosave or delete behavior."
+    },
+    {
+      "file": "tools/tests/native-picture-export.test.mjs",
+      "original_title": "pins the shipping engine lines the export grid is derived from",
+      "original_line": 142,
+      "original_operations": "old-source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed drawing engine for render cap/DPR/grid/exportScale source lines. Real native DPR and canonical-grid export tests have been restored independently; the old engine-source witness retires."
+    },
+    {
+      "file": "tools/tests/native-picture-export.test.mjs",
+      "original_title": "saves at the shipping grid and scale on a %sx display",
+      "original_line": 160,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-picture-export.test.mjs",
+        "title": "saves the expected grid and scale on a $ratio display",
+        "line": 184
+      },
+      "rationale": "Restored real pictureExport over the DPR/fractional-paper matrix against explicit pixel grids and minimum export scales."
+    },
+    {
+      "file": "tools/tests/native-picture-export.test.mjs",
+      "original_title": "saves a canonical-sheet picture at one CSS pixel per unit",
+      "original_line": 173,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-picture-export.test.mjs",
+        "title": "saves a canonical-sheet picture at one CSS pixel per unit on a 3x display",
+        "line": 199
+      },
+      "rationale": "Restored real canonical paper export against explicit 3072\u00d72304 grid and scale 3."
+    },
+    {
+      "file": "tools/tests/native-picture-export.test.mjs",
+      "original_title": "bundles the very grain file the shipping export tiles",
+      "original_line": 185,
+      "original_operations": "retained asset boundary plus old-source parsing",
+      "disposition": "oracle-only retired",
+      "rationale": "Reads the paper URL from removed exportDrawing and compares native/web-static paper bytes. The identical bytes comparison survives in rsd-native-drawing-frame; only discovery via removed exporter source is retired.",
+      "covered_by": [
+        {
+          "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+          "title": "bundles the shipping handmade-paper grain byte for byte",
+          "line": 137
+        }
+      ]
+    },
+    {
+      "file": "tools/tests/native-pointer-halos.test.mjs",
+      "original_title": "rejects a changed shipping halo: %s",
+      "original_line": 161,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Mutates three old halo CSS declarations and compares shippingProjection output to candidate constants. It never renders or expires native pointer halos."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "fades the Reduce Motion polaroid-fade keyframes between the frame resting style",
+      "original_line": 127,
+      "original_operations": "native constant equivalence",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "fades the Reduce Motion polaroid-fade keyframes between the frame resting style",
+        "line": 224
+      },
+      "rationale": "Preserves all four native reduced-motion fade frames with explicit offset/from/scale/rotate/opacity/linear easing table plus fixed700ms duration captured from the base CSS."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "uses shipping's complete transform and opacity keyframe tracks",
+      "original_line": 251,
+      "original_operations": "native constant equivalence",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "uses shipping's complete transform and opacity keyframe tracks",
+        "line": 242
+      },
+      "rationale": "Preserves full native flyout pose/fade/easing tracks, offset6/0/0px and duration300ms against frozen base CSS tables."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "uses shipping's drawer cascade start pose and fixed tool slots",
+      "original_line": 283,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Reads native drawer source and old CSS/tool markup for cascade start pose and fixed slots. The mounted drawer timing/hidden-slot callbacks and fixed-slot source guard now preserve native behavior without Svelte."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "deals flyout options on shipping's offsets, curve and stagger",
+      "original_line": 305,
+      "original_operations": "native constant equivalence",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "deals flyout options on shipping's offsets, curve and stagger",
+        "line": 262
+      },
+      "rationale": "Preserves all four native flyout option offset/rotation/opacity/easing frames plus260ms entrance,40ms delay and25ms stagger against base-derived fixed fixtures."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "squashes the camera through shipping's exact capture keyframes",
+      "original_line": 333,
+      "original_operations": "native constant equivalence plus source ordering",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "squashes the camera through shipping's exact capture keyframes",
+        "line": 287
+      },
+      "rationale": "Preserves all five native camera scale/rotation/easing frames and fixed460ms duration against frozen base keyframe data. Old screenshot/reduced-motion source-order assertions retire."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "blooms paint rings on shipping's independent scale and opacity clocks",
+      "original_line": 355,
+      "original_operations": "native constant equivalence",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "blooms paint rings on shipping's independent scale and opacity clocks",
+        "line": 301
+      },
+      "rationale": "Preserves all native bloom/trail scale and opacity tracks, every easing,620/700ms durations,90ms trail delay and3px width against frozen base data."
+    },
+    {
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "original_title": "winds Undo through shipping's exact anticipation, turns, curves and duration",
+      "original_line": 431,
+      "original_operations": "native constant equivalence plus source declarations",
+      "disposition": "restored",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "winds Undo through shipping's exact anticipation, turns, curves and duration",
+        "line": 337
+      },
+      "rationale": "Preserves all five native Undo rotation/easing frames and470ms duration against frozen base data. Only old UndoButton key-block and CSS reduced-motion selector assertions retire."
+    },
+    {
+      "file": "tools/tests/native-save-failure.test.mjs",
+      "original_title": "keeps the shipping limit on held pictures",
+      "original_line": 247,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches the removed save-failure store for UNSAVED_PICTURE_LIMIT. It does not enqueue, evict or retry held native pictures; those runtime cases survive."
+    },
+    {
+      "file": "tools/tests/native-saved-file-parity.test.mjs",
+      "original_title": "stamps a drawing saved at %s as shipping does",
+      "original_line": 34,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-saved-file-parity.test.mjs",
+        "title": "stamps a drawing saved at %s in sortable local time",
+        "line": 18
+      },
+      "rationale": "Restored real pictureFilename across three dates, including padding and midnight, against explicit expected local timestamp filenames."
+    },
+    {
+      "file": "tools/tests/native-saved-file-parity.test.mjs",
+      "original_title": "gives a %s picture the shipping extension",
+      "original_line": 39,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-saved-file-parity.test.mjs",
+        "title": "gives a %s picture its file extension",
+        "line": 26
+      },
+      "rationale": "Restored PNG/JPEG/WebP filename extensions across drawing and AI basenames with explicit expected strings."
+    },
+    {
+      "file": "tools/tests/native-section-icon-routing.test.mjs",
+      "original_title": "routes only the mascot name to the splotchy artwork, as SectionIcon.svelte does",
+      "original_line": 13,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses old SectionIcon conditional branches and icon prop forwarding. It does not call the native section router or render artwork."
+    },
+    {
+      "file": "tools/tests/native-section-icon-routing.test.mjs",
+      "original_title": "draws the splotchy artwork from splotchy.svg, which the native registry copies byte for byte",
+      "original_line": 25,
+      "original_operations": "old-source artifact routing",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks the old SplotchyIcon import URL and img markup only. Despite its title, it does not compare native asset bytes in the callback; native icon/artifact tests remain separately."
+    },
+    {
+      "file": "tools/tests/native-sections-seen.test.mjs",
+      "original_title": "pins every section content stamp to shipping, including the release version",
+      "original_line": 43,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Reads removed section definitions and compares ids/contentStamp source literals including APP_VERSION. It does not mark native sections seen or advance sessions."
+    },
+    {
+      "file": "tools/tests/native-settings-info-drift.test.mjs",
+      "original_title": "detects a negative control: a changed native literal no longer matches",
+      "original_line": 319,
+      "original_operations": "source mutation parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Mutates a native About source literal and compares parsed width against old About CSS. It validates a source-parity negative control, not native rendering."
+    },
+    {
+      "file": "tools/tests/native-settings-info-drift.test.mjs",
+      "original_title": "keep the Feedback form copy",
+      "original_line": 326,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Strips old feedback form/fields markup, compares copy/prompt constants and native source textarea/breakpoint literals. It does not edit, validate or submit a native form."
+    },
+    {
+      "file": "tools/tests/native-settings-info-drift.test.mjs",
+      "original_title": "keeps the standalone Feedback hero and next steps from the shipping route",
+      "original_line": 379,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches the removed Feedback route for hero/next/sent/copy/feature/email strings. It does not navigate or send native feedback."
+    },
+    {
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "original_title": "keeps the shipping range, default, label and help",
+      "original_line": 127,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares native Button Size min/default/max constants to parsed old settings constants plus removed row copy. It does not update a native slider or persist its value."
+    },
+    {
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "original_title": "words its fixed status lines as the shipping hub does",
+      "original_line": 183,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks native section subtitle strings as regex matches against removed section source. It does not compute a live subtitle or mount a hub row."
+    },
+    {
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "original_title": "puts only Night Mode and Sound switches on the hub, as HubList does",
+      "original_line": 259,
+      "original_operations": "old-source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses old HubList quick-toggle object entries and compares them to an explicit two-entry literal. No native HubList or toggle is rendered."
+    },
+    {
+      "file": "tools/tests/native-settings-shell-parity.test.mjs",
+      "original_title": "reads a template branch for every query-named shell",
+      "original_line": 72,
+      "original_operations": "old-source parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares query-name and template-branch inventories parsed only from deleted SettingsModal. It does not call native settingsShell."
+    },
+    {
+      "file": "tools/tests/native-settings-shell-parity.test.mjs",
+      "original_title": "renders the shell component each native shell name stands for",
+      "original_line": 76,
+      "original_operations": "old-source parser",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses deleted SettingsModal branch component names and compares compact/wide name literals. It does not render either native shell."
+    },
+    {
+      "file": "tools/tests/native-settings-shell-parity.test.mjs",
+      "original_title": "picks the shell shipping picks for every window",
+      "original_line": 80,
+      "original_operations": "native layout computation",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+        "title": "selects the %s \u00d7 %s shell at a policy boundary",
+        "line": 62
+      },
+      "rationale": "Old exhaustive3249-window source-equivalence grid retires; ten explicit native policy-boundary cases include900\u00d7599.98/600 and width/height/square edges, alongside seven retained representative shell checks. The dense oracle grid is not claimed as retained."
+    },
+    {
+      "file": "tools/tests/native-share-location-parity.test.mjs",
+      "original_title": "reads the viewport orientation by the rule layout.svelte.ts uses",
+      "original_line": 39,
+      "original_operations": "old-source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed layout.svelte.ts width/height orientation comparisons as strings. It does not call a native orientation/share-location policy."
+    },
+    {
+      "file": "tools/tests/native-sound-sources.test.mjs",
+      "original_title": "copies the Button style choice from shipping",
+      "original_line": 86,
+      "original_operations": "source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Compares toolbar style/default/data constants to removed settings/options markup. It does not select a native style or change sound settings."
+    },
+    {
+      "file": "tools/tests/native-stroke-group-count-mounted.test.mjs",
+      "original_title": "counts a stroke group once toward the settled-in strokes, as shipping\u2019s engine does",
+      "original_line": 17,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-stroke-group-count-mounted.test.mjs",
+        "title": "counts a stroke group once toward the settled-in strokes",
+        "line": 15
+      },
+      "rationale": "Preserved mounted multicontract sequence and committedStrokes counts. Only old engine source-text callback check retired."
+    },
+    {
+      "file": "tools/tests/native-stroke-smoothing.test.mjs",
+      "original_title": "draws the %s web SVG path shipping draws",
+      "original_line": 174,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-stroke-smoothing.test.mjs",
+        "title": "draws the %s SVG path on the canonical quadratic grid",
+        "line": 146
+      },
+      "rationale": "Restored real sparse zigzag/scribble SVG paths against frozen canonical fixtures from the base renderer; no retired implementation import remains."
+    },
+    {
+      "file": "tools/tests/native-stroke-smoothing.test.mjs",
+      "original_title": "draws the zigzag Skia pen path shipping draws",
+      "original_line": 181,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-stroke-smoothing.test.mjs",
+        "title": "draws the zigzag Skia pen path on the canonical quadratic grid",
+        "line": 152
+      },
+      "rationale": "Restored actual Skia pen path evaluation against the base canonical fixture with Float32 quantization."
+    },
+    {
+      "file": "tools/tests/native-unavailable-cue.test.mjs",
+      "original_title": "keeps the flash alone under Reduce Motion",
+      "original_line": 117,
+      "original_operations": "old-source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks old reduced-motion action-unavailable animation CSS. It does not execute native unavailable-cue flashing; runtime cue cases remain."
+    },
+    {
+      "file": "tools/tests/native-volume-preview.test.mjs",
+      "original_title": "plays at shipping's preview speed, which is its full-volume scratch",
+      "original_line": 30,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Computes expected preview gain from two deleted source literals and compares VOLUME_PREVIEW_SCRATCH_GAIN. It does not start/update audio; retained volume-preview tests execute playback gain changes against the native owner."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "keeps the banner button labels",
+      "original_line": 45,
+      "original_operations": "old-source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks removed banner script/template for show/hide/install button labels and icon placement. It does not press a native banner control."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "keeps the banner dismiss label",
+      "original_line": 56,
+      "original_operations": "old-source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Checks the removed install banner aria-label source against native dismiss copy. It does not dismiss or render a native banner."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "keeps the banner parting message, hint sentences and Safari steps",
+      "original_line": 60,
+      "original_operations": "native copy computation plus source declarations",
+      "disposition": "oracle-only retired",
+      "rationale": "Calls iosBannerSteps for the shared location, then checks each sentence as an old banner substring, alongside static parting/Android hint copy. Current rsd-native-install-banner mounts the iOS hint and checks every iosBannerSteps sentence; old template equivalence retires."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "detects a negative control: a reworded lock step is not found in the shipping markup",
+      "original_line": 93,
+      "original_operations": "native copy computation plus old-source mutation",
+      "disposition": "oracle-only retired",
+      "rationale": "Calls lockGuideSteps('android'), rewords its first sentence and asserts the mutant is absent from old guide markup. Native checklist order/text/bold generation is preserved by the restored fixed-fixture install-guide table; the old-markup negative control retires."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "detects a negative control: changed copy is not found in the shipping markup",
+      "original_line": 97,
+      "original_operations": "old-source negative control",
+      "disposition": "oracle-only retired",
+      "rationale": "Changes an imported Android hint string and checks it is absent from removed banner markup. It does not operate native install state."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "keeps the shipping thresholds and timings",
+      "original_line": 101,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Searches removed canvas/install/session/banner source declarations for stroke/session thresholds and parting duration. It does not advance native counters or exit timers."
+    },
+    {
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "original_title": "treats the same display modes as an installed launch",
+      "original_line": 114,
+      "original_operations": "native constant equivalence",
+      "disposition": "oracle-only retired",
+      "rationale": "Parses old fullscreen/app-like display-mode arrays and compares APP_LIKE_DISPLAY_MODE_QUERIES data. It does not query matchMedia or change native installed-launch state."
+    },
+    {
+      "file": "tools/tests/native-web-shell-head.test.mjs",
+      "original_title": "uses shipping's scoped touch, selection and callout locks",
+      "original_line": 196,
+      "original_operations": "Restored native contract; see specific rationale and current callback.",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-web-shell-head.test.mjs",
+        "title": "scopes touch, selection and callout locks to the app surface",
+        "line": 237
+      },
+      "rationale": "Restored actual strict.css app-surface declarations against five explicit lock properties; no app.css oracle."
+    },
+    {
+      "file": "tools/tests/native-web-shell-head.test.mjs",
+      "original_title": "takes shipping's viewport-fit=cover, so safe-area insets reach the Notch Band",
+      "original_line": 249,
+      "original_operations": "Native generated-head transformation against old app template",
+      "disposition": "renamed",
+      "successor": {
+        "file": "tools/tests/native-web-head.test.mjs",
+        "title": "preserves the viewport and install tags independently of an application template",
+        "line": 15
+      },
+      "rationale": "Current withWebViewport owner replaces retired template-dependent withShippingViewport; actual output keeps one viewport meta with the declared native head value, and companion checks reject missing viewport/head."
+    }
+  ],
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088"
+}

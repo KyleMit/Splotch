@@ -6,14 +6,8 @@ import {
   photoLibrary,
 } from '../../experiments/native-architecture/src/platform/photoLibrary.ts';
 import { pictureSave as nativePictureSave } from '../../experiments/native-architecture/src/platform/pictureSave.ts';
+import { saveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 import { createSaveFailure } from '../../experiments/native-architecture/src/export/saveFailure.ts';
-import { saveFailureCopy as nativeSaveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
-import {
-  DEFAULT_SAVE_ON_DELETE_ENABLED,
-  SAVE_ON_DELETE_HELP,
-  SAVE_ON_DELETE_LABEL,
-} from '../../experiments/native-architecture/src/settings/saveOnDelete.ts';
-import { saveFailureCopy } from '../../web/src/lib/drawing/saveFailureCopy.ts';
 
 vi.mock('expo-media-library', () =>
   import('./native-photo-library-port.mjs').then((port) => port.mediaLibraryModule)
@@ -77,9 +71,6 @@ describe('native photo library save', () => {
     expect(photos.permissionRequests).toEqual([]);
     expect(photos.created).toEqual([]);
     expect(photos.files.size).toBe(0);
-    expect(nativeSaveFailureCopy('failed', 1, 'android')).toEqual(
-      saveFailureCopy('failed', 1, 'android')
-    );
     photos.nativeAvailable = true;
     await failure.retry();
     expect(photos.created).toEqual([expect.objectContaining({ base64: PNG })]);
@@ -158,30 +149,6 @@ describe('shipping parity', () => {
     expect(native).toContain('context.externalMediaDirs.firstOrNull()');
   });
 
-  // Every outcome shipping words, for no held picture, one, several and the held limit, on each
-  // platform the native app runs on.
-  it.each(['ios', 'android', 'web'])(
-    'words %s unsaved pictures with the shipping banner copy',
-    (os) => {
-      for (const outcome of ['denied', 'failed'])
-        for (const count of [0, 1, 2, 8])
-          expect(nativeSaveFailureCopy(outcome, count, os)).toEqual(
-            saveFailureCopy(outcome, count, os)
-          );
-    }
-  );
-
-  it('ports the Auto-Save on Delete label, help, and default', () => {
-    const section = read('web/src/lib/components/settings/SavingSection.svelte');
-    const row = section.match(/<ToggleRow\b[^>]*id="saveOnDeleteToggle"[^>]*\/>/)?.[0];
-    expect(row).toContain(`label="${SAVE_ON_DELETE_LABEL}"`);
-    expect(row).toContain(`help="${SAVE_ON_DELETE_HELP}"`);
-    const defaults = read('web/src/lib/state/settings.svelte.ts');
-    expect(defaults).toContain(
-      `saveOnDeleteEnabled: [STORAGE_KEYS.saveOnDelete, ${DEFAULT_SAVE_ON_DELETE_ENABLED}]`
-    );
-  });
-
   it('asks iOS for add-only access and never for read access', () => {
     const usage = (plist) =>
       plist.match(/<key>NSPhotoLibraryAddUsageDescription<\/key>\s*<string>([^<]*)<\/string>/)?.[1];
@@ -189,4 +156,39 @@ describe('shipping parity', () => {
     expect(usage(candidate)).toBeDefined();
     expect(candidate).not.toContain('NSPhotoLibraryUsageDescription');
   });
+});
+
+const UNSAVED_COUNTS = [
+  [0, "Your picture wasn't saved", 'Something went wrong while saving it.'],
+  [1, "Your picture wasn't saved", 'Something went wrong while saving. Try again in a moment.'],
+  [2, "2 pictures weren't saved", 'Something went wrong while saving. Try again in a moment.'],
+  [8, "8 pictures weren't saved", 'Something went wrong while saving. Try again in a moment.'],
+];
+const UNSAVED_OUTCOMES = [
+  [
+    'ios',
+    'denied',
+    'Splotch needs permission to add pictures to Photos. Turn it on in Settings, then try again.',
+  ],
+  [
+    'android',
+    'denied',
+    'Splotch needs storage permission to save to your gallery. Turn it on in Settings, then try again.',
+  ],
+  ['web', 'denied', null],
+  ['ios', 'failed', null],
+  ['android', 'failed', null],
+  ['web', 'failed', null],
+];
+it.each(
+  UNSAVED_OUTCOMES.flatMap(([os, outcome, permissionDetail]) =>
+    UNSAVED_COUNTS.map(([count, heading, failureDetail]) => ({
+      os,
+      outcome,
+      count,
+      expected: { heading, detail: permissionDetail ?? failureDetail },
+    }))
+  )
+)('words $count unsaved pictures after $outcome on $os', ({ os, outcome, count, expected }) => {
+  expect(saveFailureCopy(outcome, count, os)).toEqual(expected);
 });

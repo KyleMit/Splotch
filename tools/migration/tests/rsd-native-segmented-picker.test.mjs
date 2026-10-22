@@ -1,15 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement as h, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { yogaTrackLayout } from './rsd-yoga-host.mjs';
 import { html } from 'react-strict-dom';
-import * as shippingRoving from '../../../web/src/lib/components/design/rovingRadio.ts';
 import { PHONE_MAX_WIDTH_PX } from '../../../web/src/lib/breakpoints.ts';
-import { brand, scale, themes, toCssVarName } from '../../../web/src/lib/design/tokens.ts';
-import * as nativeRoving from '../../../experiments/native-architecture/src/rsdDrawing/rovingRadio.ts';
+import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
@@ -18,16 +15,16 @@ import {
   RsdSegmentedPicker,
   thumbOrigin,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
+import {
+  arrowDelta,
+  nextEnabledIndex,
+  rovingTabIndex,
+} from '../../../experiments/native-architecture/src/rsdDrawing/rovingRadio.ts';
 
 const WEB_PLATFORM = '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts';
 vi.mock(
   '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts',
   () => import('../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.native.ts')
-);
-
-const SHIPPING_PICKER = readFileSync(
-  join(import.meta.dirname, '../../../web/src/lib/components/design/SegmentedPicker.svelte'),
-  'utf8'
 );
 const CELL_WIDTH_PX = 100;
 // The first Yoga case compiles React Native's Yoga sources before it lays anything out.
@@ -167,6 +164,91 @@ async function press(label) {
 }
 
 describe('radio mode', () => {
+  it('ports the roving-radio rules case for case', () => {
+    for (const [key, delta] of [
+      ['ArrowLeft', -1],
+      ['ArrowUp', -1],
+      ['ArrowRight', 1],
+      ['ArrowDown', 1],
+      ['Home', 0],
+      ['Enter', 0],
+      [' ', 0],
+    ])
+      expect(arrowDelta(key), key).toBe(delta);
+
+    const layouts = [
+      {
+        disabled: [false, false, false],
+        next: [
+          [2, 1],
+          [0, 2],
+          [1, 0],
+        ],
+        tab: [0, 0, 1, 2],
+      },
+      {
+        disabled: [true, false, false],
+        next: [
+          [2, 1],
+          [2, 2],
+          [1, 1],
+        ],
+        tab: [1, 1, 1, 2],
+      },
+      {
+        disabled: [false, true, false],
+        next: [
+          [2, 2],
+          [0, 2],
+          [0, 0],
+        ],
+        tab: [0, 0, 0, 2],
+      },
+      {
+        disabled: [false, false, true],
+        next: [
+          [1, 1],
+          [0, 0],
+          [1, 0],
+        ],
+        tab: [0, 0, 1, 0],
+      },
+      {
+        disabled: [true, true, false],
+        next: [
+          [2, 2],
+          [2, 2],
+          [2, 2],
+        ],
+        tab: [2, 2, 2, 2],
+      },
+      {
+        disabled: [true, true, true],
+        next: [
+          [0, 0],
+          [1, 1],
+          [2, 2],
+        ],
+        tab: [-1, -1, -1, -1],
+      },
+    ];
+    for (const { disabled, next, tab } of layouts) {
+      const options = disabled.map((disabled, value) => ({ disabled, value }));
+      const context = JSON.stringify(disabled);
+      for (let from = 0; from < options.length; from++)
+        for (const [direction, delta] of [-1, 1].entries())
+          expect(
+            nextEnabledIndex(options, from, delta),
+            `${context} from ${from} by ${delta}`
+          ).toBe(next[from][direction]);
+      for (const [index, selected] of [-1, 0, 1, 2].entries())
+        expect(
+          rovingTabIndex(options, (value) => value === selected),
+          `${context} selected ${selected}`
+        ).toBe(tab[index]);
+    }
+  });
+
   it('names a radiogroup of checked options, each enabled one a native focus and activation stop', async () => {
     await mount({ initial: 'dark' });
     expect(group().getAttribute('aria-label')).toBe('Theme');
@@ -435,105 +517,12 @@ describe('thumb origin in React Native Yoga', () => {
 });
 
 describe('drift from the shipping picker', () => {
-  const rule = (selector) => {
-    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = SHIPPING_PICKER.match(new RegExp(`^\\s*${escaped}\\s*\\{([^}]*)\\}`, 'm'));
-    expect(match, selector).not.toBeNull();
-    return match[1];
-  };
-  const declaration = (selector, property) => {
-    const match = rule(selector).match(new RegExp(`(?:^|;|\\s)${property}:\\s*([^;]+);`));
-    expect(match, `${selector} ${property}`).not.toBeNull();
-    return match[1].trim();
-  };
   const px = (value) => Number.parseFloat(value);
 
   it('holds every literal the port carries to the Svelte style block', () => {
-    expect(declaration('.segment', '--thumb-travel-duration')).toBe(
-      `${PICKER_METRICS.THUMB_TRAVEL_MS}ms`
-    );
-    expect(declaration('.segment .option', 'gap')).toBe(
-      `var(--segment-option-gap, ${PICKER_METRICS.SEGMENT_OPTION_GAP_PX}px)`
-    );
-    expect(Number(declaration('.segment .option', 'line-height'))).toBe(
-      PICKER_METRICS.SEGMENT_LINE_HEIGHT
-    );
-    expect(px(declaration('.segment :global(.picker-option-icon)', 'width'))).toBe(
-      PICKER_METRICS.SEGMENT_ICON_PX
-    );
-    expect(declaration('.segment:not(.fill) .option', 'padding')).toBe(
-      `var(--space-2) ${PICKER_METRICS.HUG_OPTION_PADDING_INLINE_PX}px`
-    );
-    expect(px(declaration('.chip', 'gap'))).toBe(PICKER_METRICS.CHIP_GAP_PX);
-    expect(declaration('.chip', 'grid-template-columns')).toMatch(/^repeat\(2,/);
-    expect(px(declaration('.chip .option', 'gap'))).toBe(PICKER_METRICS.CHIP_GAP_PX);
-    expect(declaration('.chip .option', 'padding')).toBe(
-      `${PICKER_METRICS.CHIP_PADDING_BLOCK_PX}px ${PICKER_METRICS.CHIP_PADDING_INLINE_PX}px`
-    );
-    expect(px(declaration('.chip :global(.picker-option-icon)', 'width'))).toBe(
-      PICKER_METRICS.CHIP_ICON_PX
-    );
-    expect(px(declaration('.option-check', 'width'))).toBe(PICKER_METRICS.CHECK_PX);
-    expect(px(declaration('.option-check :global(.option-check-icon)', 'width'))).toBe(
-      PICKER_METRICS.CHECK_PX
-    );
-    expect(px(declaration('.underline', '--underline-segment-width'))).toBe(
-      PICKER_METRICS.UNDERLINE_SEGMENT_PX
-    );
-    expect(px(declaration('.underline', 'gap'))).toBe(PICKER_METRICS.UNDERLINE_GAP_PX);
-    expect(px(declaration('.underline .option', 'gap'))).toBe(
-      PICKER_METRICS.UNDERLINE_OPTION_GAP_PX
-    );
-    expect(declaration('.underline .option', 'padding')).toBe(
-      `${PICKER_METRICS.UNDERLINE_PADDING_TOP_PX}px ${PICKER_METRICS.UNDERLINE_PADDING_INLINE_PX}px ${PICKER_METRICS.UNDERLINE_PADDING_BOTTOM_PX}px`
-    );
-    expect(Number(declaration('.underline .option', 'line-height'))).toBe(
-      PICKER_METRICS.UNDERLINE_LINE_HEIGHT
-    );
-    expect(declaration('.underline .option', 'margin-bottom')).toBe(
-      'calc(-1 * var(--border-width))'
-    );
     expect(PICKER_METRICS.UNDERLINE_RULE_OVERLAP_PX).toBe(-px(scale.borderWidth));
-    expect(px(declaration('.underline :global(.picker-option-icon)', 'width'))).toBe(
-      PICKER_METRICS.UNDERLINE_ICON_PX
-    );
-    expect(SHIPPING_PICKER).toContain('transform var(--thumb-travel-duration) var(--ease-glide)');
     expect(`cubic-bezier(${PICKER_METRICS.EASE_GLIDE.join(', ')})`).toBe(scale.easeGlide);
-    expect(SHIPPING_PICKER).toContain(`@media (max-width: ${PHONE_MAX_WIDTH_PX}px)`);
     expect(PICKER_METRICS.PHONE_MAX_WIDTH_PX).toBe(PHONE_MAX_WIDTH_PX);
-  });
-
-  it('assigns each painted part the colour token the shipping selector assigns it', () => {
-    for (const [part, { selector, property, token }] of Object.entries(PAINT))
-      expect(declaration(selector, property), part).toBe(`var(${toCssVarName(token)})`);
-    expect(declaration('.segment .thumb', 'box-shadow')).toBe('var(--shadow-control)');
-  });
-
-  it('ports the roving-radio rules case for case', () => {
-    for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Home', 'Enter', ' '])
-      expect(nativeRoving.arrowDelta(key), key).toBe(shippingRoving.arrowDelta(key));
-    const layouts = [
-      [{}, {}, {}],
-      [{ disabled: true }, {}, {}],
-      [{}, { disabled: true }, {}],
-      [{}, {}, { disabled: true }],
-      [{ disabled: true }, { disabled: true }, {}],
-      [{ disabled: true }, { disabled: true }, { disabled: true }],
-    ];
-    for (const layout of layouts) {
-      const valued = layout.map((option, index) => ({ ...option, value: index }));
-      for (let from = 0; from < layout.length; from += 1)
-        for (const delta of [-1, 1])
-          expect(nativeRoving.nextEnabledIndex(layout, from, delta)).toBe(
-            shippingRoving.nextEnabledIndex(layout, from, delta)
-          );
-      for (const selected of [-1, 0, 1, 2]) {
-        const isSelected = (value) => value === selected;
-        expect(nativeRoving.rovingTabIndex(valued, isSelected)).toBe(
-          shippingRoving.rovingTabIndex(valued, isSelected)
-        );
-      }
-    }
   });
 
   it('keeps aria-pressed for the web build, where the DOM carries it', async () => {

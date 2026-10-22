@@ -1,7 +1,7 @@
 export const MIN_TEXT_ZOOM = 1;
-export const MAX_TEXT_ZOOM = 3;
+const MAX_TEXT_ZOOM = 3;
 
-export function clampTextZoom(zoom: number): number {
+function clampTextZoom(zoom: number): number {
   if (!Number.isFinite(zoom)) return MIN_TEXT_ZOOM;
   return Math.min(MAX_TEXT_ZOOM, Math.max(MIN_TEXT_ZOOM, zoom));
 }

@@ -1,27 +1,16 @@
 ---
 name: cloud-preview
-description: Claude Code Cloud session only — start the dev server + reverse tunnel and report the public phone-preview URL
+description: Serve and verify the React Native web export in a cloud session, and identify the supported public-preview path.
 ---
 
-Start the live phone-preview tunnel for this **Claude Code Cloud** session (ADR-0021,
-`docs/CLOUD/Claude-Code.md`). This is *only* for cloud sessions — on localhost there are simpler
-ways to view the app, so don't use this there.
+# Cloud preview
 
-`npm run dev:tunnel` is a **long-running** process: it starts `vite dev` on `localhost:5173`, brings
-up the chisel reverse tunnel to the Fly relay, waits for the public URL to answer 200, prints it,
-and then holds open until stopped.
+Use the `run-splotch` skill to build and serve the RN web export on an explicit free port. Retain
+the managed terminal handle and verify the rendered page before reporting readiness. Read the
+relevant cloud setup guide in `docs/CLOUD/` for browser dependencies and network access.
 
-Do this:
-
-1. Run `npm run dev:tunnel` **in the background** — do not wait for it to exit.
-2. Watch its output for the readiness line (`➜  Live:  https://…`) or a failure (e.g.
-   `Missing TUNNEL_AUTH — …`).
-3. Report the public URL once it's live so it can be opened on a phone. If it failed, report the
-   error and the likely fix (usually a missing `TUNNEL_AUTH` in the cloud env config — see
-   `.claude/cloud/environment.example`).
-
-Notes:
-
-* This serves a **dev** build — no `/api/*` serverless functions. Those need `npm run dev:netlify`
-  (which the tunnel script does not use).
-* Leave the process running until the user asks to stop it.
+The Vite development server and its reverse-tunnel workflow retired with SvelteKit (ADR-0182). A
+public phone preview uses an existing Netlify deploy preview. Do not present a loopback address as a
+public URL or expose the isolated E2E host and its test credentials to the internet. Report the
+actual deploy URL only after verifying that deployment exists; any new deployment follows the user's
+publishing authorization.

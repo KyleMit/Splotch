@@ -108,17 +108,6 @@ export function diagnose(profile: DeviceProfile, orientation: Orientation): Diag
 type BandGapCause =
   'cutout-below-threshold' | 'platform-paints-no-band' | 'rotation-angle-unavailable';
 
-// Rendered as the band-gap tooltip in ScenarioTile. Keyed by the whole union so
-// a new cause cannot ship without the sentence that explains it.
-export const BAND_GAP_EXPLANATIONS = {
-  'cutout-below-threshold':
-    'A real cutout whose inset sits under NOTCH_INSET_THRESHOLD_PX, so the app declines to paint it rather than risk banding a plain status bar.',
-  'platform-paints-no-band':
-    'The surface reports no inset on the cutout edge at all, so there is nothing for a CSS band to fill.',
-  'rotation-angle-unavailable':
-    'The two sides differ, so only the rotation angle could pick one — and no Screen Orientation API reported a landscape angle.',
-} as const satisfies Record<BandGapCause, string>;
-
 export interface BandVerdict {
   /** The edge a band ought to cover: where the cutout actually is. */
   expected: ScreenEdge | null;

@@ -10,7 +10,7 @@ import type { SliderDraft } from './useSliderDraft';
 
 // SoundSection.svelte's spacing around the Volume row and above "What makes sound";
 // native-settings-sections.test.mjs reads each from that source.
-export const SOUND_SECTION_SPACING = {
+const SOUND_SECTION_SPACING = {
   sliderTop: 12,
   sliderBottom: 2,
   sourcesTop: 20,

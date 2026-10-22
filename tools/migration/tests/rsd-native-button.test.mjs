@@ -127,6 +127,8 @@ describe('RsdButton', () => {
 
   const PARKED = {
     brand: (theme) => ({ backgroundColor: theme.controlTrack }),
+    wash: (theme) => ({ backgroundColor: theme.controlTrack }),
+    danger: (theme) => ({ backgroundColor: theme.controlTrack }),
     outline: (theme) => ({ backgroundColor: 'transparent', borderColor: theme.border }),
   };
 

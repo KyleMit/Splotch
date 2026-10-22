@@ -104,10 +104,8 @@ describe('verifySessionToken', () => {
   });
 });
 
-// The limiter keeps state in a module-level Map that persists for the whole
-// file, so every case here uses its own IP. That both front doors draw on the
-// same bucket is proved end-to-end in routes/admin/login.integration.test.ts —
-// these cases cover the sequence itself.
+// The limiter retains state for the file, so each case uses its own IP.
+// api/adminLogin.integration.test.ts exercises the JSON boundary.
 describe('beginAdminLogin', () => {
   beforeEach(() => {
     envState.ADMIN_ACCESS_TOKEN = 'the-raw-secret';

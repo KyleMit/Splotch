@@ -1,8 +1,7 @@
 import { records, host, mount, root, openSettingsSection } from './rsd-native-selection-host.mjs';
 import './rsd-native-settings-hub-mocks.mjs';
 import { click, drawingScreen, flat, storedSettings } from './rsd-native-settings-fixture.mjs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { Animated } from 'react-native';
@@ -11,9 +10,6 @@ import { RsdSectionReveal } from '../../../experiments/native-architecture/src/r
 import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
 import { CALM_FADE_MS, SECTION_SLIDE_MS } from '../../../web/src/lib/motionDurations.ts';
 import { TOOL_DRAWER_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToolDrawerSection.tsx';
-
-const shippingSource = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', path), 'utf8');
 
 function revealProps() {
   return records.props.findLast((props) => props.testID === 'settings-section-reveal');
@@ -57,21 +53,16 @@ function holdReveals() {
 }
 
 it.each([
-  ['Sound', 'SoundSection.svelte', { soundEnabled: true }],
-  ['Tool Drawer', 'ControlsSection.svelte', { applePencilSeen: true }],
+  ['Sound', { soundEnabled: true }],
+  ['Tool Drawer', { applePencilSeen: true }],
 ])(
   'mounts both %s conditional blocks through the shipping section reveal',
-  async (name, file, settings) => {
+  async (name, settings) => {
     storedSettings(settings);
     drawingScreen();
     await mount(createElement(RsdDrawingScreen));
     await openSettingsSection(name);
-    const shipping = shippingSource(`settings/${file}`);
-    expect(host.querySelectorAll('[data-testid="settings-section-reveal"]')).toHaveLength(
-      [...shipping.matchAll(/transition:sectionReveal/g)].length
-    );
-    expect(shippingSource('settings/sectionReveal.ts')).toContain('calm(slide, SECTION_SLIDE)');
-    expect(shippingSource('settings/sections.ts')).toContain('duration: SECTION_SLIDE_MS');
+    expect(host.querySelectorAll('[data-testid="settings-section-reveal"]')).toHaveLength(2);
   }
 );
 
@@ -103,9 +94,6 @@ it('mounts each AI Art alternative through its own shipping reveal', async () =>
   await click('Create AI Images');
   const on = count();
   expect(on).toBe(1);
-  expect(off + on).toBe(
-    [...shippingSource('settings/AiKeyManager.svelte').matchAll(/transition:sectionReveal/g)].length
-  );
 });
 
 it.each([

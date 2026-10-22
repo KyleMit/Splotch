@@ -11,252 +11,154 @@ on merge.
 
 ## Prerequisites
 
-* **Node** via [nvm](https://github.com/nvm-sh/nvm) (or your version manager of choice) — any
-  version satisfying the `engines` range in [`package.json`](../package.json); Capacitor 8 requires
-  Node ≥ 22. Development is supported on macOS and Linux (ADR-0062).
-  ```bash
-  nvm use 22
-  ```
-* **pnpm** — the package manager (ADR-0119). Don't install it directly; `corepack enable pnpm` puts
-  it on PATH at the exact version `package.json`'s `packageManager` field pins, and corepack is
-  bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every
-  `npm run …` in these docs is correct as written.
-  ```bash
-  corepack enable pnpm
-  ```
-  **Re-run that after every `nvm install`.** Corepack writes its shim into the *active* Node
-  version's `bin/`, so a Node upgrade lands you in a shell where `pnpm: command not found` — the
-  package manager is fine, the new Node just has no shim yet.
+* **Node** satisfying `package.json`'s `engines` range, via nvm or another version manager.
+  Development supports macOS and Linux (ADR-0062); iOS builds need macOS and full Xcode.
+* **pnpm** at the version pinned by `package.json` (ADR-0119). Run `corepack enable pnpm` after
+  selecting Node, and again after each `nvm install`: the shim belongs to the active Node. Use
+  `pnpm install` or `pnpm install --frozen-lockfile`; use `pnpm add` for dependency changes.
+* The native toolchains in `docs/MOBILE/native.md`. React Native iOS uses CocoaPods and the
+  committed workspace, not the retired Capacitor Swift Package Manager setup.
 
-  **Never `npm install` or `npm ci` in this repo.** Neither errors — both give you a working flat
-  `node_modules` — but both write a `package-lock.json` that resolves the tree independently of
-  `pnpm-lock.yaml` and then drifts from it silently. Use `pnpm install`, or `pnpm add <pkg>` to add
-  one. `package-lock.json` is gitignored so the mistake can't spread, and
-  `tools/tests/package-manager.test.mjs` fails if any CI, hook, or bootstrap file starts installing
-  with npm again.
-* **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via
-  `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
-* For native Android/iOS work, see the full toolchain setup in the [mobile guide](MOBILE/native.md).
-  (iOS needs macOS + full Xcode; no CocoaPods — the project uses Swift Package Manager.)
+Never run `npm install` or `npm ci` in this repo. They create an independent package-lock tree that
+can drift silently from `pnpm-lock.yaml`. **pnpm installs; npm runs**: every documented `npm run`
+command is valid against the pnpm-installed tree.
 
 ## Local setup
 
-```bash
-corepack enable pnpm   # once per machine
+```sh
+corepack enable pnpm
 pnpm install
-npm run dev       # http://localhost:5173
-```
-
-Two generators run automatically before every build (the `prebuild` hook):
-
-* `gen:icon-names` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in
-  `web/src/lib/icons/`
-* `gen:releases` — generates `web/src/lib/releases.json` and the fastlane store changelogs from
-  `releases/*.md`
-
-To see every npm script with a one-line description, run:
-
-```bash
 npm run info
+npm run build:site
 ```
 
-The descriptions live in the `scripts-info` section of `package.json`; script naming follows
-ADR-0019.
+Splotch is the Expo / React Native / React Strict DOM app in `experiments/native-architecture/`
+(ADR-0182). Root promotion is a later cutover step. Shared TypeScript and hosted assets still live
+under `web/`; that directory no longer holds a runnable SvelteKit application.
 
-> **Adding a dependency?** The `dependencies`/`devDependencies` split is repurposed (ADR-0070):
-> `dependencies` holds what the **Netlify web build** needs (the app's runtime imports plus
-> vite/SvelteKit/the adapter), `devDependencies` holds local/CI-only tooling (Playwright, dprint,
-> sharp, the Capacitor CLIs, …). Netlify installs with `--prod`, so a build-needed package filed
-> under `devDependencies` fails the deploy. GitHub Actions installs everything, so the build itself
-> cannot catch it; `npm run lint:deps:prod` (in CI's Quality job) checks the split instead.
+For a local review of the production web export, select an unused port with
+`npm --silent run show:free-port`, then run:
+
+```sh
+node --experimental-strip-types e2e/server/serve.ts --port <unused-port>
+```
+
+The server combines the export and the real `/api` function on one loopback origin. Its environment
+comes from `e2e/server/serverEnv.ts`, with an unusable model key and issue submission disabled. This
+permits repeatable local UI/API review without a live model call. The plain Node function host is
+`tools/lib/netlify-function-host.mjs`; there is no Netlify Dev or Svelte dev server to start.
+
+For native iteration, follow `experiments/native-architecture/DEVELOPMENT.md`. Debug uses Metro from
+that app directory (`npx expo start --port <unused-port>`); Release embeds its bundle.
+`npm run android:apk` builds the development-identity Release APK, and `npm run ios:simulator`
+builds the unsigned Release simulator app. The mobile guide owns store identities and signing.
+
+Use `npm run info` before guessing a script. The `scripts-info` block in `package.json` explains
+each command, and new or renamed commands need a matching description (ADR-0019).
+
+### Dependencies and generated assets
+
+The root pnpm lock and hoisted linker cover the app and tools; there is no second install inside the
+app. Review Expo SDK alignment and native script provenance before changing dependencies (ADR-0119).
+
+The root `dependencies`/`devDependencies` split follows the Netlify build (ADR-0070): packages the
+production export/function build executes belong in `dependencies`; local/CI-only tools belong in
+`devDependencies`. Netlify installs with `--prod`; CI installs everything. Run
+`npm run lint:deps:prod` to catch a package that a full local install would hide.
+
+`npm run gen:releases` produces shared release data and store changelogs from `releases/*.md`. RSD
+token/icon projections have their own generators under `tools/migration/`; do not edit their
+generated output as the source of truth. The retired Svelte `prebuild` hook is not responsible for
+keeping the RN export's generated artifacts current.
 
 ## Environment variables
 
-None are required for local development. The app works fully offline without any API keys.
+Drawing works without model credentials. The hosted `/api` function reads secrets through
+`web/src/lib/server/privateEnv.ts` from its process environment. Production values come from
+Netlify. The plain Node host does **not** implicitly load `web/.env`; its caller supplies the
+environment. The E2E host deliberately ignores shell/dotenv secrets.
 
-**Where a variable goes is not a free choice** — it follows from who reads it, and the two groups
-below load at different times. Getting this wrong fails silently: the variable is simply undefined
-and the feature behaves as if you never set it.
+| Variable                        | Server owner under `web/src/lib/` | Purpose                                                                   |
+| ------------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
+| `ALLOWED_TOKENS_LIST`           | `server/tokens.ts`                | One-time managed-code seed into Blobs; `/admin` owns subsequent edits.    |
+| `ADMIN_ACCESS_TOKEN`            | `server/admin.ts`                 | Admin secret and derived bearer-session signing key.                      |
+| `OPENAI_API_KEY`                | `server/config.ts`                | Hosted generation credential; unavailable grants fail closed when absent. |
+| `USAGE_GRANT_ID_SECRET`         | `server/usage.ts`                 | Opaque grant IDs for durable usage tallies.                               |
+| `GITHUB_ISSUE_TOKEN`            | `server/config.ts`                | Private feedback issue submission.                                        |
+| `GITHUB_ISSUE_REPO`             | `server/config.ts`                | Overrides the feedback repository.                                        |
+| `REPORT_TOKEN_SECRET`           | `server/reportToken.ts`           | Credential-bound generation/refusal report authorization.                 |
+| `GENERATE_DEADLINE_MS_OVERRIDE` | `server/generationStart.ts`       | Explicit manual red-team deadline override; not production configuration. |
 
-### Server variables — Netlify env in production, `web/.env` locally
+`e2e/server/serverEnv.ts` declares every private name the test-hosted function reads.
+`tools/tests/e2e-server-env.test.mjs` catches an omitted name when a new server variable is added.
+The `api` skill documents endpoint authorization and failure behavior.
 
-Read through `$env/dynamic/private` at request time, so `web/.env` works for all of them.
-`web/.env.example` is the copy-to-`web/.env` template, with the one-time PAT setup steps.
+### Tooling variables
 
-| Variable                        | Read by                     | Purpose, and what breaks when unset                                                                                                  |
-| ------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `ALLOWED_TOKENS_LIST`           | `server/tokens.ts`          | Comma-separated managed access tokens. A **one-time seed** into Blobs on first read, not the live list — `/admin` owns it after that |
-| `ADMIN_ACCESS_TOKEN`            | `server/admin.ts`           | The `/admin` console secret, and the HMAC key for its derived session token                                                          |
-| `OPENAI_API_KEY`                | `server/config.ts`          | The credential `/api/generate-image` bills hosted generation to. Unset ⇒ `/api/free-generation-grant` also 503s                      |
-| `USAGE_GRANT_ID_SECRET`         | `server/usage.ts`           | HMAC key for opaque grant ids. Unset ⇒ generation works, but durable tallies and `/admin` usage stats are disabled                   |
-| `GITHUB_ISSUE_TOKEN`            | `server/config.ts`          | Fine-grained PAT that files feedback as issues. Unset ⇒ `/api/report`, `/api/report-image`, and the `/feedback` form action all 503  |
-| `GITHUB_ISSUE_REPO`             | `server/config.ts`          | Overrides the feedback repo (default `KyleMit/splotch-feedback`)                                                                     |
-| `REPORT_TOKEN_SECRET`           | `server/reportToken.ts`     | Signs the report token bound to a generation. Unset ⇒ free-tier picture reports **and every refusal report** 503                     |
-| `GENERATE_DEADLINE_MS_OVERRIDE` | `server/generationStart.ts` | Raises the synchronous generation deadline. The manual red-team suite is the only caller; production never sets it                   |
+Tools own their own credential loading; a variable in a dotenv file is not automatically exported.
+Read the tool's guide before running it. In particular:
 
-### Build and tooling variables — the shell only
+* `GEMINI_API_KEY` serves the offline asset-generation tools, not application generation.
+* `npm run vectorize` reads Vectorizer credentials from the shell, root `.env` and `web/.env`; its
+  guide is `tools/vectorize/README.md`.
+* `npm run gen:sound-effect` reads `ELEVENLABS_API_KEY` from the shell, root `.env.local`, root
+  `.env` and `web/.env`; its guide is `tools/elevenlabs/README.md`.
+* Red-team fixture loading is owned by `tools/redteam/lib/fixture-crypto.mjs`.
+* `EXPO_PUBLIC_SPLOTCH_PERF_PROBE` is an opt-in native Release build flag; follow the probe
+  instructions in `experiments/native-architecture/DEVELOPMENT.md`, not a generic dotenv recipe.
+* `COREPACK_HOME`, `npm_config_cache` and `PLAYWRIGHT_CHROMIUM` are machine/tool settings. Cloud
+  cache and browser overrides in `docs/CLOUD/Codex.md` should not be copied into a local profile.
 
-Build flags are read from `process.env` while the config module is evaluated, which happens **before
-Vite loads any `.env` file**. An entry in `web/.env` or `web/.env.local` does nothing for these
-flags — set them inline on the command (`PUBLIC_ENABLE_DEV_HARNESS=true npm run dev`) or export
-them. Tooling credentials in this table also require an exported variable or explicitly loading the
-file with Node's `--env-file=web/.env` option on the tool's entry point.
+In production, a managed invite can be supplied with the `ai_access_token` query parameter
+(`web/src/lib/inviteLink.ts`). Never commit credentials, private drawings or decrypted report data.
 
-| Variable                    | Read by                              | Purpose                                                                                                                          |
-| --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `CAPACITOR`                 | `svelte.config.js`, `vite.config.ts` | `true` switches to `adapter-static`, disables the PWA plugin, sets `__NATIVE_API_BASE__`                                         |
-| `PUBLIC_ENABLE_DEV_HARNESS` | `vite.config.ts`                     | Compiles the `/dev/*` routes in, via the `__DEV_HARNESS__` literal                                                               |
-| `PERF_MARKS`                | `vite.config.ts`                     | Compiles the engine's `performance.mark` instrumentation in                                                                      |
-| `TUNNEL_HOST`               | `vite.config.ts`                     | Adds the tunnel hostname to `server.allowedHosts` for cloud preview                                                              |
-| `GEMINI_API_KEY`            | `tools/asset-gen/`, `model-eval`     | **Not read by the app.** These read `process.env` directly with no `.env` loading, so a `web/.env` entry needs `node --env-file` |
-| `CLAUDE_CODE_OAUTH_TOKEN`   | Claude CLI                           | Optional plan authentication; the CLI does not load `web/.env`. An existing Claude plan login may already supply authentication  |
+## Build and deployment
 
-`REDTEAM_FIXTURE_KEY` is a third case: the red-team entry points load `web/.env` themselves
-(`REDTEAM_ENV_FILE` in `tools/redteam/lib/fixture-crypto.mjs`), so it and the red-team run's
-`OPENAI_API_KEY` come from the shell or, failing that, `web/.env`. A repo-root `.env` is not read.
+| Target                      | Command                  | Output / serving                                               |
+| --------------------------- | ------------------------ | -------------------------------------------------------------- |
+| Web                         | `npm run build:site`     | `experiments/native-architecture/dist/web`, served by Netlify. |
+| Android development Release | `npm run android:apk`    | RN `.dev` APK, separate from the store install.                |
+| Android store               | `npm run android:bundle` | Upload-key-signed AAB; manual store upload.                    |
+| iOS simulator               | `npm run ios:simulator`  | Unsigned Release simulator app.                                |
+| iOS store                   | `npm run ios:ipa`        | Signed archive/export; manual store upload.                    |
 
-Two other tooling CLIs load their own credentials from ignored files:
+Root `netlify.toml` publishes the export and routes `/api/*` to `netlify/functions/api.ts`. Platform
+file extensions choose native versus browser integrations. There is no `CAPACITOR` build flag,
+static Svelte adapter or Svelte route harness. The public `/design` document is the web styleguide;
+it is not a development route.
 
-* `npm run vectorize` reads `VECTORIZER_ID` and `VECTORIZER_SECRET`, or `VECTORIZER_AUTHORIZATION`,
-  from the shell, root `.env`, and `web/.env`. A nonempty authorization header takes precedence over
-  the pair; configure one form. See [the Vectorizer guide](../tools/vectorize/README.md).
-* `npm run gen:sound-effect` reads `ELEVENLABS_API_KEY` from the shell, then root `.env.local`, root
-  `.env`, and `web/.env`. See [the ElevenLabs guide](../tools/elevenlabs/README.md).
+## Type checking and testing
 
-`COREPACK_HOME`, `npm_config_cache`, and `PLAYWRIGHT_CHROMIUM` are machine settings read from the
-shell, not application settings loaded from `web/.env`. Local tools normally use their default cache
-locations and Playwright's installed browser without these overrides. The `/workspace/.cache` paths
-and `/usr/bin/chromium` override in [the Codex Cloud guide](CLOUD/Codex.md) are for that cloud
-machine; do not copy them into a local `.env` or shell profile.
-
-`web/playwright.shared.ts` declares the full private set the served app reads, with the
-outbound-write credentials neutralised; it is the list to check against when adding a row here.
-
-To test the AI flow locally, run `npm run dev:netlify` instead of `npm run dev` — this starts the
-Netlify Dev server so the `/api/*` serverless functions are available. This requires the Netlify
-CLI, which is installed globally (it is not a project dependency):
-
-```bash
-npm install -g netlify-cli
+```sh
+npm run check
+npm run lint
+npm run check:quality
+npm run test:browserless
+SPLOTCH_E2E_PORT=<unused-port> npm run test:e2e -- smoke.spec.ts --workers=1
 ```
 
-In production, AI access is granted per user: append one of the `ALLOWED_TOKENS_LIST` values to the
-app URL as the `ai_access_token` query param (`AI_ACCESS_TOKEN_PARAM` in
-`web/src/lib/inviteLink.ts`) — `https://splotch.art/?ai_access_token=YOUR_TOKEN`.
-
-## The dual-build
-
-Splotch ships as two distinct build targets from the same source:
-
-| Target                | Command                                        | Adapter           | Server routes                |
-| --------------------- | ---------------------------------------------- | ----------------- | ---------------------------- |
-| Web (Netlify)         | `npm run build`                                | `adapter-netlify` | `/api/*`, `/admin` included  |
-| Native (React Native) | `npm run android:apk`, `npm run ios:simulator` | none (Expo build) | none (the apps call the API) |
-
-The native apps are the React Native app in `experiments/native-architecture`; the mobile guide
-(MOBILE/native.md) covers their toolchain.
-
-### Repository layout (ADR-0024)
-
-The SvelteKit app lives in **`web/`** (`web/src/`, the Vite/SvelteKit/test configs,
-`web/netlify.toml`, and the `web/build/` output). The single root `package.json`/`node_modules` and
-`tools/` stay at the repo root. `npm run dev:netlify` runs `netlify dev --cwd web` so netlify-cli's
-file watcher is scoped to `web/` and never traverses the large native trees (the cause of the
-`EMFILE` crash this layout fixes). All the npm scripts still run from the repo root; the web
-toolchain is dispatched into `web/` by `tools/run-web-tool.mjs`.
-
-> **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the lockfile
-> live). The root `netlify.toml` build command runs `npm run build:site`, which exports the React
-> Native web app into `experiments/native-architecture/dist/web` with the files the host serves
-> beside it, and publishes that directory; `netlify/functions/api.ts` serves every `/api` path.
-> Local `netlify dev` uses `web/netlify.toml` instead.
-
-On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
-`__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
-
-To build the native apps (full toolchain setup, on-device testing, and the store release flow live
-in the [mobile guide](MOBILE/native.md)):
-
-```bash
-npm run android:apk    # React Native .dev Release APK
-npm run ios:simulator  # unsigned Release simulator app (macOS-only)
-```
-
-### Deployment
-
-The web app deploys to Netlify, which builds automatically on push using the settings in
-`netlify.toml` (see the production-deploy note above for how the root/`web/` layout is staged). A
-manual deploy also works via the Netlify CLI: `netlify deploy --prod`.
-
-## Type checking
-
-```bash
-npm run check          # Svelte and TypeScript checks, including Netlify functions
-npm run check:watch    # web/ Svelte and TypeScript checks only; no Netlify functions
-```
-
-## Testing
-
-```bash
-npm test                   # unit + asset/store pipelines + repo-script + E2E (what CI runs on every push)
-npm run test:unit:watch    # Vitest watch mode
-npm run test:e2e:headed    # Playwright with browser visible (SLOWMO=500)
-npm run test:e2e:ui        # Playwright UI mode
-```
-
-See the [testing guide](TESTING.md) for the full test strategy, including the native smoke tests
-(`test:android`, `test:ios`).
-
-## Dev routes
-
-Run with `PUBLIC_ENABLE_DEV_HARNESS=true` in the environment (see above — a `.env` entry will not
-work) to unlock:
-
-| Route         | Purpose                                                         |
-| ------------- | --------------------------------------------------------------- |
-| `/dev`        | Index of the dev harnesses                                      |
-| `/dev/engine` | Blank canvas with debug controls for testing the drawing engine |
-
-The source of truth for this list is `web/src/routes/dev/`. The design-token styleguide is not a dev
-harness — it ships as the public `/design` route (see the `design` skill).
+`npm run check` covers shared TypeScript, Netlify, RN and E2E projects. `check:quality` and
+`test:browserless` mirror their CI jobs. `npm test` adds the full browser suite; native Maestro
+smokes require an emulator/simulator and run separately. `docs/TESTING.md` owns the tier table,
+authoring rules and native prerequisites. Full browser suites and native-device work are
+host-exclusive; do not run them alongside another session's captures.
 
 ## Code conventions
 
-The coding standards live in `docs/CODING-STANDARDS.md`: each rule with the incident that earned it
-and what enforces it. Read it before adding, relaxing, or re-proposing a rule. The conventions below
-are the day-to-day ones.
+`docs/CODING-STANDARDS.md` records each rule, its incident and its enforcement. Read it before
+adding, relaxing or re-proposing a rule.
 
-**Svelte 5 runes only.** Use `$state`, `$derived`, `$effect`, `$props`. No legacy stores
-(`writable`, `readable`).
-
-**State lives in `web/src/lib/state/`**, not in components. Components read state and call setters;
-they don't own shared state.
-
-**The drawing engine is imperative.** `web/src/lib/drawing/engine.ts` is a plain TypeScript module
-(not a Svelte store). Components wire into it via callbacks on mount and call its exported functions
-directly (`setColor`, `clearCanvas`, etc.).
-
-**Svelte actions for complex gestures.** Drag interactions (drag-to-clear) and dialog wiring live in
-`web/src/lib/actions/`, not inline in components.
-
-**No comments on obvious code.** Add a comment only when the *why* is non-obvious — a hidden
-constraint, a workaround, a subtle invariant. Don't describe what the code does; the names do that.
-
-**Scoped styles.** Component styles go in the component's `<style>` block. Use `:global()` only for
-a class forwarded into a child component, cross-component state on `html[data-*]` or a sibling's
-data attributes, elements rendered inside `{@html}`, or a class set imperatively via `classList`.
-Pin every new global seam with a scoped compound (`.picker :global(.picker-option-icon)`,
-`:global(html[data-drawer-open]) .actions-drawer`); an entirely unpinned selector such as
-`:global(.gate-mascot)` is forbidden because it relies on a globally unique class name.
-
-**No framework overhead in `platform/index.ts`.** The platform detection module reads the Capacitor
-global directly rather than importing `@capacitor/core`, so it evaluates safely during SSR without
-pulling in native code.
-
-**Formatting is enforced in CI** (ADR-0031, ADR-0057). Prettier formats source; dprint formats
-markdown (asterisk bullets and emphasis, hard wrap at 100 — `dprint.json`). Run `npm run format`
-before pushing, or install the recommended VS Code extensions (`.vscode/extensions.json`) to format
-on save.
+* State has one owner; call its methods rather than copying its rules into a component or test. The
+  RN app's settings/product owners live under its `src/`; shared Svelte rune stores are retired.
+* Platform variants resolve at build time. Keep native integration out of a browser import graph.
+* Keep live stroke activity in the drawing subtree. Unrelated chrome must not commit on each contact
+  update; mounted guards enforce this boundary.
+* Use closed unions for finite vocabularies and validate untrusted inputs at the boundary.
+* Comment only a non-obvious constraint. Name tuning constants and include their units.
+* Style shared controls with RSD's design projection and platform adapters. Read the `design` skill
+  before adding visual treatments; do not reintroduce Svelte scoped-style instructions.
+* Prettier formats source and dprint formats Markdown (ADR-0031/0057). Format edited files and run
+  `npm run format:check` before committing.
 
 **Agent instruction files are generated** (ADR-0058). Every `CLAUDE.md`/`AGENTS.md` and most of the
 `.claude/skills/` + `.agents/skills/` trees are generated by
@@ -274,26 +176,17 @@ Claude Code's `Read(//tmp/**)` permission intentionally uses an absolute-path do
 sessions can read scratch files under `/tmp`. Do not change it to `Read(/tmp/**)`: that syntax is
 project-relative, and the broad `/tmp` scope is deliberate for session scratch files.
 
-## Images
+## Images and icons
 
-* **Docs-only images** (README screenshots and the like) live in `docs/assets/`, committed as
-  optimized `.webp` — never raw PNGs. Regenerate the README hero with
-  `npm run gen:readme-hero -- --port <unused-port>`; source art and capture details are in
-  [the marketing-asset runbook](../tools/marketing-assets/README.md#readme-hero).
-* **Shipped PNGs** under `web/static/` get a WebP sibling before committing:
+* Documentation images belong in `docs/assets/` as optimized WebP. The old Svelte-canvas README hero
+  generator is retired; preserve committed captures until a deliberate RN capture replaces them.
+* Shipped PNG assets under `web/static/` get a WebP sibling through
   `node tools/asset-gen/convert-png-to-webp.mjs`.
-* **Committed run outputs** (proof sheets, Lighthouse reports, model tests) belong in
-  [`/scrapbook`](../scrapbook/README.md), not `docs/`.
-
-## Adding a new icon
-
-1. Drop an SVG into `web/src/lib/icons/` — or into `web/src/lib/icons/deferred/` when only lazily
-   loaded UI renders it (a settings section, an overlay, a route other than `/`, the styleguide), so
-   its bytes stay off the startup path (ADR-0164).
-2. Run `npm run gen:icon-names` (it also runs automatically before every build).
-3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated
-   union. A file that names a deferred icon also imports `$lib/components/deferredIcons` for its
-   side effect; `deferredIcons.test.ts` says so when one is missing.
+* Committed proof sheets and measurement reports belong in `scrapbook/` (`scrapbook/README.md`).
+* Icon SVG sources remain in `web/src/lib/icons/`, with deferred-only art under `deferred/`.
+  `tools/migration/gen-native-icons.mjs` projects them into the app; its
+  `src/rsdDrawing/iconRegistry.ts` owns startup versus lazy registration. Keep unused page/settings
+  art out of the drawing startup closure and verify the built startup budgets.
 
 ## Dependency updates
 
@@ -316,9 +209,3 @@ ordered phases:
 
 The tag-triggered Android and iOS launch smoke workflows verify that the native apps start; they do
 not build, upload, or deploy release artifacts.
-
-## Native architecture candidate
-
-`experiments/native-architecture` is a private development-only member under the root pnpm lock and
-hoisted linker; the root `pnpm install` installs it. Root still owns production web and Capacitor
-builds.

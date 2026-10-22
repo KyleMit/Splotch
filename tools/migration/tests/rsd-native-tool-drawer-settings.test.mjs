@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   caller,
   records,
@@ -12,7 +10,7 @@ import {
 import { act, createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { TOOL_DRAWER_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToolDrawerSection.tsx';
+
 import {
   DRAWING_TOOLS,
   TOOL_DRAWER_COPY,
@@ -22,80 +20,15 @@ import {
   CAMERA_BUTTON_HELP,
   CAMERA_BUTTON_LABEL,
 } from '../../../experiments/native-architecture/src/settings/savingSection.ts';
-import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from '../../../experiments/native-architecture/src/settings/drawingControlPreferences.ts';
+
 import { SECTION_SUBTITLES } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
 import { PENCIL_ERASER_LABEL } from '../../../experiments/native-architecture/src/settings/pencilEraser.ts';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 
-const REPOSITORY = join(import.meta.dirname, '../../..');
-const shipping = (path) =>
-  readFileSync(join(REPOSITORY, 'web/src/lib/components/settings', path), 'utf8');
-const CONTROLS = shipping('ControlsSection.svelte');
-const TOOLS = shipping('drawingTools.ts');
-const SAVING = shipping('SavingSection.svelte');
-const COMPACT = shipping('CompactShell.svelte');
-const SECTIONS = shipping('sections.ts');
-const SETTINGS = readFileSync(join(REPOSITORY, 'web/src/lib/state/settings.svelte.ts'), 'utf8');
-
-function toggleRow(source, id) {
-  const row = source.match(new RegExp(`<ToggleRow\\b[^>]*id="${id}"[^>]*/>`))?.[0];
-  expect(row, id).toBeDefined();
-  return row;
-}
-const rowProp = (row, name) => row.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1];
-const cssPx = (source, selector, property) => {
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const body = source.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1];
-  return Number(body?.match(new RegExp(`${property}:\\s*([\\d.]+)px`))?.[1]);
-};
-
 describe('the shipping Tool Drawer and Saving sources', () => {
   it('ports the master switch, rule label, spacing and chip threshold from ControlsSection', () => {
-    const master = toggleRow(CONTROLS, 'toolDrawerToggle');
-    expect(rowProp(master, 'label')).toBe(TOOL_DRAWER_COPY.enable);
-    expect(rowProp(master, 'help')).toBe(TOOL_DRAWER_COPY.enableHelp);
-    expect(rowProp(master, 'icon')).toBe('dashboard-customize');
-    expect(CONTROLS).toContain(
-      `<RuleLabel as="h4" strong class="tools-heading">${TOOL_DRAWER_COPY.tools}</RuleLabel>`
-    );
-    expect(CONTROLS).toContain(`label="${TOOL_DRAWER_COPY.tools}"`);
-    expect(CONTROLS).toContain(`TWO_COLUMN_CHIP_WIDTH_PX = ${TWO_COLUMN_CHIP_WIDTH_PX};`);
-    expect(cssPx(CONTROLS, '.tools-block', 'margin-top')).toBe(TOOL_DRAWER_SPACING.toolsTop);
-    expect(cssPx(CONTROLS, '.tools-block :global(h4.tools-heading)', 'margin-bottom')).toBe(
-      TOOL_DRAWER_SPACING.headingBottom
-    );
-    expect(cssPx(CONTROLS, '.pencil-eraser', 'margin-top')).toBe(TOOL_DRAWER_SPACING.pencilTop);
-    expect(SECTIONS).toContain(`return '${TOOL_DRAWER_COPY.off}';`);
     expect(SECTION_SUBTITLES.toolDrawerOff).toBe(TOOL_DRAWER_COPY.off);
-  });
-
-  it('lists the drawing tools in the shipping order with their ids, labels and icons', () => {
-    const order = SETTINGS.match(/TOOL_DRAWER_CONTROLS = \[([^\]]*)\]/)[1].match(/'(\w+)'/g);
-    const meta = order.map((quoted) => {
-      const block = TOOLS.match(new RegExp(`${quoted.slice(1, -1)}: \\{([^}]*)\\}`))[1];
-      const field = (name) => block.match(new RegExp(`${name}: '([^']*)'`))[1];
-      return { id: field('id'), label: field('label'), icon: field('icon') };
-    });
-    expect(DRAWING_TOOLS.map(({ id, label, icon }) => ({ id, label, icon }))).toEqual(meta);
-  });
-
-  it('ports the Camera button row, the compact Tool drawer cell and both defaults', () => {
-    const camera = toggleRow(SAVING, 'screenshotToggle');
-    expect(rowProp(camera, 'label')).toBe(CAMERA_BUTTON_LABEL);
-    expect(rowProp(camera, 'help')).toBe(CAMERA_BUTTON_HELP);
-    expect(rowProp(camera, 'icon')).toBe('camera');
-    expect(rowProp(toggleRow(SAVING, 'saveOnDeleteToggle'), 'icon')).toBe('camera-party');
-    const quick = toggleRow(COMPACT, 'quickToolDrawerToggle');
-    expect(rowProp(quick, 'label')).toBe(TOOL_DRAWER_COPY.quick);
-    expect(rowProp(quick, 'icon')).toBe('dashboard-customize');
-    for (const [field, key] of [
-      ['toolDrawerEnabled', 'toolDrawer'],
-      ['screenshotEnabled', 'screenshotEnabled'],
-    ])
-      expect(SETTINGS).toContain(
-        `${field}: [STORAGE_KEYS.${key}, ${DEFAULT_DRAWING_CONTROL_PREFERENCES[field]}]`
-      );
   });
 });
 

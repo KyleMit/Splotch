@@ -5,10 +5,7 @@ import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { html } from 'react-strict-dom';
 import * as ReactNative from 'react-native';
 import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
-import {
-  SHIPPING_HUB_ROW_KEEPS_UA_FACE,
-  SHIPPING_HUB_TITLE_WEIGHT,
-} from './rsd-settings-rows-shipping.mjs';
+import { ROW_HUB_ROW_KEEPS_UA_FACE, ROW_HUB_TITLE_WEIGHT } from './rsd-settings-row-contract.mjs';
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { RsdHubRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdHubRow.tsx';
 import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.tsx';
@@ -276,7 +273,7 @@ describe('RsdHubRow', () => {
 
   // The face shipping's unreset <button> takes in a WebView: San Francisco on iOS, Roboto on Android.
   it('sets the title and subtitle in the system face, the title at the shipping weight', async () => {
-    expect(SHIPPING_HUB_ROW_KEEPS_UA_FACE).toBe(true);
+    expect(ROW_HUB_ROW_KEEPS_UA_FACE).toBe(true);
     await render(
       h(RsdHubRow, {
         icon: 'sound',
@@ -291,7 +288,7 @@ describe('RsdHubRow', () => {
     expect(title.textContent).toBe('Sound');
     expect(styleOf(title)).toMatchObject({
       fontFamily: 'system-ui',
-      fontWeight: scale[SHIPPING_HUB_TITLE_WEIGHT],
+      fontWeight: scale[ROW_HUB_TITLE_WEIGHT],
     });
     expect(styleOf(subtitle).fontFamily).toBe('system-ui');
     expect(styleOf(subtitle).fontWeight).toBeUndefined();

@@ -22,8 +22,7 @@ import {
 } from './rsd-native-settings-fixture.mjs';
 import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 import { act, createElement } from 'react';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -66,6 +65,7 @@ it('lists every shipping section in order with its icon tile and shipping status
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   const listed = NATIVE_SETTINGS_SECTIONS;
+  expect(host.querySelector('[role="dialog"]').getAttribute('aria-label')).toBe('Settings');
   expect(hubRows().map((row) => row.getAttribute('aria-label').split(', ')[0])).toEqual(
     listed.map(({ label }) => label)
   );
@@ -84,11 +84,6 @@ it('lists every shipping section in order with its icon tile and shipping status
     `About, Version ${WHATS_NEW_STAMP}`,
   ]);
   await openSettingsSection('Accessibility');
-  const settingsName = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/SettingsModal.svelte'),
-    'utf8'
-  ).match(/aria-label="([^"]+)"/)[1];
-  expect(host.querySelector('[role="dialog"]').getAttribute('aria-label')).toBe(settingsName);
   expect(host.querySelector('[role="heading"]').textContent).toBe('Accessibility');
   expect(hubRows()).toEqual([]);
   await click('Back');

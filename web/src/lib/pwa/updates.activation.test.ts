@@ -5,7 +5,7 @@
 // cache-bust in updates.test.ts.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createPWAUpdates, ACTIVATION_RECOVERY_MS, WAITING_SETTLE_MS } from './updates.svelte';
+import { createPWAUpdates } from './updates';
 import {
   CURRENT_VERSION,
   NEWER_VERSION,
@@ -20,14 +20,19 @@ import {
   stubServiceWorker,
 } from './updatesTestHarness';
 
-const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
+const ACTIVATION_RECOVERY_MS = 10_000;
+const WAITING_SETTLE_MS = 100;
+const canvasState = { canvasEmpty: true };
 
 let pwaUpdates: ReturnType<typeof createPWAUpdates>;
 let originalFetch: typeof fetch;
 
 beforeEach(() => {
-  pwaUpdates = createPWAUpdates();
+  pwaUpdates = createPWAUpdates({
+    canvasEmpty: () => canvasState.canvasEmpty,
+    isDevelopment: () => import.meta.env.DEV,
+    appVersion: CURRENT_VERSION,
+  });
   originalFetch = globalThis.fetch;
   canvasState.canvasEmpty = true;
   stubReloadableLocation();

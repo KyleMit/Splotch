@@ -383,7 +383,7 @@ describe('native release configuration gates', () => {
       appExternalImports([join(NATIVE_APP_DIR, 'src', 'rsdDrawing', 'RsdPrivacyContent.tsx')]).map(
         ({ target }) => target
       )
-    ).toContain('web/src/routes/privacy/contents.ts');
+    ).toContain('web/src/lib/privacy/contents.ts');
   });
 
   it('retains XCTest startup diagnostics and the flow screenshot alongside Maestro flow evidence', () => {

@@ -1,0 +1,66 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/web
+
+ ❯ src/lib/pwa/updates.registration.test.ts (11 tests | 2 failed) 25ms
+   ❯ deferred service worker registration (11)
+     × skips registration when Save-Data is on 2ms
+     × does not re-register an existing worker when Save-Data is on 3ms
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  2 failed | 55 passed (57)
+   Start at  21:30:02
+   Duration  668ms (environment 75%, tests 10%, transform 9%, import 4%, worker 1%)
+
+    Isolate  4 workers spawned · ~132ms startup each (spawn + environment, per file)
+             at least ~396ms faster with isolate: false — reuses workers across files instead of one per file
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/pwa/updates.registration.test.ts > deferred service worker registration > skips registration when Save-Data is on
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      "/sw.js",
+    ]
+
+
+Number of calls: 1
+
+ ❯ src/lib/pwa/updates.registration.test.ts:116:36
+    114|     idle.flush();
+    115|
+    116|     expect(container.register).not.toHaveBeenCalled();
+       |                                    ^
+    117|   });
+    118|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/lib/pwa/updates.registration.test.ts > deferred service worker registration > does not re-register an existing worker when Save-Data is on
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      "/sw.js",
+    ]
+
+
+Number of calls: 1
+
+ ❯ src/lib/pwa/updates.registration.test.ts:127:36
+    125|     await flushIdle();
+    126|
+    127|     expect(container.register).not.toHaveBeenCalled();
+       |                                    ^
+    128|     teardown?.();
+    129|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯

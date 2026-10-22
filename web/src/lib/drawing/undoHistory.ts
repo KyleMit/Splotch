@@ -13,31 +13,3 @@ export interface RecordedPaperState {
   angle: number;
   presentation?: PaperLayoutSnapshot;
 }
-
-export function paperStateMatches(
-  paper: Omit<RecordedPaperState, 'angle'>,
-  angle: number,
-  recorded: RecordedPaperState | undefined
-): boolean {
-  return (
-    recorded !== undefined &&
-    paper.pxW === recorded.pxW &&
-    paper.pxH === recorded.pxH &&
-    paper.cssW === recorded.cssW &&
-    paper.cssH === recorded.cssH &&
-    angle === recorded.angle
-  );
-}
-
-export interface HistoryDebug {
-  strokeRevision?: number;
-  snapshots: number;
-  liveRasters: number;
-  rasterBytes: number;
-  blobBytes: number;
-  baseRasters?: number;
-  baseRasterBytes?: number;
-  historyLength?: number;
-  patchBytes: number;
-  pendingCommands: number;
-}

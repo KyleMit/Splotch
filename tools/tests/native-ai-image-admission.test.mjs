@@ -12,7 +12,7 @@ import {
   imageGrid,
 } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
 import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
-import { AI_OUTPUT_FIXTURES } from '../../web/tests/artifacts/ai-output-fixtures.ts';
+import { AI_OUTPUT_FIXTURES } from '../../e2e/fixtures/ai-output-fixtures.ts';
 import { pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
 const fixtures = new Map();
 const current = () => true;

@@ -17,7 +17,7 @@ export type ClearPageTurnLoader = (
 
 // The shipping page turn plays at unit gain scaled by the parent's volume
 // (web/src/lib/audio/clearSound.ts); native-clear-projection.test.mjs pins the literal.
-export const CLEAR_PAGE_TURN_GAIN = 1;
+const CLEAR_PAGE_TURN_GAIN = 1;
 // Native players stop at unity; the unclipped PCM asset carries Loud's gain before attenuation.
 export const CLEAR_PAGE_TURN_ASSET_GAIN = 2;
 

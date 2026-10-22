@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { records, host, root, mount } from './rsd-native-selection-host.mjs';
@@ -8,7 +6,7 @@ import {
   TAP_ZONE_DURATION_MS,
   TAP_ZONE_RADIUS_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
-import { STATUS_LINE_HEIGHT } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringSection.tsx';
+
 import { LibraryProvider } from '../../../experiments/native-architecture/src/offlineLibrary/LibraryScope.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { catalogPack } from '../../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
@@ -26,40 +24,19 @@ import { trailingRowCutHeight } from '../../../web/src/lib/actions/scrollCue.ts'
 import {
   CARD_HEIGHT_CAP_FRACTION,
   COLORING_HEADER_GAP_PX,
-  COLORING_MAX_WIDTH_PX,
-  COLORING_NARROW_MAX_WIDTH_PX,
   COLORING_PADDING_PX,
-  COLORING_PHONE_MAX_WIDTH_PX,
   MODAL_CONTROL_SIZE_PX,
   MODAL_SCRIM_PLAIN,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import {
-  BOOK_GRID_COLUMNS,
   BOOK_GRID_FOLD_SLACK_PX,
-  BOOK_GRID_FOUR_COLUMN_MIN_WIDTH_PX,
-  BOOK_GRID_MAX_WIDTH_PX,
-  BOOK_GRID_ROWS_IN_VIEW,
   BOOK_GRID_TALL_PORTRAIT_MAX_ASPECT,
   COLORING_GRID_GAP_PX,
-  COVER_CAPTION_HEIGHT_PX,
   PAGE_GRID_COLUMNS,
   PAGE_TILE_ASPECT,
-  TILE_ART_INSET_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/coloringGrid.ts';
-import {
-  TILE_BORDER_PX,
-  TILE_HOVER_LIFT_PX,
-  TILE_HOVER_SHADOW,
-  TILE_PRESSED_SCALE,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringTile.tsx';
-import {
-  ACTIVE_PAGE_CLEAR_PADDING_PX,
-  ACTIVE_PAGE_CLEAR_PX,
-  ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX,
-  ACTIVE_PAGE_NAME_MAX_CH,
-  ACTIVE_PAGE_THUMBNAIL_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdActivePageChip.tsx';
-import { COLORING_SECTION_COPY } from '../../../experiments/native-architecture/src/settings/coloringSection.ts';
+import { TILE_HOVER_SHADOW } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringTile.tsx';
+
 import { rgba } from '../../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
 import { DRAWING_BRAND } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 
@@ -383,159 +360,17 @@ describe('the books an open picker holds', () => {
     await act(async () => root.render(picker({ state: inventory([dinosaurs]) }).tree));
     expect(control('Dinosaurs coloring book')).not.toBeNull();
   });
-
-  it('pins the fixed opening inventory and navigation to shipping', () => {
-    const shipping = read('web/src/lib/state/coloringPicker.svelte.ts');
-    expect(shipping).toContain('shownBookIds = installed.map((book) => book.id)');
-    expect(shipping).toContain('const listsBooks = $derived(shownBookIds.length >= 2)');
-  });
 });
 
-const read = (path) => readFileSync(join(import.meta.dirname, '../../..', path), 'utf8');
-const style = (path) =>
-  /<style>([\s\S]*)<\/style>/.exec(read(path))[1].replace(/\/\*[\s\S]*?\*\//g, '');
-const PICKER = style('web/src/lib/components/ColoringBook.svelte');
-const TILE = style('web/src/lib/components/ColoringTile.svelte');
-const CHIP = style('web/src/lib/components/ActivePageChip.svelte');
-const SECTION = 'web/src/lib/components/settings/ColoringSection.svelte';
-const px = (value) => {
-  const token = /^var\(--space-(\d)\)$/.exec(value.trim());
-  return Number.parseFloat(token ? scale[`space${token[1]}`] : value);
-};
-// The declarations of the first `selector {` rule after `from` (a media query, say).
-function rule(source, selector, from = '') {
-  const start = source.indexOf(from);
-  expect(start, from).toBeGreaterThanOrEqual(0);
-  const open = source.indexOf(`${selector} {`, start);
-  expect(open, `${from} ${selector}`).toBeGreaterThanOrEqual(0);
-  return source.slice(open, source.indexOf('}', open));
-}
-function declaration(block, property) {
-  const value = new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;]+);`).exec(block)?.[1];
-  expect(value, property).toBeDefined();
-  return value.replace(/\s+/g, ' ').trim();
-}
-
 describe('the picker geometry matches the shipping Coloring Book Picker', () => {
-  it('sizes and pads the card as ColoringBook.svelte does', () => {
-    const card = rule(PICKER, '.coloring-book-modal');
-    expect(declaration(card, 'max-width')).toBe(`${COLORING_MAX_WIDTH_PX}px`);
-    expect(declaration(card, '--coloring-book-modal-max-height')).toBe(
-      `${CARD_HEIGHT_CAP_FRACTION * 100}vh`
-    );
-    expect(px(declaration(rule(PICKER, '.coloring-book-content'), 'padding'))).toBe(
-      COLORING_PADDING_PX.roomy
-    );
-    const phone = `@media (max-width: ${COLORING_PHONE_MAX_WIDTH_PX}px)`;
-    const [block, inline] = declaration(rule(PICKER, '.coloring-book-content', phone), 'padding')
-      .split(' ')
-      .map(px);
-    expect({ block, inline }).toEqual({
-      block: COLORING_PADDING_PX.phoneBlock,
-      inline: COLORING_PADDING_PX.phoneInline,
-    });
-    const narrow = `@media (max-width: ${COLORING_NARROW_MAX_WIDTH_PX}px)`;
-    expect(px(declaration(rule(PICKER, '.coloring-book-content', narrow), 'padding-inline'))).toBe(
-      COLORING_PADDING_PX.narrowInline
-    );
-    expect(declaration(rule(PICKER, '.coloring-book-header h2', narrow), 'font-size')).toBe(
-      'var(--font-size-md)'
-    );
-    expect(px(declaration(rule(PICKER, '.coloring-book-header'), 'margin-bottom'))).toBe(
-      COLORING_HEADER_GAP_PX
-    );
-  });
-
   it('lays out the Book Grid and Coloring Page Grid on the shipping columns', () => {
-    const books = rule(PICKER, '.coloring-books-grid');
-    expect(Number(declaration(books, '--book-cols'))).toBe(BOOK_GRID_COLUMNS.wide);
-    expect(declaration(books, '--book-grid-max-width')).toBe(`${BOOK_GRID_MAX_WIDTH_PX}px`);
-    const orphan = rule(
-      PICKER,
-      '.coloring-books-grid.book-grid-has-orphan',
-      `@media (min-width: ${BOOK_GRID_FOUR_COLUMN_MIN_WIDTH_PX}px)`
-    );
-    expect(Number(declaration(orphan, '--book-cols'))).toBe(BOOK_GRID_COLUMNS.orphan);
-    const tablet = `@media (max-width: ${BOOK_GRID_FOUR_COLUMN_MIN_WIDTH_PX - 1}px)`;
-    expect(Number(declaration(rule(PICKER, '.coloring-books-grid', tablet), '--book-cols'))).toBe(
-      BOOK_GRID_COLUMNS.tablet
-    );
-    const phone = `@media (max-width: ${COLORING_PHONE_MAX_WIDTH_PX}px)`;
-    expect(Number(declaration(rule(PICKER, '.coloring-books-grid', phone), '--book-cols'))).toBe(
-      BOOK_GRID_COLUMNS.phone
-    );
-    expect(px(declaration(rule(PICKER, '.coloring-grid', phone), 'gap'))).toBe(
-      COLORING_GRID_GAP_PX.phone
-    );
-    expect(px(declaration(rule(PICKER, '.coloring-grid'), 'gap'))).toBe(COLORING_GRID_GAP_PX.roomy);
     const [numerator, denominator] = [4, 5];
     expect(numerator / denominator).toBe(BOOK_GRID_TALL_PORTRAIT_MAX_ASPECT);
-    const tall = rule(
-      PICKER,
-      '.coloring-books-grid,\n    .coloring-books-grid.book-grid-has-orphan',
-      `@media (max-aspect-ratio: ${numerator} / ${denominator}) and (min-width: ${BOOK_GRID_FOUR_COLUMN_MIN_WIDTH_PX}px)`
-    );
-    expect(Number(declaration(tall, '--book-cols'))).toBe(BOOK_GRID_COLUMNS.tallPortrait);
-    expect(Number(declaration(tall, '--book-grid-rows-in-view'))).toBe(BOOK_GRID_ROWS_IN_VIEW);
-    expect(declaration(tall, '--book-grid-chrome')).toMatch(/\+ var\(--space-4\) \)$/);
     expect(scale.space4).toBe(`${BOOK_GRID_FOLD_SLACK_PX}px`);
-    expect(Number(declaration(rule(PICKER, '.coloring-pages-grid'), '--page-cols'))).toBe(
-      PAGE_GRID_COLUMNS.landscape
-    );
-    expect(
-      Number(declaration(rule(PICKER, '.coloring-pages-grid.portrait-pages'), '--page-cols'))
-    ).toBe(PAGE_GRID_COLUMNS.portrait);
-    expect(
-      Number(declaration(rule(PICKER, '.coloring-pages-grid.portrait-pages', phone), '--page-cols'))
-    ).toBe(PAGE_GRID_COLUMNS.phonePortrait);
   });
 
   it('draws the Coloring Tile and Active Page Chip with the shipping literals', () => {
-    const tile = rule(TILE, '.coloring-tile');
-    expect(declaration(tile, 'border')).toBe(`${TILE_BORDER_PX}px solid var(--border-warm-strong)`);
-    expect(declaration(tile, 'border-radius')).toBe('var(--radius-md)');
-    expect(declaration(rule(TILE, '.coloring-tile:global(.activation-pending)'), 'transform')).toBe(
-      `scale(${TILE_PRESSED_SCALE})`
-    );
-    const hover = rule(TILE, '.coloring-tile.hover-armed:hover');
-    expect(declaration(hover, 'transform')).toBe(`translateY(-${TILE_HOVER_LIFT_PX}px)`);
-    expect(declaration(hover, 'box-shadow')).toBe(
-      '0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent)'
-    );
     expect(TILE_HOVER_SHADOW).toBe(`0 4px 12px ${rgba(DRAWING_BRAND, 0.25)}`);
-    expect(px(declaration(rule(TILE, '.coloring-tile img'), 'padding'))).toBe(TILE_ART_INSET_PX);
-    expect(declaration(rule(TILE, '.coloring-book-tile'), '--cover-caption-height')).toBe(
-      `${COVER_CAPTION_HEIGHT_PX}px`
-    );
-    for (const [orientation, ratio] of [
-      ['landscape', '3 / 2'],
-      ['portrait', '2 / 3'],
-    ])
-      expect(declaration(rule(TILE, `.coloring-tile.page-${orientation}`), 'aspect-ratio')).toBe(
-        ratio
-      );
     expect(PAGE_TILE_ASPECT).toEqual({ landscape: 3 / 2, portrait: 2 / 3 });
-    const chip = rule(CHIP, '.active-page-chip');
-    expect(declaration(chip, '--active-page-thumbnail-size')).toBe(`${ACTIVE_PAGE_THUMBNAIL_PX}px`);
-    expect(declaration(chip, '--active-page-clear-size')).toBe(`${ACTIVE_PAGE_CLEAR_PX}px`);
-    expect(px(declaration(rule(CHIP, '.active-page-clear'), 'padding'))).toBe(
-      ACTIVE_PAGE_CLEAR_PADDING_PX
-    );
-    expect(declaration(rule(CHIP, '.active-page-name'), 'max-width')).toBe(
-      `${ACTIVE_PAGE_NAME_MAX_CH}ch`
-    );
-    expect(CHIP).toContain(`@media (max-width: ${ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX}px)`);
-  });
-
-  it('holds tiles for the shipping launch guard and words Settings › Coloring as shipping does', () => {
-    const guard = read('web/src/lib/actions/launchGuard.ts');
-    expect(guard).toContain(`export const LAUNCH_ZONE_DURATION_MS = ${TAP_ZONE_DURATION_MS};`);
-    expect(guard).toContain(`export const LAUNCH_ZONE_RADIUS_PX = ${TAP_ZONE_RADIUS_PX};`);
-    const section = read(SECTION);
-    expect(
-      declaration(rule(style(SECTION), '.pack-summary p,\n  .remove-error'), 'line-height')
-    ).toBe(String(STATUS_LINE_HEIGHT));
-    for (const copy of Object.values(COLORING_SECTION_COPY))
-      expect(section.replaceAll(/\s+/g, ' '), copy).toContain(copy);
   });
 });

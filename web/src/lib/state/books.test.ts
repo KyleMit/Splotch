@@ -1,12 +1,10 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 import {
   BOOKS,
-  COLORING_IMAGE_SIZES,
   bookAssetPaths,
   bookPackAssetPaths,
-  coloringBookGridLayout,
   coverThumb,
   coverThumbImageSource,
   pageFillImage,
@@ -21,45 +19,6 @@ import {
   clearLocalColoringBookRoots,
   setLocalColoringBookRoot,
 } from '../coloringPacks/assetResolver';
-
-const coloringBookComponent = readFileSync(
-  new URL('../components/ColoringBook.svelte', import.meta.url),
-  'utf8'
-);
-const coloringTileComponent = readFileSync(
-  new URL('../components/ColoringTile.svelte', import.meta.url),
-  'utf8'
-);
-const activePageChipComponent = readFileSync(
-  new URL('../components/ActivePageChip.svelte', import.meta.url),
-  'utf8'
-);
-const tokensCss = readFileSync(new URL('../../tokens.css', import.meta.url), 'utf8');
-const appCss = readFileSync(new URL('../../app.css', import.meta.url), 'utf8');
-
-function spacingTokenPx(token: string): number {
-  const value = new RegExp(`--${token}: (\\d+)px`).exec(tokensCss)?.[1];
-  expect(value, token).toBeDefined();
-  return Number(value);
-}
-
-/** Both screen-edge gutters the dialog width subtracts from 100vw (app.css). */
-function dialogGuttersPx(): number {
-  const value = /--modal-gutter-min: (\d+)px/.exec(appCss)?.[1];
-  expect(value, 'modal-gutter-min').toBeDefined();
-  return 2 * Number(value);
-}
-
-/** The viewport width at which the dialog reaches its max-width cap. */
-function dialogCapViewportPx(): number {
-  const modalRule = coloringBookComponent.slice(
-    coloringBookComponent.indexOf('.coloring-book-modal {'),
-    coloringBookComponent.indexOf('.coloring-book-content {')
-  );
-  const cap = /max-width: (\d+)px/.exec(modalRule)?.[1];
-  expect(cap, 'coloring-book-modal max-width').toBeDefined();
-  return Number(cap) + dialogGuttersPx();
-}
 
 describe('page defaults', () => {
   it('every page ships night fills and dark overlays for both orientations', () => {
@@ -205,118 +164,6 @@ describe('responsive image sources', () => {
       srcset:
         '/coloring/max-240px/farm/cat-wide.dark.selector.webp 240w, /coloring/farm/cat-wide.dark.selector.webp 400w',
     });
-  });
-
-  it('keeps picker sizes aligned with the modal grid geometry', () => {
-    for (const ownedCssValue of [
-      'width: calc(100vw - 2 * var(--modal-gutter))',
-      'max-width: 920px',
-      '--book-grid-max-width: 856px',
-      '--book-cols: 4',
-      '@media (max-width: 520px)',
-    ]) {
-      expect(coloringBookComponent).toContain(ownedCssValue);
-    }
-    expect(coloringBookGridLayout(8)).toEqual({
-      hasOrphan: false,
-      imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.standard,
-    });
-    expect(coloringBookGridLayout(13)).toEqual({
-      hasOrphan: true,
-      imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.orphan,
-    });
-    expect(appCss).toContain(
-      '--modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));'
-    );
-    const guttersPx = dialogGuttersPx();
-    const capViewportPx = dialogCapViewportPx();
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain(
-      `(max-width: ${capViewportPx}px) calc((100vw - ${guttersPx + 100}px) / 4), 205px`
-    );
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain(
-      `(max-width: ${capViewportPx}px) calc((100vw - ${guttersPx + 88}px) / 3), 277px`
-    );
-    for (const ownedCssValue of [
-      '.coloring-pages-grid {',
-      '--page-cols: 2',
-      '.coloring-pages-grid.portrait-pages {',
-      '--page-cols: 3',
-      'gap: var(--space-3)',
-      'padding: var(--space-7)',
-      'gap: var(--space-2)',
-      'padding: var(--space-6) var(--space-4)',
-    ]) {
-      expect(coloringBookComponent).toContain(ownedCssValue);
-    }
-    const narrowChromePx = guttersPx + 2 * spacingTokenPx('space-4') + spacingTokenPx('space-2');
-    const scrollbarReservePx = spacingTokenPx('space-4');
-    const widePortraitChromePx =
-      guttersPx +
-      2 * spacingTokenPx('space-7') +
-      2 * spacingTokenPx('space-3') +
-      scrollbarReservePx;
-    const wideLandscapeChromePx =
-      guttersPx + 2 * spacingTokenPx('space-7') + spacingTokenPx('space-3') + scrollbarReservePx;
-    expect(COLORING_IMAGE_SIZES.pageSelector.portrait).toBe(
-      `(max-width: 520px) calc((100vw - ${narrowChromePx}px) / 2), min(calc((100vw - ${widePortraitChromePx}px) / 3), 272px)`
-    );
-    expect(COLORING_IMAGE_SIZES.pageSelector.landscape).toBe(
-      `(max-width: 520px) calc((100vw - ${narrowChromePx}px) / 2), min(calc((100vw - ${wideLandscapeChromePx}px) / 2), 414px)`
-    );
-    expect(coloringBookComponent).toContain(
-      'pageSelectorImageSource(page, orientation, resolvedTheme())'
-    );
-    const pickPage = coloringBookComponent.slice(
-      coloringBookComponent.indexOf('async function pickPage'),
-      coloringBookComponent.indexOf('async function clearAndClose')
-    );
-    const suppressRetiringTransitionsAt = pickPage.indexOf('retiringAfterPageSelection = true');
-    const hideAt = pickPage.indexOf('coloringBookModal.hide()');
-    const applyAt = pickPage.indexOf('applyColoringPageWithMagicUndo');
-    expect(suppressRetiringTransitionsAt).toBeGreaterThanOrEqual(0);
-    expect(hideAt).toBeGreaterThanOrEqual(0);
-    expect(applyAt).toBeGreaterThanOrEqual(0);
-    expect(suppressRetiringTransitionsAt).toBeLessThan(hideAt);
-    expect(hideAt).toBeLessThan(applyAt);
-    expect(coloringBookComponent).toContain('retiringAfterPageSelection = false');
-    const retiringRule = coloringTileComponent.slice(
-      coloringTileComponent.indexOf('.coloring-tile.retiring {'),
-      coloringTileComponent.indexOf('.coloring-tile img {')
-    );
-    expect(retiringRule).toContain('transition: none');
-    expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
-    expect(activePageChipComponent).toContain('srcset=');
-    expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
-  });
-
-  it('uses danger colors for active-page press feedback', () => {
-    const activeRule = activePageChipComponent.slice(
-      activePageChipComponent.indexOf('.active-page-chip:active,'),
-      activePageChipComponent.indexOf('@media (max-width: 360px)')
-    );
-    expect(activeRule).toContain('background: var(--danger-wash)');
-    expect(activeRule).toContain('border-color: var(--danger-text)');
-    expect(activeRule).toContain('background: var(--danger-text)');
-    expect(activeRule).toContain('fill: var(--surface)');
-  });
-
-  // The `sizes` hint's leading clause and the CSS that changes the grid under it
-  // are one decision written twice — a media query can't read the constant — and
-  // a hint that disagrees with the layout hands the browser the wrong candidate
-  // at exactly the widths the CSS moved. Both are derived from the shipped hint
-  // rather than restated, the dialogTabletScaling.test.ts pattern.
-  it('gates the tall cover grid and its size hint on the same condition', () => {
-    const [tallClause] = COLORING_IMAGE_SIZES.coverThumbnail.standard.split(', ');
-    const tallCondition = tallClause.slice(0, tallClause.lastIndexOf(' '));
-    expect(coloringBookComponent).toContain(`@media ${tallCondition} {`);
-
-    // The width floor the tall layout shares with the four-column layout it
-    // replaces, and the complement one pixel below it that the phone columns
-    // take — a gap between them leaves a band of widths with no rule.
-    const floorPx = Number(/min-width: (\d+)px/.exec(tallCondition)?.[1]);
-    expect(floorPx).toBeGreaterThan(0);
-    expect(coloringBookComponent).toContain(`@media (min-width: ${floorPx}px) {`);
-    expect(coloringBookComponent).toContain(`@media (max-width: ${floorPx - 1}px) {`);
   });
 });
 

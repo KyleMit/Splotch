@@ -8,12 +8,12 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 The reference lives in **[`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md)**. Read the section
 that matches the question rather than the whole file.
 
-| Section               | Answers                                                                                                                                      |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tech Stack**        | What framework/library handles a concern, and which of the two build targets it applies to                                                   |
-| **Source Map**        | What a given `web/src/lib/` module owns, and where new code belongs — one row per module, with the ADR that shaped it                        |
-| **`web/src/routes/`** | Every route, whether it is prerendered (SSG) or rendered per request (SSR), and why                                                          |
-| **UI Elements**       | The canonical name of a UI element, and the **Layout notes** that open the section — read those before positioning any new on-screen control |
+| Section         | Answers                                                                                                                                      |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tech Stack**  | What framework/library handles a concern, and which of the two build targets it applies to                                                   |
+| **Source Map**  | What a given `web/src/lib/` module owns, and where new code belongs — one row per module, with the ADR that shaped it                        |
+| **Routes**      | The prerendered RN documents and the Netlify API paths                                                                                       |
+| **UI Elements** | The canonical name of a UI element, and the **Layout notes** that open the section — read those before positioning any new on-screen control |
 
 Two things worth knowing before you read:
 

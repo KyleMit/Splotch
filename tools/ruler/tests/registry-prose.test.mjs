@@ -25,7 +25,7 @@ describe('root instruction prose that restates repo structure', () => {
 
   it('names every nested instruction directory in knowledge-map.md', () => {
     const sentence = readSource('knowledge-map.md').match(
-      /Nested `CLAUDE\.md`\/`AGENTS\.md`\s+files\s+in\s+([\s\S]*?)\s+cover\s+those\s+areas\./
+      /Nested\s+`CLAUDE\.md`\/`AGENTS\.md`\s+files\s+in\s+([\s\S]*?)\s+cover\s+those\s+areas\./
     )?.[1];
     const nestedDirs = execFileSync('git', ['ls-files', '--', `*/${RULER_SOURCE}/AGENTS.md`], {
       cwd: repoRoot,

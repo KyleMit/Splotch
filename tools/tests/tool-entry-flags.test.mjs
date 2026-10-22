@@ -11,7 +11,6 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 // A near-miss spelling ran a different job than the one asked for and exited 0.
 const ENTRIES = [
   ['tools/adrs/check-adr-integrity.mjs', ['base']],
-  ['tools/e2e-tuning/run-worker-sweep.mjs', ['workers', 'reps', 'grep', 'prebuilt', 'out']],
   [
     'tools/page-load/run-lighthouse-ci.mjs',
     ['baseline', 'out', 'port', 'samples', 'no-build', 'report-only'],

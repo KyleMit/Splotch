@@ -194,7 +194,7 @@ export function formStringField(form: FormData, name: string): string {
  * form action — which returns `fail()` rather than a Response — words it
  * identically to every JSON endpoint.
  */
-export function throttledMessage(retryAfter: number): string {
+function throttledMessage(retryAfter: number): string {
   return `Too many attempts. Please wait ${retryAfter}s.`;
 }
 

@@ -21,12 +21,12 @@ const nativeTsconfig = JSON.parse(
 );
 
 const NATIVE_CI_STEPS = [
-  { job: 'quality', command: 'npm run check:migration:types' },
+  { job: 'quality', command: 'npm run check' },
   { job: 'browserless', command: 'npm run test:migration:rsd-selection' },
   {
     job: 'rn-web-e2e',
     command:
-      'npm run test:e2e:rn -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
+      'npm run test:e2e -- --project chromium --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
   },
   { job: 'firefox-smoke', command: 'npm run test:firefox:smoke' },
   { job: 'webkit-smoke', command: 'npm run test:webkit:smoke' },
@@ -103,7 +103,7 @@ describe('the RN web export the E2E jobs serve', () => {
 
 describe('the native candidate check scripts', () => {
   it('runs the RN web E2E suite from its own config', () => {
-    expect(scripts['test:e2e:rn']).toBe('playwright test --config e2e/playwright.config.ts');
+    expect(scripts['test:e2e']).toBe('playwright test --config e2e/playwright.config.ts');
   });
 
   it("type-checks the candidate's own TypeScript project over all of its source", () => {
@@ -113,12 +113,11 @@ describe('the native candidate check scripts', () => {
     expect(nativeTsconfig.include).toEqual(['src/**/*.ts', 'src/**/*.tsx']);
   });
 
-  it('runs the renderer tier through its own config after generating web/.svelte-kit', () => {
+  it('runs the renderer tier through its own framework-free config', () => {
     expect(scripts['test:migration:rsd-selection']).toBe(
       'vitest run --config tools/migration/rsd-drawing-vitest.config.mjs'
     );
-    expect(scripts['pretest:migration:rsd-selection']).toBe(
-      'node tools/run-web-tool.mjs svelte-kit sync'
-    );
+    expect(scripts['pretest:migration:rsd-selection']).toBeUndefined();
+    expect(scripts.check).toContain('npm run check:migration:types');
   });
 });

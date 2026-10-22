@@ -18,7 +18,7 @@ import {
   settingsShell,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import { WIDE_SHELL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsWide.tsx';
-import { PICKER_METRICS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
+
 import { ORIENTATION_COLUMN_MAX_WIDTH_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdOrientationPicker.tsx';
 import { COMPACT_SHELL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsCompact.tsx';
 import {
@@ -35,34 +35,12 @@ import { SECTION_JUMP_INSET_PX } from '../../../web/src/lib/components/settings/
 
 const shipping = (path) =>
   readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', path), 'utf8');
-const WIDE = shipping('settings/WideShell.svelte');
-const COMPACT = shipping('settings/CompactShell.svelte');
-const SETTINGS = shipping('SettingsModal.svelte');
 const PANE = shipping('settings/paneScroll.ts');
 
 const TABLET = { width: 1366, height: 1024, scale: 2, fontScale: 1 };
 const SMALL_TABLET = { width: 1024, height: 768, scale: 2, fontScale: 1 };
 const PHONE_LANDSCAPE = { width: 844, height: 390, scale: 3, fontScale: 1 };
 const PHONE = { width: 390, height: 844, scale: 3, fontScale: 1 };
-
-// The declarations of the first `selector {` rule in a shipping source.
-function rule(source, selector) {
-  const open = source.indexOf(`${selector} {`);
-  expect(open, selector).toBeGreaterThanOrEqual(0);
-  return source.slice(open, source.indexOf('}', open));
-}
-
-function declaration(block, property) {
-  const value = new RegExp(`\\n\\s*${property}: ([^;]+);`).exec(block)?.[1];
-  expect(value, property).toBeDefined();
-  return value;
-}
-
-const px = (value) => {
-  expect(value).toMatch(/^(?:0|\d+px)$/);
-  return Number.parseFloat(value);
-};
-const lengths = (shorthand) => shorthand.split(/\s+/).map(px);
 
 describe("the shipping shells' geometry", () => {
   it('picks the phone, wide and compact shells where SettingsModal does', () => {
@@ -71,10 +49,6 @@ describe("the shipping shells' geometry", () => {
         readFileSync(join(import.meta.dirname, '../../../web/src/lib/breakpoints.ts'), 'utf8')
       )[1]
     );
-    expect(SETTINGS).toContain(
-      'const WIDE_QUERY = `(min-width: ${SETTINGS_WIDE_MIN_WIDTH_PX}px)`;'
-    );
-    expect(SETTINGS).toContain('compact: PHONE_LANDSCAPE_QUERY');
     expect(settingsShell(PHONE)).toBe('phone');
     expect(settingsShell({ width: wideFloor - 1, height: 1000 })).toBe('phone');
     expect(settingsShell({ width: wideFloor, height: 1000 })).toBe('wide');
@@ -85,68 +59,19 @@ describe("the shipping shells' geometry", () => {
     expect(settingsShell({ width: 667, height: 375 })).toBe('compact');
   });
 
-  it('pads the compact header as CompactShell does', () => {
-    const [top, inline, bottom] = lengths(
-      declaration(rule(COMPACT, '.settings-header-compact'), 'padding')
-    );
-    expect(modalFrame('settings', PHONE_LANDSCAPE, MODAL_GUTTER_MIN_PX).header).toEqual({
-      top,
-      inline,
-      bottom,
-    });
-    expect(modalFrame('settings', TABLET, MODAL_GUTTER_MIN_PX).header.top).not.toBe(top);
-  });
-
-  it('lays the wide split out as WideShell does', () => {
-    const split = rule(WIDE, '.settings-split');
-    expect(px(/--section-gap: ([^;]+);/.exec(split)[1])).toBe(WIDE_SHELL.sectionGap);
-    expect(px(declaration(split, 'gap'))).toBe(WIDE_SHELL.splitGap);
-    const [top, inline, bottom] = lengths(declaration(split, 'padding'));
-    expect(WIDE_SHELL.split).toEqual({ top, inline, bottom });
-    const nav = rule(WIDE, '.settings-nav');
-    expect(px(declaration(nav, 'width'))).toBe(WIDE_SHELL.navWidth);
-    expect(nav).toContain(`top / 100% ${WIDE_SHELL.navShade}px no-repeat scroll`);
-    const [paneTop, right, paneBottom, left] = lengths(
-      declaration(rule(WIDE, '.settings-pane'), 'padding')
-    );
-    expect(WIDE_SHELL.pane).toEqual({ top: paneTop, right, bottom: paneBottom, left });
-    expect(declaration(rule(WIDE, '.settings-pane-title'), 'margin')).toBe(
-      `0 0 ${WIDE_SHELL.titleGap}px`
-    );
-  });
-
-  it('sizes the quick toggles, their fade and the portrait note as CompactShell does', () => {
-    const scroll = rule(COMPACT, '.quick-toggles-scroll');
-    expect(px(/--scroll-cue-height: ([^;]+);/.exec(scroll)[1])).toBe(COMPACT_SHELL.cueHeight);
-    expect(declaration(scroll, 'padding')).toBe(
-      `0 ${COMPACT_SHELL.inline}px var(--scrollport-bottom-padding)`
-    );
-    expect(declaration(rule(COMPACT, '.quick-toggles'), 'grid-template-columns')).toBe(
-      'repeat(2, 1fr)'
-    );
-    const note = rule(COMPACT, '.portrait-note');
-    const [top, inline, bottom] = lengths(declaration(note, 'padding'));
-    expect(COMPACT_SHELL.note).toMatchObject({
-      top,
-      inline,
-      bottom,
-      gap: px(declaration(note, 'gap')),
-    });
-    expect(px(declaration(rule(COMPACT, ':global(.portrait-note-icon)'), 'width'))).toBe(
-      COMPACT_SHELL.note.icon
-    );
-  });
-
-  it('stacks the orientation options below the track width OrientationPicker does', () => {
-    const picker = shipping('settings/OrientationPicker.svelte');
-    expect(picker).toContain(
-      `@container orientation-picker (max-width: ${ORIENTATION_COLUMN_MAX_WIDTH_PX}px)`
-    );
-    expect(picker).toContain('--segment-option-direction: column;');
-    expect(picker).toContain(`--segment-option-gap: ${PICKER_METRICS.COLUMN_OPTION_GAP_PX}px;`);
-    expect(picker).toContain(
-      `--segment-option-padding: var(--space-1) ${PICKER_METRICS.COLUMN_OPTION_PADDING_INLINE_PX}px;`
-    );
+  it.each([
+    [900, 599.98, 'compact'],
+    [900, 600, 'wide'],
+    [599.98, 599.98, 'phone'],
+    [600, 600, 'phone'],
+    [700, 700, 'wide'],
+    [699.98, 1000, 'phone'],
+    [700, 1000, 'wide'],
+    [700, 699.98, 'wide'],
+    [600, 599.98, 'compact'],
+    [599.98, 600, 'phone'],
+  ])('selects the %s × %s shell at a policy boundary', (width, height, shell) => {
+    expect(settingsShell({ width, height })).toBe(shell);
   });
 
   it("reads the pane's reading line, scroll-end slack and nav clearance from paneScroll", () => {
@@ -538,4 +463,13 @@ describe('Parent Center in the wide shell', () => {
     expect(scrollTo).not.toHaveBeenCalled();
     expect(host.textContent).toContain('Unlock these settings');
   });
+});
+
+it('pads the compact header as CompactShell does', () => {
+  expect(modalFrame('settings', PHONE_LANDSCAPE, MODAL_GUTTER_MIN_PX).header).toEqual({
+    top: 14,
+    inline: 24,
+    bottom: 10,
+  });
+  expect(modalFrame('settings', TABLET, MODAL_GUTTER_MIN_PX).header.top).not.toBe(14);
 });

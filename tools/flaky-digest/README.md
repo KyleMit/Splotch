@@ -1,6 +1,6 @@
 # Flaky digest
 
-Sums the masked flakes that CI retries hide. `web/playwright-flaky-reporter.ts` writes a
+Sums the masked flakes that CI retries hide. `e2e/playwright-flaky-reporter.ts` writes a
 `flaky.json` record into every Playwright report artifact the Tests workflow uploads; this
 capability reads those records back, keeps them past the artifacts' expiry, and ranks the tests that
 passed only on retry.

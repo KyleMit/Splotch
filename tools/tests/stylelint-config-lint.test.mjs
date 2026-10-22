@@ -14,10 +14,9 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 // and pick the syntax: a plain stylesheet, and a component whose <style> block postcss-html
 // extracts.
 const STYLESHEET = 'web/src/lib/seeded-defect.css';
-const COMPONENT = 'web/src/lib/components/SeededDefect.svelte';
 
 const rulesReportedFor = async (path, css) => {
-  const code = path.endsWith('.svelte') ? `<div></div>\n<style>\n${css}\n</style>\n` : css;
+  const code = css;
   const { results } = await stylelint.lint({
     code,
     codeFilename: join(repoRoot, path),
@@ -58,7 +57,7 @@ const SEEDED_DISABLE_DEFECTS = [
   ],
 ];
 
-describe.each([STYLESHEET, COMPONENT])('stylelint.config.js lints %s', (path) => {
+describe.each([STYLESHEET])('stylelint.config.js lints %s', (path) => {
   it.each([...SEEDED_RULE_DEFECTS, ...SEEDED_DISABLE_DEFECTS])('reports %s', async (id, css) => {
     expect(await rulesReportedFor(path, css)).toContain(id);
   });

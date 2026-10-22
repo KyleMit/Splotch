@@ -162,8 +162,8 @@ moved to its own spec with its helpers in a shared helper module.
 
 **Hazards:**
 
-* Scoped CSS stops reaching markup moved into a child component — the parent's show/hide rules must
-  be rewritten, within `npm run lint:tokens`' budget of unscoped `:global()` overrides.
+* Moving markup into a child component can sever inherited styling and measured layout. Preserve its
+  RSD style contracts and verify every affected viewport and state.
 * A static import into a startup-path module re-partitions chunks
   (`tools/migration/check-native-web-startup.mjs` pins the React Native export's startup bundle).
 * Test placement (`tools/tests/test-file-placement.test.mjs`); a split that must re-declare a large
@@ -183,9 +183,9 @@ signature; a sub-factory that owns its own state (a timer set, a tap run, a re-p
 * `createX()` factories are mandated (CLAUDE.md) and dominate the long list. A factory is not too
   long because its methods are closures; one state machine over shared `$state` and timers is an
   honest raise.
-* The hot-path rule in `.claude/rules/svelte.md`: code reached per pointermove, resize, or frame
-  must not allocate. A helper that captures a closure or returns an object on that path is a
-  regression — every split under `lib/drawing/` or a gesture action states its allocation impact.
+* Code reached per pointermove, resize, or frame must not allocate. A helper that captures a closure
+  or returns an object on that path is a regression — every split under `lib/drawing/` or a gesture
+  action states its allocation impact.
 * Hoisting a factory's pieces to module scope can make the bundler unable to prove an unused
   instance side-effect-free. The fix is a `/* @__NO_SIDE_EFFECTS__ */` annotation with a WHY
   comment.

@@ -16,3 +16,63 @@ export type CommonIconName = Exclude<IconName, (typeof NON_RENDERABLE_ICONS)[num
 export function iconNameFromPath(path: string): IconName {
   return (path.split('/').pop() ?? '').replace(/\.svg$/, '') as IconName;
 }
+
+export const COLOR_ICONS = new Set<CommonIconName>([
+  'appearance',
+  'ink-splotch',
+  'brush-crayon',
+  'brush-eraser',
+  'brush-magic',
+  'brush-pen',
+  'camera',
+  'controls',
+  'dottie-another-idea',
+  'dottie-bright',
+  'dottie-giggle',
+  'dottie-hiccup',
+  'dottie-kind-eyes',
+  'dottie-lean',
+  'dottie-question',
+  'dottie-retry',
+  'dottie-stumped',
+  'dottie-sunny',
+  'feedback',
+  // The stroke glyph inherits its caller's ink instead of the modal fill override.
+  'refresh',
+  'line-weight-brush',
+  'line-weight-eraser',
+  'line-weight-magic',
+  'more-colors',
+  'parent-center',
+  'release-fixed',
+  'release-improved',
+  'release-new',
+  'save-picture',
+  'setup',
+  'shapes',
+  'sound',
+  'trash-closed',
+  'trash-open',
+  'undo',
+  'wand-stars',
+  'whats-new',
+  // Stroke-size previews carry their own coloring — the brush sizes via
+  // currentColor (the active ink color), the eraser sizes and its
+  // line-weight-eraser trigger via theme vars (--paper / --hole-stroke) —
+  // so they must skip the monochrome tint filter too.
+  'size-brush-1',
+  'size-brush-2',
+  'size-brush-3',
+  'size-brush-4',
+  'size-brush-5',
+  'size-eraser-1',
+  'size-eraser-2',
+  'size-eraser-3',
+  'size-eraser-4',
+  'size-eraser-5',
+  'size-magic-1',
+  'size-magic-2',
+  'size-magic-3',
+  'size-magic-4',
+  'size-magic-5',
+]);

@@ -1,15 +1,9 @@
 // A relative import, not $lib: the native app's Color Picker imports this module through Metro,
 // which has no $lib alias.
-import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '../breakpoints';
+import { BREAKPOINT_EPSILON_PX } from '../breakpoints';
 
-// Executable form of the responsive-trim ladders in ColorPalette.svelte,
-// ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim
-// swatches/rows/columns with pure CSS, so every breakpoint is a hand-evaluated
-// arithmetic result baked into a `@media` or `@container` rule. This module
-// holds the geometry, the formulas and the step tables — the whole ladder — so
-// a size change is re-derivable rather than re-guessable, and
-// trimGeometry.test.ts parses each component's `<style>` block and asserts the
-// committed CSS still matches what these functions produce.
+// Responsive color-menu and honeycomb thresholds shared by the native picker and RN web
+// acceptance checks. trimGeometry.test.ts pins the established boundary values independently.
 
 // A `max-*` breakpoint has to sit just below the threshold at which the layout
 // still fits (e.g. 588 → 587.98).
@@ -21,20 +15,14 @@ function justBelowPx(thresholdPx: number): number {
 // The palette is a single flow of equal squares — a landscape column or a
 // portrait row — so both axes share one extent formula.
 
-export interface PaletteStackGeometry {
+interface PaletteStackGeometry {
   swatchPx: number;
   gapPx: number;
   /** Both edges combined, not one side. */
   paddingPx: number;
 }
 
-export const PALETTE_COLUMN_GEOMETRY: PaletteStackGeometry = {
-  swatchPx: 60,
-  gapPx: 12,
-  paddingPx: 24,
-};
-
-export const PALETTE_ROW_GEOMETRY: PaletteStackGeometry = {
+const PALETTE_ROW_GEOMETRY: PaletteStackGeometry = {
   swatchPx: 55,
   gapPx: 8,
   paddingPx: 20,
@@ -50,14 +38,6 @@ function stackExtentPx(
 // The custom (gradient) swatch shares the flow but is never trimmed, so every
 // capacity below is a color count plus this.
 const GRADIENT_SLOTS = 1;
-
-/** The portrait row trims all the way down to the untrimmable gradient swatch. */
-const PORTRAIT_FLOOR_SLOTS = GRADIENT_SLOTS;
-
-// The landscape Color Palette and Actions Panel both need this inline extent
-// before hydration. app.css emits the values as a responsive custom property;
-// actionButtonLayout.fallback.test.ts guards that copy against this source.
-export const PALETTE_LANDSCAPE_WIDTH_PX = stackExtentPx(1, PALETTE_COLUMN_GEOMETRY);
 
 /** One rule of a trim ladder: what it fires at, and what it takes away. */
 export interface TrimStep {
@@ -106,21 +86,6 @@ function stackRungs(
     });
   }
   return rungs;
-}
-
-/** Heights below which the single column loses another swatch. */
-export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
-  return trimSteps(
-    colorCount,
-    stackRungs(colorCount, GRADIENT_SLOTS, PALETTE_COLUMN_GEOMETRY).filter(
-      ({ thresholdPx }) => thresholdPx >= TABLET_MIN_SIDE_PX
-    )
-  );
-}
-
-/** Widths below which the portrait row loses another swatch. */
-export function portraitTrimSteps(colorCount: number): TrimStep[] {
-  return trimSteps(colorCount, stackRungs(colorCount, PORTRAIT_FLOOR_SLOTS, PALETTE_ROW_GEOMETRY));
 }
 
 // ── ColorMenu ──────────────────────────────────────────────────────────────

@@ -1,16 +1,3 @@
-// Pure geometry for presenting the drawing's "paper" inside a viewport that has
-// rotated since the paper was adopted (ADR-0050). While ink is on the canvas the
-// engine locks the paper — the coordinate space every recorded op, live tile,
-// history base, undo patch, and magic sheet lives in — and a
-// device rotation is handled by *presenting* that space through the view
-// computed here instead of remapping any content. Production always presents
-// UPRIGHT (rotation 0: the picture rotates with the device and contain-fits,
-// centered); the quarter-turn cases are kept because the math is one unit and
-// they document the rejected counter-rotate alternative (see ADR-0050).
-// engine.ts owns all state; everything here is a pure function so the mapping
-// math is unit-testable.
-
-import type { Orientation } from '../breakpoints';
 import type { Point } from './strokeMath';
 
 export type ViewRotation = 0 | 90 | 180 | 270;
@@ -236,49 +223,3 @@ export function viewToPaper(view: PaperView, x: number, y: number): Point {
       return { x: -v, y: u };
   }
 }
-
-// The paper view published to components (CSS px), so the coloring-page overlay
-// can be positioned with the same transform the canvas paints through, and the
-// picker can keep offering the locked paper's tall/wide art variant. Lives here
-// with the presentation math rather than in engine.ts, whose state it is
-// derived from; the engine re-exports both so components keep one import.
-export interface EngineViewState {
-  active: boolean;
-  scale: number;
-  rotate: PaperView['rotate'];
-  tx: number;
-  ty: number;
-  paperCssWidth: number;
-  paperCssHeight: number;
-  paperOrientation: Orientation;
-}
-
-export function describePaperView(
-  view: PaperView,
-  renderScale: number,
-  paper: { pxW: number; pxH: number; cssW: number; cssH: number }
-): EngineViewState {
-  return {
-    active: !isIdentityView(view),
-    scale: view.scale,
-    rotate: view.rotate,
-    tx: view.tx / renderScale,
-    ty: view.ty / renderScale,
-    paperCssWidth: paper.cssW,
-    paperCssHeight: paper.cssH,
-    paperOrientation: paper.pxW > paper.pxH ? 'landscape' : 'portrait',
-  };
-}
-
-// The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
-// any paper/render-scale state to derive from.
-export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({
-  active: false,
-  scale: 1,
-  rotate: 0,
-  tx: 0,
-  ty: 0,
-  paperCssWidth: 0,
-  paperCssHeight: 0,
-  paperOrientation: 'portrait',
-});

@@ -33,7 +33,11 @@ const FIXTURE_SPECIFIERS = new Set([
   '../http',
 ]);
 
-const toolFiles = execFileSync('git', ['ls-files', 'tools'], { cwd: repoRoot, encoding: 'utf8' })
+const toolFiles = execFileSync('git', ['ls-files', 'tools'], {
+  cwd: repoRoot,
+  encoding: 'utf8',
+  env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' },
+})
   .trim()
   .split('\n')
   .filter((path) => path.endsWith('.mjs') && !SEPARATELY_CONFIGURED.test(path));

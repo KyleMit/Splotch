@@ -208,7 +208,7 @@ const SUPPORT_FLOOR_CLAIMS = [
   [
     'why-these-numbers bullet',
     'docs/COMPATIBILITY.md',
-    /\*\*Native\s+Android\s+API\s+(?<api>\d+)\s+\((?<release>\d+\.\d+)\)\*\*\s+is\s+older\s+than\s+the\s+web\s+floor/,
+    /\*\*Native\s+Android\s+API\s+(?<api>\d+)\s+\((?<release>\d+\.\d+)\)\*\*\s+is\s+the\s+native\s+OS\s+floor/,
   ],
   [
     'enforcement table value',

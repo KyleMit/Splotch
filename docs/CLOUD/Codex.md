@@ -261,7 +261,6 @@ environment.
 * [`.codex/cloud/setup.sh`](../../.codex/cloud/setup.sh) — installation and browser readiness.
 * [`.codex/cloud/maintenance.sh`](../../.codex/cloud/maintenance.sh) — cached-container refresh.
 * [`.codex/cloud/start.md`](../../.codex/cloud/start.md) — agent startup and workflow validation.
-* [`web/playwright.config.ts`](../../web/playwright.config.ts) — browser cache lookup for E2E.
-* [`tools/run-web-tool.mjs`](../../tools/run-web-tool.mjs) — invokes SvelteKit and Playwright from
-  `web/`.
+* [`e2e/playwright.config.ts`](../../e2e/playwright.config.ts) — browser cache lookup for E2E.
+* [`e2e/server/serve.ts`](../../e2e/server/serve.ts) — serves the RN export and its functions.
 * [`docs/COMPATIBILITY.md`](../COMPATIBILITY.md) — supported browser and device floor.

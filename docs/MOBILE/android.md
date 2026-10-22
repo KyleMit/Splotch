@@ -2,35 +2,27 @@
 
 # Splotch — Android: Setup, Build, Test & Release
 
-Android-specific toolchain, build/sign/run commands, on-device testing, Chrome remote profiling, and
-the Google Play release checklist. For the general build model and shared assets see
+Android-specific toolchain, build/sign/run commands, on-device testing, native profiling, and the
+Google Play release checklist. For the general build model and shared assets see
 **[native.md](native.md)**; iOS lives in **[ios.md](ios.md)**.
 
 > Minimum supported OS: **Android 7.0 / API 24** (`android.minSdkVersion` in
-> `experiments/native-architecture/android/gradle.properties`). This is safely older than the web
-> floor because the System WebView updates via Play independently of the OS — see
+> `experiments/native-architecture/android/gradle.properties`). This governs the RN runtime and
+> native modules independently of the web browser floor — see
 > [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
 
 ## 1. Toolchain setup
 
-The Android project pins **AGP 9.4.1** and **Gradle 9.6.0** (the wrapper verifies the official
-distribution SHA-256).
-[AGP's compatibility table](https://developer.android.com/build/releases/agp-9-4-0-release-notes)
-requires Gradle 9.6.0, SDK Build Tools 36.0.0, and JDK 17 or newer; Capacitor 8 keeps this project's
-full JDK 21 requirement. The app retains compile/target SDK 36 and the API 24 floor.
+The React Native project's wrapper and SDK values live in
+`experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.properties` and
+`experiments/native-architecture/android/gradle.properties`. Expo/React Native's Gradle plugins
+resolve AGP and Kotlin; review the aligned SDK/native scripts before installing an upgrade.
 
-The [AGP 9 migration](https://developer.android.com/build/releases/agp-9-0-0-release-notes) uses the
-new Android DSL and built-in Kotlin defaults. The Java-only Capacitor modules build with those
-defaults; do not patch generated dependency Gradle files or disable the new DSL/Kotlin integration.
-The app's asset exclusion filter lives in `androidResources`. Release keeps code minification,
-`proguard-android-optimize.txt`, and resource shrinking; AGP 9 integrates resource shrinking into R8
-by default. Keep the Capacitor consumer reflection rules: plugins are created and called by
-reflection, including their constructors.
-
-AGP 9 stops aligning every compile classpath with runtime dependency constraints. The app directly
-declares AndroidX Core at the shared `androidxCoreVersion` because `MainActivity` uses its
-`WindowCompat` API; relying on Capacitor's private dependency would compile against an older
-transitive Core version.
+Use a full JDK 21 for the repository's Android workflow. The project explicitly opts out of AGP's
+built-in Kotlin and new DSL defaults because Expo's SDK template applies the Kotlin Android plugin
+and old DSL. Those opt-outs are in its Gradle properties; the former Java-only Capacitor advice to
+remove them is obsolete. Release enables R8 minification and resource shrinking in
+`experiments/native-architecture/android/app/build.gradle`.
 
 ### macOS
 
@@ -41,8 +33,7 @@ transitive Core version.
    Launch it once and complete the setup wizard — it installs the SDK to `~/Library/Android/sdk`,
    including `platform-tools` (`adb`).
 
-2. **Install a full JDK 21** — Capacitor 8 plugins need a Java 21 toolchain (Android Studio's
-   bundled JBR is too old and isn't a full JDK):
+2. **Install a full JDK 21** for the repository's native build workflow:
 
    ```bash
    brew install --cask temurin@21
@@ -72,24 +63,22 @@ transitive Core version.
    smoke-test CLI automatically. It's idempotent — re-run it any time.
 
 5. **Run the app** — two flows:
-   * **Web dev server over USB** (fastest iteration): `npm run dev`, then `npm run adb:reverse`,
-     then open `http://localhost:5173` in Chrome on the phone. See "Running the web app on a real
-     device" below.
+   * **Web preview**: use a verified Netlify deploy preview for a phone browser. For local export
+     inspection use the `run-splotch` skill on the development machine.
    * **Native Release build**: `npm run android:apk` builds the React Native app as
-     `art.splotch.app.dev`; install it with `adb install -r` (see Option B below).
+     `art.splotch.app.dev`; install on the explicitly selected device with
+     `adb -s <serial> install -r`.
 
-6. **Debug with Chrome DevTools**: on desktop Chrome open `chrome://inspect/#devices` and click
-   **Inspect** on the phone's tab — see "Performance profiling with Chrome DevTools" below for the
-   full flow.
+6. **Debug the appropriate runtime**: Chrome DevTools can inspect a phone browser tab running the
+   web export. It does not inspect RN ink. Use the native development guide and `docs/PROFILING.md`
+   for Metro, the Release probe and platform traces.
 
 ### Linux
 
 * **Android SDK** installed (via Android Studio or the standalone command-line tools; default
   `~/Android/Sdk`, override with `ANDROID_HOME`), with `platform-tools` and `emulator` on `PATH`.
-* **Node ≥ 22** (Capacitor 8 requires it).
-* **Full JDK 21** on `PATH` with `JAVA_HOME` set — Capacitor 8 plugins need a Java 21 toolchain, and
-  it must be a *full* JDK (with `jlink`/`jmods`), not a JetBrains JBR, or AGP's `JdkImageTransform`
-  fails.
+* **Node** satisfying the root `package.json` engine range.
+* **Full JDK 21** on `PATH` with `JAVA_HOME` set; use the same toolchain locally and in CI.
 
 `npm run android:setup` handles the emulator image, AVD, and Maestro on both macOS and Linux.
 
@@ -130,78 +119,24 @@ The store release builds the React Native app in `experiments/native-architectur
 `experiments/native-architecture/android/app/build/outputs/bundle/release/app-release.aab`.
 
 Store identity is opt-in (ADR-0182). A Gradle build of that project is `art.splotch.app.dev`, signed
-with the local debug key, unless its command line carries `-Psplotch.store=true`, and only
-`android:bundle` passes it; a `splotch.store` in `gradle.properties` or the environment fails the
-build instead. So a Debug build, `android:apk`, and any Release build installed for testing or
-device performance install beside the store copy, never over it. The store build signs with the
-upload key named in `experiments/native-architecture/android/keystore.properties` (git-ignored;
-template `keystore.properties.example` beside it), whose `storeFile` points at the shipping
+with the local debug key, unless its command line carries `-Psplotch.store=true`, and the explicit
+`android:bundle` / `android:apk:store` scripts pass it; a `splotch.store` in `gradle.properties` or
+the environment fails the build instead. So a Debug build, `android:apk`, and any Release build
+installed for testing or device performance install beside the store copy, never over it. The store
+build signs with the upload key named in
+`experiments/native-architecture/android/keystore.properties` (git-ignored; template
+`keystore.properties.example` beside it), whose `storeFile` points at the shipping
 `android/upload-keystore.jks`: Play accepts the update only under that key. Without the file the
 build fails at configuration rather than writing an unsigned bundle. The script then runs the
 `jarsigner` check `android:verify` runs, and `npm run release:publish -- --only=android --dry-run`
 checks the bundle's embedded app ID, version, signature block and R8 mapping.
 
-### Running the web app on a real device
+### Running on a real device
 
-Two options depending on what you want to test:
-
-**Option A — Web dev server (fastest iteration, real touch input)**
-
-Useful when you want to test or profile the web build without a native build. The phone's browser
-hits your local dev server over USB.
-
-1. Start the dev server: `npm run dev`
-2. Connect the phone via USB and run:
-   ```bash
-   npm run adb:reverse
-   ```
-   This forwards the phone's port 5173 to the desktop's dev server
-   (`adb reverse tcp:5173 tcp:5173`), so `http://localhost:5173` on the phone resolves to your
-   machine. The dev server port is pinned to 5173 in `web/vite.config.ts` so this script is always
-   correct.
-3. Open Chrome on the phone and navigate to `http://localhost:5173`.
-
-Re-run `npm run adb:reverse` after each USB reconnect.
-
-If port 5173 is already in use from a stale dev server, kill it first:
-
-```bash
-npm run dev:stop
-```
-
-**Option B — Install the Release APK (tests the native app)**
-
-```bash
-npm run android:apk
-adb install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
-```
-
-This builds the Release app and installs it as `art.splotch.app.dev`, beside any store copy. Use
-this when testing native modules, storage, or the offline AI flow — not needed for canvas/perf work.
-
-#### Troubleshooting installs
-
-* **`adb: more than one device/emulator`** (or Gradle installs onto the wrong target) — you have
-  both a physical phone and an emulator connected. Pass `-s <serial>` (from `npm run adb:devices`)
-  to every adb call, or close the emulator.
-* **`INSTALL_FAILED_UPDATE_INCOMPATIBLE: … signatures do not match`** — a copy of
-  `art.splotch.app.dev` is already installed that was signed with a *different* key (a debug-signed
-  build from another machine — each machine's debug keystore is unique). Android won't overwrite
-  across signing keys. A Play Store build is a different app, `art.splotch.app`, which a `.dev`
-  install never replaces. Uninstall the old `.dev` copy first, then reinstall:
-  ```bash
-  adb -s <serial> uninstall art.splotch.app.dev   # <serial> from adb:devices
-  adb -s <serial> install -r experiments/native-architecture/android/app/build/outputs/apk/release/app-release.apk
-  ```
-  ⚠️ Uninstalling wipes that app's local data (drawings, saved settings, stored access code).
-  Harmless on a throwaway test device; warn the user if it's their real phone.
-
-To preview the dev server on a phone that isn't on your local network, use an outbound tunnel.
-Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel --url http://localhost:5173`, or
-`ngrok http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
-gateway and those tools fail — the working path is a self-hosted chisel reverse tunnel. See
-**[docs/CLOUD/Claude-Code.md](../CLOUD/Claude-Code.md)** and
-**[ADR-0021](../adrs/0021-cloud-session-tunneling.md)**.
+Use the RN app's `experiments/native-architecture/DEVELOPMENT.md` for development builds and Metro
+iteration. Build a `.dev` APK with `npm run android:apk` and verify its app ID before installing on
+the explicitly selected device. Never replace or clear the store-installed app and its drawings. The
+local web verification host uses isolated test credentials and is not a LAN or public preview.
 
 ## 3. Testing
 
@@ -220,61 +155,11 @@ gateway and those tools fail — the working path is a self-hosted chisel revers
   24 floor. This exercises R8, `proguard-android-optimize.txt`, and resource shrinking without
   putting the Play upload key in CI.
 
-### Performance profiling with Chrome DevTools (remote debugging)
+### Drawing performance
 
-Remote debugging lets you run Chrome DevTools on your desktop while drawing on the phone with real
-multi-touch input — the best way to get accurate profiles.
-
-#### One-time setup
-
-1. On the Android device: **Settings → Developer options → USB debugging → ON**. (Enable Developer
-   options by tapping *Build number* 7 times in *About phone*.)
-2. Connect via USB; accept the "Allow USB debugging?" prompt on the device.
-3. Choose "USB Tethering" as the USB connection mode
-4. Verify ADB sees the device:
-   ```bash
-   npm run adb:devices
-   ```
-   The device should show as `device` (not `unauthorized`).
-
-#### Recording a profile
-
-1. Start the app on the phone (Option A or B above).
-2. On the desktop, open Chrome and navigate to `chrome://inspect/#devices`.
-3. Find your device and the open tab, then click **Inspect**. A DevTools window opens, connected to
-   the phone's Chrome instance.
-4. In DevTools, open the **Performance** panel.
-5. Click **Record** (⏺), draw on the phone for 10–15 seconds (use multi-touch freely — this captures
-   real finger input), then click **Stop**.
-6. Export the trace: click the **⋮** menu → **Save profile…** → save as `.json`.
-
-### Scripting against the running native WebView (CDP)
-
-`chrome://inspect` is interactive; when you need to *read values out of* the running native app —
-computed styles, `env()` insets, live DOM geometry — the same debug socket takes a scripted CDP
-client. This is how the safe-area insets were measured on-device in
-[scratchpad/safe-area-device-verification-2026-08-24.md](../scratchpad/safe-area-device-verification-2026-08-24.md).
-
-```bash
-SERIAL=emulator-5554                                   # or a phone serial from adb:devices
-PID=$(adb -s "$SERIAL" shell pidof art.splotch.app | tr -d '\r')
-adb -s "$SERIAL" forward tcp:9333 "localabstract:webview_devtools_remote_$PID"
-curl -s http://localhost:9333/json/list                # confirm the page target is there
-```
-
-Then attach with Playwright's `chromium.connectOverCDP('http://localhost:9333')` and evaluate in
-`browser.contexts()[0].pages()[0]`. Run the script from the repo root so `playwright` resolves.
-
-Three things that will waste your time here:
-
-* **The socket name carries the pid** (`webview_devtools_remote_<pid>`), so the forward is invalid
-  the moment the app restarts. Re-read `pidof` and re-forward on every launch, and poll for the
-  socket to appear rather than sleeping a fixed interval — it lags process start by a second or so.
-* **`adb shell monkey -p art.splotch.app 1` can report success and start nothing.** Use
-  `adb -s "$SERIAL" shell am start -n art.splotch.app/.MainActivity`.
-* **Pin `-s <serial>` on every call** when a phone and an emulator are both attached, or adb fails
-  with `more than one device/emulator`. Per the root `CLAUDE.md`, never kill the other listener to
-  clear a port — pick another port or another serial.
+The RN app paints native ink through Skia, not a WebView. Use the app's probe and device-parity
+tools described in `docs/PROFILING.md` and `tools/device-parity/README.md`. Chrome browser profiling
+measures the web export; it does not measure native drawing.
 
 ## 4. Release checklist
 
@@ -438,14 +323,15 @@ re-verify if that flow changes:
 * **Disclosure** — `/privacy` names OpenAI, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing
-  still passes through `/api/generate-image` with the parent's key — `aiImage.ts`), and the two
-  halves of OpenAI's data posture are not the same claim — API content is **not** used to train its
-  models, and it **is** retained for abuse monitoring. Say both. The retention half is a window, not
-  a deletion promise: the ordinary one is 30 days, but OpenAI's policy allows longer where the law
-  requires it or where it is needed to prevent harm, and an image its classifier flags as potential
-  CSAM is held for manual review regardless of the account's data controls. Write "normally deleted
-  after 30 days", never "deleted after 30 days" — the difference matters most for exactly this app,
-  whose inputs are children's drawings. The exact Data safety and AI-content answers live in
+  still passes through `/api/generate-image` with the parent's key —
+  `experiments/native-architecture/src/ai/transport.ts`), and the two halves of OpenAI's data
+  posture are not the same claim — API content is **not** used to train its models, and it **is**
+  retained for abuse monitoring. Say both. The retention half is a window, not a deletion promise:
+  the ordinary one is 30 days, but OpenAI's policy allows longer where the law requires it or where
+  it is needed to prevent harm, and an image its classifier flags as potential CSAM is held for
+  manual review regardless of the account's data controls. Write "normally deleted after 30 days",
+  never "deleted after 30 days" — the difference matters most for exactly this app, whose inputs are
+  children's drawings. The exact Data safety and AI-content answers live in
   `store-assets/STORE-LISTING-ANDROID.md`.
 * **Under-18 processing** — OpenAI's under-18 API guidance asks developers serving minors for
   age-appropriate content filters, disclosures, and reporting/escalation paths, which the safety
@@ -466,7 +352,7 @@ assumption breaks:
 | SMS & Call Log Permissions (`READ_CALL_LOG`)    | Manifest declares only `INTERNET`, `ACCESS_NETWORK_STATE`, `WRITE_EXTERNAL_STORAGE` (maxSdk 28). No accounts, no phone verification. |
 | Location disclosures                            | No location permission and no Geolocation use; `securityHeaders.ts` denies `geolocation=()` outright.                                |
 | Personal Loans / Earned Wage Access             | Not a financial app.                                                                                                                 |
-| Ads, analytics, advertising ID                  | No ad/analytics/attribution SDKs — Android deps are appcompat, splashscreen, and Capacitor plugins only.                             |
+| Ads, analytics, advertising ID                  | No ad/analytics/attribution SDKs; the reviewed Expo/RN native dependency set is functional app tooling.                              |
 
 ## 5. Known follow-ups (Android-specific)
 

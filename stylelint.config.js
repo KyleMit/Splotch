@@ -31,9 +31,6 @@ export default {
   reportInvalidScopeDisables: true,
 
   ignoreFiles: [
-    // Generated from web/src/lib/design/tokens.ts (ADR-0071) —
-    // `npm run gen:tokens:check` is what guards it.
-    'web/src/tokens.css',
     // Build output and SvelteKit's generated tree (root.svelte lives here).
     '**/.svelte-kit/**',
     '**/build/**',
@@ -184,15 +181,4 @@ export default {
     // practice 01, tools/stylelint-keyframe-curves.mjs).
     'splotch/keyframe-curves': true,
   },
-  overrides: [
-    {
-      // postcss-html extracts the <style> blocks from a component file. It is
-      // scoped to .svelte rather than set at the top level on purpose: pointed
-      // at a plain .css file it parses the stylesheet as a document, finds no
-      // embedded style block, and reports zero problems — coverage that
-      // disappears without failing.
-      files: ['**/*.svelte'],
-      customSyntax: 'postcss-html',
-    },
-  ],
 };

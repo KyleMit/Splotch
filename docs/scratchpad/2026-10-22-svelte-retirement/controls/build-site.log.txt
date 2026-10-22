@@ -1,0 +1,228 @@
+
+> splotch@1.6.0 build:site
+> node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/build-native-web.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-startup.mjs
+
+$ /Users/kylemit/.codex/worktrees/0714/Splotch/node_modules/.bin/expo export --platform web --output-dir /Users/kylemit/.codex/worktrees/0714/Splotch/experiments/native-architecture/dist/web
+Expo Autolinking module resolution enabled
+Experimental bundle optimization is enabled.
+Experimental tree shaking is enabled.
+Starting Metro Bundler
+
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Web Bundled 7635ms experiments/native-architecture/src/index.ts (922 modules)
+
+› Assets (80):
+../../node_modules/@fontsource-variable/quicksand/files/quicksand-latin-ext-wght-normal.7ee01e648403b775b222bba928ecaf81.woff2 (27KB)
+../../node_modules/@fontsource-variable/quicksand/files/quicksand-latin-wght-normal.9d503278216c2225184a236c64e0924b.woff2 (28KB)
+../../node_modules/@fontsource-variable/quicksand/files/quicksand-vietnamese-wght-normal.5eaa7de506d26633f78d8f1e793e077e.woff2 (8.8KB)
+../../web/static/coloring/farm/cat-tall.dark.selector.42d24e93b1e6ec8ea605f19f663df33f.webp (12KB)
+../../web/static/coloring/farm/cat-tall.light.4d8782b4472e17b975ecc205f8a51c1a.webp (103KB)
+../../web/static/coloring/farm/cat-tall.night.35100c9c727ca9a49c3afc98b01691bd.webp (98KB)
+../../web/static/coloring/farm/cat-tall.selector.b7c5a82fbb6da2035d463a4aba534e56.webp (12KB)
+../../web/static/coloring/farm/cat-wide.dark.selector.5327b6e18252ce7d0b9f9790d7532913.webp (11KB)
+../../web/static/coloring/farm/cat-wide.light.42ba72b458998d9e646cddd5984aa7df.webp (99KB)
+../../web/static/coloring/farm/cat-wide.night.f5c3b2f8e492603a60d713d1cb7c0307.webp (104KB)
+../../web/static/coloring/farm/cat-wide.selector.99e5ff3051bf17126b31382964d75d75.webp (11KB)
+../../web/static/coloring/farm/cover.chalk.thumb.568789d24053610df0c466c1e65f5867.webp (19KB)
+../../web/static/coloring/farm/cover.thumb.31e838f7c09953ec0410408fa42565f8.webp (19KB)
+../../web/static/coloring/farm/cow-tall.dark.selector.e64e95eacd64725b5ed6e1d2f00879e3.webp (11KB)
+../../web/static/coloring/farm/cow-tall.light.d453ab2f304ac0f525c8dc32bf514f43.webp (92KB)
+../../web/static/coloring/farm/cow-tall.night.78850c5195731b9967e697ebe882aa4a.webp (87KB)
+../../web/static/coloring/farm/cow-tall.selector.d5b4a0ad9b32b0bb9e9c46096cedb5e5.webp (11KB)
+../../web/static/coloring/farm/cow-wide.dark.selector.0e15b58e6cfbba2a1208ad8b2eac7834.webp (12KB)
+../../web/static/coloring/farm/cow-wide.light.c0f16853bd4b4e612451c3659dec31e3.webp (102KB)
+../../web/static/coloring/farm/cow-wide.night.b00b691c370d66a708668f06d4e42a61.webp (114KB)
+../../web/static/coloring/farm/cow-wide.selector.72def390a589e5c8e9bfdd6f85bf61ea.webp (12KB)
+../../web/static/coloring/farm/dog-tall.dark.selector.808ed3bef3d60c15250067b2f1177d70.webp (7.9KB)
+../../web/static/coloring/farm/dog-tall.light.721333132b0600c366d0f455cae4ea89.webp (74KB)
+../../web/static/coloring/farm/dog-tall.night.958619221b7e8bd2093ed7151051dc15.webp (78KB)
+../../web/static/coloring/farm/dog-tall.selector.97cd5da4379d18a1282be365cf6a2218.webp (7.9KB)
+../../web/static/coloring/farm/dog-wide.dark.selector.354a3d881245d600b8bfc7b3ea79e958.webp (9.2KB)
+../../web/static/coloring/farm/dog-wide.light.9895d333155be53e8fe212cf1c3d5c8b.webp (85KB)
+../../web/static/coloring/farm/dog-wide.night.fc6f341498e83f2d6a8d8cd46801c5d8.webp (92KB)
+../../web/static/coloring/farm/dog-wide.selector.c9da1e8b5f599fbd2f08bb2d4431cf3d.webp (9KB)
+../../web/static/coloring/farm/duck-tall.dark.selector.c046156820374926786401994842ac41.webp (12KB)
+../../web/static/coloring/farm/duck-tall.light.a7c4a93de3676d0c9cfc47f286954303.webp (98KB)
+../../web/static/coloring/farm/duck-tall.night.b1f529ce430c84750e00b7019d8424a4.webp (102KB)
+../../web/static/coloring/farm/duck-tall.selector.f4a77174d66238678622eae055fb7783.webp (11KB)
+../../web/static/coloring/farm/duck-wide.dark.selector.137712b7f2f21d231cd4c67afda6abb1.webp (11KB)
+../../web/static/coloring/farm/duck-wide.light.2826288a92b80cc58e36c9fbaf2a9430.webp (97KB)
+../../web/static/coloring/farm/duck-wide.night.b166c3c31f5a7b5138e5352fa25e648f.webp (100KB)
+../../web/static/coloring/farm/duck-wide.selector.0faef9ca6a9354fe95cdc6a9c77242c8.webp (10KB)
+../../web/static/coloring/farm/horse-tall.dark.selector.6ab834f227a6ad4de936221b7e39f156.webp (11KB)
+../../web/static/coloring/farm/horse-tall.light.ccd804762aa69e20195500fa0de4177d.webp (87KB)
+../../web/static/coloring/farm/horse-tall.night.4fd495fb49051f2a4d1b2108e3fb9c49.webp (96KB)
+../../web/static/coloring/farm/horse-tall.selector.30f0037fcc2b3d5cc54874484b13e1f5.webp (10KB)
+../../web/static/coloring/farm/horse-wide.dark.selector.468e94ca63c46a37c310730d20dbd2bb.webp (11KB)
+../../web/static/coloring/farm/horse-wide.light.a6b0223dcfcf25216112d6e22d176bd1.webp (97KB)
+../../web/static/coloring/farm/horse-wide.night.7098aa809ab5a069efd5d88bf72e30a4.webp (97KB)
+../../web/static/coloring/farm/horse-wide.selector.b7353c08aa13bb08c46b6d3b7afbd826.webp (11KB)
+../../web/static/coloring/farm/pig-tall.dark.selector.5c376053a94c84fda60631d3dbdf6343.webp (8.9KB)
+../../web/static/coloring/farm/pig-tall.light.0d4dbdea6f24477b67e914469ffde28f.webp (74KB)
+../../web/static/coloring/farm/pig-tall.night.78bbd2158eaa62a256f6db10744931f5.webp (74KB)
+../../web/static/coloring/farm/pig-tall.selector.2cd1cd09a9c08808cfd51f187aafd6df.webp (8.7KB)
+../../web/static/coloring/farm/pig-wide.dark.selector.07603f9374053c77495575ed7ddeb02a.webp (11KB)
+../../web/static/coloring/farm/pig-wide.light.7768d127a3f2a9e8d8ca83c62a0a0289.webp (98KB)
+../../web/static/coloring/farm/pig-wide.night.cb4b0f307c256d159443e713f3932b7c.webp (95KB)
+../../web/static/coloring/farm/pig-wide.selector.e8b86e00771ba182fbbd9bcefa31898b.webp (11KB)
+assets/ai-styles/cartoon.dark.9bc13bdd2721c36b229a1366f59b11ca.webp (8.2KB)
+assets/ai-styles/cartoon.light.df1026a90eeef618623850d0549b0e27.webp (6.7KB)
+assets/ai-styles/clay.dark.02712ba5729ed4ebfe187df40ac55f3a.webp (5.7KB)
+assets/ai-styles/clay.light.6441b251c757e4dc5dd24de7a5bd22ba.webp (7KB)
+assets/ai-styles/crayon.dark.be4bb65f393d2afb1daa5b168e8c6c19.webp (15KB)
+assets/ai-styles/crayon.light.26b39a5af0b71938d98591df6e8d5358.webp (24KB)
+assets/ai-styles/felt.dark.6607581ac1ef0365eaf4607e1323a5b6.webp (25KB)
+assets/ai-styles/felt.light.a336f29d9e611c93f8b4c2e952fce9b6.webp (36KB)
+assets/ai-styles/magical.dark.4f1f968ed1be1d1fe7c7b80e1c0c9afd.webp (5.4KB)
+assets/ai-styles/magical.light.b011d41210619b3e845ffaeca1fd0794.webp (7.3KB)
+assets/ai-styles/paper.dark.14db5b1658c576a890300a7da1175478.webp (7.9KB)
+assets/ai-styles/paper.light.e63687d4d6de4d15d2545b5969ba5bd3.webp (7.7KB)
+assets/ai-styles/sticker.dark.32205ec4a799c8d4d8c2f85d3ec86b41.webp (13KB)
+assets/ai-styles/sticker.light.5ade0c20866bde679730d242a62c474e.webp (14KB)
+assets/ai-styles/watercolor.dark.d9f371989d746f1e5e98085b50aa36eb.webp (8.8KB)
+assets/ai-styles/watercolor.light.36a5135b3751626e36cb9685fe59c008.webp (12KB)
+assets/ai-value-prop/step-1.dark.0ddcc32f97638784e396da159b030162.webp (38KB)
+assets/ai-value-prop/step-1.light.7d129e8e0bdc33e252642d2e0418f999.webp (16KB)
+assets/ai-value-prop/step-2.dark.eebe1bc46289ecf7aa9b558f91c2805c.webp (35KB)
+assets/ai-value-prop/step-2.light.1ade1c43620952c513d809bd7572fcc1.webp (13KB)
+assets/ai-value-prop/step-3.dark.c828985cd3165bb3b721836203ff5732.webp (15KB)
+assets/ai-value-prop/step-3.light.d3334f033074f14ce1de7a05ca992f2e.webp (14KB)
+assets/paper/handmade-paper.7637e6600d2982210f85a1a9ff5b9cba.webp (7.8KB)
+src/audio/clear-page-turn.362b565441b3b6879dfe7d9ac3f4aa99.mp3 (12KB)
+src/audio/pencil-1.7af5b4ea03b676243f7e1afe504a0155.mp3 (83KB)
+src/audio/pencil-2.8b15be06cbcf187574c3a45bc6e54058.mp3 (78KB)
+src/audio/pencil-3.888581b611fe78d6e52997af82f98197.mp3 (85KB)
+
+› web bundles (62):
+_expo/static/css/strict-1a4992062d16b59323f8a7952102ad0f.css (27KB)
+_expo/static/js/web/__expo-metro-runtime-8c088df87a31e4e6accd81c554ec290d.js (3.8KB)
+_expo/static/js/web/aiAutoSave-02641dac91eabc06d9a60d6fc3a5d8b4.js (890B)
+_expo/static/js/web/cat-a311791adb345ef5781d50c86a4553b0.js (210KB)
+_expo/static/js/web/catalog-2079ab1aa2d66be8d55f70bf8b123cb4.js (211KB)
+_expo/static/js/web/cow-3b7e1526939822dff60d033c0f311198.js (218KB)
+_expo/static/js/web/createLibrary-492ed990960b3632f63aa31cea281a75.js (24KB)
+_expo/static/js/web/dog-eb771b640c4c496035c4f100d57e1d91.js (142KB)
+_expo/static/js/web/duck-e9fea5fed0934689e00e6f8b554d5f95.js (176KB)
+_expo/static/js/web/folderSave-eeb93208ffb4e1fab7fc517bd8645733.js (4.6KB)
+_expo/static/js/web/horse-b29bfbd33ca225594b8d4ab5d552342b.js (211KB)
+_expo/static/js/web/icons.deferred-f40f1c60503d872cbf4fd7e08df942f4.js (161KB)
+_expo/static/js/web/index-dc9f65ab08269a3b209c49ca095ddd0a.js (815KB)
+_expo/static/js/web/inkPng-a9aa76a56219d3dcb3f7ac7a71069253.js (1.8KB)
+_expo/static/js/web/keepAiPicture-0790e96941a0c88fa0ad3679d9f31539.js (940B)
+_expo/static/js/web/legacyAiCredentials-44169f38895cd2a25e2f173e1ccec7a5.js (731B)
+_expo/static/js/web/ModalShellContent-0ca00962df62148b75025b01801909ee.js (8.8KB)
+_expo/static/js/web/pageArtChunk-e741055c51dcf506841944a856a77f34.js (24KB)
+_expo/static/js/web/pictureCompose-79072fa629e4c1dcd3f588acab849172.js (1.7KB)
+_expo/static/js/web/pig-2d636df4cc3ce15b134cad151133c1f6.js (170KB)
+_expo/static/js/web/productChunk-6a8f8555d3e064f800da56db705a8095.js (238KB)
+_expo/static/js/web/pwaUpdates-ca125dc826d64468bae8d8b2d71c874c.js (5.1KB)
+_expo/static/js/web/RsdBareGlass-d7d75dcd7b32176df32a226087e7ea02.js (10KB)
+_expo/static/js/web/RsdCameraFeedback-c5a57cc8431a8676a551ebcf54068d96.js (1.7KB)
+_expo/static/js/web/RsdClearCoachmark-e98a8996b513b3dae04e04054e7e8394.js (3.1KB)
+_expo/static/js/web/RsdColoringBookPicker-6da1c54d7582bda91547c7cea3aa1322.js (22KB)
+_expo/static/js/web/RsdColorPicker-de644800d4b68d2a70349a3e2ad4adc7.js (9.3KB)
+_expo/static/js/web/RsdErrorScreen-fc87fc431f568859753a0ccbb9e0cc05.js (3.1KB)
+_expo/static/js/web/RsdFailureBanner-41db615677f5868f431c1882d712006c.js (4.9KB)
+_expo/static/js/web/RsdInstallBanner-e27b2c25dd90bcc413f6832b826ef6ed.js (13KB)
+_expo/static/js/web/RsdLeaveConfirmCard-699879082fe15a022fbd1095f7eb0416.js (1.4KB)
+_expo/static/js/web/RsdNotchBand-3b78586ac89b4d71f2eb981abe7c02ca.js (4.8KB)
+_expo/static/js/web/RsdParentGateSheet-e65f6d616b60c8aa225ac27fa94a7813.js (17KB)
+_expo/static/js/web/RsdPolaroidFlight-c476e6c950d87dceb56ea9006c7b5808.js (6KB)
+_expo/static/js/web/RsdSettingsRoute-e10fca03087e07ca46c15cb47eb8d3c5.js (259KB)
+_expo/static/js/web/RsdStepNumberContent-a6b16acd35bf593cd5da4da86333b5cd.js (2.1KB)
+_expo/static/js/web/RsdSwatchBloom-2c16f79faf82afbaddb53f80b0b02886.js (3.3KB)
+_expo/static/js/web/RsdToolFlyouts-9f95db372470e4c8e63a4ca905ea8587.js (13KB)
+_expo/static/js/web/ScrollViewContent-825de4524708c6f83ee5acce1d663836.js (13KB)
+_expo/static/js/web/splotchy-304c7885a1986b0bf6aa60fc00e953b5.js (89KB)
+_expo/static/js/web/undoFeedbackChunk-1441b3b4f25a64a3a423d777d5ea701a.js (12KB)
+
+› Files (2):
+index.html (1.5KB)
+metadata.json (49B)
+
+Exported: /Users/kylemit/.codex/worktrees/0714/Splotch/experiments/native-architecture/dist/web
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Expo Autolinking module resolution enabled
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Expo Autolinking module resolution enabled
+| (node:74456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+[native-web] /Users/kylemit/.codex/worktrees/0714/Splotch/experiments/native-architecture/dist/web: 151 precached files / 6471345 bytes
+[native-web-precache] 151 entries / 6724849 bytes; content-addressed app shell first; every entry integrity-pinned; 6 starter pages and 50 starter images precached off the startup path
+[native-web-startup] first paint 45665/47052 bytes (4211 inline JS and 41454 inline CSS bytes plus 0 files); core controls 818694/827535 bytes (2 files); startup path 864359 bytes; no inlined images
+[native-web-startup] privacy.html first paint 34509/36329 bytes (1732 inline JS and 32777 inline CSS bytes plus 0 files); page entry 789179/829600 bytes after it paints (2 files)
+[native-web-startup] changelog.html first paint 34726/36932 bytes (1732 inline JS and 32994 inline CSS bytes plus 0 files); page entry 789179/859290 bytes after it paints (2 files)
+[native-web-startup] feedback.html first paint 33575/36892 bytes (1732 inline JS and 31843 inline CSS bytes plus 0 files); page entry 789179/845661 bytes after it paints (2 files)
+[native-web-startup] beta.html first paint 35534/38443 bytes (2078 inline JS and 33456 inline CSS bytes plus 0 files); page entry 789179/859290 bytes after it paints (2 files)
+[native-web-startup] design.html first paint 45073/46979 bytes (1663 inline JS and 43410 inline CSS bytes plus 0 files); page entry 869624/954533 bytes after it paints (2 files)
+[native-web-startup] 404.html first paint 33547/36847 bytes (1732 inline JS and 31815 inline CSS bytes plus 0 files); page entry 789179/859290 bytes after it paints (2 files)
+[native-web-startup] admin.html first paint 18450/18780 bytes (1280 inline JS and 17170 inline CSS bytes plus 0 files); page entry 273677/288785 bytes after it paints (1 files)

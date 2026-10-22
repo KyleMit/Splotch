@@ -6,38 +6,11 @@
 // boot script loads after its first frame paints. Each URL counts once.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import { APP_SHELL_FILE, NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
 import { startupScriptList } from './prerender-native-web.mjs';
 import { writtenPageDocuments } from './prerender-native-web-pages.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
-// An empty app (registerRootComponent of one View) exported by this Expo and React Native Web
-// pair loads this much JavaScript, which the shipping Svelte app never pays: React DOM, React
-// Native Web's core and Expo's runtime. Measured 2026-10-13 on Expo 57 and React Native Web 0.21.
-export const REACT_NATIVE_WEB_FLOOR_BYTES = 323_984;
-// The shipping budget on top of that floor: the startup cost the RN web export would match if
-// its app code were as lean as the shipping app's.
-export const NATIVE_WEB_STARTUP_TARGET_BYTES =
-  MAX_STARTUP_JS_CSS_BYTES + REACT_NATIVE_WEB_FLOOR_BYTES;
-// The 2026-10-14 review measured 858,902 bytes, after the bundled Farm images became hashed
-// assets, each page's line art and every on-request sheet moved into lazy chunks, Reanimated left
-// the web bundle, the app's Animated stopped importing React Native Web's animated list components,
-// feedback, AI generation and recovery, and the offline library began loading after the drawing
-// screen paints, the startup icon set shrank to the icons the screen mounts with,
-// react-native-svg left the web bundle (platform/svg.web.ts), the release notes moved to Settings'
-// chunk (settings/whatsNewStamp.ts), Expo's native-module runtime left the web bundle
-// (platform/webAsset.ts, platform/registerRoot.web.ts), and the React Strict DOM imports its web
-// preset compiles away stopped loading RSD's element library (babel.config.cjs). Expo SDK 58's
-// React 19.3 then took it to 900,361 bytes. The fifth cut reviewed it at 838,334, 10,650 under
-// NATIVE_WEB_STARTUP_TARGET_BYTES: granular chunking (app.json) gives the modules lazy chunks share
-// their own chunks instead of Expo's __common chunk, which index.html loaded before first paint,
-// and Expo's tree shaking (NATIVE_WEB_EXPORT_ENV in build-native-web.mjs) drops unused exports.
-// That one startup cap kept 11,896 bytes of headroom, at 850,230. The owner raised it once, to
-// 912,257 for the Expo SDK 58 upgrade (that upgrade's reviewed 900,361 plus the same headroom), and
-// the fifth cut took it back down. ADR-0180 split it in two once the prerendered shell held the
-// bundle until its first frame had painted, so one sum no longer added two different waits.
-//
 // This cap carries the bundle's ratchet. The core controls measured 815,639 bytes (ADR-0180), and
 // it keeps the same 11,896 bytes of headroom. That stays below every move up to react-native-svg
 // (the smallest, the offline library controller, is 24,471 bytes) and below both fifth-cut levers
@@ -267,7 +240,7 @@ export function checkNativeWebStartup({
   if (problems.length) throw new Error(problems.join('\n'));
   const { firstPaintBytes, coreControlsBytes, startupBytes, files, paintFiles } = measurement;
   log(
-    `[native-web-startup] first paint ${firstPaintBytes}/${maxFirstPaintBytes} bytes (${measurement.inlineScriptBytes} inline JS and ${measurement.inlineStyleBytes} inline CSS bytes plus ${paintFiles.length} files); core controls ${coreControlsBytes}/${maxCoreControlsBytes} bytes (${files.length} files); startup path ${startupBytes} bytes (React Native Web floor ${REACT_NATIVE_WEB_FLOOR_BYTES}, floor plus shipping budget ${NATIVE_WEB_STARTUP_TARGET_BYTES}); no inlined images`
+    `[native-web-startup] first paint ${firstPaintBytes}/${maxFirstPaintBytes} bytes (${measurement.inlineScriptBytes} inline JS and ${measurement.inlineStyleBytes} inline CSS bytes plus ${paintFiles.length} files); core controls ${coreControlsBytes}/${maxCoreControlsBytes} bytes (${files.length} files); startup path ${startupBytes} bytes; no inlined images`
   );
 }
 

@@ -111,14 +111,14 @@ code. It cannot check the other columns, so this step does:
 
 ## 5. Check every place that states the floor
 
-| Statement                                                                                                                     | Drift guard                                          |
-| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `web/browserTargets.ts` (`BROWSER_TARGETS` → `build.target`)                                                                  | the source of truth                                  |
-| `experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` (every config)         | `web/src/browserFloor.test.ts` (WebKit target ≤ it)  |
-| `MIN_IOS_RELEASE` (`/beta`) and `docs/MOBILE/native.md`                                                                       | `web/src/lib/components/beta/iosBeta.test.ts`        |
-| `experiments/native-architecture/android/gradle.properties` → `android.minSdkVersion`, `/beta` Android constants, the doc row | `tools/mobile/android/tests/android-config.test.mjs` |
-| `docs/COMPATIBILITY.md` web tables, `docs/MOBILE/ios.md` web note                                                             | check by eye unless a guard has since been added     |
-| Version citations in code comments                                                                                            | none; the grep in step 2                             |
+| Statement                                                                                                                     | Drift guard                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `web/browserTargets.ts` (`BROWSER_TARGETS` → `build.target`)                                                                  | the source of truth                                           |
+| `experiments/native-architecture/ios/Splotch.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` (every config)         | native project configuration; separate from the browser floor |
+| `MIN_IOS_RELEASE` (`/beta`) and `docs/MOBILE/native.md`                                                                       | `web/src/lib/components/beta/iosBeta.test.ts`                 |
+| `experiments/native-architecture/android/gradle.properties` → `android.minSdkVersion`, `/beta` Android constants, the doc row | `tools/mobile/android/tests/android-config.test.mjs`          |
+| `docs/COMPATIBILITY.md` web tables, `docs/MOBILE/ios.md` web note                                                             | check by eye unless a guard has since been added              |
+| Version citations in code comments                                                                                            | none; the grep in step 2                                      |
 
 A statement with no guard that disagrees with `BROWSER_TARGETS` is a finding. So is a new floor
 statement that appeared without one.

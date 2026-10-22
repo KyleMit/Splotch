@@ -73,12 +73,12 @@ module belongs there only when independent capabilities consume it and no narrow
 shell-based command runner, env and arg handling, the OS opener; the ADR integrity workflow runs it
 on the GitHub runner's default Node, not the repo's pinned one, so it keeps to APIs that older Node
 has — `tools/lib/README.md`), `net.mjs` (`waitForUrl()` polls a URL until ready), `playwright.mjs`
-(resolves the Chromium binary), `vite-server.mjs` (spawns a throwaway vite dev/preview server in a
-detached process group so `stop()` can't orphan the vite grandchild, while `release()` hands that
-group to the OS instead — which is why it takes only the `RELEASABLE_STDIO` sinks it exports and
-throws on anything this process would take with it), `html.mjs` (escaping/render primitives for the
-report producers), `smoke.mjs` (the `check()`/`fatal()`/`summarize()` pass-fail reporter), and
-`coloring-book-assets.mjs`.
+(resolves the Chromium binary), `site-server.mjs` (serves the RN export with its Netlify-shaped
+local host in a detached process group so `stop()` cannot orphan its listener, while `release()`
+hands that group to the OS instead — which is why it takes only the `RELEASABLE_STDIO` sinks it
+exports and throws on anything this process would take with it), `html.mjs` (escaping/render
+primitives for the report producers), `smoke.mjs` (the `check()`/`fatal()`/`summarize()` pass-fail
+reporter), and `coloring-book-assets.mjs`.
 
 Everything else lives in the `lib/` of the capability that owns it, and another tool may import it
 across the boundary — cross-tool reuse is not a reason to erase ownership into `tools/lib/`:
@@ -86,7 +86,7 @@ across the boundary — cross-tool reuse is not a reason to erase ownership into
 (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/mobile/lib/maestro.mjs` owns
 the Maestro location; `tools/release/lib/release-frontmatter.mjs` the release frontmatter/semver
 parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login + token-CRUD request
-plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
+plumbing.
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
 concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag. A helper
@@ -123,8 +123,8 @@ entry script.
 * `no-undef` is on across `tools/` because no TypeScript program checks these files; a dropped
   import otherwise ships as a `ReferenceError`. Declare a deliberate page-script global with
   `/* global NAME */`.
-* A port that is taken means choosing another port. `freePort` (`tools/lib/vite-server.mjs`) throws
-  on a listener outside this checkout rather than stop another session's server.
+* A port that is taken means choosing another port. `tools/lib/site-server.mjs` refuses an occupied
+  port and only stops a process group that its caller created.
 * The incidents behind these rules, and what enforces each: rule 8 of `docs/CODING-STANDARDS.md`.
 * Validate the inputs a write, tag, push, delete, or credential-bearing request depends on before
   that step runs, with a path-specific one-line error and a non-zero exit (a read-only plan, then
@@ -189,13 +189,7 @@ entry script.
   the module; a single deliberately unresolvable reference is an `ALLOWED_REFERENCES` entry with its
   reason, and an entry that stops matching fails the check. Identifiers print under `--identifiers`
   and never fail it — the `reconcile-docs-with-code` skill judges them.
-* The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
-  `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
-  evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,
-  `gen-brush-review.mjs`) — drive the live app by selector through
-  `tools/app-driver/lib/app-driver.mjs` and only run on demand, so that module rots silently when
-  app markup, element IDs, or show/hide mechanics change (drawer, palette, dialogs).
-  `test:driver:smoke` (in the CI test job) boots the app and exercises the driver's entry path to
-  catch that — after such a change, run it, and remember the driver has bitten twice before (a
-  dropped `sleep` import; `expandDrawer` broke when the drawer's buttons became always-in-DOM, so
-  its probe checks visibility, not presence).
+* `gen:store-assets` frames committed captures; store-drawing generation emits scene data. The
+  selector-based Svelte generators and their driver smoke are retired. The `run-splotch` skill
+  drives the RN export using the E2E readiness and pixel-readback contracts; keep its process and
+  occupied-port controls intact when changing the local host.

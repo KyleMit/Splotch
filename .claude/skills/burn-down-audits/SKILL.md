@@ -164,14 +164,14 @@ as possible:
   verifier writes the specs into both `e2e_specs` and the acceptance criteria, so the implementer
   runs them too.
 * **The four gates do not cover the repo's bespoke lint/drift scripts, and a ratchet fails in both
-  directions.** A 2026-07-25 run reddened CI's Quality job on `npm run lint:tokens`: one finding
-  hoisted AdminConsole's hex literals into `--admin-*` properties, taking its raw-hex count 49 → 34
-  — and the ratchet demands the baseline come *down* to match, so **an improvement fails exactly
-  like a regression**. A second finding extracted a component into a new file, carrying four hexes
-  into a path with no baseline entry. Both fixes were correct; nothing in `CHECK_CMD`, `TEST_CMD`,
-  `LINT_CMD` or a targeted spec can see either. Set
-  `CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check'` — both ratchets
-  cost ~0.3s each — and check `.github/workflows/` for any other bespoke gate before a long run.
+  directions.** A 2026-07-25 run reddened CI's Quality job on the retired Svelte style ratchet: one
+  finding hoisted AdminConsole's hex literals into `--admin-*` properties, taking its raw-hex count
+  49 → 34 — and the ratchet demands the baseline come *down* to match, so **an improvement fails
+  exactly like a regression**. A second finding extracted a component into a new file, carrying four
+  hexes into a path with no baseline entry. Both fixes were correct; nothing in `CHECK_CMD`,
+  `TEST_CMD`, `LINT_CMD` or a targeted spec can see either. Set
+  `CHECK_CMD='npm run check && npm run check:migration:rsd-drawing-tokens'` — both ratchets cost
+  ~0.3s each — and check `.github/workflows/` for any other bespoke gate before a long run.
 
   **Derive that list from `test.yml` each time rather than copying the one above; it grows.** By
   2026-07-28 the Quality job ran ten steps, and a run configured from this paragraph alone would
@@ -527,13 +527,13 @@ this is only about SHAs.)
 
   **"Editing a tracked file" includes running a command that writes one.** The obvious reading of
   this rule is about `Edit`/`Write`, so a read-sounding verification command slips past it:
-  `npm run ruler:check` runs `dprint fmt` and formats the tree, and `npm run gen:tokens` /
-  `gen:assets:manifest` regenerate committed output. Run one mid-finding and its writes land inside
-  the driver's in-flight fix commit, attributed to a finding that never touched them. A 2026-08-06
-  supervisor ran `ruler:check` to confirm a fix's `ruler:apply` had taken; it was a no-op only
-  because the tree happened to be clean already. These are excluded from `CHECK_CMD` for exactly
-  this reason — the exclusion is about the command being mutating, not about where it runs, so it
-  applies to you too. CI's Agent-file drift job is the safe place to learn the same thing.
+  `npm run ruler:check` runs `dprint fmt` and formats the tree, and the RSD token projection
+  generator / `gen:assets:manifest` regenerate committed output. Run one mid-finding and its writes
+  land inside the driver's in-flight fix commit, attributed to a finding that never touched them. A
+  2026-08-06 supervisor ran `ruler:check` to confirm a fix's `ruler:apply` had taken; it was a no-op
+  only because the tree happened to be clean already. These are excluded from `CHECK_CMD` for
+  exactly this reason — the exclusion is about the command being mutating, not about where it runs,
+  so it applies to you too. CI's Agent-file drift job is the safe place to learn the same thing.
 
   **This rule binds *you*, not the roles — do not flag an implementer for running it.** The hazard
   is that a *supervisor's* writes land in a commit the driver is building; a role's writes belong to

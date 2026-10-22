@@ -2,12 +2,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import {
-  createShippingCrayonOracle,
-  shippingCrayonTile,
-} from './native-crayon-shipping-oracle.mjs';
-import { crayonPasses } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { createHash } from 'node:crypto';
+import referenceCores from './native-crayon-phase.test.fixture.json';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', async () => {
@@ -29,7 +25,7 @@ vi.mock(
   () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
 );
 
-const { Svg, Rect, Defs, Path, Pattern, Image, G } = await import('react-native-svg');
+const { Svg, Rect, Defs, Path, Pattern } = await import('react-native-svg');
 const { Ink, InkArtwork } =
   await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 const PAPER_WIDTH = 1024;
@@ -40,8 +36,7 @@ const MIN_COVERAGE = 0.3;
 const MIN_BUILDUP = 0.1;
 const SAMPLE_COLUMNS = [120, 330, 540, 750];
 const PHASE_SEEDS = [1, 17, 18, 19, 20, 21];
-const LEGACY_COVERAGE_CEILING = 0.85;
-const OVERFLOW_WIDTH_PX = 68;
+const FAILURE_HEIGHTS_PX = [550, 650];
 // Strokes end at their last sample midpoint (shipping's smoothing), so a straight run carries
 // samples this close together to reach within half a step of its end.
 const RUN_STEP_PX = 25;
@@ -104,116 +99,6 @@ function corePixels(output, x, y) {
   );
 }
 
-// Each oracle transpiles shipping's brush into a fresh VM context and rebuilds its tooth fields
-// there on cold JIT, so the file shares one owner rather than paying that per reference.
-const shippingOwner = createShippingCrayonOracle();
-// The tooth cases and the coverage-ceiling counterexample rasterise the same PHASE_SEEDS
-// references; memoised by input, the counterexample reuses them instead of rebuilding every one
-// inside a single case's timeout budget.
-const shippingReferences = new Map();
-
-function shippingReference(strokes, options = {}) {
-  const key = JSON.stringify([strokes, options]);
-  if (!shippingReferences.has(key))
-    shippingReferences.set(key, renderShippingReference(strokes, options));
-  return shippingReferences.get(key);
-}
-
-// The reference rolls shipping texels, avoiding the native renderer's four translated SVG Uses.
-async function renderShippingReference(
-  strokes,
-  { phaseShiftPx = 0, flat = false, extraWidthPx = 0 }
-) {
-  const children = [];
-  for (const [strokeIndex, stroke] of strokes.entries()) {
-    const start = stroke.points[0];
-    const end = stroke.points.at(-1);
-    if (
-      stroke.points.some(
-        (point, index) => point.y !== start.y || (index && point.x <= stroke.points[index - 1].x)
-      )
-    )
-      throw new Error('Phase oracle requires a forward horizontal line');
-    const passes = crayonPasses(stroke, stroke.width);
-    if (passes.length !== 1) throw new Error('Phase oracle requires one deposition pass');
-    const shapes = [];
-    for (let band = 0; band < shippingOwner.crayonPassCount(); band++) {
-      const tile = shippingCrayonTile(
-        shippingOwner,
-        paletteHex(stroke.color),
-        passes[0].seed,
-        band
-      );
-      const rolled = new Uint8ClampedArray(tile.pixels.length);
-      for (let y = 0; y < tile.height; y++) {
-        for (let x = 0; x < tile.width; x++) {
-          const sourceX =
-            (((x - tile.phase.x - phaseShiftPx) % tile.width) + tile.width) % tile.width;
-          const sourceY = (((y - tile.phase.y) % tile.height) + tile.height) % tile.height;
-          const source = (sourceY * tile.width + sourceX) * 4;
-          const destination = (y * tile.width + x) * 4;
-          rolled.set(tile.pixels.subarray(source, source + 4), destination);
-          if (flat) rolled[destination + 3] = 255;
-        }
-      }
-      const png = await sharp(Buffer.from(rolled), {
-        raw: { width: tile.width, height: tile.height, channels: 4 },
-      })
-        .png()
-        .toBuffer();
-      const id = `reference-${strokeIndex}-${band}`;
-      children.push(
-        createElement(
-          Defs,
-          { key: id },
-          createElement(
-            Pattern,
-            {
-              id,
-              width: tile.width,
-              height: tile.height,
-              patternUnits: 'userSpaceOnUse',
-              patternContentUnits: 'userSpaceOnUse',
-            },
-            createElement(Image, {
-              width: tile.width,
-              height: tile.height,
-              preserveAspectRatio: 'none',
-              href: `data:image/png;base64,${png.toString('base64')}`,
-            })
-          )
-        )
-      );
-      const width = stroke.width * shippingOwner.crayonPassWidthScale(band) + extraWidthPx;
-      shapes.push(
-        createElement(Rect, {
-          key: band,
-          x: start.x,
-          y: start.y - width / 2,
-          width: end.x - start.x,
-          height: width,
-          fill: `url(#${id})`,
-        })
-      );
-    }
-    children.push(
-      createElement(
-        G,
-        { key: `bottom-${strokeIndex}`, style: { mixBlendMode: 'darken' } },
-        ...shapes
-      )
-    );
-    children.push(
-      createElement(
-        G,
-        { key: `top-${strokeIndex}`, opacity: 1 - shippingOwner.crayonColorMix() },
-        ...shapes
-      )
-    );
-  }
-  return raster(children);
-}
-
 describe('crayon phase under native pattern clipping', () => {
   it('reproduces the translated-content clipping that erased the native seed20 fixture', async () => {
     const translated = await raster([
@@ -247,47 +132,29 @@ describe('crayon phase under native pattern clipping', () => {
   it.each(PHASE_SEEDS)(
     'keeps seed %s tooth across tile boundaries at both native failure heights',
     async (seed) => {
-      const strokes = [line(seed, 550), line(seed, 650)];
-      const output = await artwork(strokes);
-      const expected = await shippingReference(strokes);
-      for (const y of [550, 650]) {
+      const output = await artwork(FAILURE_HEIGHTS_PX.map((y) => line(seed, y)));
+      const reference = referenceCores.rows.find((row) => row.seed === seed);
+      for (const y of FAILURE_HEIGHTS_PX) {
         for (const x of SAMPLE_COLUMNS) {
-          expect(coverage(output, x, y)).toBeGreaterThan(MIN_COVERAGE);
+          const pigment = coverage(output, x, y);
+          expect(pigment, `seed ${seed}, core (${x}, ${y})`).toBeGreaterThan(MIN_COVERAGE);
+          expect(pigment, `seed ${seed}, core (${x}, ${y})`).toBeLessThan(1);
+          const expected = reference.windows.find((window) => window.x === x && window.y === y);
           expect(
-            corePixels(output, x, y).equals(corePixels(expected, x, y)),
-            `seed ${seed}, core (${x}, ${y}), actual ${coverage(output, x, y)}, shipping ${coverage(expected, x, y)}`
-          ).toBe(true);
-          expect(coverage(expected, x, y)).toBeLessThan(1);
+            createHash('sha256')
+              .update(corePixels(output, x, y))
+              .digest('hex')
+          ).toBe(expected.sha256);
         }
       }
     }
   );
 
-  it('exhibits a shipping-field counterexample to the legacy coverage ceiling', async () => {
-    const coverages = [];
-    for (const seed of PHASE_SEEDS) {
-      const expected = await shippingReference([line(seed, 550), line(seed, 650)]);
-      for (const y of [550, 650])
-        for (const x of SAMPLE_COLUMNS) coverages.push(coverage(expected, x, y));
-    }
-    expect(Math.max(...coverages)).toBeGreaterThan(LEGACY_COVERAGE_CEILING);
-  });
-
-  it.each([
-    ['flat tooth', { flat: true }],
-    ['one-pixel phase shift', { phaseShiftPx: 1 }],
-  ])('rejects the %s negative control', async (_name, mutant) => {
+  it('keeps wax inside its silhouette and detects a widened native stroke', async () => {
     const strokes = [line(20, 550)];
     const output = await artwork(strokes);
-    const changed = await shippingReference(strokes, mutant);
-    expect(corePixels(output, 330, 550).equals(corePixels(changed, 330, 550))).toBe(false);
-  });
-
-  it('keeps wax inside the full-width silhouette and detects an overflowing reference', async () => {
-    const strokes = [line(20, 550)];
-    const output = await artwork(strokes);
-    const overflowing = await shippingReference(strokes, { extraWidthPx: OVERFLOW_WIDTH_PX });
     expect(coverage(output, 330, 584)).toBe(0);
+    const overflowing = await artwork([{ ...strokes[0], width: 102 }]);
     expect(coverage(overflowing, 330, 584)).toBeGreaterThan(MIN_COVERAGE);
   });
 

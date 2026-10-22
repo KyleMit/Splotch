@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -167,13 +166,5 @@ describe('the drawing owner’s visible-ink state', () => {
     await show(drawn(pen));
     await idleFor(EMPTY_SCAN_IDLE_MS * 3);
     expect(scan).not.toHaveBeenCalled();
-  });
-
-  it('waits as long as the shipping eraser scan does', () => {
-    const shipping = readFileSync(
-      join(import.meta.dirname, '../../web/src/lib/drawing/idleEmptyScan.ts'),
-      'utf8'
-    );
-    expect(Number(shipping.match(/EMPTY_SCAN_IDLE_MS = (\d+);/)?.[1])).toBe(EMPTY_SCAN_IDLE_MS);
   });
 });

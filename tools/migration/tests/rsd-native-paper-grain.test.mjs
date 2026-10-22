@@ -37,20 +37,11 @@ import { paletteHex } from '../../../experiments/native-architecture/src/drawing
 import { PAPER_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
-const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
 const committedStyle = (node) => JSON.parse(node.dataset.committedProps).style;
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
-
-// Every shipping surface that paints the grain (paperTexture.test.ts's consumers).
-const PAPER_SITES = [
-  'web/src/lib/components/DrawingCanvas.svelte',
-  'web/src/lib/components/BareToolbarPaper.svelte',
-  'web/src/lib/components/GlassPanes.svelte',
-  'web/src/app.css',
-];
 
 // Shipping's paper rules size no background, so a CSS tile spans the image's own pixels in CSS
 // pixels. Natively a repeating image tiles in device pixels, a third of that on a 3x phone.
@@ -59,16 +50,6 @@ const PAPER_SITES = [
 it.each([1, 2, 3, 3.5])(
   'tiles the paper grain one image pixel per point on a %sx screen, as shipping does per CSS pixel',
   async (density) => {
-    for (const site of PAPER_SITES) {
-      const rules = read(site)
-        .split('}')
-        .filter((rule) => rule.includes('var(--paper-texture)'));
-      expect(rules.length, site).toBeGreaterThan(0);
-      expect(
-        rules.filter((rule) => rule.includes('background-size')),
-        site
-      ).toEqual([]);
-    }
     records.dimensions = { width: 402, height: 874, scale: density, fontScale: 1 };
     records.props.length = 0;
     const element = createElement(PaperTexture);
@@ -76,7 +57,9 @@ it.each([1, 2, 3, 3.5])(
     else await act(async () => root.render(element));
     const grain = flat(records.props.findLast((props) => props.testID === 'paper-grain').style);
     const tile = await sharp(
-      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+      readFileSync(
+        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
+      )
     ).metadata();
     expect(grain.minWidth * density).toBe(tile.width);
     expect(grain.minHeight * density).toBe(tile.height);
@@ -204,10 +187,6 @@ it.each(
 )(
   'grains only Flat safe-area strips for $name in $theme, under the content and Notch Band',
   async ({ theme, insets, dimensions, orientation, edges, boxes, bandColors }) => {
-    const app = read('web/src/app.css');
-    expect(
-      /html\[data-toolbar='bare'\] \.app-container \{\s*background:\s*([^;]+);/.exec(app)[1]
-    ).toBe('var(--paper) var(--paper-texture)');
     records.insets = insets;
     records.dimensions = dimensions;
     records.journalHostProps = true;
@@ -257,7 +236,9 @@ it.each(
         .map((props) => flat(props.style).backgroundColor)
     ).toEqual(edges.map(() => PAPER_THEMES[theme].paper));
     const tile = await sharp(
-      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+      readFileSync(
+        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
+      )
     ).metadata();
     expect(
       records.props
@@ -330,7 +311,9 @@ it.each([
       backgroundColor: PAPER_THEMES.light.paper,
     });
     const tile = await sharp(
-      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+      readFileSync(
+        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
+      )
     ).metadata();
     const anchor = {
       x: props.origin.x + (props.rightInset ? records.dimensions.width - props.rightInset : 0),
@@ -399,7 +382,9 @@ it.each([
     expect(slot.querySelector('[data-testid="paper-grain-phase"]') === null).toBe(lifted);
     await commitClear();
     const tile = await sharp(
-      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+      readFileSync(
+        join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
+      )
     ).metadata();
     for (const id of ['rsd-clear-cover', 'rsd-clear-sheet']) {
       const paper = host.querySelector(`[data-testid="${id}"]`);

@@ -9,7 +9,7 @@ import { RsdToggleRow, SETTING_ICON_PX } from './RsdToggleRow';
 import { colors, dimensions, fonts } from './tokens.css';
 
 // ColoringSection.svelte's status line height; rsd-native-coloring-picker.test.mjs reads it.
-export const STATUS_LINE_HEIGHT = 1.4;
+const STATUS_LINE_HEIGHT = 1.4;
 
 // Every download policy change reapplies the policy, as shipping's policy event does: it lifts a
 // removal's pause and clears a failure or network wait, so turning Coloring book on or changing

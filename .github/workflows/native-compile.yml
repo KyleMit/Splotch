@@ -26,8 +26,8 @@ on:
     paths:
       - 'experiments/native-architecture/**'
       - '!experiments/native-architecture/**/*.md'
-      - 'web/src/routes/privacy/contents.ts'
-      - 'web/src/routes/privacy/sectionLink.ts'
+      - 'web/src/lib/privacy/contents.ts'
+      - 'web/src/lib/privacy/sectionLink.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -44,8 +44,8 @@ on:
     paths:
       - 'experiments/native-architecture/**'
       - '!experiments/native-architecture/**/*.md'
-      - 'web/src/routes/privacy/contents.ts'
-      - 'web/src/routes/privacy/sectionLink.ts'
+      - 'web/src/lib/privacy/contents.ts'
+      - 'web/src/lib/privacy/sectionLink.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'

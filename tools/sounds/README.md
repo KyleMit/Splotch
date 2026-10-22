@@ -1,8 +1,9 @@
 # Sounds
 
 This capability owns the pencil drawing sounds: the stereo masters and the step that turns them into
-the mono clips `web/src/lib/audio/drawingSound.ts` loads. It does not generate new sounds. New sound
-effects come from the [ElevenLabs capability](../elevenlabs/README.md).
+the mono clips `experiments/native-architecture/src/platform/drawingAudio.ts` loads. It does not
+generate new sounds. New sound effects come from the
+[ElevenLabs capability](../elevenlabs/README.md).
 
 ## Entry point
 

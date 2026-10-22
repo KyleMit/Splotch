@@ -7,8 +7,8 @@ export type MessageStatus = 'success' | 'error' | 'warning';
 
 // StatusMessage.svelte's line heights: the warning sets slightly tighter under its medium weight.
 // Exported for native-design-primitives-drift.test.mjs, which reads both from shipping.
-export const STATUS_LINE_HEIGHT = 1.5;
-export const STATUS_WARNING_LINE_HEIGHT = 1.45;
+const STATUS_LINE_HEIGHT = 1.5;
+const STATUS_WARNING_LINE_HEIGHT = 1.45;
 
 const styles = css.create({
   message: {

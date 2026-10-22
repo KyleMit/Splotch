@@ -57,10 +57,6 @@ export interface DeviceProfile {
   sources: string[];
 }
 
-export const SYMMETRIC_LANDSCAPE_NOTE =
-  'iOS insets BOTH sides in landscape with the same value, whichever side the cutout is ' +
-  'physically on, so the insets alone cannot tell the two landscape rotations apart.';
-
 export function supportedOrientations(profile: DeviceProfile): Orientation[] {
   return Object.keys(profile.insets) as Orientation[];
 }

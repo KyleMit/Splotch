@@ -1,14 +1,7 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LANDSCAPE_COLORS, LANDSCAPE_FIRST_TRIM_RANK, landscapeTrimRank } from './landscapeToolbar';
 import { TRIM_ORDER } from './palette';
-import { PHONE_LANDSCAPE_QUERY, isPhoneLandscape } from './breakpoints';
-import {
-  PHONE_TOOLBAR_BUTTON_PX,
-  PHONE_TOOLBAR_LEG_SLOTS,
-  PHONE_TOOLBAR_VERTICAL_CHROME_PX,
-  PHONE_TOOLBAR_HORIZONTAL_CHROME_PX,
-} from './actionButtonLayout';
+import { isPhoneLandscape } from './breakpoints';
 
 describe('phone landscape toolbar', () => {
   it('ranks every hue it carries by its place in the trim order, from the first it keeps', () => {
@@ -46,17 +39,5 @@ describe('phone landscape toolbar', () => {
     [400, 400, false],
   ] as const)('classifies %s by %s', (width, height, compact) => {
     expect(isPhoneLandscape(width, height)).toBe(compact);
-  });
-
-  it('keeps the first-paint CSS breakpoint and size budget aligned', () => {
-    const css = readFileSync('src/app.css', 'utf8');
-    for (const file of ['src/app.css', 'src/lib/components/ColorPalette.svelte']) {
-      expect(readFileSync(file, 'utf8')).toContain(`@media ${PHONE_LANDSCAPE_QUERY}`);
-    }
-    expect(css).toContain(`calc(${PHONE_TOOLBAR_BUTTON_PX}px * var(--action-btn-scale, 1))`);
-    expect(css).toContain(`- ${PHONE_TOOLBAR_VERTICAL_CHROME_PX}px) / ${PHONE_TOOLBAR_LEG_SLOTS}`);
-    expect(css).toContain(
-      `- ${PHONE_TOOLBAR_HORIZONTAL_CHROME_PX}px) / ${PHONE_TOOLBAR_LEG_SLOTS}`
-    );
   });
 });

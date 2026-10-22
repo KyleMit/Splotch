@@ -14,8 +14,10 @@ the shipped icon set is the app's own `/design` styleguide, not a generated page
 
 `lib/icon-chroma.mjs` owns painted-color parsing and spot/plain classification.
 `lib/icon-chroma.d.mts` provides its TypeScript declaration, and `tests/icon-chroma.test.mjs` covers
-the parser boundaries. `web/src/lib/components/Icon.svelte.test.ts` consumes the same classifier to
-guard the production icon set, and `/design` renders the same split for review.
+the parser boundaries. The shared vector vocabulary in `web/src/lib/components/iconTypes.ts` and the
+RN icon compiler consume the retained assets and classifications;
+`tools/tests/native-icons.test.mjs` checks the generated projection, and `/design` renders it for
+review.
 
 ## Name generation
 
@@ -23,8 +25,8 @@ guard the production icon set, and `/design` renders the same split for review.
 and the deferred set in `deferred/` (ADR-0164) — sorts the basenames, and replaces
 `web/src/lib/components/icon-names.d.ts`. A basename present in both directories fails the run. It
 has no flags or external prerequisites beyond Node. An empty icon directory fails rather than
-replacing the union with an empty type. The command runs in both prebuild hooks; never hand-edit the
-generated declaration.
+replacing the union with an empty type. The native icon compiler imports this vocabulary; never
+hand-edit the generated declaration.
 
 After adding, deleting, or renaming an icon, run:
 
@@ -35,14 +37,14 @@ npm run gen:icon-names
 ## Maintenance
 
 Classification recognizes `fill`, `stroke`, and `stop-color` paint values in attributes and CSS.
-Keep `icon-chroma.mjs`, its declaration, focused tests, and the `Icon.svelte` guard aligned when the
-supported SVG paint syntax changes.
+Keep `icon-chroma.mjs`, its declaration, focused tests, and the RN icon projection tests aligned
+when the supported SVG paint syntax changes.
 
 Run focused verification with:
 
 ```sh
 npm run test:tools -- tools/icons/tests/icon-chroma.test.mjs
-npm run test:unit -- src/lib/components/Icon.svelte.test.ts
+npm run test:tools -- tools/tests/native-icons.test.mjs
 npm run gen:icon-names
 ```
 
@@ -55,11 +57,10 @@ dash arrays) rather than re-framing artwork through a shifted viewBox window. A 
 rect is centered in the square box — exactly where `xMidYMid` letterboxing already painted it — so
 rendering is unchanged. Every write is pixel-verified: the rebased file is rasterized against the
 original at 512px and the tool refuses to write when more than antialiasing rounding differs.
-`splotchy.svg` is exempt (the mascot renders via a Vite URL import where the file's own frame is the
-source of truth). `web/src/lib/icons/iconViewBox.test.ts` enforces the grid, so a newly imported
-icon on a foreign grid (Material exports arrive on `0 -960 960 960`) fails the unit tier until
-rebased — run `npm run gen:icon-viewbox && npm run optimize:svg-assets`. The tool is idempotent and
-prints nothing but a summary when everything is already canonical.
+`splotchy.svg` is exempt because its own frame is the mascot's source of truth. A newly imported
+icon on a foreign grid (Material exports arrive on `0 -960 960 960`) must be rebased — run
+`npm run gen:icon-viewbox && npm run optimize:svg-assets`. The tool is idempotent and prints nothing
+but a summary when everything is already canonical.
 
 `lib/svg-path-transform.mjs` owns the path-data half of that rebase: `transformPathData` maps every
 coordinate in a `d` attribute under a uniform scale + translate, preserving command letters,

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import type { SectionId } from '../../../../web/src/routes/privacy/contents';
+import type { SectionId } from '../../../../web/src/lib/privacy/contents';
 import {
   COPIED_DURATION_MS,
   REANNOUNCE_DELAY_MS,
   sectionLinkAnnouncement,
-} from '../../../../web/src/routes/privacy/sectionLink';
+} from '../../../../web/src/lib/privacy/sectionLink';
 import { copyPrivacySection, replacePrivacyFragment } from '../platform/privacySectionLink';
 
 export function usePrivacySectionLinks(onLink: (href: string) => void) {

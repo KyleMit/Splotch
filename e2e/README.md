@@ -1,20 +1,19 @@
 # RN web E2E
 
-Playwright specs against the React Native web export: the `npm run build:site` output, served the
-way the Netlify deploy serves it. This directory sits at the repo root so it stays where it is when
-the app moves there (ADR-0182); the SvelteKit suite in `web/tests/` runs beside it until its specs
-are ported here or deleted.
+Playwright specs against the React Native web export: the `npm run build:site` output, served with
+Netlify's headers, redirects and real API function. This is the browser suite for the app
+(ADR-0182).
 
 ## Running it
 
 | Command                      | What it runs                                                                      |
 | ---------------------------- | --------------------------------------------------------------------------------- |
-| `npm run test:e2e:rn`        | Every spec in Chromium, and the smoke specs in each other engine that's installed |
+| `npm run test:e2e`           | Every spec in Chromium, and the smoke specs in each other engine that's installed |
 | `npm run test:firefox:smoke` | The smoke specs in Firefox                                                        |
 | `npm run test:webkit:smoke`  | The smoke specs in WebKit                                                         |
 
 Trailing arguments pass through to Playwright:
-`npm run test:e2e:rn -- smoke.spec.ts --project chromium`.
+`npm run test:e2e -- smoke.spec.ts --project chromium`.
 
 Each run builds the export first (`npm run build:site`, about a minute). Set
 `SPLOTCH_E2E_PREBUILT=1` to serve the export already on disk, but only when you just built it from
@@ -23,7 +22,7 @@ free port with `npm --silent run show:free-port` and pass it as `SPLOTCH_E2E_POR
 4180).
 
 ```sh
-SPLOTCH_E2E_PORT=5330 SPLOTCH_E2E_PREBUILT=1 npm run test:e2e:rn -- --workers=1
+SPLOTCH_E2E_PORT=5330 SPLOTCH_E2E_PREBUILT=1 npm run test:e2e -- --workers=1
 ```
 
 ## The server
@@ -57,7 +56,7 @@ Nothing comes from your shell or a dotenv file.
 ## Helpers
 
 `fixtures.ts`, `support/app.ts` and `support/drawing.ts` are the suite's common helpers. A lane
-porting specs from `web/tests/` does not edit them, so lanes working at once never edit the same
+porting specs from `e2e/specs/` does not edit them, so lanes working at once never edit the same
 file:
 
 * A helper that only one spec uses stays in that spec.
@@ -71,4 +70,4 @@ The Native web build job builds the export once and uploads it. The RN web E2E j
 Firefox and WebKit smoke jobs download it and run with `SPLOTCH_E2E_PREBUILT=1`. The shard count is
 the `shard` list in the `rn-web-e2e` job of `.github/workflows/test.yml`. Each job uploads
 `playwright-report/`, which also holds the flaky reporter's `flaky.json`
-(`web/playwright-flaky-reporter.ts`, shared with the SvelteKit suite).
+(`e2e/playwright-flaky-reporter.ts`, shared with the SvelteKit suite).

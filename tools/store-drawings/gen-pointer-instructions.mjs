@@ -421,11 +421,7 @@ function formatValue(value, indent = 0) {
 }
 
 export function generateModule(drawings) {
-  // Relative to the emitted module in generated/, not to this generator. Kept in a variable so the
-  // tools/tests/tool-specifier-resolution.test.mjs guard doesn't read this emitted string as this
-  // file's own import: it resolves from generated/, but from here it would point at tools/lib/.
-  const drawingInstructionsSpecifier = '../lib/drawing-instructions.mjs';
-  const blocks = [`import { drawInstructionScene } from '${drawingInstructionsSpecifier}';`, ''];
+  const blocks = [];
   for (const drawing of drawings) {
     const constant = drawing.functionName
       .replace(/^draw/, '')
@@ -440,15 +436,7 @@ export function generateModule(drawings) {
       })};`
     );
     blocks.push('');
-    blocks.push(`export function ${drawing.functionName}(page, box, options) {`);
-    blocks.push(`  return drawInstructionScene(page, box, ${constant}, options);`);
-    blocks.push('}');
-    blocks.push('');
   }
-  blocks.push('export const STORE_DRAWINGS = {');
-  for (const drawing of drawings) blocks.push(`  '${drawing.key}': ${drawing.functionName},`);
-  blocks.push('};');
-  blocks.push('');
   blocks.push('export const STORE_DRAWING_SCENES = {');
   for (const drawing of drawings) {
     const constant = drawing.functionName

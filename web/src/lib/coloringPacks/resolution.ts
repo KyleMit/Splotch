@@ -3,8 +3,7 @@ import {
   COMPACT_COLORING_PACK_SHORT_EDGE_PX,
 } from './imageTiers.ts';
 
-export const COLORING_PACK_RESOLUTIONS = ['compact', 'full'] as const;
-export type ColoringPackResolution = (typeof COLORING_PACK_RESOLUTIONS)[number];
+export type ColoringPackResolution = 'compact' | 'full';
 
 interface ColoringPackScreen {
   widthCssPx: number;

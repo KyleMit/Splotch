@@ -4,7 +4,6 @@ import { pictureSave } from '../../experiments/native-architecture/src/platform/
 import {
   AI_IMAGE_BASENAME,
   DRAWING_BASENAME,
-  pictureFilename,
 } from '../../experiments/native-architecture/src/export/pictureFilename.ts';
 import { keepAiPicture } from '../../experiments/native-architecture/src/ai/keepAiPicture.ts';
 import {
@@ -16,8 +15,6 @@ import {
   AI_IMAGE_BASENAME as SHIPPING_AI_BASENAME,
   DRAWING_BASENAME as SHIPPING_BASENAME,
 } from '../../web/src/lib/saveNaming.ts';
-import { timestamp } from '../../web/src/lib/savedFile.ts';
-import { saveFailureCopy } from '../../web/src/lib/drawing/saveFailureCopy.ts';
 import { folderSave } from '../../experiments/native-architecture/src/platform/folderSave.web.ts';
 import { browserFolderSave } from '../../experiments/native-architecture/src/platform/browserFolderSaveLoader.ts';
 
@@ -209,7 +206,6 @@ describe('saving a picture on the web', () => {
 
   it('names the file the way the shipping save does', () => {
     expect(DRAWING_BASENAME).toBe(SHIPPING_BASENAME);
-    expect(pictureFilename(new Date())).toBe(`${SHIPPING_BASENAME}-${timestamp()}.png`);
   });
 
   it('downloads an AI picture in its own format under the shipping AI file name', async () => {
@@ -269,7 +265,6 @@ describe('saving a picture on the web', () => {
   });
 
   it('words a failed web save in the shipping banner copy, with no Settings to send a parent to', () => {
-    expect(saveFailureCopy('denied', 1, 'web')).toEqual(nativeSaveFailureCopy('denied', 1, 'web'));
     expect(nativeSaveFailureCopy('denied', 1, 'web').detail).not.toContain('Settings');
   });
 });

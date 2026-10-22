@@ -1,0 +1,203 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/web
+
+ ❯ src/lib/server/freeGenerationRollout.test.ts (11 tests | 5 failed) 128ms
+   ❯ current writer preservation assertions (5)
+     × preserves the exact pending map through a legacy reserve and successful completion 12ms
+     × preserves the exact daily map and replays the original daily charge without a write 9ms
+     × preserves the exact denied map and the historical refusal after a slot is freed 8ms
+     × preserves the exact settled map and returns the first success against a competing outcome 7ms
+     × preserves immutable expiry timing and the exact abandonment map through another legacy mutation 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/server/freeGenerationRollout.test.ts > current writer preservation assertions > preserves the exact pending map through a legacy reserve and successful completion
+AssertionError: expected undefined to deeply equal { …(1) }
+
+- Expected:
+{
+  "0000000000000000000000000000000000000000000000000000000000000001": {
+    "reservation": {
+      "admittedAt": "2026-10-12T12:00:00.000Z",
+      "dailyDate": "2026-10-12",
+      "expiresAt": "2026-10-12T12:20:52.000Z",
+      "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "remaining": 9,
+      "reservationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "reserved": true,
+      "retainUntil": "2026-10-13T12:20:52.000Z",
+    },
+    "settlement": null,
+  },
+}
+
++ Received:
+undefined
+
+ ❯ src/lib/server/freeGenerationRollout.test.ts:170:58
+    168|     if (!legacy.reserved) throw new Error('Expected a legacy reservati…
+    169|     expectFreshLegacyMutation(fixture, INSTALLATION, before);
+    170|     expect(fixture.raw(INSTALLATION).recoveryOperations).toEqual(grant…
+       |                                                          ^
+    171|     const held = fixture.checkpoint(INSTALLATION);
+    172|     await writer.completeFreeGeneration(INSTALLATION, legacy.reservati…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/lib/server/freeGenerationRollout.test.ts > current writer preservation assertions > preserves the exact daily map and replays the original daily charge without a write
+AssertionError: expected undefined to deeply equal { …(1) }
+
+- Expected:
+{
+  "0000000000000000000000000000000000000000000000000000000000000001": {
+    "admittedAt": "2026-10-12T12:00:00.000Z",
+    "dailyDate": "2026-10-12",
+    "expiresAt": "2026-10-12T12:20:52.000Z",
+    "installationId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+    "remaining": 499,
+    "reserved": true,
+    "retainUntil": "2026-10-13T12:20:52.000Z",
+  },
+}
+
++ Received:
+undefined
+
+ ❯ src/lib/server/freeGenerationRollout.test.ts:190:51
+    188|     await preservationWriter(fixture.frozen).reserveDailyFreeGeneratio…
+    189|     expectFreshLegacyMutation(fixture, DAILY_KEY, before);
+    190|     expect(fixture.raw(DAILY_KEY).recoveryStarts).toEqual(dailyMap);
+       |                                                   ^
+    191|     await expect(reserveRecoveryDailyFreeGeneration(INSTALLATION, oper…
+    192|       first.daily
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/lib/server/freeGenerationRollout.test.ts > current writer preservation assertions > preserves the exact denied map and the historical refusal after a slot is freed
+AssertionError: expected undefined to deeply equal { …(1) }
+
+- Expected:
+{
+  "0000000000000000000000000000000000000000000000000000000000000001": {
+    "reservation": {
+      "admittedAt": "2026-10-12T12:00:00.000Z",
+      "dailyDate": "2026-10-12",
+      "expiresAt": "2026-10-12T12:20:52.000Z",
+      "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "reason": "exhausted",
+      "remaining": 0,
+      "reserved": false,
+      "retainUntil": "2026-10-13T12:20:52.000Z",
+    },
+    "settlement": null,
+  },
+}
+
++ Received:
+undefined
+
+ ❯ src/lib/server/freeGenerationRollout.test.ts:210:58
+    208|     );
+    209|     expectFreshLegacyMutation(fixture, INSTALLATION, before);
+    210|     expect(fixture.raw(INSTALLATION).recoveryOperations).toEqual(grant…
+       |                                                          ^
+    211|     await expect(reserveRecoveryFreeGeneration(INSTALLATION, operation…
+    212|       first.denied
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  src/lib/server/freeGenerationRollout.test.ts > current writer preservation assertions > preserves the exact settled map and returns the first success against a competing outcome
+AssertionError: expected undefined to deeply equal { …(1) }
+
+- Expected:
+{
+  "0000000000000000000000000000000000000000000000000000000000000001": {
+    "reservation": {
+      "admittedAt": "2026-10-12T12:00:00.000Z",
+      "dailyDate": "2026-10-12",
+      "expiresAt": "2026-10-12T12:20:52.000Z",
+      "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "remaining": 9,
+      "reservationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "reserved": true,
+      "retainUntil": "2026-10-13T12:20:52.000Z",
+    },
+    "settlement": {
+      "admittedAt": "2026-10-12T12:00:00.000Z",
+      "dailyDate": "2026-10-12",
+      "expiresAt": "2026-10-12T12:20:52.000Z",
+      "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "outcome": {
+        "kind": "success",
+      },
+      "remaining": 9,
+      "retainUntil": "2026-10-13T12:20:52.000Z",
+      "settledAt": "2026-10-12T12:00:00.000Z",
+    },
+  },
+}
+
++ Received:
+undefined
+
+ ❯ src/lib/server/freeGenerationRollout.test.ts:228:58
+    226|     await preservationWriter(fixture.frozen).failFreeGeneration(INSTAL…
+    227|     expectFreshLegacyMutation(fixture, INSTALLATION, before);
+    228|     expect(fixture.raw(INSTALLATION).recoveryOperations).toEqual(grant…
+       |                                                          ^
+    229|     await expect(
+    230|       settleRecoveryFreeGeneration(INSTALLATION, operation(), {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  src/lib/server/freeGenerationRollout.test.ts > current writer preservation assertions > preserves immutable expiry timing and the exact abandonment map through another legacy mutation
+AssertionError: expected undefined to deeply equal { …(1) }
+
+- Expected:
+{
+  "0000000000000000000000000000000000000000000000000000000000000001": {
+    "reservation": {
+      "admittedAt": "2026-10-12T12:00:00.000Z",
+      "dailyDate": "2026-10-12",
+      "expiresAt": "2026-10-12T12:20:52.000Z",
+      "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "remaining": 9,
+      "reservationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "reserved": true,
+      "retainUntil": "2026-10-13T12:20:52.000Z",
+    },
+    "settlement": {
+      "admittedAt": "2026-10-12T12:00:00.000Z",
+      "dailyDate": "2026-10-12",
+      "expiresAt": "2026-10-12T12:20:52.000Z",
+      "operationId": "0000000000000000000000000000000000000000000000000000000000000001",
+      "outcome": {
+        "failureKind": "abandoned",
+        "kind": "failure",
+      },
+      "remaining": 10,
+      "retainUntil": "2026-10-13T12:20:52.000Z",
+      "settledAt": "2026-10-12T12:20:52.000Z",
+    },
+  },
+}
+
++ Received:
+undefined
+
+ ❯ src/lib/server/freeGenerationRollout.test.ts:255:58
+    253|     expectFreshLegacyMutation(fixture, INSTALLATION, before);
+    254|     const grantMap = { [operation().operationId]: { reservation, settl…
+    255|     expect(fixture.raw(INSTALLATION).recoveryOperations).toEqual(grant…
+       |                                                          ^
+    256|     const afterExpiry = fixture.checkpoint(INSTALLATION);
+    257|     await writer.failFreeGeneration(INSTALLATION, 'upstream');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 6 passed (11)
+   Start at  21:33:05
+   Duration  353ms (tests 42%, import 33%, transform 24%)

@@ -24,10 +24,7 @@ import {
   paletteSlots,
   selectionRingColor,
 } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import {
-  RsdPaintAction,
-  SWATCH_PRESS_SCALE,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
+import { RsdPaintAction } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
 import {
   CORNER_BUTTON_SIZE_PX,
   CORNER_IDLE_OPACITY,
@@ -41,60 +38,54 @@ import {
   TOUCH_TARGET,
 } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  EDGE_INSET_PX,
-  actionPanelLayout,
-} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import {
-  SELECTION_RING_GAP_PX as SHIPPING_RING_GAP_PX,
-  SELECTION_RING_WIDTH_PX as SHIPPING_RING_WIDTH_PX,
-  getRingColor,
-} from '../../../web/src/lib/colorRing.ts';
+import { actionPanelLayout } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import { getRingColor } from '../../../web/src/lib/colorRing.ts';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
-const styleBlock = (path) =>
-  /<style>([\s\S]*)<\/style>/.exec(read(path))[1].replace(/\/\*[\s\S]*?\*\//g, '');
-const PALETTE_STYLE = styleBlock('web/src/lib/components/ColorPalette.svelte');
-const SWATCH_STYLE = styleBlock('web/src/lib/components/ColorSwatch.svelte');
-const APP_CSS = read('web/src/app.css');
-
-// The shipping trim ladder as written: each `@media` rule hides one trim rank below its threshold.
-function shippingLadder(feature) {
-  const pattern = new RegExp(
-    `@media \\(orientation: \\w+\\)(?: and \\(min-height: 600px\\))? and \\(${feature}: ([\\d.]+)px\\) \\{\\s*\\.color-palette > :global\\(\\.color-swatch\\[data-trim-rank='(\\d+)'\\]\\)`,
-    'g'
-  );
-  return [...PALETTE_STYLE.matchAll(pattern)].map(([, threshold, rank]) => ({
-    threshold: Number(threshold),
-    rank: Number(rank),
-  }));
-}
-
-function shippingPaintCount(ladder, length) {
-  return PALETTE_COLORS.length - ladder.filter(({ threshold }) => length <= threshold).length;
-}
-
-// The released rgba spelling of a shipping `rgb(r g b / a%)` shadow.
-function rgbaShadow(shadow) {
-  return shadow.replace(
-    /rgb\((\d+) (\d+) (\d+) \/ (\d+)%\)/,
-    (_, red, green, blue, alpha) => `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`
-  );
-}
-
-function declaration(css, property) {
-  const values = [...css.matchAll(new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;]+);`, 'g'))];
-  return values.map(([, value]) => value.replace(/\s+/g, ' ').trim());
-}
+const PALETTE_OCCUPANCY_INTERVALS = [
+  {
+    axis: 'row',
+    intervals: [
+      [120, 137, 0],
+      [138, 200, 1],
+      [201, 263, 2],
+      [264, 326, 3],
+      [327, 389, 4],
+      [390, 452, 5],
+      [453, 515, 6],
+      [516, 578, 7],
+      [579, 641, 8],
+      [642, 704, 9],
+      [705, 767, 10],
+      [768, 830, 11],
+      [831, 893, 12],
+      [894, 956, 13],
+      [957, 1019, 14],
+      [1020, 1100, 15],
+    ],
+  },
+  {
+    axis: 'column',
+    intervals: [
+      [600, 659, 7],
+      [660, 731, 8],
+      [732, 803, 9],
+      [804, 875, 10],
+      [876, 947, 11],
+      [948, 1019, 12],
+      [1020, 1091, 13],
+      [1092, 1163, 14],
+      [1164, 1240, 15],
+    ],
+  },
+];
 
 describe('the shipping palette geometry', () => {
   it('sizes, spaces and pads both flows as trimGeometry.ts and ColorPalette.svelte do', () => {
+    expect(PALETTE_FLOWS.column).toMatchObject({ swatchPx: 60, gapPx: 12, endPaddingPx: 12 });
     const trim = read('web/src/lib/design/trimGeometry.ts');
-    for (const [axis, name] of [
-      ['row', 'PALETTE_ROW_GEOMETRY'],
-      ['column', 'PALETTE_COLUMN_GEOMETRY'],
-    ]) {
+    for (const [axis, name] of [['row', 'PALETTE_ROW_GEOMETRY']]) {
       const body = new RegExp(`${name}[^{]*\\{([^}]*)\\}`).exec(trim)[1];
       const value = (key) => Number(new RegExp(`${key}: (\\d+)`).exec(body)[1]);
       const flow = PALETTE_FLOWS[axis];
@@ -102,77 +93,37 @@ describe('the shipping palette geometry', () => {
       expect(flow.gapPx, axis).toBe(value('gapPx'));
       expect(2 * flow.endPaddingPx, axis).toBe(value('paddingPx'));
     }
-    expect(declaration(PALETTE_STYLE, 'padding')).toEqual(
-      expect.arrayContaining([
-        `${PALETTE_FLOWS.row.crossStartPaddingPx}px ${PALETTE_FLOWS.row.endPaddingPx}px ${PALETTE_FLOWS.row.crossEndPaddingPx}px`,
-      ])
-    );
-    expect(APP_CSS).toContain(`--palette-portrait-height: ${PALETTE_FLOWS.row.extentPx}px;`);
-    expect(APP_CSS).toContain(`--palette-landscape-width: ${PALETTE_FLOWS.column.extentPx}px;`);
-    const shadows = declaration(PALETTE_STYLE, 'box-shadow').filter((shadow) =>
-      shadow.includes('10px')
-    );
-    expect(shadows.map(rgbaShadow)).toEqual([
-      PALETTE_FLOWS.column.shadow,
-      PALETTE_FLOWS.row.shadow,
-    ]);
-  });
-
-  // Negative control: a column that pads its end by the flow's own 12px, or by the inset alone,
-  // leaves More colors off the Brush Button's centre line.
-  it('pads the column end as --palette-bottom does, centring More colors on the Brush Button', () => {
-    const formula =
-      /--palette-bottom:\s*max\(\s*0px,\s*calc\((\d+)px \+ var\(--action-btn-size\) \/ 2 - (\d+)px \+ var\(--safe-area-bottom\)\)\s*\);/.exec(
-        PALETTE_STYLE
-      );
-    expect(formula).not.toBeNull();
-    const [panelInset, halfSwatch] = formula.slice(1).map(Number);
-    expect(panelInset).toBe(EDGE_INSET_PX);
-    expect(halfSwatch).toBe(PALETTE_FLOWS.column.swatchPx / 2);
-    expect(declaration(PALETTE_STYLE, 'padding')).toContain(
-      `${PALETTE_FLOWS.column.endPaddingPx}px ${PALETTE_FLOWS.column.crossStartPaddingPx}px var(--palette-bottom)`
-    );
-    for (const [button, inset] of [
-      [60, 20],
-      [72, 0],
-      [44, 34],
-      [20, 0],
-    ])
-      expect(columnEndClearance(button, inset), `${button} over ${inset}`).toBe(
-        Math.max(0, panelInset + button / 2 - halfSwatch + inset)
-      );
-  });
-
-  it('keeps the swatch press, the More colors pop and the Selection Ring widths', () => {
-    expect(declaration(SWATCH_STYLE, 'width')).toEqual(
-      expect.arrayContaining([
-        `${PALETTE_FLOWS.column.swatchPx}px`,
-        `${PALETTE_FLOWS.row.swatchPx}px`,
-      ])
-    );
-    expect(declaration(SWATCH_STYLE, 'transform')).toContain(`scale(${SWATCH_PRESS_SCALE})`);
-    expect(declaration(SWATCH_STYLE, '--pop-scale')).toEqual([`${MORE_COLORS_POP_SCALE}`]);
-    expect(SELECTION_RING_WIDTH_PX).toBe(SHIPPING_RING_WIDTH_PX);
-    expect(SELECTION_RING_GAP_PX).toBe(SHIPPING_RING_GAP_PX);
   });
 
   it.each([
-    ['row', 'max-width', 120, 1100],
-    ['column', 'max-height', 600, 1240],
+    { buttonPx: 60, bottomInsetPx: 20, clearancePx: 28 },
+    { buttonPx: 72, bottomInsetPx: 0, clearancePx: 14 },
+    { buttonPx: 44, bottomInsetPx: 34, clearancePx: 34 },
+    { buttonPx: 20, bottomInsetPx: 0, clearancePx: 0 },
   ])(
-    'shows as many paints along a %s as the shipping %s ladder at every length',
-    (axis, feature, from, to) => {
-      const ladder = shippingLadder(feature);
-      expect(ladder).toHaveLength(axis === 'row' ? PALETTE_COLORS.length : 8);
-      const drift = [];
-      for (let length = from; length <= to; length++) {
-        const native = Math.min(PALETTE_COLORS.length, paletteSlots(length, axis) - 1);
-        if (native !== shippingPaintCount(ladder, length))
-          drift.push(`${length}px: ${native} vs ${shippingPaintCount(ladder, length)}`);
-      }
-      expect(drift).toEqual([]);
+    'pads the column end by $clearancePx pixels for a $buttonPx pixel button over a $bottomInsetPx pixel inset',
+    ({ buttonPx, bottomInsetPx, clearancePx }) => {
+      expect(columnEndClearance(buttonPx, bottomInsetPx)).toBe(clearancePx);
     }
   );
+
+  it.each(PALETTE_OCCUPANCY_INTERVALS)(
+    'shows the expected paint occupancy along a $axis at every length',
+    ({ axis, intervals }) => {
+      expect(PALETTE_COLORS).toHaveLength(15);
+      for (const [from, to, paints] of intervals)
+        for (let length = from; length <= to; length++)
+          expect(
+            Math.min(PALETTE_COLORS.length, paletteSlots(length, axis) - 1),
+            `${axis} ${length}px`
+          ).toBe(paints);
+    }
+  );
+
+  it('keeps the swatch press, the More colors pop and the Selection Ring widths', () => {
+    expect(SELECTION_RING_WIDTH_PX).toBe(4);
+    expect(SELECTION_RING_GAP_PX).toBe(4);
+  });
 
   it('rings each paint in the shipping Selection Ring color in both themes', () => {
     const custom = ['#000000', '#FFFFFF', '#123456', '#33CC99', '#2B2B2B'];
@@ -187,9 +138,7 @@ describe('the shipping palette geometry', () => {
     const bundled = readFileSync(
       join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
     );
-    expect(
-      bundled.equals(readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp')))
-    ).toBe(true);
+
     expect(
       bundled.equals(readFileSync(join(REPOSITORY, 'web/static/icons/handmade-paper.webp')))
     ).toBe(true);
@@ -374,9 +323,7 @@ describe('the mounted drawing screen frame', () => {
     await act(async () =>
       bar.onLayout({ nativeEvent: { layout: { width: 84, height: shortened } } })
     );
-    expect(paintLabels()).toHaveLength(
-      shippingPaintCount(shippingLadder('max-height'), height - insetBottom)
-    );
+    expect(paintLabels()).toHaveLength(10);
     // The overrun keeps every swatch whole at the shipping gap: the paint group never shrinks to
     // slide More colors over the last paint. Negative control: a shrinkable group fails here.
     expect(resolved((props) => props.testID === 'rsd-palette-plate')).toMatchObject({

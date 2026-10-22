@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLibraryPlatform as createWebLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
 import { createDeferredLibrary } from '../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
@@ -430,23 +429,6 @@ describe('web startup network policy', () => {
   ])('holds automatic web downloads for connection %j, as shipping does', async (connection) => {
     navigator.connection = connection;
     expect((await webPlatform.environment()).metered).toBe(true);
-  });
-  it('pins the ordinary web network fallback and opt-out policy to shipping', () => {
-    const shipping = readFileSync(
-      new URL('../../web/src/lib/coloringPacks/manager.ts', import.meta.url),
-      'utf8'
-    );
-    expect(shipping).toContain('if (!network) return true;');
-    expect(shipping).toContain('settingsState.coloringPacksAllowMetered');
-    expect(
-      readFileSync(new URL('../../web/src/lib/boot/coloringPacks.ts', import.meta.url), 'utf8')
-    ).toContain('heldForEngagement = !hasPackStorage && !engaged;');
-    expect(shipping).toContain(
-      "if (network.saveData || network.type === 'cellular') return false;"
-    );
-    expect(shipping).toContain(
-      "network.effectiveType !== 'slow-2g' && network.effectiveType !== '2g'"
-    );
   });
 
   it('reports quota and connection uncertainty without requesting persistence', async () => {

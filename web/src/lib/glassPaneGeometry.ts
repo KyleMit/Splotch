@@ -8,7 +8,7 @@ import type { SafeAreaInsets } from './platform/safeArea';
 export type OpenFlyout = 'brush' | 'stroke' | 'color' | null;
 
 export const BARE_MENU_GAP_PX = 4;
-export const VERTICAL_MENU_MAX_WIDTH_PX = 540;
+const VERTICAL_MENU_MAX_WIDTH_PX = 540;
 const FEATHER_SIGMA_PX = 24;
 // Phone landscape unites controls that sit only a few button-widths apart
 // (fullscreen, color, drawer toggle) into one pane; a wider feather would sum

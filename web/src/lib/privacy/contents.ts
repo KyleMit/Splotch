@@ -1,0 +1,39 @@
+import type { PaletteLabel } from '../palette';
+
+// The privacy page's contents metadata and the scrollspy that drives its
+// contents rail/disclosure, kept beside +page.svelte.
+
+// The headline promises, each led by a crayon chip in the brand rainbow — the
+// same visual vocabulary as the masthead's CrayonStrip.
+export const HIGHLIGHTS: { label: PaletteLabel; lead: string; body: string }[] = [
+  { label: 'Red', lead: 'No ads.', body: 'Ever. None.' },
+  { label: 'Orange', lead: 'No tracking.', body: "We don't follow you around the internet." },
+  { label: 'Yellow', lead: 'No accounts.', body: 'No sign-up, no login, no passwords.' },
+  { label: 'Green', lead: 'No analytics.', body: 'Not from us, not from anyone else.' },
+  {
+    label: 'Blue',
+    lead: 'No surprises.',
+    body: 'Every request the app makes is described on this page.',
+  },
+  { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
+];
+
+// Section bodies keep literal ids; privacy.spec.ts guards their agreement with
+// the heading and link metadata from this list.
+export const SECTIONS = [
+  { id: 'on-device', label: 'What stays on your device' },
+  { id: 'ai-pictures', label: 'Making an AI picture' },
+  { id: 'counting', label: 'How the counting works' },
+  { id: 'reports', label: 'Reporting a picture' },
+  { id: 'feedback', label: 'Sending feedback' },
+  { id: 'hosting', label: 'Hosting and downloads' },
+  { id: 'children', label: "Children's privacy" },
+  { id: 'contact', label: 'Changes and contact' },
+] as const;
+
+export type SectionId = (typeof SECTIONS)[number]['id'];
+
+// A section is the one being read once its top has climbed within this
+// distance of the viewport top. Deeper than either layout parks a jumped-to
+// section, so arriving from the contents marks the section it landed on.
+export const SPY_LINE_PX = 128;

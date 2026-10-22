@@ -13,7 +13,7 @@ const VISUAL_INPUT_FILES = [
   'tools/marketing-assets/lib/share-card-document.mjs',
   'tools/marketing-assets/lib/static-document.mjs',
   'web/src/lib/icons/splotchy.svg',
-  'web/src/lib/assets/handmade-paper.webp',
+  'experiments/native-architecture/assets/paper/handmade-paper.webp',
   'web/src/lib/design/tokens.ts',
   'web/src/lib/palette.ts',
   'web/src/lib/fonts.ts',

@@ -2,7 +2,6 @@
 import { ESLint } from 'eslint';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import svelteParser from 'svelte-eslint-parser';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 import lintConfig from '../../eslint.config.js';
@@ -25,15 +24,13 @@ const directiveProblems = async (fixture, source) => {
     .filter(
       (message) =>
         message.ruleId === REQUIRE_DISABLE_REASON_RULE_ID ||
-        message.ruleId === 'svelte/comment-directive' ||
         message.message.startsWith('Unused eslint-disable')
     )
     .map((message) => message.message);
 };
 
 const CONTROL_REGEX = 'export const escape = /\\x1b/;\n';
-const LINTED_SOURCE = ['*.js', '*.mjs', '*.cjs', '*.ts', '*.mts', '*.svelte'];
-const HTML_TAG = '<script>\n  const markup = "<b>hi</b>";\n</script>\n\n';
+const LINTED_SOURCE = ['*.js', '*.mjs', '*.cjs', '*.ts', '*.mts'];
 
 describe('eslint-disable directives in scripts', () => {
   it('accepts a disable that names its rule and gives a reason', async () => {
@@ -64,35 +61,6 @@ describe('eslint-disable directives in scripts', () => {
   });
 });
 
-describe('eslint-disable directives in Svelte templates', () => {
-  it('accepts a disable that names its rule and gives a reason', async () => {
-    expect(
-      await directiveProblems(
-        'web/src/lib/Probe.svelte',
-        `${HTML_TAG}<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party markup -->\n{@html markup}\n`
-      )
-    ).toEqual([]);
-  });
-
-  it('rejects prose written without the separator', async () => {
-    expect(
-      await directiveProblems(
-        'web/src/lib/Probe.svelte',
-        `${HTML_TAG}<!-- eslint-disable-next-line svelte/no-at-html-tags first-party markup -->\n{@html markup}\n`
-      )
-    ).toContain("eslint-disable-next-line must say why after ' -- '.");
-  });
-
-  it('rejects a disable that suppresses nothing', async () => {
-    expect(
-      await directiveProblems(
-        'web/src/lib/Probe.svelte',
-        `${HTML_TAG}<!-- eslint-disable-next-line svelte/no-at-html-tags -- stale -->\n<p>{markup}</p>\n`
-      )
-    ).toHaveLength(1);
-  });
-});
-
 // A directive that names no rule, or names the enforcing rule, suppresses the report that would
 // flag it. So the tracked source is also linted with inline config off — where no directive
 // suppresses anything — and only the enforcing rule enabled. Parsing, rather than matching raw
@@ -104,11 +72,7 @@ const scanner = new ESLint({
     lintConfig.find((block) => Object.keys(block).length === 1 && block.ignores),
     { files: ['**/*.{js,mjs,cjs,ts,mts}'], languageOptions: { parser: tseslint.parser } },
     {
-      files: ['**/*.svelte'],
-      languageOptions: { parser: svelteParser, parserOptions: { parser: tseslint.parser } },
-    },
-    {
-      files: ['**/*.{js,mjs,cjs,ts,mts,svelte}'],
+      files: ['**/*.{js,mjs,cjs,ts,mts}'],
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: 'off' },
       plugins: { [DISABLE_DIRECTIVES_PLUGIN_NAME]: disableDirectivesPlugin },
       rules: { [REQUIRE_DISABLE_REASON_RULE_ID]: 'error' },
@@ -155,15 +119,6 @@ describe('directives that would suppress their own report', () => {
       await unsuppressibleProblems(
         'tools/probe.mjs',
         `/* eslint-disable ${REQUIRE_DISABLE_REASON_RULE_ID} -- a reason */\n${CONTROL_REGEX}`
-      )
-    ).toHaveLength(1);
-  });
-
-  it('flags a blanket disable in a Svelte template', async () => {
-    expect(
-      await unsuppressibleProblems(
-        'web/src/lib/Probe.svelte',
-        `${HTML_TAG}<!-- eslint-disable -- a reason -->\n{@html markup}\n`
       )
     ).toHaveLength(1);
   });

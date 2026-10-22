@@ -1,6 +1,6 @@
 import { Clipboard } from 'react-native';
-import { sectionUrl } from '../../../../web/src/routes/privacy/sectionLink';
-import type { SectionId } from '../../../../web/src/routes/privacy/contents';
+import { sectionUrl } from '../../../../web/src/lib/privacy/sectionLink';
+import type { SectionId } from '../../../../web/src/lib/privacy/contents';
 
 export async function copyPrivacySection(id: SectionId) {
   try {

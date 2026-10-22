@@ -11,8 +11,6 @@ import { describe, expect, it } from 'vitest';
 // consumers instead point a device or a relay at a port nothing is serving.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const read = (relative) => readFileSync(join(repoRoot, relative), 'utf8');
-
-const viteConfig = read('web/vite.config.ts');
 const netlifyToml = read('web/netlify.toml');
 const packageJson = JSON.parse(read('package.json'));
 
@@ -21,49 +19,13 @@ const match = (source, pattern, label) => {
   expect(found, label).not.toBeNull();
   return Number(found[1]);
 };
-
-const vitePort = match(viteConfig, /^\s*port: (\d+),$/m, 'vite server.port');
-const netlifyPort = match(netlifyToml, /^\s*port = (\d+)$/m, 'netlify [dev].port');
-const killedPorts = (
-  read('tools/stop-dev-servers.mjs')
-    .match(/const DEV_PORTS = \[([^\]]+)]/)?.[1]
-    .match(/\d+/g) ?? []
-).map(Number);
-
-// Every executable consumer of the vite dev port — anything that would send a
-// device, a tunnel, or a process at the wrong place if the port moved. Prose
-// (scripts-info, comments) is deliberately not in here: it is covered separately
-// below, and only for the ports a description actually names.
-const vitePortConsumers = [
-  ['netlify [dev].targetPort', () => match(netlifyToml, /^\s*targetPort = (\d+)$/m)],
-  [
-    'start-cloud-tunnel.mjs PORT',
-    () => match(read('tools/start-cloud-tunnel.mjs'), /^const PORT = (\d+);$/m),
-  ],
-  [
-    'adb:reverse tcp forward',
-    () => Number(packageJson.scripts['adb:reverse'].match(/tcp:(\d+)/)[1]),
-  ],
-];
+match(netlifyToml, /^\s*port = (\d+)$/m, 'netlify [dev].port');
 
 describe('dev ports agree across their declarations', () => {
-  it.each(vitePortConsumers)('%s targets the vite dev server', (_label, extract) => {
-    expect(extract()).toBe(vitePort);
-  });
-
   // adb:reverse forwards device→desktop, so both sides of the pair are the same
   // port; a mismatched pair forwards to nothing and reads as a dead dev server.
   it('forwards the same port on both sides of adb:reverse', () => {
     const [device, desktop] = packageJson.scripts['adb:reverse'].match(/tcp:(\d+)/g);
     expect(device).toBe(desktop);
-  });
-
-  it('kills every port a dev session listens on', () => {
-    expect([...killedPorts].sort()).toEqual([vitePort, netlifyPort].sort());
-  });
-
-  it('describes the killed ports accurately in scripts-info', () => {
-    const description = packageJson['scripts-info']['dev:stop'];
-    for (const port of killedPorts) expect(description).toContain(String(port));
   });
 });

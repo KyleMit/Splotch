@@ -1,6 +1,5 @@
 import '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.props.test.ts';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -11,8 +10,8 @@ import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/dra
 import { RsdPrivacyContent } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyContent.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
-import { SECTIONS } from '../../../web/src/routes/privacy/contents.ts';
-import { COPIED_DURATION_MS } from '../../../web/src/routes/privacy/sectionLink.ts';
+import { SECTIONS } from '../../../web/src/lib/privacy/contents.ts';
+import { COPIED_DURATION_MS } from '../../../web/src/lib/privacy/sectionLink.ts';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { useCaller } from './rsd-native-ai-fixture.mjs';
 import { PRIVACY_LAYOUT } from '../../../experiments/native-architecture/src/information/privacyLayout.ts';
@@ -45,17 +44,6 @@ const content = (scrollY, onLink = vi.fn(), onSectionLayout = vi.fn()) =>
   );
 
 it('reserves the shipping final-section scrollport and recalculates it after rotation', async () => {
-  const policy = readFileSync(
-    join(import.meta.dirname, '../../../web/src/routes/privacy/+page.svelte'),
-    'utf8'
-  );
-  const shell = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
-    'utf8'
-  );
-  expect(policy).toContain('--page-tail: calc(var(--space-4) + var(--page-footer-reserve));');
-  expect(policy).toContain('min-height: calc(100dvh - var(--spy-line) - var(--page-tail));');
-  expect(shell).toContain(`--page-footer-reserve: ${PRIVACY_LAYOUT.footerReserve}px;`);
   records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
   await mount(content(0));
   expect(props('privacy-section-contact').style?.minHeight).toBe(540);
@@ -168,31 +156,6 @@ it.each(['ios', 'android'])(
 );
 
 it('renders the shipping metadata row and compact contents geometry', async () => {
-  const policy = readFileSync(
-    join(import.meta.dirname, '../../../web/src/routes/privacy/+page.svelte'),
-    'utf8'
-  );
-  const toc = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/nav/TocDisclosure.svelte'),
-    'utf8'
-  );
-  const pageShell = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
-    'utf8'
-  );
-  const pageRule = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/page/RuleLabel.svelte'),
-    'utf8'
-  );
-  expect(pageShell).toContain('line-height: 1.62;');
-  expect(pageRule).toContain('padding-bottom: var(--space-5);');
-  expect(policy).toContain('gap: 10px;');
-  expect(policy).toContain('margin: calc(-1 * var(--space-4)) 0 var(--space-6);');
-  expect(toc).toContain(`--toc-row-height: ${PAGE_CONTENTS.row}px;`);
-  expect(toc).toContain(`--toc-shell-border-width: ${PAGE_CONTENTS.border}px;`);
-  expect(toc).toContain(`--toc-panel-min: ${PAGE_CONTENTS.panelMin}px;`);
-  expect(toc).toContain(`width: ${PAGE_CONTENTS.count}px;`);
-  expect(toc).toContain(`height: ${PAGE_CONTENTS.mark}px;`);
   await mount(content(0));
   const meta = records.props.findLast((entry) => entry.testID === 'privacy-updated');
   expect(meta.style).toMatchObject({
@@ -319,14 +282,6 @@ it('opens an incoming privacy fragment only after both the body and target secti
 });
 
 it('pins the section-link target, blob, icon and heading spacing to shipping', () => {
-  const heading = readFileSync(
-    join(import.meta.dirname, '../../../web/src/routes/privacy/SectionHeading.svelte'),
-    'utf8'
-  );
-  expect(heading).toContain(`--section-link-size: ${PRIVACY_LINK_GEOMETRY.target}px;`);
-  expect(heading).toContain(`width: ${PRIVACY_LINK_GEOMETRY.blob}px;`);
-  expect(heading).toContain(`height: ${PRIVACY_LINK_GEOMETRY.blob}px;`);
-  expect(heading).toContain(`margin-bottom: ${PRIVACY_LINK_GEOMETRY.headingGap}px;`);
   expect(PRIVACY_LINK_GEOMETRY.icon).toBe(Number.parseFloat(scale.fontSizeMd));
 });
 

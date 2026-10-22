@@ -1,115 +1,65 @@
 # Safe areas across devices
 
-How `env(safe-area-inset-*)` behaves on the hardware Splotch ships to, how the app consumes it, and
-how to test a layout change against the whole device matrix without owning the devices.
+The React Native app reads safe areas through `react-native-safe-area-context`. Its web export maps
+the browser's safe-area environment into that same provider. Read this before moving controls near a
+cutout, home indicator or system bar. The app is in `experiments/native-architecture/` until root
+promotion (ADR-0182).
 
-Each app has its tools, and they answer different questions. The React Native app's check is the one
-that outlives the SvelteKit app; the shipping tools go with it.
+## Current owners and checks
 
-| App          | Tool                                             | Command                                                                                                                                      | Answers                                                                                                                      |
-| ------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| React Native | `tools/migration/check-native-web-safe-area.mjs` | `npm run native:web:build` (its post-build checks run it)                                                                                    | "Did anything break?" — every profile, every orientation, asserted against the RN web export                                 |
-| React Native | the same check's `--gallery`                     | `node --experimental-strip-types tools/migration/check-native-web-safe-area.mjs --gallery <dir>` after a build, then open `<dir>/index.html` | "What does this look like on a Pixel in landscape?" — every scenario's screenshot with the claimable region outlined, by eye |
-| Shipping     | `/dev/notch` harness                             | `npm run dev`, then open `/dev/notch`                                                                                                        | The same by-eye question for the SvelteKit HUD                                                                               |
+* `experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx` supplies `SafeAreaProvider`.
+  Drawing chrome and modal geometry consume `useSafeAreaInsets()`.
+* `experiments/native-architecture/src/rsdDrawing/RsdNotchBand.tsx` paints the band in separate
+  cover/dock-side layers and applies native status-bar style/visibility through RN `StatusBar`.
+* `web/src/lib/platform/notchBand.ts` holds the pure cutout threshold, band-edge, color and
+  status-bar decisions. RN uses those decisions directly.
+* `experiments/native-architecture/src/platform/notchBandPlatform.ts` maps Expo orientations into
+  the retained angle vocabulary; its `.web.ts` counterpart reads the browser orientation and writes
+  `theme-color`.
+* `web/src/lib/safeAreaMatrix/devices.ts` holds the researched profiles, and
+  `web/src/lib/safeAreaMatrix/diagnostics.ts` applies product policy before diagnosing them.
 
-The RN check drives the drawing screen through CDP's real insets (the RN app reads `env()` through
-`react-native-safe-area-context`, which has no override seam), reports each landscape rotation's
-screen orientation as a portrait-natural device would (`landscape-primary` at 90°), and asserts what
-the spec asserts: the insets reach the app, every drawing control's tap point is inside the
-claimable region, nothing scrolls, the Notch Band paints exactly `diagnose()`'s edges at their
-insets' depth, and the coloring picker's card clears the side insets. The RN web build is not a CI
-job yet, so the check runs wherever `npm run native:web:build` does.
+| Check                    | Command                                                                                                        | Proves                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| RN web safe-area matrix  | `npm run native:web:build` (post-build guard)                                                                  | Insets reach the app; control tap points fit; no scrolling; band edges and picker insets match. |
+| Screenshot gallery       | `node --experimental-strip-types tools/migration/check-native-web-safe-area.mjs --gallery <dir>` after a build | Every profile/orientation with claimable region outlined in `<dir>/index.html`.                 |
+| Native/mounted contracts | `tools/migration/tests/rsd-native-notch-band.test.mjs`                                                         | Provider-to-band contracts at their mocked native seams.                                        |
 
-## The consumption seam
+`tools/migration/check-native-web-safe-area.mjs` runs on the RN export. CI's export build includes
+it; it is also part of the local native-web build checks. It uses CDP's real safe-area override, not
+an author CSS fallback. That proves web layout under the profiles, not native UIKit/Android inset
+delivery or actual physical cutout measurements. A screenshot check can expose a policy mismatch;
+expectations derived from `diagnose()` alone cannot prove the policy is right.
 
-Nothing in `web/src` calls `env(safe-area-inset-*)` directly. `app.css` seeds four custom properties
-on `:root` and every consumer — CSS and the JS probe alike — reads those:
+The Svelte root custom-property seam, `/dev/notch` gallery, safe-area source sweep and Capacitor
+SystemBars injection tests retired with their subjects. The RN app does not consume injected
+Capacitor safe-area variables or run a native WebView. Do not combine those former offsets with
+provider insets.
 
-```css
-:root {
-  --safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-  /* right, bottom, left */
-}
-```
+## How to emulate browser insets
 
-The indirection exists because **`env()` cannot be overridden by an author**. Environment variables
-are UA-defined, and the `env(x, fallback)` second argument fires only when the variable is
-*unsupported* — never when it resolves to `0`. Every engine you would test in supports it, so the
-fallback is dead code and `env(safe-area-inset-top, 44px)` yields `0px` on your desktop. One level
-of indirection is the only way a harness can render the app under someone else's insets.
+| Approach                                  | Changes genuine `env()` values? | Use                                                                           |
+| ----------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
+| `env()` fallback argument                 | No                              | Fallback runs only for an unsupported name, not a supported zero.             |
+| Author CSS custom property                | No                              | Can model a consumer written for that seam; RN has no such override seam.     |
+| DevTools device preset                    | No                              | Device dimensions alone do not supply cutout insets.                          |
+| CDP `Emulation.setSafeAreaInsetsOverride` | Yes                             | RN browser matrix and gallery; Chromium only.                                 |
+| Safari / WebView on a simulator or device | Yes                             | Browser/WebView investigation, distinct from native RN provider measurements. |
 
-AndroidX `WindowCompat.enableEdgeToEdge` owns native edge-to-edge and display-cutout compatibility.
-The app does not override its cutout mode: API 28–29 use short edges, API 30+ use all edges, and
-older supported devices skip the cutout parameter. Native status-bar icon style and visibility use
-`@capacitor/core` SystemBars with an explicit `SystemBarType.StatusBar`; navigation stays under the
-Activity's immersive policy. The legacy StatusBar plugin is absent. AndroidX's supported helper
-still references deprecated bar-color APIs internally; a new Play bundle scan is needed to determine
-remaining warning origins. See ADR-0026's SystemBars amendment.
+CDP requires all inset keys and whole-pixel values. The RN checker rounds the researched fractional
+dp/CSS values and compares with what it actually applied. Real devices can report fractional logical
+insets; never infer a cutout from viewport dimensions alone.
 
-On Android native, Capacitor SystemBars injects `--safe-area-inset-*`. Those values take precedence,
-including explicit zero: WebViews before version 140 (or a viewport without `cover`) are padded
-natively and receive zero CSS insets. With WebView 140+ and `viewport-fit=cover`, Capacitor leaves
-system/cutout space to CSS and injects density-independent pixels. The keyboard is padded natively;
-Capacitor injects zero bottom safe area while it is visible. The Capacitor config (removed with the
-Capacitor shell) set `insetsHandling: "css"` and `initialViewportFitValueHint: "cover"`; do not add
-another native inset listener or combine the injected and `env()` values. See the installed
-Capacitor SystemBars source and
-[its configuration reference](https://capacitorjs.com/docs/apis/system-bars).
+A device pose and the app's interface orientation must agree before interpreting a screenshot. The
+2026-08 simulator investigation found WebView offsets of exactly one inset when they disagreed. That
+is historical evidence about a misleading measurement setup, not a claim that RN has the same
+WebView offset. The iOS runbook retains the screenshot-orientation caveats.
 
-Three tests hold the seam together:
+## Device observations and retained geometry rationale
 
-* `web/src/lib/platform/safeAreaProperties.test.ts` — `app.css` seeds every edge, and no other
-  source calls `env(safe-area-inset-*)` directly. A consumer that slips back to `env()` still looks
-  right on a real device, which is exactly why nothing else would catch it, and becomes invisible to
-  the harness.
-* `tools/migration/check-native-web-safe-area.mjs` — at runtime, `env(safe-area-inset-*)` resolves
-  to the emulated insets. The SvelteKit `safe-area-matrix.spec.ts` also read `var(--safe-area-top)`
-  against it; that seam retired with the SvelteKit app (ADR-0182).
-* `capacitor-safe-area.spec.ts` (retired with the Capacitor shell) — injected portrait/landscape
-  values and explicit zero override conflicting `env()` values; removing an injected property
-  restores the web fallback. The React Native export has no such override seam.
-
-`measureSafeAreaInsets()` (`lib/platform/safeArea.ts`) reads the numbers with a hidden
-fixed-position probe rather than `getComputedStyle` on the custom property — the property read is
-[reported broken in WebKit](https://bugs.webkit.org/show_bug.cgi?id=191872), the probe is not.
-
-## How to emulate insets
-
-| Approach                                  | Genuine `env()`?                 | Verdict                                                                 |
-| ----------------------------------------- | -------------------------------- | ----------------------------------------------------------------------- |
-| `env()` fallback argument                 | —                                | **No.** Fires only when unsupported, never on `0`                       |
-| `--safe-area-*` override                  | No — the properties, not `env()` | **Yes** for layout. What `/dev/notch` uses; works in any browser        |
-| Chrome DevTools device mode               | No                               | **No.** Always reports `0`, for every device preset                     |
-| CDP `Emulation.setSafeAreaInsetsOverride` | **Yes**                          | **Yes.** Chromium only. What the matrix spec and the RN check use       |
-| iOS Simulator (Safari + WKWebView)        | **Yes**                          | **Yes** — best free fidelity, but screenshots only; see the traps below |
-| Android emulator with a cutout AVD        | **Yes**                          | **Yes**, and scriptable over CDP — measured 42px on a Pixel 7 Pro AVD   |
-| Android dev options → simulate a cutout   | OS-level yes                     | Propagation into `env()` is **unverified**; see the open questions      |
-| Real-device clouds                        | **Yes**                          | Yes, and expensive. Release branches, not every PR                      |
-
-Two traps in the CDP path, both handled by the helper the SvelteKit suite had (retired with it,
-ADR-0182):
-
-* **Send all eight keys.** The protocol says "unset values will cause the respective variables to be
-  undefined, even if previously overridden" — omitting `left` un-defines it rather than leaving it
-  alone.
-* **Insets must be integers.** The call is rejected outright on a fractional one, but real devices
-  report fractions (a Galaxy S23 Ultra's `28.571`), because the value is a dp measurement divided by
-  a non-integer display density. The helper rounds and returns what it applied.
-
-And one trap that belongs to the devices rather than to CDP, because it has already produced two
-false findings: **on a simulator or emulator, a device pose that disagrees with the app's locked
-interface orientation offsets the whole web layer by exactly one safe-area inset.** Fixed elements —
-the Notch Band among them — then paint an inset's width inside the screen edge, leaving the strip
-they exist to fill bare. It is indistinguishable by eye from a `viewport-fit: cover` regression and
-it is not one. Splotch locks rotation by default on phones, so simply rotating the simulator puts
-you in that pose. Confirm the device and the interface agree before believing a placement result;
-the per-platform mechanics are in
-[MOBILE/ios.md](MOBILE/ios.md#rotating-and-screenshotting-a-simulator) and
-[MOBILE/android.md](MOBILE/android.md#scripting-against-the-running-native-webview-cdp).
-
-## What the devices actually report
-
-The full dataset with per-entry sources and confidence is `web/src/lib/safeAreaMatrix/devices.ts`.
+The browser/WebView observations below retain their original measurement dates. Capacitor-era native
+measurements are evidence about that WebView configuration, not RN safe-area-provider measurements.
+The shared dataset with per-entry sources and confidence is `web/src/lib/safeAreaMatrix/devices.ts`.
 The rules worth carrying in your head:
 
 **iOS reports both landscape sides identically.** `safe-area-inset-left` and `-right` are both set
@@ -128,11 +78,12 @@ cutout, so nothing on an iPad should ever paint a Notch Band.
 
 **The iPad top inset is not 24 on iPadOS 26, and that breaks the threshold.** An iPad mini (A17 Pro)
 and an iPad Pro 13-inch (M5) simulator, both on iPadOS 26.5 running the native build, each measured
-a top inset of exactly **32 css px** — not the 24 recorded in `DEVICE_PROFILES`, which the rest of
-this document treated as a hard ceiling. Since `NOTCH_INSET_THRESHOLD_PX = 30`, `hasNotch(32)` is
-true and the app paints a band on a device with no cutout: precisely the bezel-iPad false positive
-the threshold exists to exclude. The headroom argument the constant was chosen under (iPad max 24,
-iPhone min 44) no longer holds on its iPad side; the run is written up in
+a top inset of exactly **32 css px** in the Capacitor-era native WebView — not the 24 recorded in
+`DEVICE_PROFILES`, which the rest of this document treated as a hard ceiling. Since
+`NOTCH_INSET_THRESHOLD_PX = 30`, `hasNotch(32)` is true and the app paints a band on a device with
+no cutout: precisely the bezel-iPad false positive the threshold exists to exclude. The headroom
+argument the constant was chosen under (iPad max 24, iPhone min 44) no longer holds on its iPad
+side; the run is written up in
 [scratchpad/safe-area-device-verification-2026-08-24.md](scratchpad/safe-area-device-verification-2026-08-24.md).
 
 The profile numbers are deliberately left at 24 until the constant is decided, because
@@ -145,8 +96,8 @@ in one change.
 ships (25pt) and still reports `left: 0, right: 0`. Android waterfall/curved-edge insets default to
 `0` in AOSP and no shipped device overrides them.
 
-**Android web never sees a cutout.** `safe-area-inset-top` is always `0` in a Chrome tab (Chrome's
-own toolbar occupies that band) and still `0` in an installed PWA as of 2026-07
+**Historical Android browser/WebView contrast (2026-07).** `safe-area-inset-top` is always `0` in a
+Chrome tab (Chrome's own toolbar occupies that band) and still `0` in an installed PWA as of 2026-07
 ([crbug 407420295](https://issues.chromium.org/issues/407420295)). Only a native WebView reports one
 — and only on Chromium M144+ for all WebViews, M136–143 for fullscreen ones, and not at all below
 M136. `<meta name="theme-color">` remains the only mechanism that tints an Android web status bar.
@@ -176,7 +127,8 @@ platforms, for unrelated reasons:
   48dp it is deeper than the cutout's ~38dp. The rule picked the nav bar in *both* rotations,
   painting the drawing colour behind the back/home/recents buttons.
 
-`landscapeBandEdges()` in `lib/platform/notchBand.ts` now keys on **symmetry**, not depth:
+The retained `landscapeBandEdges()` rule in `web/src/lib/platform/notchBand.ts` keys on
+**symmetry**, not depth:
 
 | The two side insets        | What the band does | Why                                                                                                                                                |
 | -------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -188,7 +140,8 @@ platforms, for unrelated reasons:
 ### The rotation angle, and the one version that disagreed
 
 `screen.orientation.angle` is at the browser floor (Chrome 38 / Safari 16.4), is already in the
-compatibility register, and is already read by `lib/drawing/engine.ts`. The angle is the
+browser implementation's input in
+`experiments/native-architecture/src/platform/notchBandPlatform.web.ts`. The angle is the
 **device's** rotation *counter-clockwise* from natural, so **90 puts the natural top edge — and the
 cutout — on the LEFT**, and 270 on the right.
 
@@ -224,38 +177,39 @@ support. That is a large part of why iOS takes the paint-both branch rather than
 on iOS the angle is never consulted, so the 16.4 inversion cannot reach the band at all. Android's
 mapping has no such history.
 
-**Not yet verified on hardware.** The post-fix iOS mapping is inferred from WebKit's current source
-plus Apple's `UIInterfaceOrientation` semantics; no public measurement on a real notched iPhone
-exists. It does not currently affect the band (iOS never reads the angle), but it would if that
-branch ever changed. The measurement is cheap: log `screen.orientation.angle` beside
-`env(safe-area-inset-left)`/`-right` in both landscape rotations — the deeper inset is the notch
-side. Also note Safari 17 changed iPad's *natural* orientation to landscape, which reshuffles the
-angle mapping there; no iPad has a cutout, so nothing in the band depends on it.
+**Historical verification gap.** The investigation inferred the post-fix iOS mapping from WebKit
+source and Apple's `UIInterfaceOrientation` semantics; it did not record a real notched-iPhone
+measurement. It does not currently affect the band (iOS never reads the angle), but it would if that
+branch ever changed. For a new browser measurement, record `screen.orientation.angle` and both side
+insets in both landscape poses, alongside the observed physical cutout edge. Symmetric iOS insets
+cannot identify the cutout side by depth alone. Also note Safari 17 changed iPad's *natural*
+orientation to landscape, which reshuffles the angle mapping there; no iPad has a cutout, so nothing
+in the band depends on it.
 
-## What the harness models, and what it does not
+## What the current matrix models
 
-The `/dev/notch` frames run the ordinary **web** build, so `isNative()` is false and no Capacitor
-plugin executes. A native-only behaviour reaches a tile only when it changes geometry *and* the
-harness models it explicitly. One does today: Android native hides the status bar in landscape
-(`statusBarHiddenFor`), so `appliedInsets()` in the harness zeroes that top inset before rendering —
-otherwise a tile shows a strip of padding the shipped app does not have. Native status-bar icon
-styling changes no geometry and is simply absent.
+The RN check runs the browser export. It supplies profiles' geometry through CDP and the angle a
+portrait-natural device would report. `appliedInsets()` layers the app's status-bar policy on the
+raw research tuple; for native Android landscape profiles it removes the top inset contributed by
+the hidden status bar. The dataset remains unchanged research; policy belongs to its imported
+production function.
 
-The device numbers in `DEVICE_PROFILES` stay untouched research; `appliedInsets()` layers the app's
-own policy on top by calling the app's own function, so the two cannot drift.
+This does not execute native status-bar or safe-area code. Native delivery, keyboard behavior,
+window modes and physical cutouts need observations on their actual runtime. Keep that distinction
+in a result, especially when a profile carries a historically measured WebView inset.
 
 ## Adding a device
 
-Add an entry to `DEVICE_PROFILES` in `web/src/lib/safeAreaMatrix/devices.ts` with its sources and an
-honest `confidence`. The harness, the matrix spec and the RN check all read that one array, so a new
-profile appears as a section in each gallery and as a set of scenarios in every check on the next
-run. Add a profile only for a **distinct inset tuple** — a second phone reporting the same four
-numbers at the same viewport exercises nothing the first didn't.
+Add a distinct inset tuple to `DEVICE_PROFILES` in `web/src/lib/safeAreaMatrix/devices.ts`, with its
+source, runtime and honest confidence. The RN check/gallery derives scenarios from that one array. A
+second device with identical geometry adds no layout case; a new physical/runtime observation can
+still improve the provenance of an existing profile.
 
-## Settled by measurement
+## Historical measurements and remaining research
 
 A [simulator and emulator run on 2026-08-24](scratchpad/safe-area-device-verification-2026-08-24.md)
-closed three of these. Recorded here so they are not re-investigated:
+measured the former native WebViews. These are retained hardware/browser facts with that scope, not
+a fresh RN native verification:
 
 * **The rotation-angle sign is correct.** Measured on an Android emulator with distinguishable
   sides: angle `90` reports the inset on the **left**, angle `270` on the **right**, and the band

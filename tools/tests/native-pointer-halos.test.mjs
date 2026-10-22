@@ -1,6 +1,5 @@
 import { paperInputPacket } from './native-paper-fixtures.mjs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 import { scale } from '../../web/src/lib/design/tokens.ts';
 import {
@@ -11,15 +10,15 @@ import {
   HALO_GLOW,
   HALO_GLOW_PX,
   HALO_LINE,
-  HALO_IN_FROM_SCALE,
-  HALO_IN_MS,
-  HALO_OUT_MS,
-  HALO_OUT_TO_SCALE,
   HALO_RAINBOW,
   RAINBOW_BAND_PX,
   RING_GLOW_OPACITY,
   RING_LINE_OPACITY,
   RING_LINE_PX,
+  HALO_IN_FROM_SCALE,
+  HALO_IN_MS,
+  HALO_OUT_MS,
+  HALO_OUT_TO_SCALE,
   haloMotionPending,
   haloPose,
   rainbowArcs,
@@ -30,56 +29,8 @@ import { createContactResponder } from '../../experiments/native-architecture/sr
 import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 
 vi.mock('react-native', () => ({ findNodeHandle: (owner) => owner }));
-
-const root = join(import.meta.dirname, '../..');
-const shipping = readFileSync(join(root, 'web/src/lib/components/PointerHalos.svelte'), 'utf8');
 const PAPER_TARGET = 7;
 const FRAME = { width: 1024, height: 768, pageX: 40, pageY: 800 };
-
-function shippingProjection(source) {
-  const read = (pattern) => {
-    const match = pattern.exec(source);
-    if (!match) throw new Error(`Shipping PointerHalos lost ${pattern}`);
-    return match[1];
-  };
-  return {
-    inMs: Number(read(/--halo-in-duration: (\d+)ms/)),
-    outMs: Number(read(/--halo-out-duration: (\d+)ms/)),
-    inScale: Number(read(/@keyframes halo-in \{\s*from \{[^}]*scale: ([0-9.]+)/)),
-    outScale: Number(read(/@keyframes halo-out \{\s*to \{[^}]*scale: ([0-9.]+)/)),
-    ringLine: Number(read(/\.brush-ring \{[^}]*border: (\d+)px solid/)),
-    band: Number(read(/\.brush-ring\.magic \{[^}]*padding: (\d+)px/)),
-    rainbow: read(/conic-gradient\(([^)]*)\)/).split(/,\s*/),
-    ringColor: read(/\.brush-ring \{[^}]*border: \d+px solid rgb\(([^)]*)\)/),
-    ringGlow: read(/\.brush-ring \{[^}]*box-shadow: 0 0 0 \d+px rgb\(([^)]*)\)/),
-    ringGlowPx: Number(read(/\.brush-ring \{[^}]*box-shadow: 0 0 0 (\d+)px/)),
-    eraserLinePx: Number(read(/\.eraser-bubble \{[^}]*border: (\d+)px solid/)),
-    eraserColor: read(/\.eraser-bubble \{[^}]*border: \d+px solid rgb\(([^)]*)\)/),
-    eraserFill: read(/\.eraser-bubble \{[^}]*background-color: rgb\(([^)]*)\)/),
-    eraserGlow: read(/\.eraser-bubble \{[^}]*box-shadow: 0 0 0 \d+px rgb\(([^)]*)\)/),
-    eraserGlowPx: Number(read(/\.eraser-bubble \{[^}]*box-shadow: 0 0 0 (\d+)px/)),
-  };
-}
-function cssRgb(color, opacity) {
-  return `${color.match(/\d+/g).join(' ')} / ${Math.round(opacity * 100)}%`;
-}
-const candidate = {
-  inMs: HALO_IN_MS,
-  outMs: HALO_OUT_MS,
-  inScale: HALO_IN_FROM_SCALE,
-  outScale: HALO_OUT_TO_SCALE,
-  ringLine: RING_LINE_PX,
-  band: RAINBOW_BAND_PX,
-  rainbow: [...HALO_RAINBOW],
-  ringColor: cssRgb(HALO_LINE, RING_LINE_OPACITY),
-  ringGlow: cssRgb(HALO_GLOW, RING_GLOW_OPACITY),
-  ringGlowPx: HALO_GLOW_PX,
-  eraserLinePx: RING_LINE_PX,
-  eraserColor: cssRgb(HALO_LINE, ERASER_LINE_OPACITY),
-  eraserFill: cssRgb(HALO_GLOW, ERASER_FILL_OPACITY),
-  eraserGlow: cssRgb(HALO_GLOW, ERASER_GLOW_OPACITY),
-  eraserGlowPx: HALO_GLOW_PX,
-};
 
 function touch(identifier, x, y, timestamp = 100) {
   return {
@@ -155,17 +106,42 @@ const mouse = (identifier, x, y, timestamp) => ({
 
 describe('native Pointer Halos', () => {
   it('pins motion, ring and rainbow geometry to the shipping component', () => {
-    expect(shippingProjection(shipping)).toEqual(candidate);
+    const cssRgb = (color, opacity) =>
+      `${color.match(/\d+/g).join(' ')} / ${Math.round(opacity * 100)}%`;
+    expect({
+      inMs: HALO_IN_MS,
+      outMs: HALO_OUT_MS,
+      inScale: HALO_IN_FROM_SCALE,
+      outScale: HALO_OUT_TO_SCALE,
+      ringLine: RING_LINE_PX,
+      band: RAINBOW_BAND_PX,
+      rainbow: [...HALO_RAINBOW],
+      ringColor: cssRgb(HALO_LINE, RING_LINE_OPACITY),
+      ringGlow: cssRgb(HALO_GLOW, RING_GLOW_OPACITY),
+      ringGlowPx: HALO_GLOW_PX,
+      eraserLinePx: RING_LINE_PX,
+      eraserColor: cssRgb(HALO_LINE, ERASER_LINE_OPACITY),
+      eraserFill: cssRgb(HALO_GLOW, ERASER_FILL_OPACITY),
+      eraserGlow: cssRgb(HALO_GLOW, ERASER_GLOW_OPACITY),
+      eraserGlowPx: HALO_GLOW_PX,
+    }).toEqual({
+      inMs: 120,
+      outMs: 140,
+      inScale: 0.7,
+      outScale: 1.12,
+      ringLine: 2,
+      band: 3,
+      rainbow: ['#ff5e5e', '#ffa94d', '#ffe066', '#69db7c', '#4dabf7', '#b197fc', '#ff5e5e'],
+      ringColor: '80 80 80 / 35%',
+      ringGlow: '255 255 255 / 35%',
+      ringGlowPx: 1,
+      eraserLinePx: 2,
+      eraserColor: '80 80 80 / 70%',
+      eraserFill: '255 255 255 / 35%',
+      eraserGlow: '255 255 255 / 60%',
+      eraserGlowPx: 1,
+    });
     expect(`cubic-bezier(${EASE_GLIDE.join(', ')})`).toBe(scale.easeGlide);
-  });
-  it.each([
-    ['--halo-out-duration: 140ms', '--halo-out-duration: 300ms'],
-    ['rgb(80 80 80 / 70%)', 'rgb(80 80 80 / 50%)'],
-    ['box-shadow: 0 0 0 1px rgb(255 255 255 / 35%)', 'box-shadow: 0 0 0 1px rgb(0 0 0 / 35%)'],
-  ])('rejects a changed shipping halo: %s', (from, to) => {
-    const changed = shipping.replace(from, to);
-    expect(changed).not.toBe(shipping);
-    expect(shippingProjection(changed)).not.toEqual(candidate);
   });
 
   it('follows one contact with a ring the size of its stroke, then drops it on lift', () => {

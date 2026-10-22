@@ -4,7 +4,7 @@ import { useDialogSeeThrough } from './dialogScope';
 import { colors, dimensions } from './tokens.css';
 
 // SettingsModal.svelte's `.resizing .button-size-setting`: a tight, even lift that hugs the card.
-export const SEE_THROUGH_CARD_SHADOW = '0 2px 12px rgba(0, 0, 0, 0.16)';
+const SEE_THROUGH_CARD_SHADOW = '0 2px 12px rgba(0, 0, 0, 0.16)';
 
 const styles = css.create({
   // The groups of one section body stand apart by SettingsModal's `.setting-group` margin.

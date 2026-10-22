@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest';
 const clipboard = vi.hoisted(() => ({ setString: vi.fn() }));
 vi.mock('react-native', () => ({ Clipboard: clipboard }));
 import { copyPrivacySection } from '../../experiments/native-architecture/src/platform/privacySectionLink.ts';
-import { sectionUrl } from '../../web/src/routes/privacy/sectionLink.ts';
+import { sectionUrl } from '../../web/src/lib/privacy/sectionLink.ts';
 
 it('writes the canonical section link through the installed native clipboard owner', async () => {
   clipboard.setString.mockReset();

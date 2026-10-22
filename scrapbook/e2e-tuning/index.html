@@ -1076,7 +1076,10 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
     </p>
     <div class="codebox">
       <button class="copy" type="button" data-copy="retune-cmd">Copy</button>
-      <pre><code id="retune-cmd"># 1. Build once. The sweep driver builds nothing, so this is the only build, and
+      <pre><code id="retune-cmd"># Historical procedure from the retired SvelteKit worker study.
+# The build, sweep runner and workflow below are retired; this is archival evidence.
+
+# 1. Build once. The sweep driver builds nothing, so this is the only build, and
 #    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
 #    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \

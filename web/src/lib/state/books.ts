@@ -3,7 +3,7 @@
 // pack membership follow ADR-0043, ADR-0045, ADR-0103, and ADR-0129. `bookAssetPaths()` is the
 // distribution authority used by validation, pack manifests, and native asset stripping.
 
-import type { Orientation } from '../platform';
+import type { Orientation } from '../breakpoints';
 import type { ResolvedTheme } from '../theme';
 import { RESPONSIVE_COLORING_TIERS } from '../coloringPacks/imageTiers.ts';
 import { resolveColoringAssetUrl } from '../coloringPacks/assetResolver.ts';
@@ -25,11 +25,6 @@ export interface ColoringDerivativeAsset {
   maxEdgePx: number;
   widthPx: number;
   encoding: 'fill' | 'thumbnail' | 'selector';
-}
-
-interface ColoringBookGridLayout {
-  hasOrphan: boolean;
-  imageSizes: string;
 }
 
 export interface ColoringPage {
@@ -56,62 +51,11 @@ export interface Book {
 }
 
 const COLORING_ROOT = '/coloring';
-export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [
-  ...new Set(
-    Object.values(RESPONSIVE_COLORING_TIERS).map((tier) => `${COLORING_ROOT}/${tier.directory}`)
-  ),
-];
-const BOOK_GRID_DEFAULT_COLUMNS = 4;
 const PAGE_SELECTOR_MAX_EDGE_PX = 400;
 const PAGE_SELECTOR_WIDTHS: Record<BookOrientation, number> = {
   portrait: 267,
   landscape: 400,
 };
-/**
- * A tall viewport drops the cover grid to two columns and caps its width by the
- * dialog's height, so the width-only clauses below all under-report the tile
- * there. The condition has to be the one ColoringBook.svelte's media query
- * takes that layout under, or the browser reads a tile size for a layout the
- * page isn't wearing; books.test.ts holds the two sides together, since a media
- * query can't read this constant.
- */
-const TALL_COVER_GRID_MEDIA = '(max-aspect-ratio: 4 / 5) and (min-width: 741px)';
-/**
- * Deliberately over-estimates rather than restating the grid's height
- * arithmetic: `sizes` is a hint, and the source covers are 400px with 240w/400w
- * candidates, so rounding up only ever picks the candidate a retina tablet would
- * pick anyway — while rounding down would ship a soft cover.
- */
-const TALL_COVER_SIZE = `${TALL_COVER_GRID_MEDIA} 25vh`;
-// Every clause starts from the dialog's width, 100vw less --modal-gutter-min
-// (app.css) on each side; a `sizes` attribute cannot read the custom property,
-// so the 32px lives inside each subtracted chrome term, and the dialog's 920px
-// cap is reached at 952px, where the clauses hand over to the fixed slot.
-// books.test.ts binds every term to the stylesheet. On a landscape notched
-// phone the gutter grows past the floor and the hint over-estimates the slot,
-// which only ever rounds up to the candidate a sharper screen would pick.
-export const COLORING_IMAGE_SIZES = {
-  coverThumbnail: {
-    standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((100vw - 80px) / 2), (max-width: 740px) calc((100vw - 120px) / 3), (max-width: 952px) calc((100vw - 132px) / 4), 205px`,
-    orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc((100vw - 80px) / 2), (max-width: 952px) calc((100vw - 120px) / 3), 277px`,
-  },
-  // The wide clauses reserve 16px for the vertical scrollbar inside the
-  // overflow-y dialog; books.test.ts binds that reserve and every other term
-  // to the component's columns, gaps, padding, breakpoint, and width cap.
-  pageSelector: {
-    portrait: '(max-width: 520px) calc((100vw - 72px) / 2), min(calc((100vw - 136px) / 3), 272px)',
-    landscape: '(max-width: 520px) calc((100vw - 72px) / 2), min(calc((100vw - 124px) / 2), 414px)',
-  },
-  activePageChip: '36px',
-} as const;
-
-export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGridLayout {
-  const hasOrphan = visibleTileCount > 1 && visibleTileCount % BOOK_GRID_DEFAULT_COLUMNS === 1;
-  const imageSizes = hasOrphan
-    ? COLORING_IMAGE_SIZES.coverThumbnail.orphan
-    : COLORING_IMAGE_SIZES.coverThumbnail.standard;
-  return { hasOrphan, imageSizes };
-}
 
 const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
   portrait: 'tall',
@@ -229,8 +173,6 @@ function book(
 }
 
 export const BOOKS: Book[] = createBookCatalog(book);
-
-export const STARTER_COLORING_BOOK_ID = 'farm';
 
 /** Books allowed on the given platform ('web' | 'mobile'). */
 export function booksForPlatform(platform: BookPlatform): Book[] {

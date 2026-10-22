@@ -74,18 +74,6 @@ describe('the localStorage seam ban covers every spelling', () => {
     ).toHaveLength(1);
   });
 
-  it('rejects it in a rune module, where the Svelte block replaced the entry', async () => {
-    expect(
-      await storageViolations('web/src/lib/probe.svelte.ts', "localStorage.getItem('k');")
-    ).toHaveLength(1);
-  });
-
-  it('allows the seam itself', async () => {
-    expect(
-      await storageViolations('web/src/lib/storage.ts', "localStorage.getItem('k');")
-    ).toHaveLength(0);
-  });
-
   it('allows a unit test, where reaching the real store is the point', async () => {
     expect(
       await storageViolations('web/src/lib/probe.test.ts', "localStorage.getItem('k');")
@@ -138,15 +126,6 @@ describe('the media-query literal ban closes the typo class', () => {
     ).toHaveLength(1);
   });
 
-  it('rejects it in a rune module, where the Svelte block replaced the entry', async () => {
-    expect(
-      await queryViolations(
-        'web/src/lib/probe.svelte.ts',
-        "matchMedia('(prefers-reduced-motion: reduce)');"
-      )
-    ).toHaveLength(1);
-  });
-
   it('allows a genuinely imported constant', async () => {
     const source = [
       "import { REDUCED_MOTION_QUERY } from '$lib/platform/reducedMotion';",
@@ -154,19 +133,6 @@ describe('the media-query literal ban closes the typo class', () => {
     ].join('\n');
 
     expect(await queryViolations('web/src/lib/probe.ts', source)).toHaveLength(0);
-  });
-
-  // The pre-existing call sites carry per-line disables rather than a whole-file exemption, so a
-  // NEW literal in the same file is still rejected. A file-scoped allowlist made the rule's own
-  // promise — that a new call site must import a constant — false.
-  it.each([
-    'web/src/lib/platform/index.ts',
-    'web/src/lib/state/appearance.svelte.ts',
-    'web/src/lib/state/layout.svelte.ts',
-  ])('rejects a new literal in %s, which once held a file-wide exemption', async (fixture) => {
-    expect(
-      await queryViolations(fixture, "window.matchMedia('(prefers-reduced-motion: reduce)');")
-    ).toHaveLength(1);
   });
 
   // Recorded so the rule's reach is written down rather than assumed. A selector cannot resolve a

@@ -9,12 +9,9 @@ import { RsdPressable } from './RsdPressable';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
 
 // ActivePageChip.svelte's literals; rsd-native-coloring-picker.test.mjs reads them from shipping.
-export const ACTIVE_PAGE_THUMBNAIL_PX = 34;
-export const ACTIVE_PAGE_CLEAR_PX = 28;
-export const ACTIVE_PAGE_CLEAR_PADDING_PX = 4;
-// Shipping caps the name at 12ch; React Native has no ch unit, so this is twelve Quicksand
-// digits at --font-size-sm.
-export const ACTIVE_PAGE_NAME_MAX_CH = 12;
+const ACTIVE_PAGE_THUMBNAIL_PX = 34;
+const ACTIVE_PAGE_CLEAR_PX = 28;
+const ACTIVE_PAGE_CLEAR_PADDING_PX = 4;
 const ACTIVE_PAGE_NAME_MAX_WIDTH_PX = 92;
 // At and under this window width the chip drops the page name and keeps the thumbnail and clear.
 export const ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX = 360;

@@ -12,8 +12,6 @@ import {
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { html } from 'react-strict-dom';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -22,8 +20,8 @@ import {
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
 import {
-  RsdMoreColorsSwatch,
   RsdPaintAction,
+  RsdMoreColorsSwatch,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
@@ -31,23 +29,13 @@ import { NativeSoundSettingsDialog } from '../../../experiments/native-architect
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-
 it.each(['light', 'dark'])(
-  'uses shipping paint names at the native boundary in %s',
+  'names paint buttons at the native boundary in %s mode',
   async (theme) => {
-    const shipping = (file) =>
-      readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', file), 'utf8');
-    const white = shipping('ColorPalette.svelte').match(
-      /label=\{shown === hex \? label : '([^']+)'\}/
-    )[1];
-    const custom = shipping('ColorSwatch.svelte').match(
-      /aria-label=\{flat \? flat.label : '([^']+)'\}/
-    )[1];
-    expect(shipping('ColorSwatch.svelte')).not.toMatch(/role=|aria-checked=|aria-pressed=/);
     const expected = PALETTE_COLORS.map(({ label }) =>
-      theme === 'dark' && label === 'Black' ? white : label
+      theme === 'dark' && label === 'Black' ? 'White' : label
     );
-    expected.push(custom);
+    expected.push('Custom Color');
     await mount(
       createElement(
         DrawingAppearanceProvider,
@@ -78,7 +66,7 @@ it.each(['light', 'dark'])(
       [...host.querySelectorAll('button')].map((node) => node.getAttribute('aria-label'))
     ).toEqual(expected);
     for (const label of expected) {
-      const props = records.props.findLast((props) => props.accessibilityLabel === label);
+      const props = records.props.findLast((entry) => entry.accessibilityLabel === label);
       expect(props.role, label).toBe('button');
       expect(props.accessibilityState?.checked, label).toBeUndefined();
       expect(props.accessibilityState?.selected, label).toBeUndefined();
@@ -86,14 +74,6 @@ it.each(['light', 'dark'])(
   }
 );
 it.each(['tile', 'flyout'])('maps a %s pressed button into native selected state', async (skin) => {
-  for (const file of ['BrushControl', 'BrushMenu', 'StrokeWidthMenu']) {
-    const shipping = readFileSync(
-      join(import.meta.dirname, `../../../web/src/lib/components/${file}.svelte`),
-      'utf8'
-    );
-    expect(shipping).toContain('aria-pressed=');
-    expect(shipping).not.toContain('role="radio"');
-  }
   for (const selected of [true, false]) {
     const props = {
       skin,

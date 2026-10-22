@@ -12,7 +12,7 @@ type Screen = ReturnType<typeof useDrawingScreen>;
 // A live region is silent when its words do not change, and a Try again that fails again leaves
 // them exactly as they were, so the region is emptied and rewritten this long later
 // (SaveFailureBanner.svelte's REANNOUNCE_GAP_MS; rsd-native-save-flight.test.mjs reads it back).
-export const FAILURE_REANNOUNCE_GAP_MS = 150;
+const FAILURE_REANNOUNCE_GAP_MS = 150;
 
 // Shipping's generic failure heading; a refused save brings its own.
 const FAILURE_HEADING = 'Something went wrong';

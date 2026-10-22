@@ -13,25 +13,22 @@
 > package and note you intend to change; never manufacture a missing provider by copying another
 > one.
 
-Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
+Splotch is a drawing app for toddlers (2+). One Expo / React Native / React Strict DOM app ships
+Android, iOS and a prerendered web export (ADR-0182).
 
-* **Web** (`splotch.art`, Netlify): SSR + `/api/*` serverless functions + `/admin` console + PWA.
-* **Native** (Android + iOS): the React Native app in `experiments/native-architecture`, with no
-  server routes — the apps call the hosted API.
+* **Web** (`splotch.art`, Netlify): the static export, `/admin`, the PWA, and one Netlify Function
+  serving `/api/*`.
+* **Native** (Android + iOS): the React Native projects in `experiments/native-architecture`. Native
+  apps call the hosted API. Every non-store build uses `art.splotch.app.dev`.
 
-The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, build output); the
-shipping root `package.json`/`node_modules` and `tools/` stay at the repo root. This keeps
-netlify-cli's file watcher (run via `netlify dev --cwd web`) off the large native trees — see
-ADR-0024. The web toolchain runs with `cwd = web/` through `tools/run-web-tool.mjs`.
+The app lives in `experiments/native-architecture`; framework-free shared modules remain under
+`web/src/lib` until the root promotion in epic #3148. The root package and app share one pnpm lock
+and hoisted dependency tree. Dependency changes require SDK alignment and native script provenance
+review before installation (ADR-0119).
 
-The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
-(`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be
-build-time branches instead.
-
-The migration architecture check has one private development-only package at
-`experiments/native-architecture`, sharing the root pnpm lock and hoisted linker. It does not change
-shipping web/Capacitor ownership; dependency changes require SDK alignment and native script
-provenance review before installation (ADR-0119).
+Metro resolves platform modules by file extension (`.web.ts`, `.native.ts`, and platform-specific
+variants). Use that build-time boundary instead of adding runtime branches for code that only one
+platform needs (ADR-0179).
 
 <!-- Source: .ruler/agent-files.md -->
 
@@ -108,27 +105,25 @@ which would file design history inside the very skill it is kept out of. See
 | Command                             | Purpose                                                                               |
 | ----------------------------------- | ------------------------------------------------------------------------------------- |
 | `npm run info`                      | List **every** npm script with its description — run this before guessing at a script |
-| `npm run dev`                       | Dev server at `localhost:5173` (no `/api` functions)                                  |
-| `npm run dev:netlify`               | Dev server **with** the `/api/*` serverless functions                                 |
-| `npm run check`                     | svelte-check / type checking                                                          |
+| `npm run build:site`                | Build the React Native web export and enforce its browserless gates                   |
+| `npm run check`                     | Type-check shared code, Netlify Functions, the RN app and E2E                         |
 | `npm test`                          | Run the CI test tiers declared by the `package.json` test entry                       |
 | `npm run check:quality`             | Mirror CI's Quality job locally, reporting every failed step                          |
 | `npm run show:pr-state -- <n>`      | Read current PR head, registered checks, merge state, and review threads              |
 | `npm run show:epic-children -- <n>` | Read every nested GitHub sub-issue with reconciled parent counts                      |
 | `npm run show:free-port`            | Find an unused local TCP port without stopping another session's listener             |
 | `npm run test:browserless`          | Mirror CI's Browserless tests job (Vitest tiers + API smoke, no Playwright)           |
-| `npm run build`                     | Web build                                                                             |
 
 Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:variant` names
 (`dev:*`, `test:e2e:*`, `gen:*`, `android:*`, …), and every new or renamed script gets a matching
 one-line entry in the `scripts-info` block of `package.json`.
 
-Judge checks by their exit codes, not a grep over output; `svelte-check --fail-on-warnings` can
-print uppercase `WARNING` lines. Format edited files before linting, then run `npm run check` and
-`npm run lint` for each reviewable code commit. Before pushing, run the applicable full test tier:
-some guard tests inspect files outside the directory you edited. A normally fast command that
-exceeds its timeout needs immediate process and output inspection. For work with an active-time
-budget, read the clock at decision points instead of estimating elapsed time from effort.
+Judge checks by their exit codes, not a grep over output. Format edited files before linting, then
+run `npm run check` and `npm run lint` for each reviewable code commit. Before pushing, run the
+applicable full test tier: some guard tests inspect files outside the directory you edited. A
+normally fast command that exceeds its timeout needs immediate process and output inspection. For
+work with an active-time budget, read the clock at decision points instead of estimating elapsed
+time from effort.
 
 ## Concurrent worktrees
 
@@ -139,9 +134,9 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   Run targeted Playwright checks as
   `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`. The Node smokes
   (`test:api:smoke`, `test:browserless`) read `SMOKE_PORT` instead.
-* Treat `EADDRINUSE` as a request to select another port and retry. Never run `npm run dev:stop` or
-  `kill-port`, and never terminate a listener merely because it occupies a desired port. Stop only a
-  PID, process group, or tool handle created and recorded by the current session.
+* Treat `EADDRINUSE` as a request to select another port and retry. Never run `kill-port`, and never
+  terminate a listener merely because it occupies a desired port. Stop only a PID, process group, or
+  tool handle created and recorded by the current session.
 * Full `npm test`/Playwright E2E suites, fixed-port Netlify workflows, performance runs, tunnels,
   and native-device runs are host-exclusive. ADR-0078 establishes that one Playwright suite already
   sizes itself to available CPU capacity; concurrent full suites invalidate that capacity model.
@@ -161,23 +156,20 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   extract each step into a named helper — write it that way the first time.
 * **Tuning literals get names.** A numeric literal that encodes a tunable decision — threshold,
   duration, dimension, curve shaping, byte offset, retry count — gets a named constant at module
-  scope, or in a Svelte component at the top of its `<script>` (instance or `<script module>`), with
-  the unit in the name (`_MS`, `_PX`, `SNAP_BAND_FRACTION`); the WHY comment lives on the constant.
-  Plain geometry arithmetic stays inline. (ESLint's `no-magic-numbers` was evaluated and rejected:
-  ~750 hits in this canvas-heavy codebase.)
+  scope, with the unit in the name (`_MS`, `_PX`, `SNAP_BAND_FRACTION`); the WHY comment lives on
+  the constant. Plain geometry arithmetic stays inline. (ESLint's `no-magic-numbers` was evaluated
+  and rejected: ~750 hits in this canvas-heavy codebase.)
 * **Cross-file agreement is never maintained by prose.** A value that must agree with another module
-  is imported from one exported constant; when the agreeing sites can't share code (the `app.html`
-  boot script, YAML, native config, generated output), add a drift-guard test that reads both sides
-  and fails on divergence — the pattern of `web/src/app.html.test.ts`,
-  `tools/mobile/android/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep
-  in sync with X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage
-  keys, query params, event names, special-case ids): declared once, imported everywhere (tests
+  is imported from one exported constant; when the agreeing sites can't share code (prerendered boot
+  markup, YAML, native config, generated output), add a drift-guard test that reads both sides and
+  fails on divergence — the pattern of `tools/release/tests/native-app.test.mjs`. A "keep in sync
+  with X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage keys,
+  query params, event names, special-case ids): declared once, imported everywhere (tests
   deliberately excepted). A **bundle boundary** is one of the places that can't share code: a static
-  import into a startup-path module hands Rollup an edge that re-partitions chunks no matter how
-  small the imported module, so there the duplication is deliberate and the sharing itself is the
-  defect (`web/src/lib/state/saveFolder.svelte.ts` vs `folderSave.ts`, drift-guarded by
-  `saveFolder.svelte.test.ts` and pinned by `tools/migration/check-native-web-startup.mjs`). Such a
-  site keeps its inline copy, adds the drift-guard test, and carries a comment stating the
+  import into a startup-path module hands the bundler an edge that re-partitions chunks no matter
+  how small the imported module, so there the duplication is deliberate and the sharing itself is
+  the defect. The byte caps in `tools/migration/check-native-web-startup.mjs` enforce that budget.
+  Such a site keeps its inline copy, adds the drift-guard test, and carries a comment stating the
   constraint and naming the enforcing spec — that comment is load-bearing evidence of intent, not
   the "keep in sync" defect above, and refactoring the duplication away past it breaks the boundary
   it protects.
@@ -187,25 +179,22 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   the measured rejected candidates — don't re-litigate them without new evidence). The empirically
   ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
   uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
-  `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), browser-only globals are
-  banned at the top level of Svelte components, module scripts, and `.svelte.ts` modules
-  (`svelte/no-top-level-browser-globals`; Node-shared globals such as `navigator` still require an
-  explicit `browser` guard), and "should" is banned from test titles. CSS gets its own linter:
-  `npm run lint:css` runs stylelint over every `<style>` block and hand-authored `.css` file in the
-  repo, and its rules were chosen the same measured way — the ones that catch CSS the parser keeps
-  and the browser silently never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
+  `prefer-const` enforces immutable bindings, and "should" is banned from test titles. CSS gets its
+  own linter: `npm run lint:css` runs stylelint over hand-authored `.css` files in the repo, and its
+  rules were chosen the same measured way — the ones that catch CSS the parser keeps and the browser
+  silently never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
   `selector-pseudo-class-no-unknown`) plus the notation conventions, colour included
-  (`rgb(0 0 0 / 60%)`, never `rgba(`). `!important` fails `npm run lint:tokens`; test placement
-  (`.test.ts` colocated under `web/src`, `.spec.ts` in `web/tests`) is drift-guarded by
-  `tools/tests/test-file-placement.test.mjs`. Prose-only by choice: PascalCase component files,
-  camelCase lib modules, and dot-joined multi-aspect test names (`platform.osLabel.test.ts`).
+  (`rgb(0 0 0 / 60%)`, never `rgba(`). Test placement (`.test.ts` colocated under `web/src`,
+  `.spec.ts` in `e2e/specs`) is drift-guarded by `tools/tests/test-file-placement.test.mjs`.
+  Prose-only by choice: PascalCase component files, camelCase lib modules, and dot-joined
+  multi-aspect test names (`platform.osLabel.test.ts`).
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
   `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or
   `satisfies`), not `Record<string, V>`.
 * **`as` is a boundary tool.** Cast only where typed code meets untyped input (storage, wire,
-  non-standard browser APIs) after runtime validation, or augment globals in `app.d.ts` (the
-  `WindowEventMap` pattern). Never cast to silence a generated union — fix the type at its source.
+  non-standard browser APIs) after runtime validation, or augment globals in an appropriate `.d.ts`
+  module. Never cast to silence a generated union — fix the type at its source.
 * **No speculative surface.** A new prop, option, or optional parameter needs a production caller
   that exercises it; a seam kept only for tests gets a comment saying so at the declaration.
 * **Coding standards.** Each rule below has its incident and enforcement in
@@ -222,9 +211,9 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   * **One contract per wire boundary**, with a test that reads both sides and test stubs typed from
     the real function.
   * **Every lint fence has a positive control**: a test that fails if the rule stops firing.
-  * **The startup path is a budget.** The release builds pin the `/` modulepreload count exactly; a
-    runtime import from a startup module into a module that lazy code also imports is the usual way
-    to add a startup chunk. No principle outranks measured startup or hot-path cost.
+  * **The startup path is a budget.** Release export checks bound first-paint, core-control and
+    per-document bytes. A runtime import from a startup module into a module lazy code also imports
+    can add a startup chunk. No principle outranks measured startup or hot-path cost.
   * **Tests prove they can fail.** Note each guard's negative control in the PR. A test builds its
     own fixture, drives real stores, pins copy as rendered, and names its timeouts.
   * **Exceptions are declared in one list and ratchet down** (grandfathered caps, allowlists, ADR
@@ -232,9 +221,7 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
     reason in the diff.
 * Module-scope mutable `let` is either a pure memoization cache or lives behind a `createX()`
   factory so tests get fresh instances — never a shipped `*ForTests` reset export. A memoized
-  promise resets itself on rejection (see `web/src/lib/idb.ts`) unless permanent failure is
-  intended.
-* **Svelte 5 runes only.** No legacy stores (`writable`, `readable`, `derived` from `svelte/store`).
+  promise resets itself on rejection unless permanent failure is intended.
 * All npm scripts must run on macOS and Linux (ADR-0017; Windows dev support was dropped in
   ADR-0062): env vars are set inline (`VAR=value cmd`, no `cross-env`), and platform-specific tools
   (the Gradle wrapper, the file-manager opener) are invoked via Node helpers in `tools/` rather than
@@ -250,7 +237,7 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   `corepack enable pnpm` — re-run that after every `nvm install`, since the shim is written into the
   active Node's `bin/`.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
-  Netlify web build needs (runtime imports such as `sharp` and `openai` + vite/SvelteKit/adapter);
+  Netlify web build needs (runtime imports such as `sharp` and `openai`, Expo and the web bundler);
   `devDependencies` = local/CI-only tooling (Playwright, dprint, …). Netlify installs with `--prod`,
   so a build-needed package filed under `devDependencies` breaks the deploy. CI installs everything,
   so only `npm run lint:deps:prod` (knip over `knip.production.json`) catches it; a new `tools/`
@@ -429,9 +416,9 @@ agent reads the part that applies instead of the whole file. Reach past the rout
 that must not be missed — invariants, footguns, the thing that makes a wrong reading expensive.
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
-agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
-`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
-`tools/`, `tools/asset-gen/`, `tools/store-drawings/`, and `docs/handoff/` cover those areas.
+agents: read the matching rule before editing those paths): `server-api.md` and `testing.md`. Nested
+`CLAUDE.md`/`AGENTS.md` files in `tools/`, `tools/asset-gen/`, `tools/store-drawings/`, and
+`docs/handoff/` cover those areas.
 
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable

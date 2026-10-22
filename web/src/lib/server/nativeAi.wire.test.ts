@@ -222,3 +222,28 @@ it('verifies fixture credentials through actual setup handlers and preserves una
   expect(fixture.code).toHaveBeenCalledWith('fixture-code');
   expect(fixture.provider).not.toHaveBeenCalled();
 });
+
+it('preserves an unreadable allowlist as an unavailable native credential check', async () => {
+  fixture.code.mockResolvedValue({ verdict: 'unavailable', spendsGuess: false });
+
+  expect(
+    await requestAi(
+      aiTransport,
+      {
+        path: '/api/verify-access-code',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"code":"fixture-code"}',
+      },
+      () => {}
+    )
+  ).toEqual({
+    kind: 'failure',
+    reason: 'unavailable',
+    message: "We couldn't check that key just now. Please try again.",
+    status: 503,
+    detail: "We couldn't check that key just now. Please try again.",
+  });
+  expect(fixture.code).toHaveBeenCalledWith('fixture-code');
+  expect(fixture.provider).not.toHaveBeenCalled();
+});

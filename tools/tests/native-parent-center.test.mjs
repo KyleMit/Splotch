@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createParentGate,
@@ -415,20 +414,6 @@ describe('root Parent Center policy and lifetime', () => {
 // does not satisfy a later switch to per-session mode" and "changing a policy re-arms a
 // previously solved per-session gate".
 describe('Per session solves follow the shipping session rule', () => {
-  const shippingGate = readFileSync(
-    new URL('../../web/src/lib/state/parentalGate.svelte.ts', import.meta.url),
-    'utf8'
-  );
-
-  it('reads the rule this suite ports from the shipping gate', () => {
-    expect(shippingGate).toContain(
-      "if (feature && policies[feature] === 'session') sessionSolved[feature] = true;"
-    );
-    expect(shippingGate).toContain(
-      'if (policies[feature] !== mode) sessionSolved[feature] = false;'
-    );
-  });
-
   it('asks again after an Every time solve is followed by a switch to Per session', async () => {
     const f = productFixture();
     await f.owner.settings.load();

@@ -1,11 +1,9 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement as h, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { html } from 'react-strict-dom';
-import { brand, themes, toCssVarName } from '../../../web/src/lib/design/tokens.ts';
+import { brand, themes } from '../../../web/src/lib/design/tokens.ts';
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import {
@@ -17,12 +15,6 @@ import {
   RsdSliderRow,
   SLIDER_METRICS,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
-
-const shipping = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src', path), 'utf8');
-const SHIPPING_SLIDER = shipping('lib/components/Slider.svelte');
-const SHIPPING_ROW = shipping('lib/components/settings/SliderRow.svelte');
-const SHIPPING_APP_CSS = shipping('app.css');
 const TRACK_WIDTH_PX = 400;
 const MIN = 40;
 const MAX = 100;
@@ -272,71 +264,5 @@ describe('painting', () => {
       expect(style(thumb).borderColor, theme).toBe(themes[theme].borderWarm);
       expect(style(notch).backgroundColor, theme).toBe(rgba(paint('notch', theme)));
     }
-  });
-});
-
-describe('drift from the shipping slider', () => {
-  const declaration = (source, selector, property) => {
-    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const block = source.match(new RegExp(`^\\s*${escaped}\\s*\\{([^}]*)\\}`, 'm'));
-    expect(block, selector).not.toBeNull();
-    const match = block[1].match(new RegExp(`(?:^|;|\\s)${property}:\\s*([^;]+);`));
-    expect(match, `${selector} ${property}`).not.toBeNull();
-    return match[1].trim();
-  };
-  const constant = (source, name) => {
-    const match = source.match(new RegExp(`const ${name} = ([\\d.]+);`));
-    expect(match, name).not.toBeNull();
-    return Number(match[1]);
-  };
-  const px = (value) => Number.parseFloat(value);
-  const NAMED_COLORS = { white: '#fff' };
-
-  it('assigns each painted part the colour token the shipping selector assigns it', () => {
-    for (const [part, { selector, property, token }] of Object.entries(PAINT))
-      expect(declaration(SHIPPING_SLIDER, selector, property), part).toBe(
-        `var(${toCssVarName(token)})`
-      );
-  });
-
-  it('holds every literal the port carries to the Svelte sources', () => {
-    expect(constant(SHIPPING_SLIDER, 'SNAP_BAND_FRACTION')).toBe(SNAP_BAND_FRACTION);
-    expect(constant(SHIPPING_SLIDER, 'KEY_STEP')).toBe(KEY_STEP);
-    expect(constant(SHIPPING_SLIDER, 'PAGE_STEP')).toBe(PAGE_STEP);
-    expect(px(declaration(SHIPPING_SLIDER, '.slider', '--slider-thumb-size'))).toBe(
-      SLIDER_METRICS.THUMB_PX
-    );
-    expect(px(declaration(SHIPPING_SLIDER, '.slider-track', 'height'))).toBe(
-      SLIDER_METRICS.TRACK_PX
-    );
-    expect(rgba(declaration(SHIPPING_SLIDER, '.slider-track', 'box-shadow'))).toBe(
-      SLIDER_METRICS.TRACK_SHADOW
-    );
-    expect(NAMED_COLORS[declaration(SHIPPING_SLIDER, '.slider-thumb', 'background')]).toBe(
-      SLIDER_METRICS.THUMB_FILL
-    );
-    expect(declaration(SHIPPING_SLIDER, '.slider-thumb', 'border')).toBe(
-      `${SLIDER_METRICS.THUMB_RING_PX}px solid var(--border-warm)`
-    );
-    expect(rgba(declaration(SHIPPING_SLIDER, '.slider-thumb', 'box-shadow'))).toBe(
-      SLIDER_METRICS.THUMB_SHADOW
-    );
-    expect(px(declaration(SHIPPING_SLIDER, '.slider-notch', 'top'))).toBe(
-      SLIDER_METRICS.NOTCH_INSET_PX
-    );
-    expect(px(declaration(SHIPPING_SLIDER, '.slider-notch', 'bottom'))).toBe(
-      SLIDER_METRICS.NOTCH_INSET_PX
-    );
-    expect(px(declaration(SHIPPING_SLIDER, '.slider-notch', 'width'))).toBe(
-      SLIDER_METRICS.NOTCH_WIDTH_PX
-    );
-    expect(px(declaration(SHIPPING_SLIDER, '.slider-notch', 'border-radius'))).toBe(
-      SLIDER_METRICS.NOTCH_RADIUS_PX
-    );
-    expect(Number(declaration(SHIPPING_ROW, '.slider-help', 'line-height'))).toBe(
-      SLIDER_METRICS.HELP_LINE_HEIGHT
-    );
-    expect(SHIPPING_APP_CSS).toContain(`--setting-icon-size: ${SLIDER_METRICS.SETTING_ICON_PX}px;`);
-    expect(SHIPPING_ROW).toContain('const valueText = $derived(`${value}%`);');
   });
 });

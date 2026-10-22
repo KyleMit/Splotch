@@ -64,7 +64,7 @@ export const STROKE_SPEED_WINDOW_MS = 100;
 // a real home-indicator zone. The first two are scaled by renderScale at the
 // point of use, so they stay constant in CSS px across backing-store densities;
 // the inset arrives already in CSS px. See engine.ts for the full story.
-export const EDGE_SWIPE_BAND_PX = 24;
+const EDGE_SWIPE_BAND_PX = 24;
 const EDGE_SWIPE_DECISION_PX = 12;
 const GESTURE_INSET_MIN_PX = 16;
 

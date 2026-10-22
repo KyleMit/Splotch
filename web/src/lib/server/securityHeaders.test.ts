@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 import { API_RESPONSE_HEADERS, SECURITY_HEADERS, securityHeadersFor } from './securityHeaders';
 
@@ -13,7 +13,7 @@ import { API_RESPONSE_HEADERS, SECURITY_HEADERS, securityHeadersFor } from './se
 
 // The unit runner (`node tools/run-web-tool.mjs vitest run`) runs with cwd = web/, so
 // the deploy config is one level up at the repo root.
-const netlifyToml = readFileSync(resolve(process.cwd(), '..', 'netlify.toml'), 'utf8');
+const netlifyToml = readFileSync(new URL('../../../../netlify.toml', import.meta.url), 'utf8');
 
 // Line continuations in the TOML multi-line CSP string (a trailing `\` swallows
 // the newline + next line's indentation) collapse to single spaces, so the

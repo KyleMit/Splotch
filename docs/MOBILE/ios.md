@@ -2,17 +2,16 @@
 
 # Splotch — iOS: Setup, Build, Test & Release
 
-iOS-specific toolchain (macOS + Xcode only), build/run commands, Safari Web Inspector, and the App
-Store release checklist. For the general build model and shared assets see
-**[native.md](native.md)**; Android lives in **[android.md](android.md)**.
+iOS-specific toolchain (macOS + Xcode only), build/run commands, native debugging, and the App Store
+release checklist. For the general build model and shared assets see **[native.md](native.md)**;
+Android lives in **[android.md](android.md)**.
 
 > iOS can only be built on macOS — Xcode and the simulators are macOS-only. The React Native iOS
 > project resolves its native modules through CocoaPods (ADR-0182 amends ADR-0020). Minimum
 > supported OS: **iOS 16.4** (`IPHONEOS_DEPLOYMENT_TARGET` in
-> `experiments/native-architecture/ios/Splotch.xcodeproj`), aligned with the web bundle's floor —
-> see [docs/COMPATIBILITY.md](../COMPATIBILITY.md). It MUST stay ≥ the web floor's iOS/Safari
-> version (the web `build.target`, declared in `web/browserTargets.ts`) — lowering it below the web
-> floor would let pre-floor WebViews install a bundle they can't run.
+> `experiments/native-architecture/ios/Splotch.xcodeproj`). The RN native OS floor is independent of
+> the web export's Safari floor; this app does not load that export in a WebView. See
+> [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
 
 ## 1. Toolchain setup (macOS-only)
 
@@ -44,9 +43,9 @@ Store release checklist. For the general build model and shared assets see
    git), so it never needs editing in the pbxproj. A free account can run on your own device;
    distributing needs the paid program.
 
-5. **Debug with Safari Web Inspector** (the iOS equivalent of `chrome://inspect`): Safari → Settings
-   → Advanced → "Show features for web developers", then **Develop → \<device/simulator\> →
-   Splotch**.
+5. **Debug the native app** with the Xcode console and the app's
+   `experiments/native-architecture/DEVELOPMENT.md`. Safari Web Inspector is for a Safari tab
+   running the web export; RN has no web layer to inspect.
 
 ## 1a. On-device debugging (physical iPhone/iPad)
 
@@ -57,8 +56,8 @@ device:
    Computer?" prompt (enter the device passcode).
 2. **Developer Mode** (iOS/iPadOS 16+): Settings → Privacy & Security → **Developer Mode** → on,
    then restart. The toggle only appears after Xcode has connected to the device once.
-3. **Web Inspector on the device** (required for §1.5 to see it): Settings → Apps → Safari →
-   Advanced → **Web Inspector** → on.
+3. **Browser-only inspection**, when testing the web export in Safari: Settings → Apps → Safari →
+   Advanced → **Web Inspector** → on. This is not required for native RN debugging.
 4. **Signing**: sign into Xcode with an Apple ID and select your Team (§1.4). A free account runs on
    your own device.
 
@@ -67,8 +66,8 @@ Then run it:
 * Open `experiments/native-architecture/ios/Splotch.xcworkspace`, pick the device in Xcode's target
   dropdown, **Run ▶** the `Splotch` scheme (it installs `art.splotch.app.dev`). Native logs stream
   to the Xcode console (or Console.app).
-* **Inspect the web layer**: with the app running, Safari → **Develop → \<device\> → Splotch** for
-  DOM / console / network / breakpoints (§1.5).
+* **Inspect the web export separately** in a Safari tab through Safari's Develop menu. Native app
+  logs and Release-probe measurements follow the development/profiling guides.
 * **Wireless debugging**: after the first wired run, tick **"Connect via network"** on the device
   row in Xcode → Window → Devices and Simulators; the cable is then optional.
 
@@ -129,7 +128,9 @@ replace them in place when the artwork in `assets/` changes.
 ### Rotating and screenshotting a simulator
 
 Verifying anything orientation-dependent on a simulator runs into four traps, all of which produce
-plausible wrong answers rather than errors. Learned the hard way in
+plausible wrong answers rather than errors. These observations were measured against the former
+Capacitor WebView, not recaptured on RN. The screenshot file-format caveat remains relevant to
+native screenshots. Original evidence:
 [scratchpad/safe-area-device-verification-2026-08-24.md](../scratchpad/safe-area-device-verification-2026-08-24.md).
 
 * **`simctl` cannot rotate.** There is no rotation verb, and driving the Simulator's *Device →
@@ -138,8 +139,8 @@ plausible wrong answers rather than errors. Learned the hard way in
   `LANDSCAPE_RIGHT`, `UPSIDE_DOWN`), which sets `XCUIDevice.shared.orientation` through its XCTest
   driver.
 * **Rotating the device does not rotate an orientation-locked app**, and the mismatch is actively
-  misleading: Splotch locks rotation by default on phones, and when the device pose disagrees with
-  the locked interface, iOS offsets the whole web layer by exactly one safe-area inset. Fixed
+  misleading: the former app locked rotation by default on phones, and when the device pose
+  disagreed with the locked interface, iOS offset its WebView by exactly one safe-area inset. Fixed
   elements then paint an inset's width *inside* the screen edge, which is a convincing impersonation
   of a `viewport-fit: cover` bug. Get the device and the interface into the same orientation before
   believing any placement measurement.
@@ -150,12 +151,13 @@ plausible wrong answers rather than errors. Learned the hard way in
   find nothing in an image that plainly has content.
 * **`ios_webkit_debug_proxy` does not enumerate simulators**, only physically attached devices.
   There is no scripted CDP path into a simulator's WKWebView, so simulator web-layer facts have to
-  be measured off screenshots. (Android's native WebView *does* take a scripted client — see
-  [android.md](android.md#scripting-against-the-running-native-webview-cdp).)
+  be measured off screenshots. (Android's native WebView *does* take a scripted client — see the
+  recorded Capacitor-era evidence, not the RN runtime.)
 
-Maestro's text selectors also do not reach into the WebView — `tapOn: Settings` fails on controls
-that are present and labelled. Use `tapOn: {point: "92%,88%"}`, remembering the percentages are
-relative to the device frame, not the rotated interface.
+The old WebView investigation also required coordinate taps because its text selectors did not reach
+the controls. That workaround is historical. The current RN smoke selects the exact accessibility
+label `Settings`; keep native smoke selectors and their contracts in `docs/TESTING.md` rather than
+carrying WebView coordinate taps into it.
 
 ### Manual iOS 16.4 floor gate
 
@@ -315,16 +317,18 @@ policy). The Apple Kids Category adds:
       generation includes ten free creations per installation while the project-funded service is
       available, then accepts a parent-supplied access code or OpenAI key. The App Store build's
       generation policy starts at Every time. There is no browsing, chat, or sharing.
-* [x] Audit outbound links: source on GitHub, the OpenAI API keys page, OpenAI terms, and the hosted
-      feedback form all use Parent Center's external-link gate at the point where they leave the
-      app. The bundled privacy policy remains internal. The native bundle excludes the server-backed
-      feedback route and its conditional email fallback.
+* [x] Audit outbound links: source on GitHub, the OpenAI API keys page, OpenAI terms and other
+      external destinations all use Parent Center's external-link gate at the point where they leave
+      the app. The bundled privacy policy and feedback page stay internal; the feedback owner
+      submits to the hosted API. The native privacy text excludes the web-only conditional email
+      fallback.
 * [ ] Confirm on a **native build** that every Parent Center policy starts at Every time. The
-      defaults split by target (ADR-0094): only the store builds arm them, and the web build ships
-      with all five off. `CAPACITOR=true` is what decides — a gate audited in `npm run dev` is
-      auditing the wrong build.
+      defaults split by platform (ADR-0094): native defaults arm them, and the web build ships with
+      all five off. The platform defaults in
+      `experiments/native-architecture/src/platform/parentDefaults.ts` and its web counterpart
+      choose the target policy. Verify the actual native build.
 
 ## 5. Known follow-ups
 
 See [native.md](native.md) §5 for cross-platform follow-ups (hi-res icon, deep links for AI tokens,
-splash plugin, wake lock).
+and measured native UX follow-ups).

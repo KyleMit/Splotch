@@ -9,7 +9,7 @@ import {
   SECTIONS,
   SPY_LINE_PX,
   type SectionId,
-} from '../../../../web/src/routes/privacy/contents';
+} from '../../../../web/src/lib/privacy/contents';
 import { paletteHex } from '../drawing/palette';
 import type privacy from '../information/privacy.generated.json';
 import { RsdList } from './RsdList';

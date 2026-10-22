@@ -36,12 +36,9 @@ docs/scratchpad/icon-toolbar-alignment/
 docs/scratchpad/2026-10-18-device-parity/results/web/*-observations.json
 pnpm-lock.yaml
 web/src/lib/components/icon-names.d.ts
-web/src/lib/components/page/ReleaseHistory.svelte
-web/src/lib/components/settings/CurrentReleaseNotes.svelte
 web/src/lib/releases.json
 web/src/lib/releaseHues.ts
 experiments/native-architecture/src/information/releaseNotes.generated.json
-web/src/tokens.css
 tools/store-drawings/generated/store-drawings.mjs
 web/tests/**/*-snapshots/
 *.svg

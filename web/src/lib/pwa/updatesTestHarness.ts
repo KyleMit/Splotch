@@ -1,6 +1,5 @@
 import { expect, vi } from 'vitest';
 
-// __APP_VERSION__ is '1.0.0-test' in the Vitest build (see buildDefines.test.ts).
 export const CURRENT_VERSION = '1.0.0-test';
 export const NEWER_VERSION = '9.9.9';
 

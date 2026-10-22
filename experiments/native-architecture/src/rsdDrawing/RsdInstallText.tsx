@@ -14,11 +14,6 @@ import { colors, dimensions } from './tokens.css';
 // compile; tools/tests/native-install-banner-drift.test.mjs reads each back from shipping.
 const MASCOT_PX = 40;
 const TEXT_LINE_HEIGHT = 1.5;
-
-export const INSTALL_TEXT_METRICS = {
-  mascotPx: MASCOT_PX,
-  textLineHeight: TEXT_LINE_HEIGHT,
-} as const;
 export const INSTALL_HINT_ID = 'install-hint';
 
 // The hand-off to Settings: Splotchy beside the message, fading in over the card's place.

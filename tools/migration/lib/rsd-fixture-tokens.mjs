@@ -6,7 +6,7 @@ import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawi
 import { AI_RESULT_HEIGHT_PX } from '../../../experiments/native-architecture/src/ai/uiState.ts';
 import { BLACK_INK } from '../../../web/src/lib/palette.ts';
 
-const APP_CSS_URL = new URL('../../../web/src/app.css', import.meta.url);
+import { LAYOUT_METRICS } from '../../../web/src/lib/design/layoutMetrics.ts';
 
 // Shipping tokens with no RSD projection, each with the reason. Every other key of
 // themes, scale and brand is projected, so a new shipping token lands in the
@@ -115,33 +115,15 @@ function raise(message) {
   throw new Error(message);
 }
 
-function appCssPixels(css, name) {
-  const value = new RegExp(`^\\s*--${name}: (\\d+)px;$`, 'm').exec(css)?.[1];
-  if (value === undefined) throw new Error(`app.css declares no --${name} in px`);
-  return Number(value);
-}
-
-function expectAppCss(css, declaration) {
-  if (!css.includes(declaration)) throw new Error(`app.css no longer declares ${declaration}`);
-}
-
-// Layout tokens app.css owns. The settings indent is derived the way app.css derives
-// it, and the modal gutter's safe-area term is the caller's: native insets come from
-// react-native-safe-area-context, not from a token.
-function appCssDimensions(css = readFileSync(APP_CSS_URL, 'utf8')) {
-  expectAppCss(css, '--setting-indent: calc(var(--setting-icon-size) + var(--setting-icon-gap));');
-  expectAppCss(
-    css,
-    '--modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));'
-  );
-  const iconSize = appCssPixels(css, 'setting-icon-size');
-  const iconGap = appCssPixels(css, 'setting-icon-gap');
+function layoutDimensions() {
+  const { touchTargetMinPx, modalGutterMinPx, settingIconSizePx, settingIconGapPx } =
+    LAYOUT_METRICS;
   return {
-    touchTargetMin: `${appCssPixels(css, 'touch-target-min')}px`,
-    modalGutterMin: `${appCssPixels(css, 'modal-gutter-min')}px`,
-    settingIconSize: `${iconSize}px`,
-    settingIconGap: `${iconGap}px`,
-    settingIndent: `${iconSize + iconGap}px`,
+    touchTargetMin: `${touchTargetMinPx}px`,
+    modalGutterMin: `${modalGutterMinPx}px`,
+    settingIconSize: `${settingIconSizePx}px`,
+    settingIconGap: `${settingIconGapPx}px`,
+    settingIndent: `${settingIconSizePx + settingIconGapPx}px`,
   };
 }
 
@@ -229,7 +211,7 @@ function tokenSource() {
     ...groups.dimensions,
     ...groups.blobs,
     ...groups.display.bounds,
-    ...appCssDimensions(),
+    ...layoutDimensions(),
     touchTarget: `${TOUCH_TARGET}px`,
     aiResultHeight: `${AI_RESULT_HEIGHT_PX}px`,
   };

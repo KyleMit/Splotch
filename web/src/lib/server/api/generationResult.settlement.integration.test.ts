@@ -12,6 +12,7 @@ import {
   loggedText,
   OTHER_INSTALLATION,
   PICTURE,
+  readStartReply,
   PLATFORM_RETRY_DELAY_MS,
   runWorker,
   settlementTestState,
@@ -25,7 +26,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FREE_GENERATIONS_REMAINING_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
 import { SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
-import { readAiImageResponse, type AiImageResponse } from '$lib/drawing/aiImageResponse';
+import type { AiReply } from '../../../../../experiments/native-architecture/src/ai/transport';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import {
   GENERATION_JOB_STORE_NAME,
@@ -314,15 +315,13 @@ describe('free generation settlement across the background handoff', () => {
   });
 });
 
-function expectStarted(
-  result: AiImageResponse
-): asserts result is Extract<AiImageResponse, { kind: 'started' }> {
-  expect(result.kind).toBe('started');
+function expectStarted(result: AiReply): asserts result is Extract<AiReply, { kind: 'ticket' }> {
+  expect(result.kind).toBe('ticket');
 }
 
 describe('the job ticket', () => {
   it('reads on the client as a job the poll endpoint knows', async () => {
-    const started = await readAiImageResponse(await startFreeGeneration());
+    const started = await readStartReply(await startFreeGeneration());
 
     expectStarted(started);
     expect(started.pollAfterMs).toBeGreaterThan(0);

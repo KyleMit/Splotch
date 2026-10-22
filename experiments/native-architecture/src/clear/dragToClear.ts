@@ -5,8 +5,8 @@ import { ACCEPT_RADIUS_FACTOR } from '../../../../web/src/lib/actions/dragToClea
 // reads each shipping literal back and fails on divergence.
 export const HOLD_DURATION_MS = 500;
 export const MOVEMENT_THRESHOLD_PX = 50;
-export const MULTI_CLICK_WINDOW_MS = 1000;
-export const MULTI_CLICK_THRESHOLD = 3;
+const MULTI_CLICK_WINDOW_MS = 1000;
+const MULTI_CLICK_THRESHOLD = 3;
 export const ACCEPT_ZONE_HIDE_DELAY_MS = 250;
 // How far the wash's fade-out edge reaches at full progress, as a fraction of the area diagonal.
 export const WASH_REACH_DIAGONAL_FRACTION = 1.3;
@@ -17,7 +17,7 @@ export const FLOOD_RELEASE_MS = 280;
 export const FLOOD_COMMITTED_OPACITY = 0.92;
 // The departing page's flight, from web/src/lib/drawing/inkMotion.ts and app.css's clear-sheet.
 export const CLEAR_SHEET_DURATION_MS = 560;
-export const CLEAR_SHEET_CORNER_PULL = 0.34;
+const CLEAR_SHEET_CORNER_PULL = 0.34;
 export const CLEAR_SHEET_END_SCALE = 0.02;
 export const CLEAR_SHEET_END_TURN_DEG = 14;
 export const CLEAR_SHEET_CURVE = [0.32, 0.02, 0.42, 1] as const;

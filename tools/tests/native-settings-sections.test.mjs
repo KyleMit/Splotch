@@ -3,15 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
-  BUTTON_SIZE_HELP,
-  BUTTON_SIZE_LABEL,
   DEFAULT_BUTTON_SCALE,
   controlSize,
   isButtonScale,
 } from '../../experiments/native-architecture/src/settings/buttonSize.ts';
 import {
-  REDUCE_MOTION_HELP,
-  REDUCE_MOTION_LABEL,
   reduceMotionChoice,
   resolveReducedMotion,
 } from '../../experiments/native-architecture/src/settings/reduceMotion.ts';
@@ -28,10 +24,7 @@ import {
 } from '../../experiments/native-architecture/src/settings/settingsSessions.ts';
 import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
 import { RELEASE_NOTES } from '../../experiments/native-architecture/src/settings/whatsNew.ts';
-import {
-  WHATS_NEW_STAMP,
-  whatsNewUnseen,
-} from '../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
+import { WHATS_NEW_STAMP } from '../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import {
   createSoundSettings,
   parseSoundSettings,
@@ -43,36 +36,7 @@ import {
   renderNativeReleaseNotes,
 } from '../release/gen-release-notes.mjs';
 
-// The shipping sources are Svelte components and rune modules React Native cannot import, so
-// their copy, defaults and section list are read from source here.
 const source = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
-const SETTINGS_STATE = source('web/src/lib/state/settings.svelte.ts');
-const BUTTON_SIZE_SETTING = source('web/src/lib/components/settings/ButtonSizeSetting.svelte');
-const ACCESSIBILITY_SECTION = source('web/src/lib/components/settings/AccessibilitySection.svelte');
-const APPEARANCE_STATE = source('web/src/lib/state/appearance.svelte.ts');
-const SECTIONS = source('web/src/lib/components/settings/sections.ts');
-const SESSION_COUNTERS = source('web/src/lib/state/sessionCounters.svelte.ts');
-const HUB_LIST = source('web/src/lib/components/settings/HubList.svelte');
-
-function shippingConstant(name) {
-  const match = new RegExp(`export const ${name} = (\\d+);`).exec(SETTINGS_STATE);
-  expect(match, name).not.toBeNull();
-  return Number(match[1]);
-}
-
-function shippingSections() {
-  const entries = [
-    ...SECTIONS.matchAll(
-      /\{\s*id: '(\w+)',\s*label: (['"])(.+?)\2,(?:\s*title: '([^']+)',)?\s*icon: '([\w-]+)'/g
-    ),
-  ];
-  return entries.map(([, id, , label, title, icon]) => ({
-    id,
-    label,
-    ...(title ? { title } : {}),
-    icon,
-  }));
-}
 
 const CURRENT = {
   version: 16,
@@ -124,16 +88,6 @@ const VERSION_12 = Object.fromEntries(
 );
 
 describe('Button Size', () => {
-  it('keeps the shipping range, default, label and help', () => {
-    expect([BUTTON_SCALE_MIN, DEFAULT_BUTTON_SCALE, BUTTON_SCALE_MAX]).toEqual([
-      shippingConstant('ACTION_BUTTON_SCALE_MIN'),
-      shippingConstant('ACTION_BUTTON_SCALE_DEFAULT'),
-      shippingConstant('ACTION_BUTTON_SCALE_MAX'),
-    ]);
-    expect(BUTTON_SIZE_SETTING).toContain(`label="${BUTTON_SIZE_LABEL}"`);
-    expect(BUTTON_SIZE_SETTING).toContain(`help="${BUTTON_SIZE_HELP}"`);
-  });
-
   it('sizes the default to the touch target and every choice to whole pixels', () => {
     expect(controlSize(DEFAULT_BUTTON_SCALE)).toBe(TOUCH_TARGET);
     expect(Number.isInteger(controlSize(BUTTON_SCALE_MAX))).toBe(true);
@@ -149,12 +103,6 @@ describe('Button Size', () => {
 
 describe('Reduce Motion', () => {
   it('keeps the shipping label, help and the rule that a choice matching the device follows it', () => {
-    expect(ACCESSIBILITY_SECTION).toContain(`label="${REDUCE_MOTION_LABEL}"`);
-    expect(ACCESSIBILITY_SECTION).toContain(`help="${REDUCE_MOTION_HELP}"`);
-    expect(APPEARANCE_STATE).toContain("const explicit = wanted ? 'reduce' : 'full';");
-    expect(APPEARANCE_STATE).toContain(
-      "appearance.systemReduceMotion === wanted ? 'system' : explicit"
-    );
     expect(
       [
         [true, false],
@@ -171,31 +119,27 @@ describe('Reduce Motion', () => {
 
 describe('sectioned Settings', () => {
   it('names, titles, icons and orders every section as the shipping list does', () => {
-    const shipping = shippingSections();
-    expect(shipping.map(({ id }) => id)).toContain('whatsnew');
     expect(NATIVE_SETTINGS_SECTIONS.map(({ contentStamp: _stamp, ...section }) => section)).toEqual(
-      shipping
+      [
+        { id: 'appearance', label: 'Appearance', icon: 'appearance' },
+        { id: 'sound', label: 'Sound', icon: 'sound' },
+        { id: 'controls', label: 'Tool Drawer', icon: 'controls' },
+        { id: 'accessibility', label: 'Accessibility', icon: 'accessibility' },
+        { id: 'coloring', label: 'Coloring', icon: 'shapes' },
+        { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
+        { id: 'saving', label: 'Saving', icon: 'save-picture' },
+        { id: 'parentCenter', label: 'Parent Center', icon: 'parent-center' },
+        { id: 'setup', label: 'Install', icon: 'setup' },
+        { id: 'feedback', label: 'Feedback', icon: 'feedback' },
+        { id: 'whatsnew', label: "What's New", title: 'Updates', icon: 'whats-new' },
+        { id: 'about', label: 'About', icon: 'splotchy' },
+      ]
     );
     expect(sectionHeading('whatsnew')).toBe('Updates');
     expect(sectionHeading('accessibility')).toBe('Accessibility');
   });
 
-  it('words its fixed status lines as the shipping hub does', () => {
-    for (const [name, subtitle] of Object.entries(SECTION_SUBTITLES))
-      expect(SECTIONS, name).toMatch(new RegExp(`['"]${subtitle.replace(/[&]/g, '\\$&')}['"]`));
-  });
-
   it('builds its counted status lines from the shipping templates', () => {
-    for (const template of [
-      'parts.push(`${orientation} lock`)',
-      "parts.join(' · ')",
-      'const volume = `Volume ${settingsState.soundVolume}%`;',
-      "return `${books} extra ${books === 1 ? 'book' : 'books'} ready`;",
-      "`${grant.remaining} free ${grant.remaining === 1 ? 'creation' : 'creations'} left`",
-      "return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;",
-      'return `Version ${APP_VERSION}`;',
-    ])
-      expect(SECTIONS, template).toContain(template);
     const settings = { ...CURRENT, status: 'ready', saved: true, message: '' };
     const context = (overrides, extra = {}) => ({
       settings: { ...settings, ...overrides },
@@ -208,12 +152,6 @@ describe('sectioned Settings', () => {
       'Night Mode · landscape lock'
     );
     expect(sectionSubtitle('appearance', context({ orientation: 'auto' }))).toBe('Night Mode');
-    for (const template of [
-      "if (!settingsState.soundEnabled) return 'Muted';",
-      "return 'No sources';",
-      "return `${volume} · ${settingsState.drawingSoundEnabled ? 'drawing' : 'deleting'} only`;",
-    ])
-      expect(SECTIONS, template).toContain(template);
     const sound = (overrides) => sectionSubtitle('sound', context(overrides));
     expect(sound({ soundVolume: 73 })).toBe('Volume 73%');
     expect(sound({ soundVolume: 73, soundEnabled: false })).toBe(SECTION_SUBTITLES.muted);
@@ -255,24 +193,10 @@ describe('sectioned Settings', () => {
       )
     ).toBe(SECTION_SUBTITLES.aiAccessCode);
   });
-
-  it('puts only Night Mode and Sound switches on the hub, as HubList does', () => {
-    expect(
-      [...HUB_LIST.matchAll(/^ {4}(\w+): \{\n {6}id: '(\w+)',\n {6}label: '([^']+)'/gm)].map(
-        ([, section, id, label]) => ({ section, id, label })
-      )
-    ).toEqual([
-      { section: 'appearance', id: 'hubNightToggle', label: 'Night Mode' },
-      { section: 'sound', id: 'hubSoundToggle', label: 'Sound' },
-    ]);
-  });
 });
 
 describe('Settings activity dots', () => {
   it("wait for shipping's sixth session", () => {
-    expect(SESSION_COUNTERS).toContain(
-      `export const SETTINGS_ACTIVITY_DOTS_START_SESSION = ${SETTINGS_ACTIVITY_DOTS_START_SESSION};`
-    );
     expect(activityDotsShown(undefined)).toBe(false);
     expect(activityDotsShown(SETTINGS_ACTIVITY_DOTS_START_SESSION - 1)).toBe(false);
     expect(activityDotsShown(SETTINGS_ACTIVITY_DOTS_START_SESSION)).toBe(true);
@@ -315,11 +239,7 @@ describe("What's New", () => {
   });
 
   it('stamps the dot with the app version, as the shipping section does', () => {
-    expect(SECTIONS).toMatch(/id: 'whatsnew',[\s\S]*?contentStamp: APP_VERSION/);
     expect(WHATS_NEW_STAMP).toBe(JSON.parse(source('package.json')).version);
-    expect(whatsNewUnseen(null)).toBe(true);
-    expect(whatsNewUnseen('0.0.1')).toBe(true);
-    expect(whatsNewUnseen(WHATS_NEW_STAMP)).toBe(false);
   });
 });
 

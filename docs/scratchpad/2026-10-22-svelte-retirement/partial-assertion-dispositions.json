@@ -1,0 +1,1671 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "scope": "127 surviving original callback titles with expectation text differences; obsolete-source oracle retirement is distinct from native assertions restored with fixed contracts.",
+  "entries": [
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "title": "flies in along dialogFlyFromOrigin and back along dialogFlyBack",
+      "removedAssertions": [
+        "expect(APP_CSS).toContain(`animation: dialogFlyFromOrigin ${FLY_IN_DURATION_MS}ms linear;`);",
+        "expect(frames[frame.at]).toContain(translate(frame.reach));",
+        "expect(frames[frame.at]).toContain(`scale(${frame.scale})`);",
+        "expect(frames[frame.at]).toContain(`opacity: ${frame.opacity};`);",
+        "expect(frames[frame.at]).toContain(`cubic-bezier(${frame.easing.join(', ')})`);",
+        "expect(back.slice(0, back.indexOf('\\n}\\n'))).toMatch(\n      new RegExp(`\\\\* ${FLY_BACK_REACH}\\\\)[\\\\s\\\\S]*scale\\\\(${FLY_BACK_SCALE}\\\\)`)\n    );",
+        "expect(APP_CSS).toContain('animation: dialogFlyBack var(--duration-exit) var(--ease-glide)');",
+        "expect(APP_CSS).toContain('animation: modalFadeIn var(--duration-base) ease both;');",
+        "expect(APP_CSS).toContain('animation: modalFadeIn var(--duration-exit) ease reverse forwards;');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed assertions parse deleted app.css keyframes and animation declarations. The surviving callback checks shared duration/easing agreement and reversed cubic Bezier control points; mounted motion coverage is reviewed separately by the live-drivers auditor.",
+      "reviewedSourceSha256": "57da24153978170cbd308b1407dcaa6b59f90855cd56d4ce48a5e91457521773",
+      "inventoryIndex": 1
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "title": "caps Settings at its phone, landscape-phone and wide shell widths and heights",
+      "removedAssertions": [
+        "expect(modalFrame('settings', PHONE, GUTTER)).toMatchObject({\n      width: PHONE.width - 2 * GUTTER,\n      maxHeight: PHONE.height * cap,\n      height: null,\n    });",
+        "expect(modalFrame('settings', ROOMY_PHONE, GUTTER).width).toBe(maxWidth(card));",
+        "expect(modalFrame('sheet', LARGE_TABLET, GUTTER).width).toBe(maxWidth(card));",
+        "expect(modalFrame('settings', LARGE_TABLET, GUTTER)).toMatchObject({\n      width: maxWidth(rule(SETTINGS, '.settings-modal.wide', '<style>')),\n      height: ceiling,\n    });",
+        "expect(modalFrame('settings', SHORT_WIDE, GUTTER).height).toBe(SHORT_WIDE.height * cap);",
+        "expect(modalFrame('settings', PHONE_LANDSCAPE, GUTTER).width).toBe(\n      maxWidth(rule(SETTINGS, '.settings-modal.compact', '<style>'))\n    );"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The modal frame layout contracts describe block pins phone width358/maxHeight85%, sheet width500, wide860\u00d7760, short-wide85%, and landscape-phone640; old SettingsModal CSS parsing is retired.",
+      "reviewedSourceSha256": "57da24153978170cbd308b1407dcaa6b59f90855cd56d4ce48a5e91457521773",
+      "inventoryIndex": 2
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "title": "pads the Settings header and scroll as the shipping card does on narrow and roomy phones",
+      "removedAssertions": [
+        "expect(roomy.header).toEqual(\n      box(declaration(rule(SETTINGS, '.settings-header', '<style>'), 'padding'))\n    );",
+        "expect(roomy.body).toEqual(\n      box(declaration(rule(SETTINGS, '.settings-scroll', '<style>'), 'padding'))\n    );",
+        "expect(phone.header).toEqual(\n      box(declaration(rule(SETTINGS, '.settings-header', narrow), 'padding'))\n    );",
+        "expect(phone.body).toEqual(\n      box(declaration(rule(SETTINGS, '.settings-scroll', narrow), 'padding'))\n    );"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The same-titled callback in modal frame layout contracts pins roomy header28/24/18 and body0/24/28, narrow header24/20/16 and body0/20/24 against actual modalFrame output.",
+      "reviewedSourceSha256": "57da24153978170cbd308b1407dcaa6b59f90855cd56d4ce48a5e91457521773",
+      "inventoryIndex": 3
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "title": "sizes and pads the parental gate as shipping does on a %s",
+      "removedAssertions": [
+        "expect(frame.width).toBe(maxWidth(rule(GATE, '.parental-gate', media)));",
+        "expect(frame.body).toEqual(box(declaration(rule(GATE, '.gate-content', media), 'padding')));"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The parental-gate callback retains four viewport fixtures with widths336/560/420/480 and distinct expected padding objects; only deleted Svelte CSS is no longer the oracle.",
+      "reviewedSourceSha256": "57da24153978170cbd308b1407dcaa6b59f90855cd56d4ce48a5e91457521773",
+      "inventoryIndex": 4
+    },
+    {
+      "file": "tools/migration/tests/modal-geometry.test.mjs",
+      "title": "sizes and pads the confirm card as shipping does",
+      "removedAssertions": [
+        "expect(frame.width).toBe(maxWidth(rule(APP_CSS, '.confirm-card')));",
+        "expect(frame.body).toEqual(box(declaration(rule(APP_CSS, '.confirm-card-content'), 'padding')));"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The confirmation callback checks actual modalFrame output at1366\u00d71024 against width336 and padding24/24/20.",
+      "reviewedSourceSha256": "57da24153978170cbd308b1407dcaa6b59f90855cd56d4ce48a5e91457521773",
+      "inventoryIndex": 5
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-actions-panel.test.mjs",
+      "title": "reads the panel geometry from actionButtonLayout.ts, breakpoints.ts and app.css",
+      "removedAssertions": [
+        "expect(EDGE_INSET_PX).toBe(inset);",
+        "expect(CORNER_BUTTON_SIZE_PX).toBe(toggle);",
+        "expect(ACTION_BUTTON_GAP_PX).toBe(constant(LAYOUT, 'ACTION_BUTTON_GAP'));",
+        "expect(PHONE_TOOLBAR_GAP_PX).toBe(phoneGap);",
+        "expect(PHONE_TOOLBAR_BUTTON_PX).toBe(constant(LAYOUT, 'PHONE_TOOLBAR_BUTTON_PX'));",
+        "expect(PHONE_TOOLBAR_LEG_SLOTS).toBe(constant(LAYOUT, 'PHONE_TOOLBAR_LEG_SLOTS'));",
+        "expect(LANDSCAPE_ROW_RESERVE_PX).toBe(constant(LAYOUT, 'SETTINGS_BUTTON_RESERVE') + chrome);",
+        "expect(PORTRAIT_COLUMN_RESERVE_PX).toBe(constant(LAYOUT, 'PALETTE_CLEARANCE') + chrome);",
+        "expect(PHONE_TOOLBAR_VERTICAL_CHROME_PX).toBe(2 * inset + toggle + 3 * phoneGap);",
+        "expect(PHONE_TOOLBAR_HORIZONTAL_CHROME_PX).toBe(\n      inset + toggle + constant(LAYOUT, 'SETTINGS_BUTTON_RESERVE') + 4 * phoneGap\n    );",
+        "expect(Function(`return (${base})`)()).toEqual(ACTION_BUTTON_BASE_PX);",
+        "expect(PANEL).toMatch(new RegExp(`margin-right: ${DRAWER_TOGGLE_MARGIN_PX}px;`));",
+        "expect(APP_CSS).toContain(`bottom: calc(100% + ${FLYOUT_OFFSET_PX}px);`);",
+        "expect(APP_CSS).toContain(\n      `(orientation: portrait) and (max-width: ${VERTICAL_FLYOUT_MAX_WIDTH_PX}px)`\n    );",
+        "expect(APP_CSS).toMatch(\n      new RegExp(`\\\\.actions-panel \\\\.action-button \\\\{\\\\s*padding: ${PHONE_TOOLBAR_PADDING_PX}px;`)\n    );",
+        "expect(APP_CSS).toContain(\n      `--landscape-pitch: calc(var(--action-btn-size) + ${PHONE_TOOLBAR_GAP_PX}px);`\n    );",
+        "expect(APP_CSS).toMatch(\n      new RegExp(\n        `\\\\n  \\\\.actions-panel \\\\.actions-drawer \\\\{\\\\s*margin-right: ${PHONE_TOOLBAR_GAP_PX}px;`\n      )\n    );",
+        "expect(APP_CSS).toMatch(\n      new RegExp(\n        `\\\\n  \\\\.actions-panel \\\\.actions-drawer-inner \\\\{\\\\s*gap: ${PHONE_TOOLBAR_GAP_PX}px;`\n      )\n    );",
+        "expect(PANEL).toMatch(\n      new RegExp(`\\\\n  \\\\.actions-drawer-inner \\\\{[^}]*gap: ${ACTION_BUTTON_GAP_PX}px;`)\n    );"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed comparisons extract old actionButtonLayout/breakpoints/app.css geometry. Runtime panel layout assertions in the file still check mounted Native action positions and controls.",
+      "reviewedSourceSha256": "3c020760dccf3997f05be9437a860c2cd5471ba512154d8fbfef5a5d141d4701",
+      "inventoryIndex": 6
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-actions-panel.test.mjs",
+      "title": "turns the chevron and greys the panel the way the shipping stylesheets do",
+      "removedAssertions": [
+        "expect(PANEL).toContain('landscape closed 0 \u00b7 open 180');",
+        "expect(PANEL).toContain(`--drawer-open-rot: ${DRAWER_CHEVRON_TURN_DEG.row.open}deg;`);",
+        "expect(PANEL).toContain(`--drawer-axis-rot: ${DRAWER_CHEVRON_TURN_DEG.column.closed}deg;`);",
+        "expect(PANEL).toContain(\n      `--drawer-axis-rot: ${DRAWER_CHEVRON_TURN_DEG.phoneLandscape.closed}deg;`\n    );",
+        "expect(APP_CSS).toContain(\n      `filter: ${FLYOUT_OPEN_TILE_FILTER} opacity(${FLYOUT_OPEN_TILE_OPACITY});`\n    );",
+        "expect(APP_CSS).toMatch(\n      new RegExp(\n        `\\\\[data-open-flyout\\\\] \\\\.drawer-toggle \\\\{\\\\s*opacity: ${FLYOUT_OPEN_CORNER_OPACITY};`\n      )\n    );"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed comparisons read old CSS chevron rotation and disabled paint values. The callback retains assertions against the mounted Native panel states and theme tokens.",
+      "reviewedSourceSha256": "3c020760dccf3997f05be9437a860c2cd5471ba512154d8fbfef5a5d141d4701",
+      "inventoryIndex": 7
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-actions-panel.test.mjs",
+      "title": "rings white and near-black ink the way the shipping keyline rules do",
+      "removedAssertions": [
+        "expect(colors).toContain(`WHITE_INK = '${WHITE_INK_HEX}'`);",
+        "expect(constant(colors, 'DARK_INK_RELATIVE_LUMINANCE_MAX')).toBe(\n      DARK_INK_RELATIVE_LUMINANCE_MAX\n    );"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed comparisons read deleted ColorControl keyline declarations. The callback still mounts white and near-black ink and checks actual Native keyline state.",
+      "reviewedSourceSha256": "3c020760dccf3997f05be9437a860c2cd5471ba512154d8fbfef5a5d141d4701",
+      "inventoryIndex": 8
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-bare-toolbar.test.mjs",
+      "title": "holds every flat chrome value to its shipping declaration",
+      "removedAssertions": ["expect(NATIVE_BARE).toEqual(shippingBare(SOURCES));"],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements project deleted flat-toolbar CSS declarations. The callback retains checks of the actual mounted Native chrome values and layout.",
+      "reviewedSourceSha256": "ff9d839a347c2d734efb141efb7f731437f4d5e838ffaa77092616ca4d507e0e",
+      "inventoryIndex": 9
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-clear-sheet.test.mjs",
+      "title": "grains the cover and departing art, uncovering the next drawing before the flight ends",
+      "removedAssertions": [
+        "expect(readFileSync(join(import.meta.dirname, '../../../web/src/app.css'), 'utf8')).toContain(\n    'background: var(--paper) var(--paper-texture) repeat;'\n  );"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statement checks deleted paper-texture CSS. The callback retains actual grained clear cover/departing-art behavior and next-drawing timing.",
+      "reviewedSourceSha256": "5db9b1177ceaafec6321fb82c9f9090123493439b43a39a34fd4115ba632644c",
+      "inventoryIndex": 10
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-clear.test.mjs",
+      "title": "docks the red tab against the right screen edge in %s",
+      "removedAssertions": [
+        "expect(face()).toMatchObject({\n    width: dock.size,\n    height: dock.size,\n    experimental_backgroundImage: SHIPPING_REST_GRADIENT,\n    boxShadow: '-4px 4px 20px rgba(0, 0, 0, 0.3)',\n  });"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "The original dock callback again checks resolved face width/height, explicit rest gradient, and dock shadow in every existing viewport fixture, alongside corners, lid margin, and icon.",
+      "reviewedSourceSha256": "82030fff2d2689b16256beaa5640c02f40445bf791611b3e63ffdc895e70d86e",
+      "inventoryIndex": 11
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-clear.test.mjs",
+      "title": "lifts into a round puck, turns alarm red past the ring and docks again on release",
+      "removedAssertions": [
+        "expect(face()).toMatchObject({\n    experimental_backgroundImage: SHIPPING_REST_GRADIENT,\n    boxShadow: '-6px 6px 30px rgba(0, 0, 0, 0.4)',\n  });"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "The lift callback again checks explicit rest gradient and lifted shadow before alarm red, then verifies retreat and release shadows/corners.",
+      "reviewedSourceSha256": "82030fff2d2689b16256beaa5640c02f40445bf791611b3e63ffdc895e70d86e",
+      "inventoryIndex": 12
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-color-control.test.mjs",
+      "title": "gives the palette plate shipping focus-preserving pointer-down at %o",
+      "removedAssertions": [
+        "expect(shippingDown).not.toBeNull();",
+        "expect(shippingDown[1]).toContain('e.preventDefault();');",
+        "expect(shippingDown[1]).not.toContain('e.stopPropagation();');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only deleted Svelte pointer-down handler source assertions are removed; the callback continues to drive mounted Native pointer behavior and preserved focus.",
+      "reviewedSourceSha256": "fcfccfd5eddb15a181e86c771dbabedfa75a80f413b07f3709945415c86eac03",
+      "inventoryIndex": 13
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-color-control.test.mjs",
+      "title": "keeps the geometry ColorControl, ColorMenu and the trim ladder declare",
+      "removedAssertions": [
+        "expect(menu).toContain(`var(--action-btn-size) - ${COLOR_MENU_EDGE_ROOM_PX}px`);",
+        "expect(menu).toMatch(\n      new RegExp(`\\\\.color-option:active \\\\{\\\\s*transform: scale\\\\(${COLOR_OPTION_PRESS_SCALE}\\\\);`)\n    );",
+        "expect(read('web/src/app.css')).toMatch(\n      new RegExp(`\\\\.color-icon \\\\{\\\\s*width: ${COLOR_ICON_PX}px;\\\\s*height: ${COLOR_ICON_PX}px;`)\n    );",
+        "expect(read('web/src/lib/actions/colorFoldGesture.ts')).toContain(\n      `const TAP_TRAVEL_PX = ${FOLD_TAP_TRAVEL_PX};`\n    );",
+        "expect(read('web/src/lib/components/ColorControl.svelte')).toContain(\n      '<Icon name=\"ink-splotch\" class=\"color-icon\" />'\n    );",
+        "expect(PHONE_LANDSCAPE_QUERY).toContain('(max-height: 599.98px)');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements extract ColorControl/ColorMenu CSS and the old phone-query string; mounted Native flyout geometry cases remain in this file.",
+      "reviewedSourceSha256": "fcfccfd5eddb15a181e86c771dbabedfa75a80f413b07f3709945415c86eac03",
+      "inventoryIndex": 14
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-color-control.test.mjs",
+      "title": "opens a swatch flyout whose pick loads the ink and closes it",
+      "removedAssertions": [
+        "expect(shipping).toContain('aria-pressed={ringed}');",
+        "expect(shipping).toContain('aria-pressed={customRinged}');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only deleted Svelte aria-pressed markup assertions are removed; the callback still selects Native swatches, verifies loaded ink, and verifies flyout dismissal.",
+      "reviewedSourceSha256": "fcfccfd5eddb15a181e86c771dbabedfa75a80f413b07f3709945415c86eac03",
+      "inventoryIndex": 15
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-coloring-picker.test.mjs",
+      "title": "lays out the Book Grid and Coloring Page Grid on the shipping columns",
+      "removedAssertions": [
+        "expect(Number(declaration(books, '--book-cols'))).toBe(BOOK_GRID_COLUMNS.wide);",
+        "expect(declaration(books, '--book-grid-max-width')).toBe(`${BOOK_GRID_MAX_WIDTH_PX}px`);",
+        "expect(Number(declaration(orphan, '--book-cols'))).toBe(BOOK_GRID_COLUMNS.orphan);",
+        "expect(Number(declaration(rule(PICKER, '.coloring-books-grid', tablet), '--book-cols'))).toBe(\n      BOOK_GRID_COLUMNS.tablet\n    );",
+        "expect(Number(declaration(rule(PICKER, '.coloring-books-grid', phone), '--book-cols'))).toBe(\n      BOOK_GRID_COLUMNS.phone\n    );",
+        "expect(px(declaration(rule(PICKER, '.coloring-grid', phone), 'gap'))).toBe(\n      COLORING_GRID_GAP_PX.phone\n    );",
+        "expect(px(declaration(rule(PICKER, '.coloring-grid'), 'gap'))).toBe(COLORING_GRID_GAP_PX.roomy);",
+        "expect(Number(declaration(tall, '--book-cols'))).toBe(BOOK_GRID_COLUMNS.tallPortrait);",
+        "expect(Number(declaration(tall, '--book-grid-rows-in-view'))).toBe(BOOK_GRID_ROWS_IN_VIEW);",
+        "expect(declaration(tall, '--book-grid-chrome')).toMatch(/\\+ var\\(--space-4\\) \\)$/);",
+        "expect(Number(declaration(rule(PICKER, '.coloring-pages-grid'), '--page-cols'))).toBe(\n      PAGE_GRID_COLUMNS.landscape\n    );",
+        "expect(\n      Number(declaration(rule(PICKER, '.coloring-pages-grid.portrait-pages'), '--page-cols'))\n    ).toBe(PAGE_GRID_COLUMNS.portrait);",
+        "expect(\n      Number(declaration(rule(PICKER, '.coloring-pages-grid.portrait-pages', phone), '--page-cols'))\n    ).toBe(PAGE_GRID_COLUMNS.phonePortrait);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements read old grid stylesheet literals; actual mounted Book Grid and Coloring Page Grid column/layout assertions remain.",
+      "reviewedSourceSha256": "a85a8e7b95dc8667f9db8b9766f8763f4b66580c6b704d008ef49d5f91ab7db4",
+      "inventoryIndex": 16
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-coloring-picker.test.mjs",
+      "title": "draws the Coloring Tile and Active Page Chip with the shipping literals",
+      "removedAssertions": [
+        "expect(declaration(tile, 'border')).toBe(`${TILE_BORDER_PX}px solid var(--border-warm-strong)`);",
+        "expect(declaration(tile, 'border-radius')).toBe('var(--radius-md)');",
+        "expect(declaration(rule(TILE, '.coloring-tile:global(.activation-pending)'), 'transform')).toBe(\n      `scale(${TILE_PRESSED_SCALE})`\n    );",
+        "expect(declaration(hover, 'transform')).toBe(`translateY(-${TILE_HOVER_LIFT_PX}px)`);",
+        "expect(declaration(hover, 'box-shadow')).toBe(\n      '0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent)'\n    );",
+        "expect(px(declaration(rule(TILE, '.coloring-tile img'), 'padding'))).toBe(TILE_ART_INSET_PX);",
+        "expect(declaration(rule(TILE, '.coloring-book-tile'), '--cover-caption-height')).toBe(\n      `${COVER_CAPTION_HEIGHT_PX}px`\n    );",
+        "expect(declaration(rule(TILE, `.coloring-tile.page-${orientation}`), 'aspect-ratio')).toBe(\n        ratio\n      );",
+        "expect(declaration(chip, '--active-page-thumbnail-size')).toBe(`${ACTIVE_PAGE_THUMBNAIL_PX}px`);",
+        "expect(declaration(chip, '--active-page-clear-size')).toBe(`${ACTIVE_PAGE_CLEAR_PX}px`);",
+        "expect(px(declaration(rule(CHIP, '.active-page-clear'), 'padding'))).toBe(\n      ACTIVE_PAGE_CLEAR_PADDING_PX\n    );",
+        "expect(declaration(rule(CHIP, '.active-page-name'), 'max-width')).toBe(\n      `${ACTIVE_PAGE_NAME_MAX_CH}ch`\n    );",
+        "expect(CHIP).toContain(`@media (max-width: ${ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX}px)`);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements read old Coloring Tile/Active Page Chip/SVG CSS literals; actual mounted tile and chip geometry/selection assertions remain.",
+      "reviewedSourceSha256": "a85a8e7b95dc8667f9db8b9766f8763f4b66580c6b704d008ef49d5f91ab7db4",
+      "inventoryIndex": 17
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+      "title": "cascades the opened drawer on shipping's clock and stagger",
+      "removedAssertions": [
+        "expect(stagger).toBeDefined();",
+        "expect(delays).toEqual([...drawerTiles()].map((_, index) => index * Number(stagger)));"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The existing opened-drawer callback checks actual timing with an explicit200ms duration and30ms stagger rather than parsing the removed Svelte transition.",
+      "reviewedSourceSha256": "e725f0b725c152c5a559aa93aaec3d2e0111a9778c94eea32468a5c82c84aae2",
+      "inventoryIndex": 18
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+      "title": "keeps shipping's stagger slots when intervening drawer tools are hidden",
+      "removedAssertions": ["expect(delays).toEqual(indices.map((index) => index * stagger));"],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The hidden-tools callback checks actual stagger slots0/30/120/150, preserving skipped drawer positions without reading Svelte source.",
+      "reviewedSourceSha256": "e725f0b725c152c5a559aa93aaec3d2e0111a9778c94eea32468a5c82c84aae2",
+      "inventoryIndex": 19
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawer-open.test.mjs",
+      "title": "force-opens the drawer for Button Size without the user-toggle cascade",
+      "removedAssertions": [
+        "expect(source).toContain('drawerOpening = next && !isStrokeActive();');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only old drawerOpening assignment-source assertions are removed; Native forced-open Button Size behavior and absence of the user-toggle cascade remain driven.",
+      "reviewedSourceSha256": "e725f0b725c152c5a559aa93aaec3d2e0111a9778c94eea32468a5c82c84aae2",
+      "inventoryIndex": 20
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+      "title": "sizes, spaces and pads both flows as trimGeometry.ts and ColorPalette.svelte do",
+      "removedAssertions": [
+        "expect(declaration(PALETTE_STYLE, 'padding')).toEqual(\n      expect.arrayContaining([\n        `${PALETTE_FLOWS.row.crossStartPaddingPx}px ${PALETTE_FLOWS.row.endPaddingPx}px ${PALETTE_FLOWS.row.crossEndPaddingPx}px`,\n      ])\n    );",
+        "expect(APP_CSS).toContain(`--palette-portrait-height: ${PALETTE_FLOWS.row.extentPx}px;`);",
+        "expect(APP_CSS).toContain(`--palette-landscape-width: ${PALETTE_FLOWS.column.extentPx}px;`);",
+        "expect(shadows.map(rgbaShadow)).toEqual([\n      PALETTE_FLOWS.column.shadow,\n      PALETTE_FLOWS.row.shadow,\n    ]);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements compare trim constants and palette geometry to old ColorPalette CSS; actual Native swatch extent, flow spacing, padding, and plate assertions remain.",
+      "reviewedSourceSha256": "ac65ccb7cda53c591ef0eaa6aac0e1ca77317c18a4f2b02bc73faeed00063dfa",
+      "inventoryIndex": 21
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+      "title": "keeps the swatch press, the More colors pop and the Selection Ring widths",
+      "removedAssertions": [
+        "expect(declaration(SWATCH_STYLE, 'width')).toEqual(\n      expect.arrayContaining([\n        `${PALETTE_FLOWS.column.swatchPx}px`,\n        `${PALETTE_FLOWS.row.swatchPx}px`,\n      ])\n    );",
+        "expect(declaration(SWATCH_STYLE, 'transform')).toContain(`scale(${SWATCH_PRESS_SCALE})`);",
+        "expect(declaration(SWATCH_STYLE, '--pop-scale')).toEqual([`${MORE_COLORS_POP_SCALE}`]);",
+        "expect(SELECTION_RING_WIDTH_PX).toBe(SHIPPING_RING_WIDTH_PX);",
+        "expect(SELECTION_RING_GAP_PX).toBe(SHIPPING_RING_GAP_PX);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements compare press/pop/ring constants to deleted Svelte/SVG CSS; mounted Native swatch transform, More colors pop, and selection ring assertions remain.",
+      "reviewedSourceSha256": "ac65ccb7cda53c591ef0eaa6aac0e1ca77317c18a4f2b02bc73faeed00063dfa",
+      "inventoryIndex": 22
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+      "title": "bundles the shipping handmade-paper grain byte for byte",
+      "removedAssertions": [
+        "expect(\n      bundled.equals(readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp')))\n    ).toBe(true);"
+      ],
+      "disposition": "retargeted-retained-asset",
+      "rationale": "The byte-equality assertion reads the retained shipping grain under web/static/icons instead of its deleted duplicate under web/src/lib/assets, and still compares Native asset bytes.",
+      "reviewedSourceSha256": "ac65ccb7cda53c591ef0eaa6aac0e1ca77317c18a4f2b02bc73faeed00063dfa",
+      "inventoryIndex": 23
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-drawing-frame.test.mjs",
+      "title": "trims by the viewport less the bottom inset, not a bar an inset shortened, and clips the overrun",
+      "removedAssertions": [
+        "expect(paintLabels()).toHaveLength(\n      shippingPaintCount(shippingLadder('max-height'), height - insetBottom)\n    );"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "The shortened-bar callback again requires10paint swatches for viewport834 minus bottom inset20 even after an onLayout height782, preserving the viewport-based trim distinction and clipping/nonshrinking checks.",
+      "reviewedSourceSha256": "ac65ccb7cda53c591ef0eaa6aac0e1ca77317c18a4f2b02bc73faeed00063dfa",
+      "inventoryIndex": 24
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-failure-banner.test.mjs",
+      "title": "shows a denied photo save clear of the %s palette until dismissed",
+      "removedAssertions": [
+        "expect(banners()).toEqual([`${refused.heading}${refused.detail}Open SettingsTry again`]);",
+        "expect(records.announcements).toContain(`${refused.heading}. ${refused.detail}`);",
+        "expect(spoken(refused.detail)).toEqual({ announced: 1, regions: 1 });"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "The denied-save callback again pins exact denied copy, the spoken announcement, one announcement, and one innermost live region, in addition to mounted banner clearance/dismissal.",
+      "reviewedSourceSha256": "7965a3c639dd16fb14331931146aff065161b283adc0ae284c4f9b7e88d183e7",
+      "inventoryIndex": 25
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-feedback.test.mjs",
+      "title": "drills into Feedback inside Settings, with the shipping form and none of the old sheet",
+      "removedAssertions": [
+        "expect(SHIPPING_SETTINGS_REPORT).toContain('disabled={!message.trim()}');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only deleted Feedback.svelte disabled-submit-source checks are removed; the actual Settings Feedback drill-in, form fields, and absence of obsolete sheet remain exercised.",
+      "reviewedSourceSha256": "174e43d21504603e9896801e916b6375ad8436e59ffb7cec65f53ff0ba64c5ec",
+      "inventoryIndex": 26
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-feedback.test.mjs",
+      "title": "renders complete $appearance $presentation Feedback labels without a line clamp at $width px",
+      "removedAssertions": [
+        "expect(phoneRule).not.toBeNull();",
+        "expect(phoneRule[2]).toContain('font-size: var(--font-size-xs);');",
+        "expect(phoneRule[2]).toContain('white-space: nowrap;');",
+        "expect(text, label).toBeDefined();",
+        "expect(text.style.fontSize, label).toBe(\n        Number.parseFloat(tight ? scale.fontSizeXs : scale.fontSizeSm)\n      );",
+        "expect(text.numberOfLines, label).toBeUndefined();",
+        "expect(text.ellipsizeMode, label).toBeUndefined();",
+        "expect(text.style.overflow, label).not.toBe('hidden');"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "Each width360/400/401/1024 \u00d7 appearance \u00d7 settings/page fixture checks actual Native label font size(xs through400, sm above), undefined line clamp/ellipsis, and no hidden overflow.",
+      "reviewedSourceSha256": "174e43d21504603e9896801e916b6375ad8436e59ffb7cec65f53ff0ba64c5ec",
+      "inventoryIndex": 27
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-feedback.test.mjs",
+      "title": "keeps the empty standalone $value submit enabled while the real owner rejects its activation",
+      "removedAssertions": [
+        "expect(shippingSubmit).not.toBeNull();",
+        "expect(shippingSubmit[1]).not.toMatch(/\\bdisabled\\b/);",
+        "expect(shippingSubmit[1]).toContain('busy={submitting}');",
+        "expect(SHIPPING_REPORT_FIELDS).toMatch(/<textarea\\b[^>]*\\brequired\\b/);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only old standalone Svelte button/textarea markup assertions are removed; the actual enabled empty submit and rejection by the real Feedback owner remain exercised.",
+      "reviewedSourceSha256": "174e43d21504603e9896801e916b6375ad8436e59ffb7cec65f53ff0ba64c5ec",
+      "inventoryIndex": 28
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-feedback.test.mjs",
+      "title": "renders the shipping callout $part with its native $token face",
+      "removedAssertions": [
+        "expect(shippingRule).not.toBeNull();",
+        "expect(shippingRule[1]).toContain(`font-weight: var(--font-weight-${token});`);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only a deleted Svelte callout font-weight lookup is removed; mounted Native callout face checks against the applicable token remain.",
+      "reviewedSourceSha256": "174e43d21504603e9896801e916b6375ad8436e59ffb7cec65f53ff0ba64c5ec",
+      "inventoryIndex": 29
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-forced-colors.test.mjs",
+      "title": "draws the crayon divider as shipping\u2019s straight system-ink line in forced colors",
+      "removedAssertions": [
+        "expect(squiggle).toContain('height: 0;');",
+        "expect(rulePath().getAttribute('d')).toBe(`M0 ${Number(width) / 2} H48`);",
+        "expect(rulePath().getAttribute('stroke')).toBe(ink);",
+        "expect(rulePath().getAttribute('stroke-width')).toBe(width);",
+        "expect(records.props.findLast((props) => props.testID === 'release-squiggle').style).toEqual({\n    height: Number(width),\n  });",
+        "expect(rulePath().getAttribute('stroke')).not.toBe(ink);"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "The forced-color divider callback again checks actual straight SVG path, CanvasText stroke, width2, height2, and restoration of ordinary rendering after preference reset.",
+      "reviewedSourceSha256": "010ed1df14e5392e0dad19e2b908712ba9e1dc1d3fb125808ff042417301697c",
+      "inventoryIndex": 30
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-forced-colors.test.mjs",
+      "title": "draws the back-link disc in system colours in forced colors, %s",
+      "removedAssertions": [
+        "expect(backToTop).toContain(`fill: ${ink};`);",
+        "expect(edge.getAttribute('stroke')).toBe(ink);",
+        "expect(edge.getAttribute('stroke-width')).toBe(border);",
+        "expect(new Set(paints(disc()))).toEqual(new Set(['Canvas', 'none', ink]));",
+        "expect(paints(disc())).not.toContain(ink);"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "Each back-link disc fixture again checks Canvas fill, no background image, CanvasText border width1, and removal of those forced overrides after reset.",
+      "reviewedSourceSha256": "010ed1df14e5392e0dad19e2b908712ba9e1dc1d3fb125808ff042417301697c",
+      "inventoryIndex": 31
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-information-pages.test.mjs",
+      "title": "lays out the shipping footer at $width \u00d7 $height",
+      "removedAssertions": [
+        "expect(footerStyle(nav.querySelector('[role=\"list\"]'))).toMatchObject({\n      rowGap: Number.parseFloat(scale.space1),\n      columnGap: gap\n        ? Number.parseFloat(scale[gap])\n        : Number(SHIPPING_FOOTER.match(/gap: var\\(--space-1\\) (\\d+)px/)[1]),\n    });",
+        "expect(footerStyle(brand)).toMatchObject({\n      minHeight: Number(SHIPPING_FOOTER.match(/min-height: (\\d+)px/)[1]),\n      gap: Number.parseFloat(scale.space2),\n    });",
+        "expect(footerStyle(wordmark)).toMatchObject({\n      fontSize: Number.parseFloat(scale.fontSizeXs),\n      fontWeight: scale.fontWeightBold,\n      textTransform: 'uppercase',\n      letterSpacing:\n        Number.parseFloat(scale.fontSizeXs) *\n        Number(SHIPPING_FOOTER.match(/letter-spacing: ([\\d.]+)em/)[1]),\n    });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The responsive footer callback retains explicit540/541-width and500/501-height fixtures for column/row, gap, and top-margin output; the old CSS parser is retired.",
+      "reviewedSourceSha256": "bac20ed2fc0c9cbf8de63700e8404540558c415c63d0b98901c0dabcf4a2d665",
+      "inventoryIndex": 32
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-information-pages.test.mjs",
+      "title": "paints the shared footer with shipping\u2019s orange squiggle in %s",
+      "removedAssertions": [
+        "expect(SHIPPING_FOOTER).toContain(\"--footer-rule-color={paletteHex('Orange')}\");",
+        "expect(squiggle).toContain(\"d='M0 4 Q6 0 12 4 T24 4'\");",
+        "expect(stroke.getAttribute('stroke-width')).toBe(squiggle.match(/stroke-width='([\\d.]+)'/)[1]);"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "Both appearance fixtures again pin the actual footer squiggle SVG stroke-width to2.5 in addition to orange ink and layout.",
+      "reviewedSourceSha256": "bac20ed2fc0c9cbf8de63700e8404540558c415c63d0b98901c0dabcf4a2d665",
+      "inventoryIndex": 33
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-information-pages.test.mjs",
+      "title": "keeps shipping footer navigation and release action on $page",
+      "removedAssertions": [
+        "expect([...nav.querySelectorAll('[role=\"listitem\"]')].map((node) => node.textContent)).toEqual(\n      shippingLinks\n    );"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "Each privacy/changelog/feedback fixture again checks all three listitem labels(Privacy, Changelog, Send feedback), plus the expected link subset, current-page marker, and release action.",
+      "reviewedSourceSha256": "bac20ed2fc0c9cbf8de63700e8404540558c415c63d0b98901c0dabcf4a2d665",
+      "inventoryIndex": 34
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-modal-frame.test.mjs",
+      "title": "closes Settings, not the section, on Escape, Android Back and a scrim press",
+      "removedAssertions": ["expect(shipping).toContain('onRequestClose: settingsModal.hide,');"],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only the removed SettingsModal onRequestClose source check is removed; real Native Escape, Android Back, and scrim handlers continue to close Settings rather than only its section.",
+      "reviewedSourceSha256": "1542bfcfb70e20c6998703d1a65b21ce5000d3e290888f6e8792f0a1a090763d",
+      "inventoryIndex": 35
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-not-found.test.mjs",
+      "title": "keeps the copy and literals NotFoundPage and PageShell declare",
+      "removedAssertions": [
+        "expect(page).toContain(`<title>${NOT_FOUND_COPY.documentTitle}</title>`);",
+        "expect(page).toContain(`title=\"${NOT_FOUND_COPY.title}\"`);",
+        "expect(page).toContain(`{#snippet lede()}${NOT_FOUND_COPY.lede}{/snippet}`);",
+        "expect(page).toContain(`>${label}</Button>`);",
+        "expect(page).toContain(\n      `width: ${NOT_FOUND_MARK_PX}px; height: ${NOT_FOUND_MARK_PX}px; transform: rotate(${NOT_FOUND_MARK_TURN_DEG}deg);`\n    );",
+        "expect(shell).toContain(\n      `--page-gutter: clamp(${minPx}px, ${viewportWidthPercent}vw, ${maxPx}px);`\n    );",
+        "expect(shell).toContain(`max-width: ${PAGE_SHEET_MAX_WIDTH_PX}px;`);",
+        "expect(shell).toContain(`@media (max-width: ${PAGE_FRAMED_MAX_WIDTH_PX}px)`);",
+        "expect(back).toContain(`width: ${BACK_BLOB_PX}px;`);",
+        "expect(back).toContain(`width: ${BACK_ICON_PX}px;`);",
+        "expect(strip).toContain(\n      `const CRAYON_LABELS: PaletteLabel[] = [ ${CRAYON_LABELS.map((label) => `'${label}',`).join(' ')} ];`\n    );"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements compare Native copy/literals with deleted NotFoundPage/PageShell source; actual rendered copy, links, document title, and masthead checks remain.",
+      "reviewedSourceSha256": "4a12e829c23fd2a70a632ff22e17ecbfa975ce2e8f7ccc6198ca3f265b560bc5",
+      "inventoryIndex": 36
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-not-found.test.mjs",
+      "title": "keeps shipping\u2019s masthead decoration at width $width",
+      "removedAssertions": [
+        "expect(shell).toContain(\n    `@media (max-width: ${NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX}px) { .brand :global(.crayons) { display: none; } }`\n  );"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only deleted Svelte masthead media-query source checks are removed; the mounted Native masthead width matrix remains.",
+      "reviewedSourceSha256": "4a12e829c23fd2a70a632ff22e17ecbfa975ce2e8f7ccc6198ca3f265b560bc5",
+      "inventoryIndex": 37
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-not-found.test.mjs",
+      "title": "uses shipping\u2019s not-found mascot and body gap at height $height",
+      "removedAssertions": [
+        "expect(compact).toContain(\n      `width: ${SHORT_NOT_FOUND_MARK_PX}px; height: ${SHORT_NOT_FOUND_MARK_PX}px;`\n    );",
+        "expect(compact).toContain('gap: var(--space-4);');",
+        "expect(read('web/src/lib/components/SplotchyIcon.svelte')).toContain('display: inline-flex;');"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The not-found mascot/body-gap callback uses explicit expected native geometry at its height fixtures instead of deleted PageShell display/CSS extraction.",
+      "reviewedSourceSha256": "4a12e829c23fd2a70a632ff22e17ecbfa975ce2e8f7ccc6198ca3f265b560bc5",
+      "inventoryIndex": 38
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-notch-band.test.mjs",
+      "title": "restates shipping's theme-color selector",
+      "removedAssertions": [
+        "expect(THEME_COLOR_META_SELECTOR).toBe(SHIPPING_THEME_COLOR_META_SELECTOR);",
+        "expect(notchBand).toContain('setThemeColorMeta(band.themeColor)');"
+      ],
+      "disposition": "preserved-equivalent",
+      "rationale": "The native theme-color selector is pinned directly to meta[name=\"theme-color\"]; only the deleted Svelte caller source is no longer queried.",
+      "reviewedSourceSha256": "6111b81620561bc22be17fffba0958429e322ff53c0b42df637ef1d4995abc43",
+      "inventoryIndex": 39
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-paper-grain.test.mjs",
+      "title": "tiles the paper grain one image pixel per point on a %sx screen, as shipping does per CSS pixel",
+      "removedAssertions": [
+        "expect(rules.length, site).toBeGreaterThan(0);",
+        "expect(\n        rules.filter((rule) => rule.includes('background-size')),\n        site\n      ).toEqual([]);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements assert absence of texture background-size declarations in deleted CSS; actual Native image tiling scale checks still exercise each screen scale.",
+      "reviewedSourceSha256": "77c0349c8103afb14827312ce5d1d3a0166f4e09469fbe8cbd3fccd78329bfc0",
+      "inventoryIndex": 40
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-paper-grain.test.mjs",
+      "title": "grains only Flat safe-area strips for $name in $theme, under the content and Notch Band",
+      "removedAssertions": [
+        "expect(\n      /html\\[data-toolbar='bare'\\] \\.app-container \\{\\s*background:\\s*([^;]+);/.exec(app)[1]\n    ).toBe('var(--paper) var(--paper-texture)');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only old bare-app CSS texture literal assertions are removed; mounted Flat safe-area strips, theme, stacking, and Notch Band behavior remain.",
+      "reviewedSourceSha256": "77c0349c8103afb14827312ce5d1d3a0166f4e09469fbe8cbd3fccd78329bfc0",
+      "inventoryIndex": 41
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-privacy-navigation.test.mjs",
+      "title": "reserves the shipping final-section scrollport and recalculates it after rotation",
+      "removedAssertions": [
+        "expect(policy).toContain('--page-tail: calc(var(--space-4) + var(--page-footer-reserve));');",
+        "expect(policy).toContain('min-height: calc(100dvh - var(--spy-line) - var(--page-tail));');",
+        "expect(shell).toContain(`--page-footer-reserve: ${PRIVACY_LAYOUT.footerReserve}px;`);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements read deleted privacy CSS tail/scrollport declarations; the actual Native final-section scroll reserve and rotation recalculation are retained.",
+      "reviewedSourceSha256": "748698a91fd07ca04ea54d816f2b414ff66271905337efcb0b1e95fccd832101",
+      "inventoryIndex": 42
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-privacy-navigation.test.mjs",
+      "title": "renders the shipping metadata row and compact contents geometry",
+      "removedAssertions": [
+        "expect(pageShell).toContain('line-height: 1.62;');",
+        "expect(pageRule).toContain('padding-bottom: var(--space-5);');",
+        "expect(policy).toContain('gap: 10px;');",
+        "expect(policy).toContain('margin: calc(-1 * var(--space-4)) 0 var(--space-6);');",
+        "expect(toc).toContain(`--toc-row-height: ${PAGE_CONTENTS.row}px;`);",
+        "expect(toc).toContain(`--toc-shell-border-width: ${PAGE_CONTENTS.border}px;`);",
+        "expect(toc).toContain(`--toc-panel-min: ${PAGE_CONTENTS.panelMin}px;`);",
+        "expect(toc).toContain(`width: ${PAGE_CONTENTS.count}px;`);",
+        "expect(toc).toContain(`height: ${PAGE_CONTENTS.mark}px;`);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements read deleted PageShell/privacy/contents CSS literals; actual mounted metadata-row and compact contents geometry are retained.",
+      "reviewedSourceSha256": "748698a91fd07ca04ea54d816f2b414ff66271905337efcb0b1e95fccd832101",
+      "inventoryIndex": 43
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-privacy-navigation.test.mjs",
+      "title": "pins the section-link target, blob, icon and heading spacing to shipping",
+      "removedAssertions": [
+        "expect(heading).toContain(`--section-link-size: ${PRIVACY_LINK_GEOMETRY.target}px;`);",
+        "expect(heading).toContain(`width: ${PRIVACY_LINK_GEOMETRY.blob}px;`);",
+        "expect(heading).toContain(`height: ${PRIVACY_LINK_GEOMETRY.blob}px;`);",
+        "expect(heading).toContain(`margin-bottom: ${PRIVACY_LINK_GEOMETRY.headingGap}px;`);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements read deleted privacy heading/link CSS literals; actual section-link target, blob, icon, and heading spacing checks remain.",
+      "reviewedSourceSha256": "748698a91fd07ca04ea54d816f2b414ff66271905337efcb0b1e95fccd832101",
+      "inventoryIndex": 44
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-flight.test.mjs",
+      "title": "retries the exact picture that failed, though the paper has changed since",
+      "removedAssertions": [
+        "expect(banners()).toEqual([`${copy.heading}${copy.detail}Try again`]);"
+      ],
+      "disposition": "restored-native-assertions",
+      "rationale": "The failed-iOS retry callback again pins exact rendered banner copy while verifying retry exports the original failed picture after the current paper changes.",
+      "reviewedSourceSha256": "aa4f62975cfbce319fc086d6a6929e359837571ce2c6a396da874ee57e54d0e7",
+      "inventoryIndex": 45
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-flight.test.mjs",
+      "title": "offers Open Settings behind the external links check for a refused permission on iOS",
+      "removedAssertions": [
+        "expect(banners()).toEqual([`${copy.heading}${copy.detail}Open SettingsTry again`]);"
+      ],
+      "disposition": "preserved-equivalent",
+      "rationale": "The iOS refused-permission banner assertion concatenates the same expected strings instead of interpolating the old source; real Settings action remains behind its external-links check.",
+      "reviewedSourceSha256": "aa4f62975cfbce319fc086d6a6929e359837571ce2c6a396da874ee57e54d0e7",
+      "inventoryIndex": 46
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-save-flight.test.mjs",
+      "title": "words a web download that failed without Settings to send a parent to",
+      "removedAssertions": [
+        "expect(banners()).toEqual([`${copy.heading}${copy.detail}Try again`]);"
+      ],
+      "disposition": "preserved-equivalent",
+      "rationale": "The failed-web-download banner assertion concatenates the same expected strings instead of interpolating the old source; real web behavior still exposes no Settings action.",
+      "reviewedSourceSha256": "aa4f62975cfbce319fc086d6a6929e359837571ce2c6a396da874ee57e54d0e7",
+      "inventoryIndex": 47
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-segmented-picker.test.mjs",
+      "title": "holds every literal the port carries to the Svelte style block",
+      "removedAssertions": [
+        "expect(declaration('.segment', '--thumb-travel-duration')).toBe(\n      `${PICKER_METRICS.THUMB_TRAVEL_MS}ms`\n    );",
+        "expect(declaration('.segment .option', 'gap')).toBe(\n      `var(--segment-option-gap, ${PICKER_METRICS.SEGMENT_OPTION_GAP_PX}px)`\n    );",
+        "expect(Number(declaration('.segment .option', 'line-height'))).toBe(\n      PICKER_METRICS.SEGMENT_LINE_HEIGHT\n    );",
+        "expect(px(declaration('.segment :global(.picker-option-icon)', 'width'))).toBe(\n      PICKER_METRICS.SEGMENT_ICON_PX\n    );",
+        "expect(declaration('.segment:not(.fill) .option', 'padding')).toBe(\n      `var(--space-2) ${PICKER_METRICS.HUG_OPTION_PADDING_INLINE_PX}px`\n    );",
+        "expect(px(declaration('.chip', 'gap'))).toBe(PICKER_METRICS.CHIP_GAP_PX);",
+        "expect(declaration('.chip', 'grid-template-columns')).toMatch(/^repeat\\(2,/);",
+        "expect(px(declaration('.chip .option', 'gap'))).toBe(PICKER_METRICS.CHIP_GAP_PX);",
+        "expect(declaration('.chip .option', 'padding')).toBe(\n      `${PICKER_METRICS.CHIP_PADDING_BLOCK_PX}px ${PICKER_METRICS.CHIP_PADDING_INLINE_PX}px`\n    );",
+        "expect(px(declaration('.chip :global(.picker-option-icon)', 'width'))).toBe(\n      PICKER_METRICS.CHIP_ICON_PX\n    );",
+        "expect(px(declaration('.option-check', 'width'))).toBe(PICKER_METRICS.CHECK_PX);",
+        "expect(px(declaration('.option-check :global(.option-check-icon)', 'width'))).toBe(\n      PICKER_METRICS.CHECK_PX\n    );",
+        "expect(px(declaration('.underline', '--underline-segment-width'))).toBe(\n      PICKER_METRICS.UNDERLINE_SEGMENT_PX\n    );",
+        "expect(px(declaration('.underline', 'gap'))).toBe(PICKER_METRICS.UNDERLINE_GAP_PX);",
+        "expect(px(declaration('.underline .option', 'gap'))).toBe(\n      PICKER_METRICS.UNDERLINE_OPTION_GAP_PX\n    );",
+        "expect(declaration('.underline .option', 'padding')).toBe(\n      `${PICKER_METRICS.UNDERLINE_PADDING_TOP_PX}px ${PICKER_METRICS.UNDERLINE_PADDING_INLINE_PX}px ${PICKER_METRICS.UNDERLINE_PADDING_BOTTOM_PX}px`\n    );",
+        "expect(Number(declaration('.underline .option', 'line-height'))).toBe(\n      PICKER_METRICS.UNDERLINE_LINE_HEIGHT\n    );",
+        "expect(declaration('.underline .option', 'margin-bottom')).toBe(\n      'calc(-1 * var(--border-width))'\n    );",
+        "expect(px(declaration('.underline :global(.picker-option-icon)', 'width'))).toBe(\n      PICKER_METRICS.UNDERLINE_ICON_PX\n    );",
+        "expect(SHIPPING_PICKER).toContain('transform var(--thumb-travel-duration) var(--ease-glide)');",
+        "expect(SHIPPING_PICKER).toContain(`@media (max-width: ${PHONE_MAX_WIDTH_PX}px)`);"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Removed statements compare Native segmented-picker literals with a deleted Svelte style block; actual Native layout/semantics/interaction cases remain in the file.",
+      "reviewedSourceSha256": "6c2a99d62fe4fe88e32fd755ae71b8ced546ffc7cc4f8afa9ca0d179d25143cf",
+      "inventoryIndex": 48
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-segmented-picker.test.mjs",
+      "title": "ports the roving-radio rules case for case",
+      "removedAssertions": [
+        "expect(nativeRoving.arrowDelta(key), key).toBe(shippingRoving.arrowDelta(key));",
+        "expect(nativeRoving.nextEnabledIndex(layout, from, delta)).toBe(\n            shippingRoving.nextEnabledIndex(layout, from, delta)\n          );",
+        "expect(nativeRoving.rovingTabIndex(valued, isSelected)).toBe(\n          shippingRoving.rovingTabIndex(valued, isSelected)\n        );"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The roving-radio policy callback now checks explicit complete disabled/unselected/boundary fixtures and their results rather than deriving expected results from deleted Svelte source.",
+      "reviewedSourceSha256": "6c2a99d62fe4fe88e32fd755ae71b8ced546ffc7cc4f8afa9ca0d179d25143cf",
+      "inventoryIndex": 49
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-selection.test.mjs",
+      "title": "maps a %s pressed button into native selected state",
+      "removedAssertions": [
+        "expect(shipping).toContain('aria-pressed=');",
+        "expect(shipping).not.toContain('role=\"radio\"');"
+      ],
+      "disposition": "retired-source-oracle",
+      "rationale": "Only old Svelte aria-pressed and role markup checks are removed; mounted Native selected accessibility state remains tested for each button kind.",
+      "reviewedSourceSha256": "9fba99cbae1b8185671cbdfc22eac1d2156d72daf572aa6f8b60f74f678808f9",
+      "inventoryIndex": 50
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+      "title": "picks the phone, wide and compact shells where SettingsModal does",
+      "removedAssertions": [
+        "expect(SETTINGS).toContain(\n      'const WIDE_QUERY = `(min-width: ${SETTINGS_WIDE_MIN_WIDTH_PX}px)`;'\n    );",
+        "expect(SETTINGS).toContain('compact: PHONE_LANDSCAPE_QUERY');"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The original shell fixtures remain and10additional explicit policy boundaries cover599.98/600heights,699.98/700widths, portrait/square, compact and wide selection.",
+      "reviewedSourceSha256": "4580d01b277da8cb9046b9cc06aba7dcccc340f300f6351b471ce35402b56e26",
+      "inventoryIndex": 51
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-layouts.test.mjs",
+      "title": "pads the compact header as CompactShell does",
+      "removedAssertions": [
+        "expect(modalFrame('settings', PHONE_LANDSCAPE, MODAL_GUTTER_MIN_PX).header).toEqual({\n      top,\n      inline,\n      bottom,\n    });",
+        "expect(modalFrame('settings', TABLET, MODAL_GUTTER_MIN_PX).header.top).not.toBe(top);"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Compact header padding is checked against explicit expected values from the independent fixture, replacing deleted CompactShell stylesheet parsing.",
+      "reviewedSourceSha256": "4580d01b277da8cb9046b9cc06aba7dcccc340f300f6351b471ce35402b56e26",
+      "inventoryIndex": 52
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-reveal.test.mjs",
+      "title": "mounts both %s conditional blocks through the shipping section reveal",
+      "removedAssertions": [
+        "expect(host.querySelectorAll('[data-testid=\"settings-section-reveal\"]')).toHaveLength(\n      [...shipping.matchAll(/transition:sectionReveal/g)].length\n    );",
+        "expect(shippingSource('settings/sectionReveal.ts')).toContain('calm(slide, SECTION_SLIDE)');",
+        "expect(shippingSource('settings/sections.ts')).toContain('duration: SECTION_SLIDE_MS');"
+      ],
+      "disposition": "preserved-equivalent",
+      "rationale": "Both Sound/Tool Drawer fixtures still require exactly2mounted reveal blocks; literal2replaces counting removed Svelte transition directives.",
+      "reviewedSourceSha256": "db9a7ffd6fdce408503ddc97169b0207f44037ad550504084f4a94c535f7b2f1",
+      "inventoryIndex": 53
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-reveal.test.mjs",
+      "title": "mounts each AI Art alternative through its own shipping reveal",
+      "removedAssertions": [
+        "expect(off + on).toBe(\n    [...shippingSource('settings/AiKeyManager.svelte').matchAll(/transition:sectionReveal/g)].length\n  );"
+      ],
+      "disposition": "preserved-equivalent",
+      "rationale": "The AI Art callback checks one mounted reveal for each off/on alternative instead of only a sum of removed Svelte directives, preserving both conditional branches.",
+      "reviewedSourceSha256": "db9a7ffd6fdce408503ddc97169b0207f44037ad550504084f4a94c535f7b2f1",
+      "inventoryIndex": 54
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-row-faces.test.mjs",
+      "title": "sets the title and subtitle in the system face, the title at the shipping weight",
+      "removedAssertions": [
+        "expect(SHIPPING_HUB_ROW_KEEPS_UA_FACE).toBe(true);",
+        "expect(styleOf(title)).toMatchObject({\n      fontFamily: 'system-ui',\n      fontWeight: scale[SHIPPING_HUB_TITLE_WEIGHT],\n    });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The title/subtitle callback checks actual Native system face and title weight against ROW_HUB_ROW_KEEPS_UA_FACE/ROW_HUB_TITLE_WEIGHT; old UA-font CSS parsing is retired.",
+      "reviewedSourceSha256": "a86af06cb9cffb15d2c02104b679e9551770305b8212334d401dd1e4288007f1",
+      "inventoryIndex": 55
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "paints the %s track, ring and thumb at the shipping geometry",
+      "removedAssertions": [
+        "expect([box.width, box.height]).toEqual([SHIPPING.switchWidth, SHIPPING.touchTargetMin]);",
+        "expect([thumb.width, thumb.height]).toEqual([SHIPPING.thumb, SHIPPING.thumb]);",
+        "expect(thumb.backgroundColor).toBe(SHIPPING_THUMB_FACE);",
+        "expect([slot.top, slot.left]).toEqual([\n        (SHIPPING.touchTargetMin - SHIPPING.thumb) / 2,\n        SHIPPING.thumbLeft,\n      ]);"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Actual Native track/ring/thumb geometry and light/dark paint checks use the independent ROW fixture in rsd-settings-row-contract.mjs instead of old Svelte CSS.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 56
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "slides the thumb on the UI thread over the shipping duration and curve",
+      "removedAssertions": [
+        "expect(style(byTestId('toggle-switch-slide')).transform).toEqual([\n      { translateX: SHIPPING.slide },\n    ]);",
+        "expect(native.timings.at(-1)).toMatchObject({ toValue: SHIPPING.slide });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The actual UI-thread thumb timing still checks duration and Bezier configuration against the independent ROW fixture.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 57
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "mirrors the thumb inside the track in a right-to-left layout",
+      "removedAssertions": [
+        "expect(end).toBeLessThanOrEqual(SHIPPING.switchWidth);",
+        "expect(native.timings.at(-1)).toMatchObject({ toValue: -SHIPPING.slide });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "The actual RTL thumb translation remains checked against independent ROW geometry for both switch states.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 58
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "lands the thumb without sliding under reduced motion",
+      "removedAssertions": [
+        "expect(native.timings).toEqual([expect.objectContaining({ toValue: SHIPPING.slide })]);"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Reduced-motion behavior still checks the actual thumb endpoint and absence of sliding timing using independent ROW geometry.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 59
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "carries a sun or moon glyph in brand ink on the thumb",
+      "removedAssertions": [
+        "expect([Number(glyph.getAttribute('width')), Number(glyph.getAttribute('height'))]).toEqual([\n      SHIPPING.glyph,\n      SHIPPING.glyph,\n    ]);"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Actual sun/moon glyph and brand-ink assertions remain, with the independent ROW thumb-face fixture replacing old source projection.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 60
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "lays out the %s icon, label and indented help",
+      "removedAssertions": [
+        "expect(style(labelHalf).gap).toBe(SHIPPING.settingIconGap);",
+        "expect(Number(icon.getAttribute('width'))).toBe(SHIPPING.settingIcon);",
+        "expect(help).toMatchObject({\n      marginTop: SHIPPING.helpGap,\n      marginLeft: SHIPPING.settingIcon + SHIPPING.settingIconGap,\n      color: themes[theme].textSoft,\n      fontSize: px(scale.fontSizeSm),\n    });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Actual icon, label, and indented-help layout remains checked in both row fixtures against independent ROW geometry/type values.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 61
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "stacks %s cards on the raised surface",
+      "removedAssertions": [
+        "expect(style(byTestId('setting-section-body')).gap).toBe(SHIPPING.groupGap);",
+        "expect(style(byTestId('setting-card'))).toMatchObject({\n      backgroundColor: themes[theme].surface2,\n      borderRadius: px(scale.radiusLg),\n      paddingTop: SHIPPING.cardPaddingY,\n      paddingBottom: SHIPPING.cardPaddingY,\n      paddingLeft: SHIPPING.cardPaddingX,\n      paddingRight: SHIPPING.cardPaddingX,\n    });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Actual card and group stacking, raised surface, spacing, and corners remain checked against independent ROW fixtures.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 62
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "sets the %s rule label and its strong tier",
+      "removedAssertions": [
+        "expect(style(byTestId('rule-label-heading'))).toMatchObject({\n      color: themes[theme].labelInk,\n      fontSize: xs,\n      letterSpacing: SHIPPING_TRACKING * xs,\n      textTransform: 'uppercase',\n    });",
+        "expect(style(byTestId('rule-label-heading'))).toMatchObject({\n      color: themes[theme].text,\n      fontSize: sm,\n      letterSpacing: SHIPPING_STRONG_TRACKING * sm,\n    });"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Actual normal/strong rule label font, ink, and tracking remain checked against independent ROW tracking fixtures.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 63
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "sets the %s tile, icon column and two-line subtitle",
+      "removedAssertions": [
+        "expect(Number(icon.getAttribute('width'))).toBe(SHIPPING.hubIcon);",
+        "expect(style(icon.parentElement)).toMatchObject({\n        width: SHIPPING.hubIconBox,\n        height: SHIPPING.hubIconBox,\n      });",
+        "expect(Number(subtitle.dataset.lines)).toBe(SHIPPING.hubLines);",
+        "expect(style(subtitle.parentElement).gap).toBe(SHIPPING.hubTextGap);"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Actual hub tile dimensions, icon column, title/subtitle geometry, and two-line subtitle behavior remain checked against independent ROW fixtures.",
+      "reviewedSourceSha256": "0caa030129d87124bee9bf96ee7ea6e34903ecb6812bc9303e0dc131106f3468",
+      "inventoryIndex": 64
+    },
+    {
+      "inventoryIndex": 65,
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "shows the activity dot only while the section has news, and says so",
+      "removedAssertions": [
+        "expect(dot).toMatchObject({\n      opacity: 1,\n      backgroundColor: brand.brand,\n      borderColor: themes.light.surface2,\n      borderWidth: SHIPPING.dotRing,\n      width: SHIPPING.dot + 2 * SHIPPING.dotRing,\n      top: -(SHIPPING.dotOffset + SHIPPING.dotRing),\n    });"
+      ],
+      "disposition": "Preserved mounted dot geometry; expected owner renamed SHIPPING\u2192ROW, whose literal fixture no longer reads Svelte."
+    },
+    {
+      "inventoryIndex": 66,
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "answers a toggled section inline with a hairline and a trailing switch",
+      "removedAssertions": [
+        "expect(style(byTestId('hub-split'))).toMatchObject({\n      width: px(scale.borderWidth),\n      height: SHIPPING.hubSplit,\n      backgroundColor: themes.light.border,\n    });",
+        "expect(style(byTestId('hub-split').parentElement).gap).toBe(SHIPPING.hubActionGap);"
+      ],
+      "disposition": "Preserved mounted separator and trailing-switch geometry using the same explicit ROW fixture."
+    },
+    {
+      "inventoryIndex": 67,
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "marks the %s active row with the brand rail and wash",
+      "removedAssertions": [
+        "expect(rest).toMatchObject({\n        minHeight: SHIPPING.tocRow,\n        paddingTop: SHIPPING.tocPaddingY,\n        borderLeftWidth: px(scale.borderWidth),\n        borderLeftColor: themes[theme].border,\n        paddingLeft: px(scale.space4),\n      });",
+        "expect(style(byTestId('sidebar-row'))).toMatchObject({\n        borderLeftWidth: SHIPPING.tocSegment,\n        borderLeftColor: brand.brand,\n        paddingLeft: px(scale.space4) - SHIPPING.tocSegment + px(scale.borderWidth),\n        backgroundColor: themes[theme].brandWash,\n      });"
+      ],
+      "disposition": "Preserved mounted active/resting sidebar rail, wash, padding and label ink in both themes; SHIPPING\u2192ROW only."
+    },
+    {
+      "inventoryIndex": 68,
+      "file": "tools/migration/tests/rsd-native-settings-rows.test.mjs",
+      "title": "selects its section and carries the icon with its activity dot",
+      "removedAssertions": [
+        "expect(Number(row.querySelector('svg').getAttribute('width'))).toBe(SHIPPING.tocIcon);"
+      ],
+      "disposition": "Preserved selected row aria, icon width, activity dot and click dispatch; SHIPPING\u2192ROW only."
+    },
+    {
+      "inventoryIndex": 69,
+      "file": "tools/migration/tests/rsd-native-settings-sections.test.mjs",
+      "title": "lists every shipping section in order with its icon tile and shipping status line",
+      "removedAssertions": [
+        "expect(host.querySelector('[role=\"dialog\"]').getAttribute('aria-label')).toBe(settingsName);"
+      ],
+      "disposition": "Restored mounted Settings dialog aria-label with explicit Settings expectation; complete ordered status lines and drill/back transitions remain."
+    },
+    {
+      "inventoryIndex": 70,
+      "file": "tools/migration/tests/rsd-native-tool-drawer-settings.test.mjs",
+      "title": "ports the master switch, rule label, spacing and chip threshold from ControlsSection",
+      "removedAssertions": [
+        "expect(rowProp(master, 'label')).toBe(TOOL_DRAWER_COPY.enable);",
+        "expect(rowProp(master, 'help')).toBe(TOOL_DRAWER_COPY.enableHelp);",
+        "expect(rowProp(master, 'icon')).toBe('dashboard-customize');",
+        "expect(CONTROLS).toContain(\n      `<RuleLabel as=\"h4\" strong class=\"tools-heading\">${TOOL_DRAWER_COPY.tools}</RuleLabel>`\n    );",
+        "expect(CONTROLS).toContain(`label=\"${TOOL_DRAWER_COPY.tools}\"`);",
+        "expect(CONTROLS).toContain(`TWO_COLUMN_CHIP_WIDTH_PX = ${TWO_COLUMN_CHIP_WIDTH_PX};`);",
+        "expect(cssPx(CONTROLS, '.tools-block', 'margin-top')).toBe(TOOL_DRAWER_SPACING.toolsTop);",
+        "expect(cssPx(CONTROLS, '.tools-block :global(h4.tools-heading)', 'margin-bottom')).toBe(\n      TOOL_DRAWER_SPACING.headingBottom\n    );",
+        "expect(cssPx(CONTROLS, '.pencil-eraser', 'margin-top')).toBe(TOOL_DRAWER_SPACING.pencilTop);",
+        "expect(SECTIONS).toContain(`return '${TOOL_DRAWER_COPY.off}';`);"
+      ],
+      "disposition": "Removed assertions parse only retired ControlsSection/sections markup and CSS; retained native subtitle agreement plus mounted tool-switch, chip-boundary and drawer behavior callbacks in the same file."
+    },
+    {
+      "inventoryIndex": 71,
+      "file": "tools/tests/native-ai-flow-copy.test.mjs",
+      "title": "names the AI Image Button and Waiting Polaroid as shipping does",
+      "removedAssertions": [
+        "expect(SHIPPING.button).toContain(`'${label}'`);",
+        "expect(SHIPPING.button).toContain('`Create AI image, ${freeGrant.remaining} free left`');",
+        "expect(SHIPPING.button).toContain('\"Show what didn\\'t work\"');",
+        "expect(SHIPPING.button).toContain(\"'Show your finished picture'\");",
+        "expect(SHIPPING.polaroid).toContain(label);",
+        "expect(polaroid).toContain(label);"
+      ],
+      "disposition": "Native aiButtonFace state/allowance outputs retain explicit label table. Removed Svelte button markup and static dual-source waiting-polaroid strings; mounted pending/ready behavior remains in rsd-native-ai."
+    },
+    {
+      "inventoryIndex": 72,
+      "file": "tools/tests/native-ai-flow-copy.test.mjs",
+      "title": "words the problem report and lists its rows as shipping does",
+      "removedAssertions": [
+        "expect(`${SHIPPING.report} ${SHIPPING.disclosure}`, key).toContain(text);",
+        "expect(rows).toContain(`const MAX_ERROR_MESSAGE_LENGTH = ${MAX_FAILURE_MESSAGE_LENGTH};`);",
+        "expect(rows).toContain(`label: '${label}'`);",
+        "expect(value).toBeTruthy();",
+        "expect(rows).toContain(\"'Picture generation failed'\");",
+        "expect(rows).toContain(\"'No error details available.'\");",
+        "expect(rows).toContain('in a row');",
+        "expect(rows).toContain(\"style ?? 'Default'\");",
+        "expect(rows).toContain(\"failure.status ?? 'No response'\");"
+      ],
+      "disposition": "Restored truthiness for every actual problemReportRows value; existing explicit first-three output rows and reportReply owner agreement remain. Removed old report/disclosure markup and failureReport source-reader assertions."
+    },
+    {
+      "inventoryIndex": 73,
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "title": "steps and columns the AI Style Prompt at the shipping breakpoints",
+      "removedAssertions": [
+        "expect(SHIPPING.prompt).toContain(`@media (max-height: ${AI_PROMPT_SHORT_MAX_HEIGHT_PX}px)`);",
+        "expect(SHIPPING.prompt).toContain(`@media (max-width: ${AI_PROMPT_NARROW_MAX_WIDTH_PX}px)`);",
+        "expect(SHIPPING.prompt).toContain(\n    `@media (min-width: ${TABLET_MIN_SIDE_PX}px) and (min-height: ${TABLET_MIN_SIDE_PX}px)`\n  );",
+        "expect(declaration(rule(SHIPPING.prompt, '.ai-style-options'), 'grid-template-columns')).toBe(\n    `repeat(${AI_PROMPT_COLUMNS.wide}, 1fr)`\n  );",
+        "expect(\n    declaration(\n      rule(SHIPPING.prompt, '.ai-style-options', '@media (max-width: 420px)'),\n      'grid-template-columns'\n    )\n  ).toBe(`repeat(${AI_PROMPT_COLUMNS.narrow}, 1fr)`);",
+        "expect(declaration(thumb, 'border')).toBe(\n    `${prompt.AI_STYLE_THUMB_BORDER_PX}px solid transparent`\n  );",
+        "expect(declaration(rule(SHIPPING.prompt, '.ai-style-option'), 'gap')).toBe(\n    `${prompt.AI_STYLE_THUMB_GAP_PX}px`\n  );",
+        "expect(SHIPPING.prompt).toContain(`transform: translateY(-${prompt.AI_STYLE_HOVER_LIFT_PX}px);`);",
+        "expect(SHIPPING.prompt).toContain(`transform: scale(${prompt.AI_STYLE_PRESSED_SCALE});`);",
+        "expect(SHIPPING.prompt).toContain('filter: drop-shadow(0 2px 3px rgb(0 0 0 / 28%));');"
+      ],
+      "disposition": "Native step and column boundary outputs and shadow expectation remain; removed retired prompt CSS breakpoint/declaration comparisons."
+    },
+    {
+      "inventoryIndex": 74,
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "title": "budgets the AI Result card from the shipping custom properties",
+      "removedAssertions": [
+        "expect(declaration(card, '--result-gutter-min')).toBe(`${m.gutterMin}px`);",
+        "expect(declaration(card, '--result-gutter-max')).toBe(`${m.gutterMax}px`);",
+        "expect(declaration(card, '--result-gutter-ramp-from')).toBe(`${m.gutterRampFrom}px`);",
+        "expect(declaration(card, '--result-gutter-ramp')).toBe(`${m.gutterRamp}`);",
+        "expect(declaration(card, '--result-min-w')).toBe(`min(var(--result-max-w), ${m.minWidth}px)`);",
+        "expect(declaration(card, '--loading-caption-height')).toBe('max(46px, var(--touch-target-min))');",
+        "expect(declaration(card, '--keep-drawing-height')).toBe('var(--touch-target-min)');",
+        "expect(declaration(card, '--result-sizing-air')).toBe(`${m.sizingAir}px`);",
+        "expect(declaration(card, '--result-inline-padding')).toBe('calc(2 * var(--space-4))');",
+        "expect(declaration(ruleWith(SHIPPING.result, '.ai-result-modal.errored', 'width'), 'width')).toBe(\n    `min(var(--result-max-w), ${m.safetyWidth}px)`\n  );",
+        "expect(\n    declaration(ruleWith(SHIPPING.result, '.ai-result-modal.serverError', 'width'), 'width')\n  ).toBe(`min(var(--result-max-w), ${m.serverErrorWidth}px)`);",
+        "expect(SHIPPING.appCss).toContain(`--report-strip-height: ${m.reportStripHeight}px;`);",
+        "expect(SHIPPING.appCss).toContain('--report-strip-gap: var(--space-4);');",
+        "expect(SHIPPING.appCss).toContain('--report-strip-tap: var(--touch-target-min);');",
+        "expect(declaration(card, '--result-autosave-footer-reserve')).toBe(\n    `${m.autosaveFooterReserve}px`\n  );"
+      ],
+      "disposition": "Native token agreements and actual aiResultFrame sizing/reservation tests remain. Removed old CSS custom-property comparisons to AI_RESULT_METRICS."
+    },
+    {
+      "inventoryIndex": 75,
+      "file": "tools/tests/native-ai-flow-geometry.test.mjs",
+      "title": "holds the stage, footer, disclosure, error card and report thumbs to shipping",
+      "removedAssertions": [
+        "expect(SHIPPING.stage).toContain(`const MIN_BLUR_PX = ${stage.STAGE_MIN_BLUR_PX};`);",
+        "expect(SHIPPING.stage).toContain(`const MAX_EXTRA_BLUR_PX = ${stage.STAGE_MAX_EXTRA_BLUR_PX};`);",
+        "expect(SHIPPING.stage).toContain(`const BLUR_STEP_PX = ${stage.STAGE_BLUR_STEP_PX};`);",
+        "expect(SHIPPING.stage).toContain(`transform: scale(${stage.STAGE_BLUR_BLEED_SCALE});`);",
+        "expect(SHIPPING.stage).toContain(`transform: scale(${stage.STAGE_RESULT_ENTRY_SCALE});`);",
+        "expect(SHIPPING.stage).toContain(`opacity ${stage.STAGE_RESULT_FADE_MS / 1000}s ease`);",
+        "expect(SHIPPING.stage).toContain(\n    `transform ${stage.STAGE_RESULT_SETTLE_MS / 1000}s var(--ease-glide)`\n  );",
+        "expect(SHIPPING.stage).toContain(`opacity ${stage.STAGE_PREVIEW_EXIT_MS / 1000}s ease`);",
+        "expect(SHIPPING.stage).toContain('box-shadow: 0 4px 16px rgb(0 0 0 / 15%);');",
+        "expect(declaration(download, 'padding')).toBe(`0 ${parts.RESULT_PILL_PADDING_PX}px`);",
+        "expect(declaration(download, 'gap')).toBe(`${parts.DOWNLOAD_GAP_PX}px`);",
+        "expect(declaration(download, 'box-shadow')).toBe(\n    '0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent)'\n  );",
+        "expect(declaration(rule(SHIPPING.footer, '.ai-result-download:active'), 'transform')).toBe(\n    `scale(${parts.DOWNLOAD_PRESSED_SCALE})`\n  );",
+        "expect(\n    declaration(\n      rule(SHIPPING.footer, '.ai-result-download :global(.ai-result-download-icon)'),\n      'width'\n    )\n  ).toBe(`${parts.DOWNLOAD_ICON_PX}px`);",
+        "expect(declaration(rule(SHIPPING.result, '.ai-keep-drawing :global(.btn)'), 'padding')).toBe(\n    `0 ${parts.RESULT_PILL_PADDING_PX}px`\n  );",
+        "expect(declaration(strip, 'padding')).toBe(`0 ${parts.DISCLOSURE_PADDING_PX}px`);",
+        "expect(declaration(rule(SHIPPING.disclosure, '.ai-report-flag'), '--report-icon-size')).toBe(\n    `${parts.REPORT_FLAG_ICON_PX}px`\n  );",
+        "expect(declaration(rule(SHIPPING.disclosure, '.ai-report-flag:active'), 'transform')).toBe(\n    `scale(${parts.REPORT_FLAG_PRESSED_SCALE})`\n  );",
+        "expect(declaration(glyph, 'width')).toBe(`${errorCard.ERROR_GLYPH_PX}px`);",
+        "expect(\n    declaration(rule(SHIPPING.errorCard, '.ai-error-card :global(.ai-error-refresh)'), 'width')\n  ).toBe(`${errorCard.ERROR_REFRESH_ICON_PX}px`);",
+        "expect(\n    declaration(rule(SHIPPING.errorCard, '.ai-error-card :global(.ai-error-pen)'), 'width')\n  ).toBe(`${errorCard.ERROR_PEN_ICON_PX}px`);",
+        "expect(declaration(rule(SHIPPING.errorCard, '.ai-error-card h2'), 'line-height')).toBe(\n    `${errorCard.ERROR_TITLE_LINE_HEIGHT}`\n  );",
+        "expect(\n    declaration(rule(SHIPPING.errorCard, '.ai-error-card p.ai-error-body'), 'line-height')\n  ).toBe(`${errorCard.ERROR_BODY_LINE_HEIGHT}`);",
+        "expect(declaration(section, 'width')).toBe(\n    `min(86vw, ${errorCard.SAFETY_SECTION_MAX_WIDTH_PX}px)`\n  );",
+        "expect(declaration(section, 'min-height')).toBe(`${errorCard.SAFETY_SECTION_MIN_HEIGHT_PX}px`);",
+        "expect(\n    declaration(rule(SHIPPING.error, '.ai-result-error p.ai-result-error-sub'), 'max-width')\n  ).toBe(`${errorCard.SAFETY_SUB_MAX_WIDTH_PX}px`);",
+        "expect(declaration(rule(SHIPPING.report, '.ai-report-thumbs.single figure'), 'max-width')).toBe(\n    `${report.REPORT_THUMB_SINGLE_MAX_PX}px`\n  );",
+        "expect(declaration(rule(SHIPPING.report, '.ai-report-thumbs img'), 'box-shadow')).toBe(\n    '0 2px 8px rgb(0 0 0 / 14%)'\n  );"
+      ],
+      "disposition": "Native stageBlurPx outputs 18/2/9.75 and shadow values remain; removed old stage/footer/disclosure/error/report CSS literal comparisons."
+    },
+    {
+      "inventoryIndex": 76,
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "title": "stores the feature switches with the shipping fallbacks",
+      "removedAssertions": [
+        "expect(SHIPPING.settings).toContain(\n      `aiCustomizationEnabled: [STORAGE_KEYS.aiCustomizationEnabled, ${DEFAULT_AI_PREFERENCES.aiCustomizationEnabled}]`\n    );",
+        "expect(SHIPPING.settings).toContain(\n      `autoSaveAiEnabled: [STORAGE_KEYS.autoSaveAi, ${DEFAULT_AI_PREFERENCES.autoSaveAiEnabled}]`\n    );"
+      ],
+      "disposition": "FREE_LIMIT cross-owner agreement remains; actual default hydration/migration behaviors covered in native-ai-settings. Removed retired Svelte settings initializer-string comparisons."
+    },
+    {
+      "inventoryIndex": 77,
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "title": "carries the shipping geometry",
+      "removedAssertions": [
+        "expect(SHIPPING.sectionCss).toContain(\n      `--ai-section-card-height: ${literal(NATIVE.geometry, 'AI_SECTION_CARD_HEIGHT_PX')}px;`\n    );",
+        "expect(SHIPPING.tokens).toContain(`fontMono: '${mono}'`);",
+        "expect(css).toContain(`margin: 0 0 ${manager('INTRO_BOTTOM_PX')}px;`);",
+        "expect(css).toContain(`line-height: ${manager('INTRO_LINE_HEIGHT')};`);",
+        "expect(css).toContain(`margin-bottom: ${manager('LABEL_BOTTOM_PX')}px;`);",
+        "expect(css).toContain(`gap: ${manager('ROW_GAP_PX')}px;`);",
+        "expect(css).toContain(`padding: ${input.block}px ${input.inline}px;`);",
+        "expect(css).toContain(`letter-spacing: ${manager('SAVED_LETTER_SPACING_PX')}px;`);",
+        "expect(css).toContain(`margin: ${manager('NOTE_TOP_PX')}px 0 0;`);",
+        "expect(css).toContain(`margin-top: ${manager('ACTIVE_NOTE_TOP_PX')}px;`);",
+        "expect(css).toContain(`gap: ${manager('NOTE_GAP_PX')}px;`);",
+        "expect(css).toContain(`line-height: ${manager('NOTE_LINE_HEIGHT')};`);",
+        "expect(css).toContain(`width: ${manager('NOTE_ICON_PX')}px;`);",
+        "expect(css).toContain(`margin-top: ${manager('NOTE_ICON_TOP_PX')}px;`);",
+        "expect(prop).toContain(`gap: ${valueProp('STEP_GAP_PX')}px;`);",
+        "expect(prop).toContain('aspect-ratio: 278 / 213;');",
+        "expect(prop).toContain(`top: ${valueProp('BADGE_INSET_PX')}px;`);",
+        "expect(prop).toContain(`width: ${valueProp('BADGE_PX')}px;`);",
+        "expect(prop).toContain(`width: ${valueProp('BADGE_PHONE_PX')}px;`);",
+        "expect(prop).toContain(`line-height: ${valueProp('BODY_LINE_HEIGHT')};`);",
+        "expect(prop).toContain(`line-height: ${valueProp('CAPTION_LINE_HEIGHT')};`);",
+        "expect(prop).toContain(`line-height: ${valueProp('CLAIM_LINE_HEIGHT')};`);",
+        "expect(prop).toContain(`grid-template-columns: ${valueProp('CLAIM_ICON_COLUMN_PX')}px 1fr;`);",
+        "expect(prop).toContain(`width: ${valueProp('CLAIM_ICON_PX')}px;`);",
+        "expect(prop).toContain(`margin-top: ${valueProp('CLAIM_ICON_TOP_PX')}px;`);",
+        "expect(prop).toContain(`@media (max-width: ${valueProp('PHONE_MAX_WIDTH_PX')}px)`);",
+        "expect(how).toContain(`margin: 0 0 ${howTo('HOWTO_BOTTOM_PX')}px;`);",
+        "expect(how).toContain(`padding: ${summary.block}px ${summary.inline}px;`);",
+        "expect(how).toContain(`padding: 0 ${list.inline}px ${list.bottom}px ${list.start}px;`);",
+        "expect(how).toContain(`line-height: ${howTo('LIST_LINE_HEIGHT')};`);",
+        "expect(how).toContain(`padding: ${code.block}px ${code.inline}px;`);",
+        "expect(how).toContain(`padding: 0 ${note.inline}px ${note.bottom}px;`);"
+      ],
+      "disposition": "Removed only old manager/value-prop/howto CSS comparisons against native static literals; current image aspect remains pinned and native mounted AI settings contracts remain. This retires source equivalence, not a dynamic owner computation."
+    },
+    {
+      "inventoryIndex": 78,
+      "file": "tools/tests/native-ai-settings-drift.test.mjs",
+      "title": "masks all but the last four characters, as shipping does",
+      "removedAssertions": [
+        "expect(SHIPPING.manager).toContain(\"'*'.repeat(value.length - 4) + value.slice(-4)\");"
+      ],
+      "disposition": "All actual maskSecret results remain; removed old manager formula-source assertion."
+    },
+    {
+      "inventoryIndex": 79,
+      "file": "tools/tests/native-ai-transport.test.mjs",
+      "title": "pins native secure owner semantics and the namespaced app pseudonym without exposing platform identifiers",
+      "removedAssertions": [
+        "expect(shipping).toContain(\"INSTALLATION_NAMESPACE = 'splotch-free-generation-v1'\");"
+      ],
+      "disposition": "Retained Kotlin/Swift namespace, cryptographic/keychain backup semantics; removed the retired Svelte installation namespace source read."
+    },
+    {
+      "inventoryIndex": 80,
+      "file": "tools/tests/native-app-pages.test.mjs",
+      "title": "pins privacy reading rail and section parking geometry to the shipping page",
+      "removedAssertions": [
+        "expect(shell).toContain(`--page-rail-width: ${PRIVACY_LAYOUT.railWidth}px;`);",
+        "expect(shell).toContain(`--page-rail-gutter: ${PRIVACY_LAYOUT.railGap}px;`);",
+        "expect(policy).toContain(`--section-park: ${PRIVACY_LAYOUT.compactPark}px;`);"
+      ],
+      "disposition": "Retained native sticky-top token agreement; removed retired privacy-shell custom-property/source comparisons."
+    },
+    {
+      "inventoryIndex": 81,
+      "file": "tools/tests/native-appearance-paint.test.mjs",
+      "title": "projects canonical white only for semantic Black on dark paper and retains semantic IDs",
+      "removedAssertions": ["expect(paintAppearance('Black', 'dark').hex).toBe(WHITE_INK);"],
+      "disposition": "Restored exact native Black/dark paintAppearance hex #ffffff. Custom black spelling, Blue glaze, semantic IDs, actual SVG/PNG visibility and serialization checks remain."
+    },
+    {
+      "inventoryIndex": 82,
+      "file": "tools/tests/native-appearance-settings.test.mjs",
+      "title": "writes the loosest preference that gives the look, as setResolvedTheme does",
+      "removedAssertions": [
+        "expect(shipping.replace(/\\s+/g, ' ')).toContain(\n      \"settings.setTheme( resolveTheme('system', appearance.systemDark) === wanted ? 'system' : wanted );\"\n    );"
+      ],
+      "disposition": "All actual quickToggleAppearance and resolveAppearance combinations remain; removed old setResolvedTheme source pattern."
+    },
+    {
+      "inventoryIndex": 83,
+      "file": "tools/tests/native-clear-projection.test.mjs",
+      "title": "keeps Clear's ring reveal and emphasis on their shipping curves",
+      "removedAssertions": [
+        "expect(shipping.button).toMatch(/opacity var\\(--duration-base\\) ease,/);",
+        "expect(shipping.button).toMatch(/transform 0\\.3s var\\(--ease-pop\\),/);"
+      ],
+      "disposition": "Actual native ring/emphasis animation-call source assertions remain; removed old Svelte Clear CSS curve comparisons."
+    },
+    {
+      "inventoryIndex": 84,
+      "file": "tools/tests/native-crayon-grain.test.mjs",
+      "title": "contains the canonical phase for seed %s",
+      "removedAssertions": ["expect(crayonPhase(seed)).toEqual({ x, y });"],
+      "disposition": "Restored exact crayonPhase results for six original seeds using fixed coordinates evaluated from the base crayonBrush seedPhase, plus native phase bounds."
+    },
+    {
+      "inventoryIndex": 85,
+      "file": "tools/tests/native-crayon-phase.test.mjs",
+      "title": "keeps seed %s tooth across tile boundaries at both native failure heights",
+      "removedAssertions": [
+        "expect(coverage(output, x, y)).toBeGreaterThan(MIN_COVERAGE);",
+        "expect(\n            corePixels(output, x, y).equals(corePixels(expected, x, y)),\n            `seed ${seed}, core (${x}, ${y}), actual ${coverage(output, x, y)}, shipping ${coverage(expected, x, y)}`\n          ).toBe(true);",
+        "expect(coverage(expected, x, y)).toBeLessThan(1);"
+      ],
+      "disposition": "restored-fixed-contract",
+      "rationale": "Independent fixed raw core-pixel SHA256 equality for all48 base windows, plus coverage bounds. A one-pixel native phase fault rejects all six seed cases."
+    },
+    {
+      "inventoryIndex": 86,
+      "file": "tools/tests/native-crayon-phase.test.mjs",
+      "title": "keeps wax inside the full-width silhouette and detects an overflowing reference",
+      "removedAssertions": [
+        "expect(coverage(overflowing, 330, 584)).toBeGreaterThan(MIN_COVERAGE);"
+      ],
+      "disposition": "Restored independent raster control using a widened actual native stroke (102px) and the same outside sample; both no-overflow and detectable-overflow checks remain."
+    },
+    {
+      "inventoryIndex": 87,
+      "file": "tools/tests/native-feedback-contract.test.mjs",
+      "title": "pins arithmetic ranges and native default to the current gate contract",
+      "removedAssertions": [
+        "expect(source).toContain(`export const GATE_OPERAND_MIN = ${GATE_OPERAND_MIN};`);",
+        "expect(source).toContain(`export const GATE_OPERAND_MAX = ${GATE_OPERAND_MAX};`);",
+        "expect(source).toContain(\"__IS_CAPACITOR__ ? 'always' : 'never'\");"
+      ],
+      "disposition": "Restored fixed operand range [3,9] plus existing gate-mode vocabulary; removed retired CAPACITOR native-default source pattern."
+    },
+    {
+      "inventoryIndex": 88,
+      "file": "tools/tests/native-focus-ring.test.mjs",
+      "title": "lights the AI style cover with shipping halo instead of ringing the whole option",
+      "removedAssertions": [
+        "expect(ring).toMatchObject({\n    on: 'part',\n    borderColor: resolve(AI_HALO['border-color']),\n    boxShadow: resolve(AI_HALO['box-shadow']),\n  });"
+      ],
+      "disposition": "All mounted AI style halo and option outline assertions remain; expected explicit AI_HALO colors no longer need CSS-variable resolver."
+    },
+    {
+      "inventoryIndex": 89,
+      "file": "tools/tests/native-haptics-parity.test.mjs",
+      "title": "asks the native motor for the impact style haptics.ts asks for",
+      "removedAssertions": [
+        "expect(SHIPPING_STYLE).toBeTypeOf('string');",
+        "expect(impactAsync).toHaveBeenCalledWith(ImpactFeedbackStyle[SHIPPING_STYLE]);"
+      ],
+      "disposition": "Snapshot is stale: actual native impactThreshold Medium motor assertion restored with toHaveBeenCalledExactlyOnceWith; web15ms/no-motor callbacks remain."
+    },
+    {
+      "inventoryIndex": 90,
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "title": "sets the same icon beside each term",
+      "removedAssertions": [
+        "expect(bannerMarkup).toMatch(\n      new RegExp(`<Icon name=\"${term.icon}\"${inked}[^>]*/>${spoken}${escape(term.text)}`)\n    );"
+      ],
+      "disposition": "Restored complete expected term objects (icons, text, spoken-only and textInk) rather than only count; retired banner-markup regex removed."
+    },
+    {
+      "inventoryIndex": 91,
+      "file": "tools/tests/native-install-banner-drift.test.mjs",
+      "title": "sets the same icon before the bold word in the parting message",
+      "removedAssertions": [
+        "expect(bannerMarkup).toMatch(new RegExp(`<Icon name=\"${icon}\"[^>]*/> <strong>`));"
+      ],
+      "disposition": "Restored explicit settings icon object before parting message; retired banner-markup regex removed."
+    },
+    {
+      "inventoryIndex": 92,
+      "file": "tools/tests/native-modal-focus.test.mjs",
+      "title": "lands the shipping first choice when the confirmation body arrives after the web modal opens",
+      "removedAssertions": [
+        "expect(cancelAt).toBeGreaterThan(-1);",
+        "expect(sendAt).toBeGreaterThan(cancelAt);",
+        "expect(shipping).not.toContain('autofocus');"
+      ],
+      "disposition": "Actual modal delayed body, cancel/send focus order and opener restoration remain; removed Svelte cancel/send source positions and autofocus absence checks."
+    },
+    {
+      "inventoryIndex": 93,
+      "file": "tools/tests/native-modal-focus.test.mjs",
+      "title": "loads the actual problem confirmation with its device opt-in before landing focus",
+      "removedAssertions": [
+        "expect(deviceAt).toBeGreaterThan(-1);",
+        "expect(actionsAt).toBeGreaterThan(deviceAt);"
+      ],
+      "disposition": "Actual problem-confirmation device checkbox default/focus, delayed device readiness, send and opener restoration remain; removed old markup positional comparison."
+    },
+    {
+      "inventoryIndex": 94,
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "title": "takes Never off external links on iOS alone, as isParentalGateModeAvailable does",
+      "removedAssertions": [
+        "expect(SHIPPING.state).toContain(\n      \"return !(feature === 'externalLinks' && mode === 'never' && platform === 'ios');\"\n    );"
+      ],
+      "disposition": "Actual platform\u00d7feature\u00d7mode native policy matrix unchanged; removed old isParentalGateModeAvailable function-string check."
+    },
+    {
+      "inventoryIndex": 95,
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "title": "asks before Never on Parent Center and nothing else, unless it is already Never",
+      "removedAssertions": [
+        "expect(SHIPPING.state).toContain(\n      \"return feature === 'parentCenter' && mode === 'never' && !isParentCenterUnprotected();\"\n    );"
+      ],
+      "disposition": "Actual native protection-ending matrix unchanged; removed old parentalGate state-function-string check."
+    },
+    {
+      "inventoryIndex": 96,
+      "file": "tools/tests/native-parent-center-parity.test.mjs",
+      "title": "narrows only the landscape keypad, beside the problem",
+      "removedAssertions": [
+        "expect(stepValue(MEASURED.keypad, 'phoneLandscape', '.gate-keypad', 'width')).toBe(\n      PARENT_GATE_KEYPAD_METRICS.phoneLandscape.width\n    );"
+      ],
+      "disposition": "Restored explicit landscape keypad width216 and existing sole-narrowed-size assertion; removed Svelte CSS width reader."
+    },
+    {
+      "inventoryIndex": 97,
+      "file": "tools/tests/native-parent-gate-keyboard.test.mjs",
+      "title": "keeps shortcut capture visually transparent like shipping's window listener",
+      "removedAssertions": [
+        "expect(shipping).toContain(\"window.addEventListener('keydown', onKeyDown)\");",
+        "expect(shipping).not.toMatch(/\\.focus\\(/);"
+      ],
+      "disposition": "Native Android transparent shortcut-capture source checks remain; removed retired Svelte window listener/focus absence."
+    },
+    {
+      "inventoryIndex": 98,
+      "file": "tools/tests/native-parent-gate-keyboard.test.mjs",
+      "title": "restores Android shortcut capture when a modal window returns",
+      "removedAssertions": [
+        "expect(shipping).toContain(\"document.addEventListener('keydown', escape)\");",
+        "expect(shipping).toContain(\"if (event.key === 'Escape' && current.wrapper())\");"
+      ],
+      "disposition": "Native Android modal-return focus code guards remain; removed retired Svelte dialog escape listener assertions."
+    },
+    {
+      "inventoryIndex": 99,
+      "file": "tools/tests/native-photo-library.test.mjs",
+      "title": "reports a missing native gallery writer without losing a staged picture",
+      "removedAssertions": [
+        "expect(nativeSaveFailureCopy('failed', 1, 'android')).toEqual(\n      saveFailureCopy('failed', 1, 'android')\n    );"
+      ],
+      "disposition": "Failure staging/retry native behavior remains, and native-photo-library now pins all24 exact failure-copy OS/outcome/count cases. Removed duplicate comparison to deleted saveFailureCopy owner."
+    },
+    {
+      "inventoryIndex": 100,
+      "file": "tools/tests/native-picture-export.test.mjs",
+      "title": "stretches the picture onto the grid, then paints the shipping %s paper beneath it",
+      "removedAssertions": ["expect(log.slice(drawn + 1)).toEqual(shipping);"],
+      "disposition": "Preserved exact native canvas call order, scale, destination-over paper/grain composition using an explicit expected operation list."
+    },
+    {
+      "inventoryIndex": 101,
+      "file": "tools/tests/native-picture-export.test.mjs",
+      "title": "exports the current extent at DPR %s while retaining the first basis",
+      "removedAssertions": [
+        "expect(pictureExport(paper, 'light', ratio, extent).size).toEqual(\n      shippingExportSize(extent, ratio).size\n    );"
+      ],
+      "disposition": "Preserved actual current-extent export dimensions and adopted-basis immutability with fixed expected grids; broader DPR/fractional-paper table restored in same file."
+    },
+    {
+      "inventoryIndex": 102,
+      "file": "tools/tests/native-picture-save-web.test.mjs",
+      "title": "names the file the way the shipping save does",
+      "removedAssertions": [
+        "expect(pictureFilename(new Date())).toBe(`${SHIPPING_BASENAME}-${timestamp()}.png`);"
+      ],
+      "disposition": "Actual pictureFilename output matrix is restored in native-saved-file-parity (three dates, three MIME types, two basenames); native-picture-save-web still checks downloaded exact names. Removed duplicate old timestamp formula oracle."
+    },
+    {
+      "inventoryIndex": 103,
+      "file": "tools/tests/native-picture-save-web.test.mjs",
+      "title": "words a failed web save in the shipping banner copy, with no Settings to send a parent to",
+      "removedAssertions": [
+        "expect(saveFailureCopy('denied', 1, 'web')).toEqual(nativeSaveFailureCopy('denied', 1, 'web'));"
+      ],
+      "disposition": "Exact web denied/failed plural/copy cases restored in native-photo-library24case table; local web Settings absence and actual save transitions remain. Removed deleted owner equality."
+    },
+    {
+      "inventoryIndex": 104,
+      "file": "tools/tests/native-pointer-halos.test.mjs",
+      "title": "pins motion, ring and rainbow geometry to the shipping component",
+      "removedAssertions": ["expect(shippingProjection(shipping)).toEqual(candidate);"],
+      "disposition": "Restored all16 halo projection fields: in/out duration+scale, ring line/band/rainbow/color/glow, eraser line/fill/glow, preserving easeGlide owner check.",
+      "successor": {
+        "file": "tools/tests/native-pointer-halos.test.mjs",
+        "title": "pins motion, ring and rainbow geometry to the shipping component",
+        "line": 108
+      }
+    },
+    {
+      "inventoryIndex": 105,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "flies the polaroid-show keyframes, offsets, curves and duration",
+      "removedAssertions": [
+        "expect(declaration(frame, 'animation')).toBe('polaroid-show 1.9s linear forwards');",
+        "expect(POLAROID_SHOW_KEYFRAMES.map(({ easing: _easing, ...keyframe }) => keyframe)).toEqual(\n      shipping.map(({ easing: _easing, ...keyframe }) => keyframe)\n    );",
+        "expect(keyframe.easing, `${keyframe.at}`).toEqual(bezier(shipping[index].easing));"
+      ],
+      "disposition": "Restored all8 flight poses and7 outgoing curves plus1900ms duration with fixed base-derived data.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "flies the polaroid-show keyframes, offsets, curves and duration",
+        "line": 51
+      }
+    },
+    {
+      "inventoryIndex": 106,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "flashes the polaroid-flash keyframes for --duration-slow, and drops the flash under Reduce Motion",
+      "removedAssertions": [
+        "expect(declaration(flash, 'animation')).toBe(\n      'polaroid-flash var(--duration-slow) ease-out forwards'\n    );",
+        "expect(POLAROID_FLASH_KEYFRAMES).toEqual([\n      { at: 0, opacity: base, easing: bezier('ease-out') },\n      ...peaks,\n      { at: 1, opacity: base, easing: bezier('ease-out') },\n    ]);",
+        "expect(declaration(block('.polaroid-flash[data-start-reduced-motion]'), 'animation')).toBe(\n      'none'\n    );"
+      ],
+      "disposition": "Restored3 flash frames with opacity/easing, retained native slow-duration and reduced-motion drop guard. Old CSS animation selector checks retire.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "flashes the polaroid-flash keyframes for --duration-slow, and drops the flash under Reduce Motion",
+        "line": 82
+      }
+    },
+    {
+      "inventoryIndex": 107,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "frames the picture on the polaroid paper with the app.css padding, corners and shadow",
+      "removedAssertions": [
+        "expect(declaration(frame, 'padding')).toBe(\n      `${POLAROID_FRAME.paddingTopPx}px ${POLAROID_FRAME.paddingInlinePx}px ${POLAROID_FRAME.paddingBottomPx}px`\n    );",
+        "expect(declaration(frame, 'border-radius')).toBe(`${POLAROID_FRAME.radiusPx}px`);",
+        "expect(declaration(frame, 'background')).toBe('var(--polaroid-paper)');",
+        "expect(rgba(declaration(frame, 'box-shadow'))).toBe(POLAROID_FRAME.shadow);",
+        "expect(declaration(image, 'border-radius')).toBe(\n      `${native.match(/const IMAGE_RADIUS_PX = (\\d+);/)[1]}px`\n    );",
+        "expect(declaration(image, 'background')).toBe('var(--polaroid-paper)');",
+        "expect(declaration(block('.polaroid-overlay'), 'z-index')).toBe('var(--z-polaroid)');"
+      ],
+      "disposition": "Restored fixed frame16/16/64px padding,3px radius, exact shadow and native image radius1px; native paper/background/zIndex assertions retained.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "frames the picture on the polaroid paper with the app.css padding, corners and shadow",
+        "line": 94
+      }
+    },
+    {
+      "inventoryIndex": 108,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "fades a failed save out over --duration-base with the CSS ease",
+      "removedAssertions": [
+        "expect(declaration(block('.polaroid-overlay.polaroid-discarded'), 'transition')).toBe(\n      'opacity var(--duration-base) ease'\n    );"
+      ],
+      "disposition": "Only the deleted CSS discarded-overlay transition reader retires. Existing native CSS_EASE and DISCARD_FADE_MS expectations remain.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "fades a failed save out over --duration-base with the CSS ease",
+        "line": 110
+      }
+    },
+    {
+      "inventoryIndex": 109,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "sizes the polaroid by the shipping rule the shipping flight uses",
+      "removedAssertions": [
+        "expect(read('web/src/lib/drawing/polaroidAnimation.ts')).toContain('polaroidCssSize(');"
+      ],
+      "disposition": "Only deleted web polaroidAnimation source-call text retires. Native call-site plus actual polaroidCssSize valid/invalid results remain unchanged.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "sizes the polaroid by the shipping rule the shipping flight uses",
+        "line": 115
+      }
+    },
+    {
+      "inventoryIndex": 110,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "keeps the landscape-phone flyout entrance on shipping's horizontal axis",
+      "removedAssertions": [
+        "expect(phone).toBeDefined();",
+        "expect(declaration(menu, 'transform-origin')).toBe('0 100%');",
+        "expect(declaration(menu, '--flyout-from-x')).toBe('-6px');",
+        "expect(declaration(menu, '--flyout-from-y')).toBe('0px');"
+      ],
+      "disposition": "Deleted landscape-phone CSS query/origin/x/y readers retire. Original native portrait/originX call-site assertions remain; frozen flyout pose/easing/6px offset checks are restored separately.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "keeps the landscape-phone flyout entrance on shipping's horizontal axis",
+        "line": 166
+      }
+    },
+    {
+      "inventoryIndex": 111,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "fades the removed ink through shipping's scale, drift, duration and curve",
+      "removedAssertions": [
+        "expect(shippingPad).not.toBeNull();",
+        "expect(UNDO_GHOST_AA_PAD_PX).toBe(Number(shippingPad[1]));",
+        "expect(declaration(block('.undo-ink-motion'), 'animation')).toBe(\n    `undo-ink ${UNDO_GHOST_MS}ms var(--ease-glide) forwards paused`\n  );",
+        "expect(transform(declaration(last, 'transform')).scale).toBe(UNDO_GHOST_SCALE);",
+        "expect(declaration(last, 'opacity')).toBe('0');",
+        "expect(read('web/src/lib/drawing/inkMotion.ts')).toContain(\n    `const UNDO_INK_DRIFT_FRACTION = ${UNDO_GHOST_DRIFT_FRACTION};`\n  );",
+        "expect(declaration(block(':root[data-reduce-motion] .undo-ink-motion'), 'display')).toBe('none');"
+      ],
+      "disposition": "Restored native ghost AA pad2px, duration420ms, end scale0.72, drift0.28 and retained easeGlide check. Old display/opacity/source-call checks retire.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "fades the removed ink through shipping's scale, drift, duration and curve",
+        "line": 187
+      }
+    },
+    {
+      "inventoryIndex": 112,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "pins page art arrivals and retirement release to shipping DrawingCanvas",
+      "removedAssertions": [
+        "expect(declaration(block('.coloring-overlay.overlay-ready', source), 'animation')).toBe(\n    'page-land var(--duration-slow) var(--ease-glide) both'\n  );",
+        "expect(art.PAGE_ART_GLIDE).toEqual(bezier(scale.easeGlide));",
+        "expect(art.PAGE_ART_FADE_KEYFRAMES).toEqual(\n    frames\n      .filter(({ declarations }) => declaration(declarations, 'opacity') !== undefined)\n      .map(({ at, declarations }) => ({\n        at,\n        opacity: Number(declaration(declarations, 'opacity')),\n        easing: art.PAGE_ART_GLIDE,\n      }))\n  );",
+        "expect(art.PAGE_ART_SCALE_KEYFRAMES).toEqual(\n    frames\n      .filter(({ declarations }) => declaration(declarations, 'transform') !== undefined)\n      .map(({ at, declarations }) => ({\n        at,\n        scale: transform(declaration(declarations, 'transform')).scale,\n        easing: art.PAGE_ART_GLIDE,\n      }))\n  );",
+        "expect(\n    declaration(\n      block('.coloring-overlay.overlay-ready[data-start-reduced-motion]', source),\n      'animation'\n    )\n  ).toBe('overlay-fade-in var(--duration-base) ease both');",
+        "expect(block('@keyframes overlay-fade-in', source)).not.toContain('transform:');",
+        "expect(source).toMatch(/<img\\s+class=\"coloring-overlay\"[\\s\\S]*?id=\\{COLORING_OVERLAY_ID\\}/);",
+        "expect(source).toContain('hidden={!hasOverlayPage() && !retiringOverlayUrl}');",
+        "expect(source).toMatch(\n    /overlayEl\\.getAnimations\\(\\)\\.map\\(\\(animation\\) => animation\\.finished\\.catch\\(\\(\\) => undefined\\)\\)/\n  );",
+        "expect(source).toContain(\n    'if (!abandoned && retiringOverlayUrl === retiring) retiringOverlayUrl = null;'\n  );",
+        "expect(source).toMatch(\n    /if \\(!untrack\\(\\(\\) => displayedOverlayUrl\\)\\) \\{\\s*overlayMotionStartedReduced = prefersReducedMotion\\(\\);/\n  );"
+      ],
+      "disposition": "Restored3 page-art opacity and2 scale frames with all easings, retained350/200ms duration and calm-ease checks; retired DrawingCanvas markup/animation-finished cleanup readers.",
+      "successor": {
+        "file": "tools/tests/native-polaroid-flight.test.mjs",
+        "title": "pins page art arrivals and retirement release to shipping DrawingCanvas",
+        "line": 204
+      }
+    },
+    {
+      "inventoryIndex": 113,
+      "file": "tools/tests/native-settings-info-drift.test.mjs",
+      "title": "keep every shipping spacing, size and line height",
+      "removedAssertions": [
+        "expect(declaration(source, selector, property), `${selector} ${property}`).toBe(expected);"
+      ],
+      "disposition": "Removed only retired InfoSection/WhatsNew CSS spacing declarations compared to native literal source. Native mounted information/footer typography/layout callbacks retained/restored."
+    },
+    {
+      "inventoryIndex": 114,
+      "file": "tools/tests/native-settings-info-drift.test.mjs",
+      "title": "keep the About and What's New words, icons and link targets",
+      "removedAssertions": [
+        "expect(about).toContain(copy);",
+        "expect(SHIPPING.about).toContain('aria-label=\"Splotch\"');",
+        "expect(SHIPPING.about).toContain('Version {APP_VERSION}');",
+        "expect(text(SHIPPING.whatsNew)).toContain(WHATS_NEW_COPY.allReleases);",
+        "expect(SHIPPING.about).toContain('<a href=\"/privacy\">');",
+        "expect(SHIPPING.whatsNew).toContain('<a href=\"/changelog\">');",
+        "expect(constant(NATIVE.whatsNewOwner, 'RELEASE_SECTION_ICONS')).toEqual(\n      Function(`return (${shippingIcons});`)()\n    );"
+      ],
+      "disposition": "Removed old About/WhatsNew markup/copy/link targets and Svelte release icon object equality; actual mounted native information pages and release generation contracts remain."
+    },
+    {
+      "inventoryIndex": 115,
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "title": "keeps the shipping label, help and the rule that a choice matching the device follows it",
+      "removedAssertions": [
+        "expect(ACCESSIBILITY_SECTION).toContain(`label=\"${REDUCE_MOTION_LABEL}\"`);",
+        "expect(ACCESSIBILITY_SECTION).toContain(`help=\"${REDUCE_MOTION_HELP}\"`);",
+        "expect(APPEARANCE_STATE).toContain(\"const explicit = wanted ? 'reduce' : 'full';\");",
+        "expect(APPEARANCE_STATE).toContain(\n      \"appearance.systemReduceMotion === wanted ? 'system' : explicit\"\n    );"
+      ],
+      "disposition": "All actual reduceMotionChoice/resolveReducedMotion combinations remain; removed old accessibility markup and settings formula patterns."
+    },
+    {
+      "inventoryIndex": 116,
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "title": "names, titles, icons and orders every section as the shipping list does",
+      "removedAssertions": [
+        "expect(shipping.map(({ id }) => id)).toContain('whatsnew');",
+        "expect(NATIVE_SETTINGS_SECTIONS.map(({ contentStamp: _stamp, ...section }) => section)).toEqual(\n      shipping\n    );"
+      ],
+      "disposition": "Restored full explicit native section metadata array (ids, order, labels, title, icons) from the base list, plus heading outputs; no deleted-source parser remains."
+    },
+    {
+      "inventoryIndex": 117,
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "title": "builds its counted status lines from the shipping templates",
+      "removedAssertions": [
+        "expect(SECTIONS, template).toContain(template);",
+        "expect(SECTIONS, template).toContain(template);"
+      ],
+      "disposition": "All actual sectionSubtitle appearance/sound/coloring/AI branches remain; removed old section source-template presence checks."
+    },
+    {
+      "inventoryIndex": 118,
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "title": "wait for shipping's sixth session",
+      "removedAssertions": [
+        "expect(SESSION_COUNTERS).toContain(\n      `export const SETTINGS_ACTIVITY_DOTS_START_SESSION = ${SETTINGS_ACTIVITY_DOTS_START_SESSION};`\n    );"
+      ],
+      "disposition": "Actual activityDotsShown undefined/below/at milestone checks remain; removed old Svelte session-counter initializer string."
+    },
+    {
+      "inventoryIndex": 119,
+      "file": "tools/tests/native-settings-sections.test.mjs",
+      "title": "stamps the dot with the app version, as the shipping section does",
+      "removedAssertions": [
+        "expect(SECTIONS).toMatch(/id: 'whatsnew',[\\s\\S]*?contentStamp: APP_VERSION/);",
+        "expect(whatsNewUnseen(null)).toBe(true);",
+        "expect(whatsNewUnseen('0.0.1')).toBe(true);",
+        "expect(whatsNewUnseen(WHATS_NEW_STAMP)).toBe(false);"
+      ],
+      "disposition": "whatsNewUnseen had zero production callers and is removed as dead native code, so its three tests retire with it. App-version stamp remains pinned; mounted per-section visits, news clearing and version stamp behavior remain in rsd-native-settings-sections/layouts."
+    },
+    {
+      "inventoryIndex": 120,
+      "file": "tools/tests/native-sound-sources.test.mjs",
+      "title": "keeps the shipping Volume range and scales every sound by volume over the default",
+      "removedAssertions": [
+        "expect([SOUND_VOLUME_MIN, SOUND_VOLUME_DEFAULT, SOUND_VOLUME_MAX]).toEqual([\n      shippingConstant('SOUND_VOLUME_MIN'),\n      shippingConstant('SOUND_VOLUME_DEFAULT'),\n      shippingConstant('SOUND_VOLUME_MAX'),\n    ]);",
+        "expect(DRAWING_SOUND).toContain('return settingsState.soundVolume / SOUND_VOLUME_DEFAULT;');"
+      ],
+      "disposition": "Restored explicit sound range [0,50,100]; actual soundVolumeGain/isSoundVolume valid/invalid cases remain; removed old drawing-sound source expression."
+    },
+    {
+      "inventoryIndex": 121,
+      "file": "tools/tests/native-sound-sources.test.mjs",
+      "title": "gates each sound source as shipping does",
+      "removedAssertions": [
+        "expect(DRAWING_SOUND).toContain(\n      'return settingsState.soundEnabled && settingsState.drawingSoundEnabled;'\n    );",
+        "expect(CLEAR_SOUND).toContain(\n      'return settingsState.soundEnabled && settingsState.deleteSoundEnabled;'\n    );",
+        "expect(SETTINGS_STATE).toContain(`${key}: [STORAGE_KEYS.${key}, true]`);",
+        "expect(DEFAULT_SOUND_SOURCE_SETTINGS).toEqual({\n      soundVolume: shippingConstant('SOUND_VOLUME_DEFAULT'),\n      drawingSoundEnabled: true,\n      deleteSoundEnabled: true,\n    });"
+      ],
+      "disposition": "Restored explicit DEFAULT_SOUND_SOURCE_SETTINGS object using its codec owner, plus exhaustive actual drawing/delete sound boolean matrix; removed old source strings."
+    },
+    {
+      "inventoryIndex": 122,
+      "file": "tools/tests/native-stroke-smoothing.test.mjs",
+      "title": "joins crayon passes into the one curve shipping draws across its pass splits",
+      "removedAssertions": ["expect(joinPasses(curves)).toEqual(shippingCurve(SCRIBBLE));"],
+      "disposition": "Actual native crayon pass continuity remains, with independent sparse SVG path goldens restored in native-stroke-paths.fixture.json; old Svelte smoother runtime oracle retired."
+    },
+    {
+      "inventoryIndex": 123,
+      "file": "tools/tests/native-stroke-smoothing.test.mjs",
+      "title": "draws each crayon pass on Skia from where the previous pass ended",
+      "removedAssertions": [
+        "expect(joinPasses(curves)).toEqual(float32(shippingCurve(SCRIBBLE)));"
+      ],
+      "disposition": "Actual Skia crayon pass chaining remains, with independent Skia pen golden path restored in native-stroke-smoothing; old shippingCurve source oracle retired."
+    },
+    {
+      "inventoryIndex": 124,
+      "file": "tools/tests/native-unavailable-cue.test.mjs",
+      "title": "shakes the shipping offsets and swings over the shake duration, ease-in-out between them",
+      "removedAssertions": [
+        "expect(animation).toContain(`action-unavailable-shake ${UNAVAILABLE_SHAKE_MS}ms ease-in-out`);",
+        "expect(\n      UNAVAILABLE_SHAKE_KEYFRAMES.slice(1, -1).map(({ easing: _, ...frame }) => frame)\n    ).toEqual(swings);"
+      ],
+      "disposition": "Restored full7 native shake offsets/rotations,460ms duration and outgoing ease-in-out curves as fixed base-derived data.",
+      "successor": {
+        "file": "tools/tests/native-unavailable-cue.test.mjs",
+        "title": "shakes the shipping offsets and swings over the shake duration, ease-in-out between them",
+        "line": 43
+      }
+    },
+    {
+      "inventoryIndex": 125,
+      "file": "tools/tests/native-unavailable-cue.test.mjs",
+      "title": "flashes the brand wash and glow ring over the flash duration, the glow spreading as it fades",
+      "removedAssertions": [
+        "expect(rule.match(/--action-unavailable-flash-duration:\\s*(\\d+)ms/)[1]).toBe(\n      String(UNAVAILABLE_FLASH_MS)\n    );",
+        "expect(rule.replace(/\\s+/g, ' ')).toContain(\n      'action-unavailable-flash var(--action-unavailable-flash-duration) ease-in-out'\n    );",
+        "expect(peaks.map(({ at }) => at)).toEqual(\n      UNAVAILABLE_FLASH_KEYFRAMES.filter(({ lit }) => lit === 1).map(({ at }) => at)\n    );",
+        "expect(Number(spread)).toBe(UNAVAILABLE_GLOW_SPREAD_PX);",
+        "expect(Number(share) / 100).toBe(UNAVAILABLE_GLOW_BRAND_SHARE);",
+        "expect(frames.at(-1).at).toBe(1);",
+        "expect(Number(fadeSpread)).toBe(UNAVAILABLE_GLOW_FADE_SPREAD_PX);",
+        "expect(Number(fadeShare)).toBe(0);"
+      ],
+      "disposition": "Restored520ms duration, full4 lit/glow/spread frames,10\u219216px ring spread,42% brand share and outgoing ease-in-out curves.",
+      "successor": {
+        "file": "tools/tests/native-unavailable-cue.test.mjs",
+        "title": "flashes the brand wash and glow ring over the flash duration, the glow spreading as it fades",
+        "line": 58
+      }
+    },
+    {
+      "inventoryIndex": 126,
+      "file": "tools/tests/native-web-install-drift.test.mjs",
+      "title": "keeps the Settings install guide",
+      "removedAssertions": [
+        "expect(guide).toContain(step);",
+        "expect(guide).toContain(step);",
+        "expect(guideSource).toContain(`${os}: '${INSTALL_GUIDE_COPY.osLabel[os]}'`);",
+        "expect(guideSource).toContain(`${os}: '${INSTALL_GUIDE_COPY.lockTitle[os]}'`);",
+        "expect(guide).toContain(step);",
+        "expect(guideSource).toContain(`'${INSTALL_GUIDE_COPY.lockedTitle[os]}'`);",
+        "expect(installGuideSteps('ios', SHARE_LOCATION, true)).toHaveLength(\n    installGuideSteps('ios', SHARE_LOCATION, false).length + 1\n  );",
+        "expect(guide).toContain(copy);"
+      ],
+      "disposition": "Native installGuideStepParts outside-Safari extra step remains; full ordered/bold text fixtures cover Safari/outsideSafari/Android/desktop install plus lock/exit. installGuideSteps unused wrapper is removed, so duplicated wrapper length check retires."
+    },
+    {
+      "inventoryIndex": 127,
+      "file": "tools/tests/native-web-shell-head.test.mjs",
+      "title": "takes shipping's drawing-page title in place of Expo's app name",
+      "removedAssertions": ["expect(route).toContain('<title>{HOME_CARD.title}</title>');"],
+      "disposition": "Actual withShippingTitle output and missing-title rejection unchanged; removed old Svelte route title markup reader."
+    }
+  ]
+}

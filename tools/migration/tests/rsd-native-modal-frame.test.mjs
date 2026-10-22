@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { records, root, host, mount, openSettingsSection } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
@@ -374,11 +372,6 @@ it('heads the Settings hub with Settings and Close, and a section with Back to t
 // Shipping's Settings dialog closes on Escape, a backdrop press, Android Back and browser Back
 // from any view (SettingsModal.svelte's onRequestClose is settingsModal.hide; boot/dialogBack.ts).
 it('closes Settings, not the section, on Escape, Android Back and a scrim press', async () => {
-  const shipping = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/SettingsModal.svelte'),
-    'utf8'
-  );
-  expect(shipping).toContain('onRequestClose: settingsModal.hide,');
   const onClose = vi.fn();
   const dispose = await settingsDialog(onClose);
   try {

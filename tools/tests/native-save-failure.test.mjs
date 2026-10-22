@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   UNSAVED_PICTURE_LIMIT,
@@ -15,8 +14,6 @@ vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
       browserDisk.set(`${database}:${store}:${key}`, structuredClone(value)),
   }),
 }));
-
-const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
 // A platform save the test settles one call at a time.
 function heldSave() {
@@ -242,12 +239,6 @@ describe('the Save Failure Banner owner', () => {
     calls[0].resolve('failed');
     await retry;
     expect(failure.getState()).toEqual({ outcome: null, pictureCount: 0, retrying: false });
-  });
-
-  it('keeps the shipping limit on held pictures', () => {
-    expect(read('web/src/lib/state/saveFailure.svelte.ts')).toContain(
-      `export const UNSAVED_PICTURE_LIMIT = ${UNSAVED_PICTURE_LIMIT};`
-    );
   });
 });
 

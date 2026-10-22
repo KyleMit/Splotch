@@ -18,16 +18,16 @@ const LABELS: Record<AiCornerFace, string> = {
 };
 
 // AiWaitingPolaroid.svelte's literals; native-ai-flow-geometry.test.mjs reads them back.
-export const PRINT_WIDTH_PX = 104;
-export const PHOTO_HEIGHT_PX = 68;
-export const TILT_DEG = -5;
+const PRINT_WIDTH_PX = 104;
+const PHOTO_HEIGHT_PX = 68;
+const TILT_DEG = -5;
 // Where the print pins: below the portrait palette bar, or beside the landscape column with room
 // for the ready wiggle and its badge above it.
-export const POLAROID_PORTRAIT_INSET_PX = 16;
-export const POLAROID_HEADROOM_PX = 30;
-export const POLAROID_CLEARANCE_PX = 28;
-export const BADGE_ICON_PX = 28;
-export const BADGE_OFFSET = { top: -12, right: -10 } as const;
+const POLAROID_PORTRAIT_INSET_PX = 16;
+const POLAROID_HEADROOM_PX = 30;
+const POLAROID_CLEARANCE_PX = 28;
+const BADGE_ICON_PX = 28;
+const BADGE_OFFSET = { top: -12, right: -10 } as const;
 const SPINNER_SIZE_PX = 18;
 const SPINNER_MS = 900;
 // The spinner slows rather than stopping: it is the only sign left that anything is happening.

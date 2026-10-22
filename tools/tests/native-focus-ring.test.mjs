@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { act, createElement as h, forwardRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { brand, scale, toCssVarName } from '../../web/src/lib/design/tokens.ts';
+import { brand, scale } from '../../web/src/lib/design/tokens.ts';
 import { Animated } from '../../experiments/native-architecture/src/platform/animated.ts';
 import { RsdButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
 import { RsdIconButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
@@ -160,45 +160,16 @@ function rule(css, selector) {
   return found.declarations;
 }
 
-const TOKENS = new Map(
-  Object.entries({ ...scale, ...brand }).map(([key, value]) => [toCssVarName(key), value])
-);
-const resolve = (value) =>
-  value
-    .replace(/var\((--[\w-]+)\)/g, (_, name) => {
-      if (!TOKENS.has(name)) throw new Error(`no shipping token ${name}`);
-      return TOKENS.get(name);
-    })
-    .replace(/calc\(-1 \* (\d+)px\)/, (_, px) => `-${px}px`);
-
-const styleBlock = (path) => /<style>([\s\S]*)<\/style>/.exec(read(path))[1];
-const APP_CSS = read('web/src/app.css');
-const SHIPPING_RING = rule(APP_CSS, ':focus-visible');
-const RING = resolve(SHIPPING_RING.outline);
-const RING_OFFSET = resolve(SHIPPING_RING['outline-offset']);
-const DISCLOSURE_OFFSET = resolve(
-  rule(
-    styleBlock('web/src/lib/components/design/Disclosure.svelte'),
-    '.disclosure summary:focus-visible'
-  )['outline-offset']
-);
-const SWITCH_RING = rule(
-  styleBlock('web/src/lib/components/settings/ToggleSwitch.svelte'),
-  '.toggle-switch:focus-visible::before'
-);
-const AI_HALO = rule(
-  styleBlock('web/src/lib/components/AiImagePrompt.svelte'),
-  '.ai-style-option:focus-visible .ai-style-thumb'
-);
+const RING = `${scale.focusRingWidth} solid ${brand.brand}`;
+const RING_OFFSET = scale.focusRingOffset;
+const DISCLOSURE_OFFSET = `-${scale.focusRingOffset}`;
+const AI_HALO = {
+  'border-color': brand.brand,
+  'box-shadow': `0 0 0 3px color-mix(in srgb, ${brand.brand} 35%, transparent)`,
+};
 const BLOB_RADII = {
-  radiusBlob1: resolve(
-    rule(styleBlock('web/src/lib/components/design/DialogHeader.svelte'), '.dialog-back')[
-      'border-radius'
-    ]
-  ),
-  radiusBlob2: resolve(
-    rule(APP_CSS, ':is(.modal-close-btn, .dialog-header-control, .banner-dismiss)')['border-radius']
-  ),
+  radiusBlob1: scale.radiusBlob1,
+  radiusBlob2: scale.radiusBlob2,
 };
 
 let host;
@@ -221,26 +192,22 @@ afterEach(async () => {
   document.body.replaceChildren();
 });
 
-it('carries the shipping ring, inset, halo and blob radii into the web export stylesheet', () => {
+it('matches focus tokens, inset, halo and blob radii in the web export stylesheet', () => {
   expect(rule(RING_RULES, ':focus-visible')).toEqual({
     outline: RING,
     'outline-offset': RING_OFFSET,
   });
-  expect(resolve(SWITCH_RING.outline)).toBe(RING);
   expect(
     rule(RING_RULES, "[data-focus-ring='part']:focus-visible [data-focus-ring-part='ring']")
-  ).toEqual({ outline: RING, 'outline-offset': resolve(SWITCH_RING['outline-offset']) });
+  ).toEqual({ outline: RING, 'outline-offset': RING_OFFSET });
   expect(rule(RING_RULES, "[data-focus-ring='part']:focus-visible")).toEqual({ outline: 'none' });
   expect(rule(RING_RULES, "[data-focus-ring='inset']:focus-visible")).toEqual({
     'outline-offset': DISCLOSURE_OFFSET,
   });
   expect(
     rule(RING_RULES, "[data-focus-ring='part']:focus-visible [data-focus-ring-part='halo']")
-  ).toEqual(
-    Object.fromEntries(Object.entries(AI_HALO).map(([key, value]) => [key, resolve(value)]))
-  );
+  ).toEqual(AI_HALO);
   for (const [shape, radius] of Object.entries(BLOB_RADII)) {
-    expect(radius).toBe(scale[shape]);
     expect(rule(RING_RULES, `[data-focus-ring='${shape}']:focus-visible`)).toEqual({
       'border-radius': radius,
     });
@@ -281,7 +248,7 @@ function ringOf(control) {
 }
 
 // happy-dom keeps only the horizontal radii of an elliptical border-radius, so a blob is compared
-// through the same parser; the full value is held to shipping in the stylesheet test above.
+// through the same parser; the stylesheet test above checks the full value against the design tokens.
 function parsedRadius(value) {
   const probeElement = document.createElement('div');
   probeElement.style.borderRadius = value;
@@ -419,8 +386,8 @@ it('lights the AI style cover with shipping halo instead of ringing the whole op
   const ring = ringOf(option);
   expect(ring).toMatchObject({
     on: 'part',
-    borderColor: resolve(AI_HALO['border-color']),
-    boxShadow: resolve(AI_HALO['box-shadow']),
+    borderColor: AI_HALO['border-color'],
+    boxShadow: AI_HALO['box-shadow'],
   });
   expect(computed(option).outlineStyle).toBe('none');
 });

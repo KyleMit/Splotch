@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FLAKY_RECORD_FILENAME as PRODUCER_RECORD_FILENAME,
   FLAKY_RECORD_SCHEMA_VERSION,
-} from '../../../web/playwright-flaky-reporter.ts';
+} from '../../../e2e/playwright-flaky-reporter.ts';
 import {
   classifyRecordText,
   createHistory,

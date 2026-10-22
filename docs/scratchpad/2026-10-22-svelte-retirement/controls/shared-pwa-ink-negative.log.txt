@@ -1,0 +1,70 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/web
+
+ ❯ src/lib/pwa/updates.test.ts (19 tests | 1 failed) 19ms
+   ❯ checkVersionMismatch (9)
+     × does not redirect when the canvas gains content while the version fetch is in flight 2ms
+ ❯ src/lib/pwa/updates.activation.test.ts (19 tests | 1 failed) 9ms
+   ❯ checkForUpdates — stale page defers the reload to the hidden edge (10)
+     × applyPendingUpdate does nothing while the canvas has ink 2ms
+
+ Test Files  2 failed | 2 passed (4)
+      Tests  2 failed | 55 passed (57)
+   Start at  21:30:01
+   Duration  589ms (environment 74%, tests 11%, transform 9%, import 5%, worker 1%)
+
+    Isolate  4 workers spawned · ~114ms startup each (spawn + environment, per file)
+             at least ~341ms faster with isolate: false — reuses workers across files instead of one per file
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/pwa/updates.activation.test.ts > checkForUpdates — stale page defers the reload to the hidden edge > applyPendingUpdate does nothing while the canvas has ink
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      Object {
+        "type": "SKIP_WAITING",
+      },
+    ]
+
+
+Number of calls: 1
+
+ ❯ src/lib/pwa/updates.activation.test.ts:310:36
+    308|     pwaUpdates.applyPendingUpdate();
+    309|
+    310|     expect(worker.postMessage).not.toHaveBeenCalled();
+       |                                    ^
+    311|
+    312|     canvasState.canvasEmpty = true;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/lib/pwa/updates.test.ts > checkVersionMismatch > does not redirect when the canvas gains content while the version fetch is in flight
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      "https://splotch.art/?v=1.0.1",
+    ]
+
+
+Number of calls: 1
+
+ ❯ src/lib/pwa/updates.test.ts:154:41
+    152|     await mismatchCheck;
+    153|
+    154|     expect(window.location.replace).not.toHaveBeenCalled();
+       |                                         ^
+    155|   });
+    156| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯

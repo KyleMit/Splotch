@@ -1,0 +1,100 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "callbacks": [
+    {
+      "entry": 104,
+      "file": "tools/tests/native-pointer-halos.test.mjs",
+      "title": "pins motion, ring and rainbow geometry to the shipping component",
+      "line": 108,
+      "disposition": "restored native projection",
+      "rationale": "Restored all16 halo projection fields: in/out duration+scale, ring line/band/rainbow/color/glow, eraser line/fill/glow, preserving easeGlide owner check."
+    },
+    {
+      "entry": 105,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "flies the polaroid-show keyframes, offsets, curves and duration",
+      "line": 51,
+      "disposition": "restored native keyframes",
+      "rationale": "Restored all8 flight poses and7 outgoing curves plus1900ms duration with fixed base-derived data."
+    },
+    {
+      "entry": 106,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "flashes the polaroid-flash keyframes for --duration-slow, and drops the flash under Reduce Motion",
+      "line": 82,
+      "disposition": "restored native keyframes",
+      "rationale": "Restored3 flash frames with opacity/easing, retained native slow-duration and reduced-motion drop guard. Old CSS animation selector checks retire."
+    },
+    {
+      "entry": 107,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "frames the picture on the polaroid paper with the app.css padding, corners and shadow",
+      "line": 94,
+      "disposition": "restored native geometry",
+      "rationale": "Restored fixed frame16/16/64px padding,3px radius, exact shadow and native image radius1px; native paper/background/zIndex assertions retained."
+    },
+    {
+      "entry": 108,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "fades a failed save out over --duration-base with the CSS ease",
+      "line": 110,
+      "disposition": "retired source-only assertion",
+      "rationale": "Only the deleted CSS discarded-overlay transition reader retires. Existing native CSS_EASE and DISCARD_FADE_MS expectations remain."
+    },
+    {
+      "entry": 109,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "sizes the polaroid by the shipping rule the shipping flight uses",
+      "line": 115,
+      "disposition": "retired source-only assertion",
+      "rationale": "Only deleted web polaroidAnimation source-call text retires. Native call-site plus actual polaroidCssSize valid/invalid results remain unchanged."
+    },
+    {
+      "entry": 110,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "keeps the landscape-phone flyout entrance on shipping's horizontal axis",
+      "line": 166,
+      "disposition": "retired source-only assertions",
+      "rationale": "Deleted landscape-phone CSS query/origin/x/y readers retire. Original native portrait/originX call-site assertions remain; frozen flyout pose/easing/6px offset checks are restored separately."
+    },
+    {
+      "entry": 111,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "fades the removed ink through shipping's scale, drift, duration and curve",
+      "line": 187,
+      "disposition": "restored native geometry",
+      "rationale": "Restored native ghost AA pad2px, duration420ms, end scale0.72, drift0.28 and retained easeGlide check. Old display/opacity/source-call checks retire."
+    },
+    {
+      "entry": 112,
+      "file": "tools/tests/native-polaroid-flight.test.mjs",
+      "title": "pins page art arrivals and retirement release to shipping DrawingCanvas",
+      "line": 204,
+      "disposition": "restored native keyframes",
+      "rationale": "Restored3 page-art opacity and2 scale frames with all easings, retained350/200ms duration and calm-ease checks; retired DrawingCanvas markup/animation-finished cleanup readers."
+    },
+    {
+      "entry": 124,
+      "file": "tools/tests/native-unavailable-cue.test.mjs",
+      "title": "shakes the shipping offsets and swings over the shake duration, ease-in-out between them",
+      "line": 43,
+      "disposition": "restored native keyframes",
+      "rationale": "Restored full7 native shake offsets/rotations,460ms duration and outgoing ease-in-out curves as fixed base-derived data."
+    },
+    {
+      "entry": 125,
+      "file": "tools/tests/native-unavailable-cue.test.mjs",
+      "title": "flashes the brand wash and glow ring over the flash duration, the glow spreading as it fades",
+      "line": 58,
+      "disposition": "restored native keyframes",
+      "rationale": "Restored520ms duration, full4 lit/glow/spread frames,10→16px ring spread,42% brand share and outgoing ease-in-out curves."
+    }
+  ],
+  "extra_whole_callback_restorations": 6,
+  "verification": {
+    "focused_tests": "3files43tests passed",
+    "format": "Prettier passed",
+    "lint": "scoped ESLint passed",
+    "negative_controls": "13 actual callback bodies pass baseline owners and reject injected one-field motion/geometry faults"
+  }
+}

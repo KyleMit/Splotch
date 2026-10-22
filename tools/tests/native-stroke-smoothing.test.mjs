@@ -1,16 +1,13 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { appendSmoothSegments } from '../../web/src/lib/drawing/strokeMath.ts';
-import { paintOpShape } from '../../web/src/lib/drawing/opGeometry.ts';
+import goldenPaths from './native-stroke-paths.fixture.json';
+
 import { strokePath } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { crayonPasses } from '../../experiments/native-architecture/src/drawing/crayon.ts';
 import { paintStroke } from '../../experiments/native-architecture/src/drawing/skiaInkPainter.ts';
 import { createCrayonTileResources } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
 import { LEGACY_PAPER } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 
-// Native ink against shipping's stroke geometry (issue 2831). Shipping's side is the engine's
-// own pipeline: a start dot, then one path op per raster batch built by appendSmoothSegments
-// from the pointer's pen, laid down by the shared op painter (paintOpShape). Native's side is
-// the SVG path string the web ink draws and the Skia path the native painter draws.
+// SVG and Skia paths share the canonical quadratic grid and meet at each crayon pass boundary.
 
 // Awaited so this import settles before the static imports start: a concurrent import can take
 // Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.
@@ -37,8 +34,6 @@ beforeAll(async () => {
 
 // Sparse input: each leg arrives as three samples, as a fast mouse or finger delivers it.
 const SAMPLES_PER_LEG = 3;
-// Shipping rasterizes whatever moves arrived since the last frame as one op.
-const POINTS_PER_FRAME = 2;
 const STROKE_WIDTH = 12;
 
 function paperRound(value) {
@@ -59,7 +54,6 @@ function sparse(vertices) {
   }
   return points;
 }
-
 const ZIGZAG = sparse(
   Array.from({ length: 9 }, (_, index) => ({ x: 100 + index * 70, y: index % 2 ? 420 : 180 }))
 );
@@ -72,54 +66,11 @@ const SCRIBBLE = sparse([
   { x: 120, y: 400 },
 ]);
 
-// The start dot and path ops shipping's engine records for one stroke, as one curve: each op
-// continues from where the one before it ended, so its moveTo is checked and then dropped.
-function shippingCurve(points) {
-  const [first, ...rest] = points;
-  const pen = { x: first.x, y: first.y, midX: first.x, midY: first.y };
-  const commands = [];
-  let end = null;
-  const target = {
-    beginPath() {},
-    stroke() {},
-    fill() {},
-    arc(x, y) {
-      commands.push(['M', x, y]);
-      end = { x, y };
-    },
-    moveTo(x, y) {
-      if (x !== end.x || y !== end.y) throw new Error('A shipping op left a gap in the curve.');
-    },
-    quadraticCurveTo(cx, cy, x, y) {
-      commands.push(['Q', cx, cy, x, y]);
-      end = { x, y };
-    },
-  };
-  paintOpShape(target, { kind: 'dot', x: first.x, y: first.y, radius: STROKE_WIDTH / 2 }, '#000');
-  for (let index = 0; index < rest.length; index += POINTS_PER_FRAME) {
-    const op = {
-      kind: 'path',
-      startX: pen.midX,
-      startY: pen.midY,
-      segs: [],
-      lineWidth: STROKE_WIDTH,
-    };
-    appendSmoothSegments(pen, rest.slice(index, index + POINTS_PER_FRAME), op.segs);
-    paintOpShape(target, op, '#000');
-  }
-  return commands;
-}
-
 function svgCommands(path) {
   return [...path.matchAll(/([MQL])([^MQL]*)/g)].map(([, verb, args]) => [
     verb,
     ...args.trim().split(/\s+/).map(Number),
   ]);
-}
-
-// Skia stores path coordinates as 32-bit floats.
-function float32(commands) {
-  return commands.map(([verb, ...values]) => [verb, ...values.map(Math.fround)]);
 }
 
 function skiaCommands(path) {
@@ -161,7 +112,6 @@ const SCRIBBLE_CRAYON = {
   points: SCRIBBLE,
 };
 
-// A later pass's own moveTo is where the earlier pass ended, or the joined curve has a gap.
 function joinPasses(curves) {
   return curves.flatMap(([move, ...curve], index) => {
     if (!index) return [move, ...curve];
@@ -169,25 +119,15 @@ function joinPasses(curves) {
     return curve;
   });
 }
-
-describe('native strokes follow shipping smoothing', () => {
-  it.each([
-    ['zigzag', ZIGZAG],
-    ['scribble', SCRIBBLE],
-  ])('draws the %s web SVG path shipping draws', (_name, points) => {
-    expect(svgCommands(strokePath(points))).toEqual(shippingCurve(points));
-  });
-
-  it('draws the zigzag Skia pen path shipping draws', () => {
-    const paths = recordedSkiaPaths({ brush: 'pen', color: 'Blue', width: 8, points: ZIGZAG });
-    expect(paths).toEqual([float32(shippingCurve(ZIGZAG))]);
-  });
-
+function float32(curve) {
+  return curve.map(([verb, ...values]) => [verb, ...values.map(Math.fround)]);
+}
+describe('native stroke smoothing agrees across renderers', () => {
   it('joins crayon passes into the one curve shipping draws across its pass splits', () => {
     const passes = crayonPasses(SCRIBBLE_CRAYON, STROKE_WIDTH);
     expect(passes.length).toBeGreaterThan(2);
     const curves = passes.map((pass) => svgCommands(strokePath(pass.points, pass.lead)));
-    expect(joinPasses(curves)).toEqual(shippingCurve(SCRIBBLE));
+    expect(joinPasses(curves)).toEqual(svgCommands(strokePath(SCRIBBLE)));
   });
 
   it('draws each crayon pass on Skia from where the previous pass ended', () => {
@@ -199,6 +139,18 @@ describe('native strokes follow shipping smoothing', () => {
       for (const band of own) expect(band).toEqual(own[0]);
       return own[0];
     });
-    expect(joinPasses(curves)).toEqual(float32(shippingCurve(SCRIBBLE)));
+    expect(joinPasses(curves)).toEqual(float32(svgCommands(strokePath(SCRIBBLE))));
   });
+});
+
+it.each([
+  ['zigzag', ZIGZAG],
+  ['scribble', SCRIBBLE],
+])('draws the %s SVG path on the canonical quadratic grid', (name, points) => {
+  expect(svgCommands(strokePath(points))).toEqual(goldenPaths[name]);
+});
+it('draws the zigzag Skia pen path on the canonical quadratic grid', () => {
+  expect(recordedSkiaPaths({ brush: 'pen', color: 'Blue', width: 8, points: ZIGZAG })).toEqual([
+    float32(goldenPaths.zigzag),
+  ]);
 });

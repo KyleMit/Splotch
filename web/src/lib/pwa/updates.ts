@@ -63,12 +63,12 @@ const MIN_UPDATE_CHECK_GAP_MS = 30_000;
 // Grace period after posting SKIP_WAITING before we give up waiting for the new
 // worker to take control. If controllerchange never arrives, the lifecycle must
 // not stay pinned in 'activating' — see activateWaitingSW.
-export const ACTIVATION_RECOVERY_MS = 10_000;
+const ACTIVATION_RECOVERY_MS = 10_000;
 
 // How long registration.waiting is given to appear after the installing worker
 // reports `installed`. The two are populated by separately queued tasks, so the
 // slot is often still empty at statechange time.
-export const WAITING_SETTLE_MS = 100;
+const WAITING_SETTLE_MS = 100;
 
 // 'silent': the running page already matches the deployed version, so the
 // waiting worker takes control with no reload — nothing visible happens.

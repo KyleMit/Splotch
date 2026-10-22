@@ -145,16 +145,6 @@ export const ALLOWED_REFERENCES = [
     why: 'the handoff packet the skill writes when a run pauses',
   },
   {
-    doc: 'docs/MOBILE/native.md',
-    ref: 'fastlane/Appfile',
-    why: 'the setup steps tell the reader to create it',
-  },
-  {
-    doc: 'docs/MOBILE/native.md',
-    ref: 'fastlane/Fastfile',
-    why: 'the setup steps tell the reader to create it',
-  },
-  {
     doc: 'tools/asset-gen/README.md',
     ref: './design/tokens.ts',
     why: 'an import specifier quoted relative to web/src/lib/theme.ts',
@@ -163,11 +153,6 @@ export const ALLOWED_REFERENCES = [
     doc: 'tools/asset-gen/README.md',
     ref: '../fonts.ts',
     why: 'an import specifier quoted relative to web/src/lib/design/tokens.ts',
-  },
-  {
-    doc: 'docs/ARCHITECTURE.md',
-    ref: './render',
-    why: 'a sub-route of /dev/store-frames, not a file',
   },
   {
     doc: 'tools/vectorize/pilot/README.md',

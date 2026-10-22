@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_STROKE_COLOR } from '../../web/src/lib/palette.ts';
 import {
   isCustomColor,
+  paintAppearance,
   paintHex,
   paintId,
   rememberColor,
@@ -181,6 +182,40 @@ const PAINTED_RECORD = JSON.stringify({
 });
 
 describe('custom paints as session state beside the one settings owner', () => {
+  it.each(['light', 'dark'])(
+    'keeps custom selection and %s painting through an unrelated save, then resets on reopen',
+    async (theme) => {
+      const f = settingsFixture();
+      await f.owner.load();
+      f.owner.setColor('Black');
+      f.owner.selectCustomPaint();
+      expect(f.states.at(-1)).toMatchObject({ activeSwatch: 'custom', selectedColor: 'Black' });
+      expect(paintAppearance(f.states.at(-1).selectedColor, theme).hex).toBe(
+        theme === 'dark' ? '#ffffff' : '#0a0b10'
+      );
+      f.owner.setColor('#123ABC');
+      expect(f.states.at(-1)).toMatchObject({ activeSwatch: 'custom', selectedColor: '#123ABC' });
+      f.owner.setColor('Red');
+      f.owner.selectCustomPaint();
+      expect(f.states.at(-1)).toMatchObject({ activeSwatch: 'custom', selectedColor: '#123ABC' });
+      await f.owner.setEnabled(false);
+      expect(f.states.at(-1)).toMatchObject({ activeSwatch: 'custom', selectedColor: '#123ABC' });
+      const saved = JSON.parse(f.storage.write.mock.calls.at(-1)[0]);
+      expect(saved).not.toHaveProperty('activeSwatch');
+      expect(saved).not.toHaveProperty('selectedColor');
+      const reopened = [];
+      const owner = createSoundSettings(f.storage, (state) => reopened.push(state));
+      await owner.load();
+      expect(reopened.at(-1)).toMatchObject({
+        activeSwatch: 'Purple',
+        selectedColor: 'Purple',
+        customColors: [],
+      });
+      owner.dispose();
+      f.owner.dispose();
+    }
+  );
+
   it("starts every launch on shipping's default paint, whatever the record saved", async () => {
     const states = [];
     await createSoundSettings({ read: async () => PAINTED_RECORD, write: vi.fn() }, (state) =>

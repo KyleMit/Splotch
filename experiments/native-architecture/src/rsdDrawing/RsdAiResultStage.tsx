@@ -13,15 +13,15 @@ import { useAiResultZoom } from '../ai/useAiResultZoom';
 // AiResultStage.svelte's literals; native-ai-flow-geometry.test.mjs reads them back.
 // The drawing stays blurry to keep the suspense, sharpening as the dial fills, in quarter-pixel
 // steps so a half-minute run does not rewrite the blur every frame.
-export const STAGE_MIN_BLUR_PX = 2;
-export const STAGE_MAX_EXTRA_BLUR_PX = 16;
-export const STAGE_BLUR_STEP_PX = 0.25;
+const STAGE_MIN_BLUR_PX = 2;
+const STAGE_MAX_EXTRA_BLUR_PX = 16;
+const STAGE_BLUR_STEP_PX = 0.25;
 // Scaled up a little so the blur's soft edge falls outside the stage.
-export const STAGE_BLUR_BLEED_SCALE = 1.04;
-export const STAGE_PREVIEW_EXIT_MS = 500;
-export const STAGE_RESULT_FADE_MS = 550;
-export const STAGE_RESULT_SETTLE_MS = 600;
-export const STAGE_RESULT_ENTRY_SCALE = 1.08;
+const STAGE_BLUR_BLEED_SCALE = 1.04;
+const STAGE_PREVIEW_EXIT_MS = 500;
+const STAGE_RESULT_FADE_MS = 550;
+const STAGE_RESULT_SETTLE_MS = 600;
+const STAGE_RESULT_ENTRY_SCALE = 1.08;
 export const STAGE_SHADOW = '0px 4px 16px rgba(0, 0, 0, 0.15)';
 const STAGE_RADIUS_PX = 12;
 const GESTURE_POINTER = { touchAction: 'none' } as const;

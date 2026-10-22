@@ -1,41 +1,69 @@
 # Device rotation and landscape
 
-Which orientation controls Splotch can offer on which device, in which target, and what each one
-actually does to the screen. Read this before changing the Orientation picker, the rotation lock, or
-any branch that decides whether the app may turn the screen.
-
-The decision behind the current gating is
-[ADR-0172](adrs/0172-orientation-controls-render-only-where-a-lock-applies.md). The per-API
-support/fallback register is `COMPATIBILITY.md`; the native plugin mechanics are `MOBILE/native.md`.
+Read this before changing the Orientation picker or device rotation. ADR-0172 records the gating
+rationale; ADR-0182 replaces its Svelte/Capacitor implementation with the RN app in
+`experiments/native-architecture/`. Browser API risks live in `docs/COMPATIBILITY.md`.
 
 ## The two questions
 
-Every branch in this area answers one of two separate questions, and conflating them is the
-recurring bug.
+1. **May the app turn the screen right now?** The platform's `useOrientationLockApplies()` controls
+   the picker and whether a saved lock is requested.
+2. **Can Auto override the device's own rotation lock?** `autoOverridesSystemLock()` answers this
+   separately. Only native Android returns true.
 
-1. **May the app turn the screen at all right now?** A capability question plus a permission
-   question. `supportsOrientationLock()` answers the capability half; `orientationLockApplies()`
-   adds the per-moment half and is what the Settings picker renders on.
-2. **Can Auto beat the device's own rotation lock?** Independent of the first, answered by
-   `autoOrientationOverridesSystemLock()`. Only the Android shell can.
+## Current implementation
 
-## What the controls do
+The choice is `portrait`, `landscape` or `auto`, persisted as `orientation` by
+`experiments/native-architecture/src/settings/orientation.ts`. The native owner is
+`experiments/native-architecture/src/platform/deviceOrientation.ts`; Metro resolves its `.web.ts`
+counterpart for browsers.
 
-The picker offers Portrait, Landscape, and Auto (the `OrientationChoice` type), persisted as
-`lockRotationEnabled` + `forceLandscapeOrientation` and applied by
-`web/src/lib/platform/orientation.ts`. `settingsState.orientationChoice()` is the one place those
-two booleans become a choice: the picker, the Settings hub subtitle, and the device lock all read
-it.
+* **Native Portrait / Landscape** request Expo's `PORTRAIT_UP` / `LANDSCAPE_RIGHT` locks.
+* **Native Auto** requests Android's `SCREEN_ORIENTATION_SENSOR` through `lockPlatformAsync`, so
+  Auto can follow the sensor even with the OS rotation toggle off. iOS calls `unlockAsync()` and
+  follows the system.
+* **Native tablets** have no picker and no lock request when the shorter screen side is at least
+  `TABLET_MIN_SIDE_PX` (600dp). The subscription follows live screen changes: crossing the tablet
+  boundary releases or reapplies the saved choice. This avoids Android 16's large-screen ignore and
+  windowed-iPad letterboxing.
+* **Native ordering** serializes requests and settles the latest wanted target; an older async
+  request cannot land after the newer target. Refused requests remain retryable.
+* **Browser gating** requires a Screen Orientation lock method, a coarse primary pointer and element
+  fullscreen or fullscreen display mode. Browser Auto unlocks; it does not override the OS toggle. A
+  fullscreen change reruns the saved choice.
+* **iOS integration** uses scene geometry requests. The `expo-screen-orientation` patch in
+  `patches/` removes the obsolete `UIDevice` orientation setter that iOS 26 rejects. No supported
+  iOS version predates the geometry API.
+* **Dialogs** declare all supported orientations through the modal shell so a phone modal does not
+  veto a Landscape choice in Settings.
 
-* **Portrait / Landscape** beat the OS rotation lock wherever a lock is permitted at all. On the web
-  this is not obvious: Chromium maps them to `SCREEN_ORIENTATION_SENSOR_PORTRAIT` / `_LANDSCAPE`,
-  which ignore the OS toggle.
-* **Auto** beats the OS rotation lock only in the Android app, via `SensorOrientationPlugin`
-  requesting `SCREEN_ORIENTATION_SENSOR`. Everywhere else Auto means "follow the system": Chromium
-  maps `unlock()` to `SCREEN_ORIENTATION_USER` and `lock('any')` to `FULL_USER`, and iOS restores
-  the all-orientations mask. The OS rotation lock pins all three.
+A method's presence is not proof it will succeed: desktop Chromium and some older Firefox versions
+expose a lock that rejects. A render-time gate cannot probe by actually rotating the screen. The web
+picker still has that limitation on touch-primary desktops and large Android screens; these are
+recorded constraints, not evidence for a new capability detector.
 
-## Shipping matrix
+## Testing
+
+* `tools/tests/native-orientation-settings.test.mjs` checks persisted choices and native lock
+  behavior, including request ordering and the live tablet boundary.
+* `tools/tests/native-orientation-web.test.mjs` checks browser gating and fullscreen changes.
+* `tools/migration/tests/rsd-native-orientation.test.mjs` mounts the picker.
+* `tools/tests/native-paper-rotation-mounted.test.mjs` turns the paper with a drawing on it.
+* `tools/tests/native-runtime-warning-patches.test.mjs` checks the iOS dependency patch.
+* `tools/migration/tests/rsd-native-modal-frame.test.mjs` checks dialog orientation support.
+* `e2e/specs/orientation-picker.spec.ts` and `e2e/specs/settings-quick-toggles.spec.ts` cover
+  browser layout, the absent tab case and the Auto caption on the RN export.
+
+Chromium has no display-mode override. Browser specs use the real fullscreen helpers in
+`e2e/support/group-c.ts`; exit fullscreen before resizing the viewport, because Chromium refuses a
+fullscreen resize. The retired Svelte platform/orientation unit tests are historical coverage, not a
+second active enforcement tier.
+
+## Historical device evidence
+
+This table records the 2026-09 Svelte/Capacitor investigation behind ADR-0172. The native
+measurements are not a recapture of the RN app; retain their provenance when using them. Current RN
+behavior is defined above and tested below.
 
 "Dead" means the control renders but changes nothing. Evidence: **M** measured on a Pixel 7 Pro
 emulator (2026-09-22), **S** read from implementation source, **D** vendor documentation, **I**
@@ -80,99 +108,19 @@ the picker.
 Splotch targets SDK 36 (`experiments/native-architecture/android/gradle.properties`), so the last
 row applies today on tablets and unfolded foldables.
 
-## Detection
+## Detection limits retained from the investigation
 
-| Question                         | Predicate                                                                           | Reliable                                                                |
-| -------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Native or web                    | `Capacitor.isNativePlatform()`, `Capacitor.getPlatform()`                           | yes                                                                     |
-| Engine can lock at all           | `typeof screen.orientation?.lock === 'function'`                                    | no — desktop Chrome exposes one that always throws                      |
-| Screen can physically turn       | `matchMedia('(pointer: coarse)')`                                                   | good — misses touch-primary desktops                                    |
-| Lock permitted right now         | `document.fullscreenElement !== null \|\| matchMedia('(display-mode: fullscreen)')` | yes — Chromium's exact condition                                        |
-| Large-screen Android ignore      | `Math.min(screen.width, screen.height) >= 600`                                      | yes — tracks the 600dp rule                                             |
-| Why a lock failed                | catch the rejection, read `error.name`                                              | yes — `SecurityError` means fullscreen, `NotSupportedError` means never |
-| OS rotation lock, Android native | `Settings.System.ACCELEROMETER_ROTATION`                                            | yes, no permission — but Android needs no warning                       |
-| OS rotation lock, web            | none exists                                                                         | **not detectable**                                                      |
-| OS rotation lock, iOS native     | none exists                                                                         | **not detectable** — see below                                          |
+* A coarse pointer identifies the intended handheld class imperfectly; it can include a
+  touch-primary desktop.
+* Screen Orientation's lock-method presence says nothing about whether the call is permitted now.
+  Chromium's fullscreen state is the browser gate; the rejection remains authoritative.
+* The browser cannot read the user's OS rotation-lock toggle. Neither can the iOS app.
+  `UIWindowScene.effectiveGeometry.isInterfaceOrientationLocked` reports an app-requested lock, not
+  the user's Control Center setting; it is also above the iOS floor.
+* An Android shortcut may open a plain browser tab rather than the installed fullscreen PWA.
+* The browser's tablet gate still differs from native: native observes the live short-side limit,
+  while browser eligibility is pointer/fullscreen based.
 
-**The iOS trap.** `UIWindowScene.effectiveGeometry.isInterfaceOrientationLocked` looks like the
-answer and is not. It reports whether *the app's own* `prefersInterfaceOrientationLocked` request
-took effect, not whether the user's Control Center rotation lock is on, and it is iOS 26+ against a
-16.4 floor. Do not reach for it to detect the user's setting.
-
-The only universally reliable detector is behavioral: call `lock()` and read the rejection. It is
-async and it actually locks when it succeeds, so it cannot back a synchronous render-time gate.
-
-## APIs in play
-
-* **Web:** Screen Orientation API (`lock`, `unlock`, `type`, `angle`, `change`), Fullscreen API
-  (`requestFullscreen`, `fullscreenElement`, `fullscreenchange`, `fullscreenEnabled`),
-  `matchMedia('(display-mode: …)')`, the manifest's `display` and `orientation` members, and
-  `navigator.standalone` for legacy iOS.
-* **Android native:** `Activity.setRequestedOrientation()` with the `SCREEN_ORIENTATION_*`
-  constants, the manifest `screenOrientation` attribute, `Settings.System.ACCELEROMETER_ROTATION`,
-  and the Android 16 large-screen ignore.
-* **iOS native:** `UIWindowScene.requestGeometryUpdate(.iOS(interfaceOrientations:))`,
-  `supportedInterfaceOrientations`, `setNeedsUpdateOfSupportedInterfaceOrientations`.
-* **Capacitor:** `@capacitor/screen-orientation`, plus the app-local `SensorOrientation` plugin.
-
-## Known gaps
-
-* **Android tablets are not excluded on the web.** The native gate hides the picker above 600dp; the
-  web gate does not. On Android 16 that control is dead in every web target, fullscreen included.
-* **Foldables straddle the gate,** and the size read happens at render rather than on fold.
-* **Touch-primary desktops slip through** — a Surface in tablet mode reports a coarse pointer
-  against a `lock()` that always throws. The fullscreen gate hides the picker in a tab there, so the
-  dead control only surfaces once the page is fullscreen.
-* **Leaving fullscreen silently unlocks.** Chromium releases the lock on exit, so the phone returns
-  to portrait while the picker still reads Landscape.
-* **A shortcut is not an install.** Chrome offers "create shortcut" beside "install"; the shortcut
-  opens in a normal tab, so two identical-looking icons behave differently.
-* **iOS Auto has the defect Android fixed** in issue 2193 and no way to fix it.
-
-## Testing
-
-Orientation branches are covered at two layers, and the web gate cannot be reached without help.
-
-* `web/src/lib/platform/platform.orientationLock.test.ts` — the gates themselves, plus a drift guard
-  that reads the manifest and the query constant together, because the installed app's picker
-  depends on `"display": "fullscreen"` and nothing else ties those files together.
-* `web/src/lib/platform/orientation.test.ts` — what `applyDeviceOrientationPreference` calls per
-  platform, choice, and fullscreen state, including the superseded-request ordering.
-* `e2e/specs/orientation-picker.spec.ts` — layout across phone widths, the absent case in a plain
-  tab, and the Auto caption, against the React Native web export.
-* `e2e/specs/settings-quick-toggles.spec.ts` — the landscape-phone quick-toggle grid: the compact
-  Orientation picker on a touch device in fullscreen, and the version that fills its slot on a
-  desktop browser. The mini About cell on a lock-incapable native tablet was a SvelteKit-only case.
-* Chromium exposes **no display-mode override**, so a spec cannot emulate the installed app. Use
-  `enterFullscreen` from `e2e/support/group-c.ts`, which triggers real element fullscreen from a
-  keypress; pair it with `exitFullscreen` before any `setViewportSize`, because Chromium refuses to
-  resize a fullscreen window.
-
-## React Native candidate
-
-The Expo candidate in `experiments/native-architecture` ports the picker with the shipping choices,
-copy, and gates, persisted as `orientation` in settings schema 8, and applies it through
-`expo-screen-orientation` in `experiments/native-architecture/src/platform/deviceOrientation.ts`:
-
-* **Portrait / Landscape** lock `PORTRAIT_UP` / `LANDSCAPE_RIGHT`, the same single-direction
-  requests `@capacitor/screen-orientation` makes.
-* **Auto** requests `SCREEN_ORIENTATION_SENSOR` on Android through `lockPlatformAsync`, matching
-  `SensorOrientationPlugin`, and calls `unlockAsync()` on iOS.
-* **Tablets** (shorter screen side at least 600dp) get no picker and no lock request. The gate
-  follows screen-size changes live: crossing below the line applies the saved choice, and crossing
-  back releases the lock.
-* **Web** (its `.web.ts` split) keeps the shipping gate — a coarse pointer plus fullscreen — and
-  requests the lock again on every fullscreen entry.
-* **iOS** rotates through `requestGeometryUpdate` alone, as `@capacitor/screen-orientation` does;
-  the expo-screen-orientation patch in `patches/` removes the `UIDevice` orientation setter, which
-  UIKit rejects from iOS 26 and which Expo calls after every geometry request. No supported iOS
-  version predates `requestGeometryUpdate` (iOS 16), so nothing still needs the setter.
-* **Dialogs** (`ModalShell`) declare every orientation, so the app's lock decides theirs. React
-  Native's iPhone modal default, portrait only, vetoes a Landscape lock chosen in an open Settings.
-
-Its tests are `tools/tests/native-orientation-settings.test.mjs`,
-`tools/tests/native-orientation-web.test.mjs`,
-`tools/migration/tests/rsd-native-orientation.test.mjs`,
-`tools/tests/native-paper-rotation-mounted.test.mjs`, which turns the paper with a drawing on it,
-`tools/tests/native-runtime-warning-patches.test.mjs` for the iOS patch, and
-`tools/migration/tests/rsd-native-modal-frame.test.mjs` for the dialog orientations.
+The former `SensorOrientation` Capacitor plugin and Svelte settings booleans retired. Their
+historical measurements explain why native Android Auto uses a sensor request; current code and
+tests above own how it is applied.

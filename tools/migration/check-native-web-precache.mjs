@@ -10,9 +10,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import {
   APP_SHELL_FALLBACK_CALLBACKS,
-  MAX_PWA_PRECACHE_BYTES,
   appShellFallbackLookupsFromSource,
-} from '../check-pwa-precache.mjs';
+} from '../lib/pwa-precache-source.mjs';
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
 import { filesRecursively } from '../lib/filesystem.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
@@ -40,7 +39,7 @@ import { pageOnlyChunks, writtenPageDocuments } from './prerender-native-web-pag
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
-export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
+export const MAX_NATIVE_WEB_PRECACHE_BYTES = 12_000_000;
 // The version endpoint must reach the network; the worker, build identity and host's not-found
 // answer are not page assets. A page document is answered by the network, and offline by the app
 // shell, which shows the same page over the paper, or the not-found page for a document-only page

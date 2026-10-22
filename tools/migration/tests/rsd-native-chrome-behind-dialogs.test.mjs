@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement, useEffect } from 'react';
 import { expect, it, vi } from 'vitest';
 import {
@@ -165,17 +163,6 @@ it.each(['buttons', 'bare'].flatMap((style) => Object.keys(DIALOGS).map((name) =
     expect(startAi).toHaveBeenCalledOnce();
   }
 );
-
-it('pins shipping page selection and clear after dialog retirement and one frame', () => {
-  const shipping = readFileSync(
-    join(import.meta.dirname, '../../../web/src/lib/components/ColoringBook.svelte'),
-    'utf8'
-  );
-  for (const action of ['applyColoringPageWithMagicUndo', 'clearColoringPageWithMagicUndo'])
-    expect(shipping).toMatch(
-      new RegExp(`await dialogRetired;\\s*await nextFrame\\(\\);\\s*${action}\\(`)
-    );
-});
 
 it('keeps actual page history unchanged until the picker retires and the next frame paints', async () => {
   caller.realScreen = true;

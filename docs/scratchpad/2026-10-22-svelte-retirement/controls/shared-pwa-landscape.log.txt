@@ -1,0 +1,15 @@
+
+> splotch@1.6.0 test:unit
+> vitest run --config web/vitest.config.ts src/lib/pwa/updates.test.ts src/lib/pwa/updates.registration.test.ts src/lib/pwa/updates.activation.test.ts src/lib/landscapeToolbar.test.ts --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/0714/Splotch/web
+
+
+ Test Files  4 passed (4)
+      Tests  57 passed (57)
+   Start at  21:29:26
+   Duration  651ms (environment 77%, tests 9%, transform 8%, import 4%, worker 1%)
+
+    Isolate  4 workers spawned · ~130ms startup each (spawn + environment, per file)
+             at least ~391ms faster with isolate: false — reuses workers across files instead of one per file

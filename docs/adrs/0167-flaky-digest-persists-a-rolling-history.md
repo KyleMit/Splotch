@@ -4,7 +4,7 @@
 
 ## Context
 
-`web/playwright-flaky-reporter.ts` writes a `flaky.json` record into every Playwright report
+`e2e/playwright-flaky-reporter.ts` writes a `flaky.json` record into every Playwright report
 artifact the Tests workflow uploads, so masked flakes (tests that passed only on retry, ADR-0078)
 can be summed across runs. Those artifacts are retained for 7 days. A digest that reads them has to
 beat that expiry, or it silently samples a shrinking window and reports the missing days as nothing.

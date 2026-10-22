@@ -55,8 +55,4 @@ describe('the Blobs consistency guard', () => {
       await violations('web/src/lib/server/api/probe.ts', "getStore('ai-usage')")
     ).toHaveLength(1);
   });
-
-  it('rejects an omission in the storage seam, which recomposes the web/src set', async () => {
-    expect(await violations('web/src/lib/storage.ts', "getStore('ai-usage')")).toHaveLength(1);
-  });
 });

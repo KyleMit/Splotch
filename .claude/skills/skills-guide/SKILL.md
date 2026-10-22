@@ -255,11 +255,11 @@ the skill that ran is its in-file special case.
 
 ## Running & previewing the app
 
-| Skill                     | Use for                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `run-splotch`             | Launch, drive, and screenshot the web app locally to verify a change works      |
-| `cloud-preview`           | Cloud sessions only: dev server + reverse tunnel for a public phone-preview URL |
-| `critique-page-inventory` | Independently review every light/night portrait/landscape inventory capture     |
+| Skill                     | Use for                                                                     |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `run-splotch`             | Launch, drive, and screenshot the web app locally to verify a change works  |
+| `cloud-preview`           | Serve the RN export in cloud; public previews use Netlify deployments       |
+| `critique-page-inventory` | Independently review every light/night portrait/landscape inventory capture |
 
 ## Shipping
 

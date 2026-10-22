@@ -43,9 +43,6 @@ export async function settle(check) {
 // Each solved check holds its "Unlocked!" card in real time before its destination shows, and a
 // full send-and-report run solves up to three.
 export const GATED_FLOW_TIMEOUT_MS = 15_000;
-// The dial's done-ramp closes a sixth of the remaining gap each frame, so it
-// needs about forty frames; this is several times that at happy-dom's frame rate.
-export const REVEAL_RAMP_WAIT_MS = 2000;
 // One poll interval (POLL_INTERVAL_MS) and a margin for the poll to settle.
 export const POLL_WAIT_MS = 3500;
 export const POLL_TEST_TIMEOUT_MS = 15_000;

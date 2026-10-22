@@ -55,7 +55,6 @@ const MARK_PX = 22;
 const MARK_EDGE_PX = 3;
 const MARK_INSET_PX = 4;
 const MARK_DOT_PX = MARK_PX - 2 * (MARK_EDGE_PX + MARK_INSET_PX);
-export const PICKER_MARK_METRICS = { MARK_PX, MARK_EDGE_PX, MARK_INSET_PX } as const;
 
 // The SegmentedPicker.svelte literals no token carries, exported for the drift guard in
 // tools/migration/tests/rsd-native-segmented-picker.test.mjs.

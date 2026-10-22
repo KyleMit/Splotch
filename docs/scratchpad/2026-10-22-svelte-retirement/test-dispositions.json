@@ -1,0 +1,1300 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "migrations": [
+    ["web/playwright-flaky-reporter.ts", "e2e/playwright-flaky-reporter.ts"],
+    ["web/tests/artifacts/ai-output-fixtures.ts", "e2e/fixtures/ai-output-fixtures.ts"],
+    ["web/src/routes/privacy/contents.ts", "web/src/lib/privacy/contents.ts"],
+    ["web/src/routes/privacy/sectionLink.ts", "web/src/lib/privacy/sectionLink.ts"],
+    ["tools/tests/vite-server.test.mjs", "tools/tests/site-server.test.mjs"],
+    [
+      "tools/tests/check-pwa-precache.test.mjs fallback-parser callbacks",
+      "tools/tests/pwa-precache-source.test.mjs"
+    ],
+    ["web/src/lib/components/Icon.svelte.test.ts", "web/src/lib/components/iconTypes.test.ts"],
+    [
+      "web/src/lib/ai/verifyCredential.test.ts looksLikeApiKey cases",
+      "web/src/lib/ai/keyFormat.test.ts"
+    ],
+    [
+      "web/src/lib/drawing/magicBrush.test.ts gradient cases",
+      "web/src/lib/drawing/magicSheetGradient.test.ts"
+    ],
+    [
+      "web/src/routes/admin/login.integration.test.ts JSON cases",
+      "web/src/lib/server/api/adminLogin.integration.test.ts"
+    ]
+  ],
+  "retiredScripts": [
+    "dev",
+    "predev:netlify",
+    "dev:netlify",
+    "dev:host",
+    "dev:tunnel",
+    "dev:stop",
+    "prebuild",
+    "build",
+    "postbuild",
+    "preview",
+    "precheck",
+    "check:watch",
+    "lint:tokens",
+    "test:e2e:sweep",
+    "test:e2e:rn",
+    "test:driver:smoke",
+    "model-eval:gen-crayon",
+    "gen:tokens",
+    "gen:tokens:check",
+    "gen:promotional-image",
+    "gen:store-drawings:evaluate",
+    "gen:store-drawings:review",
+    "gen:readme-hero",
+    "capture:page-inventory",
+    "attach:page-inventory-feedback",
+    "pretest:migration:rsd-selection",
+    "gen:native-privacy"
+  ],
+  "retainedEquivalentTiers": [
+    "web/vitest.config.ts shared TypeScript contracts",
+    "tools/vitest.config.mjs repo and RN owner contracts",
+    "tools/migration/rsd-drawing-vitest.config.mjs mounted RN renderer contracts",
+    "e2e/playwright.config.ts RN export E2E and flaky reporter",
+    "tools/api-smoke/api-smoke-test.mjs hosted API smoke",
+    "tools/migration/check-native-web-*.mjs built export acceptance"
+  ],
+  "notes": [
+    "Framework-only Svelte source comparisons are retired; independent RN runtime assertions remain, including mixed callbacks recovered during implementation.",
+    "Generic tooling tests with synthetic old paths remain: code-map, audit-burndown, flaky-history, document references, file naming, flag parsing, import resolution, reconciliation survey, and JS/CSS lint positive controls.",
+    "Historical Svelte worker-sweep workflow/runner retired; frozen tuning report labels the old command archival. RN Playwright sharding/reporting remains in CI.",
+    "test:driver:smoke retired with its Svelte selector contract. RN source driver has tool-tier lifecycle/argument guards and a real local drawing/privacy verification, without creating a new app-selector smoke under the retired name.",
+    "Live Svelte page-inventory capture and HTML refresh retired; 672 committed capture hashes remain valid and image-review/finalization tooling remains supported.",
+    "Full source/prose reconciliation and shared-source relocation stay assigned to issues3164 and3163.",
+    "Restored shared PWA factory, server wire/settlement/rollout, terminal parser, icon, geometry, palette and contrast tests are retained; see retained-shared-test-dispositions.json and server-test-dispositions.json. A retained-import/body audit is separate from production reachability."
+  ],
+  "removedTests": [
+    {
+      "file": "tools/app-driver/tests/ensure-dev-server.test.mjs",
+      "reason": "Retired Svelte app-driver/bootstrap implementation; RN site-server lifecycle/release and run-splotch driver tests remain."
+    },
+    {
+      "file": "tools/e2e-tuning/tests/worker-sweep.test.mjs",
+      "reason": "Retired Svelte worker-sweep implementation/workflow. RN sharding and migrated flaky reporter remain."
+    },
+    {
+      "file": "tools/marketing-assets/tests/books-grid-override.test.mjs",
+      "reason": "Retired Svelte ColoringBook live-capture CSS override implementation."
+    },
+    {
+      "file": "tools/marketing-assets/tests/free-grant-stub.test.mjs",
+      "reason": "Retired live Svelte marketing API interception helper; static frame rendering has no API calls."
+    },
+    {
+      "file": "tools/marketing-assets/tests/promotional-image-svg.test.mjs",
+      "reason": "Retired live promotional image replay generator/parser. Static promotional asset remains; deterministic store-drawing scene conversion has its own retained parser suite."
+    },
+    {
+      "file": "tools/marketing-assets/tests/readme-hero-server.test.mjs",
+      "reason": "Retired live Svelte README hero generator/server implementation."
+    },
+    {
+      "file": "tools/marketing-assets/tests/readme-hero.test.mjs",
+      "reason": "Retired live Svelte README hero CLI; committed hero remains."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-button-chrome.test.mjs",
+      "reason": "Mounted all-variant resting/disabled native palettes have concrete rsd-native-button successors, including wash/danger. Old hover/source union/parser controls retire; see callback ledger."
+    },
+    {
+      "file": "tools/migration/tests/rsd-native-parent-center-marks.test.mjs",
+      "reason": "Old keypad arrays and radio metrics compared to retired Svelte source. Native mounted keypad/key labels/policy matrix/segmented picker contracts remain; see callback ledger."
+    },
+    {
+      "file": "tools/tests/brush-button-ids.test.mjs",
+      "reason": "Retired tool.svelte/app-driver ID cross-boundary checker and its parser controls; no live consumer uses those IDs."
+    },
+    {
+      "file": "tools/tests/check-build-version.test.mjs",
+      "reason": "Retired Svelte build-version checker. Native web version derivation and generated head/version contracts remain separately tested."
+    },
+    {
+      "file": "tools/tests/check-bundle-budgets.test.mjs",
+      "reason": "Retired Svelte bundle owner, per owner ruling. Native absolute startup/page budget guard and controls remain unchanged."
+    },
+    {
+      "file": "tools/tests/check-eager-error-bundle.test.mjs",
+      "reason": "Retired Svelte chunk/notification bundle checker and its fixture parsers."
+    },
+    {
+      "file": "tools/tests/check-pwa-precache.test.mjs",
+      "reason": "Retired Svelte build checker; retained fallback-source parser positive/negative tests moved to pwa-precache-source.test.mjs. Native full export precache tests remain."
+    },
+    {
+      "file": "tools/tests/check-release-seams.test.mjs",
+      "reason": "Retired Svelte debug/engine/runtime instrumentation release seam checker. Native web export acceptance and native release tests remain."
+    },
+    {
+      "file": "tools/tests/history-state-lint.test.mjs",
+      "reason": "Retired SvelteKit history.state navigation guard; its framework state ownership no longer exists. Generic lint controls remain."
+    },
+    {
+      "file": "tools/tests/magic-witness-boundary.test.mjs",
+      "reason": "Retired Svelte magic-brush PERF_MARKS graph and counters owner."
+    },
+    {
+      "file": "tools/tests/native-icon-recolor-parity.test.mjs",
+      "reason": "Only retired Icon.svelte COLOR_ICONS markup branch. Native icon recolor actual output tests remain."
+    },
+    {
+      "file": "tools/tests/native-section-icon-routing.test.mjs",
+      "reason": "Only retired SectionIcon/SplotchyIcon source routing; native-section-icon-mounted actual routing and SVG generator byte guards remain."
+    },
+    {
+      "file": "tools/tests/native-settings-shell-parity.test.mjs",
+      "reason": "Dense old CSS/media-query differential oracle retires; explicit ten native boundary cases plus seven representative and mounted shell cases remain in rsd-native-settings-layouts."
+    },
+    {
+      "file": "tools/tests/port-ownership.test.mjs",
+      "reason": "Retired freePort checkout-discovery API, whose only live consumers retired. The supported site-server refuses occupied ports and owns only its exact child; lifecycle/release tests remain."
+    },
+    {
+      "file": "tools/tests/state-export-names.test.mjs",
+      "reason": "Retired Svelte rune-module state export lint/source contracts."
+    },
+    {
+      "file": "tools/tests/stop-dev-servers.test.mjs",
+      "reason": "Retired checkout-wide Svelte/Netlify process-stop CLI. Supported helpers stop exact recorded owned children only."
+    },
+    {
+      "file": "tools/tests/svelte-browser-globals-lint.test.mjs",
+      "reason": "Retired Svelte-specific lint plugin/parser rule and its controls; no Svelte runtime source remains."
+    },
+    {
+      "file": "tools/tests/svelte-kit-version.test.mjs",
+      "reason": "Retired SvelteKit dependency/version floor guard; no SvelteKit package remains."
+    },
+    {
+      "file": "tools/tests/vite-server.test.mjs",
+      "reason": "Lifecycle and awaited-release tests migrated to site-server.test.mjs and site-server-release.test.mjs; Vite build/stop/freePort-only API cases retire with their implementation."
+    },
+    {
+      "file": "web/buildManifests.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/app.html.reduceMotion.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/app.html.test.ts",
+      "reason": "The executed boot scripts and string substitutions belong to deleted app.html. Retained constants are expectations for that removed script. Native head viewport/install tags have independent native-web-head tests; native theme has its own settings/appearance contracts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/app.html.themeColor.test.ts",
+      "reason": "The executed boot scripts and string substitutions belong to deleted app.html. Retained constants are expectations for that removed script. Native head viewport/install tags have independent native-web-head tests; native theme has its own settings/appearance contracts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/browserFloor.test.ts",
+      "reason": "The floor test reads deleted Vite/Svelte build targets. web/browserTargets.ts remains the declared web floor consumed by the retained report-browser-floor tool; RN native OS floors remain distinct.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/hooks.server.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.cssFormula.test.ts",
+      "reason": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.fallback.test.ts",
+      "reason": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.test.ts",
+      "reason": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.toolDrawer.test.ts",
+      "reason": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.touchTargets.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actionUnavailableFeedback.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/actionPanelEvents.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/colorFoldGesture.test.ts",
+      "reason": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actions/dragToClear.test.ts",
+      "reason": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actions/elementRegistry.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/hexSnapGesture.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/launchGuard.test.ts",
+      "reason": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actions/modalDialog.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/pinchTextZoom.svelte.test.ts",
+      "reason": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/actions/pinchZoom.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/pressFeedback.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/pressRelease.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/scribbleGuard.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/scribbleTap.penResume.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/scribbleTap.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/scrollCue.cutTrailingRow.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/actions/scrollCue.gutter.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/ai/credentials.test.ts",
+      "reason": "The HTTP credential/header wrapper is removed; retained API header strings only construct expected requests. Native credential transport and restored nativeAi.wire exercise the shipping boundary.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/ai/failureReport.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/ai/verifyCredential.test.ts",
+      "reason": "The deleted web verifyCredential wrapper cases retire. Its six actual looksLikeApiKey format cases are restored independently in web/src/lib/ai/keyFormat.test.ts; nativeAi.wire retains actual key/code server classification.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/ai/verifyCredential.wire.test.ts",
+      "reason": "The removed web credential wrapper no longer exists. Its actual success, unavailable-key and unavailable-code route/wire concerns have explicit current nativeAi.wire tests; no compatibility client shim is retained.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/audio/clearSound.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/audio/drawingSound.stop.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/audio/drawingSound.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/audio/volumePreview.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/bootHiddenOverlays.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/coloringPacks.cacheFamilyPrefix.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/coloringPacks.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/devHarnessSeam.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/persistedState.orientation.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/persistedState.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/settledIn.install.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/settledIn.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/systemBackHandler.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/undoShortcut.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/boot/webBackHandler.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/buildDefines.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/manager.test.ts",
+      "reason": "The removed manager and rune store are the exercised owners; assetResolver is mocked, not called as its real implementation. Native coloring-pack owner tests remain.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/coloringPacks/manager.webStore.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/manifest.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/manifestBuild.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/nativeStore.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/storeRemoval.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/webStore.concurrency.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/webStore.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/AiImagePrompt.previewFailure.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/AiImageReport.copy.test.ts",
+      "reason": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/AiImageResult.download.test.ts",
+      "reason": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/AiResultError.copy.test.ts",
+      "reason": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/AiResultStage.geometry.test.ts",
+      "reason": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/ClearButton.dock.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/ColorPalette.firstPaint.test.ts",
+      "reason": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/ErrorScreen.heroButton.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/Icon.svelte.test.ts",
+      "reason": "All actual SVG paint/color classification assertions restored in web/src/lib/components/iconTypes.test.ts; COLOR_ICONS is imported from the retained shared owner.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/InstallBanner.layout.test.ts",
+      "reason": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/ParentalGateProblem.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/SaveFailureBanner.announcement.test.ts",
+      "reason": "The removed Svelte banner is mounted with SaveResult fixtures. Actual RN denied/failed copy, announcement transitions and single live-region count remain in rsd-native-failure-banner and save-flight.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/Slider.pointer.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/admin/AdminConsole.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/admin/ledgerBreakpoints.test.ts",
+      "reason": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/aiPreview.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/coloringPickerImages.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/coloringPickerImages.webSsr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/deferredIcons.test.ts",
+      "reason": "The runtime registry/page-icon provider and their startup registration graph are removed. iconNameFromPath computes names for that registry assertion; its retained SVG classification contract is covered by iconTypes.test. RN icon generation and startup guards cover the shipping provider.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/design/Button.props.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/design/ExternalMark.coverage.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/design/ExternalMark.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/design/ScrollCue.scrollportPadding.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/design/SegmentedPicker.props.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/design/rovingRadio.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/dialogTabletScaling.test.ts",
+      "reason": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/icon-orphans.test.ts",
+      "reason": "The source reference scan and glob-exclusion literals target the deleted Icon.svelte/deferred registry vocabulary. Retained SVGs are explicit RN generator inputs. The current iconTypes classification, native generated icon coverage and names generator tests remain; no claim that the old Svelte orphan scan applies to RN.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/components/imageReportFlow.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/nav/SidebarToc.props.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/BackLink.navigation.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/NativeNotFoundPage.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/PageFooter.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/PageFooter.webSsr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/PageIcon.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/SocialCard.webSsr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/page/pageParentCenter.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/paperTexture.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/AiKeyManager.keyStorageCopy.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/AiValueProp.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/ColoringSection.removeError.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/ColoringSection.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/SetupInstructions.deviceLock.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/SliderRow.props.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/WhatsNewSection.headingOutline.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/sections.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/settingsMediaQuery.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/settings/stagedSections.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/styleguide/chipInk.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/components/swatchInk.test.ts",
+      "reason": "This mounts only removed ColorPalette/ColorControl and rune stores. getRingColor supplies expected CSS for those components. Native selection/appearance/toolbar cases preserve themed Black/White and custom paint behavior; explicit custom-colors sequence tests preserve the state/persistence flow.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/design/lint-token-styles.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/design/scrollbarThumbContrast.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/aiAutoSave.test.ts",
+      "reason": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/aiGenerationPoll.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/aiImage.request.test.ts",
+      "reason": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/aiImage.test.ts",
+      "reason": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/aiImageResponse.test.ts",
+      "reason": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/androidGallery.test.ts",
+      "reason": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/canvas2d.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/canvasContextRecovery.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/canvasRasterFlush.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/coloringAppearance.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/crayonBrush.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/crayonGlazeDirect.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/crayonPassBoundaries.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/crayonPassBuffer.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/crayonPassTracker.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/crayonShadowRefresh.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/earlyBoot.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/emptyScan.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/engine.magicWitness.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/engine.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/engineListeners.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/exportCompositor.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/exportDrawing.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/folderSave.callers.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/folderSave.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/imageSave.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/inkMotion.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/inkMotionBounds.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/magicBrush.test.ts",
+      "reason": "The deleted canvas magicBrush fill lifecycle retires. Its three actual createRainbowGradient deterministic/ascending/distinct cases are restored unchanged in magicSheetGradient.test.ts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/magicBrush.workerRaster.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/magicBrushRetention.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/magicSheet.worker.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/magicSheetRasterClient.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/magicWorkWitness.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/magicWorkWitness.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/opGeometry.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/overlay.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/penStreamQuirks.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/pngEncoder.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/pngEncoder.worker.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/polaroidAnimation.test.ts",
+      "reason": "The removed DOM polaroid animation is the test subject; screenshotTiming supplies only its timeout. Actual native motion fixtures and mounted save-flight remain.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/progressiveClearCapture.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/saveFailureCopy.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/saveOnDelete.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/screenshot.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/screenshotFeedback.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/strokeRasterQueue.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledGeometry.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledMagicRecode.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledPngCompositor.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRenderer.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererBlankUndo.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererBounds.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererClear.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererContract.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererFoldFlush.test.ts",
+      "reason": "The deleted canvas tiled renderer is driven. MAX_UNDO_DEPTH only sizes the fixture. Native drawing history/renderer tests and retained shared undo policy consumers remain; no old renderer is reconstructed.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererReadback.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererUndoBudget.test.ts",
+      "reason": "The deleted canvas tiled renderer is driven. MAX_UNDO_DEPTH only sizes the fixture. Native drawing history/renderer tests and retained shared undo policy consumers remain; no old renderer is reconstructed.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/drawing/tiledSurfaces.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledUndoPatches.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/drawing/unsavedPictureStore.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/glassPanes.test.ts",
+      "reason": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/icons/iconViewBox.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/idb.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/imagePrefetch.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/nativePlugin.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/pageHeight.test.ts",
+      "reason": "The deleted layout formula/CSS owner is compared against shared breakpoint fixtures. Native page/layout acceptance remains; the removed web formula no longer controls shipping layout.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/phoneStep.test.ts",
+      "reason": "The deleted layout formula/CSS owner is compared against shared breakpoint fixtures. Native page/layout acceptance remains; the removed web formula no longer controls shipping layout.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/platform/calmTransition.test.ts",
+      "reason": "The callback runs removed calm(slide) Svelte transition glue. applyReducedMotion sets up its preference attribute; reducedMotion.test retains the actual shared preference/attribute/watch implementation tests. Native reduced-motion fixtures remain.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/platform/notchBandReentry.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/platform/orientation.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/platform/platform.orientationLock.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/platform/platform.osLabel.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/platform/platform.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/platform/reducedMotionCss.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/platform/safeAreaProperties.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/plugins/pencilEraser.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/promiseWithResolvers.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/pwa/adminRoute.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/pwa/coloringFallback.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/pwa/coloringPackRoute.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/pwa/pageCacheCleanup.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/releaseSections.test.ts",
+      "reason": "The removed Svelte release heading vocabulary is compared to generator titles. The generator retains native JSON/store metadata output; the Svelte component/title-map agreement no longer exists.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/reportClient.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/saveNaming.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/savedFile.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/secureStorage.recovery.test.ts",
+      "reason": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/secureStorage.test.ts",
+      "reason": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/singleFlight.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/aiAccessToken.test.ts",
+      "reason": "The removed rune access-token reader is the subject; inviteLink query constant constructs its URL fixture. Retained invite-link parsing has its own tests and native startup transport consumes it.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/state/aiGeneration.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/aiKey.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/aiProgress.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/appearance.svelte.test.ts",
+      "reason": "The executed appearance/layout/save-failure rune store is deleted. Shared theme/breakpoint/SaveResult imports are expectations or types. Mounted native appearance/layout/failure suites remain.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/state/coloringBook.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/coloringPacks.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/coloringPicker.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/colors.svelte.test.ts",
+      "reason": "The removed rune palette assertions retire. Its real native light/dark comparison sequence is restored with fixed expected state/paint/persistence outcomes in tools/tests/native-custom-colors.test.mjs, independently of deleted Svelte state.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/state/dialogTheme.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/freeGenerations.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/fullscreen.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/install.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/layout.svelte.test.ts",
+      "reason": "The executed appearance/layout/save-failure rune store is deleted. Shared theme/breakpoint/SaveResult imports are expectations or types. Mounted native appearance/layout/failure suites remain.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/state/modal.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/network.svelte.test.ts",
+      "reason": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/state/overlayDemand.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/parentalGate.lockout.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/parentalGate.mash.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/parentalGate.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/readonlyView.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/saveFailure.durableRestore.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/saveFailure.svelte.test.ts",
+      "reason": "The executed appearance/layout/save-failure rune store is deleted. Shared theme/breakpoint/SaveResult imports are expectations or types. Mounted native appearance/layout/failure suites remain.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/state/saveFolder.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/sectionsSeen.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/secureCredentialCoordinator.hydrate.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/secureCredentialCoordinator.initialRead.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/secureCredentialCoordinator.storage.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/secureCredentialCoordinator.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/sessionCounters.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/settings.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/settings.toolbar.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/strokeWidth.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/tool.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/ui.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/state/webInstallationId.test.ts",
+      "reason": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/storage.hydrate.test.ts",
+      "reason": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/storage.restore.integration.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/storage.test.ts",
+      "reason": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/storageKeys.webOnly.test.ts",
+      "reason": "The source scan asserts write-count and platform guards in deleted web vault, install/rune storage and boot modules. The remaining registry values alone do not preserve those writers; their removed write graph makes the source guard obsolete.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/svelteRuntime.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/lib/theme.applyTheme.test.ts",
+      "reason": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/theme.manifest.test.ts",
+      "reason": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/theme.preference.test.ts",
+      "reason": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/theme.tokens.test.ts",
+      "reason": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/lib/warmDisplayFont.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/nativeExcludedRoutes.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/admin/load.integration.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/admin/login.integration.test.ts",
+      "reason": "Four current JSON session/rate/cap/IP cases moved to server/api/adminLogin.integration.test.ts. Old form action/cookie/crossdoor assertions retire; server-test-dispositions.json records each original callback.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/routes/admin/page.server.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/admin/tokenActions.integration.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/dev/engine/lib/pixelReadback.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/dev/page.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/errorPage.ssr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/errorPage.webSsr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/feedback/page.server.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/feedback/page.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/feedback/reportBucket.integration.test.ts",
+      "reason": "The two directional form/API shared-bucket cases require a deleted form action. Actual native feedback wire throttle, API report key/early-read limits and rateLimit runtime guards remain; exact successors are in server-test-dispositions.json.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/routes/perRequestRoutes.webSsr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/privacy/nativeContent.ssr.test.ts",
+      "reason": "These render deleted Svelte privacy pages and assert their SSR markup. Native generated privacy content, static RN page/no-JS build acceptance and mounted native page tests remain. Shared retention constants/generated data only supply those removed-page expectations.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/routes/privacy/nativeContent.webSsr.test.ts",
+      "reason": "These render deleted Svelte privacy pages and assert their SSR markup. Native generated privacy content, static RN page/no-JS build acceptance and mounted native page tests remain. Shared retention constants/generated data only supply those removed-page expectations.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/routes/privacy/page.ssr.test.ts",
+      "reason": "These render deleted Svelte privacy pages and assert their SSR markup. Native generated privacy content, static RN page/no-JS build acceptance and mounted native page tests remain. Shared retention constants/generated data only supply those removed-page expectations.",
+      "detail": "retained-shared-test-dispositions.json"
+    },
+    {
+      "file": "web/src/routes/privacy/page.webSsr.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/privacy/sectionLinks.svelte.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/src/sitemap.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    },
+    {
+      "file": "web/tsconfig.test.ts",
+      "reason": "Retired Svelte component, rune wrapper, route, DOM/canvas implementation or source-equivalence suite. This is a consumer disposition, not proof that every imported support module is unreachable. Retained-import runtime audit is recorded separately in retained-shared-test-dispositions.json."
+    }
+  ],
+  "retiredEntryPoints": [
+    {
+      "file": "tools/asset-gen/crayon-reference/capture-current-brush.mjs",
+      "disposition": "Deleted live /dev/engine capture entry point; its build/preview/global-engine contract has no RN caller. Static gen-comparison-sheet.mjs rendering from prior captures remains supported."
+    }
+  ]
+}

@@ -2,19 +2,19 @@
 
 <!-- Source: .ruler/AGENTS.md -->
 
-# tools/store-drawings/ — store screenshot drawing pipeline
+# tools/store-drawings/ — offline drawing scene data
 
-This folder is the self-contained offline pipeline that compiles authored SVG samples into static
-pointer instructions and evaluates their replay through the production Splotch canvas.
+This folder compiles authored SVG samples into deterministic static scene data. It retains pure
+geometry, scribble construction, and color-fidelity helpers; it has no live application driver.
 
-* Runnable entry points live at this capability root; shared replay helpers live in `lib/`.
-* `samples/` contains the temporary centerline SVG authoring inputs. Runtime and store screenshots
-  never load them.
-* `generated/store-drawings.mjs` is machine-authored by `npm run gen:store-drawings`; never edit it
-  directly. `npm run gen:store-drawings:check` guards drift.
-* Node-environment unit tests live in `tests/` and run through `npm run test:store-drawings` using
-  this folder's `vitest.config.mjs`.
-* The browser-driving entries deliberately reuse `tools/app-driver/lib/app-driver.mjs`, the shared
-  production UI/pointer driver also covered by `npm run test:driver:smoke`.
-* Read `README.md` for conversion and review workflows and `DESIGN.md` for the tool-local rationale
-  and tradeoffs.
+* The converter entry point lives at the capability root; pure helpers live in `lib/`.
+* `samples/` contains committed centerline SVG inputs used by the offline converter.
+* `generated/store-drawings.mjs` exports `STORE_DRAWING_SCENES` and is machine-authored by
+  `npm run gen:store-drawings`; never edit it directly. `npm run gen:store-drawings:check` guards
+  drift.
+* Node tests live in `tests/` and run through `npm run test:store-drawings` using the local
+  `vitest.config.mjs`.
+* Conversion does not update application captures. The marketing renderer reads the committed
+  `store-assets/captures/` images separately.
+* Read `README.md` for the retained conversion policy. `DESIGN.md` records the former live capture
+  pipeline's rationale and tradeoffs.

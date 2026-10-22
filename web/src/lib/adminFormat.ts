@@ -1,15 +1,5 @@
 import type { TokenUsage } from './usageRecord';
 
-// One row of the /admin access-code ledger, as the page's loader sends it.
-export interface Invite {
-  token: string;
-  url: string;
-  // `null` = tracked but never used; an object = the tally. Whether tracking
-  // works at all is a separate `usageAvailable` flag, because a broken tally
-  // backend and a code nobody has redeemed produce the same empty cell.
-  usage: TokenUsage | null;
-}
-
 const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 const TIME_AGO_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['year', 31_536_000],

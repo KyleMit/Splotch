@@ -1,18 +1,12 @@
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createSoundSettings,
   parseSoundSettings,
 } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
-import {
-  AUTO_FOLLOWS_SYSTEM_ROTATION_NOTE,
-  ORIENTATION_CHOICES,
-  ORIENTATION_LABELS,
-} from '../../experiments/native-architecture/src/settings/orientation.ts';
+import { ORIENTATION_CHOICES } from '../../experiments/native-architecture/src/settings/orientation.ts';
 import { defaultOrientation as webDefaultOrientation } from '../../experiments/native-architecture/src/platform/orientationDefault.web.ts';
-
-const repoRoot = join(import.meta.dirname, '../..');
+join(import.meta.dirname, '../..');
 const VERSION_7 = {
   version: 7,
   soundEnabled: false,
@@ -178,31 +172,5 @@ describe('persisted orientation choice', () => {
   ])('defaults a %sx%s browser the way the shipping web app does', (width, height, choice) => {
     vi.stubGlobal('window', { innerWidth: width, innerHeight: height });
     expect(webDefaultOrientation()).toBe(choice);
-  });
-});
-
-describe('orientation copy shared with the shipping picker', () => {
-  it('offers the shipping choices, order and labels', () => {
-    const picker = readFileSync(
-      join(repoRoot, 'web/src/lib/components/settings/OrientationPicker.svelte'),
-      'utf8'
-    );
-    const options = [...picker.matchAll(/value: '(\w+)',\s*label: '([^']+)'/g)].map(
-      ([, value, label]) => [value, label]
-    );
-    expect(options).toEqual(
-      ORIENTATION_CHOICES.map((choice) => [choice, ORIENTATION_LABELS[choice]])
-    );
-    expect(picker).toContain('label="Orientation"');
-  });
-
-  it('captions Auto with the shipping rotation-setting note', () => {
-    const section = readFileSync(
-      join(repoRoot, 'web/src/lib/components/settings/AppearanceSection.svelte'),
-      'utf8'
-    );
-    expect(section).toContain(
-      `<p class="orientation-note">${AUTO_FOLLOWS_SYSTEM_ROTATION_NOTE}</p>`
-    );
   });
 });

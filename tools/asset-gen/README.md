@@ -123,12 +123,12 @@ npm run vectorize:postprocess:check
 The optimized SVG under `web/static/coloring/` is the canonical line art. A pen SVG change then
 invalidates its chalk, light/night fills, and punch; a chalk SVG change invalidates its night fill
 and punch. Cover SVGs stop after regenerating their picker thumbnails and responsive derivative.
-`npm run build` emits the incremental coloring-pack manifest from `bookPackAssetPaths()`—page pen
-and chalk SVGs, including every landscape `-wide` pair, are invariant pack files; cover SVGs remain
-authoring masters because packs render the raster cover thumbnails. Web and native packs carry one
-400 px lossless selector per page/theme/orientation while the canonical SVG presents the canvas and
-drives export. Web distribution adds a 240 px selector candidate for `srcset`; that hosted tier is
-not a logical pack file (ADR-0152).
+`npm run build:site` emits the incremental coloring-pack manifest from `bookPackAssetPaths()`—page
+pen and chalk SVGs, including every landscape `-wide` pair, are invariant pack files; cover SVGs
+remain authoring masters because packs render the raster cover thumbnails. Web and native packs
+carry one 400 px lossless selector per page/theme/orientation while the canonical SVG presents the
+canvas and drives export. Web distribution adds a 240 px selector candidate for `srcset`; that
+hosted tier is not a logical pack file (ADR-0152).
 
 ### The per-page notes registry
 

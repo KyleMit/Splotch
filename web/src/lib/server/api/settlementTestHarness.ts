@@ -90,7 +90,10 @@ vi.mock('$lib/server/rateLimit', () => ({
 }));
 
 import { ASYNC_GENERATION_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
-import { readAiImageResponse } from '$lib/drawing/aiImageResponse';
+import {
+  parseAiResponse,
+  type AiReply,
+} from '../../../../../experiments/native-architecture/src/ai/transport';
 import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobs';
 import worker from '../../../../../netlify/functions/generate-image-background';
 import { POST as startGeneration } from './generateImage';
@@ -149,13 +152,22 @@ export async function startFreeGeneration(installationId = INSTALLATION): Promis
 // drive also proves the client understands what the server sent.
 export async function startHandedOffGeneration(): Promise<{ jobId: string; dispatch: Request }> {
   const response = await startFreeGeneration();
-  const started = await readAiImageResponse(response);
-  if (started.kind !== 'started') {
+  const started = await readStartReply(response);
+  if (started.kind !== 'ticket') {
     throw new Error(`the start answered ${response.status}: ${JSON.stringify(started)}`);
   }
   const dispatch = dispatched.at(-1);
   if (!dispatch) throw new Error('the start did not dispatch the worker');
   return { jobId: started.jobId, dispatch };
+}
+
+export function readStartReply(response: Response): Promise<AiReply> {
+  return parseAiResponse(
+    response,
+    { path: '/api/generate-image', method: 'POST', headers: {} },
+    new AbortController().signal,
+    Date.now()
+  );
 }
 
 export function runWorker(dispatch: Request): Promise<Response> {

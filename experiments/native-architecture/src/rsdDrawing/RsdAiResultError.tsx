@@ -13,14 +13,14 @@ import { styles as controlStyles } from './controls';
 
 // AiErrorCard.svelte and AiResultError.svelte literals; native-ai-flow-geometry.test.mjs reads
 // them back.
-export const ERROR_GLYPH_PX = 72;
-export const ERROR_REFRESH_ICON_PX = 22;
-export const ERROR_PEN_ICON_PX = 24;
-export const SAFETY_SECTION_MIN_HEIGHT_PX = 240;
-export const SAFETY_SECTION_MAX_WIDTH_PX = 380;
-export const SAFETY_SUB_MAX_WIDTH_PX = 280;
-export const ERROR_TITLE_LINE_HEIGHT = 1.2;
-export const ERROR_BODY_LINE_HEIGHT = 1.35;
+const ERROR_GLYPH_PX = 72;
+const ERROR_REFRESH_ICON_PX = 22;
+const ERROR_PEN_ICON_PX = 24;
+const SAFETY_SECTION_MIN_HEIGHT_PX = 240;
+const SAFETY_SECTION_MAX_WIDTH_PX = 380;
+const SAFETY_SUB_MAX_WIDTH_PX = 280;
+const ERROR_TITLE_LINE_HEIGHT = 1.2;
+const ERROR_BODY_LINE_HEIGHT = 1.35;
 
 // The AI Result's error section: a refusal guides the child to draw something else and offers
 // grown-ups a report; anything else is the error card.

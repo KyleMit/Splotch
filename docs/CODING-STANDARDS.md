@@ -16,7 +16,11 @@ than adding new ones, and the 2026-09-29 code-smell burndown (tracking issue #24
 (tracking issue #2500) extended rules 2, 4, 9, and 10 and added evidence to rules 1, 3, 5, 6, and 8.
 The 2026-10-03 overnight burndown of everything outside `web/` (tracking issue #2650) extended rules
 4, 8, and 9 and added evidence to rules 1, 3, and 10. Enforcement is named by path. The React Native
-candidate's own rules are in [React Native candidate](#react-native-candidate).
+app's rules are in [React Native app](#react-native-app).
+
+Campaign incidents below are historical evidence. Svelte components, rune stores and their tests
+retired under ADR-0182; an incident is not a claim that its original test still runs. The
+Enforcement paragraphs identify retained checks, RN checks, or review separately.
 
 ## What earns a rule
 
@@ -42,19 +46,19 @@ argument (rule 7).
 
 ## Rules at a glance
 
-| #  | Rule                                                                         | Enforcement                                                                                                                                                    |
-| -- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1  | [Ask the owner; don't re-derive its rule](#1-ask-the-owner)                  | Review; a test on the owner; a test that settles a superseded call last                                                                                        |
-| 2  | [One union per mode](#2-one-union-per-mode)                                  | Types; `expectTypeOf` type tests run by `npm run check`; `Record<Union, V>` tables                                                                             |
-| 3  | [Names tell the truth about effects](#3-names-tell-the-truth)                | Review; `DeepReadonly` parameters where a query must stay pure                                                                                                 |
-| 4  | [Validate at the trust boundary](#4-validate-at-the-trust-boundary)          | Boundary tests with missing, malformed, and failing inputs; `unknown` input narrowed by a guard, never cast                                                    |
-| 5  | [One declared contract per wire boundary](#5-one-contract-per-wire-boundary) | A test that reads both sides; typed stubs; review for native platform behaviour                                                                                |
-| 6  | [Server-only packages and storage modes are fenced by lint](#6-lint-fences)  | `SERVER_ONLY_PACKAGES`, `BLOBS_CONSISTENCY_EXPLICIT`, `STORAGE_SEAM_ONLY`, `API_HANDLER_WRAPPED` in `eslint.config.js`, each with a positive control           |
-| 7  | [The startup path is a budget](#7-the-startup-path-is-a-budget)              | `STARTUP_MODULEPRELOAD_COUNT`, `NATIVE_STARTUP_MODULEPRELOAD_COUNT`, `MAX_STARTUP_JS_CSS_BYTES` (`tools/check-bundle-budgets.mjs`); `STARTUP_REQUIRED_MARKERS` |
-| 8  | [Tools: entries, strict flags, validate first, size ratchet](#8-tools)       | `tools/tests/tool-specifier-resolution.test.mjs`, `tools/tests/tool-entry-flags.test.mjs`, `rejectUnknownFlags`, `TOOLS_GRANDFATHERED_MAX_LINES`, `no-undef`   |
-| 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR, for gates too; decoys for source-text guards; `docs/TESTING.md`                                 |
-| 10 | [Comments state stable facts about code that exists](#10-comments)           | Review; `npm run check:doc-refs` for docs                                                                                                                      |
-| 11 | [Exceptions are declared and ratchet down](#11-exceptions-ratchet-down)      | Ratchet tests and caps listed in rule 11                                                                                                                       |
+| #  | Rule                                                                         | Enforcement                                                                                                                                                  |
+| -- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1  | [Ask the owner; don't re-derive its rule](#1-ask-the-owner)                  | Review; a test on the owner; a test that settles a superseded call last                                                                                      |
+| 2  | [One union per mode](#2-one-union-per-mode)                                  | Types; `expectTypeOf` type tests run by `npm run check`; `Record<Union, V>` tables                                                                           |
+| 3  | [Names tell the truth about effects](#3-names-tell-the-truth)                | Review; `DeepReadonly` parameters where a query must stay pure                                                                                               |
+| 4  | [Validate at the trust boundary](#4-validate-at-the-trust-boundary)          | Boundary tests with missing, malformed, and failing inputs; `unknown` input narrowed by a guard, never cast                                                  |
+| 5  | [One declared contract per wire boundary](#5-one-contract-per-wire-boundary) | A test that reads both sides; typed stubs; review for native platform behaviour                                                                              |
+| 6  | [Server-only packages and storage modes are fenced by lint](#6-lint-fences)  | `SERVER_ONLY_PACKAGES`, `BLOBS_CONSISTENCY_EXPLICIT`, `STORAGE_SEAM_ONLY`, `API_HANDLER_WRAPPED` in `eslint.config.js`, each with a positive control         |
+| 7  | [The startup path is a budget](#7-the-startup-path-is-a-budget)              | `tools/migration/check-native-web-startup.mjs`: first-paint, core-controls and per-page byte budgets                                                         |
+| 8  | [Tools: entries, strict flags, validate first, size ratchet](#8-tools)       | `tools/tests/tool-specifier-resolution.test.mjs`, `tools/tests/tool-entry-flags.test.mjs`, `rejectUnknownFlags`, `TOOLS_GRANDFATHERED_MAX_LINES`, `no-undef` |
+| 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR, for gates too; decoys for source-text guards; `docs/TESTING.md`                               |
+| 10 | [Comments state stable facts about code that exists](#10-comments)           | Review; `npm run check:doc-refs` for docs                                                                                                                    |
+| 11 | [Exceptions are declared and ratchet down](#11-exceptions-ratchet-down)      | Ratchet tests and caps listed in rule 11                                                                                                                     |
 
 ## 1. Ask the owner
 
@@ -83,9 +87,11 @@ with two homes eventually has two answers.
   wrong in dark mode; `colorsState.themedSwatchColor()` owns it. The same PR gave the duplicated
   credential migration one owner, `hydrate()` in `secureCredentialCoordinator.ts`.
 * PR #2507: the parental gate's answer was derived as `x * y` in the store's check, in its overfill
-  rule, and in the card's dab count, which is how a grown-up knows when to stop typing.
-  `gateAnswer()` in `web/src/lib/state/parentalGate.svelte.ts` owns it, and
-  `web/src/lib/components/ParentalGateProblem.ssr.test.ts` holds the dabs to the real store.
+  rule, and in the card's dab count, which is how a grown-up knows when to stop typing. The former
+  Svelte store's `gateAnswer()` and its parental-problem SSR test unified and checked the answer.
+  Both retired with that UI. RN challenge ownership lives in
+  `experiments/native-architecture/src/parentCenter/parentGate.ts`; its current timing/destination
+  tests are `tools/tests/native-parent-gate-card.test.mjs`, not a replacement SSR dab-count test.
 
 The 2026-09-29 evening campaign found the same failure in tooling, where the copies had already
 disagreed:
@@ -95,9 +101,9 @@ disagreed:
   counted devices. With a phone and an emulator attached, its `adb` calls failed into ignored
   stderr, and the run ended 25 s later blaming the app build. That module owned the rule from then
   until #3160 retired the harness.
-* PR #2505: the Chromium self-heal was written in `tools/lib/playwright.mjs` and again in
-  `web/playwright.shared.ts`, under a "Mirror …" comment. The copies already disagreed on the
-  override variable. The E2E config now imports the tools copy across the tree boundary, typed by
+* PR #2505: the Chromium self-heal was written in `tools/lib/playwright.mjs` and again in the former
+  Svelte Playwright shared config, under a "Mirror …" comment. The copies already disagreed on the
+  override variable. The RN `e2e/playwright.config.ts` imports the tools owner, typed by
   `tools/lib/playwright.d.mts`, and `tools/tests/playwright-executable.test.mjs` tests it.
 * PR #2511: the model-eval adapter hand-copied production's image-size table, tolerance, and tie
   rule. It now calls production's `imageSizeFor`.
@@ -152,19 +158,17 @@ identity, never a flag that later calls share. PRs #2449 and #2458 fixed three b
   #2458). Switching off now cancels the check, and the completion writes only while
   `latest.isCurrent(id)` holds.
 
-**Enforcement.** Review, plus a test on the owner method rather than on a caller's copy (for example
-`web/src/lib/plugins/pencilEraser.test.ts`, `web/src/lib/ai/credentials.test.ts`). A test double
-that re-implements the owner's rule tests its own copy (rule 9). For the stale-write case, the test
-holds the superseded call open, starts the newer one, settles the old one, and then asserts the
-newer call's state survived (`web/src/lib/drawing/folderSave.test.ts`,
-`web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts`). The first version of
-`web/src/lib/components/AiImageResult.download.test.ts` covered only the first half, the next
-result's save starting while the old one was still pending, and passed with the latch fault
-injected. Since PR #2482 it holds both saves, settles the closed card's save, and asserts that
-tapping the next result again starts no second save of it. Where a tool must agree with production
-or with another tool, one test feeds each input to every reader and compares the answers:
-`tools/model-eval/tests/image-providers.test.mjs` holds each response shape to production's
-classifier (PR #2657).
+**Enforcement.** Review, plus a test on the real owner rather than a caller's copy. Current RN
+examples are `tools/tests/native-ai-credential-lease.test.mjs` (a mutation revokes earlier leases)
+and `tools/tests/native-save-failure.test.mjs` (retained picture state and stale completions). These
+assert their own current contracts; they do not re-host the retired Svelte Pencil, key-toggle or
+result-download tests. The original Svelte result-download test first covered only a new save
+starting while the old one was pending, so it passed with the latch fault injected. PR #2482 held
+both saves, settled the closed card's save, then proved that another tap started no duplicate. That
+historical negative-control lesson remains review guidance for a new async latch.
+
+Where a tool must agree with production, compare both readers on the same inputs rather than
+restating the owner's answer in the test. A double that reimplements the rule tests itself (rule 9).
 
 ## 2. One union per mode
 
@@ -195,9 +199,11 @@ fails to compile, as with `STROKE_FLAGS_BY_BRUSH`). A table of `[key, value]` pa
 exhaustive; key it by the union, or derive the union from the table, as `DEVICE_INFO_LABELS` in
 `web/src/lib/platform/deviceReport.ts` does for `DeviceInfo` (PR #2510). A component props union is
 pinned by a type test — `expectTypeOf(...).not.toExtend` over `ComponentProps<typeof X>`, which
-`npm run check` evaluates (`web/src/lib/components/design/Button.props.test.ts`,
-`web/src/lib/components/design/SegmentedPicker.props.test.ts`,
-`web/src/lib/components/nav/SidebarToc.props.test.ts`) — not by `@ts-expect-error`.
+`npm run check` evaluates — not by `@ts-expect-error`. The original Svelte Button, SegmentedPicker
+and SidebarToc props tests retired with those components. Current RSD examples are
+`experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.props.test.ts` and
+`experiments/native-architecture/src/rsdDrawing/RsdIconButton.props.test.ts`; each pins its own
+props relationship rather than claiming to test the retired component contract.
 
 **Known limits.** A spread bypasses excess-property checks, so `{...{ href, onclick }}` still
 reaches `Button`. A `never` marker on every other attribute hit TS2590 ("expression produces a union
@@ -210,7 +216,8 @@ type that is too complex") in this repo; measure before widening a union that wa
 name and a behaviour disagree, rename or split — don't add a comment.
 
 **Why here.** A reader, human or agent, calls what the name promises. A query that mutates also
-breaks in a Svelte render (`state_unsafe_mutation`).
+broke in the retired Svelte render (`state_unsafe_mutation`); React rendering also requires pure
+queries.
 
 **Earned by.** PR #2382, a real layout bug: `isAiImageButtonVisible` actually meant "usable", so the
 toolbar glass stopped one button short whenever the AI button was shown but disabled. It is now
@@ -288,8 +295,9 @@ plausible wrong numbers.
   Play refused the build. `chooseVersionCode` in `tools/release/cut-release.mjs` now names blank as
   unpinned and rejects the rest.
 * PR #2455: `check-build-version` read a missing `sw.js` as "native build", so a web build that
-  stopped emitting its service worker passed. It now uses its own `--native` flag, and
-  `tools/tests/check-build-version.test.mjs` fails a web build without `sw.js`.
+  stopped emitting its service worker passed. Its explicit native flag and regression test fixed the
+  ambiguity; that Svelte build checker retired. The RN export's precache checker independently
+  validates its service worker (`tools/migration/check-native-web-precache.mjs`).
 * PR #2451 fixed in `perf:analyze:frames` the bug PR #2401 had fixed in the rescorer: a corrupt
   evidence index read as "no refusal". A fix in one reader does not reach the other readers of the
   same file, so look for them when fixing one.
@@ -367,9 +375,10 @@ programs' output, and the status of their own commands:
 cast to the expected shape (PR #2410 replaced a `style as StyleName` cast with
 `parseGenerationJobContext`). The boundary test includes the missing and malformed inputs as
 fixtures, for example the blank-pin and missing-Gradle-code cases in
-`tools/release/tests/cut-release.test.mjs`. A failed read or write is a fixture too:
-`web/src/lib/state/saveFailure.svelte.test.ts` makes the store's `read` reject and asserts that no
-held picture is replaced (PR #2474); `web/src/lib/server/tokens.test.ts` and
+`tools/release/tests/cut-release.test.mjs`. A failed read or write is a fixture too: the retired
+Svelte save-failure test rejected a storage read and asserted that no held picture was replaced (PR
+#2474). Current RN save-failure behavior is covered separately by
+`tools/tests/native-save-failure.test.mjs`; `web/src/lib/server/tokens.test.ts` and
 `web/src/lib/server/api/verifyAccessCode.test.ts` pin the 503 and which failures spend a guess (PR
 #2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject inside
 a temporary repository (PR #2471). A failure's message is asserted, not only its status:
@@ -379,8 +388,10 @@ its exit status, so a failing gate shows the checker's own line, and
 asserts the cause is printed through `errorChain` in `tools/lib/smoke.mjs` (PR #2513). A failed
 command is a fixture too: `tools/audit-burndown/tests/run-burndown-git-failures.test.mjs` fails each
 of the driver's commit-path steps and asserts the run halts before it records an outcome (PR #2665);
-`tools/tests/stop-dev-servers.test.mjs` and `tools/tests/vite-server.test.mjs` make `lsof` missing,
-killed, and failing (PR #2675); and `tools/tests/workflow-gates.test.mjs` runs the real compare step
+the former dev-server stop and Vite-server tests made `lsof` missing, killed and failing (PR #2675).
+The old stop and nested-worktree ownership tests retired with that dev server. The retained export
+host's `tools/tests/site-server.test.mjs` checks that missing `lsof` fails loudly and that stop
+targets its own process group. `tools/tests/workflow-gates.test.mjs` runs the real compare step
 under `BASH_STEP_ARGS` with a crashing reporter, and fails any workflow whose `run:` steps lack the
 declared shell (PR #2668). So is the host's configuration:
 `tools/git-housekeeping/tests/git-facts.test.mjs`, `tools/tests/push-rebased-stack.test.mjs`, and
@@ -398,30 +409,32 @@ not restated here.
 **Why here.** E2E specs mock the server, so a one-sided rename passes every test and breaks
 production.
 
-**Earned by.** The AI generation ticket: `GenerationStartedBody`, with
-`web/src/lib/server/api/settlementTestHarness.ts` parsing every server ticket through the client's
-`readAiImageResponse` (PR #2383). Report field names and kinds (`IMAGE_REPORT_FORM_FIELDS`,
-`REPORT_FORM_FIELDS`; `web/src/lib/reportClient.test.ts` sends the client's requests to the real
-handlers; PRs #2387, #2406). The job-id format, owned by `isJobId` (PR #2393). Privacy-policy claims
-against the purge functions' schedules (`IMAGE_REPORT_REVIEW_HOURS`;
-`tools/mobile/tests/privacy-consistency.test.mjs`; PR #2411). Native plugin names and registrations
-(PR #2402, a guard removed with the Capacitor shell), and since PR #2436 the fields each native
-method resolves. The verify-key and verify-access-code request bodies (`VerifyKeyRequestBody`,
-`VerifyAccessCodeRequestBody` in `web/src/lib/ai/keyFormat.ts`, sent through both real handlers by
-`web/src/lib/ai/verifyCredential.wire.test.ts`; PR #2432). The privacy policy's "Last updated" date
-against a hash of its rendered text (`web/src/routes/privacy/policyRevisionsTestHarness.ts`; PR
-#2437, after the date stayed put through a text change).
+**Earned by.** The AI generation ticket, `GenerationStartedBody`, was parsed through the Svelte
+client's response reader by a settlement harness (PR #2383). Client report tests sent field names
+and kinds through real handlers (PRs #2387, #2406), and a verify-credential wire test did the same
+for verify-key and verify-access-code bodies (PR #2432). Those client/harness tests retired with the
+Svelte client; they explain the rule, not active RN wire coverage. The job-id format remains owned
+by `isJobId` (PR #2393). Privacy-policy retention claims are checked against purge schedules by
+`tools/mobile/tests/privacy-consistency.test.mjs` (PR #2411). A historical policy-revision harness
+tied the “Last updated” date to rendered text after a date stayed put through a text change (PR
+#2437); the Svelte harness retired.
+
+The Netlify Function's active transport equivalence is held by
+`tools/api-smoke/tests/wire-diff.test.mjs` against recorded responses. RN report contracts and
+request ownership are exercised by `tools/tests/native-ai-picture-report.test.mjs` and the browser
+report specs. Those checks cover their named surfaces rather than inheriting every Svelte test's
+claim.
 
 The 2026-09-29 evening campaign found more names, and one sentence, typed at several sites:
 
 * The `/admin` console's form fields and action names were typed in the page, the server actions,
   the console component, and the login test. A renamed field compiled, and sign-in then answered
-  "Incorrect access key." for the right key. `ADMIN_FORM_FIELDS` and `ADMIN_ACTIONS` in
-  `web/src/lib/adminForm.ts` declare them once, and `web/src/routes/admin/page.server.test.ts` pins
-  the route's action keys to the declared list (PR #2509).
+  "Incorrect access key." for the right key. PR #2509 declared one form/action vocabulary and pinned
+  the Svelte route to it. Those form actions and their route test retired; the RN web admin console
+  uses bearer API sessions, checked by `tools/migration/check-native-web-admin.mjs`.
 * The store-frames render page re-typed the query-param names that its `paths.ts` header said were
-  declared once. It now reads `RENDER_PAGE_PARAM` and `RENDER_TARGET_PARAM` from
-  `web/src/routes/dev/store-frames/lib/paths.ts` (PR #2510).
+  declared once. PR #2510 made it read the owner's constants. That Svelte development route and its
+  query contract retired; retained frame rendering uses standalone documents.
 * One parent-facing 503 sentence was typed at four sites in three server modules, and two of the six
   503 paths pinned it. `AI_REPORTING_UNAVAILABLE_MESSAGE` in
   `web/src/lib/server/imageReportUnavailable.ts` now serves all six, and each path's test pins the
@@ -430,20 +443,17 @@ The 2026-09-29 evening campaign found more names, and one sentence, typed at sev
 **Enforcement.** The both-sides test. Test stubs of a boundary function are typed from the real one
 (`vi.fn<typeof realFn>()`), so a changed signature fails `npm run check`; an untyped stub had
 drifted to a shape the real function never returns (PRs #2383, #2393). Where the stub lives in an
-untyped tool, a drift guard reads the type: the store-asset generator's free-grant stub sent a field
-the route never sends, and `tools/marketing-assets/tests/free-grant-stub.test.mjs` now holds its
-keys to `FreeGenerationGrantStatus` (PR #2518).
+untyped tool, a drift guard reads the type. Historically, the store-capture generator's free-grant
+stub sent a field the route never sent; PR #2518 pinned it to `FreeGenerationGrantStatus`. That
+stub/test retired when live Svelte capture retired. The current frame-only generator has no API
+stub; its tests cover frame rendering rather than a generation wire contract.
 
-**Known limits.** For native plugins, the both-sides test checks names and the fields each method
-resolves, not how each platform behaves. PR #2448 found two platform gaps:
-
-* Given the same malformed `status` call, Android deleted every book and iOS rejected the call.
-* iOS `remove()` left a pending `install` promise unsettled, while `cancel()` and Android both
-  rejected it. `settleCompletion` in `ColoringPacksPlugin.swift` now owns taking the completion and
-  calling it.
-
-Java and Swift have no unit harness. So two properties are enforced only by review: a native method
-settles its call on every path, and both platforms answer the same input the same way.
+**Known limits.** The retired Capacitor plugin guard checked names and resolved fields, not platform
+behavior. PR #2448 found that Android deleted all books for a malformed status call while iOS
+rejected it, and an iOS remove path left an install promise unsettled. That incident still explains
+two review obligations at native boundaries: settle every path and answer the same input
+consistently. The old plugin guard is not RN runtime-I/O coverage; the RN device checks in
+`experiments/native-architecture/DEVELOPMENT.md` identify what mocks cannot prove.
 
 ## 6. Lint fences
 
@@ -476,11 +486,11 @@ spec leans on, and the `*TestHarness.ts` modules that define tests for their cal
 syntax set once for every block that extends it. The native candidate's two React hooks rules have
 `tools/tests/native-react-hooks-lint.test.mjs`. The same pattern guards tools: `no-undef`
 (`tools/tests/tools-no-undef-lint.test.mjs`, with a case for each skill tree since PR #2503) and
-`max-lines` (`tools/tests/tools-max-lines-lint.test.mjs`). For CSS,
-`tools/tests/stylelint-config-lint.test.mjs` lints seeded CSS through the config `npm run lint:css`
-discovers, over a `.css` and a `.svelte` path, and `tools/tests/vacuous-test-lint.test.mjs` seeds
-its cases under `web/src` as well as `tools/tests/` (both PR #2481), and since PR #2514 at a
-`web/tests` helper path and a `*TestHarness.ts` path too.
+`max-lines` (`tools/tests/tools-max-lines-lint.test.mjs`). For CSS, `npm run lint:css` reads the
+hand-authored CSS surface. The former stylelint positive control covered CSS and Svelte paths and
+retired with Svelte support; it is not evidence for a new CSS restriction.
+`tools/tests/vacuous-test-lint.test.mjs` retains the positive controls for the active test/helper
+globs, including root `e2e/` paths. Any new lint fence needs its own seeded control.
 
 **Known limits.** `no-restricted-imports` sees static imports only, not `import()`. The Blobs
 selectors match a bare `getStore` callee, not an alias. A selector matches a name, not a binding:
@@ -488,34 +498,32 @@ the first `API_HANDLER_WRAPPED` was bypassed by a destructured import until bind
 `apiHandler` to its `$lib/server/http` import (PR #2432). Flat config replaces a rule's earlier
 entry, so a new restriction must be recomposed into every block for that rule (ADR-0031). Some
 server boundaries are still prose or defaults rather than lint: `.claude/rules/server-api.md` asks
-for `readFormBody` over `request.formData()`, and `handleApiCaching` in `web/src/hooks.server.ts`
-defaults every `/api` response to `no-store` (PR #2427), which the API smoke asserts
-(`tools/api-smoke/lib/api-caching.mjs`, PR #2432).
+for `readFormBody` over `request.formData()`. The retired Svelte hook defaulted API responses to
+`no-store` (PR #2427); `web/src/lib/server/api/apiFunction.ts` owns that response boundary for the
+Netlify Function, which the API smoke asserts (`tools/api-smoke/lib/api-caching.mjs`, PR #2432).
 
 ## 7. The startup path is a budget
 
-**Rule.** The code that runs before hydration is a measured budget, not a guideline. A new runtime
-import from a startup module into a module that lazy code also imports can split that module into a
-new startup chunk; give the shared piece its own module that no lazy client code imports, as PR
-#2404 did. Where a startup module cannot share code, keep the conventions' bundle-boundary copy with
-its drift guard.
+**Rule.** Startup is a measured budget. A runtime import from a startup module into a module that
+lazy code also imports can repartition chunks; verify the built closure rather than reasoning from
+the imported module's size. Where code cannot share across a bundle boundary, a deliberate inline
+copy needs a drift guard.
 
-**Why here.** The first stroke must land before hydration (ADR-0072), on a 120 Hz iPad.
+**Why here.** The drawing screen must paint and accept input promptly on the supported devices.
+First paint and interactive controls have different waits (ADR-0180).
 
-**Earned by.** PR #2391 added a startup module's runtime import of `$lib/freeGenerations`, which
-lazy code also imported, so Rolldown split it into a new 158-byte startup chunk: one more request
-before hydration, invisible to the byte budget and to every module marker. PR #2404 moved the check
-to `web/src/lib/installationId.ts` and pinned the count. A native-only import behind
-`__IS_CAPACITOR__` can do the same to the native build while the web count holds; a reviewer found
-one on PR #2406, and PR #2418 pinned the native count too.
+**Earned by.** In the Svelte app, PR #2391 added a runtime import that split a 158-byte chunk into
+one more startup request, invisible to its byte budget and marker checks. PR #2404 separated the
+owner and pinned modulepreload count; PR #2418 extended the count pin to the Capacitor export. Those
+two builds and their count checks retired. The RN export's startup cuts and split budgets are
+recorded in ADR-0179 and ADR-0180.
 
-**Enforcement.** `STARTUP_MODULEPRELOAD_COUNT` in `tools/check-bundle-budgets.mjs` is an exact,
-two-sided pin enforced by `npm run build` on the release build; a change in either direction fails
-and asks for the constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes. On the
-React Native export `tools/migration/check-native-web-startup.mjs` holds the startup bytes, and
-`tools/tests/native-web-service-worker.test.mjs` keeps a module that must stay eager (the install
-prompt's listener, PR #2428) on the startup path; the SvelteKit `startup-bundle.spec.ts` that pinned
-both retired with its suite (ADR-0182). ADR-0032's 2026-09 amendments record the reasoning.
+**Enforcement.** `tools/migration/check-native-web-startup.mjs`, run by `npm run build:site`, holds
+`MAX_NATIVE_WEB_FIRST_PAINT_BYTES`, `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` and the per-page
+`MAX_NATIVE_WEB_PAGE_BYTES` registry. The caps remain 47,052 bytes for drawing first paint and
+827,535 bytes for its core controls. `tools/tests/native-web-service-worker.test.mjs` checks the
+export's startup/offline contracts, including listeners that must attach early. These enforce RN
+output; the retired Svelte startup spec and exact modulepreload pin are historical mechanisms.
 
 ## 8. Tools
 
@@ -600,15 +608,15 @@ unproved premise in tools that stop processes and drive devices:
   commit (PR #2685). The preflight read `--ios-udid` after `--wake-android` had written to the
   phone, and the release read `--android-serial` after it had stopped the rig (PR #2667, review
   round one).
-* Stops and device steps on targets the run had not proved its own. `npm run dev:stop` signalled
-  every listener on its two ports, whoever owned it, so it could stop another worktree's dev server,
-  and it read a worktree nested inside the checkout as its own (PR #2675). The burndown's status
-  lookup and documented hard stop matched `claude -p` and `codex exec` across the host, so the stop
-  could kill the supervising session (PR #2674). `perf:release` did not see a live person session,
-  so it would stop that session's preview, Appium, and WebDriverAgent while a person was mid-step at
-  the device (PR #2661). `test:android` drove whichever emulator answered first, so it would test on
-  and then kill a developer's open emulator, and install its debug build on an attached phone (PR
-  #2682).
+* Stops and device steps on targets the run had not proved its own. The retired `dev:stop` command
+  signalled every listener on its two ports, whoever owned it, so it could stop another worktree's
+  dev server, and it read a worktree nested inside the checkout as its own (PR #2675). The
+  burndown's status lookup and documented hard stop matched `claude -p` and `codex exec` across the
+  host, so the stop could kill the supervising session (PR #2674). `perf:release` did not see a live
+  person session, so it would stop that session's preview, Appium, and WebDriverAgent while a person
+  was mid-step at the device (PR #2661). `test:android` drove whichever emulator answered first, so
+  it would test on and then kill a developer's open emulator, and install its debug build on an
+  attached phone (PR #2682).
 * Deletes beyond what the run owned. A `FILTER`ed `model-eval:fixtures` run deleted the 51 fixtures
   it skipped, so the next paid bake-off would run on a corpus missing whole categories (PR #2659).
   In review, the rival bench's leftover cleanup twice cleared a path it had not proved its own,
@@ -630,10 +638,12 @@ unproved premise in tools that stop processes and drive devices:
 `tools/tests/tool-entry-flags.test.mjs` (which also fails a flag read in an exported function's
 parameter default and, since PR #2515, an accepted flag that the entry's `npm run info` text leaves
 out); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES` in `eslint.config.js`; `no-undef` across
-`tools/` and the skill-package scripts; `freePort` in `tools/lib/vite-server.mjs` throws on a
-listener outside the checkout, and `ensureDevServer` in `tools/app-driver/lib/app-driver.mjs` starts
-its own server and rejects an answer from any other process
-(`tools/app-driver/tests/ensure-dev-server.test.mjs`). `generateFromValidatedSources` in
+`tools/` and the skill-package scripts. The former Vite/app-driver checks proved process ownership
+before reuse; those development-server entries/tests retired. The current export-host lifecycle is
+`tools/lib/site-server.mjs`, with `tools/tests/site-server.test.mjs` and
+`tools/tests/site-server-release.test.mjs` checking its owned process group, listener detection,
+stop/release behavior and durable stdio. These are their current contracts, not a claim that the old
+development-server reuse path still exists. `generateFromValidatedSources` in
 `tools/ruler/apply-ruler.mjs` runs read-only plans before generating, and the bad-source cases in
 `tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
 `main()` parses the arguments and `chooseVersionCode` decides the version code before the first
@@ -655,14 +665,14 @@ second also spawns both bake-off runners with one, since the bug lived in the en
 than in a parser (PRs #2655, #2660). The scratch-checkout cuts in
 `tools/release/tests/cut-release.test.mjs` run the real script and assert that a stray change or a
 release document whose version is not its filename is refused with the tree unchanged (PR #2685).
-Each stop is driven against a target it must spare: a listener that changes owner during the grace
-period (`tools/tests/stop-dev-servers.test.mjs`), a real listener in a nested worktree
-(`tools/tests/port-ownership.test.mjs`), an unrelated `claude -p` beside a stand-in driver tree
-(`tools/audit-burndown/tests/driver-process-pattern.test.mjs`), and an open emulator and an attached
-phone (`tools/mobile/android/tests/run-smoke-test.test.mjs`). The import tests in
-`tools/audit-burndown/tests/backfill-comments.test.mjs`,
-`tools/marketing-assets/tests/promotional-image-svg.test.mjs`, and
+The former dev-stop test drove a listener changing ownership during its grace period; that entry and
+its nested-worktree test retired. Current stop checks include an unrelated `claude -p` beside a
+stand-in driver tree (`tools/audit-burndown/tests/driver-process-pattern.test.mjs`), and an open
+emulator and an attached phone (`tools/mobile/android/tests/run-smoke-test.test.mjs`). The import
+tests in `tools/audit-burndown/tests/backfill-comments.test.mjs` and
 `tools/mobile/android/tests/run-smoke-test.test.mjs` assert that importing the entry starts nothing.
+The promotional-image import test retired with its Svelte capture entry; retained store-frame
+rendering is checked separately by `tools/marketing-assets/tests/store-assets.test.mjs`.
 
 ## 9. Tests prove they can fail
 
@@ -694,20 +704,22 @@ changed the store, and the repair copied its `aiCredentialKind` rule, so the tes
 copy (PR #2413). A whitespace-collapsing copy test hid a Prettier re-wrap that changed the rendered
 text (PR #2400); PR #2411's exact pins caught the same trap. Two coloring-pack regressions (caching
 before verification, remembering a failed manifest load) would have passed the whole suite until PR
-#2431 added `web/src/lib/coloringPacks/manager.webStore.test.ts` on the real web store, and PR #2436
-gave a positive control to a blank-undo test that could pass vacuously. Tests running close to their
-timeout failed on loaded CI runners, one at 5,570 ms against a 5,000 ms default (PRs #2401, #2407,
-#2417). The web-store tests stubbed `scheduleIdle` to call back before it returned, which the real
-scheduler never does. The tests ran in an order production cannot produce, and an install aborted
-mid-wait had no test; PR #2484 replaced the stub with a double that defers its callback.
+#2431 tested the real web store, and PR #2436 added a positive control to a blank-undo test that
+could pass vacuously. Those Svelte-runtime tests retired; they remain evidence for using real owners
+and proving a test fails, not active RN library coverage. Tests running close to their timeout
+failed on loaded CI runners, one at 5,570 ms against a 5,000 ms default (PRs #2401, #2407, #2417).
+The web-store tests stubbed `scheduleIdle` to call back before it returned, which the real scheduler
+never does. The tests ran in an order production cannot produce, and an install aborted mid-wait had
+no test; PR #2484 replaced the stub with a double that defers its callback.
 
 The 2026-09-29 evening campaign found tests that could not fail for the reason they exist:
 
 * PR #2506: What's New rendered its release sections at `h2` under an `h3` date, and the release
   notes generator's test pinned `level={2}`, the bug itself. axe's `heading-order` rule flags only a
-  skipped level, so the accessibility scans passed too.
-  `web/src/lib/components/settings/WhatsNewSection.headingOutline.test.ts` now asserts that every
-  section heading sits one level below the rendered date heading.
+  skipped level, so the accessibility scans passed too. Its Svelte heading-outline test asserted
+  that every section heading sat one level below the rendered date heading. That component/test
+  retired; the relationship remains review guidance rather than a claim that axe catches inverted
+  nesting.
 * PR #2508: two `vi.mock` doubles stood in for modules their tests never load, one under a comment
   naming a dependency that did not exist. A dead double tells the reader about a coupling that is
   not there and would silently absorb one that came back. A double whose factory throws on import
@@ -763,8 +775,9 @@ Gates that passed without checking what they claimed:
   while the captures read through whatever relay held 9221.
 * PR #2673: `DEFERRED_OWNERS` matched chunks by name and never confirmed the names existed, so a
   renamed owner would have left the eager-error check printing "deferred owners remain lazy" with
-  nothing to match. `requireDeferredOwnerChunks` in `tools/check-eager-error-bundle.mjs` fails on a
-  name no chunk carries.
+  nothing to match. Its guard then required each owner to exist before checking its laziness. The
+  Svelte bundle checker retired; the general requirement to prove a nonempty input remains part of
+  rule 9 and applies to RN output guards separately.
 * PR #2651: a test compared the reviewed halo ceilings with its own copy of them, so it could never
   score a new exception. Both ceiling suites now derive their cases from the registry and first
   assert the derived list is non-empty, since `it.each([])` generates no tests. The guards of PRs
@@ -786,16 +799,17 @@ Source-text guards that a comment, another job, or another spelling could satisf
 * PR #2508: the safe-area sweep, the only guard that catches a component calling
   `env(safe-area-inset-*)` past the `--safe-area-*` seam, required `)` right after the edge name. It
   missed `env(safe-area-inset-top, 0px)`, the fallback form the `app.css` seed itself uses and so
-  the form a consumer copying the seed would write.
-  `web/src/lib/platform/safeAreaProperties.test.ts` now pins its pattern against that form, inner
-  padding, and a call nested in `max()`.
+  the form a consumer copying the seed would write. The former Svelte safe-area source test added
+  those fallback, inner-padding and nested-call decoys. It retired with that CSS seam; RN safe-area
+  layout is checked independently by `tools/migration/check-native-web-safe-area.mjs`.
 * PR #2511: a first-cut guard that read the iPad gates probe's source literals passed with a
   scenario hard-coded to two strokes, and regexes over engine measure names read comments and
   skipped template literals. The fixes ran the probe and counted what it drew, and parsed both sides
   with the TypeScript compiler API; both retired with the harness in #3160.
 * PR #2518: the dialog retirement settles on the `close` event or a one-frame fallback, and with the
-  `close` listener removed every test still passed. `web/src/lib/actions/modalDialog.svelte.test.ts`
-  now holds the fallback's frame and settles on `close` alone.
+  `close` listener removed every test still passed. Its Svelte action test held the fallback frame
+  and settled on `close` alone. Both action and test retired; a replacement dialog's fallback must
+  be isolated in its own negative control rather than inheriting that test's guarantee.
 * PR #2513: a WebKit history test asserted `if: always()` against the whole job, and the diagnostics
   upload step satisfied it while the history step carried a different condition. That assertion is
   gone, and the upload's other assertions now read the history step alone.
@@ -850,12 +864,13 @@ For source-text guards, the decoy controls: a wired line moved into a `decoy` jo
 (`tools/page-load/tests/lighthouse-ci.test.mjs`), the respellings of `permissions` and the escaped
 or flow-style keys the workflow readers must refuse (`tools/tests/workflow-gates.test.mjs`), the
 TOML escapes and respellings `tools/tests/netlify-cache-rules.test.mjs` refuses, an artifact-name
-fixture that holds spaces (`tools/tests/playwright-report-folder.test.mjs`), and the seed's own
-fallback form (`web/src/lib/platform/safeAreaProperties.test.ts`). Mocking only what the subject
-loads is review; PR #2508's throwing factories are the control for a double suspected dead. A double
-that copies a producer's output is built from the producer where it can be, so rewording the
-producer fails the tests that use it (PR #2679); that is review-enforced since its test retired with
-the capture rig in #3160. The git temp-repo fixture,
+fixture that holds spaces (`tools/tests/playwright-report-folder.test.mjs`). The retired Svelte
+safe-area guard's fallback-form decoy is historical evidence for this rule; the RN layout check has
+a different surface and does not validate that old parser. Mocking only what the subject loads is
+review; PR #2508's throwing factories are the control for a double suspected dead. A double that
+copies a producer's output is built from the producer where it can be, so rewording the producer
+fails the tests that use it (PR #2679); that is review-enforced since its test retired with the
+capture rig in #3160. The git temp-repo fixture,
 `tools/git-housekeeping/tests/fixtures/temp-repo.mjs`, pins `GIT_CONFIG_GLOBAL` and
 `GIT_CONFIG_NOSYSTEM`, and the real-git suites of PRs #2652, #2666, and #2677 also clear
 `GIT_CONFIG_COUNT` and `GIT_CONFIG_PARAMETERS`, which outrank repository config. Lint cannot see an
@@ -935,10 +950,10 @@ regression.
 * ADR carve-outs: the engine's module-scope state is ADR-0004's documented exception to the
   `createX()` factory convention. Changing it is an ADR amendment, not a refactor.
 
-## React Native candidate
+## React Native app
 
-These rules cover the React Native app under evaluation in `experiments/native-architecture/` (epic
-#2690). Its platform vocabulary, and the adapters named here, are in
+These rules cover the shipping React Native app in `experiments/native-architecture/` pending root
+promotion (ADR-0182). Its platform vocabulary, and the adapters named here, are in
 [`RSD-VOCABULARY.md`](../experiments/native-architecture/RSD-VOCABULARY.md).
 
 ### Stroke activity stays out of the chrome's props

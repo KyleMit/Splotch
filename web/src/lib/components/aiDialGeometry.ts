@@ -6,9 +6,3 @@
 // in the falling leaves with nothing behind it.
 export const DIAL_STAGE_FRACTION = 0.52;
 export const DIAL_MAX_SIZE_PX = 300;
-
-// How much wider than the dial the confetti's mask hole is cut, so leaves
-// vanish just behind its translucent rim rather than at the exact edge. Spent
-// as a CSS literal in AiResultStage's style block; AiResultStage.geometry.test.ts
-// holds that copy to this one.
-export const MASK_CLEARANCE = 1.19;

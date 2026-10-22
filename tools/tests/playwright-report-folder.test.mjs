@@ -3,11 +3,9 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { REPORT_FOLDER } from '../../e2e/playwright.config.ts';
-import { playwrightReportFolder } from '../../web/playwright.shared.ts';
 import { jobBlocks, stepBlocks, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
 
-// web/playwright.shared.ts and e2e/playwright.config.ts each pin the folder both
-// of their Playwright reporters write to, and test.yml uploads it by a literal
+// e2e/playwright.config.ts pins the folder its Playwright reporters write to, and test.yml uploads it by a literal
 // path YAML cannot import. This is the guard against the sides drifting apart: a
 // moved folder would leave every Playwright job uploading nothing
 // (if-no-files-found: error) — or, worse, an old copy.
@@ -30,14 +28,10 @@ function uploadArtifactSteps(workflow) {
 }
 
 describe('Playwright report folder', () => {
-  const folder = relative(repoRoot, playwrightReportFolder);
+  const folder = relative(repoRoot, REPORT_FOLDER);
   const reportUploads = uploadArtifactSteps(testWorkflow).filter(({ name }) =>
     name?.startsWith('playwright-report-')
   );
-
-  it('is one folder for both suites', () => {
-    expect(REPORT_FOLDER).toBe(playwrightReportFolder);
-  });
 
   // Pinned by name, not counted: a step whose name fails to parse drops out of the filter, and
   // the steps that remain keep any count above zero.

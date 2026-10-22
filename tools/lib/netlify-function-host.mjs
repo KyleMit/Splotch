@@ -28,12 +28,6 @@ function routeOf(pathname) {
   return pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
 }
 
-/** `(pathname) => file`: the module of the function that claims `pathname`, or null. */
-export function functionFiles() {
-  const files = new Map(netlifyFunctionRoutes(FUNCTIONS_DIR).map(({ file, path }) => [path, file]));
-  return (pathname) => files.get(routeOf(pathname)) ?? null;
-}
-
 // Vite fixes import.meta.env.DEV from NODE_ENV as the server is created, and fills an unset
 // NODE_ENV in itself, so the mode holds only for the creation and the caller's value returns.
 async function createModuleLoader(mode) {

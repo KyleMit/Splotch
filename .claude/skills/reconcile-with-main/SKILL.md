@@ -126,9 +126,8 @@ These merge clean every time and are worth checking by name:
   is what the Netlify build needs (ADR-0070). CI installs everything and stays green; the deploy
   breaks.
 * **Split constants** — a value duplicated across a bundle boundary, where the two copies cannot
-  import each other and a drift-guard test enforces agreement
-  (`web/src/lib/state/saveFolder.svelte.ts` and `web/src/app.html` are the standing examples). If
-  one side moved, the guard test is what tells you.
+  import each other and a drift-guard test enforces agreement, such as native project settings and
+  their typed release tooling. If one side moved, the guard test is what tells you.
 * **Backlog overlap** — the issue this branch closes may already be closed on `main`, or its
   approach superseded by an ADR that landed since the merge base:
   `git log <merge-base>..origin/main -- docs/adrs/`.

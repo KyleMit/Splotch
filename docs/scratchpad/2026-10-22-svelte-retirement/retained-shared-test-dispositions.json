@@ -1,0 +1,2230 @@
+{
+  "base": "01e13ba6bfd3d33e3307eef9984f74c1990bb088",
+  "scope": "All 76 initial retained-import candidates, plus a complete deleted-web-test import-call sweep. Retained import does not imply the tested function survives; actual runtime operations are restored or mapped explicitly.",
+  "candidateCount": 76,
+  "candidates": [
+    {
+      "file": "web/src/app.html.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/boot/appSurfaceRoute.ts",
+          "names": ["DRAWING_ROUTE"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/appIdentity.ts",
+          "names": ["APP_HOME_SCREEN_NAME"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PORTRAIT_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["RESOLVED_THEMES"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/boot/appSurfaceRoute.ts",
+          "names": ["DRAWING_ROUTE"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/appIdentity.ts",
+          "names": ["APP_HOME_SCREEN_NAME"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/components/page/backLabel.ts",
+          "names": ["DRAWING_VISITED_FLAG", "DRAWING_VISITED_SESSION_KEY"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PORTRAIT_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["RESOLVED_THEMES"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "18088a8ba072637d6c39cf8e89c43eb923dbf28e8d752ea731723206851d69e1",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed boot scripts and string substitutions belong to deleted app.html. Retained constants are expectations for that removed script. Native head viewport/install tags have independent native-web-head tests; native theme has its own settings/appearance contracts."
+    },
+    {
+      "file": "web/src/app.html.themeColor.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": [
+            "DARK_SCHEME_QUERY",
+            "RESOLVED_THEMES",
+            "resolveTheme",
+            "THEME_COLOR_META_SELECTOR",
+            "THEME_COLORS",
+            "THEME_DEFAULT",
+            "ThemePreference"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": [
+            "DARK_SCHEME_QUERY",
+            "RESOLVED_THEMES",
+            "resolveTheme",
+            "THEME_COLOR_META_SELECTOR",
+            "THEME_COLORS",
+            "THEME_DEFAULT",
+            "ThemePreference"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "2b55300b8edd4998017810bfc8836b66fe3cc94c8f13fcbe087c5fe906766105",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed boot scripts and string substitutions belong to deleted app.html. Retained constants are expectations for that removed script. Native head viewport/install tags have independent native-web-head tests; native theme has its own settings/appearance contracts."
+    },
+    {
+      "file": "web/src/browserFloor.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/browserTargets.ts",
+          "names": ["BROWSER_TARGETS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/browserTargets.ts",
+          "names": ["BROWSER_TARGETS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "32626374387ca0a1341c2c37457ae156d13b06525293e49900c0b3ffb7d5ba83",
+      "disposition": "retired consumer assertions",
+      "rationale": "The floor test reads deleted Vite/Svelte build targets. web/browserTargets.ts remains the declared web floor consumed by the retained report-browser-floor tool; RN native OS floors remain distinct."
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.cssFormula.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/platform/safeArea.ts",
+          "names": ["SafeAreaInsets"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "16751ede58aabcfd73fe46a27f03d591709f94e637db5e2d13b60c86e2e2802c",
+      "disposition": "retired consumer assertions",
+      "rationale": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts."
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.fallback.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "18f865b8fda492bd67dfd0d4f255e4fc810b2bac3e0ffca10f8a136c8954d673",
+      "disposition": "retired consumer assertions",
+      "rationale": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts."
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["LARGE_TABLET_MIN_SIDE_PX", "TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/platform/safeArea.ts",
+          "names": ["SafeAreaInsets"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["LARGE_TABLET_MIN_SIDE_PX", "TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "b97daebbff9d1bf1a563be83edc0c5de91c6c517a98c8aef8ce6c6d8e640dafd",
+      "disposition": "retired consumer assertions",
+      "rationale": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts."
+    },
+    {
+      "file": "web/src/lib/actionButtonLayout.toolDrawer.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "5a1bccd2e2b4bf666b342b0850e69dc0e1b8531abc49ae3d73bdd2f9e711f541",
+      "disposition": "retired consumer assertions",
+      "rationale": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts."
+    },
+    {
+      "file": "web/src/lib/actions/colorFoldGesture.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/actions/clickConsumeWindow.ts",
+          "names": ["PRESS_CLICK_CONSUME_WINDOW_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/actions/clickConsumeWindow.ts",
+          "names": ["PRESS_CLICK_CONSUME_WINDOW_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "c66330244368087ab680562d88e8f1d553d9bd019c074f940464760c475e736c",
+      "disposition": "retired consumer assertions",
+      "rationale": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests."
+    },
+    {
+      "file": "web/src/lib/actions/dragToClear.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/actions/dragToClearGeometry.ts",
+          "names": ["ACCEPT_RADIUS_FACTOR"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/actions/dragToClearGeometry.ts",
+          "names": ["ACCEPT_RADIUS_FACTOR"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "e322e64b0c15823a0ed70ffd845daad15fe3d3060afdca5999914105d44eb3ca",
+      "disposition": "retired consumer assertions",
+      "rationale": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests."
+    },
+    {
+      "file": "web/src/lib/actions/launchGuard.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_COLUMN_GEOMETRY", "PALETTE_ROW_GEOMETRY"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_COLUMN_GEOMETRY", "PALETTE_ROW_GEOMETRY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/tokens.ts",
+          "names": ["scale", "toCssVarName"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "e6e022536176f62e1f83ea6a64fd21b15a7083083a5ddb349d566e3bc431b7d8",
+      "disposition": "retired consumer assertions",
+      "rationale": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests."
+    },
+    {
+      "file": "web/src/lib/actions/pinchTextZoom.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/actions/clickConsumeWindow.ts",
+          "names": ["PRESS_CLICK_CONSUME_WINDOW_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/actions/clickConsumeWindow.ts",
+          "names": ["PRESS_CLICK_CONSUME_WINDOW_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "d23969239c21ce331d53d5bef83167988b288357b4b0c288cdcaa16e3fd2f6af",
+      "disposition": "retired consumer assertions",
+      "rationale": "The driven gesture/action/rune implementation is removed. Surviving click-window/geometry/token imports are fixture constants or CSS-variable formatting for those consumers, rather than the action under test. Retained dragToClearGeometry and pinchTextZoomGesture pure modules keep their own tests."
+    },
+    {
+      "file": "web/src/lib/ai/credentials.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["ACCESS_TOKEN_HEADER", "API_KEY_HEADER", "INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["ACCESS_TOKEN_HEADER", "API_KEY_HEADER", "INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "0dde7c51360874a74506644fe45e687805c7a1019a6a738087c6e8b892dc879b",
+      "disposition": "retired consumer assertions",
+      "rationale": "The HTTP credential/header wrapper is removed; retained API header strings only construct expected requests. Native credential transport and restored nativeAi.wire exercise the shipping boundary."
+    },
+    {
+      "file": "web/src/lib/ai/generationAttempt.terminal.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "experiments/native-architecture/src/ai/recoveryTransport.ts",
+          "names": ["RecoveryReadRequest", "RecoveryAdmissionRequest", "RecoveryMutationRequest"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/ai/generationAttempt.ts",
+          "names": [
+            "RECOVERY_PROTOCOL",
+            "RECOVERY_TTL_MS",
+            "RECOVERY_MAX_JSON_BYTES",
+            "RECOVERY_TERMINAL_HEADER",
+            "RECOVERY_TERMINAL_VALUE",
+            "RECOVERY_TERMINAL_STATUS",
+            "RECOVERY_TERMINAL_CODE",
+            "parseRecoveryTerminalReply",
+            "recoveryTerminalRequested"
+          ],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "experiments/native-architecture/src/ai/recoveryTransport.ts",
+          "names": ["RecoveryReadRequest", "RecoveryAdmissionRequest", "RecoveryMutationRequest"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "77ba50f5e8a76ca3b9245458ceffdfdfb025e8935384278fdfe6fd229e28c264",
+      "disposition": "restored retained runtime assertions",
+      "rationale": "All retained-owner runtime assertions are present; only removed-source inputs are replaced by independent fixed contracts where needed."
+    },
+    {
+      "file": "web/src/lib/ai/verifyCredential.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/ai/keyFormat.ts",
+          "names": ["KEY_CHECK_UNAVAILABLE_CODE", "looksLikeApiKey"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/ai/keyFormat.ts",
+          "names": ["KEY_CHECK_UNAVAILABLE_CODE", "looksLikeApiKey"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "a10246227c61e910f1824c25278311fda6d07db595c9c66bdf92acc899f787b1",
+      "disposition": "partly migrated",
+      "rationale": "The deleted web verifyCredential wrapper cases retire. Its six actual looksLikeApiKey format cases are restored independently in web/src/lib/ai/keyFormat.test.ts; nativeAi.wire retains actual key/code server classification."
+    },
+    {
+      "file": "web/src/lib/ai/verifyCredential.wire.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/server/ai/provider.ts",
+          "names": ["AiImageProvider"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/ai/provider.ts",
+          "names": ["AiImageProvider"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/api/verifyKey.ts",
+          "names": ["verifyKeyRoute"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/verifyAccessCode.ts",
+          "names": ["verifyAccessCodeRoute"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "c8ba2caf87e0b3a2a539485b716142697c47fd9a73ba866fca7695fada757a06",
+      "disposition": "migrated to native wire",
+      "rationale": "The removed web credential wrapper no longer exists. Its actual success, unavailable-key and unavailable-code route/wire concerns have explicit current nativeAi.wire tests; no compatibility client shim is retained."
+    },
+    {
+      "file": "web/src/lib/coloringPacks/manager.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/coloringPacks/assetResolver.ts",
+          "names": ["setLocalColoringBookRoot"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/coloringPacks/assetResolver.ts",
+          "names": ["setLocalColoringBookRoot"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "b123e5d12bf93cc8e3b969e22171eac0a01f0d60327f5fc35dc7b30bf66eae79",
+      "disposition": "retired consumer assertions",
+      "rationale": "The removed manager and rune store are the exercised owners; assetResolver is mocked, not called as its real implementation. Native coloring-pack owner tests remain."
+    },
+    {
+      "file": "web/src/lib/components/AiImageReport.copy.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/imageReport.ts",
+          "names": ["IMAGE_REPORT_RETENTION_DAYS", "IMAGE_REPORT_REVIEW_HOURS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/imageReport.ts",
+          "names": ["IMAGE_REPORT_RETENTION_DAYS", "IMAGE_REPORT_REVIEW_HOURS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "790e02bde5655ccf5b750c3e8c1695072dec9f5f543fbf3478a4238a4deb08f7",
+      "disposition": "retired consumer assertions",
+      "rationale": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently."
+    },
+    {
+      "file": "web/src/lib/components/AiImageResult.download.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["AI_IMAGE_BASENAME"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["AI_IMAGE_BASENAME"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "9085edf66acbdcb5d7ee17ccf5b0909decd7b724d03a2f874695be5688a3a10d",
+      "disposition": "retired consumer assertions",
+      "rationale": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently."
+    },
+    {
+      "file": "web/src/lib/components/AiResultError.copy.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["REPORT_TOKEN_HEADER"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["REPORT_TOKEN_HEADER"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "68b74a15ea6ffe23d4d680548dbad4961dd6ddaf13793e7d18c8a28a98eaedc3",
+      "disposition": "retired consumer assertions",
+      "rationale": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently."
+    },
+    {
+      "file": "web/src/lib/components/AiResultStage.geometry.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/components/aiDialGeometry.ts",
+          "names": ["DIAL_MAX_SIZE_PX", "DIAL_STAGE_FRACTION", "MASK_CLEARANCE"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/components/aiDialGeometry.ts",
+          "names": ["DIAL_MAX_SIZE_PX", "DIAL_STAGE_FRACTION", "MASK_CLEARANCE"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "a755adc7474e2a7a8c52dc7d851fabeffdcca261dbf7c571378268658d51955e",
+      "disposition": "retired consumer assertions",
+      "rationale": "The component/copy/render target is deleted Svelte UI. Retained report-window/header/save constants and dial dimensions construct its expected markup or event payload. Current mounted RN AI/report/error/export suites retain shipping behavior independently."
+    },
+    {
+      "file": "web/src/lib/components/ColorPalette.firstPaint.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_COLUMN_GEOMETRY"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_COLUMN_GEOMETRY"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "965be4eb0ca18af4a040ab7106e5cbba788712d0091b2be2d18b870c175af35c",
+      "disposition": "retired consumer assertions",
+      "rationale": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor."
+    },
+    {
+      "file": "web/src/lib/components/Icon.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["iconNameFromPath"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["CommonIconName"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "tools/icons/lib/icon-chroma.mjs",
+          "names": ["isSpot", "paintedValues"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["iconNameFromPath"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["CommonIconName"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "tools/icons/lib/icon-chroma.mjs",
+          "names": ["isSpot", "paintedValues"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/tokens.ts",
+          "names": ["themes"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "798aba017b7eb040558a1281c444ffc18dec416107b2f3fc0d40398f6f6a22f5",
+      "disposition": "renamed retained SVG classification suite",
+      "rationale": "All actual SVG paint/color classification assertions restored in web/src/lib/components/iconTypes.test.ts; COLOR_ICONS is imported from the retained shared owner."
+    },
+    {
+      "file": "web/src/lib/components/InstallBanner.layout.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["BREAKPOINT_EPSILON_PX", "TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["BREAKPOINT_EPSILON_PX", "TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "0cb7e2cfdfaba86775b4a005b644159c4b1439ada18175a95d674024c7e999e3",
+      "disposition": "retired consumer assertions",
+      "rationale": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor."
+    },
+    {
+      "file": "web/src/lib/components/SaveFailureBanner.announcement.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "014978cf563aa639309835fc59bff70b51099f7e8415f9758a31803931730cf9",
+      "disposition": "retired consumer assertions",
+      "rationale": "The removed Svelte banner is mounted with SaveResult fixtures. Actual RN denied/failed copy, announcement transitions and single live-region count remain in rsd-native-failure-banner and save-flight."
+    },
+    {
+      "file": "web/src/lib/components/admin/ledgerBreakpoints.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": [
+            "ADMIN_LEDGER_COMPACT_MAX_WIDTH_PX",
+            "ADMIN_LEDGER_LANDSCAPE_MAX_HEIGHT_PX",
+            "ADMIN_LEDGER_LANDSCAPE_MAX_WIDTH_PX",
+            "ADMIN_LEDGER_STACK_MAX_WIDTH_PX"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": [
+            "ADMIN_LEDGER_COMPACT_MAX_WIDTH_PX",
+            "ADMIN_LEDGER_LANDSCAPE_MAX_HEIGHT_PX",
+            "ADMIN_LEDGER_LANDSCAPE_MAX_WIDTH_PX",
+            "ADMIN_LEDGER_STACK_MAX_WIDTH_PX"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "47a6640302164ca8c1a605930cfc133f054b6d05f555d3b92195244381f0eaa1",
+      "disposition": "retired consumer assertions",
+      "rationale": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor."
+    },
+    {
+      "file": "web/src/lib/components/deferredIcons.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["iconNameFromPath", "CommonIconName"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["iconNameFromPath", "CommonIconName"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "5d85ab7b43e472ebe4d4445ef28534b6d4f3e1fbc5de6ccf1fb0641be8cdf516",
+      "disposition": "retired consumer assertions",
+      "rationale": "The runtime registry/page-icon provider and their startup registration graph are removed. iconNameFromPath computes names for that registry assertion; its retained SVG classification contract is covered by iconTypes.test. RN icon generation and startup guards cover the shipping provider."
+    },
+    {
+      "file": "web/src/lib/components/dialogTabletScaling.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["LARGE_TABLET_MIN_SIDE_PX", "PHONE_LANDSCAPE_QUERY", "TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["LARGE_TABLET_MIN_SIDE_PX", "PHONE_LANDSCAPE_QUERY", "TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "c267da275e20335669cde712fca438cb72a3867b1b666dbfc5edec2caa8c193a",
+      "disposition": "retired consumer assertions",
+      "rationale": "These inspect deleted component/CSS first-paint/media rules. Retained geometry and breakpoint numbers are source-comparison expectations. RN palette, install and dialog layout tests remain; removed Svelte admin markup has no live successor."
+    },
+    {
+      "file": "web/src/lib/components/icon-orphans.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["NON_RENDERABLE_ICONS", "iconNameFromPath"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/components/iconTypes.ts",
+          "names": ["NON_RENDERABLE_ICONS", "iconNameFromPath"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "ce7ddfe9cc318e527f877eba990c5cfe3ce7f5a034c56f092b60ead79c73ecdb",
+      "disposition": "retired consumer assertions",
+      "rationale": "The source reference scan and glob-exclusion literals target the deleted Icon.svelte/deferred registry vocabulary. Retained SVGs are explicit RN generator inputs. The current iconTypes classification, native generated icon coverage and names generator tests remain; no claim that the old Svelte orphan scan applies to RN."
+    },
+    {
+      "file": "web/src/lib/components/swatchInk.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/landscapeToolbar.ts",
+          "names": ["LANDSCAPE_COLORS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["ResolvedTheme"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/colorRing.ts",
+          "names": ["getRingColor"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/landscapeToolbar.ts",
+          "names": ["LANDSCAPE_COLORS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["ResolvedTheme"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "49abb63de0ebdddc007fdeb1c33509a2211bb3d081e34c63087457e61f5f431c",
+      "disposition": "retired consumer assertions",
+      "rationale": "This mounts only removed ColorPalette/ColorControl and rune stores. getRingColor supplies expected CSS for those components. Native selection/appearance/toolbar cases preserve themed Black/White and custom paint behavior; explicit custom-colors sequence tests preserve the state/persistence flow."
+    },
+    {
+      "file": "web/src/lib/design/trimGeometry.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/landscapeToolbar.ts",
+          "names": ["LANDSCAPE_COLORS", "LANDSCAPE_FIRST_TRIM_RANK", "landscapeTrimRank"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": [
+            "COLOR_MENU_GEOMETRY",
+            "HEX_GRID_GEOMETRY",
+            "PALETTE_COLUMN_GEOMETRY",
+            "PALETTE_ROW_GEOMETRY",
+            "TrimStep",
+            "colorMenuTrimSteps",
+            "hexGridColumnLadderPx",
+            "hexGridRowLadderPx",
+            "landscapeSingleColumnTrimSteps",
+            "portraitTrimSteps"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["TABLET_MIN_SIDE_PX"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/palette.ts",
+          "names": ["PALETTE_COLORS"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/landscapeToolbar.ts",
+          "names": ["LANDSCAPE_COLORS", "LANDSCAPE_FIRST_TRIM_RANK", "landscapeTrimRank"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": [
+            "COLOR_MENU_GEOMETRY",
+            "HEX_GRID_GEOMETRY",
+            "PALETTE_COLUMN_GEOMETRY",
+            "PALETTE_ROW_GEOMETRY",
+            "TrimStep",
+            "colorMenuTrimSteps",
+            "hexGridColumnLadderPx",
+            "hexGridRowLadderPx",
+            "landscapeSingleColumnTrimSteps",
+            "portraitTrimSteps"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "7ecf69ce63d434e108d539ab2d67b8019f4e4a361f7171e69817882c5e3ae2a6",
+      "disposition": "restored retained runtime assertions",
+      "rationale": "Fixed base-derived menu-count/rank and hex row/column ladder tables independently test all three retained exports. Deleted palette-flow functions and CSS parser/mutation callbacks retire."
+    },
+    {
+      "file": "web/src/lib/drawing/aiAutoSave.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "1d2d0192ded1fa1a8ac84e9eb01d554b9ad206cbf6f6956ff166952f0e51b4f7",
+      "disposition": "retired consumer assertions",
+      "rationale": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes."
+    },
+    {
+      "file": "web/src/lib/drawing/aiImage.request.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["ACCESS_TOKEN_HEADER", "API_KEY_HEADER", "INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["ACCESS_TOKEN_HEADER", "API_KEY_HEADER", "INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "f2a321f475ca32ce872a6fed2b8782081190cc7278d96744f949eff0e915b82f",
+      "disposition": "retired consumer assertions",
+      "rationale": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes."
+    },
+    {
+      "file": "web/src/lib/drawing/aiImage.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["REPORT_TOKEN_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/ai/limits.ts",
+          "names": ["CLIENT_REQUEST_TIMEOUT_MS"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["REPORT_TOKEN_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "4c7061750952f7ce6b7b3afc0e89efe3deb7d7ce93005f78b323cd0dbc6ceb0f",
+      "disposition": "retired consumer assertions",
+      "rationale": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes."
+    },
+    {
+      "file": "web/src/lib/drawing/aiImageResponse.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/ai/generationResult.ts",
+          "names": ["SAFETY_REFUSAL_STATUS", "THROTTLED_STATUS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/ai/generationResult.ts",
+          "names": ["SAFETY_REFUSAL_STATUS", "THROTTLED_STATUS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "5ee8f8932018ce7090cd755097646dc1d905cbd8260d5a556e6055cd4c1c38a1",
+      "disposition": "retired consumer assertions",
+      "rationale": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes."
+    },
+    {
+      "file": "web/src/lib/drawing/androidGallery.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["DRAWING_BASENAME"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["DRAWING_BASENAME"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "41c7ad084f71b05a1eec646fdf04ea1b12503da2a1479551311d5c0c77172bf3",
+      "disposition": "retired consumer assertions",
+      "rationale": "The exercised web AI/save/Capacitor gallery implementations are removed. Header/status/basename/SaveResult imports are request fixtures or type-only values. Native AI parse/start/poll/export/Photos/auto-save tests retain actual shipping operations with explicit outcomes."
+    },
+    {
+      "file": "web/src/lib/drawing/magicBrush.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/drawing/magicSheetGradient.ts",
+          "names": ["createRainbowGradient", "MAGIC_GRADIENT_COUNT"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/drawing/magicSheetGradient.ts",
+          "names": ["createRainbowGradient", "MAGIC_GRADIENT_COUNT"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "5eddc9f2faa106094b5f6e2ff1ec8d308541fd0d4dcdf29ede571d9b98c87e0e",
+      "disposition": "partly migrated",
+      "rationale": "The deleted canvas magicBrush fill lifecycle retires. Its three actual createRainbowGradient deterministic/ascending/distinct cases are restored unchanged in magicSheetGradient.test.ts."
+    },
+    {
+      "file": "web/src/lib/drawing/polaroidAnimation.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/drawing/screenshotTiming.ts",
+          "names": ["POLAROID_CLEANUP_TIMEOUT_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/drawing/screenshotTiming.ts",
+          "names": ["POLAROID_CLEANUP_TIMEOUT_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "89b4f7a0d5abad7fd46591f0b682b551396bc38d5994fbd00f7d947fce5037c1",
+      "disposition": "retired consumer assertions",
+      "rationale": "The removed DOM polaroid animation is the test subject; screenshotTiming supplies only its timeout. Actual native motion fixtures and mounted save-flight remain."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererFoldFlush.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/drawing/undoHistory.ts",
+          "names": ["MAX_UNDO_DEPTH"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/drawing/undoHistory.ts",
+          "names": ["MAX_UNDO_DEPTH"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "82526151cc8ce7b3b1cb3f57532239794b9a4af4cba52d6cc62fc3b215443771",
+      "disposition": "retired consumer assertions",
+      "rationale": "The deleted canvas tiled renderer is driven. MAX_UNDO_DEPTH only sizes the fixture. Native drawing history/renderer tests and retained shared undo policy consumers remain; no old renderer is reconstructed."
+    },
+    {
+      "file": "web/src/lib/drawing/tiledRendererUndoBudget.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/drawing/undoHistory.ts",
+          "names": ["MAX_UNDO_DEPTH"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/drawing/paperView.ts",
+          "names": ["IDENTITY_PAPER_VIEW"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/drawing/undoHistory.ts",
+          "names": ["MAX_UNDO_DEPTH"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "a8c372a536c0a7b261516d6830220f7ead39d359e6072d159fec0186256a04ae",
+      "disposition": "retired consumer assertions",
+      "rationale": "The deleted canvas tiled renderer is driven. MAX_UNDO_DEPTH only sizes the fixture. Native drawing history/renderer tests and retained shared undo policy consumers remain; no old renderer is reconstructed."
+    },
+    {
+      "file": "web/src/lib/glassPanes.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/trimGeometry.ts",
+          "names": ["PALETTE_LANDSCAPE_WIDTH_PX"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "05aaee7c6edd7890adf024bc8a4eb552efcb628139321224e5456004003ef2f1",
+      "disposition": "retired consumer assertions",
+      "rationale": "These execute the deleted actionButtonLayout/glass-pane rule and read retired CSS/component geometry. Imported breakpoint/free-generation/trim values supply fixtures for that consumer. Actual RN drawing-frame, clear, toolbar and modal layout cases remain, including fixed palette occupancy and shortened-bar counts."
+    },
+    {
+      "file": "web/src/lib/landscapeToolbar.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/landscapeToolbar.ts",
+          "names": ["LANDSCAPE_COLORS", "LANDSCAPE_FIRST_TRIM_RANK", "landscapeTrimRank"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY", "isPhoneLandscape"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/landscapeToolbar.ts",
+          "names": ["LANDSCAPE_COLORS", "LANDSCAPE_FIRST_TRIM_RANK", "landscapeTrimRank"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/palette.ts",
+          "names": ["TRIM_ORDER"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY", "isPhoneLandscape"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "093d240ca1f43b2b64a446b619c97fc33f929d84aec556ad352a8917d667dda3",
+      "disposition": "restored retained runtime assertions",
+      "rationale": "Preserved landscapeTrimRank range/uniqueness, fixed eleven-label palette order, and all six isPhoneLandscape boundary fixtures. Only the last callback reading deleted app.css and ColorPalette.svelte first-paint declarations is retired."
+    },
+    {
+      "file": "web/src/lib/pageHeight.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["SHORT_PAGE_HEIGHT_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["SHORT_PAGE_HEIGHT_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "3f44c7b1bdc224f211944dd8cb1be23c7741e74bcb1ec007d865967fae2f62f2",
+      "disposition": "retired consumer assertions",
+      "rationale": "The deleted layout formula/CSS owner is compared against shared breakpoint fixtures. Native page/layout acceptance remains; the removed web formula no longer controls shipping layout."
+    },
+    {
+      "file": "web/src/lib/phoneStep.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["BREAKPOINT_EPSILON_PX", "NARROW_PHONE_MIN_WIDTH_PX", "PHONE_MAX_WIDTH_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["BREAKPOINT_EPSILON_PX", "NARROW_PHONE_MIN_WIDTH_PX", "PHONE_MAX_WIDTH_PX"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "255790f91301c02a03b7c9d99399d76f9d1204325e746e2c1ad6f71b8d26fce1",
+      "disposition": "retired consumer assertions",
+      "rationale": "The deleted layout formula/CSS owner is compared against shared breakpoint fixtures. Native page/layout acceptance remains; the removed web formula no longer controls shipping layout."
+    },
+    {
+      "file": "web/src/lib/platform/calmTransition.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/motionDurations.ts",
+          "names": ["CALM_FADE_MS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/motionDurations.ts",
+          "names": ["CALM_FADE_MS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/platform/reducedMotion.ts",
+          "names": ["applyReducedMotion", "REDUCE_MOTION_ATTRIBUTE"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "5be10b56a1b8c7d782a5956d55631504e2afa1c63c4a08a88076b36a598278ef",
+      "disposition": "retired consumer assertions",
+      "rationale": "The callback runs removed calm(slide) Svelte transition glue. applyReducedMotion sets up its preference attribute; reducedMotion.test retains the actual shared preference/attribute/watch implementation tests. Native reduced-motion fixtures remain."
+    },
+    {
+      "file": "web/src/lib/releaseSections.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "tools/release/gen-release-notes.mjs",
+          "names": ["RELEASE_SECTION_TITLES"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "tools/release/gen-release-notes.mjs",
+          "names": ["RELEASE_SECTION_TITLES"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "6260f71df4f22557b34d78607677021cec6922221075e0251b885fa8e81a7484",
+      "disposition": "retired consumer assertions",
+      "rationale": "The removed Svelte release heading vocabulary is compared to generator titles. The generator retains native JSON/store metadata output; the Svelte component/title-map agreement no longer exists."
+    },
+    {
+      "file": "web/src/lib/secureStorage.recovery.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "f9b1c7120f345d2d459e2bf84bda30a296bd4b8aed5abf4411cdd9f75d5ef302",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved."
+    },
+    {
+      "file": "web/src/lib/secureStorage.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/idbDatabase.ts",
+          "names": ["DBSchema", "IdbDatabase"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "ad07efe7907957a7cfc97fc7c221a8f806e43f7623a4db468524391730852f27",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved."
+    },
+    {
+      "file": "web/src/lib/server/api/admin.wire.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/server/api/adminTokens.ts",
+          "names": ["DELETE", "GET", "mutateTokens"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/api/adminLogin.ts",
+          "names": ["login"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/admin.ts",
+          "names": ["sessionToken"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/adminTokens.ts",
+          "names": ["DELETE", "GET", "mutateTokens"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/api/adminLogin.ts",
+          "names": ["login"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "91f229e981b8bbbc5604b9d153ff2bd92579c792594b7a62af3befd4b9d6e5d6",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/api/adminStats.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/server/usageRecordStorage.ts",
+          "names": ["USAGE_STORE_NAME"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/usageTelemetry.ts",
+          "names": ["managedUsageKey"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/api/adminStats.ts",
+          "names": ["GET"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/admin.ts",
+          "names": ["sessionToken"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationGrants.ts",
+          "names": ["completeFreeGeneration", "failFreeGeneration", "reserveFreeGeneration"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/usageRecordStorage.ts",
+          "names": ["USAGE_STORE_NAME"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/usageTelemetry.ts",
+          "names": ["managedUsageKey"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/api/adminStats.ts",
+          "names": ["GET"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "c06843cc7d0372751beb47a0d64316fe555f1ddf3c1c614c7dad36092134e113",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/api/generationResult.settlement.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["FREE_GENERATIONS_REMAINING_HEADER", "INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/ai/generationResult.ts",
+          "names": ["SAFETY_REFUSAL_STATUS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "netlify/functions/generate-image-background.ts",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["FREE_GENERATIONS_REMAINING_HEADER", "INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/ai/limits.ts",
+          "names": ["GENERATION_JOB_TTL_MS"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/ai/generationResult.ts",
+          "names": ["SAFETY_REFUSAL_STATUS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/generationJobs.ts",
+          "names": ["GENERATION_JOB_STORE_NAME", "issueWorkTicket", "WORK_TICKET_HEADER"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "netlify/functions/generate-image-background.ts",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "ade43ac16f824b47a4b61df1b831f3f5a467d071576b4557b3ac94501aa1aafa",
+      "disposition": "restored runtime tests",
+      "rationale": "The removed web drawing response parser/type is replaced with native parseAiResponse/AiReply; native ticket discriminant replaces started. All server/accounting/worker assertions remain."
+    },
+    {
+      "file": "web/src/lib/server/api/generationResult.settlement.storeFailure.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/ai/generationResult.ts",
+          "names": ["SAFETY_REFUSAL_STATUS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/ai/generationResult.ts",
+          "names": ["SAFETY_REFUSAL_STATUS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/generationJobs.ts",
+          "names": ["GENERATION_JOB_STORE_NAME"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "bd36421880959191a5836c93ff3c0224dc0d68a039b52e44d3c01d9a3f1a9710",
+      "disposition": "restored runtime tests",
+      "rationale": "The removed web drawing response parser/type is replaced with native parseAiResponse/AiReply; native ticket discriminant replaces started. All server/accounting/worker assertions remain."
+    },
+    {
+      "file": "web/src/lib/server/api/verifyAccessCode.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/server/rateLimitKeys.ts",
+          "names": ["verifyAccessCodeBucket"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/rateLimitPolicy.ts",
+          "names": ["rateLimitPolicy"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/api/verifyAccessCode.ts",
+          "names": ["POST"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/rateLimit.ts",
+          "names": ["peekRateLimit"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/rateLimitKeys.ts",
+          "names": ["verifyAccessCodeBucket"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/rateLimitPolicy.ts",
+          "names": ["rateLimitPolicy"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "ea1392c9bc44907c3bde972ecd07c8b44edfa52db6a3845f78e48580b71da255",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/freeGenerationRecovery.expiry.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationLedger.ts",
+          "names": ["normalizeDailyProviderStarts"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationRecoveryReceipts.ts",
+          "names": [
+            "RECOVERY_DAILY_RECEIPT_LIMIT",
+            "RECOVERY_GRANT_RECEIPT_LIMIT",
+            "RecoveryGrantOperation",
+            "RecoveryFreeGenerationSettlementReceipt",
+            "RecoveryDailyFreeGenerationReceipt"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/ai/limits.ts",
+          "names": ["FREE_RESERVATION_LEASE_MS"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationGrants.ts",
+          "names": [
+            "completeFreeGeneration",
+            "failFreeGeneration",
+            "FREE_GENERATION_DAILY_PROVIDER_START_LIMIT",
+            "getFreeGenerationGrantStatus",
+            "reserveFreeGeneration",
+            "reserveDailyFreeGeneration",
+            "reserveRecoveryDailyFreeGeneration",
+            "reserveRecoveryFreeGeneration",
+            "settleRecoveryFreeGeneration"
+          ],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationLedger.ts",
+          "names": ["normalizeDailyProviderStarts"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationRecoveryReceipts.ts",
+          "names": [
+            "RECOVERY_DAILY_RECEIPT_LIMIT",
+            "RECOVERY_GRANT_RECEIPT_LIMIT",
+            "RecoveryGrantOperation",
+            "RecoveryFreeGenerationSettlementReceipt",
+            "RecoveryDailyFreeGenerationReceipt"
+          ],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "a67ded80440ec0591b1ed9d9f8e0b9ee48295a091a3db46d29a735024179619b",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/freeGenerationRollout.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationRecoveryReceipts.ts",
+          "names": ["recoveryOperationTiming"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/freeGenerations.ts",
+          "names": ["FREE_GENERATION_LIMIT"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationGrants.ts",
+          "names": [
+            "reserveFreeGeneration",
+            "reserveRecoveryFreeGeneration",
+            "reserveRecoveryDailyFreeGeneration",
+            "settleRecoveryFreeGeneration",
+            "FREE_GENERATION_DAILY_PROVIDER_START_LIMIT"
+          ],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/freeGenerationRecoveryReceipts.ts",
+          "names": ["recoveryOperationTiming"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "2d590b2a470b7544466f38ade41a42c24c9a77c96294fc44be4f86b048c05290",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/generationAttemptService.terminal.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/apiHeaders.ts",
+          "names": ["INSTALLATION_ID_HEADER"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/ai/generationAttempt.ts",
+          "names": [
+            "RECOVERY_PATH",
+            "RECOVERY_PROTOCOL",
+            "RECOVERY_VERSION_HEADER",
+            "RECOVERY_TTL_MS",
+            "RECOVERY_TERMINAL_HEADER",
+            "RECOVERY_TERMINAL_VALUE",
+            "RECOVERY_EXPIRES_HEADER",
+            "RECOVERY_TERMINAL_STATUS",
+            "parseRecoveryTerminalReply",
+            "RecoveryFault"
+          ],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/generationAttemptService.ts",
+          "names": ["createRecoveryAttemptHandlers"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/generationAttemptPolicy.ts",
+          "names": ["recoveryServiceEnabled"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "3e289105953e55dbe9ff05c5f19142e1cfc1e17c6b21c5b2b9e6a77f14db4fbf",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/server/nativeAi.wire.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "experiments/native-architecture/src/platform/ai.web.ts",
+          "names": ["aiTransport"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/ai/transport.ts",
+          "names": ["requestAi", "AiRequest"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/api/generationResult.ts",
+          "names": ["pollHandler"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/verifyKey.ts",
+          "names": ["verifyKeyHandler"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/verifyAccessCode.ts",
+          "names": ["verifyCodeHandler"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/generateImage.ts",
+          "names": ["POST"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/freeGenerationGrant.ts",
+          "names": ["GET"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "experiments/native-architecture/src/platform/ai.web.ts",
+          "names": ["aiTransport"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/ai/transport.ts",
+          "names": ["requestAi", "AiRequest"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "76e832bf4b7b25dd0556ecac222780589c192d8cf8737e6ee362a78846317d86",
+      "disposition": "restored runtime tests",
+      "rationale": "Original four wire callbacks restored intact; added unavailable access-code allowlist response test migrated from deleted old web verifyCredential.wire test."
+    },
+    {
+      "file": "web/src/lib/server/nativeFeedback.wire.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "experiments/native-architecture/src/feedback/feedback.ts",
+          "names": ["createNativeFeedback"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/platform/feedback.web.ts",
+          "names": ["feedbackTransport"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/feedback/feedbackTransport.ts",
+          "names": ["FEEDBACK_PATH"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/api/report.ts",
+          "names": ["POST"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "experiments/native-architecture/src/feedback/feedback.ts",
+          "names": ["createNativeFeedback"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/platform/feedback.web.ts",
+          "names": ["feedbackTransport"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/feedback/feedbackTransport.ts",
+          "names": ["FEEDBACK_PATH"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "f3a7fada8efa1a5e540ec729190523f7e2d49a2e3b7a583596a7b542b1376c00",
+      "disposition": "restored runtime tests",
+      "rationale": "Base source restored byte-for-byte."
+    },
+    {
+      "file": "web/src/lib/state/aiAccessToken.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/inviteLink.ts",
+          "names": ["AI_ACCESS_TOKEN_PARAM"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/inviteLink.ts",
+          "names": ["AI_ACCESS_TOKEN_PARAM"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "357063af47872bcd367197dc372f109a9b5fdebf3c658e9414692bbd32b89ece",
+      "disposition": "retired consumer assertions",
+      "rationale": "The removed rune access-token reader is the subject; inviteLink query constant constructs its URL fixture. Retained invite-link parsing has its own tests and native startup transport consumes it."
+    },
+    {
+      "file": "web/src/lib/state/appearance.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["THEME_COLORS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/tokens.ts",
+          "names": ["themes"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["THEME_COLORS"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/platform/reducedMotion.ts",
+          "names": ["REDUCE_MOTION_ATTRIBUTE", "REDUCED_MOTION_QUERY"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "457bc446e59d1528ea6101a4a13bb5a97c76ec07ab0e4d42afaef526b8892392",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed appearance/layout/save-failure rune store is deleted. Shared theme/breakpoint/SaveResult imports are expectations or types. Mounted native appearance/layout/failure suites remain."
+    },
+    {
+      "file": "web/src/lib/state/colors.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "experiments/native-architecture/src/settings/soundSettings.ts",
+          "names": ["createSoundSettings", "initialSoundSettingsState"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/drawing/palette.ts",
+          "names": ["paintAppearance", "paletteHex"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/hexPickerLayout.ts",
+          "names": ["PICKER_DIM_BORDER"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/design/colorContrast.ts",
+          "names": ["colorContrast"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/design/tokens.ts",
+          "names": ["themes", "toCssVarName"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "experiments/native-architecture/src/settings/soundSettings.ts",
+          "names": ["createSoundSettings", "initialSoundSettingsState"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "experiments/native-architecture/src/drawing/palette.ts",
+          "names": ["paintAppearance", "paletteHex"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "220dd03ecdc98b528237eba2c942438a801d34532f2ac4e4a4e2de4895119e46",
+      "disposition": "partly migrated",
+      "rationale": "The removed rune palette assertions retire. Its real native light/dark comparison sequence is restored with fixed expected state/paint/persistence outcomes in tools/tests/native-custom-colors.test.mjs, independently of deleted Svelte state."
+    },
+    {
+      "file": "web/src/lib/state/layout.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/breakpoints.ts",
+          "names": ["PHONE_LANDSCAPE_QUERY"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/platform/safeArea.ts",
+          "names": ["SafeAreaInsets"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "1513f2ce5d870aa84736d2f3cb0bb049537f7efb9baf3fadbc4b8e8d4f03599c",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed appearance/layout/save-failure rune store is deleted. Shared theme/breakpoint/SaveResult imports are expectations or types. Mounted native appearance/layout/failure suites remain."
+    },
+    {
+      "file": "web/src/lib/state/network.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "b06b9e8777f185c233b27645ee23374a306a3f5bed06f0a703ce5c5a3ce6726d",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved."
+    },
+    {
+      "file": "web/src/lib/state/saveFailure.svelte.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/saveNaming.ts",
+          "names": ["SaveResult"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "686dbf1f7b78562caa291dcf3b8e36a3de02a29ad8848d9b209e47e5534dd3b2",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed appearance/layout/save-failure rune store is deleted. Shared theme/breakpoint/SaveResult imports are expectations or types. Mounted native appearance/layout/failure suites remain."
+    },
+    {
+      "file": "web/src/lib/state/webInstallationId.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "622fe995085d3ba4137022e4f4c26b00e3d37cfbf26c324dde0df1b3584d77ae",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved."
+    },
+    {
+      "file": "web/src/lib/storage.hydrate.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["WEB_ONLY_STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["WEB_ONLY_STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "0896afce960a5c4f4acd3f9f2f3d7da3f0edc3b33a400639735fb397482dbbb3",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved."
+    },
+    {
+      "file": "web/src/lib/storage.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["WEB_ONLY_STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["WEB_ONLY_STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "9e204d2169206a1d5f805aed710495456bf49c8139a9c93c3c5216fb9ba73662",
+      "disposition": "retired consumer assertions",
+      "rationale": "The executed web/Capacitor storage or rune wrapper is removed. STORAGE_KEYS/WEB_ONLY_STORAGE_KEYS only identify fixture rows. Native settings, credentials, installation and recovery stores have separate shipping tests; deleted web storage behavior is not claimed preserved."
+    },
+    {
+      "file": "web/src/lib/storageKeys.webOnly.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS", "WEB_ONLY_STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/storageKeys.ts",
+          "names": ["STORAGE_KEYS", "WEB_ONLY_STORAGE_KEYS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "13860d91b97b395965879d989882c7c1b22c9af0dbcf35c6de4d3c42922cc8d3",
+      "disposition": "retired consumer assertions",
+      "rationale": "The source scan asserts write-count and platform guards in deleted web vault, install/rune storage and boot modules. The remaining registry values alone do not preserve those writers; their removed write graph makes the source guard obsolete."
+    },
+    {
+      "file": "web/src/lib/theme.applyTheme.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["applyTheme", "THEME_VEIL_CLASS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["applyTheme", "THEME_VEIL_CLASS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "57c93b22b755b13bb386c3d52d2ead7ee55f29c39eeacc2c6497855a73d80951",
+      "disposition": "retired consumer assertions",
+      "rationale": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation."
+    },
+    {
+      "file": "web/src/lib/theme.manifest.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["THEME_COLORS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/tokens.ts",
+          "names": ["brand"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["THEME_COLORS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "594939d4171ae4a3c2c877e0cb60f3d1b1bff9ea6d6843be3740af605ab27746",
+      "disposition": "retired consumer assertions",
+      "rationale": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation."
+    },
+    {
+      "file": "web/src/lib/theme.preference.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["isThemePreference", "RESOLVED_THEMES"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["isThemePreference", "RESOLVED_THEMES"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "8ed9425d6cbf7651ad3f5f8f7723c7bea4692aa773595885ee4463287849c44a",
+      "disposition": "retired consumer assertions",
+      "rationale": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation."
+    },
+    {
+      "file": "web/src/lib/theme.tokens.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["PAPER_COLORS", "THEME_COLORS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/design/tokens.ts",
+          "names": ["themes"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/theme.ts",
+          "names": ["PAPER_COLORS", "THEME_COLORS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "55ecba1c7b40993f31f190f0b72ed4b68a1b3a7cf71acb08e18b0321bc7252c0",
+      "disposition": "retired consumer assertions",
+      "rationale": "The tested resolve/apply/preference/theme-color exports and manifest/CSS agreement owners were removed from theme.ts. Only RESOLVED_THEMES/ResolvedTheme/PAPER_COLORS remain; importing that surviving file does not retain removed functions. Native theme settings/paint tests retain the shipping implementation."
+    },
+    {
+      "file": "web/src/routes/admin/login.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/server/api/adminLogin.ts",
+          "names": ["POST"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/server/admin.ts",
+          "names": ["MAX_ADMIN_LOGIN_BODY_BYTES", "sessionToken"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/api/adminLogin.ts",
+          "names": ["POST"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "23b5327eb80a6665a79c3b65a994df9092509a070f6a2b1bfaff50f2570a15e3",
+      "disposition": "migrated JSON runtime subset",
+      "rationale": "Four current JSON session/rate/cap/IP cases moved to server/api/adminLogin.integration.test.ts. Old form action/cookie/crossdoor assertions retire; server-test-dispositions.json records each original callback."
+    },
+    {
+      "file": "web/src/routes/feedback/reportBucket.integration.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/server/rateLimitPolicy.ts",
+          "names": ["rateLimitPolicy"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/report.ts",
+          "names": ["REPORT_FORM_FIELDS"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/http.ts",
+          "names": ["throttledMessage"],
+          "hasColocatedTests": true
+        },
+        {
+          "owner": "web/src/lib/server/rateLimitPolicy.ts",
+          "names": ["rateLimitPolicy"],
+          "hasColocatedTests": false
+        },
+        {
+          "owner": "web/src/lib/server/api/report.ts",
+          "names": ["POST"],
+          "hasColocatedTests": true
+        }
+      ],
+      "sourceSha256": "5e572ee1a671c3486df38aadf2216162af6563cb3b363e71f155cf0c1bdfcf40",
+      "disposition": "retired removed form crossdoor",
+      "rationale": "The two directional form/API shared-bucket cases require a deleted form action. Actual native feedback wire throttle, API report key/early-read limits and rateLimit runtime guards remain; exact successors are in server-test-dispositions.json."
+    },
+    {
+      "file": "web/src/routes/privacy/nativeContent.ssr.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "experiments/native-architecture/src/information/privacy.generated.json",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "experiments/native-architecture/src/information/privacy.generated.json",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "f66a28275f4f1bdbadcd0f28350e6fcbe087fdd9c469e80223d6e9d9a579e4f7",
+      "disposition": "retired consumer assertions",
+      "rationale": "These render deleted Svelte privacy pages and assert their SSR markup. Native generated privacy content, static RN page/no-JS build acceptance and mounted native page tests remain. Shared retention constants/generated data only supply those removed-page expectations."
+    },
+    {
+      "file": "web/src/routes/privacy/nativeContent.webSsr.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "experiments/native-architecture/src/information/privacy.generated.json",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "experiments/native-architecture/src/information/privacy.generated.json",
+          "names": [],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "69c1ab3c047516ca27cb1700618d6360ca92d3b040fedc7e432c04f10f6b880e",
+      "disposition": "retired consumer assertions",
+      "rationale": "These render deleted Svelte privacy pages and assert their SSR markup. Native generated privacy content, static RN page/no-JS build acceptance and mounted native page tests remain. Shared retention constants/generated data only supply those removed-page expectations."
+    },
+    {
+      "file": "web/src/routes/privacy/page.ssr.test.ts",
+      "retainedOwnersWithoutColocatedTests": [
+        {
+          "owner": "web/src/lib/imageReport.ts",
+          "names": ["IMAGE_REPORT_RETENTION_DAYS", "IMAGE_REPORT_REVIEW_HOURS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "allRetainedImports": [
+        {
+          "owner": "web/src/lib/imageReport.ts",
+          "names": ["IMAGE_REPORT_RETENTION_DAYS", "IMAGE_REPORT_REVIEW_HOURS"],
+          "hasColocatedTests": false
+        }
+      ],
+      "sourceSha256": "8f46ac530d1175c7c4fdf3dbd33da948221c9cd070f35af03b4b12ec494735ba",
+      "disposition": "retired consumer assertions",
+      "rationale": "These render deleted Svelte privacy pages and assert their SSR markup. Native generated privacy content, static RN page/no-JS build acceptance and mounted native page tests remain. Shared retention constants/generated data only supply those removed-page expectations."
+    }
+  ],
+  "additionalRestorations": [
+    {
+      "file": "web/src/lib/ai/generationAttempt.terminal.test.ts",
+      "reason": "All 39 terminal parser/type/native wire drift assertions retained unchanged."
+    },
+    {
+      "file": "web/src/lib/design/tokens.contrast.test.ts",
+      "reason": "All retained theme/palette contrast computations restored unchanged."
+    },
+    {
+      "file": "web/src/lib/ai/keyFormat.test.ts",
+      "reason": "Six retained key shape cases extracted from deleted verifyCredential test."
+    },
+    {
+      "file": "web/src/lib/drawing/magicSheetGradient.test.ts",
+      "reason": "Three retained gradient generator cases extracted from deleted magicBrush test."
+    },
+    {
+      "file": "web/src/lib/interactionIdle.test.ts",
+      "reason": "Three dynamic-imported scheduleInteractionIdle runtime cases restored unchanged: input quiet across click/key/wheel/pointer, slice spacing, and cancellation."
+    }
+  ],
+  "nonCandidateRuntimeCallSweep": {
+    "method": "All 279 initially deleted web test files inspected for calls to retained imported bindings, including owners that already have colocated tests.",
+    "retiredCalls": {
+      "scrollCue.cutTrailingRow / scrollCue.gutter": "cutTrailingRow/excludeScrollportGutter implementations removed; retained trailingRowCutHeight/observeContentEnd have tests.",
+      "app.html.reduceMotion": "Runs removed boot script; reducedMotion.test exercises retained resolver directly.",
+      "manifestBuild / coloringAppearance / engine.magicWitness / coloringBook / coloringPacks": "books helpers supply fixtures for deleted pack/canvas/rune owners. Retained books tests remain.",
+      "SocialCard.webSsr": "shareImageFor/isPageShareCardPath supply expected tags for deleted Svelte render. Retained socialCard tests and RN static head build acceptance remain.",
+      "ErrorScreen.heroButton / scrollbarThumbContrast": "Token/contrast functions derive expectations for deleted authored component/app.css declaration. Retained token/contrast tests and native component tests remain.",
+      "tiledRendererContract": "compositeVisibleLiveTiles consumes removed renderer output in this contract; retained liveTileComposite.test directly exercises the surviving compositor.",
+      "notchBandReentry": "listenForStatusBarReentry removed; remaining pure notchBand policy retains its tests.",
+      "routes/admin/load / tokenActions": "sessionToken supplies auth fixtures for removed Svelte load/actions. Current admin JSON integration and token API tests remain.",
+      "reportClient": "The exercised web report client and readReportReply wrapper are removed. Actual nativeFeedback.wire cases preserve bug/feature/honeypot server routing. native-ai-picture-report/refusal-report preserve exact multipart fields and reply narrowing; API reportImage tests retain server body/auth checks. The removed wrapper is not kept as a test-only shim."
+    },
+    "dynamicImportReview": {
+      "interactionIdle": "Restored all three actual runtime cases.",
+      "secureStorage.recovery": "keyFormat helper classifies a credential fixture for removed vault/coordinator operations; actual shared keyFormat cases remain."
+    }
+  },
+  "importInventory": "Names describe base imports whose owner file survives; individual obsolete exports may have been removed. Disposition is based on the actual exercised implementation and callback body, not file survival alone."
+}

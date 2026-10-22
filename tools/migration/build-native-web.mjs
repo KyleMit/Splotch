@@ -1,3 +1,4 @@
+import { WEB_INSTALL_HEAD_TAGS, WEB_VIEWPORT_META } from './lib/native-web-head.mjs';
 // Production web export of the React Native app (experiments/native-architecture),
 // made installable and offline-capable the way the shipping PWA is (ADR-0022): the
 // shipping manifest, icons and install head tags, plus a Workbox service worker
@@ -49,9 +50,9 @@ export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
 export const NATIVE_WEB_EXPORT_DIR = join(NATIVE_APP_DIR, 'dist/web');
 export const NATIVE_WEB_SERVICE_WORKER = SERVICE_WORKER_PATH.slice(1);
 const WEB_STATIC_DIR = join(ROOT, 'web/static');
-const SHIPPING_APP_HTML = join(ROOT, 'web/src/app.html');
+
 export const WEB_MANIFEST_FILE = 'site.webmanifest';
-const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
+
 // Expo's build-identity file is read by its own tooling, never by the app.
 const EXPORT_METADATA_FILE = 'metadata.json';
 export const APP_SHELL_FILE = 'index.html';
@@ -89,21 +90,6 @@ function copyHostedStatic(outputDir) {
 // leaving a child waiting for a load that may not finish (the shipping value).
 const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;
 
-// The install-related head tags, copied from the shipping document so the two
-// targets announce one app: Apple's standalone/title metas, the theme color, the
-// icons and the manifest link.
-const INSTALL_HEAD_TAG =
-  /^\s*(<meta name="(?:apple-mobile-web-app-[a-z-]+|mobile-web-app-capable|theme-color)"[^>]*>|<link rel="(?:icon|shortcut icon|apple-touch-icon|manifest)"[^>]*>)\s*$/gm;
-
-export function shippingInstallHeadTags(appHtml) {
-  const tags = [...appHtml.matchAll(INSTALL_HEAD_TAG)].map((match) =>
-    match[1].replaceAll(ASSETS_PLACEHOLDER, '')
-  );
-  if (!tags.some((tag) => tag.includes('rel="manifest"')))
-    throw new Error('The shipping app.html no longer links a web app manifest.');
-  return tags;
-}
-
 export function installHeadTagAssets(tags) {
   return tags.map((tag) => /href="\/([^"]+)"/.exec(tag)?.[1]).filter((path) => path !== undefined);
 }
@@ -114,14 +100,9 @@ export function manifestIconAssets(manifest) {
 
 const VIEWPORT_META = /<meta name="viewport" content="[^"]*"\s*\/?>/;
 
-// Shipping's viewport lets the page run under the status bar, notch and home indicator
-// (viewport-fit=cover, ADR-0026), so the safe-area insets reach NativeFrame and the Notch Band
-// on the web as they do in the native apps.
-export function withShippingViewport(indexHtml, appHtml) {
-  const viewport = VIEWPORT_META.exec(appHtml)?.[0];
-  if (!viewport) throw new Error('The shipping app.html no longer declares a viewport.');
+export function withWebViewport(indexHtml) {
   if (!VIEWPORT_META.test(indexHtml)) throw new Error('The export has no viewport to replace.');
-  return indexHtml.replace(VIEWPORT_META, viewport);
+  return indexHtml.replace(VIEWPORT_META, WEB_VIEWPORT_META);
 }
 
 export function withInstallHeadTags(indexHtml, tags) {
@@ -268,8 +249,7 @@ export function webVersionHeadTag(appVersion) {
 }
 
 function copyShippingInstallAssets(outputDir, appVersion) {
-  const appHtml = readFileSync(SHIPPING_APP_HTML, 'utf8');
-  const tags = shippingInstallHeadTags(appHtml);
+  const tags = WEB_INSTALL_HEAD_TAGS;
   const manifest = JSON.parse(readFileSync(join(WEB_STATIC_DIR, WEB_MANIFEST_FILE), 'utf8'));
   const assets = new Set([
     ...installHeadTagAssets(tags),
@@ -281,14 +261,13 @@ function copyShippingInstallAssets(outputDir, appVersion) {
   const indexPath = join(outputDir, APP_SHELL_FILE);
   writeFileSync(
     indexPath,
-    withShippingViewport(
+    withWebViewport(
       withInstallHeadTags(withShippingTitle(readFileSync(indexPath, 'utf8')), [
         ...tags,
         webVersionHeadTag(appVersion),
         ...bootThemeHeadTags(),
         bootAppSurfaceHeadTag(),
-      ]),
-      appHtml
+      ])
     )
   );
 }

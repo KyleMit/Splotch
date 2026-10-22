@@ -2,7 +2,7 @@
 
 The working behind PR \#1556 and the ADR-0078 §4a amendment it carries. The list came from a log
 sweep of 106 `test.yml` runs (2026-08-29T18:38Z to 2026-09-02T00:52Z) that extracted the
-retried-pass annotations `web/playwright-flaky-reporter.ts` emits: 52 masked flakes in 39 runs,
+retried-pass annotations `e2e/playwright-flaky-reporter.ts` emits: 52 masked flakes in 39 runs,
 every one shipped green under `retries: 2`. That sweep's scratch files are gone; its table is
 reproduced in the PR.
 
