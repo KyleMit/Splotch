@@ -530,7 +530,7 @@
     "gen:android:assets": "Regenerate Android launcher icons and splash with Capacitor assets, then restore the app-designed monochrome drawable and both adaptive references from assets/icon-monochrome.xml"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
+    "@axe-core/playwright": "^4.14.0",
     "@capacitor/android": "^8.5.2",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.2",
