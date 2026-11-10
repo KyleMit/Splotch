@@ -1,4 +1,4 @@
-import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PALETTE_COLORS } from '../palette';
@@ -136,9 +136,10 @@ describe('ColorPalette', () => {
   const colorCount = PALETTE_COLORS.length;
 
   const landscape = rules.filter((rule) => rule.condition.includes('orientation: landscape'));
-  const singleColumnTrim = landscape.filter(
-    (rule) => has(rule, 'min-height') && has(rule, 'max-height')
+  const columnContainer = landscape.filter((rule) =>
+    rule.body.includes('container: palette-column / size;')
   );
+  const singleColumnTrim = containerRules(css, 'palette-column');
   const layoutSwitch = landscape.filter((rule) => rule.body.includes('grid-template-columns'));
   const twoColumnTrim = landscape.filter(
     (rule) => !has(rule, 'min-height') && has(rule, 'max-height') && hiddenRanks(rule).length > 0
@@ -152,7 +153,7 @@ describe('ColorPalette', () => {
 
   it('classifies every @media rule, so no ladder is silently skipped', () => {
     const classified = [
-      ...singleColumnTrim,
+      ...columnContainer,
       ...layoutSwitch,
       ...twoColumnTrim,
       ...portraitTrim,
@@ -162,6 +163,8 @@ describe('ColorPalette', () => {
     expect(classified).toHaveLength(thresholdRules(rules).length);
     expect(layoutSwitch).toHaveLength(0);
     expect(phonePaletteHidden).toHaveLength(1);
+    expect(columnContainer).toHaveLength(1);
+    expect(singleColumnTrim).toHaveLength((css.match(/@container /g) ?? []).length);
   });
 
   it('restates the landscape column geometry', () => {
@@ -195,13 +198,17 @@ describe('ColorPalette', () => {
     expect(swatch).toContain('transform var(--duration-base) ease');
   });
 
-  it('trims the single column a swatch at a time, floored at that same height', () => {
+  it('trims the single column by its own height, a swatch at a time', () => {
     expect(singleColumnTrim.map((rule) => trimStep(rule, 'max-height'))).toEqual(
       landscapeSingleColumnTrimSteps(colorCount)
     );
-    for (const rule of singleColumnTrim) {
-      expect(feature(rule, 'min-height')).toBe(TABLET_MIN_SIDE_PX);
-    }
+  });
+
+  it('makes the column a size container only where the column layout shows', () => {
+    expect(feature(columnContainer[0], 'min-height')).toBe(TABLET_MIN_SIDE_PX);
+    expect(feature(phonePaletteHidden[0], 'max-height')).toBe(
+      TABLET_MIN_SIDE_PX - BREAKPOINT_EPSILON_PX
+    );
   });
 
   it('has no two-column trim ladder behind the phone color flyout', () => {

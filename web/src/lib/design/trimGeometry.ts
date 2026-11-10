@@ -1,4 +1,4 @@
-import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+import { BREAKPOINT_EPSILON_PX } from '$lib/breakpoints';
 
 // Executable form of the responsive-trim ladders in ColorPalette.svelte,
 // ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim
@@ -106,13 +106,15 @@ function stackRungs(
   return rungs;
 }
 
-/** Heights below which the single column loses another swatch. */
+/**
+ * Content-box heights below which the single column loses another swatch. The column is its own
+ * size container, so its room is what the safe-area insets and its Brush-Button clearance leave,
+ * and its padding is already outside the measured box.
+ */
 export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
   return trimSteps(
     colorCount,
-    stackRungs(colorCount, GRADIENT_SLOTS, PALETTE_COLUMN_GEOMETRY).filter(
-      ({ thresholdPx }) => thresholdPx >= TABLET_MIN_SIDE_PX
-    )
+    stackRungs(colorCount, GRADIENT_SLOTS, { ...PALETTE_COLUMN_GEOMETRY, paddingPx: 0 })
   );
 }
 
