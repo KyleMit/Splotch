@@ -138,10 +138,17 @@ the edit.** Three fresh-simulator runs (each deleted after):
 
 No harness change was made for the preflight failure. If it recurs, a wait for the Settings control
 in the preflight (before `ensureSound`) is the fix to try; the device apps are not first launches.
-Edits to existing harness code are additive: four lines extended (default block list 1–7, the
-`--b7s/--b7e` flags, `LEAD[7]`, the block map), one new `app.mjs` method (`sequence`), a new
-`lib/inputloss.mjs`, a block-7 section appended to `summarize.mjs`. Device time ≈ 4.75 h (block 7 ≈
-15 min; 4 min for the quick version on the simulator).
+
+**Device run started 2026-11-10 08:34 EST** (`runs/device-20261110-083417`), after owner case 1: UI
+Automation on, and both test apps granted Photos access by saving one picture each. Just before it,
+a harness bug was fixed in `lib/photos.mjs`. `pymobiledevice3 afc ls` prints full paths, so the
+device branch built `/DCIM//DCIM/100APPLE` and always listed zero photos, and block 6's export check
+would have failed in both arms on the real iPad. The simulator path was unaffected, which is why the
+dry runs passed. It now lists the device's photos correctly, checked by listing names only. Edits to
+existing harness code are additive: four lines extended (default block list 1–7, the `--b7s/--b7e`
+flags, `LEAD[7]`, the block map), one new `app.mjs` method (`sequence`), a new `lib/inputloss.mjs`,
+a block-7 section appended to `summarize.mjs`. Device time ≈ 4.75 h (block 7 ≈ 15 min; 4 min for the
+quick version on the simulator).
 
 **Harness facts found while building it** (simulator, WDA + XCTest; they constrain what any block
 can time): (1) a `pointerMove` after a `pointerUp` on one pointer is applied to the lifted path, so

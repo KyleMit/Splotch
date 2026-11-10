@@ -14,13 +14,16 @@ word or two each.
 Claude starts the unattended iPad run (~4.5 h), and the iPad is busy until it ends. If you only have
 time for case 1, say "start the run" after it.
 
+**Best versions:** cases 2–6 run on each arm's best version (frozen candidate plus every fix that
+passed its gate), once those builds are on the iPad, so you judge bones rather than known bugs.
+
 ## Cases
 
-1. **Unlock the iPad experiment, about 3 minutes.** On the iPad: Settings › Developer › Enable UI
-   Automation → on (authenticate if asked). Then Claude opens each of the two test apps in turn:
-   draw a squiggle, tap the camera button (Save screenshot), and choose Allow when iOS asks about
-   Photos. The test tool never answers that prompt itself, and the run's save check needs it. The
-   run leaves 6 test pictures in Photos.
+1. **Done 2026-11-10 08:33. Unlock the iPad experiment, about 3 minutes.** On the iPad: Settings ›
+   Developer › Enable UI Automation → on (authenticate if asked). Then Claude opens each of the two
+   test apps in turn: draw a squiggle, tap the camera button (Save screenshot), and choose Allow
+   when iOS asks about Photos. The test tool never answers that prompt itself, and the run's save
+   check needs it. The run leaves 6 test pictures in Photos.
 2. **iPad, first stroke after a cold start (masked).** Claude cold-starts A, then B, 4 times each.
    As soon as the paper shows, draw one slow, long line. Does the line freeze for a blink near its
    start in either app?

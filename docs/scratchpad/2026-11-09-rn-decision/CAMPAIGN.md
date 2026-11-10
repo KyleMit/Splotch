@@ -14,6 +14,24 @@ together on day 5, aiming for the highest quality for users at a maintenance cos
 * **Breadth before depth.** A shallow pass over every axis first, so a blocker shows up on day 1,
   not day 5. Provisional recommendation within 24 hours of start (start: 2026-11-09 ~21:45 EST).
 
+## Owner steer (2026-11-10 ~08:45): pick the best bones
+
+Pick the app **with the best bones**. A problem that agent hours can fix without big tradeoffs is
+repair cost, not a verdict: it gets fixed eventually in whichever arm wins. What decides is each
+arm's **floors**, the limits that cannot be fixed without big tradeoffs (for example WebView drawing
+performance for shipping, app size for RN).
+
+* Every finding is classed **floor**, **fixable** (a fix passed its gate), or **unclear** (bug or
+  bones not yet known). Depth time goes to the unclear ones.
+* **RN memory is the top unclear item.** Owner: "memory needs to be solved on RN because if there's
+  a memory leak we run the risk of a crash and a crash to a toddler is gonna be really unfun. We
+  need to figure out if it's bones or bug."
+* Each arm gets a **best version**: its frozen candidate plus every fix that passed its gate, on a
+  local side branch with its own bundle ID. Paths those fixes touch are re-tested on the best
+  versions; the frozen numbers stay the record for everything else, including the floors. The
+  owner's masked feel cases run on the best versions.
+* The tie rule still applies: if the bones come out equal, shipping wins.
+
 ## Frozen candidates — never edit product code in either
 
 | Arm      | Source                                        | Checkout                                                       |

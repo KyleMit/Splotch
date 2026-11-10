@@ -1,12 +1,22 @@
-# Provisional recommendation (2026-11-10, ~T+4.5 h; updated ~T+10 h)
+# Provisional recommendation (2026-11-10, ~T+4.5 h; updated ~T+11 h)
 
-**Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: about 75%.** It was 60% when
-Claude and Codex first reached it independently. It rose to 65–70% after shipping's multi-finger
-result and the pricing of RN's known repairs. It rose to 75% after the Galaxy brushes lane found
-four more RN-only defects and none in shipping (below). Pricing those four (T+10 h) confirmed 75%
-rather than raising it again: two are cheap, local fixes, two are design-level, and RN's priced
-repair bill roughly doubles to ~9–16 agent-days. The number is judgement, not a measured
-probability.
+**Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: about 65–70%** under the
+owner's best-bones lens (below). It was 60% when Claude and Codex first reached it independently,
+65–70% after shipping's multi-finger result and the pricing of RN's known repairs, and 75% once the
+Galaxy lane's four RN-only defects were counted. The owner then asked for the app with the best
+bones: a fixable defect is repair cost, not a verdict. That counts RN's long bug list for less, so
+the number comes back down until the floors and the unclear items are known. The number is
+judgement, not a measured probability.
+
+**Best-bones lens (owner, 2026-11-10 ~08:45).** Each finding is a floor, fixable (a fix passed its
+gate) or unclear. The verdict now turns on:
+
+* the iPad drawing floor (the real-iPad run, under way since 08:34);
+* whether RN's memory growth is a leak or a plateau, and whether it can be bounded. This is the top
+  priority, because a crash in front of a toddler is the worst outcome;
+* whether RN's Undo can be made fast within the memory budget;
+* whether RN's lost strokes come from small fixable slips or from the JS-thread design;
+* shipping's WebView floors: extra fingers during a main-thread stall, and audio while muted.
 
 The breadth pass found **no clear RN advantage** for users on any platform. That is not the same as
 proving the arms equal: the most heavily weighted measurement, iPad drawing under real touch, is
@@ -134,24 +144,21 @@ for extra fingers during a main-thread stall stay unrecoverable even after the t
 Still unknown and able to move either way: native AI success and saving once production is fixed, a
 real screen-reader pass on both apps, a low-end device, and store distribution.
 
-## Days 2–4: depth only on these risks
+## Days 2–4: best versions and the unclear items
 
-The single most valuable step is one counterbalanced, pixel-witnessed Release/Release experiment on
-the real iPad, frozen candidates first:
+Running now:
 
-* cold first strokes with sound on;
-* dense Crayon and Magic brush;
-* multi-finger and palm contact;
-* rotate, Clear and Undo, then draw again.
+* the real-iPad experiment (frozen candidates, ~4.75 h from 08:34): the iPad drawing floor, plus
+  block 7's input-loss repeat;
+* RN memory, bones or bug (`rn-memory-bones.md`): leak or plateau over a 30-minute session, what
+  grows, a bounded fix, and crash risk on the smallest supported devices;
+* RN Undo, bones or bug (`rn-undo-bones.md`): snapshots within the memory budget;
+* best versions of both arms (`best-versions.md`): every fix that passed its gate plus the small
+  unbuilt ones, on local branches with their own bundle IDs.
 
-It needs owner case 1, then runs unattended. The three masked owner feel cases (first stroke, dense
-Crayon, palm and multi-finger) go with it. Meanwhile:
-
-* the four new RN defects are priced (`spike-input-loss.md`): ~4–7.5 agent-days;
-* an exploratory block 7, added after the pre-registered ones and not scored, repeats
-  Clear-after-Eraser and Settings-then-draw on the real iPad (simulator results in
-  `ipad-input-loss.md`; the device run is now about 4.75 h);
-* validated repairs are measured separately from the frozen comparison.
+Next: RN touch handling under a busy JS thread; shipping's WebView floors on the real iPad after the
+run; re-tests of the touched paths on the best versions; the owner's masked feel cases on the best
+versions; then Codex round 3 on the reframed verdict.
 
 ## Codex's challenges (read-only)
 
