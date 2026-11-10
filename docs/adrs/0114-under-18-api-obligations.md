@@ -156,3 +156,20 @@ for manual review even under Modified Abuse Monitoring or Zero Data Retention. C
 and store declarations state the ordinary period and those exceptions together. The architectural
 decision remains unchanged: every Responses request sets `store: false`, and ZDR remains an
 account-level action outside this repository.
+
+## Amendment (2026-11-10): the reasoning-effort pin is removed
+
+OpenAI released GPT Image 2.6 on 2026-11-04 with an adjustable `complexity`. The Responses API
+reference describes the image tool's `complexity` as inheriting the outer `reasoning.effort` when
+the tool sets none, and the GPT Image 2.5 models do not support it. From that release, the pinned
+`medium` made every generation fail for every client with
+`400 Complexity 'medium' is not supported for this image model.`
+
+The adapter therefore sends no `reasoning` field. The
+[`gpt-5.6-sol` model page](https://developers.openai.com/api/docs/models/gpt-5.6-sol) documents
+`medium` as the default effort, so the request still runs the configuration the corpus measured. The
+cost is the guard the pin was chosen for above: a provider-side change to that default would now
+move the safety layer without a code change. Re-pin the effort only alongside an image model that
+accepts `complexity`, with `complexity` set on the tool itself so the outer effort is not forwarded.
+The model-eval harness mirrors the unpinned request, and `web/src/lib/server/ai/openai.test.ts` pins
+the exact request keys so neither field returns unnoticed.

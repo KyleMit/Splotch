@@ -17,8 +17,10 @@ export { ROOT };
 // The model that reads the drawing, decides whether it is safe to render, and
 // calls the image tool. Its refusal-in-prose is what the app turns into a 422,
 // so it is part of the production contract rather than an implementation detail.
+// It runs at its default reasoning effort, as production does: an outer
+// `reasoning.effort` reaches the image tool as a `complexity`, which only the
+// GPT Image 2.6 models accept (web/src/lib/server/ai/openai.ts, ADR-0114).
 export const ORCHESTRATOR_MODEL = 'gpt-5.6-sol';
-export const ORCHESTRATOR_REASONING_EFFORT = 'medium';
 
 // The image model and effort tier production actually renders with. The
 // adherence lab's default arm resolves its variant from these rather than
@@ -213,7 +215,6 @@ export function evaluationMetadata(concurrency, previous) {
       prompt: DEFAULT_PROMPT,
       systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
       orchestrator: ORCHESTRATOR_MODEL,
-      reasoningEffort: ORCHESTRATOR_REASONING_EFFORT,
     },
     rates: { images: RATES, orchestrator: ORCHESTRATOR_RATES },
   };
@@ -284,11 +285,6 @@ const PRODUCTION_SOURCES = [
     name: 'ORCHESTRATOR_MODEL',
     candidates: ['web/src/lib/server/ai/openai.ts'],
     value: `const ORCHESTRATOR_MODEL = '${ORCHESTRATOR_MODEL}';`,
-  },
-  {
-    name: 'ORCHESTRATOR_REASONING_EFFORT',
-    candidates: ['web/src/lib/server/ai/openai.ts'],
-    value: `const ORCHESTRATOR_REASONING_EFFORT = '${ORCHESTRATOR_REASONING_EFFORT}';`,
   },
   {
     name: 'SAFETY_SYSTEM_INSTRUCTION',

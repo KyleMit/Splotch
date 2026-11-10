@@ -50,13 +50,23 @@ beforeEach(() => {
 });
 
 describe('openAiProvider.generateImage', () => {
-  it('uses the measured flagship configuration as the child-safety orchestrator', async () => {
+  it('uses the measured flagship model as the child-safety orchestrator', async () => {
     create.mockResolvedValue(imageResponse);
     await openAiProvider.generateImage(request);
-    expect(create.mock.calls[0][0]).toMatchObject({
-      model: 'gpt-5.6-sol',
-      reasoning: { effort: 'medium' },
-    });
+    expect(create.mock.calls[0][0].model).toBe('gpt-5.6-sol');
+  });
+
+  it('sends no field that reaches the image tool as a complexity Flare rejects', async () => {
+    // The Responses API passes an outer reasoning.effort to the image tool as
+    // its `complexity`, which gpt-image-2.5-flare does not support: with the
+    // effort pinned to medium, every production generation failed with
+    // "400 Complexity 'medium' is not supported for this image model." Exact
+    // key lists, so a field added to either object has to be added here too.
+    create.mockResolvedValue(imageResponse);
+    await openAiProvider.generateImage(request);
+    const call = create.mock.calls[0][0];
+    expect(Object.keys(call).sort()).toEqual(['input', 'instructions', 'model', 'store', 'tools']);
+    expect(Object.keys(call.tools[0]).sort()).toEqual(['model', 'quality', 'size', 'type']);
   });
 
   it('returns the image when the model produced one', async () => {
