@@ -16,10 +16,10 @@ together on day 5, aiming for the highest quality for users at a maintenance cos
 
 ## Frozen candidates — never edit product code in either
 
-| Arm      | Source                                    | Checkout                                                         |
-| -------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| Arm      | Source                                        | Checkout                                                       |
+| -------- | --------------------------------------------- | -------------------------------------------------------------- |
 | RN       | `427756f14` (tip of `codex/native-migration`) | `.claude/worktrees/splotch-status-planning-f08c4b` (this tree) |
-| Shipping | `ef3d1eb20` (tip of `main`)               | `.claude/worktrees/rn-decision-shipping-ef3d1eb` (detached)      |
+| Shipping | `ef3d1eb20` (tip of `main`)                   | `.claude/worktrees/rn-decision-shipping-ef3d1eb` (detached)    |
 
 The store release users have is v1.6.0 (`d8b86469f`); it is older than shipping main and is a
 cross-check only. To price a fix for a possible blocker, branch off a candidate into a separate
@@ -41,10 +41,10 @@ throwaway worktree, time-box it to half a day, and never push it into either fro
 * Ports: pick with `npm --silent run show:free-port`; never kill a listener you did not start.
 * **Rig lock.** Physical-device timing captures and heavy host work (native builds, test suites,
   Lighthouse, simulators/emulators) must not overlap. Lock directory is in the rig file. Acquire
-  with `until mkdir "$L" 2>/dev/null; do sleep 20; done`, then immediately write
-  `"$L/owner"` (lane, purpose, time). Release with `rm "$L/owner"; rmdir "$L"` on every path,
-  including failures. Hold it per capture window or per heavy command, never across a wait.
-  Functional (non-timing) device checks may run without it.
+  with `until mkdir "$L" 2>/dev/null; do sleep 20; done`, then immediately write `"$L/owner"` (lane,
+  purpose, time). Release with `rm "$L/owner"; rmdir "$L"` on every path, including failures. Hold
+  it per capture window or per heavy command, never across a wait. Functional (non-timing) device
+  checks may run without it.
 * Name the number that would change the decision before measuring. At most two attempts per
   hypothesis. Three samples is enough for breadth.
 
@@ -54,8 +54,8 @@ throwaway worktree, time-box it to half a day, and never push it into either fro
   tables over prose, every claim with its build, device and method. Raw media and logs go to the
   scratchpad folder named in the rig file, never into the tree. Do not commit; the orchestrator
   commits.
-* Return a summary of **at most 350 words**: what you measured, the result per arm, each defect
-  with severity (blocker / major / minor / cosmetic) and whether it exists in RN, shipping or both,
-  and one line on **whether anything you found could flip the decision**.
+* Return a summary of **at most 350 words**: what you measured, the result per arm, each defect with
+  severity (blocker / major / minor / cosmetic) and whether it exists in RN, shipping or both, and
+  one line on **whether anything you found could flip the decision**.
 * If something only the owner's eyes or fingers can judge comes up, add it to `owner-packet.md` as
   one numbered case (what to open, what to do, what to compare, ≤3 lines). Never wait for the owner.
