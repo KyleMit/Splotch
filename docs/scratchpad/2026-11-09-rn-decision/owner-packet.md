@@ -9,8 +9,10 @@ list.
 ## Cases
 
 1. **Do this first, 1 minute: unlock scripted touch on the iPad.** On the iPad: Settings › Developer
-   › Enable UI Automation → on (authenticate if asked). This alone unblocks the fair iPad drawing
-   comparison, the decision's most heavily weighted measurement. Then tell Claude it's done.
+   › Enable UI Automation → on (authenticate if asked). This unblocks scripted touch on the real
+   iPad for the three checks that decide the iPad verdict: the fair drawing comparison, whether RN's
+   invisible-ink-after-rotation bug happens on real hardware, and whether shipping really cuts
+   multi-finger lines short. Then tell Claude it's done.
 
 *(the remaining cases are being curated)*
 
