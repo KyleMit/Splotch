@@ -24,8 +24,9 @@ so don't open them yourself. Reply with the case number and a word or two each.
    stops early, extra loops, rounded corners that shouldn't be, or stray palm marks?
 5. **iPad, held finger plus a colour tap (masked).** Hold one finger drawing, tap a colour with
    another finger, keep moving the first. Does the line continue, and in which colour?
-6. **iPad, rotate then draw (masked).** Rotate the iPad 3–4 times, clearing and drawing a short line
-   after each rotation. Does every line show up straight away?
+6. **iPad, rotate then draw (masked).** First open a coloring page, set Settings › Appearance to
+   Dark and back, and clear the page. Then rotate 3–4 times, clearing and drawing a short line after
+   each rotation. Does every line show up straight away, and does a colour swatch land on the paper?
 7. **Sound, iPad and Galaxy (masked).** Draw with Sound on, then turn it off (Settings › Sound) and
    draw again. Is the sound right when on, and silent when off?
 8. **Galaxy, TalkBack (masked, about 3 minutes).** Turn TalkBack on, swipe through the canvas
