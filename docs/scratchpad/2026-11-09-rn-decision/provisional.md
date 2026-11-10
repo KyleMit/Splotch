@@ -43,7 +43,7 @@ this folder carry the methods, devices and raw evidence paths.
 | Core journeys           | mostly equal; on the simulator RN loses a stroke 0.3 s after closing Settings (5 of 5) and fails every Clear right after an Eraser lift (20 of 20), shipping clean | 22 checks equal; RN fails Clear or ignores touch for up to 3.8 s right after an Eraser lift (10 of 10 tries), loses strokes after Clear with an opt-in setting, and takes 0.6–0.85 s per Undo on a dense picture  | equal smoke pass                                                                       |
 | Memory                  | unmeasured                                                                                                                                                         | RN grows 3.9–7.1× shipping's in a 10-min Crayon session (guardrail 2×)                                                                                                                                            | not measured                                                                           |
 | Looks                   | parity apart from one shipping layout bug                                                                                                                          | parity apart from two minor RN bugs                                                                                                                                                                               | parity (33 pairs pixel-identical)                                                      |
-| AI art                  | failure handling identical; a real picture and saving it **unknown** (production is down)                                                                          | same                                                                                                                                                                                                              | success and failure paths identical against a fake image model                         |
+| AI art                  | failure handling identical; a real picture and saving it **not yet tested** (production AI fixed 2026-11-10 09:17)                                                 | same                                                                                                                                                                                                              | success and failure paths identical against a fake image model                         |
 
 ## Defects that matter
 
@@ -141,8 +141,9 @@ for extra fingers during a main-thread stall stay unrecoverable even after the t
    small, though, so they add to the bill rather than settle the call. *Check:* the real-iPad run's
    block 7 repeats both (exploratory, not scored).
 
-Still unknown and able to move either way: native AI success and saving once production is fixed, a
-real screen-reader pass on both apps, a low-end device, and store distribution.
+Still unknown and able to move either way: native AI success and saving (production is fixed;
+untested in either app), a real screen-reader pass on both apps, a low-end device, and store
+distribution.
 
 ## Days 2–4: best versions and the unclear items
 
@@ -189,5 +190,6 @@ simulator finding needs realistic pacing or real fingers before it counts. RN's 
 passed that check: it reproduced at ~60 Hz pacing, and its cause is in how native views are mounted,
 not in touch input. The multi-finger results did not pass it.
 
-Separate from the decision: **production AI generation is down for everyone** (OpenAI rejects a
-request setting). A fix session is proposed for the owner; shipping it needs a main deploy.
+Separate from the decision: **production AI generation was down for everyone** (OpenAI rejected a
+request setting). It was fixed on `main` in PR 3223 and has been live since 2026-11-10 09:17
+(1.6.2690). Porting the same change to RN's server copy is issue 3224.

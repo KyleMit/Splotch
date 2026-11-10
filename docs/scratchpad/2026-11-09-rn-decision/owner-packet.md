@@ -46,9 +46,9 @@ passed its gate), once those builds are on the iPad, so you judge bones rather t
    and do switches say on or off?
 9. **Optional: iPad Safari, both web builds.** Claude gives you two links. Scribble fast for about
    10 s in each, then open Settings. Does either lag, and does either dialog backdrop look broken?
-10. **Later, once production AI is fixed: one AI picture each (masked).** Make one Magical picture
-    in A, then B, on the iPad. Compare the wait and the result, then Download. This costs 2
-    generations.
+10. **One AI picture each (masked; production AI works again since 2026-11-10 09:17).** Make one
+    Magical picture in A, then B, on the iPad. Compare the wait and the result, then Download. This
+    costs 2 generations.
 
 ## Source candidates (folded into the cases above)
 
