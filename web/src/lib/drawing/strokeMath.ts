@@ -113,6 +113,29 @@ export function pointerWasResumed(
   return idleMs > POINTER_RESUME_GAP_MS && jumpDistance > POINTER_RESUME_JUMP_RATIO * minPaperSide;
 }
 
+export interface MoveSample {
+  timeStamp: number;
+  clientX: number;
+  clientY: number;
+}
+
+// WebKit can dispatch one pointermove twice, before and after its touchmove, with the same
+// coalesced list. Replaying the copy redraws the path from its first sample: a closing curve back
+// across a fast zigzag. A real later move always ends on a later sample, so a move is admitted, and
+// becomes the stroke's last, unless its final sample repeats the last admitted move's.
+export function admitMove(stroke: { lastMove?: MoveSample }, samples: readonly MoveSample[]) {
+  const { timeStamp, clientX, clientY } = samples[samples.length - 1];
+  const previous = stroke.lastMove;
+  if (
+    previous?.timeStamp === timeStamp &&
+    previous.clientX === clientX &&
+    previous.clientY === clientY
+  )
+    return false;
+  stroke.lastMove = { timeStamp, clientX, clientY };
+  return true;
+}
+
 // Honest sliding window: stamp each move's distance with its time, drop samples
 // older than windowMs, then divide the distance covered since the oldest
 // surviving sample by that elapsed span. (The oldest sample is the anchor for

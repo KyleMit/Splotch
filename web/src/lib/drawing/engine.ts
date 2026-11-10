@@ -32,7 +32,9 @@ import {
   edgeSwipeDirectionDecided,
   guardedEdgeAt,
   pointerWasResumed,
+  admitMove,
   type GuardEdge,
+  type MoveSample,
   type Point,
 } from './strokeMath';
 import {
@@ -755,6 +757,7 @@ interface PointerState {
   // digitizer that outruns the display from making the engine paint the same
   // presentable frame several times over.
   pendingRaster: RasterBatch[];
+  lastMove?: MoveSample;
 }
 
 // StrokeOp carries one flag per brush; this is the one place the engine's brush
@@ -1023,6 +1026,7 @@ function draw(e: PointerEvent) {
     // back to the event itself.
     const coalesced = e.getCoalescedEvents?.() ?? [];
     const events = coalesced.length > 0 ? coalesced : [e];
+    if (!admitMove(pointerState, events)) return;
     const screenPoints = events.map(pointerToScreen);
 
     const now = Date.now();
