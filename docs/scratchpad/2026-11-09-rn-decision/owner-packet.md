@@ -1,7 +1,7 @@
 # Owner packet: what only your eyes or fingers can judge
 
-At most 10 cases, about 20 minutes. Every app is already installed. Do case 1 first; the rest go in
-any order, and you can skip any you don't have time for.
+At most 10 cases, about 20 minutes. Every app is already installed. Do case 1 first. Cases 2–4 are
+the ones the final verdict needs; if you only have 10 minutes, do 1–4. The rest can be skipped.
 
 ## How it works
 
@@ -19,9 +19,9 @@ so don't open them yourself. Reply with the case number and a word or two each.
    start in either app?
 3. **iPad, dense Crayon (masked).** Pick Crayon in A, then B, and fill most of the page with fast
    scribbles for about 20 s. Does either lag behind your finger, stutter, or drop ink?
-4. **iPad, several fingers and a palm (masked).** In A, then B: draw 2–3 parallel lines with fingers
-   together, then a fast tight zigzag, then draw with your palm resting on the paper. Any line that
-   stops early, extra loops, rounded corners that shouldn't be, or stray palm marks?
+4. **iPad, several fingers and a palm (masked).** In A, then B, on a busy picture: draw 2–3 curved
+   lines with fingers together and lift them one at a time, then a fast tight zigzag, then draw with
+   your palm resting on the paper. Any line that stops early, extra loops, or stray palm marks?
 5. **iPad, held finger plus a colour tap (masked).** Hold one finger drawing, tap a colour with
    another finger, keep moving the first. Does the line continue, and in which colour?
 6. **iPad, rotate then draw (masked).** First open a coloring page, set Settings › Appearance to

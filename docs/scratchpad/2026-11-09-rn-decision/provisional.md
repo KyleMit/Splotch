@@ -1,8 +1,8 @@
 # Provisional recommendation (2026-11-10, ~T+4.5 h)
 
-**Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: moderate, about 70%** (60%
+**Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: moderate, about 65–70%** (60%
 when Claude and Codex first reached it independently; raised after shipping's multi-finger result
-and the pricing of RN's known repairs, below).
+and the pricing of RN's known repairs, below). The number is judgement, not a measured probability.
 
 The breadth pass found **no clear RN advantage** for users on any platform. That is not the same as
 proving the arms equal: the most heavily weighted measurement, iPad drawing under real touch, is
@@ -31,32 +31,41 @@ Two RN findings break guardrails the campaign set in advance: lost contact (ink 
 and memory growth at least twice shipping's. RN cannot be accepted until each is repaired or
 explicitly dispositioned, however a feel check comes out.
 
-| Defect                                                                                            | Arm      | Severity                                | Evidence                                       | Status                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------- | -------- | --------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Strokes within ~0.8 s after Clear never appear when Auto-Save on Delete is on                     | RN       | major, **contact-loss guardrail**       | Galaxy, on-device timing                       | **fix validated**: input stays locked while the picture saves; the fix passed 14 of 14 (+210/−70, 7 files), ~1 day. The first dot still shows 0.5–0.9 s late until the save moves off the JS thread (+1.5–3 days)                                                                                             |
-| Memory grows with Undo: plateaus at 624–706 MB, ~2.1× shipping's 314 MB                           | RN       | major, **memory guardrail**             | Galaxy                                         | **bounded, fix partial**: Skia's GPU cache keeps one texture per Undo step and is never purged, and a Skia canvas isn't freed until garbage collection. The fix (+125/−45, 5 files, plus a one-line native Skia patch) bounds it at 412–427 MB but still misses the growth limit (+128 vs ≤ +72 MB). 1–2 days |
-| First stroke stalls 105–163 ms after cold launch (drawing sound blocks the main thread)           | RN       | major                                   | real iPad, 4 of 7                              | **fix validated**: launch race confirmed; 4-line fix (+20/−1 with tests) cleared 10 of 10 cold launches outside first-after-install; ~½ day to land. Shipping unmeasured                                                                                                                                      |
-| First launch after install stalls the first stroke 81–183 ms; a sound loop wrap stalls 113 ms     | RN       | minor (once per install; 2 of 39 wraps) | real iPad                                      | found by the fix test; not priced                                                                                                                                                                                                                                                                             |
-| New ink hidden after a rotation (also after page or theme changes) until a menu opens             | RN       | major                                   | iPad simulator, 2 of 40 under realistic pacing | **fix validated**: RN's compatibility layer for older-style native views loses track of the paper view's children; a one-file fix (+36/−9) passed 0 of 24. ~1 day to land, plus 0.5–1 day for a second view with the same exposure. Real iPad plausible, unchecked                                            |
-| Two- and three-finger lines stop early; fast zigzags gain loops                                   | shipping | **cosmetic with real fingers**          | iPad simulator, 7 of 13                        | investigated: scripted touch arrives in one burst and WebKit keeps only the last point of each extra finger (a simulator artefact). What is left is shipping never drawing a stroke's last half-segment (5–18 pt with real fingers); a 10-line fix passed 0 cuts in 30 tries                                  |
-| Custom-colour button half off-screen in landscape on the 12.9"                                    | shipping | major (looks), minor (use)              | simulator and real iPad                        | not priced                                                                                                                                                                                                                                                                                                    |
-| Night Mode doesn't recolour ink already drawn; brush and size buttons have no screen-reader names | shipping | minor                                   | Galaxy                                         | not priced                                                                                                                                                                                                                                                                                                    |
-| SDK 27 build doesn't launch on iPadOS 27 until UIScene is adopted                                 | shipping | chore before next iOS release           | simulator, tested +38-line fix                 | priced: ~0.5 day                                                                                                                                                                                                                                                                                              |
-| RN reaches the AI error card ~5 s later on native; cause unexplained                              | RN       | minor, unverified                       | iPad simulator, Galaxy                         | could also delay real pictures                                                                                                                                                                                                                                                                                |
+| Defect                                                                                                              | Arm      | Severity                                                                                                | Evidence                                       | Status                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Strokes within ~0.8 s after Clear never appear when Auto-Save on Delete is on                                       | RN       | major, **contact-loss guardrail**                                                                       | Galaxy, on-device timing                       | **fix validated**: input stays locked while the picture saves; the fix passed 14 of 14 (+210/−70, 7 files), ~1 day. The first dot still shows 0.5–0.9 s late until the save moves off the JS thread (+1.5–3 days)                                                                                             |
+| Memory grows with Undo: plateaus at 624–706 MB, ~2.1× shipping's 314 MB                                             | RN       | major, **memory guardrail**                                                                             | Galaxy                                         | **bounded, fix partial**: Skia's GPU cache keeps one texture per Undo step and is never purged, and a Skia canvas isn't freed until garbage collection. The fix (+125/−45, 5 files, plus a one-line native Skia patch) bounds it at 412–427 MB but still misses the growth limit (+128 vs ≤ +72 MB). 1–2 days |
+| First stroke stalls 105–163 ms after cold launch (drawing sound blocks the main thread)                             | RN       | major                                                                                                   | real iPad, 4 of 7                              | **fix validated**: launch race confirmed; 4-line fix (+20/−1 with tests) cleared 10 of 10 cold launches outside first-after-install; ~½ day to land. Shipping unmeasured                                                                                                                                      |
+| Sound loop wrap stalls drawing 113 ms (2 of 39 wraps); first launch after install stalls the first stroke 81–183 ms | RN       | loop wrap: **major** under the pre-registered 100 ms rule; first-after-install: minor, once per install | real iPad                                      | found by the audio fix test; the loop wrap needs the robust audio rewrite                                                                                                                                                                                                                                     |
+| New ink hidden after a rotation (also after page or theme changes) until a menu opens                               | RN       | major                                                                                                   | iPad simulator, 2 of 40 under realistic pacing | **fix validated**: RN's compatibility layer for older-style native views loses track of the paper view's children; a one-file fix (+36/−9) passed 0 of 24. ~1 day to land, plus 0.5–1 day for a second view with the same exposure. Real iPad plausible, unchecked                                            |
+| Two- and three-finger lines stop early; fast zigzags gain loops                                                     | shipping | **cosmetic with real fingers**                                                                          | iPad simulator, 7 of 13                        | investigated: scripted touch arrives in one burst and WebKit keeps only the last point of each extra finger (a simulator artefact). What is left is shipping never drawing a stroke's last half-segment (5–18 pt with real fingers); a 10-line fix passed 0 cuts in 30 tries                                  |
+| Custom-colour button half off-screen in landscape on the 12.9"                                                      | shipping | major (looks), minor (use)                                                                              | simulator and real iPad                        | not priced                                                                                                                                                                                                                                                                                                    |
+| Night Mode doesn't recolour ink already drawn; brush and size buttons have no screen-reader names                   | shipping | minor                                                                                                   | Galaxy                                         | not priced                                                                                                                                                                                                                                                                                                    |
+| SDK 27 build doesn't launch on iPadOS 27 until UIScene is adopted                                                   | shipping | chore before next iOS release                                                                           | simulator, tested +38-line fix                 | priced: ~0.5 day                                                                                                                                                                                                                                                                                              |
+| RN reaches the AI error card ~5 s later on native; cause unexplained                                                | RN       | minor, unverified                                                                                       | iPad simulator, Galaxy                         | could also delay real pictures                                                                                                                                                                                                                                                                                |
 
 ## Known repair work before each arm reaches its own best
 
-| Arm      | Item                                      | Estimate                                          |
-| -------- | ----------------------------------------- | ------------------------------------------------- |
-| RN       | First-stroke sound stall                  | ~0.5 day (validated)                              |
-| RN       | Ink hidden after rotation or theme change | 1–2 days (validated, plus a second view)          |
-| RN       | Strokes lost after Clear (Auto-Save on)   | ~1 day, +1.5–3 days for prompt ink (validated)    |
-| RN       | Undo memory growth                        | 1–2 days, including a native Skia patch (partial) |
-| RN       | **Total**                                 | **~4–9 agent-days**                               |
-| Shipping | UIScene for iPadOS 27                     | ~0.5 day (validated)                              |
-| Shipping | Last half-segment of each stroke          | ~0.25 day (validated)                             |
-| Shipping | Custom-colour button off-screen on 12.9"  | not priced, likely small                          |
-| Shipping | **Total**                                 | **~1 agent-day** plus minor items                 |
+Priced items only; the unpriced ones are listed, not counted. Both sides apply the same acceptance
+standard: a fix counts only once a gate shows the defect gone.
+
+| Arm      | Item                                               | Estimate                                                           |
+| -------- | -------------------------------------------------- | ------------------------------------------------------------------ |
+| RN       | First-stroke sound stall                           | ~0.5 day (validated), or 1.5–2.5 days for the robust audio rewrite |
+| RN       | Sound loop-wrap stall (113 ms, 2 of 39 wraps)      | unpriced alone; covered by the robust audio rewrite                |
+| RN       | Ink hidden after rotation or theme change          | 1–2 days (validated, plus a second view)                           |
+| RN       | Strokes lost after Clear (Auto-Save on)            | ~1 day (validated), +1.5–3 days for prompt ink                     |
+| RN       | Undo memory growth                                 | 1–2 days with a native Skia patch; still misses the growth limit   |
+| RN       | **Priced total**                                   | **~5–8.5 agent-days** (about 6–10.5 with the robust audio rewrite) |
+| Shipping | UIScene for iPadOS 27                              | ~0.5 day (validated)                                               |
+| Shipping | Last half-segment of each stroke                   | ~0.25 day (validated)                                              |
+| Shipping | Duplicate move events (zigzag closing curve)       | ~4 lines, priced not built                                         |
+| Shipping | Custom-colour button off-screen on 12.9"           | unpriced                                                           |
+| Shipping | Brush and size buttons have no screen-reader names | unpriced                                                           |
+| Shipping | Night Mode doesn't recolour ink already drawn      | unpriced                                                           |
+| Shipping | **Priced subtotal**                                | **~1 agent-day**, plus four unpriced items                         |
+
+Shipping's SvelteKit 3 migration and Capacitor 9 are charged under upkeep below, not here.
 
 ## Cost to carry
 
@@ -72,10 +81,12 @@ explicitly dispositioned, however a feel check comes out.
 Repair cost is compared symmetrically: a shipping defect does not have to be unfixable to count for
 RN, only more expensive to fix than RN's equivalent.
 
-Retired: *shipping's multi-finger ink loss is real.* The investigation found that scripted touch on
-the simulator arrives in one burst, and WebKit keeps only the last point of each extra finger. Real
-fingers on iPad Safari showed no bursts and no cancelled touches. What is left (a stroke's last
-half-segment never drawn, 5–18 pt) is cosmetic, and a 10-line fix passed 0 cuts in 30 tries.
+Resolved: *the simulator's 55% cuts showed a major real-finger defect.* Scripted touch on the
+simulator arrives in one burst, and WebKit keeps only the last point of each extra finger; with
+paced input the cuts disappear (0 of 50). Still open: *shipping keeps multi-finger fidelity in the
+installed app*. The real-finger evidence is two Safari recordings, not the frozen app, and samples
+for extra fingers during a main-thread stall stay unrecoverable even after the tail fix. Owner case
+4 checks it.
 
 **Toward RN**
 
@@ -111,7 +122,7 @@ Crayon, palm and multi-finger) go with it. Meanwhile:
 * the two RN guardrail breaches get priced;
 * validated repairs are measured separately from the frozen comparison.
 
-## Codex's challenge (round 1, read-only)
+## Codex's challenges (read-only)
 
 Codex's independent verdict was the same: keep shipping, about 60%. It corrected the first draft,
 and every correction is applied above:
@@ -124,6 +135,16 @@ and every correction is applied above:
 
 It added the missing risks listed above and named the real-iPad experiment as the highest-value next
 step. No call was contested, so none went to walk-through-decision.
+
+Round 2 (after the four fix tests) kept the verdict and called 65–70% defensible. Its corrections
+are applied above: RN's priced repairs add up to ~5–8.5 days, not 4–9; shipping's figure is a priced
+subtotal with four unpriced items; the multi-finger question is resolved for the simulator but open
+for the installed app; and the 113 ms loop-wrap stall breaks the pre-registered 100 ms rule. Its
+edits to the real-iPad plan (stalled-ink control, block 1 witness, lost-time formula, per-contact
+pacing, 36 rotation tries, two blocks of three dense pairs, an accumulated-session block) are being
+applied before the device run. Still unchecked in either direction: dense drawing with several real
+fingers during a stall, RN's audio after resume, long-session Crayon and Magic memory, and Clear
+right after an Eraser lift.
 
 **Caution for every simulator finding:** XCUITest's fast scripted strokes can arrive in bursts. Each
 simulator finding needs realistic pacing or real fingers before it counts. RN's rotation bug has
