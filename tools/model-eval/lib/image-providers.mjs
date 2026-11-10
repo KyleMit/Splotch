@@ -19,7 +19,7 @@ import {
   classifyOpenAiResponse,
   isSafetyError,
 } from '../../../web/src/lib/server/ai/openaiSafety.ts';
-import { ORCHESTRATOR_MODEL, ORCHESTRATOR_REASONING_EFFORT } from './model-eval.mjs';
+import { ORCHESTRATOR_MODEL } from './model-eval.mjs';
 
 // Tighten every configurable Gemini harm category to its most aggressive
 // setting: the configuration the app's Gemini adapter shipped with, kept so the
@@ -172,7 +172,6 @@ async function callOpenAi({
   try {
     response = await client.responses.create({
       model: ORCHESTRATOR_MODEL,
-      reasoning: { effort: ORCHESTRATOR_REASONING_EFFORT },
       instructions: systemInstruction,
       // The same invariant production holds (ADR-0114). The corpus here is
       // synthetic rather than a child's drawing, so this is not the privacy
