@@ -150,6 +150,26 @@ flags, `LEAD[7]`, the block map), one new `app.mjs` method (`sequence`), a new `
 a block-7 section appended to `summarize.mjs`. Device time ≈ 4.75 h (block 7 ≈ 15 min; 4 min for the
 quick version on the simulator).
 
+**Two disk-full stops, then a restart (2026-11-10).** Block 1 finished and scored clean in both arms
+(0 of 12 strokes held ≥100 ms, no missing ink). The disk filled during block 2's prefill (14:43
+UTC); a resume (`runs/device-20261110-125401`) filled it again during block 2's controls. After the
+cleanup, blocks 2–7 restarted at 15:30 EST with three harness changes, none touching scoring:
+`traced()` now waits for 30 GB free before each trace instead of failing mid-export, scored
+freeze-free traces are always deleted, and `wda-up.zsh` uses whichever WebDriverAgent runner is
+built (clearing Xcode's build cache had deleted the old one; it was rebuilt from the same source
+under the same Xcode 27.2, which has been installed since before the campaign). Block 1's scores
+stand; its raw traces were deleted after scoring.
+
+**The shipping presentation control did not pass on the real iPad** (the resume's block 2,
+`b2/control-ship`). Across the 8 s contact shipping presented 568 frames, a swap every 17 ms on
+average, straight through all three stationary holds; the only gap ≥100 ms was 482 ms at the
+contact's start. Shipping keeps presenting at about 60 fps while a finger rests, so a still finger
+is not a "no new ink" interval in shipping's frame record, and this control cannot pass there as
+built. On the simulator it never passed in either arm (no Animation Hitches). Under the
+pre-registered rule block 2 is therefore **presentation-only** unless the restarted run's controls
+pass in both arms: it can still show RN freezing where shipping does not, but it cannot show RN
+clearly better. The control was not changed after seeing this.
+
 **Harness facts found while building it** (simulator, WDA + XCTest; they constrain what any block
 can time): (1) a `pointerMove` after a `pointerUp` on one pointer is applied to the lifted path, so
 the finger is not lifted between that pointer's contacts and a tap followed by a move never presses
