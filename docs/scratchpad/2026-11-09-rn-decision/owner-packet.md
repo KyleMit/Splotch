@@ -1,22 +1,43 @@
 # Owner packet: what only your eyes or fingers can judge
 
-At most 10 cases, about 20 minutes. Every app is pre-installed and labelled. Do them in any order;
-skip any you don't have time for. Reply with the case number and a word or two each.
+At most 10 cases, about 20 minutes. Every app is already installed. Do case 1 first; the rest go in
+any order, and you can skip any you don't have time for.
 
-Lanes append candidate cases under "Candidates"; the orchestrator curates them into the numbered
-list.
+## How it works
+
+Tell Claude "packet" when you're free. Claude opens the apps for you as **App A** and **App B** in a
+random order and keeps the key, so you judge without knowing which is RN. Every icon says "Splotch",
+so don't open them yourself. Reply with the case number and a word or two each.
 
 ## Cases
 
-1. **Do this first, 1 minute: unlock scripted touch on the iPad.** On the iPad: Settings › Developer
-   › Enable UI Automation → on (authenticate if asked). This unblocks scripted touch on the real
-   iPad for the three checks that decide the iPad verdict: the fair drawing comparison, whether RN's
-   invisible-ink-after-rotation bug happens on real hardware, and whether shipping really cuts
-   multi-finger lines short. Then tell Claude it's done.
+1. **Do this first, 1 minute: unlock scripted touch on the iPad.** Settings › Developer › Enable UI
+   Automation → on (authenticate if asked). It unblocks the real-iPad experiment that decides the
+   iPad verdict, which then runs unattended.
+2. **iPad, first stroke after a cold start (masked).** Claude cold-starts A, then B, 4 times each.
+   As soon as the paper shows, draw one slow, long line. Does the line freeze for a blink near its
+   start in either app?
+3. **iPad, dense Crayon (masked).** Pick Crayon in A, then B, and fill most of the page with fast
+   scribbles for about 20 s. Does either lag behind your finger, stutter, or drop ink?
+4. **iPad, several fingers and a palm (masked).** In A, then B: draw 2–3 parallel lines with fingers
+   together, then a fast tight zigzag, then draw with your palm resting on the paper. Any line that
+   stops early, extra loops, rounded corners that shouldn't be, or stray palm marks?
+5. **iPad, held finger plus a colour tap (masked).** Hold one finger drawing, tap a colour with
+   another finger, keep moving the first. Does the line continue, and in which colour?
+6. **iPad, rotate then draw (masked).** Rotate the iPad 3–4 times, clearing and drawing a short line
+   after each rotation. Does every line show up straight away?
+7. **Sound, iPad and Galaxy (masked).** Draw with Sound on, then turn it off (Settings › Sound) and
+   draw again. Is the sound right when on, and silent when off?
+8. **Galaxy, TalkBack (masked, about 3 minutes).** Turn TalkBack on, swipe through the canvas
+   controls, then Brushes, Stroke width and Settings › Sound. Does every control get a spoken name,
+   and do switches say on or off?
+9. **Optional: iPad Safari, both web builds.** Claude gives you two links. Scribble fast for about
+   10 s in each, then open Settings. Does either lag, and does either dialog backdrop look broken?
+10. **Later, once production AI is fixed: one AI picture each (masked).** Make one Magical picture
+    in A, then B, on the iPad. Compare the wait and the result, then Download. This costs 2
+    generations.
 
-*(the remaining cases are being curated)*
-
-## Candidates
+## Source candidates (folded into the cases above)
 
 * **(setup) iPad automation.** Settings › Developer › Enable UI Automation on (authenticate if
   asked) so WebDriverAgent works again; then draw a line in `art.splotch.app.baseline.main` (all
