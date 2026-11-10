@@ -11,9 +11,10 @@ so don't open them yourself. Reply with the case number and a word or two each.
 
 ## Cases
 
-1. **Do this first, 1 minute: unlock scripted touch on the iPad.** Settings › Developer › Enable UI
-   Automation → on (authenticate if asked). It unblocks the real-iPad experiment that decides the
-   iPad verdict, which then runs unattended.
+1. **Do this first, about 2 minutes: unlock the iPad experiment.** Settings › Developer › Enable UI
+   Automation → on (authenticate if asked). Then Settings › Privacy & Security › Photos: give both
+   "Splotch" test apps permission to add photos. The unattended run (~4.5 h) then starts by itself
+   and leaves 6 test pictures in Photos.
 2. **iPad, first stroke after a cold start (masked).** Claude cold-starts A, then B, 4 times each.
    As soon as the paper shows, draw one slow, long line. Does the line freeze for a blink near its
    start in either app?
