@@ -32,6 +32,27 @@ performance for shipping, app size for RN).
   owner's masked feel cases run on the best versions.
 * The tie rule still applies: if the bones come out equal, shipping wins.
 
+## Disk rules (2026-11-10)
+
+The disk filled twice in one day and stopped every lane. With the owner's approval about 100 GB of
+generated caches and scored raw data was cleared; these rules keep it from filling again.
+
+* **Raw media goes once it is scored.** A trace, recording or capture is deleted after its numbers
+  are written, unless it caught a freeze or a failure someone still has to read. Key frames stay.
+* **Campaign scratch stays under about 20 GB.** Each lane deletes its build caches and recordings
+  when its result is written.
+* **The real-iPad trace run has the disk to itself.** One trace export swings about 25 GB. While it
+  runs, no lane starts a build, and the harness waits before a trace when less than 30 GB is free.
+* **Every heavy step checks first.** A lane runs the campaign's `disk-ok` check before a build, a
+  large install or a capture, and does not start it on a non-zero exit.
+* **A disk watch logs free space every minute** and raises a stop flag below 20 GB, so lanes pause
+  instead of crashing.
+* **One iOS build cache per app.** Spikes reuse their arm's build cache rather than making their
+  own.
+* **Raw evidence never goes into git.** The repo is public, single traces exceed GitHub's file
+  limits, and history is permanent. Numbers live in these notes; any archive worth keeping goes to
+  private storage, decided at the end of the campaign.
+
 ## Frozen candidates — never edit product code in either
 
 | Arm      | Source                                        | Checkout                                                       |
