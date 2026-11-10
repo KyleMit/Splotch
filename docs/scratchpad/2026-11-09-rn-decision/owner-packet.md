@@ -49,3 +49,13 @@ list.
 * **(journeys-ipad) Sound on/off, both apps.** Draw with Sound on, then off (Settings › Sound), in
   each app: is the drawing sound right, and silent when off? (No log evidence for shipping's Web
   Audio.)
+* **(journeys-android) TalkBack on the Galaxy, both apps.** Turn TalkBack on and swipe through the
+  canvas controls, then open Brushes, Stroke width and Settings › Sound in each app. Does every
+  control get a spoken name, and do switches say on or off? (The accessibility tree shows shipping's
+  brush and size options with no name; RN names them all.)
+* **(journeys-android) Sound off on the Galaxy, both apps.** Draw with Sound on, then turn it off in
+  Settings › Sound and draw again. Is each app silent when off? (RN proven by OS audio players;
+  shipping's WebView keeps an audio stream open even while muted.)
+* **(journeys-android) Held finger and colour tap on the Galaxy, both apps.** Hold one finger
+  drawing, tap Blue with another, keep moving the first finger. Does the line continue, and in which
+  colour? (Under injected input both apps stopped the held line at a dot.)
