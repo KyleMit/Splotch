@@ -1,20 +1,26 @@
 # Owner packet: what only your eyes or fingers can judge
 
-At most 10 cases, about 20 minutes. Every app is already installed. Do case 1 first. Cases 2–4 are
-the ones the final verdict needs; if you only have 10 minutes, do 1–4. The rest can be skipped.
+At most 10 cases, about 25 minutes. Every app is already installed. Cases 1–4 are the ones the
+verdict needs, about 15 minutes; the rest can be skipped.
 
 ## How it works
 
 Tell Claude "packet" when you're free. Claude opens the apps for you as **App A** and **App B** in a
-random order and keeps the key, so you judge without knowing which is RN. Every icon says "Splotch",
-so don't open them yourself. Reply with the case number and a word or two each.
+random order and keeps the key, so you judge without knowing which is RN. The iPad has eight apps
+called "Splotch" with the same icon, so don't open them yourself. Reply with the case number and a
+word or two each.
+
+**Order:** case 1, then the other iPad cases, then the Galaxy. When you're done with the iPad,
+Claude starts the unattended iPad run (~4.5 h), and the iPad is busy until it ends. If you only have
+time for case 1, say "start the run" after it.
 
 ## Cases
 
-1. **Do this first, about 2 minutes: unlock the iPad experiment.** Settings › Developer › Enable UI
-   Automation → on (authenticate if asked). Then Settings › Privacy & Security › Photos: give both
-   "Splotch" test apps permission to add photos. The unattended run (~4.5 h) then starts by itself
-   and leaves 6 test pictures in Photos.
+1. **Unlock the iPad experiment, about 3 minutes.** On the iPad: Settings › Developer › Enable UI
+   Automation → on (authenticate if asked). Then Claude opens each of the two test apps in turn:
+   draw a squiggle, tap the camera button (Save screenshot), and choose Allow when iOS asks about
+   Photos. The test tool never answers that prompt itself, and the run's save check needs it. The
+   run leaves 6 test pictures in Photos.
 2. **iPad, first stroke after a cold start (masked).** Claude cold-starts A, then B, 4 times each.
    As soon as the paper shows, draw one slow, long line. Does the line freeze for a blink near its
    start in either app?
@@ -25,9 +31,11 @@ so don't open them yourself. Reply with the case number and a word or two each.
    your palm resting on the paper. Any line that stops early, extra loops, or stray palm marks?
 5. **iPad, held finger plus a colour tap (masked).** Hold one finger drawing, tap a colour with
    another finger, keep moving the first. Does the line continue, and in which colour?
-6. **iPad, rotate then draw (masked).** First open a coloring page, set Settings › Appearance to
-   Dark and back, and clear the page. Then rotate 3–4 times, clearing and drawing a short line after
-   each rotation. Does every line show up straight away, and does a colour swatch land on the paper?
+6. **iPad, draw straight after rotating, clearing or closing a menu (masked).** First open a
+   coloring page, set Settings › Appearance to Dark and back, and clear the page. Then rotate 3–4
+   times, clearing and drawing a short line after each rotation. Then erase part of a line and
+   straight away drag to Clear and draw; then close Settings and draw at once. Does every line show
+   up straight away, does Clear work, and does a colour swatch land on the paper?
 7. **Sound, iPad and Galaxy (masked).** Draw with Sound on, then turn it off (Settings › Sound) and
    draw again. Is the sound right when on, and silent when off?
 8. **Galaxy, TalkBack (masked, about 3 minutes).** Turn TalkBack on, swipe through the canvas
@@ -82,3 +90,7 @@ so don't open them yourself. Reply with the case number and a word or two each.
 * **(journeys-android) Held finger and colour tap on the Galaxy, both apps.** Hold one finger
   drawing, tap Blue with another, keep moving the first finger. Does the line continue, and in which
   colour? (Under injected input both apps stopped the held line at a dot.)
+* **(perf-galaxy-brushes) Draw right after Clear-after-Eraser, and right after closing Settings,
+  iPad.** On the Galaxy, RN ignored touch for up to 3.8 s after a Clear that followed an Eraser
+  lift, and for ~0.3 s after closing any dialog (shipping ~0.24 s). The code is shared, so the iPad
+  likely has both; the iPad run's block 7 also checks them by script.
