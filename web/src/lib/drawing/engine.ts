@@ -1075,6 +1075,16 @@ function stopDrawing(e: PointerEvent) {
     commitEdgeSwipe(pointerState);
   }
 
+  // Midpoint smoothing ends every stroke halfway along its last chord. Dense
+  // input hides that, but a burst can reach a non-primary finger as one far
+  // sample (WebKit keeps its coalesced list to the last point), and the line
+  // then stops visibly short of the lift. Draw the closing half-chord.
+  if (e.type === 'pointerup' && !pointerState.edgeSwipeGuard) {
+    if (pointerState.x !== pointerState.midX || pointerState.y !== pointerState.midY) {
+      strokeSegments(pointerState, [{ x: pointerState.x, y: pointerState.y }]);
+    }
+  }
+
   // A lifting crayon finger closes its deposition pass by stamping each tile's
   // buffered wax and recording the flush at the same point in the op order.
   // A discarded edge-swipe candidate rendered nothing, so it has no pass.
