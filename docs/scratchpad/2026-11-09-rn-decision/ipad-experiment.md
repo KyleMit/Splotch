@@ -170,6 +170,36 @@ pre-registered rule block 2 is therefore **presentation-only** unless the restar
 pass in both arms: it can still show RN freezing where shipping does not, but it cannot show RN
 clearly better. The control was not changed after seeing this.
 
+**The restarted run stopped in block 2 because the iPad's own storage was full** (2026-11-10,
+`runs/device-20261110-153107`). The iPad had 4.6 GB free (`AmountDataAvailable`, purgeable space
+excluded), less than one trace: an all-process Animation Hitches trace is 4.5–5.2 GB here, and
+Instruments stages it on the device before copying it to the Mac. In order of capture:
+
+| Trace              | What happened                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `control-ship`     | complete; missed, as in the resume (shipping presents continuously)                                              |
+| `control-rn`       | complete (recording ends at 21.7 s); missed, witness failed                                                      |
+| `01-crayon-1-ship` | complete and valid: lost60 1,681 ms, longest gap 1,458 ms (first-swap lag at the contact's start)                |
+| `02-crayon-1-rn`   | display swaps stop 2.7 s into the stroke (23.5 s of a 45 s trace) and never resume; the scorer marked it invalid |
+| `03-crayon-1-rn`   | Instruments: "Data Providers emitted errors: Logging"; no frame data                                             |
+| `04-crayon-1-ship` | Instruments: "Transferred trace file is malformed"; no frame data                                                |
+
+The RN rep's 18.9 s gap is **the recording stopping, not an RN freeze**. Instruments also reports a
+21.65 s "Severe Hang" on Splotch's main thread from 23.52 s to the end of the trace, but every table
+stops at the same instant: display vsyncs end at 23.52 s, and from 24 s on the per-process CPU table
+reads exactly 0.0% for every process, including the WebDriverAgent runner (still injecting the
+stroke until ~42 s), `backboardd`, Instruments' own `DTServiceHub`, and total system CPU (~300% the
+4 s before). A running iPad never idles at zero, so the device-side data stream stopped and the hang
+detector closed its last open interval at the trace's end. All the ink was on the paper afterwards
+(coverage 0.985). The run was stopped while it waited for the rig lock, and the harness now reads
+the iPad's free space before every trace and stops below 12 GB. The scored calibration and
+shipping-control traces of all three device runs were deleted (~15 GB).
+
+**The iPad did not come back from a reboot** (requested 16:51 EST through `devicectl` to clear
+stranded trace data; the iPad has no passcode, and no data or settings were changed). Fourteen
+minutes later it was still absent from the Mac's USB bus while the Galaxy and the keyboard were
+present. The run waits on the owner checking the iPad.
+
 **Harness facts found while building it** (simulator, WDA + XCTest; they constrain what any block
 can time): (1) a `pointerMove` after a `pointerUp` on one pointer is applied to the lifted path, so
 the finger is not lifted between that pointer's contacts and a tap followed by a move never presses
