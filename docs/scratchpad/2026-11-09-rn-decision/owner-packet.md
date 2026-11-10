@@ -26,6 +26,24 @@ list.
 * **(web) iPad Safari, both web builds.** Needs an RN branch-preview link from the orchestrator; the
   shipping web is splotch.art. In Safari, scribble fast for ~10 s on each, then open Settings: does
   either lag behind your finger, and do RN's Settings row titles look too light next to shipping's?
+* **(visual) iPad ink corners, both apps.** In `art.splotch.app.dev`, then
+  `art.splotch.app.baseline.main`, draw a fast, tight zigzag with one finger. Scripted strokes show
+  RN rounding sharp corners into waves and shipping keeping them sharp: which follows your finger,
+  and does either look wrong?
+* **(visual, fold into the web case) Dialog backdrop on web.** While Settings is open in each web
+  build: RN blurs the page behind the dialog and shipping only dims it. Masked reviewers split (two
+  called RN's blur "smeared/broken", one preferred it). Does either look broken?
 * **(ai) After the server's OpenAI `400` is fixed (all AI is down now, both arms).** On the iPad
   make one Magical picture in `art.splotch.app.dev`, then `art.splotch.app.baseline.main`; compare
   the wait and the result card, then Download (2 generations).
+* **(journeys-ipad) Rotate, then draw, in RN.** In `art.splotch.app.dev`, rotate the iPad 3–4 times,
+  drag the trash to clear, and draw a line after each rotation. Does the line show up straight away?
+  (On the simulator RN left new ink invisible until a menu opened in 4 of 9 rotations; shipping 0 of
+  8.)
+* **(journeys-ipad) Two or three fingers at once, both apps.** Draw 2–3 parallel lines together,
+  then a fast scribble, in `art.splotch.app.baseline.main`, then `art.splotch.app.dev`. Do any lines
+  stop early, or does an extra loop appear? (Simulator: shipping cut 7/13 lines and looped fast
+  zigzags; RN clean.)
+* **(journeys-ipad) Sound on/off, both apps.** Draw with Sound on, then off (Settings › Sound), in
+  each app: is the drawing sound right, and silent when off? (No log evidence for shipping's Web
+  Audio.)
