@@ -174,3 +174,77 @@ priced under Undo.
 **Device state.** mem-2 stays installed as `art.splotch.app.dev.mem`, because the missing
 measurement builds on it. `.dev`, `.dev.mem` and `.baseline.main` were left on Pen with a cleared
 page. The store app was not touched.
+
+## Settle run (mem-2 + tile Undo + purges)
+
+2026-11-10, Claude. The missing measurement above: the same workload, scripts and scoring (`run.zsh`
+held under the Galaxy and rig locks, `summary.py`, `components.py`, `cmp.zsh`), one run. Raw data is
+`rn-memory/runs/settle-1/` (rig file).
+
+**Build.** Local branch `claude/spike-rn-memory-settle` off mem-2 `c904b4026`, never pushed, built
+like mem-2 (probe Release, `EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1`, build tag `mem-settle`, arm64, debug
+key) and installed over `.dev.mem` (APK sha256 `73b0aabf…8474`). Type check and 7 native ink, Undo
+and probe test files (79 tests) pass on the branch.
+
+| Commit      | Adds                                                                                                                                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `3c75b4254` | (a) The Undo lane's tile snapshots (`764d43a6a` + `be6ed6674`) without the verify build, device log line or `.dev.undo` suffix; the scene's log callback stays as a test seam                                  |
+| `8ac70e177` | (b) A timer on the presenting thread's looper, pushed back by every frame, purges every dead (scratch) Ganesh texture 2 s after the last frame                                                                 |
+| `236584509` | (c) `SplotchPurgeNativeHeap`, a JSI function in the Skia patch: `mallopt(M_PURGE_ALL)` (M_PURGE before API 34) on a detached thread; the app calls it 2 s after the last Clear or Undo, so a burst purges once |
+
+**Bar check** (written 17:27 EST, before the run): readings exactly as pre-registered, no outlier
+removal. *Bones* if the gate fails and the failing reading is carried, more than half of it, by the
+Hermes heap (`Unknown`) or native PSS, at ≥ 1.0 MB/min each over SA or, for G, each holding at least
+half of G's excess over 106.7 MB. *Unclear* if the excess sits mostly in GPU memory or the run is
+invalid.
+
+| Arm      | Blank paper | Peak | G        | S15   | SA    | Clear drops 20.5 / 24.5 / 28.5 | GC drop | Post-Clear floors 21 / 25 / 29 (slope) |
+| -------- | ----------- | ---- | -------- | ----- | ----- | ------------------------------ | ------- | -------------------------------------- |
+| Shipping | 283         | 392  | +53      | −2.16 | +0.82 | −27 / +1 / 0                   | −60     | 365 / 370 / 373 (+0.99)                |
+| mem-2    | 295         | 580  | +160     | −2.60 | +5.23 | −94 / −1 / +4                  | −97     | 471 / 466 / 472 (+0.11)                |
+| Settle   | 242         | 527  | **+201** | +1.83 | +1.12 | −2 / −24 / −12                 | −105    | 498 / 482 / 506 (+0.93)                |
+
+Class: **creep** (S15 between 1.0 and 2.0, floors flat), and it does **not** climb with the picture
+(SA ≤ 1.5). No focus loss; 718 of 718 strokes inked. The peak (527 MB at 27.5 min) is a plain
+sample, not a spike. The blank-paper sample came in 53 MB under mem-2's (EGL 66 against 84 MB,
+native 42 against 55). After 60 s idle the settle build sat at 443 MB, against mem-2's 455 and
+shipping's 336.
+
+**Fix gate: fail.**
+
+| Criterion    | Bar         | Settle                                                                                                                                                                   | Result   |
+| ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| Plateau, S15 | ≤ 1.0       | +1.83 (Hermes +1.04, native +1.02)                                                                                                                                       | **fail** |
+| Plateau, SA  | ≤ 1.0       | +1.12 (Hermes +0.68, native +0.52)                                                                                                                                       | **fail** |
+| G            | ≤ 106.7 MB  | +201; +148 on mem-2's blank-paper sample                                                                                                                                 | **fail** |
+| Drawing      | same as mem | Same Crayon texture; pixels differing (8% fuzz) from mem-2: 0.29% at 20 min (mem-1 vs mem-2: 0.30%), 2.9% at 30 min (4.2%, a stroke in flight); 718 of 718 strokes inked | pass     |
+
+**What holds G** (MB, `components.py`; idle60 minus blank paper):
+
+| Part                    | Settle              | mem-2          | What it is                                                                                                                                                                                                                                                                                                         |
+| ----------------------- | ------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Hermes heap (`Unknown`) | +101                | +80            | The heap reaches 80 MB by 5 min and 104–116 MB in phase B, while live JS after a collection peaks at 32 MB and ends at ~22. JS allocates 252 MB/min while drawing (mem-2: 873, from the Undo replays), and the collector sizes the heap to that churn. Clear does not shrink it; the full GC on HOME returned 4 MB |
+| Native heap             | +77 (live +31)      | +53 (live +19) | The live part is freed only by a garbage collection: the HOME GC took Heap Alloc from 91 to 57 MB, under launch's 60. The allocator purge ran 35 times (p50 11 ms, max 30 ms, off the JS thread), yet at idle native PSS sat at 119 MB against 91 MB allocated (launch: 42 against 60)                             |
+| GPU (GL + EGL + other)  | +22 (+10 / +8 / +4) | +35            | The idle purge ran after the final Clear and cut Ganesh's cache from 26.5 to 8.7 MB (the paper's texture). GL still rose 13.6 → 49.9 MB at that Clear and held until HOME, as in mem-2: driver memory outside Ganesh's cache                                                                                       |
+
+**Undo**, as a proxy (the probe does not time Undo; `rn-memory-settle/bin/undo-proxy.py`): the worst
+first-dot delay of the strokes after each Undo burst, phase A, p50 / p90 / max: settle 40 / 42 / 70
+ms; mem-2 5.8 / 10.6 / 12.0 s; frozen 5.9 / 11.7 / 14.2 s. On a 15–20-minute picture a frozen Undo
+burst holds the next strokes' ink for over 10 s.
+
+**Verdict: bones** (by the bar check above; G fails with its excess held by the Hermes heap, +101,
+and the native heap, +77). It is a high-water mark, not growth: floors are flat, SA is under the
+"climbs with the picture" bar, and no leak survives. **Price:** a dense 32-minute session leaves RN
+~200 MB above launch (443 MB) where shipping keeps +53 (336 MB); peak 527 MB. Shrinking it means
+either a Hermes GC set to a smaller heap target, which buys memory with more collection on the JS
+thread that runs the ink (the probe already counts 4–5 s of GC time per minute of drawing), or
+cutting the drawing path's JS churn, whose size and gain are unmeasured. A native-triggered GC on
+idle (untried, ~0.25 day) would take back the ~35 MB of GC-held native memory, not the gate's ~95 MB
+excess. Untested: how much of the churn is the probe's own (every arm here is a probe build).
+
+**Decision-changers: none.** No leak survives (floors +0.93 MB/min; S15 +1.83 is creep, under the
+2.0 leak bar), and the peak of 527 MB sits at least ~370 MB under a 2 GB Android phone's estimated
+kill range. The iPad was not measured; both purges are Android-only.
+
+**Device state.** The settle build stays installed as `art.splotch.app.dev.mem`, left on Pen with a
+cleared page. `.dev` and `.baseline.main` were not touched; the store app was not touched.
