@@ -1,13 +1,15 @@
 # Provisional recommendation (2026-11-10, ~T+4.5 h)
 
-**Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: moderate, about 60%.** Claude
-and Codex reached this independently (Codex's challenge is summarized at the end).
+**Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: moderate, about 65%** (60%
+when Claude and Codex first reached it independently; raised after shipping's multi-finger result
+below).
 
 The breadth pass found **no clear RN advantage** for users on any platform. That is not the same as
 proving the arms equal: the most heavily weighted measurement, iPad drawing under real touch, is
 still unknown. Under the campaign's rule RN has to show a user win to pay for its extra upkeep, and
-it has not shown one yet. The verdict is weakly held, because the strongest pro-RN signal (shipping
-losing multi-finger ink on the iPad) is not yet confirmed on real hardware.
+it has not shown one yet. Day 1's strongest pro-RN signal, shipping losing multi-finger ink on the
+iPad, turned out to be mostly an artefact of scripted touch on the simulator. With real fingers,
+what is left is cosmetic, and a 10-line fix removes it.
 
 This is a judgement about the frozen candidates (RN `427756f14`, shipping `ef3d1eb20`). Repairs that
 fix tests validate are reported separately and are never credited as measured quality. Lane notes in
@@ -29,18 +31,18 @@ Two RN findings break guardrails the campaign set in advance: lost contact (ink 
 and memory growth at least twice shipping's. RN cannot be accepted until each is repaired or
 explicitly dispositioned, however a feel check comes out.
 
-| Defect                                                                                            | Arm      | Severity                                | Evidence                       | Status                                                                                                                                                                   |
-| ------------------------------------------------------------------------------------------------- | -------- | --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Strokes within ~0.6 s after Clear never appear when Auto-Save on Delete is on                     | RN       | major, **contact-loss guardrail**       | Galaxy, 6 of 6; controls pass  | not priced; likely a save blocking input                                                                                                                                 |
-| Memory grows with Undo: 413 vs 314 MB, 3.8× shipping's growth, still rising over cycles           | RN       | major, **memory guardrail**             | Galaxy                         | not priced; not proven unbounded                                                                                                                                         |
-| First stroke stalls 105–163 ms after cold launch (drawing sound blocks the main thread)           | RN       | major                                   | real iPad, 4 of 7              | **fix validated**: launch race confirmed; 4-line fix (+20/−1 with tests) cleared 10 of 10 cold launches outside first-after-install; ~½ day to land. Shipping unmeasured |
-| First launch after install stalls the first stroke 81–183 ms; a sound loop wrap stalls 113 ms     | RN       | minor (once per install; 2 of 39 wraps) | real iPad                      | found by the fix test; not priced                                                                                                                                        |
-| New ink invisible after a rotation until a menu opens                                             | RN       | major if the real iPad sees it          | iPad simulator, 4 of 9         | fix test running                                                                                                                                                         |
-| Two- and three-finger lines stop early; fast zigzags gain loops                                   | shipping | major if real fingers see it            | iPad simulator, 7 of 13        | cause investigation running                                                                                                                                              |
-| Custom-colour button half off-screen in landscape on the 12.9"                                    | shipping | major (looks), minor (use)              | simulator and real iPad        | not priced                                                                                                                                                               |
-| Night Mode doesn't recolour ink already drawn; brush and size buttons have no screen-reader names | shipping | minor                                   | Galaxy                         | not priced                                                                                                                                                               |
-| SDK 27 build doesn't launch on iPadOS 27 until UIScene is adopted                                 | shipping | chore before next iOS release           | simulator, tested +38-line fix | priced: ~0.5 day                                                                                                                                                         |
-| RN reaches the AI error card ~5 s later on native; cause unexplained                              | RN       | minor, unverified                       | iPad simulator, Galaxy         | could also delay real pictures                                                                                                                                           |
+| Defect                                                                                            | Arm      | Severity                                | Evidence                       | Status                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------- | -------- | --------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Strokes within ~0.6 s after Clear never appear when Auto-Save on Delete is on                     | RN       | major, **contact-loss guardrail**       | Galaxy, 6 of 6; controls pass  | not priced; likely a save blocking input                                                                                                                                                                                                                                     |
+| Memory grows with Undo: 413 vs 314 MB, 3.8× shipping's growth, still rising over cycles           | RN       | major, **memory guardrail**             | Galaxy                         | not priced; not proven unbounded                                                                                                                                                                                                                                             |
+| First stroke stalls 105–163 ms after cold launch (drawing sound blocks the main thread)           | RN       | major                                   | real iPad, 4 of 7              | **fix validated**: launch race confirmed; 4-line fix (+20/−1 with tests) cleared 10 of 10 cold launches outside first-after-install; ~½ day to land. Shipping unmeasured                                                                                                     |
+| First launch after install stalls the first stroke 81–183 ms; a sound loop wrap stalls 113 ms     | RN       | minor (once per install; 2 of 39 wraps) | real iPad                      | found by the fix test; not priced                                                                                                                                                                                                                                            |
+| New ink invisible after a rotation until a menu opens                                             | RN       | major if the real iPad sees it          | iPad simulator, 4 of 9         | fix test running                                                                                                                                                                                                                                                             |
+| Two- and three-finger lines stop early; fast zigzags gain loops                                   | shipping | **cosmetic with real fingers**          | iPad simulator, 7 of 13        | investigated: scripted touch arrives in one burst and WebKit keeps only the last point of each extra finger (a simulator artefact). What is left is shipping never drawing a stroke's last half-segment (5–18 pt with real fingers); a 10-line fix passed 0 cuts in 30 tries |
+| Custom-colour button half off-screen in landscape on the 12.9"                                    | shipping | major (looks), minor (use)              | simulator and real iPad        | not priced                                                                                                                                                                                                                                                                   |
+| Night Mode doesn't recolour ink already drawn; brush and size buttons have no screen-reader names | shipping | minor                                   | Galaxy                         | not priced                                                                                                                                                                                                                                                                   |
+| SDK 27 build doesn't launch on iPadOS 27 until UIScene is adopted                                 | shipping | chore before next iOS release           | simulator, tested +38-line fix | priced: ~0.5 day                                                                                                                                                                                                                                                             |
+| RN reaches the AI error card ~5 s later on native; cause unexplained                              | RN       | minor, unverified                       | iPad simulator, Galaxy         | could also delay real pictures                                                                                                                                                                                                                                               |
 
 ## Cost to carry
 
@@ -56,20 +58,21 @@ explicitly dispositioned, however a feel check comes out.
 Repair cost is compared symmetrically: a shipping defect does not have to be unfixable to count for
 RN, only more expensive to fix than RN's equivalent.
 
+Retired: *shipping's multi-finger ink loss is real.* The investigation found that scripted touch on
+the simulator arrives in one burst, and WebKit keeps only the last point of each extra finger. Real
+fingers on iPad Safari showed no bursts and no cancelled touches. What is left (a stroke's last
+half-segment never drawn, 5–18 pt) is cosmetic, and a 10-line fix passed 0 cuts in 30 tries.
+
 **Toward RN**
 
-1. **Shipping's multi-finger ink loss is real.** Toddlers draw with several fingers. If real fingers
-   on the real iPad lose ink in shipping and not in RN, and shipping's fix costs more than RN's iPad
-   repairs, RN becomes better on the top-weighted platform. *Check:* the shipping investigation now
-   running, then the real-iPad experiment.
-2. **The fair iPad drawing pair under real touch.** One pre-registered route to an RN win: shipping
+1. **The fair iPad drawing pair under real touch.** One pre-registered route to an RN win: shipping
    freezes for 100 ms or more in at least 4 of 6 dense-Crayon runs, RN never does, and RN cuts lost
    in-contact time by at least half in every pair. Other measured user benefits count too. *Check:*
    needs owner case 1.
 
 **Toward a firm no-go**
 
-3. **RN's own defects are expensive or real.** The rotation bug reproduces on the real iPad without
+2. **RN's own defects are expensive or real.** The rotation bug reproduces on the real iPad without
    a small fix, or the post-Clear loss or Undo memory growth resist a repair. *Check:* the rotation
    fix test now running, plus pricing the two guardrail breaches. (The sound stall's fix test
    passed: about half a day to land.)
@@ -90,7 +93,7 @@ the real iPad, frozen candidates first:
 It needs owner case 1, then runs unattended. The three masked owner feel cases (first stroke, dense
 Crayon, palm and multi-finger) go with it. Meanwhile:
 
-* the rotation fix test and the shipping multi-finger investigation report;
+* the rotation fix test reports;
 * the two RN guardrail breaches get priced;
 * validated repairs are measured separately from the frozen comparison.
 
@@ -107,6 +110,10 @@ and every correction is applied above:
 
 It added the missing risks listed above and named the real-iPad experiment as the highest-value next
 step. No call was contested, so none went to walk-through-decision.
+
+**Caution for every simulator finding:** scripted XCUITest touch arrives in bursts. RN's rotation
+bug and every multi-finger result were found that way, so each needs realistic pacing or real
+fingers before it counts.
 
 Separate from the decision: **production AI generation is down for everyone** (OpenAI rejects a
 request setting). A fix session is proposed for the owner; shipping it needs a main deploy.
