@@ -151,15 +151,12 @@ where found on and back after, restores the orientation, and stops starting trie
 Device time ≈ 15 min (36 tries took ≈ 10 min on the simulator; device screenshots and the log
 collection add the rest), so the full run is now ≈ 4.75 h.
 
-**Not dry-run end to end (incomplete).** Every block-7 function ran on the simulator through the
-harness's own libraries (all the tables above), and the summary's block-7 section was rendered from
-recorded rows. The whole-harness dry run F (fresh simulator, `--reps quick`, blocks 1–7) stopped in
-the pre-registered preflight, before block 1: shipping's first launch on the fresh simulator showed
-no Settings control 3 s after activation (`ipad-experiment/runs/sim-F-074729`). The campaign was
-paused before a retry, so `experiment.mjs` has not run block 7 itself, and the pre-registered blocks
-have not been re-run since the edit. The edit to pre-registered code is additive only: four lines
-extended (default block list, flag map, lead table, block-function map), one new `app.mjs` method,
-nothing removed; `node --check` passes for every changed file.
+**Dry run (08:09):** block 7 ran inside `experiment.mjs` on a fresh simulator and passed
+(`sim-F-080220`, preflight + block 7, quick reps, 6 min); it reproduced both RN defects there. A
+whole-harness run passed the preflight, block 1 and most of block 2 before I stopped it for the
+owner's deadline, so blocks 3–6 were not re-run after the edit; an earlier run failed once in the
+pre-registered preflight (shipping's first launch on a fresh simulator, likely load timing). Details
+in `ipad-experiment.md`'s status note.
 
 ## Defects
 
