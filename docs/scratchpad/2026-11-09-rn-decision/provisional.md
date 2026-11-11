@@ -17,7 +17,7 @@ gate) or unclear. The verdict now turns on:
 * the iPad drawing floor. **Real iPad, frozen builds (T+25.5 h): no RN win under the pre-registered
   rule.** On the dense Crayon picture RN presents at ~116 fps with a 108–117 ms stall in 2 of 3
   runs, shipping at ~51 fps with none. Every RN defect found elsewhere repeats on the real iPad and
-  none is new (`ipad-experiment.md`). Block 6 waits for an iPad reboot;
+  none is new (`ipad-experiment.md`). The accumulated session (block 6) is clean in both arms;
 * whether RN's memory growth is a leak or a plateau, and whether it can be bounded. This is the top
   priority, because a crash in front of a toddler is the worst outcome. **Answered for the leak
   (T+19 h): a bug, and fixed.** The frozen build leaks in a 32-minute session (peak 926 MB); the
