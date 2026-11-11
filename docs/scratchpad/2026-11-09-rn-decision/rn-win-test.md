@@ -24,10 +24,21 @@ Best versions on the iPad:
 * RN: `art.splotch.app.dev.best` (`claude/best-rn` @ e703b8b79).
 * Shipping: `art.splotch.app.baseline.best` (`claude/best-shipping` @ f9d3b6ff6).
 
-Both are masked as App A and App B, using `owner-packet.md`'s key procedure. Each clip starts on a
-cleared page with Purple at Size 3 and Sound as found.
+Both are masked as App A and App B, using `owner-packet.md`'s key procedure.
 
-## Part 1: ink catch-up on film (objective)
+**Amended ~14:00 EST, before any film,** from Codex's check of this plan. The original is in commit
+08b0529db. The changes: trail time replaces catch-up as the main measure; each brush gets a reversed
+second block; conditions are matched; scoring rules are tighter; and both routes need a clear,
+order-repeated preference.
+
+**Conditions:**
+
+* Each clip starts on a cleared page, Purple at Size 3, in portrait.
+* Sound is On in both apps; the owner checks Settings › Sound once in each before the first clip.
+* The iPad stays as it is now (charger, brightness, display settings untouched). Its refresh
+  behaviour is recorded, not forced.
+
+## Part 1: ink trail on film (objective)
 
 The owner films the iPad with an iPhone in Slo-mo at 240 fps, propped above the drawing area. Each
 clip holds 8 "flick and freeze" strokes:
@@ -36,57 +47,87 @@ clip holds 8 "flick and freeze" strokes:
 2. Hold the finger dead still for about 1 s.
 3. Lift.
 
-There are four counterbalanced clips: Pen A, Pen B, Crayon B, Crayon A.
+There are eight clips, two reversed blocks per brush:
 
-**Catch-up time**, per stroke: the frame where the ink tip stops advancing, minus the frame where
-the fingertip stops moving, at 4.17 ms per frame.
+* Pen: A, B, then B, A.
+* Crayon: B, A, then A, B.
 
-* The fingertip has stopped at the first frame after which it moves under 2 px for 10 consecutive
-  frames.
-* The ink tip has stopped at the first frame after which it advances under 2 px for 10 consecutive
-  frames.
-* Both events are in one camera clock, so no synchronization is needed.
-* Same rules for both arms.
+**Primary measure: trail time.** During the fast part of a stroke, the ink tip trails behind the
+finger and stays visible behind it.
 
-Secondary, reported only: the trail (fingertip to ink tip) at peak speed, in ms, and any stroke
-where either app's ink freezes for 100 ms or more.
+* Trail time = (gap from the ink tip to the fingertip's trailing edge, along the stroke) ÷ (the
+  fingertip's speed over the surrounding ±4 frames), in ms.
+* Measured in the 10 fastest frames in which both the ink tip and the trailing edge are visible.
+* Distances are in millimetres, calibrated from the iPad's screen width in each clip.
+* The contact point sits a few millimetres inside the fingertip's edge. That adds the same small
+  constant to both arms, so it does not change the comparison.
+* This is the lag a child sees while drawing. Both apps' smoothing, and any prediction, count as
+  part of each shipped experience.
+
+**Cross-check: arrival time.** The time from the fingertip stopping to the ink tip reaching its
+trailing edge.
+
+* The fingertip has stopped at the first frame after which its trailing edge stays within 1 mm for
+  the next 10 frames (42 ms).
+* After that frame the ink tip disappears under the finger, so arrival time is a lower bound.
+
+**Scoring rules:**
+
+* A stroke is scorable only if the ink tip and the trailing edge are both visible in at least 10
+  fast frames.
+* Ink that stops short of where the finger stopped, has a gap, or is missing is a **fidelity
+  failure**. It is reported and never counts as a fast result.
+* A clip needs at least 5 scorable strokes. A brush with a clip below that cannot show a win.
+* Per-stroke values are reported, with the scorer's uncertainty.
 
 **Blind analysis:**
 
-* An analysis agent receives the clips labelled A and B only. The key stays with the orchestrator
-  until every number is written down.
-* Before unblinding, a stroke is dropped if its fingertip never stops clearly, leaves the frame, or
-  is hidden by the hand. Drops are reported.
+* Each clip is cropped to the drawing area, with no app chrome, and labelled A or B.
+* An analysis agent scores it. The scores are written and committed before the key is opened.
+* A second, independent agent re-scores every stroke flagged ambiguous plus a random quarter of the
+  rest. If the two disagree in a way that changes the outcome, the win is not established.
 
-**Line:** RN wins catch-up if its median is at least **20 ms** lower than shipping's for **both**
-Pen and Crayon. 20 ms is more than one full 60 Hz frame, plus margin. Shipping wins by the mirror
-line. Anything else is a tie.
+**Line:** RN wins Part 1 if its median trail time is at least **20 ms** lower than shipping's in
+**every block of both brushes** (four comparisons). Arrival time must not favour shipping by 20 ms
+or more in any block. 20 ms is more than one full 60 Hz frame, about five camera frames. Shipping
+wins by the mirror line. Anything else is a tie.
 
 ## Part 2: masked feel (`owner-packet.md` cases 2–4 and 8)
 
-The cases run as written in `owner-packet.md`, with one addition from Codex round 4. If case 3 or 4
-shows a preference, it is repeated in the other order (B, then A), and it counts only if the
-preference holds.
+The cases run as written in `owner-packet.md`, with these additions:
+
+* "No difference" is always a valid answer.
+* Each answer is recorded before any Part 1 number is shown.
+* If case 3 or 4 shows a preference, it is repeated in the other order (B, then A). It counts only
+  if it holds, and only a **clear** preference counts toward a solid win. A mild one is reported:
+  Codex round 4 sized it at 5–10 points.
+* Case 8 runs RN's repaired Save (`art.splotch.app.dev.export`) if the iOS export spike passes its
+  gate (`spike-rn-export-ios.md`). Otherwise it runs RN best, and that is noted.
 
 ## What counts as a solid win
 
 Either of:
 
 1. **Latency:** Part 1's line is met **and**, in case 3 (dense Crayon: "does either lag behind your
-   finger?"), the owner names RN's app as keeping up better.
+   finger?"), the owner reports a clear advantage for RN's app that holds after the order is
+   swapped.
 2. **Feel:** a clear RN preference in case 3 or 4 (dense drawing or multi-finger fidelity) that
    holds after the order is swapped. This is Codex round 4's "clear, repeatable RN advantage".
 
 None of these is solid:
 
 * a latency win the owner cannot feel;
-* a preference that does not hold after the swap;
+* a mild preference, or one that does not hold after the swap;
 * RN doing better in case 2 or 8 alone. Those cases test known bugs that have fixes, not bones.
 
-**If solid:** the verdict moves 20–30 points toward RN (Codex round 4's band), so RN leads. The
-campaign then continues, with RN's ~10–16 agent-day repair bill as the cost.
+**If solid:** the verdict moves 20–30 points toward RN (Codex round 4's band), so RN leads at about
+55–65%. That is permission to continue, not to ship: the campaign would land RN's ~10–16 agent-day
+repair bill (a subtotal) and re-verify before any switch.
 
 **If not:** keep shipping, and the campaign closes early.
+
+**Not measured here:** first-contact responsiveness (the first dot) on the iPad. Cases 2 and 3 cover
+it by feel only.
 
 ## Results
 
