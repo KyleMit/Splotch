@@ -1,7 +1,8 @@
 # Owner packet: what only your eyes or fingers can judge
 
-At most 10 cases, about 25 minutes. Every app is already installed. Cases 2–4 and 8 are the ones the
-verdict needs, about 15 minutes; the rest can be skipped. (Refreshed 2026-11-11 ~05:00.)
+At most 10 cases, about 25 minutes. Every app is already installed. Case 0 comes first; then cases
+2–4 and 8 are the ones the verdict needs, about 15 minutes; the rest can be skipped. (Refreshed
+2026-11-11 ~05:00.)
 
 ## How it works
 
