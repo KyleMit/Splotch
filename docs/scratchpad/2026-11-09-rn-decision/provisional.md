@@ -1,4 +1,4 @@
-# Provisional recommendation (2026-11-10, ~T+4.5 h; updated ~T+19.5 h)
+# Provisional recommendation (2026-11-10, ~T+4.5 h; updated ~T+25.5 h)
 
 **Verdict: keep shipping (SvelteKit + Capacitor) for now. Confidence: about 60–65%** under the
 owner's best-bones lens (below). It came down from 65–70% at T+19.5 h, because both of RN's
@@ -14,7 +14,10 @@ are known. The number is judgement, not a measured probability.
 **Best-bones lens (owner, 2026-11-10 ~08:45).** Each finding is a floor, fixable (a fix passed its
 gate) or unclear. The verdict now turns on:
 
-* the iPad drawing floor (the real-iPad run, under way since 08:34);
+* the iPad drawing floor. **Real iPad, frozen builds (T+25.5 h): no RN win under the pre-registered
+  rule.** On the dense Crayon picture RN presents at ~116 fps with a 108–117 ms stall in 2 of 3
+  runs, shipping at ~51 fps with none. Every RN defect found elsewhere repeats on the real iPad and
+  none is new (`ipad-experiment.md`). Block 6 waits for an iPad reboot;
 * whether RN's memory growth is a leak or a plateau, and whether it can be bounded. This is the top
   priority, because a crash in front of a toddler is the worst outcome. **Answered for the leak
   (T+19 h): a bug, and fixed.** The frozen build leaks in a 32-minute session (peak 926 MB); the
@@ -30,11 +33,12 @@ gate) or unclear. The verdict now turns on:
 * shipping's WebView floors: extra fingers during a main-thread stall, and audio while muted.
 
 The breadth pass found **no clear RN advantage** for users on any platform. That is not the same as
-proving the arms equal: the most heavily weighted measurement, iPad drawing under real touch, is
-still unknown. Under the campaign's rule RN has to show a user win to pay for its extra upkeep, and
-it has not shown one yet. Day 1's strongest pro-RN signal, shipping losing multi-finger ink on the
-iPad, turned out to be mostly an artefact of scripted touch on the simulator. With real fingers,
-what is left is cosmetic, and a 10-line fix removes it.
+proving the arms equal: the most heavily weighted measurement, iPad drawing under real touch, shows
+no RN win either, but its dense-picture block could only measure freezes, not how the ink feels
+(owner cases 2–6 cover that). Under the campaign's rule RN has to show a user win to pay for its
+extra upkeep, and it has not shown one yet. Day 1's strongest pro-RN signal, shipping losing
+multi-finger ink on the iPad, turned out to be mostly an artefact of scripted touch on the
+simulator. With real fingers, what is left is cosmetic, and a 10-line fix removes it.
 
 The Galaxy brushes lane (T+8.5 h) tied on dense Crayon and Magic, and it showed the jank counter
 does catch a known stall, so the Galaxy smoothness tie stands. Every new user-visible difference it
@@ -47,14 +51,14 @@ this folder carry the methods, devices and raw evidence paths.
 
 ## Scorecard (user-facing quality; weight iPad > Galaxy > web)
 
-| Axis                    | iPad                                                                                                                                                               | Galaxy                                                                                                                                                                                                            | Web                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Drawing smoothness      | **unknown**: the fair pair needs scripted touch on the real iPad (owner case 1)                                                                                    | tie on Pen, dense Crayon and Magic (janky frames within 0.4 pt; the counter catches a known stall); dense picture favours RN, not pre-registered                                                                  | tie (60 fps both)                                                                      |
-| First stroke and launch | RN: first stroke stalls 105–163 ms in 4 of 7 cold launches; shipping unmeasured on the device                                                                      | after a dialog closes RN ignores touch until ~0.3 s, shipping until ~0.24 s (a stroke at 0.3 s: RN 0 of 5, shipping 5 of 5); otherwise tie, RN's first dot 25–40 ms later; shipping shows controls ~150 ms sooner | lean RN: first ink 2.55 vs 3.00 s, LCP 1.05 vs ~1.7 s (short of the 1 s clear-win bar) |
-| Core journeys           | mostly equal; on the simulator RN loses a stroke 0.3 s after closing Settings (5 of 5) and fails every Clear right after an Eraser lift (20 of 20), shipping clean | 22 checks equal; RN fails Clear or ignores touch for up to 3.8 s right after an Eraser lift (10 of 10 tries), loses strokes after Clear with an opt-in setting, and takes 0.6–0.85 s per Undo on a dense picture  | equal smoke pass                                                                       |
-| Memory                  | unmeasured; estimated best-fix peak ~0.7 GB in 30 min against ~1.35 GB on the smallest supported iPad                                                              | 32-min dense Crayon: frozen RN leaks (peak 926 MB, G +486); with every fix, RN reaches a ceiling (peak 527, 443 after the session); shipping peaks at 392 and ends at 336. Guardrail 2× still missed              | not measured                                                                           |
-| Looks                   | parity apart from one shipping layout bug                                                                                                                          | parity apart from two minor RN bugs                                                                                                                                                                               | parity (33 pairs pixel-identical)                                                      |
-| AI art                  | failure handling identical; a real picture and saving it **not yet tested** (production AI fixed 2026-11-10 09:17)                                                 | same                                                                                                                                                                                                              | success and failure paths identical against a fake image model                         |
+| Axis                    | iPad                                                                                                                                                                                                                                                      | Galaxy                                                                                                                                                                                                            | Web                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Drawing smoothness      | real iPad, frozen builds: no RN win under the pre-registered rule. First strokes clean in both; dense Crayon (presentation only) RN ~116 fps with a ~110 ms stall in 2 of 3 runs, shipping ~51 fps with none                                              | tie on Pen, dense Crayon and Magic (janky frames within 0.4 pt; the counter catches a known stall); dense picture favours RN, not pre-registered                                                                  | tie (60 fps both)                                                                      |
+| First stroke and launch | RN: first stroke stalls 105–163 ms in 4 of 7 cold launches; shipping unmeasured on the device                                                                                                                                                             | after a dialog closes RN ignores touch until ~0.3 s, shipping until ~0.24 s (a stroke at 0.3 s: RN 0 of 5, shipping 5 of 5); otherwise tie, RN's first dot 25–40 ms later; shipping shows controls ~150 ms sooner | lean RN: first ink 2.55 vs 3.00 s, LCP 1.05 vs ~1.7 s (short of the 1 s clear-win bar) |
+| Core journeys           | mostly equal; RN loses a stroke 0.3 s after closing Settings (simulator 5 of 5, real iPad 3 of 3) and fails every Clear right after an Eraser lift (20 of 20, real iPad 5 of 5); new ink hidden after a rotation 1 of 36 on the real iPad; shipping clean | 22 checks equal; RN fails Clear or ignores touch for up to 3.8 s right after an Eraser lift (10 of 10 tries), loses strokes after Clear with an opt-in setting, and takes 0.6–0.85 s per Undo on a dense picture  | equal smoke pass                                                                       |
+| Memory                  | unmeasured; estimated best-fix peak ~0.7 GB in 30 min against ~1.35 GB on the smallest supported iPad                                                                                                                                                     | 32-min dense Crayon: frozen RN leaks (peak 926 MB, G +486); with every fix, RN reaches a ceiling (peak 527, 443 after the session); shipping peaks at 392 and ends at 336. Guardrail 2× still missed              | not measured                                                                           |
+| Looks                   | parity apart from one shipping layout bug                                                                                                                                                                                                                 | parity apart from two minor RN bugs                                                                                                                                                                               | parity (33 pairs pixel-identical)                                                      |
+| AI art                  | failure handling identical; a real picture and saving it **not yet tested** (production AI fixed 2026-11-10 09:17)                                                                                                                                        | same                                                                                                                                                                                                              | success and failure paths identical against a fake image model                         |
 
 ## Defects that matter
 
