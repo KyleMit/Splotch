@@ -38,38 +38,54 @@ order-repeated preference.
 * The iPad stays as it is now (charger, brightness, display settings untouched). Its refresh
   behaviour is recorded, not forced.
 
-## Part 1: ink trail on film (objective)
+## Part 1: ink lag on film (objective)
 
-The owner films the iPad with an iPhone in Slo-mo at 240 fps, propped above the drawing area. Each
-clip holds 8 "flick and freeze" strokes:
+**Amendment 2 (~15:05 EST, before any film).** The scorer's validation on synthetic 240 fps clips
+showed that trail time, the first main measure, compresses latency. A 25 ms planted difference read
+as 10.5–12 ms. Past about 60 ms of latency it stops responding when the finger rests before the
+flick (`rn-win/test/results/sensitivity.txt` in the campaign scratch folder). So the 20 ms line
+would have needed 30–50 ms of true advantage, not the 20 ms intended. Shift lag replaces it as the
+main measure; it recovered the planted 25 ms as 24.99 and 25.04 ms. Trail time is still reported.
+The line, blocks, clips and scoring rules are unchanged.
 
-1. Swipe fast and straight across about half the page.
-2. Hold the finger dead still for about 1 s.
-3. Lift.
+The owner films the iPad with an iPhone in Slo-mo at 240 fps, propped above the drawing area:
+
+* all four screen corners in view;
+* exposure and focus locked;
+* the same start habit in every clip (rest then flick, or touch and go).
+
+Each clip holds 8 "flick and freeze" strokes, as separate horizontal lines on fresh paper, about 100
+mm long, swiped sideways to the finger and starting at least 20 mm from the screen's edges:
+
+1. Swipe fast and straight.
+2. Hold the finger dead still for at least 1 s.
+3. Lift and move the hand out of view.
 
 There are eight clips, two reversed blocks per brush:
 
 * Pen: A, B, then B, A.
 * Crayon: B, A, then A, B.
 
-**Primary measure: trail time.** During the fast part of a stroke, the ink tip trails behind the
-finger and stays visible behind it.
+**Primary measure: shift lag.** While the finger moves fast, how long ago was the finger where the
+ink tip is now?
 
-* Trail time = (gap from the ink tip to the fingertip's trailing edge, along the stroke) ÷ (the
-  fingertip's speed over the surrounding ±4 frames), in ms.
-* Measured in the 10 fastest frames in which both the ink tip and the trailing edge are visible.
-* Distances are in millimetres, calibrated from the iPad's screen width in each clip.
-* The contact point sits a few millimetres inside the fingertip's edge. That adds the same small
-  constant to both arms, so it does not change the comparison.
-* This is the lag a child sees while drawing. Both apps' smoothing, and any prediction, count as
-  part of each shipped experience.
+* For each fast frame: the time since the fingertip's trailing edge stood at (ink tip − e), where e
+  is that stroke's settled ink end beyond the trailing edge at the hold.
+* The contact offset and any shortfall at the ink's end cancel out of it, so it is the
+  touch-to-screen lag a child sees while drawing.
+* Per stroke: the median over the 10 fastest frames in which both the ink tip and the trailing edge
+  are visible.
+* Distances are in millimetres, calibrated from the screen's four corners in each clip.
+* Both apps' smoothing, and any prediction, count as part of each shipped experience.
 
 **Cross-check: arrival time.** The time from the fingertip stopping to the ink tip reaching its
-trailing edge.
+trailing edge. It also tracks latency one to one.
 
 * The fingertip has stopped at the first frame after which its trailing edge stays within 1 mm for
   the next 10 frames (42 ms).
-* After that frame the ink tip disappears under the finger, so arrival time is a lower bound.
+
+**Reported only:** trail time (gap ÷ current speed), and peak finger speed per clip, so A and B can
+be compared.
 
 **Scoring rules:**
 
@@ -79,15 +95,18 @@ trailing edge.
   failure**. It is reported and never counts as a fast result.
 * A clip needs at least 5 scorable strokes. A brush with a clip below that cannot show a win.
 * Per-stroke values are reported, with the scorer's uncertainty.
+* Before anything is scored, the first real clip is checked by eye against the scorer's debug
+  images.
 
 **Blind analysis:**
 
-* Each clip is cropped to the drawing area, with no app chrome, and labelled A or B.
+* Each clip is cropped to the same drawing area, with no app chrome, and labelled with an opaque id.
+  Its brush is known; its app is not.
 * An analysis agent scores it. The scores are written and committed before the key is opened.
 * A second, independent agent re-scores every stroke flagged ambiguous plus a random quarter of the
   rest. If the two disagree in a way that changes the outcome, the win is not established.
 
-**Line:** RN wins Part 1 if its median trail time is at least **20 ms** lower than shipping's in
+**Line:** RN wins Part 1 if its median shift lag is at least **20 ms** lower than shipping's in
 **every block of both brushes** (four comparisons). Arrival time must not favour shipping by 20 ms
 or more in any block. 20 ms is more than one full 60 Hz frame, about five camera frames. Shipping
 wins by the mirror line. Anything else is a tie.
