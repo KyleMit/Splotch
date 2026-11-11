@@ -54,8 +54,8 @@ The owner films the iPad with an iPhone in Slo-mo at 240 fps, propped above the 
 * exposure and focus locked;
 * the same start habit in every clip (rest then flick, or touch and go).
 
-Each clip holds 8 "flick and freeze" strokes, as separate horizontal lines on fresh paper, about 100
-mm long, swiped sideways to the finger and starting at least 20 mm from the screen's edges:
+Each clip holds 8 "flick and freeze" strokes, as separate horizontal lines on fresh paper, about
+130–150 mm long, swiped sideways to the finger and starting at least 20 mm from the screen's edges:
 
 1. Swipe fast and straight.
 2. Hold the finger dead still for at least 1 s.
@@ -137,6 +137,33 @@ measure, qualifies the cancellation, adds the e ± 2 mm test, takes the veto fro
 freezes the exclusion rules, and adds the interval and per-block aggregation. These changes restore
 the intended criterion, 20 ms of tracking delay, which the first measure could not see. They do not
 lower it.
+
+**Amendment 4 (~16:00 EST, before any film).** The frozen scorer, run end to end on synthetic
+four-block sets, found two ways the rule as written could hide a true RN win. Both are measurement
+conditioning. Neither changes the 20 ms line.
+
+1. **The e ± 2 mm test was lopsided.** Moving e by 2 mm shifts the matched moment by 2 mm ÷ the
+   finger's speed at that moment. The slower arm's matched moment falls early in the flick, while
+   the finger is still slow, so the same 2 mm cost it 4–9 ms and the faster arm about 2. A true 25
+   ms advantage (30 against 55 ms) read 16.6–18.9 ms under e − 2 mm and scored a tie. **Fix:** a
+   frame counts only if the finger was also moving at 0.5 m/s or more **at the matched moment**.
+   That caps the effect of 2 mm at 4 ms for either arm, and position noise is no longer amplified at
+   slow speeds. Swipes are longer (130–150 mm) to keep enough fast frames.
+2. **A very fast app could not score.** A tip shows only once it is at least 2 mm clear behind the
+   finger, which needs a delay of roughly 7–20 ms depending on speed. Ink that leads the finger
+   stays hidden under it. Such a stroke had too few frames to score, so a clip from an app faster
+   than that floor could fall below 5 scorable strokes and lose by default. **Fix:** a stroke whose
+   ink is present and complete after the lift (no fidelity failure), but whose tip is never visible
+   2 mm clear in enough fast frames, is scored **below floor**. Its value is the delay at which its
+   tip would just have become visible at that stroke's speeds. That is an upper bound, conservative
+   against the arm it belongs to. It counts as scorable, and below-floor strokes are reported per
+   clip.
+
+The scorer's two unwritten choices are adopted as rules for both arms:
+
+* A frame is censored when (ink tip − e) lies within 1 mm of where the finger rested before the
+  flick or held after it, because "when was the finger there" has no single answer.
+* The visibility floor of a tip at least 2 mm clear behind the finger.
 
 **Freeze.** Before any film, the scorer, the generator of its synthetic test clips and the
 validation reports are fingerprinted, and a SHA-256 manifest is committed beside this note
