@@ -18,6 +18,12 @@ fix that passed its gate), installed on both devices, so you judge bones rather 
 
 ## Cases
 
+0. **First, about 1 minute: unlock the iPad and allow Photos.** An overnight lane locked the iPad at
+   4:07, and only your passcode opens it; every iPad test waits on this. If iPadOS still shows
+   "Splotch would like to add to your Photos", choose Allow. Then Claude opens the two best apps in
+   turn: draw a squiggle, tap the camera button, and choose Allow when asked. Neither best app has
+   Photos access yet, and the Save tests need it.
+
 1. **Done 2026-11-10 08:33. Unlock the iPad experiment, about 3 minutes.** On the iPad: Settings ›
    Developer › Enable UI Automation → on (authenticate if asked). Then Claude opens each of the two
    test apps in turn: draw a squiggle, tap the camera button (Save screenshot), and choose Allow
