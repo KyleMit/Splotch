@@ -143,3 +143,30 @@ No smoke has run. Still to do on resume: the RN checks at the tip, the RN Androi
 Galaxy installs and smokes (launch, draw, Undo, Clear, Settings open and close, then draw at once,
 plus Settings › Appearance for the Orientation picker and a dialog's status bar), and the iPad after
 its lock frees.
+
+## v2 (2026-11-11 00:46 → 01:35 EST, lane rn-best-v2): memory, Undo and sound
+
+RN best v2 is `claude/best-rn` @ `e703b8b79a08fbb4ff6301de0007e495e2c7f207` (v1 + 6 commits, local,
+never pushed). Full record: `rn-best-v2.md`. Shipping best is unchanged.
+
+| Added                                                                  | Commit on `claude/best-rn`                                                                                                                                                             | Evidence                                                                                                                                                                     |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ganesh purge + 96 MB cap; idle Ganesh purge; allocator purge (Android) | `cc0485716bdb7c4452ee1ce877cad17d62b3baf0`, `a7de2f1f217401267d3a26f0e5e545a959473279`, `55e3a8b144c8e60537bb72e43180dddbb716cce3` (from settle `c904b4026`, `8ac70e177`, `236584509`) | `rn-memory-bones.md` settle run: frozen's leak gone (floors +13.5 → +0.93 MB/min, peak 926 → 527 MB); its own fix gate still failed on the ~200 MB high-water mark ("bones") |
+| Undo from per-commit tile snapshots                                    | `e1c106844a0ad8ea8f546be8766a0bea9970cdcb` (from `3c75b4254`); lint-cap refactor `af76f91d68834edd8888345d5547eee7f20f9fe4`                                                            | `rn-undo-bones.md`: all four criteria (p90 79 ms, 0 differing bytes, ≤ 24 MB)                                                                                                |
+| Sound ramp at 120 Hz touch rates                                       | `e703b8b79a08fbb4ff6301de0007e495e2c7f207` (new, with a touch-rate test that fails on v1)                                                                                              | Galaxy rerun of `rn-sound.md`'s counted set: 0 of 30 never (frozen control 28 of 30), 122–226 ms                                                                             |
+
+The settle branch's instrumentation commit `1ef1c80b8` stays out (its `.dev.mem` ID, Hermes heap
+line and Ganesh counter); the Skia patch was regenerated per commit without the counter.
+
+**Checks at the tip:** `check` clean; `lint` 0 errors, the same 3 warnings; `test:unit` 2,048 pass;
+`test:tools` 8,245 pass and the same expired node-forge exception failure the frozen build has;
+`test:migration:rsd-selection` 1,051 pass.
+
+| Artifact (campaign scratch folder)                                                      | sha256                                                                        |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `builds/best-rn-v2/app-release.apk` (Android probe Release, `art.splotch.app.dev.best`) | `a95722f306a81f46bf8758681a0ded8dcde14c7aaec3d4519f2449b389395ca9`            |
+| `builds/best-rn-v2/Splotch.app` (iOS probe Release device app, same ID)                 | App binary `98d9fc005bea850fed4699d1e6134c8a65b8fc3a001d772092a3998a30ab66a0` |
+
+v1's artifacts stay in `builds/best-rn/`. **Devices:** the Galaxy's `art.splotch.app.dev.best` is v2
+since 01:03:57 (install -r, data kept; launch, draw, Undo, Clear, Undo of a Clear smoke-checked).
+The iPad still has whatever the iPad lanes installed; the orchestrator installs v2 there.
