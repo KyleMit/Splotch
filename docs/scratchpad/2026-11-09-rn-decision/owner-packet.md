@@ -40,10 +40,13 @@ passed its gate), once those builds are on the iPad, so you judge bones rather t
    straight away drag to Clear and draw; then close Settings and draw at once. Does every line show
    up straight away, does Clear work, and does a colour swatch land on the paper?
 7. **Sound, iPad and Galaxy (masked).** Draw with Sound on, then turn it off (Settings › Sound) and
-   draw again. Is the sound right when on, and silent when off?
-8. **Galaxy, TalkBack (masked, about 3 minutes).** Turn TalkBack on, swipe through the canvas
-   controls, then Brushes, Stroke width and Settings › Sound. Does every control get a spoken name,
-   and do switches say on or off?
+   draw again. Is the sound right when on, and silent when off? **Galaxy done 2026-11-10 ~20:30** on
+   the best versions: RN's sound comes in "a long long time" late, if at all; shipping's comes in at
+   once. Frozen RN (unmasked) is the same as RN best. The iPad half is still open.
+8. **Removed from the go/no-go (owner, 2026-11-10).** Screen readers moved to issue 3226, a human
+   pass on the winning app. A first TalkBack try on RN best: switches read on/off correctly; the
+   volume slider speaks its value only when a drag starts, and its "swipe up or down" hint does not
+   work.
 9. **Optional: iPad Safari, both web builds.** Claude gives you two links. Scribble fast for about
    10 s in each, then open Settings. Does either lag, and does either dialog backdrop look broken?
 10. **One AI picture each (masked; production AI works again since 2026-11-10 09:17).** Make one
