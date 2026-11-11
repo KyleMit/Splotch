@@ -152,6 +152,176 @@ In `battery-heat/` (campaign scratch folder): `bin/gen.py` with `bin/mt.py` (the
 `bin/run.zsh` (one run), `bin/baseline.zsh`, `bin/settle.zsh`, `bin/batch.zsh` (locks, settle,
 capture), `bin/probe.zsh` (readability check), `bin/score.py` (per-phase numbers).
 
-## Results
+Added in phase 2: `bin/table.py` (tables from `score.json`), `bin/series.zsh` (runs batches in
+order), `bin/diag.zsh` + `bin/idlediag.py` (the idle traces below). Key tables and frames:
+`battery-heat/keep/`.
 
-Pending: phase 2 waits until the Galaxy is free.
+## Results (2026-11-11 08:19–11:56 EST)
+
+### As run
+
+* **Order and start temperatures** (battery / xo-therm board sensor, °C): L0 08:47 (28.2 / 29.9),
+  RN1 08:53 (27.8 / 29.6), SH1 09:24 (28.7 / 30.5), SH2 10:00 (28.7 / 30.5), RN2 10:38 (28.7 /
+  30.5), L1 11:12 (28.7 / 30.5), probe run PR1 11:25 (28.6 / 30.6). Thermal status 0 at every
+  reading.
+* **Device:** battery 100%, status Full, on USB; Stay awake on; brightness automatic (level 97 of
+  255 at the start, driven by room light, not controlled); media volume 4 of 15; ringer Vibrate;
+  Nova launcher. The display policy allows only 120 Hz (`mDisplayModeSpecs` 120–120), so the refresh
+  rate was 120 Hz in every phase and is not an arm difference.
+* **In-app settings matched** (screenshots in `battery-heat/dev/setup/`): Sound on at 50%, drawing
+  and deleting sounds on, Auto-Save on Delete off, AI off, Night Mode off, portrait lock, drawer
+  expanded, Pen, Purple. RN plain's first launch showed no first-run screen; its drawer started
+  collapsed and was expanded through the UI; its four coloring-download jobs had finished by
+  08:22:53, before any run. The probe build `.dev.best` was found at Sound 33% and left so (volume
+  changes no CPU path).
+* **Deviations from the plan:** (1) Before L0 the battery was still cooling ~0.1 °C/min when the
+  20-min settle cap hit, so the reference was set by hand to that reading (28.2 / 29.9). Every later
+  run met it within the bounds; RN1 started 0.9 °C cooler than the rest (the A B B A order spreads
+  that). (2) The battery's sysfs files are closed to the shell, so battery temperature comes from
+  thermal zone `battery` and the settle check used `xo-therm`. (3) After SH1 showed device-wide CPU
+  it could not attribute, an every-process scan was added to the boundary counters from SH2 on; RN1
+  and SH1 lack it. (4) Two 5 s idle traces (one per arm, `atrace`) ran after the counted runs to
+  attribute the idle costs. Tracing adds overhead, so they explain the cost but do not measure it.
+
+**Not measured.** No power number: the battery current files are permission-denied, the battery
+service reports `current now: 0` with the battery full on USB, and `dumpsys powerstats` has no
+energy meters on this phone. CPU time, CPU-clock residency, GPU busy and temperatures stand in. GPU
+clock (`gpuclk` denied; the devfreq clock was read instead). The background with the screen off.
+Display power (same brightness policy, fixed 120 Hz, and both apps keep the screen on). The iPad.
+
+### Numbers by phase
+
+Each arm's value is the mean of its two runs, with the runs in brackets (RN1, RN2 / SH1, SH2).
+CPU-s/min = CPU-seconds per minute (60 = one core flat out). "System" = SurfaceFlinger, the composer
+HAL, audioserver, the audio HAL and system_server. "Device above launcher" = whole-phone busy CPU
+minus the mean of the two launcher baselines (11.8 CPU-s/min).
+
+| Phase                 | Metric                       | RN plain                   | Shipping                                                                    |
+| --------------------- | ---------------------------- | -------------------------- | --------------------------------------------------------------------------- |
+| P0 launch, untouched  | App CPU-s/min                | 11.5 (11.5, 11.4)          | 3.0 (3.2, 2.7)                                                              |
+|                       | SurfaceFlinger CPU-s/min     | 7.5                        | 0.1                                                                         |
+|                       | Frames/min                   | 0                          | 0                                                                           |
+| P1 blank page, idle   | App CPU-s/min                | 11.3 (11.3, 11.3)          | 4.0 (4.2, 3.9)                                                              |
+|                       | SurfaceFlinger CPU-s/min     | 7.5                        | 0.07                                                                        |
+|                       | Device above launcher        | +11.4 (11.1, 11.6)         | +0.0 in SH2 (SH1: +15.1, an unattributed transient before the scan existed) |
+|                       | Frames/min; GPU busy         | 0; 0%                      | 0; 0%                                                                       |
+| P2 drawing, 10 min    | App CPU-s/min                | 50.0 (50.0, 50.1)          | 58.2 (58.4, 58.1): app 29.4 + renderer 28.8                                 |
+|                       | GPU busy                     | 14.6% (14.7, 14.4)         | 15.3% (16.0, 14.5)                                                          |
+|                       | **App CPU + GPU, s/min**     | **58.8** (58.8, 58.8)      | **67.4** (68.0, 66.8): +15%                                                 |
+|                       | System CPU-s/min             | 44.7 (SurfaceFlinger 19.3) | 36.7 (SurfaceFlinger 16.2)                                                  |
+|                       | **Device above launcher**    | **100.3** (101.3, 99.2)    | **88.5** (86.4, 90.6): RN +13%                                              |
+|                       | Frames/min                   | 3,510                      | 3,480                                                                       |
+| P3 busy picture, idle | App CPU-s/min                | 11.1 (11.1, 11.0)          | 3.1 (3.3, 3.0)                                                              |
+|                       | SurfaceFlinger CPU-s/min     | 7.5                        | 0.14                                                                        |
+| P4 background (HOME)  | App CPU-s/min                | 0.05 (0.05, 0.05)          | 1.9 (1.9, 1.9), 1.7 of it in the renderer                                   |
+|                       | Audio output; app wake locks | none; none                 | none; none                                                                  |
+
+Both arms present at the display's 120 Hz while a finger moves: ~3,500 frames a minute is ~58 per
+second averaged over a session with the finger down 46% of the time. On this phone RN's frame-rate
+lead seen on the iPad (~116 vs ~51 fps) does not exist, so drawing compares like for like.
+
+**Where the drawing CPU goes** (CPU-seconds in P2, mean of the two runs). RN: UI thread 196,
+RenderThread 127, JS thread 104, ExoPlayer + MediaCodec (the pencil sound) 32. Shipping: renderer
+main thread (`CrRendererMain`) 161, audio thread (`AudioOutputDevice`) 74, RenderThread 73, app UI
+thread 70, WebView GPU thread 52, compositor 47. RN's system side is larger (SurfaceFlinger +3.1,
+system_server +2.6, the audio HAL +1.3 CPU-s/min), which is why the device-wide total flips the
+order.
+
+**Heat in P2** (rise from the end of P1 to the end of P2, °C; thermal HAL sensors, plus the
+`xo-therm` zone):
+
+| Sensor                                                    | RN plain (RN1, RN2) | Shipping (SH1, SH2) | Shipping − RN, mean     |
+| --------------------------------------------------------- | ------------------- | ------------------- | ----------------------- |
+| AP (the hottest HAL sensor)                               | 6.5, 6.4            | 9.3, 7.7            | **+2.1** (+1.2 to +2.9) |
+| SKIN                                                      | 3.6, 3.3            | 4.3, 4.5            | +0.95                   |
+| Battery                                                   | 3.1, 2.9            | 3.7, 3.8            | +0.75                   |
+| xo-therm                                                  | 4.4, 4.4            | 6.0, 5.8            | +1.5                    |
+| AP at the end of P2                                       | 36.0, 36.4          | 39.0, 37.7          |                         |
+| Thermal status                                            | 0                   | 0                   |                         |
+| Mid CPU cluster in the top third of its clocks (of 600 s) | 54 s, 51 s          | 180 s, 183 s        |                         |
+
+Shipping runs warmer although its device-wide CPU time is lower: it holds the mid CPU cluster at
+high clocks about 3.5 times as long (one busy renderer main thread), and higher clocks cost more
+energy per cycle.
+
+**Memory** (`dumpsys meminfo` total PSS at the end of each phase, MB; shipping = app + WebView
+renderer):
+
+| Arm                  | P0       | P1       | P2 (after drawing) | P3       | P4 (background) |
+| -------------------- | -------- | -------- | ------------------ | -------- | --------------- |
+| RN plain (RN1, RN2)  | 228, 255 | 322, 339 | 410, 426           | 413, 421 | 329, 346        |
+| RN probe build (PR1) | 213      | 315      | 413                | 405      | 327             |
+| Shipping (SH1, SH2)  | 194, 249 | 236, 272 | 276, 279           | 281, 279 | 188, 213        |
+
+RN's Graphics share at the end of P2 is 103–104 MB (EGL 90), its native heap 113–115 MB; shipping's
+app holds 58–60 MB Graphics and its renderer 116–123 MB.
+
+**The probe's own share** (PR1, `.dev.best`, one run): P2 app CPU 50.2 CPU-s/min against plain's
+50.0 (JS thread 107 against 104 CPU-s), idle 11.2–11.5 like plain, PSS after drawing 413 MB against
+plain's 410–426, and 327 MB after HOME against plain's 329–346. Its AP sensor rose 5.2 °C in P2
+(plain 6.4–6.5; it started 0.1 °C warmer, one run). The probe costs nothing measurable here, so it
+does not explain RN's memory overhead.
+
+### What the idle cost is (diagnostic traces, 5 s each, 60 s after the warm-up)
+
+* **RN:** the UI thread runs `Choreographer#doFrame` 120 times a second with only its animation
+  stage (no layout, no draw) and requests the next vsync each time. SurfaceFlinger's `app` and
+  `TimerDispatch` threads wake 120 times a second to deliver it. No frame is produced; the JS thread
+  and the GPU stay idle. Two stock React Native 0.88 loops re-post themselves every vsync while the
+  app is resumed: the Fabric event dispatcher's frame callback (trace section
+  `BatchEventDispatchedListeners`,
+  `node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/uimanager/events/FabricEventDispatcher.kt:147-176`)
+  and the timer manager's (`.../modules/core/JavaTimerManager.kt:317`). Not Splotch code, not the
+  probe, not Skia (its native code has no frame loop).
+* **Shipping:** two WebView renderer thread-pool threads wake ~790 times a second (2.6% + 2.2% of a
+  core in the trace); the UI thread, renderer main thread and SurfaceFlinger stay asleep. The audio
+  log shows the WebView's AAudio stream opened 4 s after launch (the boot warm-up) and released
+  35–48 s after the last sound, and every output thread was in standby at every phase end. So the
+  hardware audio path does go quiet on Android; the remaining wake-ups are most likely Chromium
+  clocking the never-suspended `AudioContext` into a silent sink (inference: the cost appears before
+  the first touch too, and the code never suspends the context,
+  `web/src/lib/audio/drawingSound.ts:193-220`).
+
+### Findings and classes (pre-registered rules)
+
+| Finding                                                                                                                                                                       | Arm      | Severity (rule)                                                                                                                                                                                | Class                                                                                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Idle in front costs ~11 app CPU-s/min plus about 7.5 in SurfaceFlinger (about +11 device-wide, about a fifth of one core), with no frames: the UI thread wakes on every vsync | RN       | **major** (over 6 CPU-s/min)                                                                                                                                                                   | **floor candidate** by the pre-registered rule: stock React Native forces it. A patch to React Native's two loops (post only when events or timers are pending) could remove it; unbuilt, a core patch with upkeep, so it may become fixable |
+| Idle in front costs ~3–4 app CPU-s/min in the WebView renderer (~790 wake-ups/s); hardware audio output released after 35–48 s                                                | shipping | minor (over 0.6, under 6, not over 2× RN)                                                                                                                                                      | **unclear, likely fixable**: suspend the `AudioContext` when idle or when Sound is off; unvalidated                                                                                                                                          |
+| Background keeps 1.9 CPU-s/min going in the WebView renderer (no audio output, no wake lock)                                                                                  | shipping | **major** by the pre-registered line (over 0.6). Softer than written: with no wake lock held, a screen-off phone can still sleep, so it costs only while the phone is awake for something else | **unclear, likely fixable**: suspend the `AudioContext` on pause, or let Capacitor pause the WebView (`KeepRunning` false); unvalidated                                                                                                      |
+| Background                                                                                                                                                                    | RN       | no signal (0.05 CPU-s/min; audio released)                                                                                                                                                     | –                                                                                                                                                                                                                                            |
+| Drawing CPU + GPU                                                                                                                                                             | both     | **no signal**: shipping +15% counting the app, RN +13% counting the whole phone; frames equal                                                                                                  | –                                                                                                                                                                                                                                            |
+| Drawing heat: shipping's AP sensor rises 1.2–2.9 °C more (mean +2.1), skin +0.95, battery +0.75; no thermal-status change                                                     | shipping | **noisy, minor to major**: the two shipping runs fall on either side of the 2 °C line                                                                                                          | **unclear**: tracks shipping's longer high-clock residency on the mid CPU cluster; whether app-side changes lower it is untested                                                                                                             |
+| Memory after a 10-min session: RN ~418 MB, shipping ~278 MB (both settle back after HOME: 338 vs 200)                                                                         | RN       | reported (feeds `rn-memory-bones.md`)                                                                                                                                                          | the probe is not the cause                                                                                                                                                                                                                   |
+
+### State left behind
+
+* The Galaxy, 08:19–11:57 under `dev-galaxy.lock` (rig lock per run).
+  `art.splotch.app.dev.bestplain` was first launched by this lane (installed by the orchestrator).
+  All three apps used here (`.dev.bestplain`, `.baseline.best`, `.dev.best`) are on a cleared page,
+  Pen, Purple, with Auto-Save on Delete off and AI off; screenshot
+  `battery-heat/keep/end-montage.png`. Their settings are as found (`.dev.best` Sound 33%), except
+  `.dev.bestplain`'s drawer, expanded through its UI. Launcher in front.
+* No device, display, battery or accessibility setting changed; no Save, so no new gallery pictures;
+  no install, uninstall or reboot. The lane's on-device folder `/data/local/tmp/bh` was deleted. The
+  store app and every other build were never touched.
+
+## Could this flip the decision?
+
+No. On the Galaxy neither arm has a drawing cost that clears the 20% line, and neither reaches a
+higher thermal status in 10 minutes of toddler drawing. Both present at 120 Hz here, so this phone
+cannot test the iPad worry (RN at ~116 fps against shipping's ~51); that half waits for the owner.
+
+What it adds to each side:
+
+* **RN:** one floor candidate, against RN: stock React Native wakes the UI thread and SurfaceFlinger
+  on every vsync while the app sits in front, costing about a fifth of a core with nothing on screen
+  changing. Both apps keep the screen on, and the lit screen likely costs far more than this (not
+  measured), so the battery effect is small in absolute terms. It hardens the current call slightly;
+  a React Native patch could remove it.
+* **Shipping:** a never-suspended `AudioContext` costs ~3–4 CPU-s/min in front and ~1.9 in the
+  background, likely a small fix. Its renderer runs the phone 1–3 °C warmer at the SoC while
+  drawing, without a thermal-status change; noisy and unclear.
+
+Net: battery and heat on the Galaxy do not move the verdict. The iPad half (ProMotion, RN's higher
+frame rate) remains the open part of Codex's flip risk.
