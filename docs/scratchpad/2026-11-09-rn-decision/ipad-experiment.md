@@ -198,7 +198,19 @@ shipping-control traces of all three device runs were deleted (~15 GB).
 **The iPad did not come back from a reboot** (requested 16:51 EST through `devicectl` to clear
 stranded trace data; the iPad has no passcode, and no data or settings were changed). Fourteen
 minutes later it was still absent from the Mac's USB bus while the Galaxy and the keyboard were
-present. The run waits on the owner checking the iPad.
+present. It came back at 17:26 with **145 GB free** (the reboot cleared ~140 GB of stranded trace
+data) and the same iPadOS 26.5. After a reboot, iPadOS asks on the device before allowing UI
+automation: two WebDriverAgent starts timed out ("Timed out while enabling automation mode") until
+the owner allowed the prompt, and the run restarted at 17:33 (`runs/device-20261110-173259`).
+Preflight and the pacing gate passed in both arms (8.3 ms touch pacing).
+
+**The host disk then filled during block 2's first rep (18:46, 38 → 1 GB in three minutes).** Every
+`xctrace record` leaves its raw `instruments*.ktrace` (0.15–12.8 GB) in the Mac's user temp folder,
+and about 40 had built up since 11-09 (~140 GB); this was the cause of all the day's host disk-full
+stops. Rep 1 (shipping) has no trace data and is invalid. The harness paused before the next trace
+as designed; the owner cleared the leftovers (166 GB free) and the run resumed at 19:48. A
+background sweep the owner approved now deletes leftovers over 5 minutes old that no process holds
+open.
 
 **Harness facts found while building it** (simulator, WDA + XCTest; they constrain what any block
 can time): (1) a `pointerMove` after a `pointerUp` on one pointer is applied to the lifted path, so

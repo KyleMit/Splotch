@@ -49,6 +49,12 @@ generated caches and scored raw data was cleared; these rules keep it from filli
   instead of crashing.
 * **One iOS build cache per app.** Spikes reuse their arm's build cache rather than making their
   own.
+* **Instruments leaves its raw recordings behind.** Every `xctrace record` writes an
+  `instruments*.ktrace` file (0.15–12.8 GB) to the Mac's user temp folder and never deletes it;
+  about 40 of them (~140 GB) caused every host disk-full stop on 11-10. With the owner's approval, a
+  background sweep (`bin/ktrace-sweep.zsh` in the campaign scratch folder) deletes them once they
+  are over 5 minutes old and no process holds them open. The iPad also stages each trace on its own
+  storage; the iPad harness stops when the iPad has under 12 GB free.
 * **Raw evidence never goes into git.** The repo is public, single traces exceed GitHub's file
   limits, and history is permanent. Numbers live in these notes; any archive worth keeping goes to
   private storage, decided at the end of the campaign.
