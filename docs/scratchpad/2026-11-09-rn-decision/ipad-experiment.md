@@ -212,6 +212,25 @@ as designed; the owner cleared the leftovers (166 GB free) and the run resumed a
 background sweep the owner approved now deletes leftovers over 5 minutes old that no process holds
 open.
 
+**Block 2, interim read (dense Crayon, 3 RN reps and 2 shipping reps scored by 21:45).** Every trace
+is complete now. Shipping's two reps each show a 4.1 s gap at the start of the window (`lost60` ~4.2
+s), but it is a **scoring artefact, not a freeze**:
+
+* A window ends at WDA's reply and reaches back the planned duration times each arm's calibration
+  playback ratio, measured on a blank page: shipping 1.263, RN 1.086. On the dense picture
+  shipping's gesture did not play that slowly, so its 25.1 s window starts ~3.5 s before the first
+  touch (RN's window is 21.6 s for the same gesture). ~0.6 s of ordinary start lag, as in RN, plus
+  ~3.5 s of over-long window gives the 4.1 s.
+* The traces agree: `potential-hangs` and `hitches` have **no rows** for either shipping rep, in any
+  process. RN rep 2 shows two "Brief Unresponsiveness" hangs on Splotch's main thread (150 and 111
+  ms, ~1.7 s into the stroke).
+
+Mid-stroke, after the first swap: shipping 0 gaps ≥ 100 ms in 2 reps; RN one gap of 108–117 ms in 2
+of 3 reps. RN presents at ~116 fps (mean gap 8.6 ms), shipping at ~51 fps (19.5 ms). **Scoring
+consequence:** block 2's start-of-window gaps are not freezes in either arm. The final summary
+scores freezes from each window's first swap, a method change made after seeing data, reported as
+such; the frozen `summarize.mjs` output is kept beside it.
+
 **Harness facts found while building it** (simulator, WDA + XCTest; they constrain what any block
 can time): (1) a `pointerMove` after a `pointerUp` on one pointer is applied to the lifted path, so
 the finger is not lifted between that pointer's contacts and a tap followed by a move never presses
