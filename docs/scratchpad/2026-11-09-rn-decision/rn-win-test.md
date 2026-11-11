@@ -165,10 +165,15 @@ The scorer's two unwritten choices are adopted as rules for both arms:
   flick or held after it, because "when was the finger there" has no single answer.
 * The visibility floor of a tip at least 2 mm clear behind the finger.
 
+Below floor, as implemented: a stroke qualifies only when its tip was visible 2 mm clear in fewer
+than 10 fast frames. A stroke whose tip was visible but whose frames were censored stays unscorable,
+since a floor would understate a long delay.
+
 **Freeze.** Before any film, the scorer, the generator of its synthetic test clips and the
 validation reports are fingerprinted, and a SHA-256 manifest is committed beside this note
 (`rn-win-scorer/`). A later correction is written down, applied to both arms while they are still
-masked, and fingerprinted again.
+masked, and fingerprinted again. Frozen ~16:30 EST after amendment 4: `rn-win-scorer/` (archive,
+manifest and validation summary).
 
 ## Part 2: masked feel (`owner-packet.md` cases 2–4 and 8)
 
