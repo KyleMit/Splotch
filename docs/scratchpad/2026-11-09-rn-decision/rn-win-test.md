@@ -66,20 +66,29 @@ There are eight clips, two reversed blocks per brush:
 * Pen: A, B, then B, A.
 * Crayon: B, A, then A, B.
 
-**Primary measure: shift lag.** While the finger moves fast, how long ago was the finger where the
-ink tip is now?
+**Primary measure: shift lag (apparent tracking delay).** While the finger moves fast, how long ago
+was the finger where the ink tip is now?
 
 * For each fast frame: the time since the fingertip's trailing edge stood at (ink tip − e), where e
   is that stroke's settled ink end beyond the trailing edge at the hold.
-* The contact offset and any shortfall at the ink's end cancel out of it, so it is the
-  touch-to-screen lag a child sees while drawing.
-* Per stroke: the median over the 10 fastest frames in which both the ink tip and the trailing edge
-  are visible.
-* Distances are in millimetres, calibrated from the screen's four corners in each clip.
-* Both apps' smoothing, and any prediction, count as part of each shipped experience.
+* The contact offset and any shortfall at the ink's end cancel out of it **exactly only if the ink
+  keeps the same offset from the finger while moving as at the hold**. Each stroke's e is reported,
+  and the verdict has to survive e ± 2 mm (below).
+* It is the delay a child sees, including each app's smoothing and any prediction, as shipped. It is
+  not a causal input-latency figure.
+* Only frames where the fingertip moves at 0.5 m/s or more count. Per stroke: the median over the 10
+  fastest frames in which both the ink tip and the trailing edge are visible and at least 2 mm
+  apart.
+* Ink that leads the finger (prediction) counts as negative delay and is never clamped. Ink that
+  overshoots the hold point by more than 4 mm and then retracts is a fidelity failure (a prediction
+  error), counted like a short end.
+* Exclusions are applied by these rules only, never by judgement, and reported per clip.
+* Distances are in millimetres, calibrated from the screen's four corners in each clip. Times come
+  from the file's capture timestamps, which the ingest check requires to be uniformly 1/240 s apart.
 
-**Cross-check: arrival time.** The time from the fingertip stopping to the ink tip reaching its
-trailing edge. It also tracks latency one to one.
+**Arrival time: reported only, with no veto** (amendment 3). It is the time from the fingertip
+stopping to the ink tip reaching the trailing edge. Its target depends on each app's offset, and the
+true end of the ink is hidden under the finger, so it cannot decide anything.
 
 * The fingertip has stopped at the first frame after which its trailing edge stays within 1 mm for
   the next 10 frames (42 ms).
@@ -106,10 +115,33 @@ be compared.
 * A second, independent agent re-scores every stroke flagged ambiguous plus a random quarter of the
   rest. If the two disagree in a way that changes the outcome, the win is not established.
 
-**Line:** RN wins Part 1 if its median shift lag is at least **20 ms** lower than shipping's in
-**every block of both brushes** (four comparisons). Arrival time must not favour shipping by 20 ms
-or more in any block. 20 ms is more than one full 60 Hz frame, about five camera frames. Shipping
-wins by the mirror line. Anything else is a tie.
+**Line:** a block is one clip per arm for one brush, so there are four blocks.
+
+* Per clip: the median shift lag over its scorable strokes.
+* Per block: the difference, shipping's median minus RN's, with a 95% bootstrap interval over
+  strokes (10,000 resamples).
+* A block counts only if the two clips' median peak speeds are within 25% of each other.
+
+RN wins Part 1 if, in **every block of both brushes**:
+
+* the difference is at least **20 ms**;
+* its 95% interval excludes zero; and
+* it stays at 20 ms or more both with every stroke's e moved by ± 2 mm and on the second scorer's
+  re-score.
+
+Otherwise no win is established. 20 ms is more than one full 60 Hz frame, about five camera frames.
+Shipping wins by the mirror line. Anything else is a tie.
+
+**Amendment 3 (~15:30 EST, before any film),** from Codex's check of amendment 2. It names the
+measure, qualifies the cancellation, adds the e ± 2 mm test, takes the veto from arrival time,
+freezes the exclusion rules, and adds the interval and per-block aggregation. These changes restore
+the intended criterion, 20 ms of tracking delay, which the first measure could not see. They do not
+lower it.
+
+**Freeze.** Before any film, the scorer, the generator of its synthetic test clips and the
+validation reports are fingerprinted, and a SHA-256 manifest is committed beside this note
+(`rn-win-scorer/`). A later correction is written down, applied to both arms while they are still
+masked, and fingerprinted again.
 
 ## Part 2: masked feel (`owner-packet.md` cases 2–4 and 8)
 
