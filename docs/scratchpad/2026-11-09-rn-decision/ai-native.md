@@ -120,3 +120,75 @@ result), `shots/r1-result.png`, `shots/r1-download-pair.png`,
 `saved/splotch-ai-2026-11-11_01-36-31.png`, `runs/sh-1/strip.png` (shipping used-up page),
 `shots/r4-zero-after-gate.png` + `shots/s4-zero-after-gate.png` (0-badge parity), `runs/sw-rows.png`
 (dot trains).
+
+## iPad, best versions (2026-11-11)
+
+08:27–08:41 EST, Claude (lane L). The iPad (iPad Pro 12.9-inch 5th gen, iPadOS 26.5), landscape,
+dark paper. Shipping best `art.splotch.app.baseline.best` (`claude/best-shipping` @ `f9d3b6ff6`) and
+RN best v2 `art.splotch.app.dev.best` (`claude/best-rn` @ `e703b8b79`), both calling production
+`https://splotch.art` (served `1.6.2690`). Driven through an own WebDriverAgent with fixed
+coordinates under `dev-ipad.lock`. The same house + sun as the Galaxy run: the strokes from
+`draw.py`, scaled ×0.6 into points, in Blue then Yellow, on Pen Size 3 in both arms. Wait timed from
+the Magical tap request to the first screenshot showing the result card (screenshots every ~0.5 s,
+OCR of each frame), so each wait is good to about ±0.6 s. Raw files: `ai-native/ipad/` in the
+campaign scratch folder.
+
+**The iPad gives each arm its own grant**, as predicted above. Both apps read "10 free AI creations
+left." when AI Art was turned on, and each dropped to 9 after its own picture only.
+
+| Shipping best                | Result                                                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI Art as found              | off (turned on for the run, turned off again after)                                                                                                            |
+| Badge before / after         | 10 / **9** (drawer badge and Settings › AI Art text)                                                                                                           |
+| Path                         | AI button → Grown-Ups gate (5 × 5) → Pick a style → Magical                                                                                                    |
+| While waiting                | polaroid with the drawing behind a progress dial, confetti; "Making your picture… / This takes about 30 seconds"; "Keep drawing while you wait"; no stall seen |
+| Tap → result card            | **≈ 29.4 s** (last waiting frame 28.8 s, card at 29.4 s)                                                                                                       |
+| Result card                  | a real Magical picture: blue house with a glowing door, sun, meadow, stars; landscape, nothing cropped; Download; "AI-generated picture · Report"              |
+| Error text                   | none                                                                                                                                                           |
+| Download                     | the card flies away like a polaroid (no text toast); the paper comes back with the drawing kept; no permission prompt                                          |
+| Photos                       | **IMG_0932.PNG**, PNG 1536 × 1024, 8-bit RGB, 1,873,159 bytes, mtime 08:33:26 (tap 08:33:25); the only new picture                                             |
+| Is it the AI picture?        | **yes**: pulled with `afc pull`, decodes, and is the picture on the result card, not the drawing                                                               |
+| Generations (`ai-spend.tsv`) | 1 (`ipad-shipping-best`, 0.06)                                                                                                                                 |
+
+| RN best v2                   | Result                                                                                                                                                    |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI Art as found              | off (turned on for the run, turned off again after)                                                                                                       |
+| Badge before / after         | 10 / **9**                                                                                                                                                |
+| Path                         | AI button → Grown-Ups gate (3 × 3) → Pick a style → Magical                                                                                               |
+| While waiting                | the same polaroid, progress dial, confetti and copy as shipping; no stall seen                                                                            |
+| Tap → result card            | **≈ 38.9 s** (last waiting frame 38.4 s, card at 38.9 s, picture fully in at 39.5 s)                                                                      |
+| Result card                  | a real Magical picture: blue house with a glowing door, sun, glowing ground, stars; landscape, nothing cropped; Download; "AI-generated picture · Report" |
+| Error text                   | none                                                                                                                                                      |
+| Download                     | the same polaroid fly-away, drawing kept, no prompt                                                                                                       |
+| Photos                       | **IMG_0933.PNG**, PNG 1536 × 1024, 8-bit RGB, 1,863,394 bytes, mtime 08:40:08 (tap 08:40:08); the only new picture                                        |
+| Is it the AI picture?        | **yes**: pulled, decodes, and is the picture on the result card                                                                                           |
+| Generations (`ai-spend.tsv`) | 1 (`ipad-rn-best`, 0.06)                                                                                                                                  |
+
+Two generations, no retry; lane total $0.12. The two waits (29 s, 39 s) are one sample each against
+the same server minutes apart; the copy and the 3 s poll are shared, so the 10 s gap is not an arm
+difference. RN's 39 s matches its 38 s on the Galaxy. Both arms saved the full 1536 × 1024 picture
+the server returned, so neither crops or re-encodes it.
+
+### Not tested
+
+* Any error path on the iPad (a provider failure, offline, the used-up grant, closing the card while
+  waiting, leaving the app mid-wait). The Galaxy run covered the used-up page (same copy in both).
+* Auto-Save AI Images (off in both), the Report link, and a second picture in a row.
+* Portrait. Other styles than Magical.
+* One frame of RN's AI Art page, 1.5 s after turning AI off, showed the three "What turning this on
+  does" pictures as empty dark tiles; they showed when the page first opened. One frame, not
+  repeated; cosmetic at most.
+
+### State left behind (the iPad)
+
+Both best apps: AI Art **off** again, page cleared (Auto-Save on Delete off, so no picture), Pen,
+Purple, Size 3 (read from the size menu), dark paper; RN best in front. Each app's free grant is
+now 9. Photos: two new pictures, IMG_0932 (shipping) and IMG_0933 (RN); nothing deleted. Never
+locked, no system prompt, store app and every other app untouched, no Instruments. Own WDA stopped;
+`dev-ipad.lock` released 08:41.
+
+### Could this flip the decision?
+
+No. On the iPad both arms make, show and save the real AI picture the same way: same flow, same
+copy, same file type and size, same polaroid save. That closes the "shipping's native AI success and
+saving" unknown with parity.
