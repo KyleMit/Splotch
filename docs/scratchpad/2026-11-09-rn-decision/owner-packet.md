@@ -1,7 +1,7 @@
 # Owner packet: what only your eyes or fingers can judge
 
-At most 10 cases, about 25 minutes. Every app is already installed. Cases 1–4 are the ones the
-verdict needs, about 15 minutes; the rest can be skipped.
+At most 10 cases, about 25 minutes. Every app is already installed. Cases 2–4 and 8 are the ones the
+verdict needs, about 15 minutes; the rest can be skipped. (Refreshed 2026-11-11 ~05:00.)
 
 ## How it works
 
@@ -10,12 +10,11 @@ random order and keeps the key, so you judge without knowing which is RN. The iP
 called "Splotch" with the same icon, so don't open them yourself. Reply with the case number and a
 word or two each.
 
-**Order:** case 1, then the other iPad cases, then the Galaxy. When you're done with the iPad,
-Claude starts the unattended iPad run (~4.5 h), and the iPad is busy until it ends. If you only have
-time for case 1, say "start the run" after it.
+**Order:** the iPad cases first, then the Galaxy. The unattended iPad run is finished, so nothing
+waits on you.
 
-**Best versions:** cases 2–6 run on each arm's best version (frozen candidate plus every fix that
-passed its gate), once those builds are on the iPad, so you judge bones rather than known bugs.
+**Best versions:** every masked case runs on each arm's best version (frozen candidate plus every
+fix that passed its gate), installed on both devices, so you judge bones rather than known bugs.
 
 ## Cases
 
@@ -42,16 +41,20 @@ passed its gate), once those builds are on the iPad, so you judge bones rather t
 7. **Sound, iPad and Galaxy (masked).** Draw with Sound on, then turn it off (Settings › Sound) and
    draw again. Is the sound right when on, and silent when off? **Galaxy done 2026-11-10 ~20:30** on
    the best versions: RN's sound comes in "a long long time" late, if at all; shipping's comes in at
-   once. Frozen RN (unmasked) is the same as RN best. The iPad half is still open.
-8. **Removed from the go/no-go (owner, 2026-11-10).** Screen readers moved to issue 3226, a human
-   pass on the winning app. A first TalkBack try on RN best: switches read on/off correctly; the
-   volume slider speaks its value only when a drag starts, and its "swipe up or down" hint does not
-   work.
+   once. RN's best version has since gained a sound fix (0 of 30 strokes silent on the Galaxy, was
+   28 of 30), so a 1-minute Galaxy re-check is worth it. The iPad half is still open.
+8. **Save, then draw straight away (masked), iPad then Galaxy.** In A, then B: scribble a little,
+   tap the camera button (Save), and draw a long line the moment you've tapped it; do it 3 times.
+   Does the line appear, appear late, or start as a straight stroke instead of following your
+   finger? (By script on the Galaxy, RN loses strokes started within ~1.6 s of Save and shipping
+   bends their start into a straight line; the iPad is being measured.) Screen readers, the old case
+   8, moved to issue 3226 (owner, 2026-11-10).
 9. **Optional: iPad Safari, both web builds.** Claude gives you two links. Scribble fast for about
    10 s in each, then open Settings. Does either lag, and does either dialog backdrop look broken?
 10. **One AI picture each (masked; production AI works again since 2026-11-10 09:17).** Make one
     Magical picture in A, then B, on the iPad. Compare the wait and the result, then Download. This
-    costs 2 generations.
+    costs 2 generations, expected to come from the test builds' own free allowances, not the store
+    app's.
 
 ## Source candidates (folded into the cases above)
 
