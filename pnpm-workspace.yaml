@@ -39,6 +39,10 @@ overrides:
   brace-expansion@1.1.18: ^1.1.20
   brace-expansion@2.1.4: ^2.1.6
   devalue@5.9.2: ^5.9.3
+  # zod <4.6.6 carries a high advisory. Lighthouse 13.6.0's chromium-bidi needs zod ^4.6.5 and
+  # resolves 4.6.5; another consumer resolves 4.4.3. Every consumer's range admits the fix.
+  zod@4.6.5: ^4.6.6
+  zod@4.4.3: ^4.6.6
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
