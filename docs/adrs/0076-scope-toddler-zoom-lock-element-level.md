@@ -48,6 +48,10 @@ half. That forced every other route to stay locked — `/admin` couldn't even zo
 `/privacy` and `/admin` each duplicate a `position: fixed` scroll container with `user-select: text`
 to claw scrolling and selection back. They are now scoped to the drawing route: `<html>` carries a
 `data-app-surface` flag, and `app.css` applies all four locks under `:root[data-app-surface] body`.
+A fifth lock, `overscroll-behavior: none`, sits on `:root[data-app-surface]` itself, because the
+viewport reads overscroll behavior from the root element and not from `body`. It stops Android
+Chrome arming its pull-to-refresh indicator when a stroke starts at the paper's top edge (issue
+1386).
 
 * The flag is **seeded before first paint** by the `app.html` boot script
   (`location.pathname === '/'`) so the locks apply with no window where the page scrolls or the
