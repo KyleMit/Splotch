@@ -129,6 +129,9 @@
     border: none;
     border-radius: var(--radius-lg);
     background: transparent;
+    /* A button does not inherit the document's font, so without this the row
+       titles and summaries fall back to the system sans. */
+    font-family: inherit;
     cursor: pointer;
     text-align: left;
     transition:

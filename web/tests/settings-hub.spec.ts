@@ -36,6 +36,45 @@ test('Settings hub drills into a section and back (phone layout)', async ({ page
   await expect(page.locator('#toolDrawerToggle')).toHaveCount(0);
 });
 
+// Buttons do not inherit the page's font, so a row that forgets to ask for it
+// renders in the system sans under a Quicksand heading (issue 2841).
+async function fontsOf(page: Page, selector: string) {
+  return page.evaluate(
+    (rowSelector) => ({
+      app: getComputedStyle(document.body).fontFamily,
+      rows: [...document.querySelectorAll(rowSelector)].map(
+        (row) => getComputedStyle(row).fontFamily
+      ),
+    }),
+    selector
+  );
+}
+
+test('hub rows set their titles and summaries in the app font', async ({ page }) => {
+  await page.setViewportSize({ width: 460, height: 852 });
+  await gotoApp(page);
+  await openSettingsModal(page);
+  await expect(page.locator('.hub-list')).toBeVisible();
+
+  const { app, rows } = await fontsOf(page, '.hub-row .hub-title, .hub-row .hub-subtitle');
+
+  expect(app).toContain('Quicksand');
+  expect(rows.length).toBeGreaterThan(0);
+  expect(new Set(rows)).toEqual(new Set([app]));
+});
+
+test('sidebar rows set their labels in the app font (tablet layout)', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await gotoApp(page);
+  const modal = await openSettingsModal(page);
+  await expect(modal).toHaveClass(/wide/);
+
+  const { app, rows } = await fontsOf(page, '.toc-row');
+
+  expect(rows.length).toBeGreaterThan(0);
+  expect(new Set(rows)).toEqual(new Set([app]));
+});
+
 // Every phone-shell move unmounts the control that held focus, so each one
 // proves focus lands on its replacement rather than falling to <body>.
 test('drilling into a section focuses its heading, and Back refocuses its row', async ({
