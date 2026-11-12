@@ -84,8 +84,7 @@ import {
 } from './overlay';
 import { currentExportScale } from './exportScale';
 import {
-  captureLiveTileSnapshot,
-  captureTiledSnapshot,
+  captureWorkerSnapshots,
   closeStrokeSnapshots,
   closeTiledExportSnapshot,
   createStrokeSnapshot,
@@ -1474,13 +1473,14 @@ export interface CanvasExportPreparation {
   cancel(): void;
 }
 
-// Capture strokes in upright paper space rather than the CSS-presented view.
+// Capture strokes in upright paper space rather than the CSS-presented view. Without the export
+// workers the history replays on the page, where no live-tile preview can be taken either.
 function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
-  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
-  if (tiledSnapshot) return { export: tiledSnapshot, preview: null };
-  const preview = capturePreview ? captureLiveTileSnapshot(renderScale) : null;
+  const size = { width, height, snapshotScale, renderScale };
+  const inWorkers = captureWorkerSnapshots(size, capturePreview);
+  if (inWorkers) return inWorkers;
   return {
     export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
       renderTiledSnapshot(target);
@@ -1489,7 +1489,7 @@ function snapshotStrokes(snapshotScale: number, capturePreview: boolean): Stroke
       // snapshot, so stamp it now rather than dropping that ink.
       flushCrayonBuffer(target);
     }),
-    preview,
+    preview: null,
   };
 }
 

@@ -3,43 +3,24 @@ import {
   createOffscreenCanvas2dSurface,
   runWithCanvasContextRecovery,
 } from './canvasContextRecovery';
-import {
-  createTiledPngPreview,
-  createTiledPngSurface,
-  paintTiledPngSurface,
-} from './tiledPngCompositor';
-import type { EncodePngRequest, EncodePngResponse } from './pngEncoderProtocol';
+import { CPU_SURFACE_SETTINGS } from './canvas2d';
+import { createTiledPngSurface, paintTiledPngSurface, readTilesOnce } from './tiledPngCompositor';
+import type { EncodePngRequest } from './pngEncoderProtocol';
+import { encoderWorkerScope, postPreview } from './encoderWorkerScope';
 
-interface EncoderWorkerScope {
-  onmessage: ((event: MessageEvent<EncodePngRequest>) => void) | null;
-  postMessage(message: EncodePngResponse, transfer?: Transferable[]): void;
-}
-
-// The app type-checks against the DOM lib, which types `self` as Window; the
-// webworker lib cannot join the same program, so the worker scope is declared here.
-const encoderWorker = self as unknown as EncoderWorkerScope;
+const encoderWorker = encoderWorkerScope<EncodePngRequest>();
 
 encoderWorker.onmessage = async ({ data }) => {
   const { id } = data;
   try {
     if (data.kind === 'tiles') {
+      const layers = data.previewWidth ? { ...data, tiles: readTilesOnce(data.tiles) } : data;
+      if (data.previewWidth) postPreview(encoderWorker, id, layers, data.previewWidth);
       const blob = await runWithCanvasContextRecovery(
         () => createTiledPngSurface(data),
         ({ canvas, context }) => {
-          paintTiledPngSurface({ canvas, context }, data);
-          const encoded = canvas.convertToBlob({ type: 'image/png' });
-          if (data.previewWidth) {
-            let preview: ImageBitmap | null = null;
-            try {
-              preview = createTiledPngPreview(canvas, data.previewWidth);
-              encoderWorker.postMessage({ id, preview }, [preview]);
-              preview = null;
-            } catch {
-              // Preview feedback is optional; its failure must not cancel the already-started PNG save.
-              preview?.close();
-            }
-          }
-          return encoded;
+          paintTiledPngSurface({ canvas, context }, layers);
+          return canvas.convertToBlob({ type: 'image/png' });
         }
       );
       encoderWorker.postMessage({ id, blob });
@@ -50,7 +31,8 @@ encoderWorker.onmessage = async ({ data }) => {
         createOffscreenCanvas2dSurface(
           data.bitmap.width,
           data.bitmap.height,
-          'PNG encoder could not allocate a 2D context'
+          'PNG encoder could not allocate a 2D context',
+          CPU_SURFACE_SETTINGS
         ),
       ({ canvas, context }) => {
         context.drawImage(data.bitmap, 0, 0);

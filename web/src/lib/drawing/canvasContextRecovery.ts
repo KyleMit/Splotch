@@ -23,10 +23,11 @@ export class CanvasContextRecoveryError extends Error {
 export function createOffscreenCanvas2dSurface(
   width: number,
   height: number,
-  allocationErrorMessage: string
+  allocationErrorMessage: string,
+  settings?: CanvasRenderingContext2DSettings
 ): RecoverableCanvas2dSurface {
   const canvas = new OffscreenCanvas(width, height);
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', settings);
   if (!context) throw new Error(allocationErrorMessage);
   return { canvas, context };
 }

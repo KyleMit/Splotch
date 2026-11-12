@@ -142,6 +142,7 @@ describe('colorTileCache LRU eviction', () => {
     ) {
       if (kind !== '2d') return null;
       return {
+        canvas: this,
         createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
         putImageData: () => {},
       };

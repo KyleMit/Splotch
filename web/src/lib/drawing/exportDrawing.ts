@@ -18,8 +18,15 @@ import {
   paintTiledExportLayers,
   type ExportContext,
 } from './exportCompositor';
+import { closeReplayCapture, type ReplayCapture } from './exportReplayCapture';
 import type { ExportOverlaySource } from './overlay';
-import { encodeCanvasPng, encodeTiledCanvasPng, type TiledPngInput } from './pngEncoder';
+import {
+  encodeCanvasPng,
+  encodeReplayPng,
+  encodeTiledCanvasPng,
+  type ReplayPngInput,
+  type TiledPngInput,
+} from './pngEncoder';
 import type { TiledCanvasSnapshot } from './tiledSurfaces';
 
 type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
@@ -31,7 +38,13 @@ export interface TiledExportSnapshot {
   source: TiledCanvasSnapshot;
   sourceScale: number;
 }
-export type ExportSnapshot = ExportCanvas | TiledExportSnapshot;
+export interface ReplayExportSnapshot {
+  replay: ReplayCapture;
+  width: number;
+  height: number;
+  replayScale: number;
+}
+export type ExportSnapshot = ExportCanvas | TiledExportSnapshot | ReplayExportSnapshot;
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
@@ -240,6 +253,79 @@ async function settleTiledExportBitmaps(
   return { tiles, texture: textureBitmap, overlay: overlayBitmap };
 }
 
+async function settleReplayExportInput(
+  snapshot: ReplayExportSnapshot,
+  exportScale: number,
+  texture: HTMLImageElement | null,
+  overlaySource: ExportOverlaySource | null,
+  paperColor: string,
+  preview: ExportOptions['preview']
+): Promise<ReplayPngInput> {
+  const { replay } = snapshot;
+  const previewSnapshot = preview?.snapshot ?? null;
+  const settled = await Promise.allSettled([
+    Promise.all(replay.base.map(async ({ bitmap, x, y }) => ({ bitmap: await bitmap, x, y }))),
+    Promise.all(
+      replay.sheets.map(async ({ bitmap, ...sheet }) => ({ ...sheet, bitmap: await bitmap }))
+    ),
+    previewSnapshot
+      ? Promise.all(
+          previewSnapshot.source.tiles.map(async ({ bitmap, x, y }) => ({
+            bitmap: await bitmap,
+            x,
+            y,
+          }))
+        )
+      : null,
+    texture ? createImageBitmap(texture) : null,
+    loadExportOverlay(overlaySource).then((image) =>
+      image ? createExportOverlayBitmap(image) : null
+    ),
+  ]);
+  const [base, sheets, previewTiles, textureBitmap, overlayBitmap] = settled;
+  if (
+    base.status === 'rejected' ||
+    sheets.status === 'rejected' ||
+    previewTiles.status === 'rejected' ||
+    textureBitmap.status === 'rejected' ||
+    overlayBitmap.status === 'rejected'
+  ) {
+    // The capture and preview own their pending bitmaps, settled or not; only the two made here
+    // need closing by hand.
+    closeReplayCapture(replay);
+    closeTiledPreviewSnapshot(preview);
+    for (const made of [textureBitmap, overlayBitmap]) {
+      if (made.status === 'fulfilled') made.value?.close();
+    }
+    const failure = settled.find((result) => result.status === 'rejected');
+    throw failure?.status === 'rejected' ? failure.reason : new Error('Export bitmap failed');
+  }
+  return {
+    width: snapshot.width,
+    height: snapshot.height,
+    replayScale: snapshot.replayScale,
+    exportScale,
+    paper: replay.paper,
+    base: base.value,
+    commands: replay.commands,
+    sheets: sheets.value,
+    crayon: replay.crayon,
+    texture: textureBitmap.value,
+    overlay: overlayBitmap.value,
+    paperColor,
+    preview:
+      preview && previewSnapshot && previewTiles.value
+        ? {
+            width: preview.width,
+            sourceWidth: previewSnapshot.source.width,
+            sourceHeight: previewSnapshot.source.height,
+            sourceScale: previewSnapshot.sourceScale,
+            tiles: previewTiles.value,
+          }
+        : null,
+  };
+}
+
 // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
 // first export. The engine calls this from its own idle warm of this module.
 export function warmPaperTexture() {
@@ -254,6 +340,19 @@ export async function composeExportPng(
   theme: ResolvedTheme = resolvedTheme()
 ): Promise<Blob | null> {
   const { includePaperTexture = true, preview } = options;
+
+  if ('replay' in snapshot) {
+    const texture = includePaperTexture ? await loadPaperTexture() : null;
+    const input = await settleReplayExportInput(
+      snapshot,
+      renderScale,
+      texture,
+      overlaySource,
+      PAPER_COLORS[theme],
+      preview
+    );
+    return encodeReplayPng(input, input.preview ? preview?.onReady : undefined);
+  }
 
   if ('source' in snapshot) {
     const texture = includePaperTexture ? await loadPaperTexture() : null;

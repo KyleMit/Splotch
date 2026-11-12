@@ -5,7 +5,8 @@ complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and is amende
 [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles; bounded
 polaroid feedback amended 2026-08-02 and 2026-08-09; worker context-loss recovery added by
 [ADR-0110](0110-single-replay-worker-canvas-context-recovery.md); trusted-press preparation amended
-2026-08-17 and 2026-09-11. **Date:** 2026-07
+2026-08-17 and 2026-09-11; the scale-mismatch replay moved to a CPU replay worker 2026-11-11.
+**Date:** 2026-07
 
 ## Context
 
@@ -190,6 +191,43 @@ deliberate: preparation needs an immutable ordering boundary, and pressing the c
 captured moment. Waiting for every concurrent drawing pointer to lift would make one child's held
 finger block another child's completed save.
 
+### Replay worker amendment (2026-11-11)
+
+The scale-mismatch fallback turned out to be the common path, not an edge case. Every Android phone
+above 2× renders live at the 2× cap and saves at its own scale, so every save there replayed the
+history onto a main-thread full-page `OffscreenCanvas`. The RN go/no-go campaign (issue 2690; its
+`spike-shipping-export.md` on `claude/rn-decision-2026-11`) traced what that costs on a 3× Galaxy
+S21 FE: Android WebView rastered the replay as one 415 ms task on its in-process GPU thread, the
+WebView draw functor waited 448 ms on it, the UI thread froze 634–651 ms per Save, and strokes
+started within 0.5 s of Save drew their start as a straight chord (18 of 18). One auto-saving Clear
+in 69 ended in an ANR with that GPU thread stuck in the driver's `glCopyTexSubImage2D`.
+
+The spike's cheapest fix exported the settled 2× live tiles at every scale and upsampled them in a
+CPU worker. It removed every chord (36 of 36 lines on-wave) but failed the saved-image gate: 3.1% of
+pixels differed from the 3× replay by more than 8 levels, against a line of under 1%, all on stroke
+edges and crayon grain.
+
+The retained route keeps the replay and moves it. `exportReplayCapture.ts` captures the history base
+tiles (`createImageBitmap`) and the retained commands synchronously at the press, naming each Magic
+op's colour sheet by index; `exportReplay.worker.ts`, a second cached worker, replays them through
+the same `renderOp`, op order, per-command paper clip and crayon pass handling as the page replay,
+with the same crayon options and deposition pipeline, then composes paper, texture and overlay and
+encodes. Every surface in both export workers is created with `willReadFrequently` (`canvas2d.ts`'s
+`CPU_SURFACE_SETTINGS`), so it rasters on the worker's CPU and never on the GPU thread the WebView
+frame waits on; the shared op renderers create their scratch canvases (crayon tooth tiles, pass
+buffers, under shadows) as CPU `OffscreenCanvas`es when there is no document. The polaroid preview
+is painted in the worker from the settled live tiles at its own size before the replay starts, and
+the matched-scale worker reads each tile back once when both the preview and the page need it.
+
+`web/tests/export-replay-worker.spec.ts` gates the route at 3× on a dense picture with folded
+history, Pen, Crayon, Magic and Eraser: the worker's PNG against the page replay's. Measured on this
+branch in Playwright on a Mac: Chromium byte-identical, Firefox (which Playwright runs at 2×)
+byte-identical; WebKit 0.38% of pixels off by more than 8 levels (mean 0.34 levels). The spike's 2×
+tile route fails the same gate in Chromium at 1.36%. Without Worker, `OffscreenCanvas` or
+`createImageBitmap` the page replay remains the fallback. The physical-device results (the Galaxy's
+chord rerun and a 200-export ANR soak, the iPad's worker compose on CPU surfaces) are pending and
+listed in `docs/scratchpad/2026-11-11-shipping-vnext/progress.md`.
+
 ## Decision
 
 At matched live/export scale with an identity paper view, screenshot export reuses the tiled live
@@ -213,8 +251,10 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
 4. The fast path is deliberately narrow: export scale must equal live render scale, no pointer may
    still be active, and Worker, `OffscreenCanvas`, and `createImageBitmap` must exist. ADR-0089
    keeps rotated tile pixels in the full upright paper and applies presentation through CSS, so a
-   rotated settled snapshot is eligible too. A scale mismatch still needs vector replay rather than
-   interpolated live pixels and retains the disposable full-snapshot architecture.
+   rotated settled snapshot is eligible too. A scale mismatch or an active pointer still needs
+   vector replay rather than interpolated live pixels; since the 2026-11-11 amendment that replay
+   runs in the replay worker on CPU surfaces, and only an engine without those APIs keeps the
+   disposable main-thread snapshot.
 5. `screenshotFeedback.ts` animates the existing camera icon immediately after a guarded tap
    activates. Tile snapshot preparation may already be running from `pointerdown`, but the
    compositor, visible feedback, preview, and save do not start until activation. When screenshot
@@ -277,9 +317,10 @@ because the tiled path requires the full set of transferable canvas APIs.
   isolated candidate's measurements.
 * \+ The affected 2× iPad path no longer creates a full-resolution drawing surface on the main
   thread. Only the worker owns the full composed output.
-* − Active pointers and devices whose live and export scales differ retain the replay fallback. They
-  preserve vector quality but can still hit the older compatibility path's main-thread graphics
-  cost.
+* − Active pointers and devices whose live and export scales differ still replay the history. Since
+  the 2026-11-11 amendment that replay runs in the replay worker on CPU surfaces, so it keeps vector
+  quality without a main-thread surface, but its completion time grows with the retained history and
+  is unmeasured on a physical device.
 * − Repeated Screenshot Button taps within four seconds of a successful save are intentionally
   ignored so MobileSafari can reclaim the full-page PNG surfaces.
 * − The compatibility fallback can still block on engines whose main-thread canvas encoder is slow.

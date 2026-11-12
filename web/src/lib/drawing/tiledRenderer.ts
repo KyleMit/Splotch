@@ -9,7 +9,8 @@ import {
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { PERF_MARKS } from './perf';
-import type { MagicSheetSnapshot } from './magicBrush';
+import { captureMagicSheet, type MagicSheetSnapshot } from './magicBrush';
+import { captureReplay, type ReplayCapture } from './exportReplayCapture';
 import { opPaddedUserBounds } from './opGeometry';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
@@ -477,6 +478,17 @@ export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
 
 export const paintVisibleTiledInk = (target: CanvasRenderingContext2D) =>
   readback.paintTiledInk(target, liveTiles);
+
+// The replay worker's inputs (exportReplayCapture.ts): the same base tiles and commands, in the same
+// order, that renderTiledSnapshot replays on the page.
+export function captureTiledReplay(): ReplayCapture {
+  return captureReplay({
+    base: historyBase.filter((tile) => tile.painted),
+    commands: (activeCommand ? [...history, activeCommand] : history).map(({ ops }) => ops),
+    liveSheet: captureMagicSheet(),
+    paper: host?.paperSize() ?? null,
+  });
+}
 
 export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
   const paper = host?.paperSize() ?? null;

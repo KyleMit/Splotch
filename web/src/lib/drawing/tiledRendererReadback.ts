@@ -66,9 +66,19 @@ export function captureTiledCanvasReadback(input: CanvasSnapshotInput): TiledCan
   };
 }
 
+// The replay's inputs as both realms hold them: the engine's history base and commands on the page,
+// their transferred copies in the export replay worker.
+interface ReplayBaseTile {
+  canvas: CanvasImageSource;
+  x: number;
+  y: number;
+  painted: boolean;
+}
+type ReplayCommand = Pick<StrokeGroupCommand, 'ops'>;
+
 function renderCommand(
   target: CanvasRenderingContext2D,
-  command: StrokeGroupCommand,
+  command: ReplayCommand,
   paper: { width: number; height: number } | null
 ) {
   if (!paper) return;
@@ -82,9 +92,9 @@ function renderCommand(
 
 export function renderTiledReadback(
   target: CanvasRenderingContext2D,
-  base: HistoryBaseTile[],
-  history: StrokeGroupCommand[],
-  activeCommand: StrokeGroupCommand | null,
+  base: readonly ReplayBaseTile[],
+  history: readonly ReplayCommand[],
+  activeCommand: ReplayCommand | null,
   paper: { width: number; height: number } | null
 ) {
   for (const tile of base) {

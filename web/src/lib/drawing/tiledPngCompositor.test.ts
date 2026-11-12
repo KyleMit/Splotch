@@ -3,6 +3,7 @@ import {
   createTiledPngPreview,
   createTiledPngSurface,
   paintTiledPngSurface,
+  readTilesOnce,
 } from './tiledPngCompositor';
 
 afterEach(() => {
@@ -39,6 +40,7 @@ describe('tiled PNG composition', () => {
       drawImage,
     };
     const convertToBlob = vi.fn(async () => expected);
+    const getContext = vi.fn(() => context);
     const canvases: Array<{ width: number; height: number }> = [];
     vi.stubGlobal(
       'OffscreenCanvas',
@@ -49,9 +51,7 @@ describe('tiled PNG composition', () => {
         ) {
           canvases.push(this);
         }
-        getContext() {
-          return context;
-        }
+        getContext = getContext;
         convertToBlob = convertToBlob;
       }
     );
@@ -76,6 +76,7 @@ describe('tiled PNG composition', () => {
 
     expect(canvases).toHaveLength(1);
     expect(canvases[0]).toMatchObject({ width: 400, height: 300 });
+    expect(getContext).toHaveBeenCalledWith('2d', { willReadFrequently: true });
     expect(setTransform).toHaveBeenNthCalledWith(1, 2, 0, 0, 2, 0, 0);
     expect(setTransform).toHaveBeenNthCalledWith(2, 1, 0, 0, 1, 0, 0);
     expect(setTransform).toHaveBeenNthCalledWith(3, 2, 0, 0, 2, 0, 0);
@@ -88,34 +89,83 @@ describe('tiled PNG composition', () => {
     expect(convertToBlob).toHaveBeenCalledWith({ type: 'image/png' });
   });
 
-  it('downscales the composed export into a transferable preview bitmap', () => {
-    const source = { width: 400, height: 300 } as OffscreenCanvas;
+  it('paints the preview from the tile layers at its own size on a CPU surface', () => {
     const bitmap = {} as ImageBitmap;
+    const drawImage = vi.fn();
+    const setTransform = vi.fn();
     const context = {
+      globalCompositeOperation: 'source-over' as GlobalCompositeOperation,
       imageSmoothingEnabled: false,
       imageSmoothingQuality: 'low' as ImageSmoothingQuality,
-      drawImage: vi.fn(),
+      fillStyle: '',
+      setTransform,
+      resetTransform: vi.fn(),
+      fillRect: vi.fn(),
+      createPattern: vi.fn(() => ({}) as CanvasPattern),
+      drawImage,
     };
     const transferToImageBitmap = vi.fn(() => bitmap);
+    const getContext = vi.fn(() => context);
+    const canvases: Array<{ width: number; height: number }> = [];
     vi.stubGlobal(
       'OffscreenCanvas',
       class {
         constructor(
           readonly width: number,
           readonly height: number
-        ) {}
-        getContext() {
-          return context;
+        ) {
+          canvases.push(this);
         }
+        getContext = getContext;
         transferToImageBitmap = transferToImageBitmap;
       }
     );
+    const tile = { width: 50, height: 50 } as ImageBitmap;
 
-    expect(createTiledPngPreview(source, 200)).toBe(bitmap);
+    const preview = createTiledPngPreview(
+      {
+        sourceWidth: 400,
+        sourceHeight: 300,
+        sourceScale: 2,
+        tiles: [{ bitmap: tile, x: 10, y: 20 }],
+        texture: null,
+        overlay: null,
+        paperColor: '#fffaf0',
+      },
+      100
+    );
 
-    expect(context.imageSmoothingEnabled).toBe(true);
-    expect(context.imageSmoothingQuality).toBe('high');
-    expect(context.drawImage).toHaveBeenCalledWith(source, 0, 0, 200, 150);
+    expect(preview).toBe(bitmap);
+    expect(canvases).toEqual([expect.objectContaining({ width: 100, height: 75 })]);
+    expect(getContext).toHaveBeenCalledWith('2d', { willReadFrequently: true });
+    expect(setTransform).toHaveBeenNthCalledWith(2, 0.25, 0, 0, 0.25, 0, 0);
+    expect(drawImage).toHaveBeenCalledWith(tile, 10, 20);
     expect(transferToImageBitmap).toHaveBeenCalledOnce();
+  });
+
+  it('reads each tile back once onto a CPU surface the preview and the page then share', () => {
+    const drawImage = vi.fn();
+    const getContext = vi.fn(() => ({ drawImage }));
+    const copies: Array<{ width: number; height: number }> = [];
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        constructor(
+          readonly width: number,
+          readonly height: number
+        ) {
+          copies.push(this);
+        }
+        getContext = getContext;
+      }
+    );
+    const tile = { width: 256, height: 128 } as ImageBitmap;
+
+    const read = readTilesOnce([{ bitmap: tile, x: 512, y: 0 }]);
+
+    expect(copies).toEqual([expect.objectContaining({ width: 256, height: 128 })]);
+    expect(getContext).toHaveBeenCalledWith('2d', { willReadFrequently: true });
+    expect(drawImage).toHaveBeenCalledExactlyOnceWith(tile, 0, 0);
+    expect(read).toEqual([{ bitmap: copies[0], x: 512, y: 0 }]);
   });
 });

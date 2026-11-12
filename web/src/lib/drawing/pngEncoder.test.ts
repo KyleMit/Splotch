@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CRAYON_DEFAULTS } from './crayonBrush';
 
 interface WorkerMessage {
   id: number;
-  kind: 'canvas' | 'tiles';
+  kind: 'canvas' | 'tiles' | 'replay';
   bitmap?: ImageBitmap;
   tiles?: Array<{ bitmap: ImageBitmap; x: number; y: number }>;
   previewWidth?: number;
@@ -21,8 +22,10 @@ class ControllableWorker {
   readonly messageErrorListeners: Array<(event: MessageEvent) => void> = [];
   readonly posted: Array<{ message: WorkerMessage; transfer: Transferable[] }> = [];
   terminated = false;
+  readonly url: string;
 
-  constructor() {
+  constructor(url?: string | URL) {
+    this.url = String(url);
     ControllableWorker.instances.push(this);
   }
 
@@ -397,5 +400,73 @@ describe('encodeCanvasPng', () => {
 
     await expect(encoded).resolves.toBe(fallback);
     expect(ControllableWorker.instances[0].terminated).toBe(false);
+  });
+});
+
+describe('encodeReplayPng', () => {
+  function replayInput() {
+    const bitmap = () => ({ close: vi.fn() }) as unknown as ImageBitmap;
+    return {
+      width: 300,
+      height: 150,
+      replayScale: 1.5,
+      exportScale: 3,
+      paper: { width: 200, height: 100 },
+      base: [{ bitmap: bitmap(), x: 0, y: 0 }],
+      commands: [[{ kind: 'clear' } as const]],
+      sheets: [{ bitmap: bitmap(), originX: 0, originY: 0, sourceUrl: null }],
+      crayon: { options: CRAYON_DEFAULTS, deposition: 'restamp' as const },
+      texture: bitmap(),
+      overlay: bitmap(),
+      paperColor: '#fff',
+      preview: {
+        width: 64,
+        sourceWidth: 200,
+        sourceHeight: 100,
+        sourceScale: 2,
+        tiles: [{ bitmap: bitmap(), x: 0, y: 0 }],
+      },
+    };
+  }
+
+  it('sends the replay to its own worker with every bitmap transferred', async () => {
+    const input = replayInput();
+    const expected = new Blob(['worker'], { type: 'image/png' });
+    vi.stubGlobal('Worker', ControllableWorker);
+    const { encodeReplayPng } = await import('./pngEncoder');
+
+    const encoded = encodeReplayPng(input);
+    const worker = ControllableWorker.instances[0];
+
+    expect(worker.url).toContain('exportReplay.worker');
+    expect(worker.posted[0].message).toMatchObject({ kind: 'replay', width: 300, height: 150 });
+    expect(worker.posted[0].transfer).toEqual([
+      input.base[0].bitmap,
+      input.sheets[0].bitmap,
+      input.texture,
+      input.overlay,
+      input.preview.tiles[0].bitmap,
+    ]);
+    worker.resolve(expected);
+    await expect(encoded).resolves.toBe(expected);
+  });
+
+  it('settles a failed replay as null after closing every bitmap it carried', async () => {
+    const input = replayInput();
+    vi.stubGlobal('Worker', ControllableWorker);
+    const { encodeReplayPng } = await import('./pngEncoder');
+
+    const encoded = encodeReplayPng(input);
+    ControllableWorker.instances[0].send({ id: 1, error: 'replay failed' });
+
+    await expect(encoded).resolves.toBeNull();
+    const closes = [
+      input.base[0].bitmap,
+      input.sheets[0].bitmap,
+      input.texture,
+      input.overlay,
+      input.preview.tiles[0].bitmap,
+    ].map((bitmap) => vi.mocked(bitmap.close).mock.calls.length);
+    expect(closes).toEqual([1, 1, 1, 1, 1]);
   });
 });

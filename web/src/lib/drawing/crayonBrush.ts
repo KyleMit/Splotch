@@ -51,6 +51,7 @@
 
 import { scheduleIdle } from '../idle';
 import { PALETTE_COLORS } from '../palette';
+import { createScratch2dContext } from './canvas2d';
 
 // A density pass: stroke the op at `widthScale` of its line width, filled with
 // tooth at `coverage` (fraction opaque). Passes are drawn widest-first so the
@@ -343,6 +344,12 @@ export function getPerOpGlazeReturn(): number {
   return Math.min(1, Math.max(0, opts.perOpGlazeReturn));
 }
 
+// The options a replay in another realm (the export replay worker) applies so its wax matches this
+// one's.
+export function crayonOptionsSnapshot(): CrayonOptions {
+  return clone(opts);
+}
+
 // The glaze strength for a deposition pass's stamp (see CrayonOptions).
 export function getCrayonMix(): number {
   return Math.min(MAX_CRAYON_MIX, Math.max(0, opts.colorMix));
@@ -409,7 +416,7 @@ export function shadeShift(heightValue: number, bodyValue: number, amplitude: nu
 // A colorized wax tile per (colour, pass): rgb = the crayon colour shade-shifted
 // per texel (identically for every pass), alpha = the pass's tooth field. Built
 // once and reused by every context's pattern.
-const colorTileCache = new Map<string, HTMLCanvasElement>();
+const colorTileCache = new Map<string, CanvasImageSource>();
 // Physical-iPad trials need warm-up work to leave headroom inside a presentation frame; a deadline
 // lets slower devices generate fewer eight-row chunks instead of turning one tuned row count into a
 // stall.
@@ -426,7 +433,7 @@ export const MAX_COLOR_TILES = (PALETTE_COLORS.length + 1) * CRAYON_DEFAULTS.pas
 
 interface ColorTileBuild {
   key: string;
-  canvas: HTMLCanvasElement;
+  canvas: CanvasImageSource;
   context: CanvasRenderingContext2D;
   image: ImageData;
   fields: CrayonFields;
@@ -441,14 +448,15 @@ function createColorTileBuild(color: string, passIdx: number): ColorTileBuild | 
   const pass = opts.passes[passIdx];
   if (!pass) return null;
   const fields = crayonFields();
-  const canvas = document.createElement('canvas');
-  canvas.width = fields.tile;
-  canvas.height = fields.tile;
-  const context = canvas.getContext('2d');
-  if (!context) return null;
+  let context: CanvasRenderingContext2D;
+  try {
+    context = createScratch2dContext(fields.tile, fields.tile);
+  } catch {
+    return null;
+  }
   return {
     key: colorTileKey(color, passIdx),
-    canvas,
+    canvas: context.canvas,
     context,
     image: context.createImageData(fields.tile, fields.tile),
     fields,
@@ -508,7 +516,7 @@ function colorTileKey(color: string, passIdx: number): string {
   return `${color}@${passIdx}`;
 }
 
-function colorTile(key: string, color: string, passIdx: number): HTMLCanvasElement | null {
+function colorTile(key: string, color: string, passIdx: number): CanvasImageSource | null {
   const hit = colorTileCache.get(key);
   if (hit) {
     colorTileCache.delete(key);
@@ -644,7 +652,7 @@ function cachedSeedPhase(seed: number, tileSize: number): [number, number] {
 
 // The paint for one density pass of a crayon op: the colour's wax tile as a
 // repeating pattern, phase-shifted (in paper coordinates) by the stroke's seed.
-// Returns null only if the tile can't be built (no DOM canvas) — caller skips.
+// Returns null only if the tile can't be built (no 2D context) — caller skips.
 export function crayonPatternFor(
   target: CanvasRenderingContext2D,
   color: string,
