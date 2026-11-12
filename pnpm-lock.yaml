@@ -110,8 +110,8 @@ importers:
         specifier: ^2.32.0
         version: 2.32.0(supports-color@10.2.2)
       '@intellectronica/ruler':
-        specifier: 0.3.44
-        version: 0.3.44
+        specifier: 0.3.46
+        version: 0.3.46
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
@@ -1375,8 +1375,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@intellectronica/ruler@0.3.44':
-    resolution: {integrity: sha512-OjJCdZleUQSLapy2HuLdDNpbyneArwYT9i9QP7mskrREPqBEB3JoDiZ8xded3Q7oA7/s5Pgn8Qo6UiGEsYZIVQ==}
+  '@intellectronica/ruler@0.3.46':
+    resolution: {integrity: sha512-oQRNNW8/PHnye1qTJQlAuVozBkqpu/9J7SmugOXxt27UrKuVb/yxeqY7Hdq6yzNOgLkTs4Hl2gEb8lg0hRNkTA==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
     hasBin: true
 
@@ -5358,10 +5358,6 @@ packages:
     resolution: {integrity: sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==}
     engines: {node: '>=12'}
 
-  yargs@18.0.0:
-    resolution: {integrity: sha512-4UEqdc2RYGHZc7Doyqkrqiln3p9X2DZVxaGbwhn2pi7MrRagKaOcIKe8L3OxYcbhXLgLFUS3zAYuQjKBQgmuNg==}
-    engines: {node: ^20.19.0 || ^22.12.0 || >=23}
-
   yargs@18.2.0:
     resolution: {integrity: sha512-9OpKOLeaoNFecEp7P6iYbzze/5CqWoH7N3SMs/6y1XF4nMvFMspEGZzJ6uFi9MmQwXhyzqYoSEKO3tvA3Z/o2w==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
@@ -6566,11 +6562,11 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@intellectronica/ruler@0.3.44':
+  '@intellectronica/ruler@0.3.46':
     dependencies:
       '@iarna/toml': 2.2.5
       js-yaml: 4.3.2
-      yargs: 18.0.0
+      yargs: 18.2.0
       zod: 4.6.7
 
   '@ionic/cli-framework-output@2.2.8(supports-color@10.2.2)':
@@ -7066,7 +7062,7 @@ snapshots:
   '@puppeteer/browsers@3.2.7(yauzl@2.10.0)':
     dependencies:
       modern-tar: 0.8.6
-      yargs: 18.0.0
+      yargs: 18.2.0
     optionalDependencies:
       yauzl: 2.10.0
 
@@ -10630,15 +10626,6 @@ snapshots:
       string-width: 4.2.3
       y18n: 5.0.8
       yargs-parser: 21.1.1
-
-  yargs@18.0.0:
-    dependencies:
-      cliui: 9.0.1
-      escalade: 3.2.0
-      get-caller-file: 2.0.5
-      string-width: 7.2.0
-      y18n: 5.0.8
-      yargs-parser: 22.0.0
 
   yargs@18.2.0:
     dependencies:

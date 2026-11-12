@@ -28,6 +28,11 @@ import {
   SHARED_SKILLS_SOURCE,
 } from './lib/layout.mjs';
 
+// Ruler 0.3.45+ resolves each nested `.ruler/` directory's agents from that directory's own config,
+// and the nested ones carry none, so without an explicit list every nested directory gains files
+// for every agent Ruler knows. The CLI list overrides each directory's selection.
+export const RULER_APPLY_ARGS = Object.freeze(['apply', '--agents', PROVIDERS.join(',')]);
+
 export const RULER_STEP_PATHS = Object.freeze({
   mirrorSkillNotes: fileURLToPath(new URL('mirror-skill-notes.mjs', import.meta.url)),
   applySkillForks: fileURLToPath(new URL('apply-skill-forks.mjs', import.meta.url)),
@@ -213,7 +218,7 @@ function main() {
   assertDprintPlugins(ROOT);
 
   generateFromValidatedSources(ROOT, () => {
-    runStep('ruler', ['apply']);
+    runStep('ruler', [...RULER_APPLY_ARGS]);
     runStep(process.execPath, [RULER_STEP_PATHS.mirrorSkillNotes]);
     runStep(process.execPath, [RULER_STEP_PATHS.applySkillForks]);
   });
