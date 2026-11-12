@@ -73,7 +73,7 @@ describe('the installed app uses the preview label', () => {
 
 it('keeps the pre-hydration Back state key aligned with the web handler', () => {
   const match = webBackHandlerSource.match(/WEB_BACK_PAGE_STATE_KEY\s*=\s*['"]([^'"]+)['"]/u);
-  expect(match, 'webBackHandler exports its page-state key').not.toBeNull();
+  expect(match, 'webBackHandler declares its page-state key').not.toBeNull();
   expect(bootScript).toContain(`pageState.${match![1]}`);
 });
 

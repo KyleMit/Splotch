@@ -221,7 +221,7 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
   };
 }
 
-export interface TiledCheckpoint {
+interface TiledCheckpoint {
   snapshot: TiledCanvasSnapshot;
   renderScale: number;
   cssWidth: number;
