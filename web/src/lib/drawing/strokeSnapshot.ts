@@ -1,6 +1,11 @@
 import type { ExportSnapshot, ReplayExportSnapshot, TiledExportSnapshot } from './exportDrawing';
 import { closeReplayCapture } from './exportReplayCapture';
-import { captureTiledCanvasSnapshot, captureTiledReplay } from './tiledRenderer';
+import { flushCrayonBuffer } from './crayonPassBuffer';
+import {
+  captureTiledCanvasSnapshot,
+  captureTiledReplay,
+  renderTiledSnapshot,
+} from './tiledRenderer';
 import { require2dContext } from './canvas2d';
 
 type SnapshotCanvas = HTMLCanvasElement | OffscreenCanvas;
@@ -21,18 +26,14 @@ function captureLiveTileSnapshot(renderScale: number): TiledExportSnapshot | nul
   return source ? { source, sourceScale: renderScale } : null;
 }
 
-interface ExportSize {
-  width: number;
-  height: number;
-  snapshotScale: number;
-  renderScale: number;
-}
-
 // At matched scale the export composes the settled live tiles (ADR-0088). Above the live render cap,
 // or with a pointer down, it replays the history at export scale in the replay worker, whose CPU
 // surfaces keep that full-page raster off the page's GPU thread. Null without the export workers.
-export function captureWorkerSnapshots(
-  { width, height, snapshotScale, renderScale }: ExportSize,
+function captureWorkerSnapshots(
+  width: number,
+  height: number,
+  snapshotScale: number,
+  renderScale: number,
   capturePreview: boolean
 ): StrokeSnapshots | null {
   if (!exportWorkersSupported()) return null;
@@ -49,7 +50,37 @@ export function captureWorkerSnapshots(
   return { export: replay, preview: capturePreview ? captureLiveTileSnapshot(renderScale) : null };
 }
 
-export function createStrokeSnapshot(
+// Capture strokes in upright paper space rather than the CSS-presented view. Without the export
+// workers the history replays on the page, where no live-tile preview can be taken either.
+export function snapshotStrokes(
+  paper: { pxW: number; pxH: number },
+  renderScale: number,
+  snapshotScale: number,
+  capturePreview: boolean
+): StrokeSnapshots {
+  const width = Math.round((paper.pxW / renderScale) * snapshotScale);
+  const height = Math.round((paper.pxH / renderScale) * snapshotScale);
+  const inWorkers = captureWorkerSnapshots(
+    width,
+    height,
+    snapshotScale,
+    renderScale,
+    capturePreview
+  );
+  if (inWorkers) return inWorkers;
+  return {
+    export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
+      renderTiledSnapshot(target);
+      // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+      // (its flush is only recorded at pass close); an export is terminal for this
+      // snapshot, so stamp it now rather than dropping that ink.
+      flushCrayonBuffer(target);
+    }),
+    preview: null,
+  };
+}
+
+function createStrokeSnapshot(
   width: number,
   height: number,
   scale: number,

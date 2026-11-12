@@ -34,7 +34,7 @@
     <div class="confirm-card-heading">
       <h2 id="leaveConfirmTitle">Leave Splotch?</h2>
       <p id="leaveConfirmCopy">
-        This drawing stays while Splotch is in the background. It is lost if Splotch closes.
+        This drawing stays while Splotch is in the background, and comes back if Splotch closes.
       </p>
     </div>
 

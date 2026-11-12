@@ -1,7 +1,8 @@
 # ADR-0165: Android System Back Goes Through a Local `SystemBack` Plugin
 
 **Status:** Active (web boundary amended by
-[ADR-0168](0168-browser-back-dialogs-and-drawing-guard.md)) **Date:** 2026-09
+[ADR-0168](0168-browser-back-dialogs-and-drawing-guard.md); Leave copy amended by
+[ADR-0178](0178-drawing-checkpoint-survives-process-death.md)) **Date:** 2026-09
 
 ## Context
 
@@ -98,7 +99,8 @@ Leave Splotch is itself a `modalDialog`, so Back on it is its cancel. Repeated B
 alternates between opening and closing the question and never leaves; only the Leave button leaves.
 Keep drawing is first in the card, so `showModal()` focuses the choice that stays. The copy says
 only what holds: the drawing stays while Splotch is in the background, and is lost if Splotch
-closes.
+closes. Since [ADR-0178](0178-drawing-checkpoint-survives-process-death.md) checkpoints the picture
+in progress, the second half reads that it comes back if Splotch closes.
 
 ## Consequences
 

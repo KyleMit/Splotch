@@ -60,7 +60,7 @@ import {
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
 import { createCrayonPassBoundaries } from './crayonPassBoundaries';
-import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
+import { configureCrayonDeposition } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -83,13 +83,7 @@ import {
   type ExportOverlaySource,
 } from './overlay';
 import { currentExportScale } from './exportScale';
-import {
-  captureWorkerSnapshots,
-  closeStrokeSnapshots,
-  closeTiledExportSnapshot,
-  createStrokeSnapshot,
-  type StrokeSnapshots,
-} from './strokeSnapshot';
+import { closeStrokeSnapshots, closeTiledExportSnapshot, snapshotStrokes } from './strokeSnapshot';
 import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
@@ -110,8 +104,8 @@ import {
   repaintTiledRenderer,
   recoverTiledRendererIfNeeded,
   renderTiledOp,
-  renderTiledSnapshot,
   resizeTiledRenderer,
+  restoreTiledBase,
   scanTiledRendererIsEmpty,
   scheduleTiledHistoryFold,
   syncTiledCrayonMix,
@@ -1232,6 +1226,15 @@ export function isCanvasEmpty(): boolean {
   return canvasEmpty;
 }
 
+// A picture checkpointed in an earlier run of the app (drawingCheckpoint.ts) comes back only onto
+// an untouched page of the same size, as ink the child drew rather than a step Undo takes back.
+export function restoreDrawing(image: CanvasImageSource, cssWidth: number, cssHeight: number) {
+  if (!canvasEmpty || isStrokeActive() || !restoreTiledBase(image, cssWidth, cssHeight))
+    return false;
+  setCanvasEmptyState(false);
+  return true;
+}
+
 // Test/profiling seam: how tiled undo history is currently stored.
 export function getUndoDebug(): HistoryDebug {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
@@ -1473,33 +1476,13 @@ export interface CanvasExportPreparation {
   cancel(): void;
 }
 
-// Capture strokes in upright paper space rather than the CSS-presented view. Without the export
-// workers the history replays on the page, where no live-tile preview can be taken either.
-function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
-  const width = Math.round((paper.pxW / renderScale) * snapshotScale);
-  const height = Math.round((paper.pxH / renderScale) * snapshotScale);
-  const size = { width, height, snapshotScale, renderScale };
-  const inWorkers = captureWorkerSnapshots(size, capturePreview);
-  if (inWorkers) return inWorkers;
-  return {
-    export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
-      renderTiledSnapshot(target);
-      // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
-      // (its flush is only recorded at pass close); an export is terminal for this
-      // snapshot, so stamp it now rather than dropping that ink.
-      flushCrayonBuffer(target);
-    }),
-    preview: null,
-  };
-}
-
 export function prepareCanvasExport(capturePreview = true): CanvasExportPreparation | null {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
   const { theme, overlaySource } = capturedExportAppearance();
   const scale = currentExportScale();
   // This snapshot must precede the compositor import: save-on-delete fire-and-forgets an export
   // and clears the live engine synchronously. web/tests/engine-export.spec.ts pins the race.
-  const snapshots = snapshotStrokes(scale, capturePreview);
+  const snapshots = snapshotStrokes(paper, renderScale, scale, capturePreview);
   let available = true;
   return {
     async complete(options: ExportOptions = {}) {

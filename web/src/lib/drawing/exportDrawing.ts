@@ -326,6 +326,27 @@ async function settleReplayExportInput(
   };
 }
 
+// The drawing checkpoint's ink (ADR-0178): the settled tiles alone, on transparent paper with no
+// texture or overlay, at the scale they hold. It reaches the encoder through this module so the
+// checkpoint's own lazy chunk adds no second static importer of pngEncoder.ts, which would
+// re-partition the startup chunks.
+export async function encodeTiledInkPng(
+  source: TiledCanvasSnapshot,
+  sourceScale: number
+): Promise<Blob | null> {
+  const { tiles } = await settleTiledExportBitmaps({ source, sourceScale }, null, null);
+  return encodeTiledCanvasPng({
+    sourceWidth: source.width,
+    sourceHeight: source.height,
+    sourceScale,
+    exportScale: sourceScale,
+    tiles,
+    texture: null,
+    overlay: null,
+    paperColor: 'transparent',
+  });
+}
+
 // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
 // first export. The engine calls this from its own idle warm of this module.
 export function warmPaperTexture() {
