@@ -23,7 +23,7 @@ import {
   readJobImage,
   type GenerationJobContext,
 } from '$lib/server/generationJobs';
-import { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
+import { completeFreeCharge, failFreeCharge } from '$lib/server/freeGenerationSettlement';
 import { loggableError } from '$lib/server/logRedaction';
 import type { ReportTokenBinding } from '$lib/server/reportToken';
 import type { RequestHandler } from './$types';
@@ -60,34 +60,6 @@ function reportBinding(request: Request, context: GenerationJobContext): ReportT
   if (token) return { kind: 'managed', credential: token };
   if (context.free) return { kind: 'free', credential: context.free.installationId };
   return null;
-}
-
-/**
- * Spend the reserved slot now that a picture exists. The picture is already made
- * and already paid for, so a ledger write that fails must not turn it into an
- * error the child sees — the reservation lapses on its own and the response
- * simply omits the remaining-count header.
- */
-async function settleFreeGeneration(
-  context: GenerationJobContext,
-  succeeded: boolean,
-  failureKind: 'safety' | 'upstream'
-): Promise<number | null> {
-  if (!context.free) return null;
-  const { installationId, reservationId } = context.free;
-  try {
-    if (!succeeded) {
-      await failFreeGeneration(installationId, failureKind, reservationId);
-      return null;
-    }
-    return (await completeFreeGeneration(installationId, reservationId)).remaining;
-  } catch (cause) {
-    console.warn(
-      '[generation-result] failed to record the settled generation:',
-      loggableError(cause)
-    );
-    return null;
-  }
 }
 
 // Every caller here is already answering, so a delete that fails is logged, not
@@ -133,13 +105,13 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   const binding = reportBinding(request, job.context);
 
   if (job.status === 'refusal') {
-    await settleFreeGeneration(job.context, false, 'safety');
+    await failFreeCharge(job.context.free, 'safety', 'generation-result');
     await discard(jobId);
     return safetyRefusalResponse(job.reason, binding);
   }
 
   if (job.status === 'error') {
-    await settleFreeGeneration(job.context, false, 'upstream');
+    await failFreeCharge(job.context.free, 'upstream', 'generation-result');
     await discard(jobId);
     throw error(502, job.reason);
   }
@@ -167,12 +139,12 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
       'generation-result'
     );
   } catch (cause) {
-    await settleFreeGeneration(job.context, false, 'upstream');
+    await failFreeCharge(job.context.free, 'upstream', 'generation-result');
     await discard(jobId);
     throw cause;
   }
 
-  const freeRemaining = await settleFreeGeneration(job.context, true, 'upstream');
+  const freeRemaining = await completeFreeCharge(job.context.free, 'generation-result');
   await discard(jobId);
 
   return pictureResponse(prepared, {

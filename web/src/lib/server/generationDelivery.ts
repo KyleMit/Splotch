@@ -29,6 +29,9 @@ export function safetyRefusalResponse(
   return fail(SAFETY_REFUSAL_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
 }
 
+/** The route a delivery or settlement runs in, as its log lines name it. */
+export type GenerationRouteTag = 'generate-image' | 'generation-result';
+
 /**
  * The provider's picture as the child gets it: a punched-background style has
  * its flat background keyed out. One that cannot be keyed throws the 502 both
@@ -38,7 +41,7 @@ export async function prepareDeliveredImage(
   style: StyleName | null,
   bytes: Uint8Array,
   mimeType: string,
-  logTag: 'generate-image' | 'generation-result'
+  logTag: GenerationRouteTag
 ): Promise<DeliveredImage> {
   if (style === null || !hasPunchedBackground(style)) return { bytes, mimeType };
   try {
