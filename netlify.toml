@@ -32,7 +32,17 @@
   # other import forms (side-effect or dynamic imports).
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
+  #
+  # Two diffs, and the build is skipped only when both are clean.
+  # CACHED_COMMIT_REF is the last commit the site built in ANY context, so a
+  # branch deploy of the same tree a PR merge later lands on main makes that
+  # diff empty and cancels the production build (issue 3225). The second diff
+  # is the pushed commit against its first parent: the change the merge itself
+  # brings. `set --` holds the path list once; both diffs read it as "$@".
+  # The value is a TOML multi-line literal string kept on one line: it holds
+  # the pathspec's single quotes and the double quotes around "$@" without an
+  # escape, which tools/tests/netlify-cache-rules.test.mjs rejects anywhere.
+  ignore = '''set -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml; git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- "$@" && git diff --quiet $COMMIT_REF^1 $COMMIT_REF -- "$@"'''
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify-functions.mjs copies that one tree up.

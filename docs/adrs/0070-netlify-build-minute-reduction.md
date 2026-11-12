@@ -116,3 +116,22 @@ entry in `dependencies` the deploy never reaches reports as unused.
 deploy actually runs. knip exempts itself and `typescript` from the unused report, and counts an
 `@types/*` package as used whenever production code imports what it types, so the same test pins the
 first two to `devDependencies` and keeps every `@types/*` out of `dependencies`.
+
+## Amendment (2026-11-12): the ignore rule also diffs the pushed commit against its first parent
+
+`CACHED_COMMIT_REF` is the last commit the site built in any deploy context, not the last production
+build. A branch deploy that builds the same tree a PR merge later puts on `main` makes the
+`$CACHED_COMMIT_REF..$COMMIT_REF` diff empty, so the production build cancelled itself. That
+happened on 2026-11-10: a production-outage fix sat merged but undeployed (issue 3225). The rule now
+skips only when that diff **and** `$COMMIT_REF^1..$COMMIT_REF` are both clean over the watched
+paths. The second diff is the change the push itself brings, and it does not depend on what other
+deploy contexts built. It also makes a rebuild of an already-built commit run whenever that commit
+touched a watched path. `tools/tests/netlify-deploy-skip.test.mjs` runs the real command against a
+scratch history: merge, squash and rebuild after a branch deploy of the same tree, plus the skip
+cases.
+
+Comparing against the published production deploy's commit, the other fix considered, needs a
+Netlify API token inside the ignore command. Netlify exposes no such commit to the build
+environment. One gap remains. A push that fast-forwards several commits, after a branch deploy built
+the final tree, where the last commit touches no watched path, still skips. The post-merge check
+that `/version.json` moved is the backstop for that case.
