@@ -7,10 +7,10 @@ export function require2dContext(canvas: HTMLCanvasElement): CanvasRenderingCont
   return context;
 }
 
-// A worker's surfaces raster on the CPU. On Android WebView a GPU-backed worker canvas sends its
-// raster and every read-back to the in-process GPU thread, which the WebView's draw functor waits
-// on each frame, so the UI thread stalls for the whole export and drops the touch samples of a
-// stroke started meanwhile.
+// The export replay worker's surfaces raster on the CPU. On Android WebView a GPU-backed worker
+// canvas sends its raster and every read-back to the in-process GPU thread, which the WebView's draw
+// functor waits on each frame, so the UI thread stalls for the whole export and drops the touch
+// samples of a stroke started meanwhile.
 export const CPU_SURFACE_SETTINGS: CanvasRenderingContext2DSettings = {
   willReadFrequently: true,
 };

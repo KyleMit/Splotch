@@ -6,44 +6,58 @@ import {
 import { paintTiledExportLayers } from './exportCompositor';
 import type { TiledPngInput } from './pngEncoderProtocol';
 
-// The export rasters on the worker's CPU (CPU_SURFACE_SETTINGS says why); the GPU thread keeps one
-// read-back per live tile.
 export function createTiledPngSurface(data: TiledPngInput): RecoverableCanvas2dSurface {
   const width = Math.round((data.sourceWidth / data.sourceScale) * data.exportScale);
   const height = Math.round((data.sourceHeight / data.sourceScale) * data.exportScale);
   return createOffscreenCanvas2dSurface(
     width,
     height,
-    'PNG encoder could not allocate a 2D context',
-    CPU_SURFACE_SETTINGS
+    'PNG encoder could not allocate a 2D context'
   );
 }
 
-// The layers both the preview and the page paint. A tile is a transferred bitmap or, once read back,
-// a CPU surface.
-export interface TiledLayers extends Omit<TiledPngInput, 'exportScale' | 'previewWidth' | 'tiles'> {
-  tiles: ReadonlyArray<{ bitmap: CanvasImageSource; x: number; y: number }>;
-}
-
-// Drawing a GPU-backed bitmap onto a CPU surface reads it back each time, so when the preview and
-// the page both need the tiles, each is read back once onto a CPU surface they then share.
-export function readTilesOnce(
-  tiles: TiledPngInput['tiles']
-): Array<{ bitmap: CanvasImageSource; x: number; y: number }> {
-  return tiles.map(({ bitmap, x, y }) => {
-    const copy = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = copy.getContext('2d', CPU_SURFACE_SETTINGS);
-    if (!context) return { bitmap, x, y };
-    context.drawImage(bitmap, 0, 0);
-    return { bitmap: copy, x, y };
+export function paintTiledPngSurface(
+  { canvas, context }: RecoverableCanvas2dSurface,
+  data: TiledPngInput
+) {
+  paintTiledExportLayers(context, {
+    tiles: data.tiles,
+    sourceScale: data.sourceScale,
+    width: canvas.width / data.exportScale,
+    height: canvas.height / data.exportScale,
+    scale: data.exportScale,
+    paperColor: data.paperColor,
+    texture: data.texture,
+    overlay: data.overlay
+      ? { source: data.overlay, width: data.overlay.width, height: data.overlay.height }
+      : null,
   });
 }
 
-function paintTiledLayersAt(
-  context: OffscreenCanvasRenderingContext2D,
-  data: TiledLayers,
-  scale: number
-) {
+export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: number): ImageBitmap {
+  const previewHeight = Math.max(1, Math.round((canvas.height / canvas.width) * previewWidth));
+  const preview = new OffscreenCanvas(previewWidth, previewHeight);
+  const context = preview.getContext('2d');
+  if (!context) throw new Error('PNG encoder could not allocate a preview context');
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(canvas, 0, 0, previewWidth, previewHeight);
+  return preview.transferToImageBitmap();
+}
+
+// The live-tile layers the replay worker paints its polaroid from.
+export type TiledLayers = Omit<TiledPngInput, 'exportScale' | 'previewWidth'>;
+
+// The replay worker's polaroid: the settled live tiles painted at the preview's own size, on a CPU
+// surface, before the replay starts, so the full page's replay never delays the picture the child
+// sees. The matched-scale path above keeps the downscale of its composed page that ADR-0088
+// measured on the iPad.
+export function createLayeredPngPreview(data: TiledLayers, previewWidth: number): ImageBitmap {
+  const scale = previewWidth / (data.sourceWidth / data.sourceScale);
+  const previewHeight = Math.max(1, Math.round((data.sourceHeight / data.sourceScale) * scale));
+  const preview = new OffscreenCanvas(previewWidth, previewHeight);
+  const context = preview.getContext('2d', CPU_SURFACE_SETTINGS);
+  if (!context) throw new Error('PNG encoder could not allocate a preview context');
   paintTiledExportLayers(context, {
     tiles: data.tiles,
     sourceScale: data.sourceScale,
@@ -56,23 +70,5 @@ function paintTiledLayersAt(
       ? { source: data.overlay, width: data.overlay.width, height: data.overlay.height }
       : null,
   });
-}
-
-export function paintTiledPngSurface(
-  { context }: RecoverableCanvas2dSurface,
-  data: TiledLayers & Pick<TiledPngInput, 'exportScale'>
-) {
-  paintTiledLayersAt(context, data, data.exportScale);
-}
-
-// The polaroid preview is painted from the same layers at its own size before the full page, so the
-// full page's CPU compose never delays the picture the child sees.
-export function createTiledPngPreview(data: TiledLayers, previewWidth: number): ImageBitmap {
-  const scale = previewWidth / (data.sourceWidth / data.sourceScale);
-  const previewHeight = Math.max(1, Math.round((data.sourceHeight / data.sourceScale) * scale));
-  const preview = new OffscreenCanvas(previewWidth, previewHeight);
-  const context = preview.getContext('2d', CPU_SURFACE_SETTINGS);
-  if (!context) throw new Error('PNG encoder could not allocate a preview context');
-  paintTiledLayersAt(context, data, scale);
   return preview.transferToImageBitmap();
 }

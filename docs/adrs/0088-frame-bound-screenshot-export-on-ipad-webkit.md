@@ -212,12 +212,18 @@ tiles (`createImageBitmap`) and the retained commands synchronously at the press
 op's colour sheet by index; `exportReplay.worker.ts`, a second cached worker, replays them through
 the same `renderOp`, op order, per-command paper clip and crayon pass handling as the page replay,
 with the same crayon options and deposition pipeline, then composes paper, texture and overlay and
-encodes. Every surface in both export workers is created with `willReadFrequently` (`canvas2d.ts`'s
+encodes. Every surface in the replay worker is created with `willReadFrequently` (`canvas2d.ts`'s
 `CPU_SURFACE_SETTINGS`), so it rasters on the worker's CPU and never on the GPU thread the WebView
 frame waits on; the shared op renderers create their scratch canvases (crayon tooth tiles, pass
 buffers, under shadows) as CPU `OffscreenCanvas`es when there is no document. The polaroid preview
-is painted in the worker from the settled live tiles at its own size before the replay starts, and
-the matched-scale worker reads each tile back once when both the preview and the page need it.
+is painted in the replay worker from the settled live tiles at its own size before the replay
+starts.
+
+The matched-scale worker path, the one the 12.9-inch iPad takes, is left exactly as measured above:
+GPU-backed surfaces and a preview downscaled from the composed page. The spike also moved that path
+to CPU surfaces, but only the Android path was measured, and the real iPad was already clean after
+Save (0 of 36, `ipad-stall-ink.md`). The branch's rival review argued for keeping WebKit on its
+measured path until an iPad run says otherwise, and a 2× Android screen keeps it too.
 
 `web/tests/export-replay-worker.spec.ts` gates the route at 3× on a dense picture with folded
 history, Pen, Crayon, Magic and Eraser: the worker's PNG against the page replay's. Measured on this
@@ -225,7 +231,7 @@ branch in Playwright on a Mac: Chromium byte-identical, Firefox (which Playwrigh
 byte-identical; WebKit 0.38% of pixels off by more than 8 levels (mean 0.34 levels). The spike's 2×
 tile route fails the same gate in Chromium at 1.36%. Without Worker, `OffscreenCanvas` or
 `createImageBitmap` the page replay remains the fallback. The physical-device results (the Galaxy's
-chord rerun and a 200-export ANR soak, the iPad's worker compose on CPU surfaces) are pending and
+chord rerun and a 200-export ANR soak, the iPad's replay worker with a pointer down) are pending and
 listed in `docs/scratchpad/2026-11-11-shipping-vnext/progress.md`.
 
 ## Decision

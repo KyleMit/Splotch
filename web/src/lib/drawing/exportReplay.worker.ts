@@ -4,24 +4,44 @@ import {
   createOffscreenCanvas2dSurface,
   runWithCanvasContextRecovery,
 } from './canvasContextRecovery';
-import { encoderWorkerScope, postPreview } from './encoderWorkerScope';
 import { configureReplayCrayon, paintReplayExport } from './exportReplayPaint';
-import { closeReplayPngInput, type EncodeReplayPngRequest } from './pngEncoderProtocol';
+import {
+  closeReplayPngInput,
+  type EncodePngResponse,
+  type EncodeReplayPngRequest,
+} from './pngEncoderProtocol';
+import { createLayeredPngPreview } from './tiledPngCompositor';
 
-const replayWorker = encoderWorkerScope<EncodeReplayPngRequest>();
+interface ReplayWorkerScope {
+  onmessage: ((event: MessageEvent<EncodeReplayPngRequest>) => void) | null;
+  postMessage(message: EncodePngResponse, transfer?: Transferable[]): void;
+}
+
+// The app type-checks against the DOM lib, which types `self` as Window; the webworker lib cannot
+// join the same program, so the worker scope is declared here.
+const replayWorker = self as unknown as ReplayWorkerScope;
+
+function postPreview(id: number, data: EncodeReplayPngRequest) {
+  if (!data.preview) return;
+  const { width, ...tiles } = data.preview;
+  let preview: ImageBitmap | null = null;
+  try {
+    preview = createLayeredPngPreview(
+      { ...tiles, texture: data.texture, overlay: data.overlay, paperColor: data.paperColor },
+      width
+    );
+    replayWorker.postMessage({ id, preview }, [preview]);
+    preview = null;
+  } catch {
+    // Preview feedback is optional; its failure must not cancel the PNG save.
+    preview?.close();
+  }
+}
 
 replayWorker.onmessage = async ({ data }) => {
   const { id } = data;
   try {
-    if (data.preview) {
-      const { width, ...layers } = data.preview;
-      postPreview(
-        replayWorker,
-        id,
-        { ...layers, texture: data.texture, overlay: data.overlay, paperColor: data.paperColor },
-        width
-      );
-    }
+    postPreview(id, data);
     const blob = await runWithCanvasContextRecovery(
       () =>
         createOffscreenCanvas2dSurface(
