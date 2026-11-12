@@ -11,6 +11,7 @@ import {
   renameSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
@@ -26,12 +27,43 @@ import {
   PROVIDERS,
   SHARED_NOTES_SOURCE,
   SHARED_SKILLS_SOURCE,
+  skillsDir,
 } from './lib/layout.mjs';
 
 // Ruler 0.3.45+ resolves each nested `.ruler/` directory's agents from that directory's own config,
 // and the nested ones carry none, so without an explicit list every nested directory gains files
 // for every agent Ruler knows. The CLI list overrides each directory's selection.
 export const RULER_APPLY_ARGS = Object.freeze(['apply', '--agents', PROVIDERS.join(',')]);
+
+// Ruler 0.3.46+ rewrites only the skill entries this manifest lists. Any other entry already in the
+// destination it treats as a provider-native package and leaves alone. It records only the entries
+// it creates, so a shared skill whose generated copy predates the manifest would never be refreshed,
+// and ruler:check would pass on the stale copy. Each run therefore claims every shared source entry
+// first. It keeps the paths already listed, because that is how Ruler deletes the copy of a skill
+// whose source was removed.
+export const RULER_MANAGED_MANIFEST = '.ruler-managed.json';
+
+function managedPaths(manifestPath) {
+  if (!existsSync(manifestPath)) return [];
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const paths = manifest?.paths;
+  if (!Array.isArray(paths) || !paths.every((path) => typeof path === 'string')) {
+    throw new Error(`${manifestPath} has no string array of paths`);
+  }
+  return paths;
+}
+
+export function claimSharedSkillOutputs(root) {
+  const source = join(root, SHARED_SKILLS_SOURCE);
+  if (!existsSync(source)) return;
+  const shared = readdirSync(source);
+  for (const provider of PROVIDERS) {
+    const manifestPath = join(root, skillsDir(provider), RULER_MANAGED_MANIFEST);
+    const paths = [...new Set([...managedPaths(manifestPath), ...shared])].sort();
+    mkdirSync(dirname(manifestPath), { recursive: true });
+    writeFileSync(manifestPath, `${JSON.stringify({ version: 1, paths }, null, 2)}\n`);
+  }
+}
 
 export const RULER_STEP_PATHS = Object.freeze({
   mirrorSkillNotes: fileURLToPath(new URL('mirror-skill-notes.mjs', import.meta.url)),
@@ -209,7 +241,10 @@ function runStep(command, args) {
 export function generateFromValidatedSources(root, generate) {
   planSkillNotes(root);
   planRulerSkillForks(root);
-  withPreservedDirectProviderPaths(root, generate);
+  withPreservedDirectProviderPaths(root, () => {
+    claimSharedSkillOutputs(root);
+    generate();
+  });
 }
 
 function main() {
