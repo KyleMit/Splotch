@@ -57,8 +57,9 @@ export interface ResolvedPage {
 export interface CheckpointDeps {
   store: CheckpointStore;
   capture(): Promise<CheckpointCapture>;
-  // Finds the checkpoint's coloring page on this device; null when it is not available here.
-  resolvePage(page: CheckpointPage): Promise<ResolvedPage | null>;
+  // Finds the checkpoint's coloring page on this device; null when it is not available here, or
+  // once `signal` aborts (the checkpoint was disposed).
+  resolvePage(page: CheckpointPage, signal: AbortSignal): Promise<ResolvedPage | null>;
   // Whether nothing has chosen this launch's page yet, so a restore cannot replace it.
   pageUntouched(): boolean;
   // Refuses a page the child has started or paper of another size.
@@ -112,11 +113,12 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
   // blank. One that never did leaves it for a later launch that can restore it, such as one whose
   // paper is the size the picture was saved at.
   let hadInk = false;
+  const disposal = new AbortController();
 
   async function restoreRecord(): Promise<boolean> {
     const record = await deps.store.read();
     if (!isCheckpointRecord(record)) return false;
-    const page = record.page ? await deps.resolvePage(record.page) : null;
+    const page = record.page ? await deps.resolvePage(record.page, disposal.signal) : null;
     if (record.page && !page) return false;
     const image = await deps.decode(record.bytes);
     try {
@@ -197,6 +199,7 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
     },
     dispose() {
       disposed = true;
+      disposal.abort();
       cancelTimer();
     },
   };
@@ -214,7 +217,7 @@ export interface AppCheckpointHooks {
   isCanvasEmpty(): boolean;
   captureTiles(): TiledCheckpoint | null;
   currentPage(): CheckpointPage | null;
-  resolvePage(page: CheckpointPage): Promise<ResolvedPage | null>;
+  resolvePage(page: CheckpointPage, signal: AbortSignal): Promise<ResolvedPage | null>;
   restoreInk(image: ImageBitmap, cssWidth: number, cssHeight: number): boolean;
 }
 

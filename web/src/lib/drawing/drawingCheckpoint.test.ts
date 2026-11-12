@@ -27,7 +27,10 @@ function harness(stored: unknown = undefined) {
       remove: vi.fn(async () => {}),
     },
     capture: vi.fn(async () => capture),
-    resolvePage: vi.fn(async (): Promise<ResolvedPage | null> => resolved),
+    resolvePage: vi.fn(
+      async (_page: CheckpointRecord['page'], _signal: AbortSignal): Promise<ResolvedPage | null> =>
+        resolved
+    ),
     pageUntouched: vi.fn(() => true),
     restoreInk: vi.fn(() => true),
     decode: vi.fn(async () => image),
@@ -178,7 +181,10 @@ describe('drawing checkpoint restore', () => {
 
     await expect(checkpoint.restore()).resolves.toBe(true);
 
-    expect(deps.resolvePage).toHaveBeenCalledWith({ id: 'farm-cow', orientation: 'landscape' });
+    expect(deps.resolvePage).toHaveBeenCalledWith(
+      { id: 'farm-cow', orientation: 'landscape' },
+      expect.any(AbortSignal)
+    );
     expect(deps.restoreInk).toHaveBeenCalledWith(image, 400, 300);
     expect(applyPage).toHaveBeenCalledOnce();
     expect(vi.mocked(image.close)).toHaveBeenCalledOnce();
@@ -230,6 +236,21 @@ describe('drawing checkpoint restore', () => {
 
     await expect(restoring).resolves.toBe(false);
     expect(deps.restoreInk).not.toHaveBeenCalled();
+  });
+
+  it('aborts the page lookup it is waiting on when disposed', async () => {
+    const { checkpoint, deps } = harness(record({ page: { id: 'trex', orientation: 'portrait' } }));
+    let lookupSignal: AbortSignal | undefined;
+    deps.resolvePage.mockImplementationOnce(async (_page, signal) => {
+      lookupSignal = signal;
+      return null;
+    });
+
+    await checkpoint.restore();
+    expect(lookupSignal?.aborted).toBe(false);
+    checkpoint.dispose();
+
+    expect(lookupSignal?.aborted).toBe(true);
   });
 
   it('brings back no ink when its coloring page is not available', async () => {

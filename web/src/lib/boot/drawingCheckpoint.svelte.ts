@@ -49,19 +49,26 @@ function currentPage(): CheckpointPage | null {
 // book waits this long for the scan before it counts the book as missing.
 const PACK_DISCOVERY_WAIT_MS = 10_000;
 
-function packsDiscovered(packs: Pick<ColoringPacksState, 'initialized'>): Promise<boolean> {
+function packsDiscovered(
+  packs: Pick<ColoringPacksState, 'initialized'>,
+  signal: AbortSignal
+): Promise<boolean> {
   if (packs.initialized) return Promise.resolve(true);
+  if (signal.aborted) return Promise.resolve(false);
   return new Promise((resolve) => {
     let settled = false;
     const settle = (found: boolean) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      signal.removeEventListener('abort', abandon);
       // Torn down after the running effect returns, by which time `stop` is assigned.
       queueMicrotask(() => stop());
       resolve(found);
     };
-    const timer = setTimeout(() => settle(false), PACK_DISCOVERY_WAIT_MS);
+    const abandon = () => settle(false);
+    const timer = setTimeout(abandon, PACK_DISCOVERY_WAIT_MS);
+    signal.addEventListener('abort', abandon, { once: true });
     const stop = $effect.root(() => {
       $effect(() => {
         if (packs.initialized) settle(true);
@@ -72,7 +79,10 @@ function packsDiscovered(packs: Pick<ColoringPacksState, 'initialized'>): Promis
 
 // A page from a book this device does not have, or with the coloring book switched off, cannot
 // come back, and its ink without the line art would not be the picture the child left.
-async function resolvePage({ id, orientation }: CheckpointPage): Promise<ResolvedPage | null> {
+async function resolvePage(
+  { id, orientation }: CheckpointPage,
+  signal: AbortSignal
+): Promise<ResolvedPage | null> {
   if (!settingsState.coloringBookEnabled) return null;
   const platform = isNative() ? 'mobile' : 'web';
   const findPage = (books: readonly Book[]) =>
@@ -81,7 +91,7 @@ async function resolvePage({ id, orientation }: CheckpointPage): Promise<Resolve
   let page = findPage(starter);
   if (!page) {
     const { coloringPacksState } = await import('$lib/state/coloringPacks.svelte');
-    if (await packsDiscovered(coloringPacksState)) {
+    if (await packsDiscovered(coloringPacksState, signal)) {
       page = findPage(coloringPacksState.availableColoringBooks(platform));
     }
   }
