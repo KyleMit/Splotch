@@ -91,8 +91,8 @@ not rule out the privacy helper race found in review; the other two remain leads
 digest.
 
 After review, both header themes and both users of the shared contents helper (privacy and
-changelog) passed 30 repetitions each at ten workers with retries disabled: **120/120** on port
-5198. The final
+changelog) passed 30 repetitions each at ten workers with retries disabled: **120/120** on
+port 5198. The final
 `SPLOTCH_E2E_PORT=5200 npm run test:e2e:sweep -- --workers=10 --reps=3 --out=/private/tmp/splotch-flaky-sweep-2367-r2`
 then passed another three fresh-server repetitions: **2,937/2,937 executions**, zero failures and
 zero skips. Its median wall time was 155.6 seconds. The final sweep measured the review fixes;
