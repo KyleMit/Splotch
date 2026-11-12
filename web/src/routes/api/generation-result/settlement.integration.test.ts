@@ -556,7 +556,9 @@ describe('the installation id in the function log', () => {
     grantFault('get');
 
     expect((await collect(jobId)).status).toBe(200);
-    expectLoggedWithoutInstallationId('failed to record the settled generation');
+    expectLoggedWithoutInstallationId(
+      '[generation-result] failed to record the settled generation'
+    );
   });
 
   it('stays out when an in-line picture cannot be charged', async () => {
@@ -567,7 +569,7 @@ describe('the installation id in the function log', () => {
     });
 
     expect((await startFreeGeneration()).status).toBe(200);
-    expectLoggedWithoutInstallationId('failed to record a completed generation');
+    expectLoggedWithoutInstallationId('[generate-image] failed to record the settled generation');
   });
 
   it('stays out when an in-line refusal cannot be refunded', async () => {
@@ -578,7 +580,7 @@ describe('the installation id in the function log', () => {
     });
 
     expect((await startFreeGeneration()).status).toBe(SAFETY_REFUSAL_STATUS);
-    expectLoggedWithoutInstallationId('failed to record unsuccessful attempt');
+    expectLoggedWithoutInstallationId('[generate-image] failed to record the settled generation');
   });
 
   // Nothing on the free path catches a reservation failure, so it reaches
