@@ -1,6 +1,7 @@
 import { untrack } from 'svelte';
 import type {
   AppCheckpointHooks,
+  ApplyPage,
   CheckpointPage,
   CheckpointRecord,
   CheckpointStore,
@@ -11,8 +12,9 @@ import { captureTiledCheckpoint } from '$lib/drawing/tiledRenderer';
 import type { DBSchema } from '$lib/idbDatabase';
 import { idbKvStore } from '$lib/idb';
 import { isNative } from '$lib/platform';
-import { booksForPlatform, STARTER_COLORING_BOOK_ID } from '$lib/state/books';
+import { booksForPlatform, STARTER_COLORING_BOOK_ID, type Book } from '$lib/state/books';
 import { canvasState } from '$lib/state/canvas.svelte';
+import type { ColoringPacksState } from '$lib/state/coloringPacks.svelte';
 import { coloringBookState, setOverlayPage } from '$lib/state/coloringBook.svelte';
 import { settingsState } from '$lib/state/settings.svelte';
 
@@ -43,20 +45,49 @@ function currentPage(): CheckpointPage | null {
   return page ? { id: page.id, orientation: coloringBookState.orientation } : null;
 }
 
-// A page from a book this device no longer has, or with the coloring book switched off, cannot
+// The installed packs are scanned at idle after boot; a checkpoint on a page outside the starter
+// book waits this long for the scan before it counts the book as missing.
+const PACK_DISCOVERY_WAIT_MS = 10_000;
+
+function packsDiscovered(packs: Pick<ColoringPacksState, 'initialized'>): Promise<boolean> {
+  if (packs.initialized) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let settled = false;
+    const settle = (found: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      // Torn down after the running effect returns, by which time `stop` is assigned.
+      queueMicrotask(() => stop());
+      resolve(found);
+    };
+    const timer = setTimeout(() => settle(false), PACK_DISCOVERY_WAIT_MS);
+    const stop = $effect.root(() => {
+      $effect(() => {
+        if (packs.initialized) settle(true);
+      });
+    });
+  });
+}
+
+// A page from a book this device does not have, or with the coloring book switched off, cannot
 // come back, and its ink without the line art would not be the picture the child left.
-async function restorePage({ id, orientation }: CheckpointPage) {
-  if (!settingsState.coloringBookEnabled) return false;
+async function resolvePage({ id, orientation }: CheckpointPage): Promise<ApplyPage | null> {
+  if (!settingsState.coloringBookEnabled) return null;
   const platform = isNative() ? 'mobile' : 'web';
-  const { coloringPacksState } = await import('$lib/state/coloringPacks.svelte');
-  // Until the installed packs are known, only the starter book is sure to be on the device.
-  const books = coloringPacksState.initialized
-    ? coloringPacksState.availableColoringBooks(platform)
-    : booksForPlatform(platform).filter((book) => book.id === STARTER_COLORING_BOOK_ID);
-  const page = books.flatMap((book) => book.pages).find((candidate) => candidate.id === id);
-  if (!page) return false;
-  setOverlayPage(page, orientation);
-  return true;
+  const findPage = (books: readonly Book[]) =>
+    books.flatMap((book) => book.pages).find((candidate) => candidate.id === id) ?? null;
+  const starter = booksForPlatform(platform).filter((book) => book.id === STARTER_COLORING_BOOK_ID);
+  let page = findPage(starter);
+  if (!page) {
+    const { coloringPacksState } = await import('$lib/state/coloringPacks.svelte');
+    if (await packsDiscovered(coloringPacksState)) {
+      page = findPage(coloringPacksState.availableColoringBooks(platform));
+    }
+  }
+  if (!page) return null;
+  const found = page;
+  return () => setOverlayPage(found, orientation);
 }
 
 function appCheckpointHooks(): AppCheckpointHooks {
@@ -65,7 +96,7 @@ function appCheckpointHooks(): AppCheckpointHooks {
     isCanvasEmpty,
     captureTiles: captureTiledCheckpoint,
     currentPage,
-    restorePage,
+    resolvePage,
     restoreInk: restoreDrawing,
   };
 }

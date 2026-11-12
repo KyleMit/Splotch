@@ -39,17 +39,24 @@ export interface CheckpointStore {
 }
 
 export type CheckpointCapture =
-  | { kind: 'ink'; png: Blob; cssWidth: number; cssHeight: number }
+  // The coloring page is read in the same tick as the tiles, so a page changed while the PNG
+  // encodes cannot be stored with the ink drawn on the previous one.
+  | { kind: 'ink'; png: Blob; cssWidth: number; cssHeight: number; page: CheckpointPage | null }
   | { kind: 'empty' }
   // A stroke is in progress; its end is a change of its own.
   | { kind: 'busy' };
 
+// Applies a resolved coloring page. Called only after the ink it belongs to was accepted.
+export type ApplyPage = () => void;
+
 export interface CheckpointDeps {
   store: CheckpointStore;
   capture(): Promise<CheckpointCapture>;
-  currentPage(): CheckpointPage | null;
-  // Applies the checkpoint's coloring page; false when it is not available on this device.
-  restorePage(page: CheckpointPage): boolean | Promise<boolean>;
+  // Finds the checkpoint's coloring page on this device; null when it is not available here.
+  resolvePage(page: CheckpointPage): Promise<ApplyPage | null>;
+  // Whether nothing has chosen this launch's page yet, so a restore cannot replace it.
+  pageUntouched(): boolean;
+  // Refuses a page the child has started or paper of another size.
   restoreInk(image: ImageBitmap, cssWidth: number, cssHeight: number): boolean;
   decode(bytes: ArrayBuffer): Promise<ImageBitmap>;
 }
@@ -104,10 +111,15 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
   async function restoreRecord(): Promise<boolean> {
     const record = await deps.store.read();
     if (!isCheckpointRecord(record)) return false;
-    if (record.page && !(await deps.restorePage(record.page))) return false;
+    const applyPage = record.page ? await deps.resolvePage(record.page) : null;
+    if (record.page && !applyPage) return false;
     const image = await deps.decode(record.bytes);
     try {
+      // One synchronous step after every await: the child can draw or pick a page while the
+      // record loads, and nothing may change their page once they have.
+      if (!deps.pageUntouched()) return false;
       hadInk = deps.restoreInk(image, record.cssWidth, record.cssHeight);
+      if (hadInk) applyPage?.();
       return hadInk;
     } finally {
       image.close();
@@ -126,7 +138,7 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
       bytes: await captured.png.arrayBuffer(),
       cssWidth: captured.cssWidth,
       cssHeight: captured.cssHeight,
-      page: deps.currentPage(),
+      page: captured.page,
     });
   }
 
@@ -196,7 +208,7 @@ export interface AppCheckpointHooks {
   isCanvasEmpty(): boolean;
   captureTiles(): TiledCheckpoint | null;
   currentPage(): CheckpointPage | null;
-  restorePage(page: CheckpointPage): boolean | Promise<boolean>;
+  resolvePage(page: CheckpointPage): Promise<ApplyPage | null>;
   restoreInk(image: ImageBitmap, cssWidth: number, cssHeight: number): boolean;
 }
 
@@ -207,14 +219,15 @@ export function createAppDrawingCheckpoint(hooks: AppCheckpointHooks): DrawingCh
       if (hooks.isCanvasEmpty()) return { kind: 'empty' };
       const tiles = hooks.captureTiles();
       if (!tiles) return { kind: 'busy' };
+      const page = hooks.currentPage();
       const { snapshot, renderScale, cssWidth, cssHeight } = tiles;
       const { encodeTiledInkPng } = await import('./exportDrawing');
       const png = await encodeTiledInkPng(snapshot, renderScale);
       if (!png) throw new Error('The checkpoint PNG could not be encoded');
-      return { kind: 'ink', png, cssWidth, cssHeight };
+      return { kind: 'ink', png, cssWidth, cssHeight, page };
     },
-    currentPage: hooks.currentPage,
-    restorePage: hooks.restorePage,
+    resolvePage: hooks.resolvePage,
+    pageUntouched: () => hooks.currentPage() === null,
     restoreInk: hooks.restoreInk,
     decode: (bytes) => createImageBitmap(new Blob([bytes], { type: 'image/png' })),
   });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHECKPOINT_QUIET_MS,
+  type ApplyPage,
   createDrawingCheckpoint,
   isCheckpointRecord,
   type CheckpointCapture,
@@ -17,6 +18,7 @@ function record(overrides: Partial<CheckpointRecord> = {}): CheckpointRecord {
 function harness(stored: unknown = undefined) {
   let capture: CheckpointCapture = { kind: 'empty' };
   const image = { close: vi.fn() } as unknown as ImageBitmap;
+  const applyPage = vi.fn();
   const deps = {
     store: {
       read: vi.fn(async () => stored),
@@ -24,14 +26,15 @@ function harness(stored: unknown = undefined) {
       remove: vi.fn(async () => {}),
     },
     capture: vi.fn(async () => capture),
-    currentPage: vi.fn((): CheckpointRecord['page'] => null),
-    restorePage: vi.fn(() => true),
+    resolvePage: vi.fn(async (): Promise<ApplyPage | null> => applyPage),
+    pageUntouched: vi.fn(() => true),
     restoreInk: vi.fn(() => true),
     decode: vi.fn(async () => image),
   } satisfies CheckpointDeps;
   return {
     deps,
     image,
+    applyPage,
     checkpoint: createDrawingCheckpoint(deps),
     setCapture(next: CheckpointCapture) {
       capture = next;
@@ -39,11 +42,12 @@ function harness(stored: unknown = undefined) {
   };
 }
 
-const ink = (): CheckpointCapture => ({
+const ink = (page: CheckpointRecord['page'] = null): CheckpointCapture => ({
   kind: 'ink',
   png: new Blob([PNG], { type: 'image/png' }),
   cssWidth: 400,
   cssHeight: 300,
+  page,
 });
 
 beforeEach(() => {
@@ -55,10 +59,9 @@ afterEach(() => {
 });
 
 describe('drawing checkpoint writes', () => {
-  it('writes the page once it has been quiet, with its coloring page', async () => {
+  it('writes the page once it has been quiet, with the coloring page captured with its ink', async () => {
     const { checkpoint, deps, setCapture } = harness();
-    setCapture(ink());
-    deps.currentPage.mockReturnValue({ id: 'farm-cow', orientation: 'portrait' });
+    setCapture(ink({ id: 'farm-cow', orientation: 'portrait' }));
 
     checkpoint.changed();
     checkpoint.changed();
@@ -162,21 +165,47 @@ describe('drawing checkpoint writes', () => {
 });
 
 describe('drawing checkpoint restore', () => {
-  it('restores the coloring page, then the ink, and releases the decoded image', async () => {
-    const { checkpoint, deps, image } = harness(
+  it('restores the ink, then its coloring page, and releases the decoded image', async () => {
+    const { checkpoint, deps, image, applyPage } = harness(
       record({ page: { id: 'farm-cow', orientation: 'landscape' } })
     );
+    deps.restoreInk.mockImplementation(() => {
+      expect(applyPage).not.toHaveBeenCalled();
+      return true;
+    });
 
     await expect(checkpoint.restore()).resolves.toBe(true);
 
-    expect(deps.restorePage).toHaveBeenCalledWith({ id: 'farm-cow', orientation: 'landscape' });
+    expect(deps.resolvePage).toHaveBeenCalledWith({ id: 'farm-cow', orientation: 'landscape' });
     expect(deps.restoreInk).toHaveBeenCalledWith(image, 400, 300);
+    expect(applyPage).toHaveBeenCalledOnce();
     expect(vi.mocked(image.close)).toHaveBeenCalledOnce();
+  });
+
+  it('leaves the coloring page alone when the page refuses the ink', async () => {
+    const { checkpoint, deps, applyPage } = harness(
+      record({ page: { id: 'farm-cow', orientation: 'portrait' } })
+    );
+    deps.restoreInk.mockReturnValue(false);
+
+    await expect(checkpoint.restore()).resolves.toBe(false);
+    expect(applyPage).not.toHaveBeenCalled();
+  });
+
+  it('changes nothing once a page was chosen while the record loaded', async () => {
+    const { checkpoint, deps, applyPage } = harness(
+      record({ page: { id: 'farm-cow', orientation: 'portrait' } })
+    );
+    deps.pageUntouched.mockReturnValue(false);
+
+    await expect(checkpoint.restore()).resolves.toBe(false);
+    expect(deps.restoreInk).not.toHaveBeenCalled();
+    expect(applyPage).not.toHaveBeenCalled();
   });
 
   it('brings back no ink when its coloring page is not available', async () => {
     const { checkpoint, deps } = harness(record({ page: { id: 'gone', orientation: 'portrait' } }));
-    deps.restorePage.mockReturnValue(false);
+    deps.resolvePage.mockResolvedValue(null);
 
     await expect(checkpoint.restore()).resolves.toBe(false);
     expect(deps.decode).not.toHaveBeenCalled();

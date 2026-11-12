@@ -2,8 +2,11 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   applyFarmPage,
   clearViaGesture,
+  gotoAppWithInstalledColoringBook,
   opaqueCanvasPixelCount,
+  openColoringBookGrid,
   openDrawer,
+  settleTapGuard,
 } from './flows-harness';
 import { drawCommittedStroke, gotoApp } from './helpers';
 
@@ -17,6 +20,8 @@ const CHECKPOINT_WRITTEN_TIMEOUT_MS = 15_000;
 // How long a blank page is watched after a relaunch to prove nothing comes back: longer than a
 // restore takes once the drawing route has mounted.
 const NO_RESTORE_WATCH_MS = 3_000;
+// A page from a downloaded book waits for the idle-time scan of the installed packs.
+const PACK_RESTORE_TIMEOUT_MS = 15_000;
 
 // The record the app stored, summarized, or null. The database is opened only once it exists: an
 // open from here would create it without the app's object store, which the app never adds later.
@@ -96,5 +101,85 @@ test('a coloring page comes back with the drawing on it', async ({ page }) => {
   await gotoApp(page);
 
   await expect(page.locator('#coloringOverlay')).toBeVisible();
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(inked);
+});
+
+// The restore reads the record while the page is already live, so a child can draw first. The
+// read is held here until a stroke has landed.
+async function holdCheckpointRead(page: Page) {
+  await page.addInitScript(() => {
+    const get = IDBObjectStore.prototype.get;
+    IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey) {
+      const request = get.call(this, key);
+      if (this.transaction.db.name !== 'splotch-drawing-checkpoint') return request;
+      let deliver: ((event: Event) => void) | null = null;
+      Object.defineProperty(request, 'onsuccess', {
+        configurable: true,
+        set(handler: (event: Event) => void) {
+          request.addEventListener('success', (event) => {
+            deliver = () => handler.call(request, event);
+            Object.assign(window, { releaseCheckpointRead: () => deliver?.(new Event('success')) });
+          });
+        },
+      });
+      return request;
+    } as typeof IDBObjectStore.prototype.get;
+  });
+}
+
+test('a restore that lands after the child has started leaves their page alone', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+  await drawCommittedStroke(page, STROKE);
+  await expect
+    .poll(() => storedCheckpoint(page), { timeout: CHECKPOINT_WRITTEN_TIMEOUT_MS })
+    .toMatchObject({ page: { id: expect.any(String) } });
+
+  await holdCheckpointRead(page);
+  await gotoApp(page);
+  await expect.poll(() => page.evaluate(() => 'releaseCheckpointRead' in window)).toBe(true);
+  await drawCommittedStroke(page, [
+    { x: 200, y: 320 },
+    { x: 320, y: 380 },
+  ]);
+  const ownInk = await opaqueCanvasPixelCount(page);
+  await page.evaluate(() =>
+    (window as unknown as { releaseCheckpointRead: () => void }).releaseCheckpointRead()
+  );
+  await page.waitForTimeout(NO_RESTORE_WATCH_MS);
+
+  expect(await opaqueCanvasPixelCount(page)).toBe(ownInk);
+  await expect(page.locator('#coloringOverlay')).toBeHidden();
+});
+
+test('a page from a downloaded book comes back once the installed packs are known', async ({
+  page,
+}) => {
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await openDrawer(page);
+  await openColoringBookGrid(page);
+  const dialog = page.locator('#coloring-book-dialog');
+  await dialog.getByRole('button', { name: 'Dinosaurs coloring book' }).click();
+  await settleTapGuard(page);
+  await dialog
+    .getByRole('button', { name: / coloring page$/i })
+    .first()
+    .click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#coloringOverlay')).toBeVisible();
+  await drawCommittedStroke(page, STROKE);
+  const inked = await opaqueCanvasPixelCount(page);
+  await expect
+    .poll(() => storedCheckpoint(page), { timeout: CHECKPOINT_WRITTEN_TIMEOUT_MS })
+    .toMatchObject({ page: { id: expect.any(String) } });
+
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\/dinosaur\//, {
+    timeout: PACK_RESTORE_TIMEOUT_MS,
+  });
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(inked);
 });
