@@ -35,6 +35,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AppSettingsPlugin.class);
         registerPlugin(SensorOrientationPlugin.class);
         super.onCreate(savedInstanceState);
+        bridge.addWebViewListener(new RendererGoneListener(this));
         WindowCompat.enableEdgeToEdge(getWindow());
         preserveNavigationBarContrast();
         updateWebViewBackground();

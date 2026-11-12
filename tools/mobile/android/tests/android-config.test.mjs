@@ -278,6 +278,27 @@ describe('Android manifest kids-compliance', () => {
   });
 });
 
+describe('Android page survival', () => {
+  // A configuration change the activity does not handle recreates it, and with it the WebView: the
+  // child returns to a blank page. These four were missing until 2026-11 (the RN decision campaign's
+  // durability lane).
+  const SELF_HANDLED_CHANGES = ['fontScale', 'fontWeightAdjustment', 'layoutDirection', 'assetsPaths'];
+
+  it('handles font, bold-text, direction and theme-overlay changes without a recreation', () => {
+    const manifest = read('android/app/src/main/AndroidManifest.xml');
+    const handled = manifest.match(/android:configChanges="([^"]+)"/)?.[1].split('|') ?? [];
+    expect(handled).toEqual(expect.arrayContaining(SELF_HANDLED_CHANGES));
+  });
+
+  it('claims a WebView renderer death instead of letting WebView kill the app', () => {
+    const activity = read('android/app/src/main/java/art/splotch/app/MainActivity.java');
+    const listener = read('android/app/src/main/java/art/splotch/app/RendererGoneListener.java');
+    expect(activity).toContain('bridge.addWebViewListener(new RendererGoneListener(this));');
+    expect(listener).toMatch(/public boolean onRenderProcessGone\(/);
+    expect(listener).toContain('activity.recreate();');
+  });
+});
+
 describe('Android native theme backgrounds', () => {
   const colorValue = (path) => {
     const match = read(path).match(/<color name="app_background">(#[0-9a-f]+)<\/color>/i);
