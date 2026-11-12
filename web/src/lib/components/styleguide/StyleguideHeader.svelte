@@ -42,7 +42,7 @@
       </div>
       <span class="header-label">Design system</span>
     </div>
-    <a class="header-brand" href="#top" aria-label="Back to top">
+    <a class="header-brand" href="#top" aria-label="Splotch, back to top">
       <BrandMark />
     </a>
   </div>
