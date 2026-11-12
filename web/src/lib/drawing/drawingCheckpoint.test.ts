@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHECKPOINT_QUIET_MS,
-  type ApplyPage,
+  type ResolvedPage,
   createDrawingCheckpoint,
   isCheckpointRecord,
   type CheckpointCapture,
@@ -18,7 +18,8 @@ function record(overrides: Partial<CheckpointRecord> = {}): CheckpointRecord {
 function harness(stored: unknown = undefined) {
   let capture: CheckpointCapture = { kind: 'empty' };
   const image = { close: vi.fn() } as unknown as ImageBitmap;
-  const applyPage = vi.fn();
+  const resolved = { stillApplies: vi.fn(() => true), apply: vi.fn() };
+  const applyPage = resolved.apply;
   const deps = {
     store: {
       read: vi.fn(async () => stored),
@@ -26,7 +27,7 @@ function harness(stored: unknown = undefined) {
       remove: vi.fn(async () => {}),
     },
     capture: vi.fn(async () => capture),
-    resolvePage: vi.fn(async (): Promise<ApplyPage | null> => applyPage),
+    resolvePage: vi.fn(async (): Promise<ResolvedPage | null> => resolved),
     pageUntouched: vi.fn(() => true),
     restoreInk: vi.fn(() => true),
     decode: vi.fn(async () => image),
@@ -35,6 +36,7 @@ function harness(stored: unknown = undefined) {
     deps,
     image,
     applyPage,
+    resolved,
     checkpoint: createDrawingCheckpoint(deps),
     setCapture(next: CheckpointCapture) {
       capture = next;
@@ -201,6 +203,33 @@ describe('drawing checkpoint restore', () => {
     await expect(checkpoint.restore()).resolves.toBe(false);
     expect(deps.restoreInk).not.toHaveBeenCalled();
     expect(applyPage).not.toHaveBeenCalled();
+  });
+
+  it('changes nothing once the coloring book was switched off while the record loaded', async () => {
+    const { checkpoint, deps, resolved } = harness(
+      record({ page: { id: 'farm-cow', orientation: 'portrait' } })
+    );
+    resolved.stillApplies.mockReturnValue(false);
+
+    await expect(checkpoint.restore()).resolves.toBe(false);
+    expect(deps.restoreInk).not.toHaveBeenCalled();
+    expect(resolved.apply).not.toHaveBeenCalled();
+  });
+
+  it('changes nothing once it was disposed while the record loaded', async () => {
+    let finishDecode = (_image: ImageBitmap) => {};
+    const { checkpoint, deps, image } = harness(record());
+    deps.decode.mockImplementationOnce(
+      () => new Promise<ImageBitmap>((resolve) => (finishDecode = resolve))
+    );
+
+    const restoring = checkpoint.restore();
+    await vi.advanceTimersByTimeAsync(0);
+    checkpoint.dispose();
+    finishDecode(image);
+
+    await expect(restoring).resolves.toBe(false);
+    expect(deps.restoreInk).not.toHaveBeenCalled();
   });
 
   it('brings back no ink when its coloring page is not available', async () => {

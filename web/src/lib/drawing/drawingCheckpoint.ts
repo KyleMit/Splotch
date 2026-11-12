@@ -46,14 +46,19 @@ export type CheckpointCapture =
   // A stroke is in progress; its end is a change of its own.
   | { kind: 'busy' };
 
-// Applies a resolved coloring page. Called only after the ink it belongs to was accepted.
-export type ApplyPage = () => void;
+// A coloring page found on this device. `stillApplies` is asked again in the synchronous restore
+// step, since the coloring book can be switched off while the record loads; `apply` runs only once
+// the ink it belongs to was accepted.
+export interface ResolvedPage {
+  stillApplies(): boolean;
+  apply(): void;
+}
 
 export interface CheckpointDeps {
   store: CheckpointStore;
   capture(): Promise<CheckpointCapture>;
   // Finds the checkpoint's coloring page on this device; null when it is not available here.
-  resolvePage(page: CheckpointPage): Promise<ApplyPage | null>;
+  resolvePage(page: CheckpointPage): Promise<ResolvedPage | null>;
   // Whether nothing has chosen this launch's page yet, so a restore cannot replace it.
   pageUntouched(): boolean;
   // Refuses a page the child has started or paper of another size.
@@ -111,15 +116,16 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
   async function restoreRecord(): Promise<boolean> {
     const record = await deps.store.read();
     if (!isCheckpointRecord(record)) return false;
-    const applyPage = record.page ? await deps.resolvePage(record.page) : null;
-    if (record.page && !applyPage) return false;
+    const page = record.page ? await deps.resolvePage(record.page) : null;
+    if (record.page && !page) return false;
     const image = await deps.decode(record.bytes);
     try {
       // One synchronous step after every await: the child can draw or pick a page while the
-      // record loads, and nothing may change their page once they have.
-      if (!deps.pageUntouched()) return false;
+      // record loads, the coloring book can be switched off, and the drawing route can unmount;
+      // nothing may change the page once any of those has happened.
+      if (disposed || !deps.pageUntouched() || (page && !page.stillApplies())) return false;
       hadInk = deps.restoreInk(image, record.cssWidth, record.cssHeight);
-      if (hadInk) applyPage?.();
+      if (hadInk) page?.apply();
       return hadInk;
     } finally {
       image.close();
@@ -208,7 +214,7 @@ export interface AppCheckpointHooks {
   isCanvasEmpty(): boolean;
   captureTiles(): TiledCheckpoint | null;
   currentPage(): CheckpointPage | null;
-  resolvePage(page: CheckpointPage): Promise<ApplyPage | null>;
+  resolvePage(page: CheckpointPage): Promise<ResolvedPage | null>;
   restoreInk(image: ImageBitmap, cssWidth: number, cssHeight: number): boolean;
 }
 

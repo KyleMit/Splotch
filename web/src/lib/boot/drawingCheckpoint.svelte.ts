@@ -1,7 +1,7 @@
 import { untrack } from 'svelte';
 import type {
   AppCheckpointHooks,
-  ApplyPage,
+  ResolvedPage,
   CheckpointPage,
   CheckpointRecord,
   CheckpointStore,
@@ -72,7 +72,7 @@ function packsDiscovered(packs: Pick<ColoringPacksState, 'initialized'>): Promis
 
 // A page from a book this device does not have, or with the coloring book switched off, cannot
 // come back, and its ink without the line art would not be the picture the child left.
-async function resolvePage({ id, orientation }: CheckpointPage): Promise<ApplyPage | null> {
+async function resolvePage({ id, orientation }: CheckpointPage): Promise<ResolvedPage | null> {
   if (!settingsState.coloringBookEnabled) return null;
   const platform = isNative() ? 'mobile' : 'web';
   const findPage = (books: readonly Book[]) =>
@@ -87,7 +87,10 @@ async function resolvePage({ id, orientation }: CheckpointPage): Promise<ApplyPa
   }
   if (!page) return null;
   const found = page;
-  return () => setOverlayPage(found, orientation);
+  return {
+    stillApplies: () => settingsState.coloringBookEnabled,
+    apply: () => setOverlayPage(found, orientation),
+  };
 }
 
 function appCheckpointHooks(): AppCheckpointHooks {
