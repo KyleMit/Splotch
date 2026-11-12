@@ -12,6 +12,13 @@ const FULL_VOLUME_SPEED = 0.45;
 const GAIN_RAMP_S = 0.06;
 const STOP_DECLICK_S = 0.005;
 const TEARDOWN_SLACK_MS = 20;
+// Once a sound has played, a running context keeps the device's audio output open with nothing to
+// play: the iPad's audio server held the session active, playing silence, for as long as the app
+// stayed in front, Sound on or off, and the Galaxy's WebView renderer spent 3-4 CPU-s/min on it in
+// front and 1.9 in the background (ipad-best-retest.md and battery-heat.md in the RN decision
+// campaign). So the context parks this long after the last sound ends, and the next sound resumes it.
+// Exported for drawingSound.park.test.ts only.
+export const AUDIO_IDLE_SUSPEND_MS = 3_000;
 
 // The one context for all app audio: clearSound.ts reaches it through
 // ensureAudioContext/currentAudioContext rather than building a second one.
@@ -31,6 +38,7 @@ const loadPromises = new Map<string, Promise<void>>();
 const soundBytes = new Map<string, Promise<ArrayBuffer>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
+let parkTimer: ReturnType<typeof setTimeout> | null = null;
 type PencilPlaybackKind = 'drawing' | 'volume-preview';
 
 let playbackRequest: { kind: PencilPlaybackKind; speed: number } | null = null;
@@ -48,6 +56,35 @@ export function ensureAudioContext(): AudioContext | null {
   if (typeof AudioContext === 'undefined') return null;
   audioContext = new AudioContext();
   return audioContext;
+}
+
+function cancelPark() {
+  if (parkTimer === null) return;
+  clearTimeout(parkTimer);
+  parkTimer = null;
+}
+
+function parkAfter(delayMs: number) {
+  cancelPark();
+  parkTimer = setTimeout(() => {
+    parkTimer = null;
+    const ctx = audioContext;
+    if (!ctx || currentPlayback || playbackRequest || ctx.state !== 'running') return;
+    ctx.suspend().catch(() => {});
+  }, delayMs);
+}
+
+// Every one-shot sound on the shared context (clearSound.ts) reports how long it lasts, so the
+// context stays awake through it and parks once it has been quiet.
+export function noteSoundPlayed(ctx: AudioContext, durationMs: number) {
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  parkAfter(durationMs + AUDIO_IDLE_SUSPEND_MS);
+}
+
+// A parent switching a sound off parks the context as soon as the scratch's declick has played.
+export function parkAudio() {
+  stopDrawSound();
+  parkAfter(STOP_DECLICK_S * 1_000 + TEARDOWN_SLACK_MS);
 }
 
 export function currentAudioContext(): AudioContext | null {
@@ -182,6 +219,7 @@ function startPlaybackIfReady() {
   source.connect(gain);
   source.start(0, Math.random() * buffer.duration);
   currentPlayback = { source, gain };
+  cancelPark();
   updateGain(gain.gain, request.speed, ctx.currentTime);
 }
 
@@ -217,6 +255,7 @@ export function stopDrawSound() {
     }
   }
   currentPlayback = null;
+  parkAfter(AUDIO_IDLE_SUSPEND_MS);
 }
 
 // Ramping (instead of setting the value directly) avoids audible clicks; the

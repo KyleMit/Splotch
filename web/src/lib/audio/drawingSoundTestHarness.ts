@@ -5,6 +5,8 @@ interface AudioContextStubOptions {
   currentTime?: number;
   destination?: unknown;
   resume?: unknown;
+  suspend?: unknown;
+  close?: unknown;
   decodeAudioData?: unknown;
   createGain?: unknown;
   createBufferSource?: unknown;
@@ -19,6 +21,8 @@ export function stubAudioContext({
   currentTime = 0,
   destination = {},
   resume = vi.fn().mockResolvedValue(undefined),
+  suspend = vi.fn().mockResolvedValue(undefined),
+  close = vi.fn().mockResolvedValue(undefined),
   decodeAudioData = vi.fn().mockResolvedValue({ duration: 1 }),
   createGain = vi.fn(() => ({
     gain: {
@@ -59,6 +63,8 @@ export function stubAudioContext({
       currentTime = currentTime;
       destination = destination;
       resume = resume;
+      suspend = suspend;
+      close = close;
       decodeAudioData = decodeAudioData;
       createGain = createGain;
       createBufferSource = createBufferSource;

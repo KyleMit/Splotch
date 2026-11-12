@@ -1,5 +1,10 @@
 import { settingsState } from '$lib/state/settings.svelte';
-import { currentAudioContext, ensureAudioContext, volumeMultiplier } from './drawingSound';
+import {
+  currentAudioContext,
+  ensureAudioContext,
+  noteSoundPlayed,
+  volumeMultiplier,
+} from './drawingSound';
 
 const CLEAR_PAGE_TURN_URL = '/sounds/clear-page-turn.mp3';
 
@@ -90,7 +95,7 @@ export function startClearSound() {
 
   clearGestureActive = true;
   void loadClearPageTurn(ctx, CLEAR_PAGE_TURN_URL);
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  noteSoundPlayed(ctx, 0);
 }
 
 // `progress` is raw normalized drag distance, so it keeps climbing past the
@@ -214,6 +219,7 @@ function playClearNote(ctx: AudioContext, frequency: number, gainMultiplier = 1)
   };
   oscillator.start(now);
   oscillator.stop(now + CLEAR_BUBBLE_DURATION_S);
+  noteSoundPlayed(ctx, CLEAR_BUBBLE_DURATION_S * 1_000);
 
   playClearDroplet(ctx, frequency, level, now);
 }
@@ -264,4 +270,5 @@ function playClearPageTurnIfReady() {
     gain.disconnect();
   };
   source.start();
+  noteSoundPlayed(ctx, clearPageTurnBuffer.duration * 1_000);
 }
