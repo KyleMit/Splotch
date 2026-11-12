@@ -540,7 +540,7 @@
     "@dprint/typescript": "^0.96.1",
     "@eslint/js": "^10.0.1",
     "@google/genai": "^2.24.0",
-    "@intellectronica/ruler": "0.3.44",
+    "@intellectronica/ruler": "0.3.46",
     "@playwright/test": "^1.63.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^22.20.4",
