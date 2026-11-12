@@ -55,16 +55,25 @@ reasoning behind each verdict is in the commit message.
 * `pnpm audit --audit-level=high` passes. The braces exception stays: issue 2648 waits for braces
   3.0.4, and the registry still lists 3.0.3 as latest (checked 2026-11-12).
 * Unverified: the Lighthouse medians were not recalibrated for 13.6.0, only the recorded version.
+* The Ruler bump (d4b7d2332533) committed empty `.ruler-managed.json` manifests. Ruler 0.3.46 then
+  skipped every existing shared skill, so a source edit never reached its copies and `ruler:check`
+  still passed. The final rival review found it. 35a222b8f4e7 claims every shared skill before Ruler
+  runs, with a scratch-project test against the real CLI. `ruler:check` now fails on an unapplied
+  source edit.
 
 ## 3. Open issues
 
-| Issue | Outcome                                                       | Commit       | Gate                                                                                                                                                            | Unverified                                                    |
-| ----- | ------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 2868  | Fixed in phase 1                                              | 2449a4e9db8a | 15be9246fd93's spec (fails 8 iPad landscape cases before the fix)                                                                                               | Real 12.9" iPad look                                          |
-| 2841  | Fixed: hub rows inherit Quicksand                             | 7fec3abf9f3d | two new `settings-hub.spec.ts` cases; the hub case fails without the CSS                                                                                        | none                                                          |
-| 1386  | `overscroll-behavior: none` on the drawing route's `<html>`   | e69955087711 | new `page.spec.ts` case (none on `/`, auto on `/privacy`) fails without the rule                                                                                | No pull indicator on a physical Android phone in Chrome       |
-| 3225  | Netlify ignore also diffs the pushed commit's first parent    | 45cc24928a9d | `netlify-deploy-skip.test.mjs` runs the real command on a scratch history; the old command fails its three trap cases; `test:tools` 7,107 passed                | The first production deploy after merge; the multi-commit gap |
-| 1583  | One `FreeCharge` settlement module for both generation routes | fe8bcb202ac2 | both route suites pass without changes beyond one id constant; a new route case passes on the old code and fails on the issue's proposed shape; API smoke 42/42 | none                                                          |
+| Issue | Outcome                                                       | Commit                     | Gate                                                                                                                                                            | Unverified                                                    |
+| ----- | ------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 2868  | Fixed in phase 1                                              | 2449a4e9db8a               | 15be9246fd93's spec (fails 8 iPad landscape cases before the fix)                                                                                               | Real 12.9" iPad look                                          |
+| 2841  | Fixed: hub rows inherit Quicksand                             | 7fec3abf9f3d               | two new `settings-hub.spec.ts` cases; the hub case fails without the CSS                                                                                        | none                                                          |
+| 1386  | `overscroll-behavior: none` on the drawing route's `<html>`   | e69955087711               | new `page.spec.ts` case (none on `/`, auto on `/privacy`) fails without the rule                                                                                | No pull indicator on a physical Android phone in Chrome       |
+| 3225  | Netlify ignore also diffs the pushed commit's first parent    | 45cc24928a9d               | `netlify-deploy-skip.test.mjs` runs the real command on a scratch history; the old command fails its three trap cases; `test:tools` 7,107 passed                | The first production deploy after merge; the multi-commit gap |
+| 1583  | One `FreeCharge` settlement module for both generation routes | fe8bcb202ac2, cbe73f92b988 | both route suites pass without changes beyond one id constant; a new route case passes on the old code and fails on the issue's proposed shape; API smoke 42/42 | none                                                          |
+
+cbe73f92b988 updates the grant-redaction integration test, which pinned the in-line route's two old
+settlement log lines. CI's coverage tier caught it. The 1583 commit message says the route tests
+needed no edits, and that claim missed this third file.
 
 Not done, and why:
 
@@ -77,6 +86,12 @@ Not done, and why:
 * 1451 (entropy floor on managed codes), 1450 (should a drawing survive a crash), 2376 and 1427
   (campaign umbrellas): each needs an owner decision. ADR-0178's checkpoint is relevant to 1450 but
   does not decide it.
+
+## 4. Review
+
+* Phase 1: two rival rounds on 23160beec0aa and 70dfb0852b3d, every finding fixed.
+* Final: a fresh rival reviewer on 42c5c6003928 found the Ruler manifest defect (fixed in
+  35a222b8f4e7). Its resumed round 2 on 35a222b8f4e7 confirmed the fix and found nothing new.
 
 ## Pending device checks (run after the RN film test)
 
