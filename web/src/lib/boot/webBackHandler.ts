@@ -4,7 +4,7 @@ import { observeModalStack } from '$lib/actions/modalDialog.svelte';
 import { COARSE_POINTER_QUERY, isStandalone } from '$lib/platform';
 import { respondToDialogBack } from './dialogBack';
 
-export const WEB_BACK_PAGE_STATE_KEY = 'splotchBackNavigation';
+const WEB_BACK_PAGE_STATE_KEY = 'splotchBackNavigation';
 
 interface BackStack {
   guard: boolean;

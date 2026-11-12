@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  createLayeredPngPreview,
   createTiledPngPreview,
   createTiledPngSurface,
   paintTiledPngSurface,
@@ -116,6 +117,60 @@ describe('tiled PNG composition', () => {
     expect(context.imageSmoothingEnabled).toBe(true);
     expect(context.imageSmoothingQuality).toBe('high');
     expect(context.drawImage).toHaveBeenCalledWith(source, 0, 0, 200, 150);
+    expect(transferToImageBitmap).toHaveBeenCalledOnce();
+  });
+
+  it('paints the replay worker preview from the tile layers at its own size on a CPU surface', () => {
+    const bitmap = {} as ImageBitmap;
+    const drawImage = vi.fn();
+    const setTransform = vi.fn();
+    const context = {
+      globalCompositeOperation: 'source-over' as GlobalCompositeOperation,
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low' as ImageSmoothingQuality,
+      fillStyle: '',
+      setTransform,
+      resetTransform: vi.fn(),
+      fillRect: vi.fn(),
+      createPattern: vi.fn(() => ({}) as CanvasPattern),
+      drawImage,
+    };
+    const transferToImageBitmap = vi.fn(() => bitmap);
+    const getContext = vi.fn(() => context);
+    const canvases: Array<{ width: number; height: number }> = [];
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        constructor(
+          readonly width: number,
+          readonly height: number
+        ) {
+          canvases.push(this);
+        }
+        getContext = getContext;
+        transferToImageBitmap = transferToImageBitmap;
+      }
+    );
+    const tile = { width: 50, height: 50 } as ImageBitmap;
+
+    const preview = createLayeredPngPreview(
+      {
+        sourceWidth: 400,
+        sourceHeight: 300,
+        sourceScale: 2,
+        tiles: [{ bitmap: tile, x: 10, y: 20 }],
+        texture: null,
+        overlay: null,
+        paperColor: '#fffaf0',
+      },
+      100
+    );
+
+    expect(preview).toBe(bitmap);
+    expect(canvases).toEqual([expect.objectContaining({ width: 100, height: 75 })]);
+    expect(getContext).toHaveBeenCalledWith('2d', { willReadFrequently: true });
+    expect(setTransform).toHaveBeenNthCalledWith(2, 0.25, 0, 0, 0.25, 0, 0);
+    expect(drawImage).toHaveBeenCalledWith(tile, 10, 20);
     expect(transferToImageBitmap).toHaveBeenCalledOnce();
   });
 });

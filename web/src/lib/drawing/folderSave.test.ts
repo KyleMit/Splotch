@@ -93,6 +93,17 @@ describe('folderSaveSupported', () => {
     setPicker(() => {});
     expect(folderSave.folderSaveSupported()).toBe(true);
   });
+
+  it('is false in a native shell, whose WebView exposes a picker that never opens', () => {
+    const original = globalThis.Capacitor;
+    setPicker(() => {});
+    globalThis.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android' };
+    try {
+      expect(folderSave.folderSaveSupported()).toBe(false);
+    } finally {
+      globalThis.Capacitor = original;
+    }
+  });
 });
 
 describe('chooseSaveFolder', () => {

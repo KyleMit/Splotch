@@ -46,6 +46,7 @@
   import { hydrateSettings } from '$lib/boot/persistedState';
   import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
   import { installSettledInEffects } from '$lib/boot/settledIn.svelte';
+  import { installDrawingCheckpoint } from '$lib/boot/drawingCheckpoint.svelte';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
   import {
@@ -98,6 +99,9 @@
   // only post-hydration strokes count — acceptable, it only defers
   // registration slightly further.
   if (!__IS_CAPACITOR__) installSettledInEffects(() => hiddenOverlays);
+
+  // The picture in progress survives the app's process ending (ADR-0178).
+  installDrawingCheckpoint();
 
   // A first visit's coloring-pack downloads wait for the same settled-in
   // signal, or for the picker opening, which asks for books outright. Opening

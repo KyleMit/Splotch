@@ -32,7 +32,9 @@ import {
   edgeSwipeDirectionDecided,
   guardedEdgeAt,
   pointerWasResumed,
+  admitMove,
   type GuardEdge,
+  type MoveSample,
   type Point,
 } from './strokeMath';
 import {
@@ -58,7 +60,7 @@ import {
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
 import { createCrayonPassBoundaries } from './crayonPassBoundaries';
-import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
+import { configureCrayonDeposition } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -81,14 +83,7 @@ import {
   type ExportOverlaySource,
 } from './overlay';
 import { currentExportScale } from './exportScale';
-import {
-  captureLiveTileSnapshot,
-  captureTiledSnapshot,
-  closeStrokeSnapshots,
-  closeTiledExportSnapshot,
-  createStrokeSnapshot,
-  type StrokeSnapshots,
-} from './strokeSnapshot';
+import { closeStrokeSnapshots, closeTiledExportSnapshot, snapshotStrokes } from './strokeSnapshot';
 import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
@@ -109,8 +104,8 @@ import {
   repaintTiledRenderer,
   recoverTiledRendererIfNeeded,
   renderTiledOp,
-  renderTiledSnapshot,
   resizeTiledRenderer,
+  restoreTiledBase,
   scanTiledRendererIsEmpty,
   scheduleTiledHistoryFold,
   syncTiledCrayonMix,
@@ -755,6 +750,7 @@ interface PointerState {
   // digitizer that outruns the display from making the engine paint the same
   // presentable frame several times over.
   pendingRaster: RasterBatch[];
+  lastMove?: MoveSample;
 }
 
 // StrokeOp carries one flag per brush; this is the one place the engine's brush
@@ -1023,6 +1019,7 @@ function draw(e: PointerEvent) {
     // back to the event itself.
     const coalesced = e.getCoalescedEvents?.() ?? [];
     const events = coalesced.length > 0 ? coalesced : [e];
+    if (!admitMove(pointerState, events)) return;
     const screenPoints = events.map(pointerToScreen);
 
     const now = Date.now();
@@ -1073,6 +1070,16 @@ function stopDrawing(e: PointerEvent) {
   // rendered and the canvas state below is left alone.
   if (pointerState?.edgeSwipeGuard && e.type === 'pointerup') {
     commitEdgeSwipe(pointerState);
+  }
+
+  // Midpoint smoothing ends every stroke halfway along its last chord. Dense
+  // input hides that, but a burst can reach a non-primary finger as one far
+  // sample (WebKit keeps its coalesced list to the last point), and the line
+  // then stops visibly short of the lift. Draw the closing half-chord.
+  if (e.type === 'pointerup' && !pointerState.edgeSwipeGuard) {
+    if (pointerState.x !== pointerState.midX || pointerState.y !== pointerState.midY) {
+      strokeSegments(pointerState, [{ x: pointerState.x, y: pointerState.y }]);
+    }
   }
 
   // A lifting crayon finger closes its deposition pass by stamping each tile's
@@ -1217,6 +1224,15 @@ function clearRecordedInk(animateInto: ClientPoint | undefined) {
 
 export function isCanvasEmpty(): boolean {
   return canvasEmpty;
+}
+
+// A picture checkpointed in an earlier run of the app (drawingCheckpoint.ts) comes back only onto
+// an untouched page of the same size, as ink the child drew rather than a step Undo takes back.
+export function restoreDrawing(image: CanvasImageSource, cssWidth: number, cssHeight: number) {
+  if (!canvasEmpty || isStrokeActive() || !restoreTiledBase(image, cssWidth, cssHeight))
+    return false;
+  setCanvasEmptyState(false);
+  return true;
 }
 
 // Test/profiling seam: how tiled undo history is currently stored.
@@ -1460,32 +1476,13 @@ export interface CanvasExportPreparation {
   cancel(): void;
 }
 
-// Capture strokes in upright paper space rather than the CSS-presented view.
-function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
-  const width = Math.round((paper.pxW / renderScale) * snapshotScale);
-  const height = Math.round((paper.pxH / renderScale) * snapshotScale);
-  const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
-  if (tiledSnapshot) return { export: tiledSnapshot, preview: null };
-  const preview = capturePreview ? captureLiveTileSnapshot(renderScale) : null;
-  return {
-    export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
-      renderTiledSnapshot(target);
-      // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
-      // (its flush is only recorded at pass close); an export is terminal for this
-      // snapshot, so stamp it now rather than dropping that ink.
-      flushCrayonBuffer(target);
-    }),
-    preview,
-  };
-}
-
 export function prepareCanvasExport(capturePreview = true): CanvasExportPreparation | null {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
   const { theme, overlaySource } = capturedExportAppearance();
   const scale = currentExportScale();
   // This snapshot must precede the compositor import: save-on-delete fire-and-forgets an export
   // and clears the live engine synchronously. web/tests/engine-export.spec.ts pins the race.
-  const snapshots = snapshotStrokes(scale, capturePreview);
+  const snapshots = snapshotStrokes(paper, renderScale, scale, capturePreview);
   let available = true;
   return {
     async complete(options: ExportOptions = {}) {

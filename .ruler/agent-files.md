@@ -36,11 +36,13 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   tree. The registered direct notes stay beside their direct provider trees. Notes are deliberately
   *not* part of a skill — see below.
 * `npm run ruler:apply` validates the note and fork sources, snapshots every path in the
-  direct-provider registry, runs Ruler, mirrors shared skill notes, applies managed skill forks,
-  restores the direct paths even on failure, and dprint-formats the output. `npm run ruler:check`
-  repeats that pipeline and fails if generated output changed — the CI drift gate.
-  `npm run ruler:dry-run` previews Ruler's shared output only; it does not preview the post-apply
-  layers.
+  direct-provider registry, claims every shared skill in each provider's `.ruler-managed.json`, runs
+  Ruler, mirrors shared skill notes, applies managed skill forks, restores the direct paths even on
+  failure, and dprint-formats the output. Ruler rewrites only the skills that manifest lists, so
+  without the claim a source edit to an existing shared skill never reaches its copies.
+  `npm run ruler:check` repeats that pipeline and fails if generated output changed — the CI drift
+  gate. `npm run ruler:dry-run` previews Ruler's shared output only; it does not preview the
+  post-apply layers.
 
 `ruler:apply` rewrites both `.claude/` and `.agents/`. In a filesystem sandbox that makes either
 provider tree read-only, run it with host/escalated write access from the first attempt. An `EPERM`

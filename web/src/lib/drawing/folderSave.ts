@@ -2,6 +2,7 @@ import type { DBSchema } from '$lib/idbDatabase';
 import { browser } from '$app/environment';
 import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
 import { idbKvStore, requestPersistentStorage } from '$lib/idb';
+import { isNative } from '$lib/platform';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent optionally pick a
@@ -72,9 +73,12 @@ async function storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
   await handleStore.put(HANDLE_KEY, handle);
 }
 
-/** Whether the browser exposes the File System Access directory picker. */
+/**
+ * Whether the browser exposes the File System Access directory picker. The native shells save to
+ * the photo gallery, and Android's WebView exposes a picker that never opens.
+ */
 export function folderSaveSupported(): boolean {
-  return browser && 'showDirectoryPicker' in window;
+  return browser && !(__IS_CAPACITOR__ && isNative()) && 'showDirectoryPicker' in window;
 }
 
 /** The name of the remembered destination folder, or null if none is set. */

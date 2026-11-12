@@ -433,3 +433,21 @@ export async function submitAiKey(page: Page, value: string) {
   }).toPass({ timeout: 5000 });
   await save.click();
 }
+
+/** Clear the page the way a child does: drag the Clear Button to the middle of the screen. */
+export async function clearViaGesture(page: Page) {
+  const box = await page.locator('#clearButton').boundingBox();
+  const vp = page.viewportSize();
+  if (!box || !vp) throw new Error('missing clear button box or viewport');
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++) {
+    await page.mouse.move(
+      cx + ((vp.width / 2 - cx) * i) / 12,
+      cy + ((vp.height / 2 - cy) * i) / 12
+    );
+  }
+  await page.mouse.up();
+}

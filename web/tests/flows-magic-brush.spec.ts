@@ -11,7 +11,13 @@ import {
   TEST_PALETTE,
 } from './helpers';
 
-import { applyFarmPage, openBrushMenu, openDrawer, pickBrush } from './flows-harness';
+import {
+  applyFarmPage,
+  clearViaGesture,
+  openBrushMenu,
+  openDrawer,
+  pickBrush,
+} from './flows-harness';
 
 // The magic brush reveals by sampling a sheet that rasterizes asynchronously
 // (a random rainbow, or an async-decoded coloring-page fill). A stroke drawn
@@ -69,22 +75,6 @@ async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
 
 /** Perform the drag-to-clear gesture: pull the clear button past its accept
  *  threshold (0.4 × min viewport) toward the screen center and release. */
-async function clearViaGesture(page: Page) {
-  const box = await page.locator('#clearButton').boundingBox();
-  const vp = page.viewportSize();
-  if (!box || !vp) throw new Error('missing clear button box or viewport');
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-  await page.mouse.move(cx, cy);
-  await page.mouse.down();
-  for (let i = 1; i <= 12; i++) {
-    await page.mouse.move(
-      cx + ((vp.width / 2 - cx) * i) / 12,
-      cy + ((vp.height / 2 - cy) * i) / 12
-    );
-  }
-  await page.mouse.up();
-}
 
 // Distinct strongly-opaque canvas colors, quantized to `bits` per channel. A
 // solid stroke yields ~one bucket; a magic reveal spanning several fill regions

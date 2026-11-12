@@ -172,6 +172,14 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* Android Chrome arms its pull-to-refresh indicator from a downward drag at the
+   top edge even when the drag is a stroke the page consumes. The viewport takes
+   overscroll-behavior from the root element (a value on body is not propagated),
+   so the declaration sits on <html> itself. */
+:root[data-app-surface] {
+  overscroll-behavior: none;
+}
+
 .app-container {
   display: flex;
   width: 100%;

@@ -9,6 +9,7 @@ export const SETTLED_IN_STROKES = 3;
 interface PaperPlacement {
   paperOrientation: Orientation;
   paperCssWidth: number;
+  paperCssHeight: number;
 }
 
 // The reactive mirror of the imperative drawing engine (ADR-0004). The engine
@@ -31,6 +32,9 @@ export interface CanvasState {
   // CSS width of that same adopted/locked paper. Responsive overlay prefetches
   // use this instead of the full pointer canvas, which diverges under ADR-0050.
   readonly paperCssWidth: number;
+  // Its CSS height. The drawing checkpoint retries a refused restore when either side changes: an
+  // Android activity recreated in place first lays out shorter than it settles (ADR-0178).
+  readonly paperCssHeight: number;
   recordUndo(): void;
   setCanUndo(canUndo: boolean): void;
   setCanvasEmpty(empty: boolean): void;
@@ -46,6 +50,7 @@ export function createCanvas(): CanvasState {
     strokeCount: number;
     paperOrientation: Orientation | null;
     paperCssWidth: number;
+    paperCssHeight: number;
   }>({
     canUndo: false,
     undoCount: 0,
@@ -53,6 +58,7 @@ export function createCanvas(): CanvasState {
     strokeCount: 0,
     paperOrientation: null,
     paperCssWidth: 0,
+    paperCssHeight: 0,
   });
 
   return {
@@ -74,6 +80,9 @@ export function createCanvas(): CanvasState {
     get paperCssWidth() {
       return s.paperCssWidth;
     },
+    get paperCssHeight() {
+      return s.paperCssHeight;
+    },
     recordUndo() {
       s.undoCount += 1;
     },
@@ -89,6 +98,7 @@ export function createCanvas(): CanvasState {
     setPaperView(view) {
       s.paperOrientation = view.paperOrientation;
       s.paperCssWidth = view.paperCssWidth;
+      s.paperCssHeight = view.paperCssHeight;
     },
   };
 }

@@ -196,6 +196,24 @@ test.describe('safe-area matrix', () => {
         await expectInsideSafeArea(control.name, control.selector);
       }
 
+      // The palette's centre can sit inside the safe area while its last swatch,
+      // More colors, hangs into the home indicator (issue 2868), so every shown
+      // swatch is held above the bottom inset. Phone landscape hides the palette,
+      // and the count says so rather than letting an empty list pass.
+      const swatchBottoms = await page
+        .locator('.color-palette .color-swatch')
+        .evaluateAll((swatches) =>
+          swatches
+            .filter((swatch) => swatch.checkVisibility())
+            .map((swatch) => swatch.getBoundingClientRect().bottom)
+        );
+      expect(swatchBottoms.length > 0, 'palette swatches shown').toBe(
+        colorControl.selector === '.color-palette'
+      );
+      for (const [index, bottom] of swatchBottoms.entries()) {
+        expect(bottom, `palette swatch ${index} bottom`).toBeLessThanOrEqual(safe.bottom);
+      }
+
       // 3. Insets shrink the usable box; they must never make the page scroll.
       const overflow = await page.evaluate(() => ({
         x: document.documentElement.scrollWidth - document.documentElement.clientWidth,

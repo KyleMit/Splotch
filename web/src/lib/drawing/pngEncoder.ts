@@ -1,7 +1,15 @@
 import { promiseWithResolvers } from '../promiseWithResolvers';
-import type { EncodePngPayload, EncodePngResponse, TiledPngInput } from './pngEncoderProtocol';
+import {
+  closeReplayPngInput,
+  replayPngTransfer,
+  type EncodePngPayload,
+  type EncodePngResponse,
+  type EncodeReplayPngRequest,
+  type ReplayPngInput,
+  type TiledPngInput,
+} from './pngEncoderProtocol';
 
-export type { TiledPngInput } from './pngEncoderProtocol';
+export type { ReplayPngInput, TiledPngInput } from './pngEncoderProtocol';
 
 interface PendingEncode {
   resolve: (blob: Blob) => void;
@@ -10,34 +18,58 @@ interface PendingEncode {
   onPreview?: (preview: ImageBitmap) => void;
 }
 
-interface PngEncoder {
-  encode(bitmap: ImageBitmap): Promise<Blob>;
-  encodeTiles(input: TiledPngInput, onPreview?: (preview: ImageBitmap) => void): Promise<Blob>;
+type EncoderPayload = EncodePngPayload | Omit<EncodeReplayPngRequest, 'id'>;
+
+interface EncoderWorker {
+  request(
+    message: EncoderPayload,
+    transfer: Transferable[],
+    onPreview?: (preview: ImageBitmap) => void
+  ): Promise<Blob>;
   terminate(error: Error): void;
 }
 
-let cachedEncoder: PngEncoder | null = null;
+// One cached worker per kind: the PNG worker composes settled tiles; the replay worker carries the
+// op renderers, so the matched-scale path never loads them.
+interface EncoderSlot {
+  current: EncoderWorker | null;
+  spawn(): Worker;
+}
+
+const pngEncoderSlot: EncoderSlot = {
+  current: null,
+  spawn: () => new Worker(new URL('./pngEncoder.worker.ts', import.meta.url), { type: 'module' }),
+};
+const replayEncoderSlot: EncoderSlot = {
+  current: null,
+  spawn: () => new Worker(new URL('./exportReplay.worker.ts', import.meta.url), { type: 'module' }),
+};
 
 const ENCODE_TIMEOUT_MS = 15_000;
 
-function createPngEncoder(): PngEncoder {
-  const worker = new Worker(new URL('./pngEncoder.worker.ts', import.meta.url), {
-    type: 'module',
-  });
+function encoderFor(slot: EncoderSlot): EncoderWorker {
+  slot.current ??= createEncoderWorker(slot);
+  return slot.current;
+}
+
+function createEncoderWorker(slot: EncoderSlot): EncoderWorker {
+  const worker = slot.spawn();
   const pending = new Map<number, PendingEncode>();
   let nextRequestId = 0;
+  const retire = (error: Error) => {
+    encoder.terminate(error);
+    if (slot.current === encoder) slot.current = null;
+  };
 
-  function request<T extends EncodePngPayload>(
-    message: T,
+  function request(
+    message: EncoderPayload,
     transfer: Transferable[],
     onPreview?: (preview: ImageBitmap) => void
   ): Promise<Blob> {
     const id = ++nextRequestId;
     const { promise, resolve, reject } = promiseWithResolvers<Blob>();
     const timeoutId = setTimeout(() => {
-      const error = new Error('PNG encoder worker timed out');
-      encoder.terminate(error);
-      if (cachedEncoder === encoder) cachedEncoder = null;
+      retire(new Error('PNG encoder worker timed out'));
     }, ENCODE_TIMEOUT_MS);
     pending.set(id, { resolve, reject, timeoutId, onPreview });
     try {
@@ -58,18 +90,8 @@ function createPngEncoder(): PngEncoder {
     pending.clear();
   }
 
-  const encoder: PngEncoder = {
-    encode(bitmap) {
-      return request({ kind: 'canvas', bitmap }, [bitmap]);
-    },
-    encodeTiles(input, onPreview) {
-      const transfer = [
-        ...input.tiles.map((tile) => tile.bitmap),
-        ...(input.texture ? [input.texture] : []),
-        ...(input.overlay ? [input.overlay] : []),
-      ];
-      return request({ kind: 'tiles', ...input }, transfer, onPreview);
-    },
+  const encoder: EncoderWorker = {
+    request,
     terminate(error) {
       worker.terminate();
       rejectPending(error);
@@ -97,9 +119,7 @@ function createPngEncoder(): PngEncoder {
     // A coded error means the worker's canvas context is unrecoverable, so it retires the worker and
     // every request pending on it. Any other error reply settles only its own request.
     if ('error' in event.data && event.data.code !== undefined) {
-      const error = new Error(event.data.error);
-      encoder.terminate(error);
-      if (cachedEncoder === encoder) cachedEncoder = null;
+      retire(new Error(event.data.error));
       return;
     }
     clearTimeout(request.timeoutId);
@@ -113,14 +133,10 @@ function createPngEncoder(): PngEncoder {
     }
   });
   worker.addEventListener('error', (event) => {
-    const error = new Error(event.message || 'PNG encoder worker failed');
-    encoder.terminate(error);
-    if (cachedEncoder === encoder) cachedEncoder = null;
+    retire(new Error(event.message || 'PNG encoder worker failed'));
   });
   worker.addEventListener('messageerror', () => {
-    const error = new Error('PNG encoder worker response could not be decoded');
-    encoder.terminate(error);
-    if (cachedEncoder === encoder) cachedEncoder = null;
+    retire(new Error('PNG encoder worker response could not be decoded'));
   });
 
   return encoder;
@@ -146,8 +162,16 @@ export async function encodeTiledCanvasPng(
   onPreview?: (preview: ImageBitmap) => void
 ): Promise<Blob | null> {
   try {
-    cachedEncoder ??= createPngEncoder();
-    return await cachedEncoder.encodeTiles(input, onPreview);
+    const transfer = [
+      ...input.tiles.map((tile) => tile.bitmap),
+      ...(input.texture ? [input.texture] : []),
+      ...(input.overlay ? [input.overlay] : []),
+    ];
+    return await encoderFor(pngEncoderSlot).request(
+      { kind: 'tiles', ...input },
+      transfer,
+      onPreview
+    );
   } catch {
     // The encoder alone decides when its worker is broken; retiring it here for this request's
     // failure would reject every concurrent export along with it.
@@ -166,12 +190,28 @@ export async function encodeCanvasPng(
   let bitmap: ImageBitmap | null = null;
   try {
     bitmap = await createImageBitmap(canvas);
-    cachedEncoder ??= createPngEncoder();
-    const blob = await cachedEncoder.encode(bitmap);
+    const blob = await encoderFor(pngEncoderSlot).request({ kind: 'canvas', bitmap }, [bitmap]);
     bitmap = null;
     return blob;
   } catch {
     bitmap?.close();
     return encodeOnMainThread(canvas);
+  }
+}
+
+// Like the tiled path, a failed replay settles as null after releasing every bitmap it carried.
+export async function encodeReplayPng(
+  input: ReplayPngInput,
+  onPreview?: (preview: ImageBitmap) => void
+): Promise<Blob | null> {
+  try {
+    return await encoderFor(replayEncoderSlot).request(
+      { kind: 'replay', ...input },
+      replayPngTransfer(input),
+      onPreview
+    );
+  } catch {
+    closeReplayPngInput(input);
+    return null;
   }
 }

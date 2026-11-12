@@ -49,3 +49,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 }
+
+// UIKit requires the scene lifecycle for apps linked against the iOS 27 SDK. Capacitor's
+// SceneDelegateProxy republishes scene URL, user-activity and connection events to the bridge.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+
+    var window: UIWindow?
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
+    }
+
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        SceneDelegateProxy.shared.scene(scene, continue: userActivity)
+    }
+}

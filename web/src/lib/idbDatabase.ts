@@ -38,6 +38,7 @@ export interface IdbTransaction<Schema extends DBSchema, Name extends StoreNames
   store: {
     get(key: StoreKey<Schema, Name>): Promise<StoreValue<Schema, Name> | undefined>;
     put(value: StoreValue<Schema, Name>, key: StoreKey<Schema, Name>): Promise<void>;
+    delete(key: StoreKey<Schema, Name>): Promise<void>;
   };
   done: Promise<void>;
 }
@@ -60,9 +61,12 @@ export interface IdbDatabase<Schema extends DBSchema> {
     storeName: Name,
     key: StoreKey<Schema, Name>
   ): Promise<void>;
+  // `durability: 'strict'` makes `done` wait until the commit is on disk, so a process killed right
+  // after it cannot lose the write (the drawing checkpoint, ADR-0178). The default is the browser's.
   transaction<Name extends StoreNames<Schema>>(
     storeName: Name,
-    mode: IDBTransactionMode
+    mode: IDBTransactionMode,
+    durability?: IDBTransactionDurability
   ): IdbTransaction<Schema, Name>;
 }
 
@@ -136,13 +140,18 @@ function wrapDatabase<Schema extends DBSchema>(database: IDBDatabase): IdbDataba
         objectStore(database, storeName, 'readwrite').delete(key),
         `Deleting from ${storeName}`
       ),
-    transaction: (storeName, mode) => {
-      const transaction = database.transaction(storeName, mode);
+    transaction: (storeName, mode, durability) => {
+      const transaction = database.transaction(
+        storeName,
+        mode,
+        durability ? { durability } : undefined
+      );
       const store = transaction.objectStore(storeName);
       return {
         store: {
           get: (key) => requestResult(store.get(key), `Reading ${storeName}`),
           put: (value, key) => requestDone(store.put(value, key), `Writing ${storeName}`),
+          delete: (key) => requestDone(store.delete(key), `Deleting from ${storeName}`),
         },
         done: transactionDone(transaction, storeName),
       };

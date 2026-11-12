@@ -84,6 +84,24 @@ test('non-canvas routes are normal documents by default (/privacy, /admin)', asy
   expect(admin.userSelect).not.toBe('none');
 });
 
+const rootOverscroll = (page: Page) =>
+  page.locator('html').evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { x: s.overscrollBehaviorX, y: s.overscrollBehaviorY };
+  });
+
+test('only the drawing route suppresses the viewport overscroll (pull-to-refresh)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  expect(await rootOverscroll(page)).toEqual({ x: 'none', y: 'none' });
+
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  expect(await rootOverscroll(page)).toEqual({ x: 'auto', y: 'auto' });
+});
+
 test('client-side nav off the drawing route drops the app-surface locks (effect cleanup)', async ({
   page,
 }) => {

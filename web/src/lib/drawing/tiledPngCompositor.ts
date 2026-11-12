@@ -1,3 +1,4 @@
+import { CPU_SURFACE_SETTINGS } from './canvas2d';
 import {
   createOffscreenCanvas2dSurface,
   type RecoverableCanvas2dSurface,
@@ -41,5 +42,33 @@ export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: num
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
   context.drawImage(canvas, 0, 0, previewWidth, previewHeight);
+  return preview.transferToImageBitmap();
+}
+
+// The live-tile layers the replay worker paints its polaroid from.
+export type TiledLayers = Omit<TiledPngInput, 'exportScale' | 'previewWidth'>;
+
+// The replay worker's polaroid: the settled live tiles painted at the preview's own size, on a CPU
+// surface, before the replay starts, so the full page's replay never delays the picture the child
+// sees. The matched-scale path above keeps the downscale of its composed page that ADR-0088
+// measured on the iPad.
+export function createLayeredPngPreview(data: TiledLayers, previewWidth: number): ImageBitmap {
+  const scale = previewWidth / (data.sourceWidth / data.sourceScale);
+  const previewHeight = Math.max(1, Math.round((data.sourceHeight / data.sourceScale) * scale));
+  const preview = new OffscreenCanvas(previewWidth, previewHeight);
+  const context = preview.getContext('2d', CPU_SURFACE_SETTINGS);
+  if (!context) throw new Error('PNG encoder could not allocate a preview context');
+  paintTiledExportLayers(context, {
+    tiles: data.tiles,
+    sourceScale: data.sourceScale,
+    width: data.sourceWidth / data.sourceScale,
+    height: data.sourceHeight / data.sourceScale,
+    scale,
+    paperColor: data.paperColor,
+    texture: data.texture,
+    overlay: data.overlay
+      ? { source: data.overlay, width: data.overlay.width, height: data.overlay.height }
+      : null,
+  });
   return preview.transferToImageBitmap();
 }

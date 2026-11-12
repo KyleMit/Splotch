@@ -16,11 +16,14 @@ import { tmpdir } from 'node:os';
 import {
   DIRECT_PROVIDER_PATHS,
   FORBIDDEN_DIRECT_PROVIDER_SOURCES,
+  RULER_APPLY_ARGS,
+  RULER_MANAGED_MANIFEST,
   RULER_STEP_PATHS,
   generateFromValidatedSources,
   withPreservedDirectProviderPaths,
 } from '../apply-ruler.mjs';
 import { sharedNoteSource } from '../mirror-skill-notes.mjs';
+import { PROVIDERS, SHARED_SKILLS_SOURCE, skillsDir } from '../lib/layout.mjs';
 import { DIRECT_PROVIDER_SKILLS, directNoteNames } from '../lib/direct-provider-skills.mjs';
 
 const roots = [];
@@ -342,6 +345,20 @@ describe('generateFromValidatedSources', () => {
     expect(generationRuns(root)).toEqual({ runs: 1, thrown: undefined });
   });
 
+  it('claims every shared skill for both providers before generation runs', () => {
+    const root = makeRoot();
+    mkdirSync(join(root, SHARED_SKILLS_SOURCE, 'shared'), { recursive: true });
+    const claimed = [];
+    generateFromValidatedSources(root, () => {
+      for (const provider of PROVIDERS) {
+        const manifest = join(root, skillsDir(provider), RULER_MANAGED_MANIFEST);
+        claimed.push(JSON.parse(readFileSync(manifest, 'utf8')).paths);
+      }
+    });
+
+    expect(claimed).toEqual(PROVIDERS.map(() => ['shared']));
+  });
+
   it('rejects a stray .md note before generation runs', () => {
     const root = makeRoot();
     mkdirSync(join(root, '.ruler', 'skill-notes'), { recursive: true });
@@ -361,5 +378,17 @@ describe('generateFromValidatedSources', () => {
     const { runs, thrown } = generationRuns(root);
     expect(thrown?.message).toContain('unsupported ruler skill fork target: unknown-runner');
     expect(runs).toBe(0);
+  });
+});
+
+describe('ruler agent selection', () => {
+  // Ruler 0.3.45+ gives a nested .ruler/ without its own config every agent it knows, so both entry
+  // points name the providers; a directory full of CRUSH.md and .kiro/ files would not fail
+  // ruler:check, which watches only CLAUDE.md, AGENTS.md and the skill trees.
+  it('names exactly the configured providers when applying and when previewing', () => {
+    const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
+
+    expect(RULER_APPLY_ARGS).toEqual(['apply', '--agents', PROVIDERS.join(',')]);
+    expect(packageJson.scripts['ruler:dry-run']).toContain(`--agents ${PROVIDERS.join(',')} `);
   });
 });

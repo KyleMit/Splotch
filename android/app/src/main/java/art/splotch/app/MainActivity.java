@@ -39,6 +39,7 @@ public class MainActivity extends BridgeActivity {
         preserveNavigationBarContrast();
         updateWebViewBackground();
         hideNavigationBar();
+        bridge.addWebViewListener(new RendererGoneListener(this));
     }
 
     private void preserveNavigationBarContrast() {

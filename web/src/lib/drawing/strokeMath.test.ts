@@ -5,6 +5,7 @@ import {
   edgeSwipeIsOsGesture,
   edgeSwipeDirectionDecided,
   pointerWasResumed,
+  admitMove,
   calculateStrokeSpeed,
   type SpeedSample,
 } from './strokeMath';
@@ -80,6 +81,35 @@ describe('edgeSwipeDirectionDecided', () => {
     // At scale 2 the threshold is 24px, so 12px no longer decides.
     expect(edgeSwipeDirectionDecided(12, 2)).toBe(false);
     expect(edgeSwipeDirectionDecided(24, 2)).toBe(true);
+  });
+});
+
+describe('admitMove', () => {
+  const sample = (timeStamp: number, clientX: number, clientY = 140) => ({
+    timeStamp,
+    clientX,
+    clientY,
+  });
+  const zigzag = [sample(1180.5, 113), sample(1192.5, 520), sample(1200.5, 880)];
+
+  it('refuses the second dispatch of a move that carried the same coalesced list', () => {
+    const stroke = {};
+    expect(admitMove(stroke, zigzag)).toBe(true);
+    expect(admitMove(stroke, [...zigzag])).toBe(false);
+  });
+
+  it('admits the first move of a stroke and keeps its final sample', () => {
+    const stroke: { lastMove?: ReturnType<typeof sample> } = {};
+    expect(admitMove(stroke, zigzag)).toBe(true);
+    expect(stroke.lastMove).toEqual(sample(1200.5, 880));
+  });
+
+  it('admits a later move that ends on a new sample, even at the same spot', () => {
+    for (const next of [sample(1208.5, 880), sample(1200.5, 881), sample(1200.5, 880, 139)]) {
+      const stroke = {};
+      admitMove(stroke, zigzag);
+      expect(admitMove(stroke, [next])).toBe(true);
+    }
   });
 });
 

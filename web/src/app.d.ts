@@ -89,7 +89,12 @@ declare global {
     connection?: NetworkInformation;
     // iOS Safari only: true when launched from a Home Screen web clip.
     standalone?: boolean;
+    // The W3C Audio Session API, WebKit only (Safari 16.4): the page's audio session category.
+    audioSession?: { type: AudioSessionType };
   }
+
+  type AudioSessionType =
+    'auto' | 'playback' | 'transient' | 'transient-solo' | 'ambient' | 'play-and-record';
 
   // Safari-only field, read by lib/actions/scribbleGuard.ts (Scribble only
   // exists there). lib.dom declares it on TouchInit but not on Touch itself.

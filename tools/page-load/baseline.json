@@ -3,7 +3,7 @@
   "profileVersion": 1,
   "sourceDigest": "6d8d309d14e46bd31b345da9c87f23358ec2c741f6ae271a60fe597f407545ae",
   "calibratedOn": "2026-09-25",
-  "lighthouseVersion": "13.5.0",
+  "lighthouseVersion": "13.6.0",
   "samplesPerProfile": 3,
   "profiles": {
     "phone-portrait": {

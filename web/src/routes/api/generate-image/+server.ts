@@ -27,7 +27,12 @@ import {
   resolveGenerationStyle,
 } from '$lib/server/generateImagePolicy';
 import { apiHandler, contentTypeOf, readBodyWithinLimit, readFormBody } from '$lib/server/http';
-import { loggableError } from '$lib/server/logRedaction';
+import {
+  completeFreeCharge,
+  failFreeCharge,
+  freeChargeFor,
+  unreserved,
+} from '$lib/server/freeGenerationSettlement';
 import {
   clientAcceptsBackgroundGeneration,
   deadlineAfterFailedHandoffMs,
@@ -43,7 +48,6 @@ import {
   type GenerationStartedBody,
 } from '$lib/ai/generationResult';
 import {
-  completeFreeGeneration,
   failFreeGeneration,
   reserveDailyFreeGeneration,
   reserveFreeGeneration,
@@ -173,21 +177,6 @@ function freeFailureKind(cause: unknown): FreeGenerationFailureKind {
   return 'invalid-request';
 }
 
-async function recordFreeGenerationFailure(
-  installationId: string,
-  kind: FreeGenerationFailureKind,
-  reservationId?: string
-): Promise<void> {
-  try {
-    await failFreeGeneration(installationId, kind, reservationId);
-  } catch (trackingError) {
-    console.warn(
-      '[free-generation] failed to record unsuccessful attempt:',
-      loggableError(trackingError)
-    );
-  }
-}
-
 function exhaustedGrant(): Response {
   const body: FreeGenerationGrantExhausted = {
     ok: false,
@@ -207,26 +196,6 @@ function exhaustedDailyLimit(): Response {
   return Response.json(body, { status: 503 });
 }
 
-// Spend the reserved slot now that an image exists, and answer with what is left.
-// The picture is already made and already paid for, so a ledger write that fails
-// anyway must not turn it into an error the child sees: the reservation lapses on
-// its own, the daily provider-start ceiling still bounds spending, and the
-// response simply omits the remaining-count header.
-async function recordFreeGeneration(
-  installationId: string,
-  reservationId: string
-): Promise<number | null> {
-  try {
-    return (await completeFreeGeneration(installationId, reservationId)).remaining;
-  } catch (cause) {
-    console.warn(
-      '[free-generation] failed to record a completed generation:',
-      loggableError(cause)
-    );
-    return null;
-  }
-}
-
 const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const requestStartedAt = Date.now();
   const source = await readGenerationRequest(request, url);
@@ -239,7 +208,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
   });
   if (!authorization.authorized) return authorization.response;
 
-  let reservationId: string | undefined;
+  let free = freeChargeFor(authorization);
   let usageAttempted = false;
   let usageRecorded = false;
   let usageStyle: ReturnType<typeof resolveGenerationStyle> = null;
@@ -249,14 +218,14 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     usageStyle = style;
     const finalPrompt = resolveGenerationPrompt(style);
 
-    if (authorization.kind === 'free') {
-      const reservation = await reserveFreeGeneration(authorization.installationId);
+    if (free) {
+      const reservation = await reserveFreeGeneration(free.installationId);
       if (!reservation.reserved) return exhaustedGrant();
-      reservationId = reservation.reservationId;
+      free = { ...free, reservationId: reservation.reservationId };
       const daily = await reserveDailyFreeGeneration();
       if (!daily.reserved) {
-        await failFreeGeneration(authorization.installationId, 'daily-limit', reservationId);
-        reservationId = undefined;
+        await failFreeGeneration(free.installationId, 'daily-limit', free.reservationId);
+        free = unreserved(free);
         return exhaustedDailyLimit();
       }
     }
@@ -277,7 +246,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       const handoffStartedAt = Date.now();
       const started = await startBackgroundGeneration(
         url.origin,
-        { free: freeSettlement(authorization, reservationId), style },
+        { free: freeSettlement(authorization, free?.reservationId), style },
         {
           bytes: new Uint8Array(inputBytes).buffer,
           mimeType,
@@ -287,9 +256,8 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       if (started) {
         recordGenerationUsage(authorization, style, 'accepted', platform);
         usageRecorded = true;
-        // The reservation now belongs to the job; the catch below must not
-        // release it on this request's way out.
-        reservationId = undefined;
+        // The job settles the free charge from here; this request books nothing more.
+        free = null;
         return Response.json({ ok: true, ...started } satisfies GenerationStartedBody, {
           status: GENERATION_ACCEPTED_STATUS,
         });
@@ -321,9 +289,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     if (result.kind === 'refusal') {
       recordGenerationUsage(authorization, style, 'refused', platform);
       usageRecorded = true;
-      if (authorization.kind === 'free') {
-        await recordFreeGenerationFailure(authorization.installationId, 'safety', reservationId);
-      }
+      await failFreeCharge(free, 'safety', 'generate-image');
       return safetyRefusalResponse(result.reason, reportTokenBinding(authorization));
     }
     if (result.kind === 'error') throw error(502, result.reason);
@@ -338,12 +304,9 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     recordGenerationUsage(authorization, style, 'succeeded', platform);
     usageRecorded = true;
 
-    let freeRemaining: number | null = null;
-    if (authorization.kind === 'free' && reservationId) {
-      const settled = reservationId;
-      reservationId = undefined;
-      freeRemaining = await recordFreeGeneration(authorization.installationId, settled);
-    }
+    const freeRemaining = await completeFreeCharge(free, 'generate-image');
+    // Spent: a failure past this point books an unreserved attempt, not a release.
+    free = unreserved(free);
 
     // Minted off the authorized installation id, never off request-body data.
     return pictureResponse(prepared, {
@@ -354,13 +317,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     if (usageAttempted && !usageRecorded) {
       recordGenerationUsage(authorization, usageStyle, 'failed', platform);
     }
-    if (authorization.kind === 'free') {
-      await recordFreeGenerationFailure(
-        authorization.installationId,
-        freeFailureKind(cause),
-        reservationId
-      );
-    }
+    await failFreeCharge(free, freeFailureKind(cause), 'generate-image');
     throw cause;
   }
 };

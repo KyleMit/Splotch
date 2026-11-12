@@ -13,13 +13,13 @@ import {
 import { PERF_MARKS } from './perf';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { DotOp, PathOp } from './strokeOps';
-import { require2dContext } from './canvas2d';
+import { createScratch2dContext } from './canvas2d';
 
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
 // each filled with the paper-tooth pattern for the op's colour + seed. Opaque
 // where wax deposits, transparent in the tooth pits — so overlapping same-colour
 // strokes build up coverage without shifting hue (ADR-0065). No-op until the
-// tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
+// tooth tile is buildable (a 2D context exists), matching the magic sheet's
 // decode-pending skip.
 function paintCrayon(
   target: CanvasRenderingContext2D,
@@ -170,7 +170,7 @@ function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathO
 // tile itself — no accumulation buffer, no preview planes, and no blit, which
 // is what the WKWebView actually charges for (this campaign's D1 measured the
 // composited planes, not the bake, as the plane pipeline's cost).
-type CrayonDepositionMode = 'restamp' | 'planes' | 'glaze-direct';
+export type CrayonDepositionMode = 'restamp' | 'planes' | 'glaze-direct';
 
 // A dependency rather than a compile-time literal for the same reason as
 // ADR-0146's granularity seam: vitest pins __IS_CAPACITOR__ true and would
@@ -226,6 +226,12 @@ export function configureCrayonDeposition(
 export function setCrayonDepositionForTuning(mode: 'restamp' | 'glaze-direct') {
   if (!__DEV_HARNESS__) return;
   configureCrayonDeposition(mode, strokeActiveProbe);
+}
+
+// The configured pipeline, for a replay in another realm (the export replay worker) to configure
+// the same one.
+export function crayonDepositionMode(): CrayonDepositionMode {
+  return depositionMode;
 }
 
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
@@ -294,10 +300,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
   const w = target.canvas.width;
   const h = target.canvas.height;
   if (!buf) {
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
-    const g = require2dContext(c);
+    const g = createScratch2dContext(w, h);
     g.lineCap = 'round';
     g.lineJoin = 'round';
     buf = {
@@ -328,10 +331,7 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
   const w = target.canvas.width;
   const h = target.canvas.height;
   if (!buf.under) {
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
-    buf.under = require2dContext(c);
+    buf.under = createScratch2dContext(w, h);
   } else if (buf.under.canvas.width !== w || buf.under.canvas.height !== h) {
     buf.under.canvas.width = w;
     buf.under.canvas.height = h;

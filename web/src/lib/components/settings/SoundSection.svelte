@@ -12,7 +12,7 @@
     SOUND_VOLUME_MAX,
     SOUND_VOLUME_MIN,
   } from '$lib/state/settings.svelte';
-  import { playVolumePreview, stopDrawSound } from '$lib/audio/drawingSound';
+  import { parkAudio, playVolumePreview, stopDrawSound } from '$lib/audio/drawingSound';
   import { sectionReveal } from './sectionReveal';
   import '$lib/components/deferredIcons';
 
@@ -34,6 +34,14 @@
     } else stopDrawSound();
   }
 
+  // Switching a sound off parks the audio context at once instead of after the idle delay.
+  function toggleSound(set: (on: boolean) => void) {
+    return (on: boolean) => {
+      set(on);
+      if (!on) parkAudio();
+    };
+  }
+
   function onVolumeInput(value: number) {
     setSoundVolume(value);
     previewVolume();
@@ -47,7 +55,7 @@
       label="Sound"
       id="soundToggle"
       checked={settingsState.soundEnabled}
-      onToggle={setSound}
+      onToggle={toggleSound(setSound)}
     />
     {#if settingsState.soundEnabled}
       <div class="slider-setting" transition:sectionReveal>
@@ -75,7 +83,7 @@
             label="Drawing"
             id="drawingSoundToggle"
             checked={settingsState.drawingSoundEnabled}
-            onToggle={setDrawingSound}
+            onToggle={toggleSound(setDrawingSound)}
           />
         </div>
         <div class="setting">
@@ -84,7 +92,7 @@
             label="Deleting"
             id="deleteSoundToggle"
             checked={settingsState.deleteSoundEnabled}
-            onToggle={setDeleteSound}
+            onToggle={toggleSound(setDeleteSound)}
           />
         </div>
       </div>

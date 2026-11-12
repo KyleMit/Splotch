@@ -9,7 +9,8 @@ import {
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { PERF_MARKS } from './perf';
-import type { MagicSheetSnapshot } from './magicBrush';
+import { captureMagicSheet, type MagicSheetSnapshot } from './magicBrush';
+import { captureReplay, type ReplayCapture } from './exportReplayCapture';
 import { opPaddedUserBounds } from './opGeometry';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
@@ -477,6 +478,50 @@ export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
 
 export const paintVisibleTiledInk = (target: CanvasRenderingContext2D) =>
   readback.paintTiledInk(target, liveTiles);
+
+// The checkpoint's view of the settled page: its live tiles, the render scale they hold, and the
+// CSS size of the paper they cover. Null while a pointer is down.
+export function captureTiledCheckpoint() {
+  const paper = host?.paperSize();
+  const snapshot = captureTiledCanvasSnapshot();
+  if (!paper || !snapshot || rendererScale <= 0) return null;
+  return {
+    snapshot,
+    renderScale: rendererScale,
+    cssWidth: Math.round(paper.width / rendererScale),
+    cssHeight: Math.round(paper.height / rendererScale),
+  };
+}
+
+// A checkpointed picture becomes the history base, under anything drawn since and outside the
+// undo window. It is drawn only onto paper of the size it was saved from, scaled to this render
+// scale; a page that has already been drawn on keeps what it has.
+export function restoreTiledBase(image: CanvasImageSource, cssWidth: number, cssHeight: number) {
+  const paper = host?.paperSize();
+  if (!paper || history.length > 0 || activeCommand || rendererScale <= 0) return false;
+  const sameSize =
+    Math.round(paper.width / rendererScale) === cssWidth &&
+    Math.round(paper.height / rendererScale) === cssHeight;
+  if (!sameSize) return false;
+  ensureHistoryBase();
+  for (const tile of historyBase) {
+    tile.ctx.drawImage(image, 0, 0, paper.width, paper.height);
+    tile.painted = true;
+  }
+  repaintTiledRenderer(false);
+  return true;
+}
+
+// The replay worker's inputs (exportReplayCapture.ts): the same base tiles and commands, in the same
+// order, that renderTiledSnapshot replays on the page.
+export function captureTiledReplay(): ReplayCapture {
+  return captureReplay({
+    base: historyBase.filter((tile) => tile.painted),
+    commands: (activeCommand ? [...history, activeCommand] : history).map(({ ops }) => ops),
+    liveSheet: captureMagicSheet(),
+    paper: host?.paperSize() ?? null,
+  });
+}
 
 export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
   const paper = host?.paperSize() ?? null;

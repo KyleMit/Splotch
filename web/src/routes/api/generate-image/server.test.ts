@@ -105,13 +105,16 @@ async function stickerPng(subject: boolean): Promise<Buffer> {
     .toBuffer();
 }
 
+// The installation the mocked free authorization carries.
+const FREE_ID = 'a'.repeat(64);
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.authorize.mockResolvedValue({
     authorized: true,
     kind: 'free',
     effectiveKey: 'project-key',
-    installationId: 'a'.repeat(64),
+    installationId: FREE_ID,
   });
   mocks.reserveGrant.mockResolvedValue({ reserved: true, reservationId: 'reservation-1' });
   mocks.reserveDaily.mockResolvedValue({ reserved: false, remaining: 0 });
@@ -142,7 +145,7 @@ describe('POST /api/generate-image', () => {
     expect(response.headers.get('Content-Type')).toBe('image/png');
     expect(data[3]).toBe(0);
     expect(data[(32 * info.width + 32) * info.channels + 3]).toBe(255);
-    expect(mocks.completeGrant).toHaveBeenCalledExactlyOnceWith('a'.repeat(64), 'reservation-1');
+    expect(mocks.completeGrant).toHaveBeenCalledExactlyOnceWith(FREE_ID, 'reservation-1');
   });
 
   it('rejects a blank Sticker image and releases the free creation', async () => {
@@ -160,11 +163,7 @@ describe('POST /api/generate-image', () => {
       ok: false,
       error: 'The sticker picture could not be used. Please try again.',
     });
-    expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(
-      'a'.repeat(64),
-      'upstream',
-      'reservation-1'
-    );
+    expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(FREE_ID, 'upstream', 'reservation-1');
     expect(mocks.completeGrant).not.toHaveBeenCalled();
   });
 
@@ -287,6 +286,17 @@ describe('POST /api/generate-image', () => {
     expect(mocks.generateImage).not.toHaveBeenCalled();
   });
 
+  // A free request refused before it reserves still counts as an attempt: the
+  // ledger books an unreserved failure, with no reservation to release.
+  it('books an unreserved failure for a free request refused before it reserves', async () => {
+    const headers = { 'Content-Type': 'text/plain' };
+    const request = new Request('http://localhost/api/generate-image', { method: 'POST', headers });
+
+    expect((await handle(request)).status).toBe(415);
+    expect(mocks.reserveGrant).not.toHaveBeenCalled();
+    expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(FREE_ID, 'invalid-request', undefined);
+  });
+
   // The code is what sends a parent to BYOK setup, and a used-up grant costs
   // nothing: no provider call, no daily-ceiling spend, and no failure booked
   // against a slot it never reserved.
@@ -317,7 +327,7 @@ describe('POST /api/generate-image', () => {
       code: 'FREE_DAILY_LIMIT_EXHAUSTED',
       error: 'Free creations are unavailable today. Add your own OpenAI key to keep creating.',
     });
-    expect(mocks.failGrant).toHaveBeenCalledWith('a'.repeat(64), 'daily-limit', 'reservation-1');
+    expect(mocks.failGrant).toHaveBeenCalledWith(FREE_ID, 'daily-limit', 'reservation-1');
     expect(mocks.generateImage).not.toHaveBeenCalled();
   });
 
@@ -352,10 +362,10 @@ describe('POST /api/generate-image', () => {
       ok: false,
       error: 'Drawing was blocked for safety: IMAGE_SAFETY',
     });
-    expect(mocks.failGrant).toHaveBeenCalledWith('a'.repeat(64), 'safety', 'reservation-1');
+    expect(mocks.failGrant).toHaveBeenCalledWith(FREE_ID, 'safety', 'reservation-1');
     expect(mocks.completeGrant).not.toHaveBeenCalled();
     expect(mocks.issueReportToken).toHaveBeenCalledWith(
-      { kind: 'free', credential: 'a'.repeat(64) },
+      { kind: 'free', credential: FREE_ID },
       { kind: 'false-positive-refusal', refusalReason: 'IMAGE_SAFETY' }
     );
   });
@@ -520,11 +530,7 @@ describe('POST /api/generate-image', () => {
       });
       expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(SPENT_MS);
       expect(mocks.generateImage).not.toHaveBeenCalled();
-      expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(
-        'a'.repeat(64),
-        'upstream',
-        'reservation-1'
-      );
+      expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(FREE_ID, 'upstream', 'reservation-1');
     });
 
     // A direct request's routine pre-work is charged to the margin rather than

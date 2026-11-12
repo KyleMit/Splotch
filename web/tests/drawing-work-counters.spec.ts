@@ -18,16 +18,17 @@ const MAX_REALIZED_NORMAL_BACKINGS = 20;
 // planes (crayonPassBuffer.ts). Any realized crayon backing means the plane path came back.
 const MAX_REALIZED_CRAYON_BACKINGS = 0;
 
-// The fixed protocol input is one start dot plus twelve pointer moves. A scheduler cannot change
-// the protocol event count, so any extra op is engine work rather than timing noise.
-const MAX_INPUT_OPS_PER_STROKE = 13;
+// The fixed protocol input is one start dot, twelve pointer moves, and the closing half-chord the
+// lift draws to the last sample. A scheduler cannot change the protocol event count, so any extra
+// op is engine work rather than timing noise.
+const MAX_INPUT_OPS_PER_STROKE = 14;
 
 // Three diagonal corner crossings intentionally visit four cells; no op in this scenario needs to
 // rasterize into the rest of the grid.
 const MAX_SURFACE_VISITS_PER_OP = 4;
 
-// The retained culling shape rasterizes thirteen input ops twenty-two times after counting the
-// three four-cell seam crossings. A higher total catches lost culling or added seam overdraw.
+// The retained culling shape rasterizes the stroke's input ops at most twenty-two times, counting
+// the three four-cell seam crossings. A higher total catches lost culling or added seam overdraw.
 const MAX_RASTERIZED_OPS_PER_STROKE = 22;
 
 // One committed command owns one undo-stack entry and at most one entry with live patch rasters.

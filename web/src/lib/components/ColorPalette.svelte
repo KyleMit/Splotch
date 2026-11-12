@@ -70,10 +70,10 @@
 
   // Each swatch is tagged with its trim rank (0 = first to be hidden) so the
   // style block can drop swatches by priority at each breakpoint. Hiding is
-  // done entirely in CSS media queries — no JS measurement — so the layout is
-  // correct on the prerendered first paint with no resize flash. The palette
-  // always spans the full relevant viewport dimension (height in landscape,
-  // width in portrait), so viewport breakpoints map directly onto its room.
+  // done entirely in CSS queries — no JS measurement — so the layout is
+  // correct on the prerendered first paint with no resize flash. The portrait
+  // row spans the viewport's width, so viewport breakpoints map onto its room;
+  // the landscape column queries its own height, which safe-area insets shorten.
   const trimRank = new Map(TRIM_ORDER.map((hex, i) => [hex, i]));
 </script>
 
@@ -134,9 +134,8 @@
     flex-shrink: 0;
     position: relative;
     /* Visible sideways so the selection bloom can overshoot the edges; clipped
-       (not hidden: no scroll container) vertically because the ladder trims by
-       viewport height, so a status-bar iPad's inset-shortened column overruns
-       its last swatch (safe-area-matrix.spec.ts) and would scroll the page. */
+       (not hidden: no scroll container) vertically for the last swatch's shadow
+       (see the padding above). */
     overflow-x: visible;
     overflow-y: clip;
     touch-action: manipulation; /* Prevent iOS gesture delays */
@@ -268,49 +267,90 @@
     }
   }
 
-  /* LANDSCAPE, single column (1 bar) — 60px swatches, 12px gaps, 12px side
-     padding: N fit at height ≥ 72·N + 12. Floored at the layout switch. */
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 1163.98px) {
+  /* LANDSCAPE, single column (1 bar) — 60px swatches with 12px gaps: N fit in a
+     content box at least 72·N − 12 tall. The column is its own size container, so
+     its room is what the status bar, the home indicator and the Brush-Button
+     clearance (--palette-bottom) leave, not the viewport height. */
+  @media (orientation: landscape) and (min-height: 600px) {
+    .color-palette {
+      container: palette-column / size;
+    }
+  }
+  @container palette-column (max-height: 1139.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='0']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 1091.98px) {
+  @container palette-column (max-height: 1067.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='1']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 1019.98px) {
+  @container palette-column (max-height: 995.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='2']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 947.98px) {
+  @container palette-column (max-height: 923.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='3']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 875.98px) {
+  @container palette-column (max-height: 851.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='4']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 803.98px) {
+  @container palette-column (max-height: 779.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='5']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 731.98px) {
+  @container palette-column (max-height: 707.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='6']) {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 600px) and (max-height: 659.98px) {
+  @container palette-column (max-height: 635.98px) {
     .color-palette > :global(.color-swatch[data-trim-rank='7']) {
       display: none;
     }
   }
-
+  @container palette-column (max-height: 563.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='8']) {
+      display: none;
+    }
+  }
+  @container palette-column (max-height: 491.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='9']) {
+      display: none;
+    }
+  }
+  @container palette-column (max-height: 419.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='10']) {
+      display: none;
+    }
+  }
+  @container palette-column (max-height: 347.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='11']) {
+      display: none;
+    }
+  }
+  @container palette-column (max-height: 275.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='12']) {
+      display: none;
+    }
+  }
+  @container palette-column (max-height: 203.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='13']) {
+      display: none;
+    }
+  }
+  @container palette-column (max-height: 131.98px) {
+    .color-palette > :global(.color-swatch[data-trim-rank='14']) {
+      display: none;
+    }
+  }
   /* Phone landscape hands the palette's strip back to the drawing canvas. */
   @media (orientation: landscape) and (max-height: 599.98px) {
     .color-palette {
