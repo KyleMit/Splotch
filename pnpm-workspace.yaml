@@ -43,6 +43,9 @@ overrides:
   # resolves 4.6.5; another consumer resolves 4.4.3. Every consumer's range admits the fix.
   zod@4.6.5: ^4.6.6
   zod@4.4.3: ^4.6.6
+  # source-map-js <1.2.2 carries a high advisory; the postcss copies eslint-plugin-svelte pulls
+  # in still resolve 1.2.1 inside a range that admits the fix.
+  source-map-js@1.2.1: ^1.2.2
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
