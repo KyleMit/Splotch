@@ -9,8 +9,8 @@ import type {
 } from '$lib/drawing/drawingCheckpoint';
 import { isCanvasEmpty, restoreDrawing } from '$lib/drawing/engine';
 import { captureTiledCheckpoint } from '$lib/drawing/tiledRenderer';
-import type { DBSchema } from '$lib/idbDatabase';
-import { idbKvStore } from '$lib/idb';
+import type { DBSchema, IdbTransaction } from '$lib/idbDatabase';
+import { lazyIdbDatabase } from '$lib/idb';
 import { isNative } from '$lib/platform';
 import { booksForPlatform, STARTER_COLORING_BOOK_ID, type Book } from '$lib/state/books';
 import { canvasState } from '$lib/state/canvas.svelte';
@@ -24,19 +24,28 @@ import { settingsState } from '$lib/state/settings.svelte';
 // startup modules is handed to it here (see AppCheckpointHooks).
 
 const DB_NAME = 'splotch-drawing-checkpoint';
-const STORE = 'checkpoint';
+const STORE = 'checkpoint' as const;
 const CHECKPOINT_KEY = 'current';
 
 interface CheckpointDb extends DBSchema {
   checkpoint: { key: string; value: CheckpointRecord };
 }
 
+// Writes and removals wait for a strict commit: the checkpoint exists for the moment the OS kills
+// the process, and a relaxed commit acknowledged just before that kill was lost on the emulator.
 function createIdbCheckpointStore(): CheckpointStore {
-  const store = idbKvStore<CheckpointDb>(DB_NAME, STORE);
+  const getDb = lazyIdbDatabase<CheckpointDb>(DB_NAME, STORE);
+  const commit = async (
+    change: (store: IdbTransaction<CheckpointDb, typeof STORE>['store']) => Promise<void>
+  ) => {
+    const transaction = (await getDb()).transaction(STORE, 'readwrite', 'strict');
+    await change(transaction.store);
+    await transaction.done;
+  };
   return {
-    read: () => store.get(CHECKPOINT_KEY),
-    write: (record) => store.put(CHECKPOINT_KEY, record),
-    remove: () => store.delete(CHECKPOINT_KEY),
+    read: async () => (await getDb()).get(STORE, CHECKPOINT_KEY),
+    write: (record) => commit((store) => store.put(record, CHECKPOINT_KEY)),
+    remove: () => commit((store) => store.delete(CHECKPOINT_KEY)),
   };
 }
 
@@ -140,6 +149,12 @@ export function installDrawingCheckpoint() {
       checkpoint?.dispose();
       checkpoint = null;
     };
+  });
+
+  $effect(() => {
+    void canvasState.paperCssWidth;
+    void canvasState.paperCssHeight;
+    untrack(() => checkpoint?.paperResized());
   });
 
   // Every committed change the page can show: a stroke group, an undo, a clear, a coloring page.

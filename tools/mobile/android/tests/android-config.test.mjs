@@ -295,7 +295,8 @@ describe('Android page survival', () => {
     const listener = read('android/app/src/main/java/art/splotch/app/RendererGoneListener.java');
     expect(activity).toContain('bridge.addWebViewListener(new RendererGoneListener(this));');
     expect(listener).toMatch(/public boolean onRenderProcessGone\(/);
-    expect(listener).toContain('activity.recreate();');
+    expect(listener).toContain('Intent.FLAG_ACTIVITY_CLEAR_TASK');
+    expect(listener).toContain('activity.startActivity(relaunch);');
   });
 });
 

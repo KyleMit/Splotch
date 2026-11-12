@@ -238,6 +238,37 @@ describe('drawing checkpoint restore', () => {
     expect(deps.restoreInk).not.toHaveBeenCalled();
   });
 
+  it('retries a restore the page refused once the paper is resized', async () => {
+    const { checkpoint, deps, image } = harness(record());
+    deps.restoreInk.mockReturnValueOnce(false);
+
+    await expect(checkpoint.restore()).resolves.toBe(false);
+    checkpoint.paperResized();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(deps.restoreInk).toHaveBeenCalledTimes(2);
+    expect(deps.restoreInk).toHaveBeenLastCalledWith(image, 400, 300);
+    checkpoint.paperResized();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(deps.restoreInk).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry once the page has been touched, or when nothing was refused', async () => {
+    const touched = harness(record());
+    touched.deps.restoreInk.mockReturnValueOnce(false);
+    await touched.checkpoint.restore();
+    touched.deps.pageUntouched.mockReturnValue(false);
+    touched.checkpoint.paperResized();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(touched.deps.restoreInk).toHaveBeenCalledOnce();
+
+    const empty = harness(undefined);
+    await empty.checkpoint.restore();
+    empty.checkpoint.paperResized();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(empty.deps.store.read).toHaveBeenCalledOnce();
+  });
+
   it('aborts the page lookup it is waiting on when disposed', async () => {
     const { checkpoint, deps } = harness(record({ page: { id: 'trex', orientation: 'portrait' } }));
     let lookupSignal: AbortSignal | undefined;

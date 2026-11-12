@@ -71,6 +71,9 @@ export interface DrawingCheckpoint {
   // Resolves whether a checkpointed picture came back. Writes wait for it, so the first empty
   // page of a launch never removes the picture it is about to restore.
   restore(): Promise<boolean>;
+  // Re-attempts a restore the page refused, while the page is untouched: the paper can be laid out
+  // at another size first and settle at the one the picture was saved at.
+  paperResized(): void;
   changed(): void;
   flush(): Promise<void>;
   dispose(): void;
@@ -113,6 +116,9 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
   // blank. One that never did leaves it for a later launch that can restore it, such as one whose
   // paper is the size the picture was saved at.
   let hadInk = false;
+  // The last restore reached the page and the page refused the ink.
+  let inkRefused = false;
+  let retrying: Promise<boolean> | null = null;
   const disposal = new AbortController();
 
   async function restoreRecord(): Promise<boolean> {
@@ -127,6 +133,7 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
       // nothing may change the page once any of those has happened.
       if (disposed || !deps.pageUntouched() || (page && !page.stillApplies())) return false;
       hadInk = deps.restoreInk(image, record.cssWidth, record.cssHeight);
+      inkRefused = !hadInk;
       if (hadInk) page?.apply();
       return hadInk;
     } finally {
@@ -182,6 +189,15 @@ export function createDrawingCheckpoint(deps: CheckpointDeps): DrawingCheckpoint
     restore() {
       restored ??= restoreRecord().catch(() => false);
       return restored;
+    },
+    paperResized() {
+      if (disposed || hadInk || !inkRefused || retrying || !deps.pageUntouched()) return;
+      inkRefused = false;
+      retrying = restoreRecord()
+        .catch(() => false)
+        .finally(() => {
+          retrying = null;
+        });
     },
     changed() {
       if (disposed) return;
