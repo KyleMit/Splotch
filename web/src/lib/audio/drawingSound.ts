@@ -19,6 +19,11 @@ const TEARDOWN_SLACK_MS = 20;
 // campaign). So the context parks this long after the last sound ends, and the next sound resumes it.
 // Exported for drawingSound.park.test.ts only.
 export const AUDIO_IDLE_SUSPEND_MS = 3_000;
+// Consecutive stroke gestures whose resume left the context stopped. After an iPadOS audio-server
+// restart, every activation of the page's session was refused until a relaunch; past this many the
+// context is closed and replaced on the next gesture. Decoded buffers outlive their context.
+// Exported for drawingSound.park.test.ts only.
+export const MAX_STALLED_RESUMES = 2;
 
 // The one context for all app audio: clearSound.ts reaches it through
 // ensureAudioContext/currentAudioContext rather than building a second one.
@@ -39,6 +44,7 @@ const soundBytes = new Map<string, Promise<ArrayBuffer>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 let parkTimer: ReturnType<typeof setTimeout> | null = null;
+let stalledResumes = 0;
 type PencilPlaybackKind = 'drawing' | 'volume-preview';
 
 let playbackRequest: { kind: PencilPlaybackKind; speed: number } | null = null;
@@ -51,9 +57,18 @@ export function canPlayDrawingSound() {
   return settingsState.soundEnabled && settingsState.drawingSoundEnabled;
 }
 
+// WebKit's audio session for the page. 'ambient' mixes with a parent's own audio and never stops it,
+// and an explicit type is what WebKit rebuilds the session with after iPadOS's audio server
+// restarts: left on 'auto', the iPad brought it back solo-ambient and non-mixable.
+function declareAmbientAudioSession() {
+  const session = typeof navigator === 'undefined' ? undefined : navigator.audioSession;
+  if (session && session.type !== 'ambient') session.type = 'ambient';
+}
+
 export function ensureAudioContext(): AudioContext | null {
   if (audioContext) return audioContext;
   if (typeof AudioContext === 'undefined') return null;
+  declareAmbientAudioSession();
   audioContext = new AudioContext();
   return audioContext;
 }
@@ -85,6 +100,27 @@ export function noteSoundPlayed(ctx: AudioContext, durationMs: number) {
 export function parkAudio() {
   stopDrawSound();
   parkAfter(STOP_DECLICK_S * 1_000 + TEARDOWN_SLACK_MS);
+}
+
+function replaceStalledContext(stalled: AudioContext): AudioContext | null {
+  if (audioContext === stalled) audioContext = null;
+  stalledResumes = 0;
+  stalled.close().catch(() => {});
+  return ensureAudioContext();
+}
+
+// A suspended WebKit context may reject without changing state. One attempt per gesture preserves
+// the next real activation without charging every move.
+function resumeForGesture(ctx: AudioContext) {
+  declareAmbientAudioSession();
+  ctx.resume().then(
+    () => {
+      stalledResumes = ctx.state === 'running' ? 0 : stalledResumes + 1;
+    },
+    () => {
+      stalledResumes += 1;
+    }
+  );
 }
 
 export function currentAudioContext(): AudioContext | null {
@@ -169,12 +205,14 @@ function requestPencilPlayback({ speed, isStrokeStart }: DrawSoundData, kind: Pe
     failedUrls.clear();
     preloadPencilSounds();
   } else preloadFirstPencilSound();
-  const ctx = audioContext;
+  let ctx = audioContext;
   if (!ctx) return;
 
-  // A suspended WebKit context may reject without changing state. One attempt
-  // per gesture preserves the next real activation without charging every move.
-  if (gestureStarted && ctx.state === 'suspended') ctx.resume().catch(() => {});
+  if (gestureStarted && ctx.state !== 'running') {
+    if (stalledResumes >= MAX_STALLED_RESUMES) ctx = replaceStalledContext(ctx);
+    if (!ctx) return;
+    resumeForGesture(ctx);
+  }
   if (currentPlayback) updateGain(currentPlayback.gain.gain, speed, ctx.currentTime);
   else startPlaybackIfReady();
 }
