@@ -559,7 +559,7 @@
     "lighthouse": "13.5.0",
     "postcss-html": "^2.0.0",
     "prettier": "^3.9.9",
-    "prettier-plugin-svelte": "^4.1.1",
+    "prettier-plugin-svelte": "^4.2.0",
     "scripts-info": "^1.0.5",
     "stylelint": "^17.15.0",
     "svelte-check": "^4.7.6",
